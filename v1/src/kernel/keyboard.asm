@@ -12,6 +12,12 @@
 ;
 ; Cooperative keyboard owner. Full decoding is never performed from IM2.
 
+KEYBOARD_STATE_BASE      EQU CONSOLE_STATE_END
+tty_input_owner          EQU KEYBOARD_STATE_BASE+0
+break_pending            EQU KEYBOARD_STATE_BASE+1
+KEYBOARD_STATE_END       EQU KEYBOARD_STATE_BASE+2
+    ASSERT KEYBOARD_STATE_END <= EMERGENCY_END+1
+
     MACRO EMIT_KEYBOARD_ROUTINES
 zx48_keyboard_init:
     ld a,HANDLE_FREE
@@ -35,7 +41,6 @@ zx48_keyboard_claim:
     ld a,b
     ld (tty_input_owner),a
     call zx48_rom_key_scan
-    ; KEY-SCAN returns E/L state; no-key convention is normalized here.
     ld a,e
     cp $ff
     jr z,zx48_keyboard_none
@@ -61,9 +66,4 @@ zx48_keyboard_release:
     ld a,HANDLE_FREE
     ld (tty_input_owner),a
     ret
-
-tty_input_owner:
-    db HANDLE_FREE
-break_pending:
-    db 0
     ENDM
