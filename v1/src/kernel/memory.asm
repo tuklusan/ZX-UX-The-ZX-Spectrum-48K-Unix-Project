@@ -36,7 +36,7 @@ zx48_alloc:
     ld (memory_policy),a
     ld a,b
     or c
-    jr z,zx48_alloc_zero
+    jp z,zx48_alloc_zero
     bit 0,c
     jr z,zx48_alloc_even
     inc bc
@@ -180,7 +180,8 @@ zx48_free_scan:
     jr z,zx48_free_store
     ld de,4
     add ix,de
-    djnz zx48_free_scan
+    dec b
+    jp nz,zx48_free_scan
     ld a,E_NOSPC
     scf
     ret
