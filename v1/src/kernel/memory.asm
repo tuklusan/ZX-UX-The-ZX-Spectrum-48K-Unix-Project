@@ -10,9 +10,9 @@
 ; SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 ; patent, trademark, and governing-law provisions.
 ;
-; Compact sixteen-extent arena allocator. Requests are rounded even. ANY takes
-; the lowest fit, FAST_REQUIRED carves a high fit, COLD_PREFERRED first stays
-; wholly below 0x8000 and otherwise retries as ANY.
+; Sixteen-entry address-ordered arena allocator. Requests are rounded even.
+; ANY takes the lowest fit, FAST_REQUIRED carves a high fit, COLD_PREFERRED
+; first stays wholly below 0x8000 and otherwise retries as ANY.
 
     MACRO EMIT_MEMORY_ROUTINES
 zx48_memory_init:
@@ -90,7 +90,7 @@ zx48_alloc_take_low:
     ld (ix+3),h
     pop hl
     pop bc
-    jp zx48_alloc_done
+    jr zx48_alloc_done
 zx48_alloc_take_high:
     push hl
     add hl,de
@@ -111,20 +111,19 @@ zx48_alloc_take_high:
     ld (ix+3),h
     pop hl
     pop bc
-    jp zx48_alloc_done
+    jr zx48_alloc_done
 zx48_alloc_next:
     ld de,4
     add ix,de
     pop bc
-    dec b
-    jp nz,zx48_alloc_loop
+    djnz zx48_alloc_loop
     ld a,(memory_policy)
     and $7f
     cp ALLOC_COLD_PREFERRED
     jr nz,zx48_alloc_fail
     xor a
     ld (memory_policy),a
-    jp zx48_alloc_retry
+    jr zx48_alloc_retry
 zx48_alloc_fail:
     ld a,E_NOMEM
     scf
@@ -140,7 +139,7 @@ zx48_alloc_done:
     xor a
     ret
 
-; HL=base, BC=rounded length.
+; HL=base, BC=rounded length. Reject overlaps/double free before mutation.
 zx48_free:
     ld a,b
     or c
@@ -156,44 +155,128 @@ zx48_free:
     jr nc,zx48_free_bad
     ld (memory_free_start),hl
     ld (memory_free_length),bc
-    push hl
     add hl,bc
-    jr c,zx48_free_bad_pop
+    jr c,zx48_free_bad
     ld de,ARENA_END+1
     or a
     sbc hl,de
-    pop hl
-    jr c,zx48_free_find
-    jr z,zx48_free_find
-    jr zx48_free_bad
-zx48_free_bad_pop:
-    pop hl
-zx48_free_bad:
-    ld a,E_INVAL
-    scf
-    ret
-zx48_free_find:
+    jr c,zx48_free_end_ok
+    jr nz,zx48_free_bad
+zx48_free_end_ok:
+    add hl,de
+    ld (memory_candidate),hl
+    ld hl,0
+    ld (memory_info_ptr),hl
     ld ix,memory_free_extents
     ld b,FREE_EXTENT_COUNT
 zx48_free_scan:
     ld a,(ix+2)
     or (ix+3)
-    jr z,zx48_free_store
+    jr nz,zx48_free_live
+    ld hl,(memory_info_ptr)
+    ld a,h
+    or l
+    jr nz,zx48_free_next
+    push ix
+    pop hl
+    ld (memory_info_ptr),hl
+    jr zx48_free_next
+zx48_free_live:
+    ; new_end compared with existing_start.
+    ld hl,(memory_candidate)
+    ld e,(ix+0)
+    ld d,(ix+1)
+    or a
+    sbc hl,de
+    jr z,zx48_free_prepend
+    jr c,zx48_free_next
+    ; existing_end compared with new_start.
+    ld l,(ix+0)
+    ld h,(ix+1)
+    ld e,(ix+2)
+    ld d,(ix+3)
+    add hl,de
+    ld de,(memory_free_start)
+    or a
+    sbc hl,de
+    jr z,zx48_free_append
+    jr c,zx48_free_next
+    jr zx48_free_bad
+zx48_free_next:
     ld de,4
     add ix,de
-    dec b
-    jp nz,zx48_free_scan
-    ld a,E_NOSPC
-    scf
-    ret
-zx48_free_store:
+    djnz zx48_free_scan
+    ld hl,(memory_info_ptr)
+    ld a,h
+    or l
+    jr z,zx48_free_nospc
+    push hl
+    pop ix
     ld hl,(memory_free_start)
     ld bc,(memory_free_length)
     ld (ix+0),l
     ld (ix+1),h
     ld (ix+2),c
     ld (ix+3),b
-    call zx48_extent_merge
+    jr zx48_free_normalize
+zx48_free_prepend:
+    ld hl,(memory_free_start)
+    ld (ix+0),l
+    ld (ix+1),h
+    ld hl,(memory_free_length)
+    ld e,(ix+2)
+    ld d,(ix+3)
+    add hl,de
+    ld (ix+2),l
+    ld (ix+3),h
+    jr zx48_free_normalize
+zx48_free_append:
+    ld hl,(memory_free_length)
+    ld e,(ix+2)
+    ld d,(ix+3)
+    add hl,de
+    ld (ix+2),l
+    ld (ix+3),h
+zx48_free_normalize:
+    call zx48_extent_sort
+zx48_extent_merge_restart:
+    ld ix,memory_free_extents
+    ld c,FREE_EXTENT_COUNT-1
+zx48_extent_merge_loop:
+    ld a,(ix+2)
+    or (ix+3)
+    jr z,zx48_free_commit
+    ld a,(ix+6)
+    or (ix+7)
+    jr z,zx48_free_commit
+    ld l,(ix+0)
+    ld h,(ix+1)
+    ld e,(ix+2)
+    ld d,(ix+3)
+    add hl,de
+    ld e,(ix+4)
+    ld d,(ix+5)
+    or a
+    sbc hl,de
+    jr nz,zx48_extent_merge_next
+    ld l,(ix+2)
+    ld h,(ix+3)
+    ld e,(ix+6)
+    ld d,(ix+7)
+    add hl,de
+    ld (ix+2),l
+    ld (ix+3),h
+    xor a
+    ld (ix+6),a
+    ld (ix+7),a
+    call zx48_extent_sort
+    jr zx48_extent_merge_restart
+zx48_extent_merge_next:
+    ld de,4
+    add ix,de
+    dec c
+    jr nz,zx48_extent_merge_loop
+zx48_free_commit:
     ld hl,(memory_live_allocations)
     ld a,h
     or l
@@ -203,86 +286,65 @@ zx48_free_store:
 zx48_free_ok:
     xor a
     ret
+zx48_free_nospc:
+    ld a,E_NOSPC
+    scf
+    ret
+zx48_free_bad:
+    ld a,E_INVAL
+    scf
+    ret
 
-; Pairwise adjacent coalescing. IY is restored before return.
-zx48_extent_merge:
-    push iy
-zx48_extent_again:
+; Stable bounded sort: active records by ascending start, zero-length records last.
+zx48_extent_sort:
+    ld b,FREE_EXTENT_COUNT-1
+zx48_extent_sort_pass:
     ld ix,memory_free_extents
-    ld b,FREE_EXTENT_COUNT
-zx48_extent_outer:
+    ld c,FREE_EXTENT_COUNT-1
+zx48_extent_sort_pair:
     ld a,(ix+2)
     or (ix+3)
-    jr z,zx48_extent_outer_next
-    push bc
-    push ix
-    pop iy
-    ld de,4
-    add iy,de
-    dec b
-    jr z,zx48_extent_outer_pop
-zx48_extent_inner:
-    ld a,(iy+2)
-    or (iy+3)
-    jr z,zx48_extent_inner_next
+    jr nz,zx48_extent_sort_current_live
+    ld a,(ix+6)
+    or (ix+7)
+    jr z,zx48_extent_sort_next
+    jr zx48_extent_swap
+zx48_extent_sort_current_live:
+    ld a,(ix+6)
+    or (ix+7)
+    jr z,zx48_extent_sort_next
     ld l,(ix+0)
     ld h,(ix+1)
-    ld e,(ix+2)
-    ld d,(ix+3)
-    add hl,de
-    ld e,(iy+0)
-    ld d,(iy+1)
+    ld e,(ix+4)
+    ld d,(ix+5)
     or a
     sbc hl,de
-    jr z,zx48_extent_join_xy
-    ld l,(iy+0)
-    ld h,(iy+1)
-    ld e,(iy+2)
-    ld d,(iy+3)
-    add hl,de
-    ld e,(ix+0)
-    ld d,(ix+1)
-    or a
-    sbc hl,de
-    jr z,zx48_extent_join_yx
-zx48_extent_inner_next:
-    ld de,4
-    add iy,de
-    djnz zx48_extent_inner
-zx48_extent_outer_pop:
-    pop bc
-zx48_extent_outer_next:
+    jr c,zx48_extent_sort_next
+    jr z,zx48_extent_sort_next
+zx48_extent_swap:
+    ld a,(ix+0)
+    ld e,(ix+4)
+    ld (ix+0),e
+    ld (ix+4),a
+    ld a,(ix+1)
+    ld e,(ix+5)
+    ld (ix+1),e
+    ld (ix+5),a
+    ld a,(ix+2)
+    ld e,(ix+6)
+    ld (ix+2),e
+    ld (ix+6),a
+    ld a,(ix+3)
+    ld e,(ix+7)
+    ld (ix+3),e
+    ld (ix+7),a
+zx48_extent_sort_next:
     ld de,4
     add ix,de
-    djnz zx48_extent_outer
-    pop iy
+    dec c
+    jr nz,zx48_extent_sort_pair
+    djnz zx48_extent_sort_pass
     ret
-zx48_extent_join_xy:
-    ld l,(ix+2)
-    ld h,(ix+3)
-    ld e,(iy+2)
-    ld d,(iy+3)
-    add hl,de
-    ld (ix+2),l
-    ld (ix+3),h
-    xor a
-    ld (iy+2),a
-    ld (iy+3),a
-    pop bc
-    jp zx48_extent_again
-zx48_extent_join_yx:
-    ld l,(iy+2)
-    ld h,(iy+3)
-    ld e,(ix+2)
-    ld d,(ix+3)
-    add hl,de
-    ld (iy+2),l
-    ld (iy+3),h
-    xor a
-    ld (ix+2),a
-    ld (ix+3),a
-    pop bc
-    jp zx48_extent_again
 
 zx48_memory_pin_bytes:
     ld hl,(memory_pinned_bytes)
@@ -320,7 +382,6 @@ zx48_mem_scan:
     pop hl
     jr c,zx48_mem_cold_whole
     jr z,zx48_mem_cold_whole
-    ; crossing extent: cold=8000-start, fast=end-8000.
     push bc
     ld de,FAST_START
     ex de,hl
