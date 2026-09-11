@@ -78,11 +78,11 @@ def scan_source(path: Path, text: str) -> list[Finding]:
 
     lines = text.splitlines()
     for index, raw in enumerate(lines, 1):
+        raw_lower = raw.lower()
         code = code_part(raw)
         if not code.strip():
             continue
         stripped = code.lstrip()
-        lowered = stripped.lower()
 
         if raw and not raw[0].isspace() and INSTRUCTION_OR_DIRECTIVE.match(stripped):
             findings.append(Finding("indent-unlabelled", index, stripped))
@@ -114,10 +114,10 @@ def scan_source(path: Path, text: str) -> list[Finding]:
         if is_application(path) and ALT_BANK.search(code):
             findings.append(Finding("alternate-bank-os-private", index, stripped))
 
-        if R_REGISTER.search(code) and "nonsecurity_seed_only" not in raw.lower():
+        if R_REGISTER.search(code) and "nonsecurity_seed_only" not in raw_lower:
             findings.append(Finding("r-not-correctness-source", index, stripped))
 
-        if "contention_exact_required" in lowered:
+        if "contention_exact_required" in raw_lower:
             findings.append(Finding("no-precise-contention-dependency", index, stripped))
 
     return findings
