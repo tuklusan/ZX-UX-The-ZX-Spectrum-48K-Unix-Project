@@ -91,6 +91,14 @@ zx48_process_lookup:
     jr z,zx48_process_noent
     xor a
     ret
+zx48_process_live_lookup:
+    call zx48_process_lookup
+    ret c
+    ld a,(ix+PROC_STATE)
+    cp PROC_ZOMBIE
+    jr z,zx48_process_noent
+    xor a
+    ret
 zx48_process_noent:
     ld a,E_NOENT
     scf
@@ -181,6 +189,7 @@ zx48_process_count_next:
     add ix,de
     djnz zx48_process_count_loop
     ld a,c
+    or a
     ret
 
 zx48_process_info:
@@ -233,11 +242,31 @@ zx48_process_exit:
     ld a,(process_temp_status)
     ld (ix+PROC_EXIT_STATUS),a
     ld (ix+PROC_STATE),PROC_ZOMBIE
+    call zx48_handles_close_all_current
     call zx48_process_wake_parent
+    call zx48_process_restore_tty_owner
     jp zx48_schedule
 zx48_process_exit_panic:
     ld a,PANIC_SCHEDULER
     jp zx48_panic
+
+; If the exiting process owned tty input, hand it back to live PID1 or PID0.
+zx48_process_restore_tty_owner:
+    ld a,(current_pid)
+    ld b,a
+    ld a,(tty_input_owner)
+    cp b
+    ret nz
+    ld a,1
+    call zx48_process_live_lookup
+    jr c,zx48_process_tty_owner_zero
+    ld a,1
+    jr zx48_process_tty_owner_set
+zx48_process_tty_owner_zero:
+    xor a
+zx48_process_tty_owner_set:
+    ld (tty_input_owner),a
+    ret
 
 zx48_process_wake_parent:
     ld a,(ix+PROC_PARENT)
