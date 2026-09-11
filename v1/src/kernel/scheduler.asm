@@ -45,6 +45,7 @@ zx48_schedule_from_idle:
     call zx48_process_ptr
     ld (ix+PROC_STATE),PROC_READY
 zx48_schedule_begin:
+    call zx48_keyboard_wake_input
     ld a,(scheduler_current)
     inc a
     and 7

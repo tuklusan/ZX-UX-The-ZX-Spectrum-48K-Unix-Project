@@ -14,6 +14,7 @@
 
 ROM_PRINT_A               EQU $0010
 ROM_FP_CALC               EQU $0028
+ROM_KEY_TABLE             EQU $0205
 ROM_KEY_SCAN              EQU $028E
 ROM_KEYBOARD              EQU $02BF
 ROM_KEY_DECODE            EQU $0333
@@ -64,6 +65,9 @@ zx48_rom_print_a:
     jp zx48_rom_checked_return
 zx48_rom_key_scan:
     call ROM_KEY_SCAN
+    jp zx48_rom_checked_return
+zx48_rom_key_decode:
+    call ROM_KEY_DECODE
     jp zx48_rom_checked_return
 zx48_rom_pixel_add:
     call ROM_PIXEL_ADD
