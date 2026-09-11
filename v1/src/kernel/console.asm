@@ -78,7 +78,6 @@ zx48_console_set_commit:
     ld (tty_col),a
     call zx48_cursor_show
     xor a
-    or a
     ret
 zx48_console_bad:
     ld a,E_INVAL
@@ -91,7 +90,6 @@ zx48_console_getpos:
     ld a,(tty_col)
     ld l,a
     xor a
-    or a
     ret
 
 ; A=byte.
@@ -109,7 +107,6 @@ zx48_console_putchar:
     cp $0c
     jp z,zx48_console_clear
     xor a
-    or a
     ret
 zx48_console_print:
     call zx48_cursor_hide
@@ -208,7 +205,6 @@ zx48_console_write_loop:
 zx48_console_write_done:
     ld hl,(console_count)
     xor a
-    or a
     ret
 
 zx48_console_scroll:
@@ -300,10 +296,17 @@ zx48_tty_set_owner:
     ld a,(de)
     cp MAX_PROCESSES
     jr nc,zx48_tty_bad
+    or a
+    jr z,zx48_tty_set_owner_commit
+    push de
+    call zx48_process_live_lookup
+    pop de
+    ret c
+    ld a,(de)
+zx48_tty_set_owner_commit:
     ld (tty_input_owner),a
 zx48_tty_ok:
     xor a
-    or a
     ret
 zx48_tty_bad:
     ld a,E_INVAL
