@@ -16,6 +16,11 @@ TTY_CURSOR_OFF           EQU 0
 TTY_CURSOR_UNDERLINE     EQU 1
 TTY_CURSOR_BLOCK         EQU 2
 
+CURSOR_STATE_BASE        EQU ERROR_STATE_END
+cursor_scan              EQU CURSOR_STATE_BASE+0
+cursor_count             EQU CURSOR_STATE_BASE+1
+CURSOR_STATE_END         EQU CURSOR_STATE_BASE+2
+
     MACRO EMIT_CURSOR_ROUTINES
 zx48_cursor_hide:
     ld a,(tty_cursor_visible)
@@ -105,7 +110,4 @@ zx48_cursor_blink:
     or a
     jp z,zx48_cursor_show
     jp zx48_cursor_hide
-
-cursor_scan: db 0
-cursor_count: db 0
     ENDM
