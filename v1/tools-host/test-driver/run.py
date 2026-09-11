@@ -21,6 +21,7 @@ sys.dont_write_bytecode = True
 
 import foundation
 import phase0
+import phase0_layout
 from driver_core import (
     DriverError,
     find_root,
@@ -39,6 +40,8 @@ def dispatch(root: Path, action: str, step: str):
     }
     if step.startswith("E0."):
         return foundation.dispatch(root, action, step, **kwargs)
+    if step == "P0.02":
+        return phase0_layout.dispatch(root, action, step, **kwargs)
     if step.startswith("P0."):
         return phase0.dispatch(root, action, step, **kwargs)
     raise DriverError(f"step is not registered with the deterministic test driver: {step}")
