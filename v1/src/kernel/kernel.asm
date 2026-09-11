@@ -10,18 +10,27 @@
 ; SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 ; patent, trademark, and governing-law provisions.
 ;
-; Phase P0.02: fixed 8 KiB resident-kernel image scaffold.
-;
-; This file owns only fixed image layout. Functional modules progressively
-; replace zero-filled bytes inside KERNEL_CODE_START..KERNEL_CODE_END.
+; Resident-kernel image layout and Phase-P0.03 gateway scaffold.
 
     DEVICE ZXSPECTRUM48
     INCLUDE "../../include/zx48ux.inc"
+    INCLUDE "syscall.asm"
+    INCLUDE "../boot/entry.asm"
 
     ORG KERNEL_START
 kernel_image_start:
 kernel_ordinary_pool_start:
-    DEFS KERNEL_CODE_END-KERNEL_CODE_START+1,0
+    EMIT_SYSCALL_GATEWAY
+    ASSERT $ = BOOT_GATEWAY
+    EMIT_BOOT_GATEWAY
+    ASSERT $ = BOOT_GATEWAY+3
+    EMIT_SYSCALL_BODY
+    EMIT_BOOT_BODY
+    EMIT_SYSCALL_IMPL
+    EMIT_BOOT_IMPL
+kernel_ordinary_used_end:
+    ASSERT $ <= KERNEL_CODE_END+1
+    DEFS KERNEL_CODE_END+1-$,0
 kernel_ordinary_pool_end:
 
     ASSERT $ = KERNEL_STACK_START
