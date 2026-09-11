@@ -1,0 +1,7 @@
+Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+Proprietary rights reserved except as expressly licensed herein.
+
+ZX-UX Sinclair ZX Spectrum Unix
+This file is governed by the SANYALnet Labs Non-Commercial License in the root LICENSE file.
+
+Stable resident build baseline marker. Subsequent phase integrations must preserve an 8192-byte kernel image and keep the fixed E000/FD00/FDFD/FE00/FF01 layout.
