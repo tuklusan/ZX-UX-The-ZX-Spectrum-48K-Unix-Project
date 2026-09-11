@@ -10,267 +10,216 @@
 ; SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 ; patent, trademark, and governing-law provisions.
 ;
-; Twenty-four shared open descriptions. Process handle slots contain only IDs.
+; Compact shared open-description layer. Eight-byte records remain below the
+; twelve-byte architecture ceiling and share offsets across dup/inheritance.
 
-OD_KIND                  EQU 0
-OD_ACCESS                EQU 1
-OD_REFS                  EQU 2
-OD_IDENTITY              EQU 3
-OD_OFFSET                EQU 4
-OD_DECODER               EQU 6
-OD_AUX                   EQU 8
-OD_FLAGS                 EQU 10
-OD_RESERVED              EQU 11
+OD_KIND_O                 EQU 0
+OD_ACCESS_O               EQU 1
+OD_REFS_O                 EQU 2
+OD_ID_O                   EQU 3
+OD_OFFSET_O               EQU 4
+OD_AUX_O                  EQU 6
+OD_COMPACT_SIZE           EQU 8
 
     MACRO EMIT_HANDLE_ROUTINES
 zx48_handles_init:
     xor a
-    ld hl,open_descriptions
-    ld de,open_descriptions+1
-    ld bc,OPEN_DESCRIPTION_COUNT*OD_DESC_SIZE-1
+    ld hl,open_description_table
+    ld de,open_description_table+1
+    ld bc,OPEN_DESCRIPTION_COUNT*OD_COMPACT_SIZE-1
     ld (hl),a
     ldir
     ret
 
-zx48_od_alloc:
-    ld ix,open_descriptions
-    ld c,0
-    ld b,OPEN_DESCRIPTION_COUNT
-zx48_od_alloc_loop:
-    ld a,(ix+OD_KIND)
+; A=index -> IX record.
+zx48_od_ptr:
+    cp OPEN_DESCRIPTION_COUNT
+    jr nc,zx48_handle_noent
+    ld ix,open_description_table
     or a
-    jr z,zx48_od_alloc_found
-    ld de,OD_DESC_SIZE
+    ret z
+    ld b,a
+    ld de,OD_COMPACT_SIZE
+zx48_od_ptr_loop:
     add ix,de
-    inc c
-    djnz zx48_od_alloc_loop
+    djnz zx48_od_ptr_loop
+    ret
+
+; B=kind,C=access,D=identity -> A=index, IX record, refs=1.
+zx48_od_create:
+    ld ix,open_description_table
+    ld e,0
+    ld a,OPEN_DESCRIPTION_COUNT
+    ld (handle_scan_left),a
+zx48_od_create_scan:
+    ld a,(ix+OD_KIND_O)
+    or a
+    jr z,zx48_od_create_found
+    ld a,e
+    inc a
+    ld e,a
+    ld bc,OD_COMPACT_SIZE
+    add ix,bc
+    ld a,(handle_scan_left)
+    dec a
+    ld (handle_scan_left),a
+    jr nz,zx48_od_create_scan
     ld a,E_NOSPC
     scf
     ret
-zx48_od_alloc_found:
-    ld a,c
-    ld (handle_temp_id),a
-    push ix
-    pop hl
+zx48_od_create_found:
+    ld (ix+OD_KIND_O),b
+    ld (ix+OD_ACCESS_O),c
+    ld (ix+OD_ID_O),d
+    ld a,1
+    ld (ix+OD_REFS_O),a
     xor a
-    ld (hl),a
-    ld d,h
-    ld e,l
-    inc de
-    ld bc,OD_DESC_SIZE-1
-    ldir
-    ld a,(handle_temp_id)
+    ld (ix+OD_OFFSET_O),a
+    ld (ix+OD_OFFSET_O+1),a
+    ld (ix+OD_AUX_O),a
+    ld (ix+OD_AUX_O+1),a
+    ld a,e
     or a
     ret
 
-zx48_od_lookup:
-    cp OPEN_DESCRIPTION_COUNT
-    jr nc,zx48_handle_invalid
-    ld c,a
-    ld ix,open_descriptions
-    or a
-    jr z,zx48_od_lookup_check
-    ld b,a
-    ld de,OD_DESC_SIZE
-zx48_od_lookup_loop:
-    add ix,de
-    djnz zx48_od_lookup_loop
-zx48_od_lookup_check:
-    ld a,(ix+OD_KIND)
-    or a
-    jr z,zx48_handle_invalid
-    xor a
-    or a
-    ret
-
-; IX=process,C=handle -> A=OD id.
+; A=handle in current process -> C=OD index, IX=OD.
 zx48_handle_lookup:
-    ld a,c
     cp MAX_HANDLES_PER_PROCESS
-    jr nc,zx48_handle_invalid
+    jr nc,zx48_handle_noent
+    ld e,a
+    ld d,0
+    push de
+    ld a,(current_pid)
+    call zx48_process_lookup
+    pop de
+    ret c
     push ix
     pop hl
-    ld de,PROC_HANDLES
-    add hl,de
-    ld e,c
-    ld d,0
+    ld bc,PROC_HANDLES
+    add hl,bc
     add hl,de
     ld a,(hl)
     cp HANDLE_FREE
-    jr z,zx48_handle_invalid
-    cp OPEN_DESCRIPTION_COUNT
-    jr nc,zx48_handle_invalid
+    jr z,zx48_handle_noent
+    ld c,a
+    call zx48_od_ptr
+    ret c
+    ld a,(ix+OD_KIND_O)
     or a
-    ret
-zx48_handle_invalid:
-    ld a,E_INVAL
-    scf
+    jr z,zx48_handle_noent
+    xor a
     ret
 
-; IX=process,A=OD id,C=slot or FF lowest free. Returns HL=handle.
+; A=requested handle or FF, C=OD index. Does not change OD refcount.
+; Returns A=installed handle.
 zx48_handle_install:
-    ld (handle_temp_id),a
+    ld (handle_od),c
+    ld (handle_requested),a
+    ld a,(current_pid)
+    call zx48_process_lookup
+    ret c
     push ix
     pop hl
     ld de,PROC_HANDLES
     add hl,de
-    ld a,c
+    ld a,(handle_requested)
     cp HANDLE_FREE
-    jr z,zx48_handle_install_find
+    jr z,zx48_handle_install_auto
     cp MAX_HANDLES_PER_PROCESS
-    jr nc,zx48_handle_invalid
-    ld e,c
+    jr nc,zx48_handle_nospc
+    ld e,a
     ld d,0
     add hl,de
     ld a,(hl)
     cp HANDLE_FREE
     jr nz,zx48_handle_busy
+    ld a,(handle_requested)
     jr zx48_handle_install_here
-zx48_handle_install_find:
-    ld c,0
+zx48_handle_install_auto:
     ld b,MAX_HANDLES_PER_PROCESS
+    xor a
 zx48_handle_install_scan:
-    ld a,(hl)
-    cp HANDLE_FREE
+    ld c,(hl)
+    inc c
     jr z,zx48_handle_install_here
     inc hl
-    inc c
+    inc a
     djnz zx48_handle_install_scan
+zx48_handle_nospc:
     ld a,E_NOSPC
     scf
-    ret
-zx48_handle_install_here:
-    ld a,(handle_temp_id)
-    ld (hl),a
-    ld l,c
-    ld h,0
-    xor a
-    or a
     ret
 zx48_handle_busy:
     ld a,E_BUSY
     scf
     ret
-
-; A=kind,B=access,C=identity -> A=id, IX record, refs=1.
-zx48_od_create:
-    ld (handle_temp_kind),a
-    ld a,b
-    ld (handle_temp_access),a
-    ld a,c
-    ld (handle_temp_identity),a
-    call zx48_od_alloc
-    ret c
-    ld (handle_temp_id),a
-    ld a,(handle_temp_kind)
-    ld (ix+OD_KIND),a
-    ld a,(handle_temp_access)
-    ld (ix+OD_ACCESS),a
-    ld (ix+OD_REFS),1
-    ld a,(handle_temp_identity)
-    ld (ix+OD_IDENTITY),a
-    ld a,(handle_temp_id)
-    or a
-    ret
-
-; A=id. Drop one reference; invoke endpoint/object hooks at final close.
-zx48_od_release_id:
-    call zx48_od_lookup
-    ret c
-    ld a,(ix+OD_REFS)
-    or a
-    jr z,zx48_handle_invalid
-    dec a
-    ld (ix+OD_REFS),a
-    jr nz,zx48_od_release_ok
-    ld a,(ix+OD_KIND)
-    cp OD_KIND_OBJECT
-    call z,zx48_object_description_final_close
-    ld a,(ix+OD_KIND)
-    cp OD_KIND_PIPE_READ
-    call z,zx48_pipe_reader_final_close
-    ld a,(ix+OD_KIND)
-    cp OD_KIND_PIPE_WRITE
-    call z,zx48_pipe_writer_final_close
-    ld l,(ix+OD_DECODER)
-    ld h,(ix+OD_DECODER+1)
-    ld a,h
-    or l
-    call nz,zx48_object_final_close_decoder
-    push ix
-    pop hl
-    xor a
+zx48_handle_install_here:
+    ld c,a
+    ld a,(handle_od)
     ld (hl),a
-    ld d,h
-    ld e,l
-    inc de
-    ld bc,OD_DESC_SIZE-1
-    ldir
-zx48_od_release_ok:
-    xor a
+    ld a,c
     or a
     ret
 
-; IX=process,C=handle.
-zx48_close:
-    ld a,c
+; A=handle. Final close clears the OD.
+zx48_handle_close:
     cp MAX_HANDLES_PER_PROCESS
-    jr nc,zx48_handle_invalid
+    jr nc,zx48_handle_noent
+    ld (handle_requested),a
+    ld e,a
+    ld d,0
+    ld a,(current_pid)
+    call zx48_process_lookup
+    ret c
     push ix
     pop hl
-    ld de,PROC_HANDLES
-    add hl,de
-    ld e,c
-    ld d,0
+    ld bc,PROC_HANDLES
+    add hl,bc
     add hl,de
     ld a,(hl)
     cp HANDLE_FREE
-    jr z,zx48_handle_invalid
-    ld (handle_temp_id),a
+    jr z,zx48_handle_noent
+    ld c,a
     ld (hl),HANDLE_FREE
-    ld a,(handle_temp_id)
-    jp zx48_od_release_id
+    ld a,c
+    call zx48_od_ptr
+    ret c
+    ld a,(ix+OD_REFS_O)
+    dec a
+    ld (ix+OD_REFS_O),a
+    ret nz
+    xor a
+    ld (ix+OD_KIND_O),a
+    ld (ix+OD_ACCESS_O),a
+    ld (ix+OD_ID_O),a
+    ret
 
-; IX=process, HL -> {source,destination}. Destination FF chooses lowest free.
-zx48_dup:
-    ld (handle_process_ptr),ix
-    ld c,(hl)
-    inc hl
-    ld a,(hl)
-    ld (handle_temp_dest),a
+; B=source handle,C=destination or FF. Returns A=destination.
+zx48_handle_dup:
+    ld a,b
     call zx48_handle_lookup
     ret c
-    ld (handle_temp_id),a
-    ld a,(handle_temp_dest)
-    ld c,a
-    ld ix,(handle_process_ptr)
-    ld a,(handle_temp_id)
-    call zx48_handle_install
-    ret c
-    ld (handle_temp_result),hl
-    ld a,(handle_temp_id)
-    call zx48_od_lookup
-    ret c
-    ld a,(ix+OD_REFS)
+    ld a,(ix+OD_REFS_O)
     cp $ff
-    jr z,zx48_dup_overflow
+    jr z,zx48_handle_busy
     inc a
-    ld (ix+OD_REFS),a
-    ld hl,(handle_temp_result)
-    xor a
-    or a
-    ret
-zx48_dup_overflow:
-    ld a,E_NOSPC
+    ld (ix+OD_REFS_O),a
+    ld a,c
+    call zx48_handle_install
+    ret nc
+    ld a,(ix+OD_REFS_O)
+    dec a
+    ld (ix+OD_REFS_O),a
     scf
     ret
 
-handle_temp_id: db 0
-handle_temp_kind: db 0
-handle_temp_access: db 0
-handle_temp_identity: db 0
-handle_temp_dest: db 0
-handle_temp_result: dw 0
-handle_process_ptr: dw 0
-open_descriptions: defs OPEN_DESCRIPTION_COUNT*OD_DESC_SIZE,0
+zx48_handle_noent:
+    ld a,E_NOENT
+    scf
+    ret
+
+handle_requested: db 0
+handle_od: db 0
+handle_scan_left: db 0
+open_description_table: defs OPEN_DESCRIPTION_COUNT*OD_COMPACT_SIZE,0
     ENDM

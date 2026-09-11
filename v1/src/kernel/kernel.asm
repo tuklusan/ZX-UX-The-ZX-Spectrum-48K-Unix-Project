@@ -10,7 +10,7 @@
 ; SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 ; patent, trademark, and governing-law provisions.
 ;
-; Resident ZX-UX kernel composition through Phase 1.
+; Resident ZX-UX kernel composition.
 
     DEVICE ZXSPECTRUM48
     INCLUDE "../../include/zx48ux.inc"
@@ -22,6 +22,7 @@
     INCLUDE "errors.asm"
     INCLUDE "memory.asm"
     INCLUDE "process.asm"
+    INCLUDE "handles.asm"
     INCLUDE "scheduler.asm"
     INCLUDE "z80_primitives.asm"
     INCLUDE "ula_io.asm"
@@ -58,6 +59,8 @@ kernel_mod_memory:
     EMIT_MEMORY_ROUTINES
 kernel_mod_process:
     EMIT_PROCESS_ROUTINES
+kernel_mod_handles:
+    EMIT_HANDLE_ROUTINES
 kernel_mod_scheduler:
     EMIT_SCHEDULER_ROUTINES
 kernel_mod_primitives:
