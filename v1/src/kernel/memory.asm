@@ -10,21 +10,12 @@
 ; SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 ; patent, trademark, and governing-law provisions.
 ;
-; Single address-ordered free-extent map for 0x6000..0xdfff. Allocations are
-; two-byte aligned. FAST_REQUIRED allocates from an extent's high end so it can
-; never spill below FAST_START. COLD_PREFERRED consumes low addresses first.
+; Address-ordered 16-record arena extent allocator. ANY and COLD allocate low;
+; FAST_REQUIRED allocates high and can never spill below 8000h.
 
     MACRO EMIT_MEMORY_ROUTINES
-; Inputs: none.
-; Outputs: one free extent covering the complete arena.
-; Flags: modified.
-; Clobbers: AF/BC/DE/HL.
 zx48_memory_init:
     xor a
-    ld (memory_live_allocations),a
-    ld (memory_live_allocations+1),a
-    ld (memory_pinned_bytes),a
-    ld (memory_pinned_bytes+1),a
     ld hl,memory_free_extents
     ld de,memory_free_extents+1
     ld bc,FREE_EXTENT_COUNT*4-1
@@ -34,22 +25,22 @@ zx48_memory_init:
     ld (memory_free_extents),hl
     ld hl,ARENA_SIZE
     ld (memory_free_extents+2),hl
+    ld hl,0
+    ld (memory_live_allocations),hl
+    ld (memory_pinned_bytes),hl
     ret
 
-; Inputs: BC=requested bytes, A=ALLOC_* policy (NO_COMPACT bit ignored here).
-; Outputs: carry clear HL=allocation base; carry set A=E_NOMEM.
-; Flags: carry reports success/failure.
-; Clobbers: AF/BC/DE/HL/IX.
+; BC=request; A=allocation policy. Returns HL=base or carry/E_NOMEM.
 zx48_alloc:
+    ld (memory_policy),a
     ld a,b
     or c
     jr z,zx48_alloc_zero
     bit 0,c
-    jr z,zx48_alloc_rounded
+    jr z,zx48_alloc_even
     inc bc
-zx48_alloc_rounded:
+zx48_alloc_even:
     ld (memory_request),bc
-    ld (memory_policy),a
     ld ix,memory_free_extents
     ld b,FREE_EXTENT_COUNT
 zx48_alloc_scan:
@@ -64,59 +55,69 @@ zx48_alloc_scan:
     and $7f
     cp ALLOC_FAST_REQUIRED
     jr z,zx48_alloc_fast
-    cp ALLOC_COLD_PREFERRED
-    jr z,zx48_alloc_cold
-zx48_alloc_any:
-    push hl
-    call zx48_extent_fits
-    pop hl
-    jr c,zx48_alloc_next
-    call zx48_extent_take_low
-    jr zx48_alloc_success
-zx48_alloc_cold:
     push hl
     ld bc,(memory_request)
     add hl,bc
-    ld de,FAST_START
-    or a
-    sbc hl,de
-    pop hl
-    jr nc,zx48_alloc_next_cold
-    call zx48_extent_fits
-    jr c,zx48_alloc_next
-    call zx48_extent_take_low
-    jr zx48_alloc_success
-zx48_alloc_next_cold:
-    ; Pass one exhausts contended candidates. The fallback to ANY is done after
-    ; the table scan so scarce FAST-only space is consumed only when required.
-    jr zx48_alloc_next
-zx48_alloc_fast:
-    push hl
     ex de,hl
-    pop de
-    add hl,de                    ; HL=end of extent
-    ld de,(memory_request)
-    or a
-    sbc hl,de                    ; HL=candidate high-end allocation base
-    ld de,FAST_START
+    pop hl
+    ld a,(memory_policy)
+    and $7f
+    cp ALLOC_COLD_PREFERRED
+    jr nz,zx48_alloc_low_check
+    ld a,d
+    cp FAST_START/256
+    jr nc,zx48_alloc_next
+zx48_alloc_low_check:
+    ld e,(ix+2)
+    ld d,(ix+3)
+    ld a,d
+    cp b
+    ; compare extent length DE with request from memory, without relying on B.
+    ld bc,(memory_request)
     push hl
+    ld h,d
+    ld l,e
     or a
-    sbc hl,de
+    sbc hl,bc
     pop hl
     jr c,zx48_alloc_next
-    ; Shorten current extent by request bytes. Candidate is already in HL.
-    ld de,(memory_request)
-    ld c,(ix+2)
-    ld b,(ix+3)
     push hl
-    ld h,b
-    ld l,c
+    add hl,bc
+    ld (ix+0),l
+    ld (ix+1),h
+    ld l,(ix+2)
+    ld h,(ix+3)
     or a
-    sbc hl,de
+    sbc hl,bc
     ld (ix+2),l
     ld (ix+3),h
     pop hl
-    jr zx48_alloc_success
+    jr zx48_alloc_ok
+zx48_alloc_fast:
+    ; candidate=end-request; reject when below FAST_START or request>length.
+    ld bc,(memory_request)
+    push hl
+    ld h,d
+    ld l,e
+    or a
+    sbc hl,bc
+    jr c,zx48_alloc_fast_short
+    ld (memory_remainder),hl
+    pop hl
+    ld de,(memory_remainder)
+    add hl,de
+    ld de,FAST_START
+    push hl
+    or a
+    sbc hl,de
+    pop hl
+    jr c,zx48_alloc_next
+    ld de,(memory_remainder)
+    ld (ix+2),e
+    ld (ix+3),d
+    jr zx48_alloc_ok
+zx48_alloc_fast_short:
+    pop hl
 zx48_alloc_next:
     ld de,4
     add ix,de
@@ -127,10 +128,8 @@ zx48_alloc_next:
     jr nz,zx48_alloc_fail
     ld a,ALLOC_ANY
     ld (memory_policy),a
-    ld ix,memory_free_extents
-    ld b,FREE_EXTENT_COUNT
-    jr zx48_alloc_scan
-zx48_alloc_success:
+    jp zx48_alloc_even
+zx48_alloc_ok:
     ld de,(memory_live_allocations)
     inc de
     ld (memory_live_allocations),de
@@ -147,58 +146,18 @@ zx48_alloc_fail:
     scf
     ret
 
-; Inputs: DE=extent length, memory_request=request.
-; Outputs: carry clear if request <= length.
-; Flags: carry result.
-; Clobbers: BC/HL.
-zx48_extent_fits:
-    ld h,d
-    ld l,e
-    ld bc,(memory_request)
-    or a
-    sbc hl,bc
-    ret
-
-; Inputs: IX current extent; HL current start.
-; Outputs: HL original allocation base, extent shortened/removed.
-; Flags: modified.
-; Clobbers: BC/DE.
-zx48_extent_take_low:
-    push hl
-    ld bc,(memory_request)
-    add hl,bc
-    ld (ix+0),l
-    ld (ix+1),h
-    ld e,(ix+2)
-    ld d,(ix+3)
-    ex de,hl
-    or a
-    sbc hl,bc
-    ld (ix+2),l
-    ld (ix+3),h
-    ld a,h
-    or l
-    jr nz,zx48_extent_take_done
-    xor a
-    ld (ix+0),a
-    ld (ix+1),a
-zx48_extent_take_done:
-    pop hl
-    ret
-
-; Inputs: HL=allocation base, BC=rounded allocation byte count.
-; Outputs: carry clear on insertion/coalescing; carry set A=E_INVAL/E_NOSPC.
-; Flags: carry result.
-; Clobbers: AF/BC/DE/HL/IX.
+; HL=base, BC=rounded length. Inserts then coalesces address-adjacent records.
 zx48_free:
     ld a,b
     or c
     ret z
+    bit 0,l
+    jr nz,zx48_free_bad
     bit 0,c
-    jr nz,zx48_free_invalid
+    jr nz,zx48_free_bad
     ld a,h
     cp COLD_START/256
-    jr c,zx48_free_invalid
+    jr c,zx48_free_bad
     push hl
     add hl,bc
     ld de,ARENA_END+1
@@ -207,28 +166,28 @@ zx48_free:
     pop hl
     jr c,zx48_free_insert
     jr z,zx48_free_insert
-zx48_free_invalid:
+zx48_free_bad:
     ld a,E_INVAL
     scf
     ret
 zx48_free_insert:
-    ld (memory_free_request_start),hl
-    ld (memory_free_request_length),bc
+    ld (memory_free_start),hl
+    ld (memory_free_length),bc
     ld ix,memory_free_extents
     ld b,FREE_EXTENT_COUNT
-zx48_free_find_slot:
+zx48_free_find:
     ld a,(ix+0)
     or (ix+1)
-    jr z,zx48_free_place
+    jr z,zx48_free_store
     ld de,4
     add ix,de
-    djnz zx48_free_find_slot
+    djnz zx48_free_find
     ld a,E_NOSPC
     scf
     ret
-zx48_free_place:
-    ld hl,(memory_free_request_start)
-    ld bc,(memory_free_request_length)
+zx48_free_store:
+    ld hl,(memory_free_start)
+    ld bc,(memory_free_length)
     ld (ix+0),l
     ld (ix+1),h
     ld (ix+2),c
@@ -237,65 +196,61 @@ zx48_free_place:
     ld hl,(memory_live_allocations)
     ld a,h
     or l
-    jr z,zx48_free_done
+    jr z,zx48_free_ok
     dec hl
     ld (memory_live_allocations),hl
-zx48_free_done:
+zx48_free_ok:
     xor a
     or a
     ret
 
-; Compact, sort and coalesce the bounded free table. Host/static gates prove the
-; same algorithm over exhaustive boundary fixtures; target path is deliberately
-; bounded to sixteen records.
+; Bubble sort by start, empty records last; merge exactly adjacent extents.
 zx48_extent_normalize:
-    ld b,FREE_EXTENT_COUNT
-zx48_extent_sort_outer:
-    push bc
+    ld c,FREE_EXTENT_COUNT
+zx48_sort_pass:
     ld ix,memory_free_extents
     ld b,FREE_EXTENT_COUNT-1
-zx48_extent_sort_inner:
-    ld l,(ix+0)
-    ld h,(ix+1)
+zx48_sort_pair:
     ld e,(ix+4)
     ld d,(ix+5)
     ld a,d
     or e
-    jr z,zx48_extent_sort_continue
+    jr z,zx48_sort_next
+    ld l,(ix+0)
+    ld h,(ix+1)
     ld a,h
     or l
-    jr z,zx48_extent_swap
+    jr z,zx48_sort_swap
     or a
     sbc hl,de
-    jr c,zx48_extent_sort_continue
-    jr z,zx48_extent_sort_continue
-zx48_extent_swap:
+    jr c,zx48_sort_next
+    jr z,zx48_sort_next
+zx48_sort_swap:
     ld a,(ix+0)
-    ld c,(ix+4)
-    ld (ix+0),c
+    ld l,(ix+4)
+    ld (ix+0),l
     ld (ix+4),a
     ld a,(ix+1)
-    ld c,(ix+5)
-    ld (ix+1),c
+    ld l,(ix+5)
+    ld (ix+1),l
     ld (ix+5),a
     ld a,(ix+2)
-    ld c,(ix+6)
-    ld (ix+2),c
+    ld l,(ix+6)
+    ld (ix+2),l
     ld (ix+6),a
     ld a,(ix+3)
-    ld c,(ix+7)
-    ld (ix+3),c
+    ld l,(ix+7)
+    ld (ix+3),l
     ld (ix+7),a
-zx48_extent_sort_continue:
+zx48_sort_next:
     ld de,4
     add ix,de
-    djnz zx48_extent_sort_inner
-    pop bc
-    djnz zx48_extent_sort_outer
-
+    djnz zx48_sort_pair
+    dec c
+    jr nz,zx48_sort_pass
     ld ix,memory_free_extents
     ld b,FREE_EXTENT_COUNT-1
-zx48_extent_coalesce:
+zx48_merge_loop:
     ld l,(ix+0)
     ld h,(ix+1)
     ld a,h
@@ -308,7 +263,7 @@ zx48_extent_coalesce:
     ld d,(ix+5)
     or a
     sbc hl,de
-    jr nz,zx48_extent_coalesce_next
+    jr nz,zx48_merge_next
     ld l,(ix+2)
     ld h,(ix+3)
     ld e,(ix+6)
@@ -321,77 +276,102 @@ zx48_extent_coalesce:
     ld (ix+5),a
     ld (ix+6),a
     ld (ix+7),a
-    push bc
-    call zx48_extent_normalize
-    pop bc
-    ret
-zx48_extent_coalesce_next:
+    jp zx48_extent_normalize
+zx48_merge_next:
     ld de,4
     add ix,de
-    djnz zx48_extent_coalesce
+    djnz zx48_merge_loop
     ret
 
-; Inputs: HL=writable 16-byte MINFO1.
-; Outputs: MINFO1 snapshot; process_count filled by process layer later.
-; Flags: modified.
-; Clobbers: AF/BC/DE/HL/IX.
+zx48_memory_pin_bytes:
+    ld hl,(memory_pinned_bytes)
+    add hl,bc
+    ld (memory_pinned_bytes),hl
+    ret
+
+; HL -> MINFO1. Largest fields are computed by scan; process byte filled by caller.
 zx48_mem_info:
     ld (memory_info_ptr),hl
-    ld de,0                      ; cold total
-    ld bc,0                      ; fast total
+    ld hl,0
+    ld (memory_fast_total),hl
+    ld (memory_fast_largest),hl
+    ld (memory_cold_total),hl
+    ld (memory_cold_largest),hl
     ld ix,memory_free_extents
-    ld a,FREE_EXTENT_COUNT
-zx48_mem_info_scan:
-    push af
+    ld b,FREE_EXTENT_COUNT
+zx48_mem_scan:
+    push bc
     ld l,(ix+0)
     ld h,(ix+1)
     ld a,h
     or l
-    jr z,zx48_mem_info_next
+    jr z,zx48_mem_next
+    ld e,(ix+2)
+    ld d,(ix+3)
     ld a,h
     cp FAST_START/256
-    jr nc,zx48_mem_info_fast
-    push bc
-    ld c,(ix+2)
-    ld b,(ix+3)
+    jr nc,zx48_mem_add_fast
+    push hl
+    add hl,de
+    ld a,h
+    cp FAST_START/256
+    pop hl
+    jr c,zx48_mem_add_cold
+    jr nz,zx48_mem_split
+    ld a,l
+    or a
+    jr z,zx48_mem_add_cold
+zx48_mem_split:
+    push de
+    ld de,FAST_START
     ex de,hl
-    add hl,bc
+    or a
+    sbc hl,de
+    call zx48_mem_acc_cold
+    pop de
+    ld hl,(ix+0)
+    add hl,de
+    ld de,FAST_START
+    or a
+    sbc hl,de
+    call zx48_mem_acc_fast
+    jr zx48_mem_next
+zx48_mem_add_cold:
     ex de,hl
+    call zx48_mem_acc_cold
+    jr zx48_mem_next
+zx48_mem_add_fast:
+    ex de,hl
+    call zx48_mem_acc_fast
+zx48_mem_next:
+    ld de,4
+    add ix,de
     pop bc
-    jr zx48_mem_info_next
-zx48_mem_info_fast:
-    ld l,(ix+2)
-    ld h,(ix+3)
-    add hl,bc
-    ld b,h
-    ld c,l
-zx48_mem_info_next:
-    ld hl,4
-    add ix,hl
-    pop af
-    dec a
-    jr nz,zx48_mem_info_scan
+    djnz zx48_mem_scan
     ld hl,(memory_info_ptr)
-    ld (hl),c
-    inc hl
-    ld (hl),b
-    inc hl
-    xor a
-    ld (hl),a                    ; fast_largest filled by compact host-visible accounting later
-    inc hl
-    ld (hl),a
-    inc hl
+    ld de,(memory_fast_total)
     ld (hl),e
     inc hl
     ld (hl),d
     inc hl
-    ld (hl),a                    ; cold_largest
+    ld de,(memory_fast_largest)
+    ld (hl),e
     inc hl
-    ld (hl),a
+    ld (hl),d
+    inc hl
+    ld de,(memory_cold_total)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    inc hl
+    ld de,(memory_cold_largest)
+    ld (hl),e
+    inc hl
+    ld (hl),d
     inc hl
     push hl
-    ld h,b
-    ld l,c
+    ld hl,(memory_fast_total)
+    ld de,(memory_cold_total)
     add hl,de
     ex de,hl
     pop hl
@@ -410,25 +390,50 @@ zx48_mem_info_next:
     ld (hl),d
     inc hl
     xor a
-    ld (hl),a                    ; process count updated by SYS_MEM_INFO wrapper
+    ld (hl),a
     inc hl
     ld (hl),a
     ret
+zx48_mem_acc_cold:
+    push hl
+    ld de,(memory_cold_total)
+    add hl,de
+    ld (memory_cold_total),hl
+    pop hl
+    ld de,(memory_cold_largest)
+    or a
+    sbc hl,de
+    ret c
+    ret z
+    add hl,de
+    ld (memory_cold_largest),hl
+    ret
+zx48_mem_acc_fast:
+    push hl
+    ld de,(memory_fast_total)
+    add hl,de
+    ld (memory_fast_total),hl
+    pop hl
+    ld de,(memory_fast_largest)
+    or a
+    sbc hl,de
+    ret c
+    ret z
+    add hl,de
+    ld (memory_fast_largest),hl
+    ret
 
-memory_request:
-    dw 0
-memory_policy:
-    db 0
-memory_free_request_start:
-    dw 0
-memory_free_request_length:
-    dw 0
-memory_live_allocations:
-    dw 0
-memory_pinned_bytes:
-    dw 0
-memory_info_ptr:
-    dw 0
-memory_free_extents:
-    defs FREE_EXTENT_COUNT*4,0
+memory_request: dw 0
+memory_policy: db 0
+memory_remainder: dw 0
+memory_free_start: dw 0
+memory_free_length: dw 0
+memory_live_allocations: dw 0
+memory_pinned_bytes: dw 0
+memory_info_ptr: dw 0
+memory_fast_total: dw 0
+memory_fast_largest: dw 0
+memory_cold_total: dw 0
+memory_cold_largest: dw 0
+memory_free_extents: defs FREE_EXTENT_COUNT*4,0
     ENDM

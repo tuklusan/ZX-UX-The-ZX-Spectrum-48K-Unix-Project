@@ -10,242 +10,209 @@
 ; SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 ; patent, trademark, and governing-law provisions.
 ;
-; Resident ZXP1 manager. Compression is stored-object-only. Decoder history is
-; never treated as paging or address-space extension.
-
-ZXP_HISTORY_SIZE          EQU 256
-ZXP_DECODER_STATE_SIZE    EQU 272
-ZXP_ENCODER_WORKSPACE     EQU 512
+; Resident ZXP1 decoder and conservative bounded packer. Decoder implements the
+; frozen LITERAL/RLE/BACKREF grammar and overlap semantics exactly.
 
     MACRO EMIT_ZXPACK_ROUTINES
-; Inputs IX=packed object, DE=logical offset, HL=destination, BC=count.
-; Outputs carry clear HL=logical bytes read, carry set format/memory error.
-; This bounded implementation reconstructs from logical offset zero into one
-; FAST_REQUIRED 272-byte history/state allocation and discards prefix bytes.
-zx48_zxpack_read:
-    ld (zxpack_read_destination),hl
-    ld (zxpack_read_count),bc
-    ld (zxpack_read_skip),de
-    ld bc,ZXP_DECODER_STATE_SIZE
-    ld a,ALLOC_FAST_REQUIRED
-    call zx48_alloc
-    ret c
-    ld (zxpack_state_ptr),hl
-    push ix
-    ld e,(ix+OBJ_ALLOCATION_PTR)
-    ld d,(ix+OBJ_ALLOCATION_PTR+1)
-    ld c,(ix+OBJ_STORAGE_LENGTH)
-    ld b,(ix+OBJ_STORAGE_LENGTH+1)
-    ld l,(ix+OBJ_LOGICAL_LENGTH)
-    ld h,(ix+OBJ_LOGICAL_LENGTH+1)
-    ld (zxpack_logical_remaining),hl
-    pop ix
-    ld (zxpack_stream_ptr),de
-    ld (zxpack_stream_remaining),bc
-    xor a
-    ld (zxpack_history_pos),a
-    ld (zxpack_history_count),a
-    ld hl,0
-    ld (zxpack_output_count),hl
-zx48_zxpack_read_token:
-    ld hl,(zxpack_logical_remaining)
+; HL=physical stream, BC=physical bytes, DE=output, stack word logical bytes is
+; supplied through zx_logical by callers. Carry set E_FORMAT on malformed input.
+zx48_zxpack_decode:
+    ld (zx_in),hl
+    ld (zx_phys),bc
+    ld (zx_out_base),de
+    ld (zx_out),de
+zx48_zxpack_next:
+    ld hl,(zx_logical)
     ld a,h
     or l
-    jr z,zx48_zxpack_read_finish
-    ld bc,(zxpack_stream_remaining)
+    jr z,zx48_zxpack_finish
+    ld bc,(zx_phys)
     ld a,b
     or c
-    jr z,zx48_zxpack_read_format
-    ld hl,(zxpack_stream_ptr)
+    jp z,zx48_zxpack_format
+    ld hl,(zx_in)
     ld a,(hl)
     inc hl
-    ld (zxpack_stream_ptr),hl
+    ld (zx_in),hl
     dec bc
-    ld (zxpack_stream_remaining),bc
+    ld (zx_phys),bc
     cp $40
     jr c,zx48_zxpack_literal
     cp $80
     jr c,zx48_zxpack_rle
     jr zx48_zxpack_backref
+
 zx48_zxpack_literal:
     inc a
-    ld b,a
-zx48_zxpack_literal_loop:
-    ld hl,(zxpack_stream_remaining)
-    ld a,h
-    or l
-    jr z,zx48_zxpack_read_format
-    ld hl,(zxpack_stream_ptr)
-    ld a,(hl)
-    inc hl
-    ld (zxpack_stream_ptr),hl
-    ld hl,(zxpack_stream_remaining)
-    dec hl
-    ld (zxpack_stream_remaining),hl
-    call zx48_zxpack_emit_byte
-    jr c,zx48_zxpack_read_format
-    djnz zx48_zxpack_literal_loop
-    jr zx48_zxpack_read_token
+    ld e,a
+    ld d,0
+    call zx48_zxpack_check_output
+    ret c
+    ld bc,(zx_phys)
+    ld h,b
+    ld l,c
+    or a
+    sbc hl,de
+    jp c,zx48_zxpack_format
+    ld (zx_phys),hl
+    ld hl,(zx_in)
+    ld bc,0
+    ld c,e
+    push de
+    ld de,(zx_out)
+    ldir
+    ld (zx_out),de
+    ld (zx_in),hl
+    pop de
+    call zx48_zxpack_consume_output
+    jr zx48_zxpack_next
+
 zx48_zxpack_rle:
     and $3f
     add a,3
-    ld b,a
-    ld hl,(zxpack_stream_remaining)
-    ld a,h
-    or l
-    jr z,zx48_zxpack_read_format
-    ld hl,(zxpack_stream_ptr)
+    ld e,a
+    ld d,0
+    call zx48_zxpack_check_output
+    ret c
+    ld bc,(zx_phys)
+    ld a,b
+    or c
+    jp z,zx48_zxpack_format
+    dec bc
+    ld (zx_phys),bc
+    ld hl,(zx_in)
     ld a,(hl)
     inc hl
-    ld (zxpack_stream_ptr),hl
-    ld hl,(zxpack_stream_remaining)
-    dec hl
-    ld (zxpack_stream_remaining),hl
-    ld c,a
+    ld (zx_in),hl
+    ld hl,(zx_out)
+    ld b,e
 zx48_zxpack_rle_loop:
-    ld a,c
-    call zx48_zxpack_emit_byte
-    jr c,zx48_zxpack_read_format
+    ld (hl),a
+    inc hl
     djnz zx48_zxpack_rle_loop
-    jr zx48_zxpack_read_token
+    ld (zx_out),hl
+    call zx48_zxpack_consume_output
+    jr zx48_zxpack_next
+
 zx48_zxpack_backref:
     and $7f
     add a,3
-    ld b,a
-    ld hl,(zxpack_stream_remaining)
-    ld a,h
-    or l
-    jr z,zx48_zxpack_read_format
-    ld hl,(zxpack_stream_ptr)
-    ld a,(hl)
-    inc hl
-    ld (zxpack_stream_ptr),hl
-    ld hl,(zxpack_stream_remaining)
-    dec hl
-    ld (zxpack_stream_remaining),hl
-    inc a
-    ld c,a
-    ld a,(zxpack_history_count)
-    cp c
-    jr c,zx48_zxpack_read_format
-zx48_zxpack_backref_loop:
-    ld a,(zxpack_history_pos)
-    sub c
     ld e,a
     ld d,0
-    ld hl,(zxpack_state_ptr)
-    add hl,de
+    call zx48_zxpack_check_output
+    ret c
+    ld bc,(zx_phys)
+    ld a,b
+    or c
+    jp z,zx48_zxpack_format
+    dec bc
+    ld (zx_phys),bc
+    ld hl,(zx_in)
     ld a,(hl)
-    call zx48_zxpack_emit_byte
-    jr c,zx48_zxpack_read_format
-    djnz zx48_zxpack_backref_loop
-    jr zx48_zxpack_read_token
-
-; Inputs A=decoded byte. Outputs carry set on logical overrun.
-zx48_zxpack_emit_byte:
-    push af
-    ld hl,(zxpack_logical_remaining)
-    ld a,h
-    or l
-    jr z,zx48_zxpack_emit_overrun
-    dec hl
-    ld (zxpack_logical_remaining),hl
-    pop af
-    push af
-    ld e,(zxpack_history_pos)
-    ld d,0
-    ld hl,(zxpack_state_ptr)
-    add hl,de
-    pop af
-    ld (hl),a
-    ld hl,zxpack_history_pos
-    inc (hl)
-    ld a,(zxpack_history_count)
-    cp $ff
-    jr z,zx48_zxpack_emit_history_full
+    inc hl
+    ld (zx_in),hl
     inc a
-    ld (zxpack_history_count),a
-zx48_zxpack_emit_history_full:
-    ld hl,(zxpack_read_skip)
-    ld a,h
-    or l
-    jr z,zx48_zxpack_emit_visible
-    dec hl
-    ld (zxpack_read_skip),hl
-    xor a
+    ld c,a
+    ld b,0
+    ld hl,(zx_out)
+    push hl
     or a
-    ret
-zx48_zxpack_emit_visible:
-    ld hl,(zxpack_read_count)
-    ld a,h
-    or l
-    jr z,zx48_zxpack_emit_discard
-    dec hl
-    ld (zxpack_read_count),hl
-    push af
-    ld hl,(zxpack_read_destination)
-    pop af
-    ld (hl),a
-    inc hl
-    ld (zxpack_read_destination),hl
-    ld hl,(zxpack_output_count)
-    inc hl
-    ld (zxpack_output_count),hl
-zx48_zxpack_emit_discard:
-    xor a
+    sbc hl,bc
+    ld de,(zx_out_base)
+    push hl
     or a
-    ret
-zx48_zxpack_emit_overrun:
-    pop af
-    scf
-    ret
+    sbc hl,de
+    pop hl
+    jr c,zx48_zxpack_back_bad
+    pop de                         ; DE=current out
+    ld b,0
+    ld c,(zx_token_count)
+    ; token count is reloaded below from E because E was distance-clobbered.
+    ld a,(zx_saved_len)
+    ld c,a
+zx48_zxpack_back_loop:
+    ld a,(hl)
+    ld (de),a
+    inc hl
+    inc de
+    dec c
+    jr nz,zx48_zxpack_back_loop
+    ld (zx_out),de
+    ld a,(zx_saved_len)
+    ld e,a
+    ld d,0
+    call zx48_zxpack_consume_output
+    jr zx48_zxpack_next
+zx48_zxpack_back_bad:
+    pop de
+    jp zx48_zxpack_format
 
-zx48_zxpack_read_finish:
-    ld hl,(zxpack_stream_remaining)
-    ld a,h
-    or l
-    jr nz,zx48_zxpack_read_format
-    call zx48_zxpack_free_state
-    ld hl,(zxpack_output_count)
+; DE=len. Save len for backref and prove len<=remaining logical.
+zx48_zxpack_check_output:
+    ld a,e
+    ld (zx_saved_len),a
+    ld (zx_token_count),a
+    ld hl,(zx_logical)
+    or a
+    sbc hl,de
+    jr c,zx48_zxpack_format_local
     xor a
     or a
     ret
-zx48_zxpack_read_format:
-    call zx48_zxpack_free_state
+zx48_zxpack_format_local:
     ld a,E_FORMAT
     scf
     ret
-zx48_zxpack_free_state:
-    ld hl,(zxpack_state_ptr)
-    ld bc,ZXP_DECODER_STATE_SIZE
-    jp zx48_free
+zx48_zxpack_consume_output:
+    ld hl,(zx_logical)
+    or a
+    sbc hl,de
+    ld (zx_logical),hl
+    ret
+zx48_zxpack_finish:
+    ld hl,(zx_phys)
+    ld a,h
+    or l
+    jr nz,zx48_zxpack_format
+    xor a
+    or a
+    ret
+zx48_zxpack_format:
+    ld a,E_FORMAT
+    scf
+    ret
 
-; Inputs IX=PACKED object. Outputs object atomically becomes RAW.
+; IX=packed object. Allocate logical image, decode completely, commit atomically.
 zx48_zxpack_materialize:
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    and OBJ_PACKED
+    ret z
+    ld (zx_object_ptr),ix
     ld c,(ix+OBJ_LOGICAL_LENGTH)
     ld b,(ix+OBJ_LOGICAL_LENGTH+1)
-    ld a,b
-    or c
-    jr z,zx48_zxpack_materialize_empty
+    ld (zx_logical),bc
     ld a,ALLOC_COLD_PREFERRED
     call zx48_alloc
     ret c
-    ld (zxpack_materialize_ptr),hl
-    push ix
-    ld de,0
-    ld bc,(zxpack_read_count_zero)
-    pop ix
-    ; Read full logical bytes directly into private replacement.
-    ld c,(ix+OBJ_LOGICAL_LENGTH)
-    ld b,(ix+OBJ_LOGICAL_LENGTH+1)
-    call zx48_zxpack_read
-    jr c,zx48_zxpack_materialize_rollback
+    ld (zx_new_ptr),hl
+    ex de,hl
+    ld ix,(zx_object_ptr)
     ld l,(ix+OBJ_ALLOCATION_PTR)
     ld h,(ix+OBJ_ALLOCATION_PTR+1)
     ld c,(ix+OBJ_STORAGE_LENGTH)
     ld b,(ix+OBJ_STORAGE_LENGTH+1)
+    call zx48_zxpack_decode
+    jr c,zx48_zxpack_materialize_fail
+    ld ix,(zx_object_ptr)
+    ld l,(ix+OBJ_ALLOCATION_PTR)
+    ld h,(ix+OBJ_ALLOCATION_PTR+1)
+    ld c,(ix+OBJ_STORAGE_LENGTH)
+    ld b,(ix+OBJ_STORAGE_LENGTH+1)
+    push bc
     call zx48_free
-    ld hl,(zxpack_materialize_ptr)
+    pop bc
+    ld ix,(zx_object_ptr)
+    ld hl,(zx_new_ptr)
     ld (ix+OBJ_ALLOCATION_PTR),l
     ld (ix+OBJ_ALLOCATION_PTR+1),h
     ld l,(ix+OBJ_LOGICAL_LENGTH)
@@ -258,80 +225,251 @@ zx48_zxpack_materialize:
     xor a
     or a
     ret
-zx48_zxpack_materialize_rollback:
+zx48_zxpack_materialize_fail:
     push af
-    ld hl,(zxpack_materialize_ptr)
-    ld c,(ix+OBJ_LOGICAL_LENGTH)
-    ld b,(ix+OBJ_LOGICAL_LENGTH+1)
+    ld hl,(zx_new_ptr)
+    ld bc,(zx_logical)
     call zx48_free
     pop af
     scf
     ret
-zx48_zxpack_materialize_empty:
+
+; IX=object, DE=offset, HL=dst, BC=count. For compactness the first read of a
+; packed object materializes atomically, then follows the ordinary RAW path.
+zx48_zxpack_read:
+    push hl
+    push bc
+    push de
+    call zx48_zxpack_materialize
+    pop de
+    pop bc
+    pop hl
+    ret c
+    jp zx48_object_read
+
+; A=object slot. Conservative packer recognizes a uniform-byte object. It emits
+; legal RLE chunks (3..66) only when the physical representation is smaller.
+zx48_zxpack_try_slot:
+    ld (zx_slot),a
+    ld hl,(zx_pack_attempts)
+    inc hl
+    ld (zx_pack_attempts),hl
+    call zx48_object_ptr_slot
+    ret c
+    ld (zx_object_ptr),ix
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    and OBJ_PACKED
+    jr z,zx48_zxpack_try_raw
+    ld hl,0
     xor a
-    ld (ix+OBJ_FLAGS_BYTE),a
-    ld (ix+OBJ_STORAGE_LENGTH),a
-    ld (ix+OBJ_STORAGE_LENGTH+1),a
-    ld (ix+OBJ_ALLOCATION_PTR),a
-    ld (ix+OBJ_ALLOCATION_PTR+1),a
     or a
     ret
-
-; Inputs A=object slot. Target encoder work is bounded by one 512-byte workspace.
-; Version-1 resident path currently attempts only representation maintenance; the
-; host/reference encoder supplies release tape compression and target pack tests
-; close the exact grammar before Phase-4 acceptance.
-zx48_zxpack_try_slot:
-    cp RAM_OBJECT_COUNT
-    ret nc
-    ld bc,ZXP_ENCODER_WORKSPACE
-    ld a,ALLOC_ANY|ALLOC_NO_COMPACT
+zx48_zxpack_try_raw:
+    ld l,(ix+OBJ_LOGICAL_LENGTH)
+    ld h,(ix+OBJ_LOGICAL_LENGTH+1)
+    ld a,h
+    or l
+    jr z,zx48_zxpack_nosave
+    ld de,3
+    or a
+    sbc hl,de
+    jr c,zx48_zxpack_nosave
+    ld ix,(zx_object_ptr)
+    ld l,(ix+OBJ_ALLOCATION_PTR)
+    ld h,(ix+OBJ_ALLOCATION_PTR+1)
+    ld a,(hl)
+    ld (zx_uniform_byte),a
+    ld c,(ix+OBJ_LOGICAL_LENGTH)
+    ld b,(ix+OBJ_LOGICAL_LENGTH+1)
+    dec bc
+    inc hl
+zx48_zxpack_uniform_loop:
+    ld a,b
+    or c
+    jr z,zx48_zxpack_uniform_ok
+    ld a,(hl)
+    ld d,a
+    ld a,(zx_uniform_byte)
+    cp d
+    jr nz,zx48_zxpack_nosave
+    inc hl
+    dec bc
+    jr zx48_zxpack_uniform_loop
+zx48_zxpack_uniform_ok:
+    ; encoded bytes = 2*ceil(length/66)
+    ld ix,(zx_object_ptr)
+    ld l,(ix+OBJ_LOGICAL_LENGTH)
+    ld h,(ix+OBJ_LOGICAL_LENGTH+1)
+    ld de,65
+    add hl,de
+    ld de,0
+zx48_zxpack_div66:
+    ld bc,66
+    or a
+    sbc hl,bc
+    jr c,zx48_zxpack_div_done
+    inc de
+    jr zx48_zxpack_div66
+zx48_zxpack_div_done:
+    sla e
+    rl d
+    ld (zx_encoded_len),de
+    ld l,(ix+OBJ_LOGICAL_LENGTH)
+    ld h,(ix+OBJ_LOGICAL_LENGTH+1)
+    or a
+    sbc hl,de
+    jr c,zx48_zxpack_nosave
+    jr z,zx48_zxpack_nosave
+    ld b,d
+    ld c,e
+    ld a,ALLOC_COLD_PREFERRED
     call zx48_alloc
     ret c
-    ld (zxpack_encoder_workspace),hl
-    ; A full greedy encoder is called through this hook by SYS_PACK. Keeping the
-    ; workspace allocation here ensures allocator compaction cannot recurse.
-    ld hl,(zxpack_encoder_workspace)
-    ld bc,ZXP_ENCODER_WORKSPACE
+    ld (zx_new_ptr),hl
+    ex de,hl
+    ld ix,(zx_object_ptr)
+    ld l,(ix+OBJ_LOGICAL_LENGTH)
+    ld h,(ix+OBJ_LOGICAL_LENGTH+1)
+zx48_zxpack_emit_run:
+    ld a,h
+    or l
+    jr z,zx48_zxpack_commit
+    ld bc,66
+    or a
+    sbc hl,bc
+    jr c,zx48_zxpack_emit_tail
+    ld a,$7f                    ; RLE length 66
+    ld (de),a
+    inc de
+    ld a,(zx_uniform_byte)
+    ld (de),a
+    inc de
+    jr zx48_zxpack_emit_run
+zx48_zxpack_emit_tail:
+    add hl,bc
+    ld a,l
+    sub 3
+    or $40
+    ld (de),a
+    inc de
+    ld a,(zx_uniform_byte)
+    ld (de),a
+    inc de
+zx48_zxpack_commit:
+    ld ix,(zx_object_ptr)
+    ld l,(ix+OBJ_ALLOCATION_PTR)
+    ld h,(ix+OBJ_ALLOCATION_PTR+1)
+    ld c,(ix+OBJ_STORAGE_LENGTH)
+    ld b,(ix+OBJ_STORAGE_LENGTH+1)
     call zx48_free
+    ld ix,(zx_object_ptr)
+    ld hl,(zx_new_ptr)
+    ld (ix+OBJ_ALLOCATION_PTR),l
+    ld (ix+OBJ_ALLOCATION_PTR+1),h
+    ld hl,(zx_encoded_len)
+    ld (ix+OBJ_STORAGE_LENGTH),l
+    ld (ix+OBJ_STORAGE_LENGTH+1),h
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    or OBJ_PACKED
+    ld (ix+OBJ_FLAGS_BYTE),a
+    ld hl,(zx_pack_successes)
+    inc hl
+    ld (zx_pack_successes),hl
+    ld ix,(zx_object_ptr)
+    ld hl,(ix+OBJ_LOGICAL_LENGTH)
+    ld de,(zx_encoded_len)
+    or a
+    sbc hl,de
+    xor a
+    or a
+    ret
+zx48_zxpack_nosave:
+    ld hl,0
     xor a
     or a
     ret
 
+; HL -> exact 20-byte ZPINFO1. Bounded table scan computes current totals.
 zx48_zxpack_info:
-    ; Zero current-state counters are valid until mutable objects are populated.
-    ld b,ZPINFO1_SIZE
+    ld (zx_info_ptr),hl
     xor a
-zx48_zxpack_info_zero:
+    ld hl,zx_info_scratch
+    ld de,zx_info_scratch+1
+    ld bc,19
     ld (hl),a
+    ldir
+    ld ix,object_table
+    ld b,RAM_OBJECT_COUNT
+zx48_zxpack_info_loop:
+    push bc
+    ld a,(ix+OBJ_TYPE_ID)
+    or a
+    jr z,zx48_zxpack_info_next
+    ld l,(ix+OBJ_LOGICAL_LENGTH)
+    ld h,(ix+OBJ_LOGICAL_LENGTH+1)
+    ld de,(zx_info_scratch)
+    add hl,de
+    ld (zx_info_scratch),hl
+    jr nc,zx48_zxpack_info_no_carry
+    ld hl,(zx_info_scratch+2)
     inc hl
-    djnz zx48_zxpack_info_zero
+    ld (zx_info_scratch+2),hl
+zx48_zxpack_info_no_carry:
+    ld l,(ix+OBJ_STORAGE_LENGTH)
+    ld h,(ix+OBJ_STORAGE_LENGTH+1)
+    ld de,(zx_info_scratch+4)
+    add hl,de
+    ld (zx_info_scratch+4),hl
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    and OBJ_PACKED
+    jr z,zx48_zxpack_info_raw
+    ld hl,zx_info_scratch+10
+    inc (hl)
+    jr zx48_zxpack_info_next
+zx48_zxpack_info_raw:
+    ld hl,zx_info_scratch+11
+    inc (hl)
+zx48_zxpack_info_next:
+    ld de,OBJ_RECORD_SIZE
+    add ix,de
+    pop bc
+    djnz zx48_zxpack_info_loop
+    ; bytes_saved u32 = logical-total minus physical u16.
+    ld hl,(zx_info_scratch)
+    ld de,(zx_info_scratch+4)
+    or a
+    sbc hl,de
+    ld (zx_info_scratch+6),hl
+    ld hl,(zx_info_scratch+2)
+    ld de,0
+    sbc hl,de
+    ld (zx_info_scratch+8),hl
+    ld hl,(zx_pack_attempts)
+    ld (zx_info_scratch+14),hl
+    ld hl,(zx_pack_successes)
+    ld (zx_info_scratch+16),hl
+    ld hl,zx_info_scratch
+    ld de,(zx_info_ptr)
+    ld bc,20
+    ldir
+    xor a
+    or a
     ret
 
-zxpack_read_destination:
-    dw 0
-zxpack_read_count:
-    dw 0
-zxpack_read_count_zero:
-    dw 0
-zxpack_read_skip:
-    dw 0
-zxpack_stream_ptr:
-    dw 0
-zxpack_stream_remaining:
-    dw 0
-zxpack_logical_remaining:
-    dw 0
-zxpack_state_ptr:
-    dw 0
-zxpack_output_count:
-    dw 0
-zxpack_materialize_ptr:
-    dw 0
-zxpack_encoder_workspace:
-    dw 0
-zxpack_history_pos:
-    db 0
-zxpack_history_count:
-    db 0
+zx_in: dw 0
+zx_phys: dw 0
+zx_out_base: dw 0
+zx_out: dw 0
+zx_logical: dw 0
+zx_saved_len: db 0
+zx_token_count: db 0
+zx_object_ptr: dw 0
+zx_new_ptr: dw 0
+zx_slot: db 0
+zx_uniform_byte: db 0
+zx_encoded_len: dw 0
+zx_pack_attempts: dw 0
+zx_pack_successes: dw 0
+zx_info_ptr: dw 0
+zx_info_scratch: defs 20,0
     ENDM

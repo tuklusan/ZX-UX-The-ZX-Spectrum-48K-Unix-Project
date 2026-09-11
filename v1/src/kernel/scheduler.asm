@@ -10,14 +10,9 @@
 ; SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 ; patent, trademark, and governing-law provisions.
 ;
-; Cooperative scheduler. Context frames live on process FAST stacks and contain
-; AF,BC,DE,HL,IX beneath the already-present return PC.
+; Cooperative round-robin scheduler. AF/BC/DE/HL/IX and return PC are stack state.
 
     MACRO EMIT_SCHEDULER_ROUTINES
-; Inputs: called only at a kernel-controlled scheduling point.
-; Outputs: restores the selected task frame and RETs into it.
-; Flags: restored from task AF.
-; Clobbers: none from selected task's perspective.
 zx48_schedule:
     push af
     push bc
@@ -25,38 +20,47 @@ zx48_schedule:
     push hl
     push ix
     ld a,(current_pid)
-    call zx48_process_descriptor_from_pid
-    ld (ix+PROC_SAVED_SP),sp
+    ld (scheduler_current),a
+    call zx48_process_ptr
+    ; Z80 has no LD (IX+d),SP; snapshot through HL.
+    ld hl,0
+    add hl,sp
+    ld (ix+PROC_SAVED_SP),l
+    ld (ix+PROC_SAVED_SP+1),h
     ld a,(ix+PROC_STATE)
     cp PROC_RUNNING
-    jr nz,zx48_schedule_scan
+    jr nz,zx48_schedule_scan_start
     ld (ix+PROC_STATE),PROC_READY
-zx48_schedule_scan:
-    ld a,(current_pid)
+zx48_schedule_scan_start:
+    ld a,(scheduler_current)
     inc a
-    and $07
+    and 7
+    ld (scheduler_candidate),a
     ld b,MAX_PROCESSES
-zx48_schedule_scan_loop:
-    push af
-    call zx48_process_descriptor_from_pid
+zx48_schedule_scan:
+    push bc
+    ld a,(scheduler_candidate)
+    call zx48_process_ptr
     ld a,(ix+PROC_STATE)
-    cp PROC_READY
-    jr z,zx48_schedule_select_pop
     cp PROC_SLEEPING
     call z,zx48_scheduler_maybe_wake
     ld a,(ix+PROC_STATE)
     cp PROC_READY
-    jr z,zx48_schedule_select_pop
-    pop af
+    jr z,zx48_schedule_choose
+    pop bc
+    ld a,(scheduler_candidate)
     inc a
-    and $07
-    djnz zx48_schedule_scan_loop
+    and 7
+    ld (scheduler_candidate),a
+    djnz zx48_schedule_scan
     xor a
-    call zx48_process_descriptor_from_pid
-    jr zx48_schedule_select
-zx48_schedule_select_pop:
-    pop af
-zx48_schedule_select:
+    ld (scheduler_candidate),a
+    call zx48_process_ptr
+    jr zx48_schedule_restore
+zx48_schedule_choose:
+    pop bc
+zx48_schedule_restore:
+    ld a,(scheduler_candidate)
     ld (current_pid),a
     ld (ix+PROC_STATE),PROC_RUNNING
     ld a,(ix+PROC_PRIVATE_FLAGS)
@@ -73,77 +77,90 @@ zx48_schedule_select:
     ld iy,ROM_IY_ANCHOR
     ret
 
-; Inputs: A=pid 0..7.
-; Outputs: IX descriptor address.
-; Flags: modified.
-; Clobbers: BC/DE/HL/IX.
-zx48_process_descriptor_from_pid:
-    ld c,a
-    ld b,0
-    ld hl,process_table
-    ld de,PROC_DESC_SIZE
-    ld a,c
-    or a
-    jr z,zx48_process_descriptor_done
-zx48_process_descriptor_loop:
-    add hl,de
-    dec c
-    jr nz,zx48_process_descriptor_loop
-zx48_process_descriptor_done:
-    push hl
-    pop ix
-    ret
-
-; Inputs: IX=SLEEPING descriptor.
-; Outputs: READY if wake_tick <= current ticks in modular low-16 comparison.
-; Flags: modified.
-; Clobbers: AF/DE/HL.
+; IX=SLEEPING. Signed modular 32-bit now-deadline >=0 wakes.
 zx48_scheduler_maybe_wake:
     ld hl,(kernel_ticks)
     ld e,(ix+PROC_WAKE_TICK)
     ld d,(ix+PROC_WAKE_TICK+1)
     or a
     sbc hl,de
+    ld hl,(kernel_ticks+2)
+    ld e,(ix+PROC_WAKE_TICK+2)
+    ld d,(ix+PROC_WAKE_TICK+3)
+    sbc hl,de
     bit 7,h
     ret nz
     ld (ix+PROC_STATE),PROC_READY
     ret
 
-; Inputs: HL=frame delay, current process RUNNING.
-; Outputs: resumes at/after target frame.
-; Flags: restored at resumption.
-; Clobbers: none after resume.
+; HL -> u32 relative ticks.
 zx48_sleep_current:
-    push hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    inc hl
+    ld c,(hl)
+    inc hl
+    ld b,(hl)
+    bit 7,b
+    jr nz,zx48_sleep_bad
+    ld a,b
+    or c
+    or d
+    or e
+    jr z,zx48_sleep_zero
+    ld (scheduler_sleep_lo),de
+    ld (scheduler_sleep_hi),bc
     ld a,(current_pid)
-    call zx48_process_descriptor_from_pid
-    pop de
+    call zx48_process_lookup
     ld hl,(kernel_ticks)
+    ld de,(scheduler_sleep_lo)
     add hl,de
     ld (ix+PROC_WAKE_TICK),l
     ld (ix+PROC_WAKE_TICK+1),h
+    ld hl,(kernel_ticks+2)
+    ld de,(scheduler_sleep_hi)
+    adc hl,de
+    ld (ix+PROC_WAKE_TICK+2),l
+    ld (ix+PROC_WAKE_TICK+3),h
     ld (ix+PROC_STATE),PROC_SLEEPING
     jp zx48_schedule
-
-; Inputs: none.
-; Outputs: never exits. Interrupts enabled for HALT.
-; Flags: modified.
-; Clobbers: AF.
-zx48_idle_loop:
-    ei
-    halt
-    call zx48_scheduler_wake_scan
-    jp zx48_schedule
+zx48_sleep_zero:
+    xor a
+    or a
+    ret
+zx48_sleep_bad:
+    ld a,E_INVAL
+    scf
+    ret
 
 zx48_scheduler_wake_scan:
     ld ix,process_table+PROC_DESC_SIZE
-    ld b,MAX_USER_PID
-zx48_scheduler_wake_loop:
+    ld b,MAX_PROCESSES-1
+zx48_wake_scan_loop:
     ld a,(ix+PROC_STATE)
     cp PROC_SLEEPING
     call z,zx48_scheduler_maybe_wake
     ld de,PROC_DESC_SIZE
     add ix,de
-    djnz zx48_scheduler_wake_loop
+    djnz zx48_wake_scan_loop
     ret
+
+zx48_idle_loop:
+    ei
+    halt
+    call zx48_scheduler_wake_scan
+    ld a,(tty_cursor_due)
+    or a
+    jr z,zx48_idle_no_cursor
+    call zx48_cursor_blink
+    xor a
+    ld (tty_cursor_due),a
+zx48_idle_no_cursor:
+    jp zx48_schedule
+
+scheduler_current: db 0
+scheduler_candidate: db 0
+scheduler_sleep_lo: dw 0
+scheduler_sleep_hi: dw 0
     ENDM

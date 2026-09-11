@@ -10,8 +10,8 @@
 ; SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 ; patent, trademark, and governing-law provisions.
 ;
-; 48-byte bounded process descriptor. The canonical runnable register frame is
-; stack-resident; saved_sp is the only CPU resume token held here.
+; Eight fixed 48-byte process descriptors. Runnable register state lives on each
+; FAST stack; the descriptor keeps only saved SP and process metadata.
 
 PROC_PID                  EQU 0
 PROC_PARENT               EQU 1
@@ -35,10 +35,6 @@ PROC_PRIVATE_FLAGS        EQU 46
 PROC_RESERVED             EQU 47
 
     MACRO EMIT_PROCESS_ROUTINES
-; Inputs: none.
-; Outputs: PID0 RUNNING, PID1..7 FREE, handles free.
-; Flags: modified.
-; Clobbers: AF/BC/DE/HL.
 zx48_process_init:
     xor a
     ld hl,process_table
@@ -46,126 +42,150 @@ zx48_process_init:
     ld bc,MAX_PROCESSES*PROC_DESC_SIZE-1
     ld (hl),a
     ldir
-    ld hl,process_table
-    ld b,MAX_PROCESSES
+    ld ix,process_table
     ld c,0
-zx48_process_init_loop:
-    ld (hl),c
-    push hl
+    ld b,MAX_PROCESSES
+zx48_process_init_each:
+    ld (ix+PROC_PID),c
+    ld (ix+PROC_PARENT),HANDLE_FREE
+    push bc
+    push ix
+    pop hl
     ld de,PROC_HANDLES
     add hl,de
+    ld b,MAX_HANDLES_PER_PROCESS
     ld a,HANDLE_FREE
-    ld d,MAX_HANDLES_PER_PROCESS
-zx48_process_init_handles:
+zx48_process_init_handle:
     ld (hl),a
     inc hl
-    dec d
-    jr nz,zx48_process_init_handles
-    pop hl
+    djnz zx48_process_init_handle
+    pop bc
     ld de,PROC_DESC_SIZE
-    add hl,de
+    add ix,de
     inc c
-    djnz zx48_process_init_loop
-    ld hl,process_table
-    ld (hl),0
-    inc hl
-    ld (hl),HANDLE_FREE
-    inc hl
-    ld (hl),PROC_RUNNING
-    ld a,0
+    djnz zx48_process_init_each
+    ld ix,process_table
+    ld (ix+PROC_STATE),PROC_RUNNING
+    xor a
     ld (current_pid),a
     ret
 
-; Inputs: A=PID.
-; Outputs: carry clear IX=descriptor, carry set A=E_NOENT.
-; Flags: carry result.
-; Clobbers: AF/BC/DE/HL/IX.
-zx48_process_lookup:
+; A=pid -> IX record regardless of state.
+zx48_process_ptr:
+zx48_process_descriptor_from_pid:
     cp MAX_PROCESSES
-    jr nc,zx48_process_lookup_fail
+    jr nc,zx48_process_noent
     ld c,a
-    ld b,0
-    ld hl,0
+    ld ix,process_table
+    or a
+    ret z
+    ld b,a
     ld de,PROC_DESC_SIZE
-zx48_process_lookup_mul:
-    ld a,c
-    or a
-    jr z,zx48_process_lookup_done
-    add hl,de
-    dec c
-    jr zx48_process_lookup_mul
-zx48_process_lookup_done:
-    ld de,process_table
-    add hl,de
-    push hl
-    pop ix
-    ld a,(ix+PROC_STATE)
-    or a
-    jr z,zx48_process_lookup_fail
+zx48_process_ptr_loop:
+    add ix,de
+    djnz zx48_process_ptr_loop
     xor a
     or a
     ret
-zx48_process_lookup_fail:
+zx48_process_lookup:
+    call zx48_process_ptr
+    ret c
+    ld a,(ix+PROC_STATE)
+    or a
+    jr z,zx48_process_noent
+    xor a
+    or a
+    ret
+zx48_process_noent:
     ld a,E_NOENT
     scf
     ret
 
-; Inputs: none.
-; Outputs: carry clear A=new PID/IX=descriptor; carry set A=E_AGAIN.
-; Flags: carry result.
-; Clobbers: AF/BC/DE/HL/IX.
-zx48_process_alloc_slot:
-    ld ix,process_table+PROC_DESC_SIZE
-    ld b,MAX_USER_PID
-    ld c,1
-zx48_process_alloc_scan:
+; Reserve PID2..7; caller publishes READY after constructing complete context.
+zx48_process_reserve_slot:
+    ld ix,process_table+2*PROC_DESC_SIZE
+    ld c,2
+    ld b,MAX_PROCESSES-2
+zx48_process_reserve_scan:
     ld a,(ix+PROC_STATE)
     or a
-    jr z,zx48_process_alloc_found
+    jr z,zx48_process_reserve_found
     ld de,PROC_DESC_SIZE
     add ix,de
     inc c
-    djnz zx48_process_alloc_scan
+    djnz zx48_process_reserve_scan
     ld a,E_AGAIN
     scf
     ret
-zx48_process_alloc_found:
+zx48_process_reserve_found:
+    ld a,c
+    ld (process_temp_pid),a
     push ix
     pop hl
     xor a
     ld (hl),a
-    ld de,1
-    push hl
-    pop de
+    ld d,h
+    ld e,l
     inc de
     ld bc,PROC_DESC_SIZE-1
     ldir
-    pop hl
-    push hl
-    pop ix
-    ld a,c
+    ld a,(process_temp_pid)
     ld (ix+PROC_PID),a
     ld a,(current_pid)
     ld (ix+PROC_PARENT),a
-    ld (ix+PROC_STATE),PROC_READY
-    ld a,HANDLE_FREE
-    ld b,MAX_HANDLES_PER_PROCESS
     push ix
     pop hl
     ld de,PROC_HANDLES
     add hl,de
-zx48_process_alloc_handles:
+    ld b,MAX_HANDLES_PER_PROCESS
+    ld a,HANDLE_FREE
+zx48_process_reserve_handles:
     ld (hl),a
     inc hl
-    djnz zx48_process_alloc_handles
-    ld a,(ix+PROC_PID)
+    djnz zx48_process_reserve_handles
+    ld a,(process_temp_pid)
     or a
     ret
 
-; Inputs: A=PID.
-; Outputs: A=public state flag byte (only CANCEL_PENDING bit0).
-; Flags: modified.
-; Clobbers: AF/BC/DE/HL/IX.
+zx48_process_alloc_slot:
+    call zx48_process_reserve_slot
+    ret c
+    ld (ix+PROC_STATE),PROC_READY
+    ld a,(process_temp_pid)
+    or a
+    ret
+
+; Boot creates PID1 shell descriptor before image publication.
+zx48_process_prepare_pid1:
+    ld a,1
+    call zx48_process_ptr
+    ret c
+    ld a,(ix+PROC_STATE)
+    or a
+    jr nz,zx48_process_busy
+    ld a,1
+    ld (ix+PROC_PID),a
+    xor a
+    ld (ix+PROC_PARENT),a
+    ld (ix+PROC_CWD),DIR_ROOT
+    ld hl,process_name_sh
+    push ix
+    pop de
+    ld bc,PROC_NAME
+    ex de,hl
+    add hl,bc
+    ex de,hl
+    ld hl,process_name_sh
+    ld bc,10
+    ldir
+    xor a
+    or a
+    ret
+zx48_process_busy:
+    ld a,E_BUSY
+    scf
+    ret
+
 zx48_process_public_flags:
     call zx48_process_lookup
     ret c
@@ -173,16 +193,11 @@ zx48_process_public_flags:
     and PROC_FLAG_CANCEL
     ret
 
-; Inputs: A=PID, HL=writable 16-byte output.
-; Outputs: exact PINFO output or carry set errno.
-; Flags: carry result.
-; Clobbers: AF/BC/DE/HL/IX.
+; A=pid, HL=16-byte PINFO destination.
 zx48_process_info:
     ld (process_info_ptr),hl
-    push af
     call zx48_process_lookup
-    jr c,zx48_process_info_fail_pop
-    pop af
+    ret c
     ld hl,(process_info_ptr)
     ld a,(ix+PROC_PID)
     ld (hl),a
@@ -197,10 +212,10 @@ zx48_process_info:
     and PROC_FLAG_CANCEL
     ld (hl),a
     inc hl
-    push ix
-    pop de
     push hl
-    ld hl,PROC_NAME
+    push ix
+    pop hl
+    ld de,PROC_NAME
     add hl,de
     ex de,hl
     pop hl
@@ -219,18 +234,10 @@ zx48_process_info_name:
     xor a
     or a
     ret
-zx48_process_info_fail_pop:
-    pop bc
-    scf
-    ret
 
-; Inputs: none.
-; Outputs: A=count of non-FREE PID1..7.
-; Flags: modified.
-; Clobbers: AF/BC/DE/IX.
 zx48_process_count:
     ld ix,process_table+PROC_DESC_SIZE
-    ld b,MAX_USER_PID
+    ld b,MAX_PROCESSES-1
     ld c,0
 zx48_process_count_loop:
     ld a,(ix+PROC_STATE)
@@ -244,28 +251,154 @@ zx48_process_count_next:
     ld a,c
     ret
 
-; Inputs: A=exit status; current_pid identifies caller.
-; Outputs: current descriptor becomes ZOMBIE; never resumes as runnable.
-; Flags: modified.
-; Clobbers: AF/BC/DE/HL/IX.
+; A=status. PID0 never exits; normal children become ZOMBIE and wake parent.
 zx48_process_exit:
-    ld b,a
+    ld (process_temp_status),a
     ld a,(current_pid)
     or a
-    jr z,zx48_process_exit_idle
+    jr z,zx48_process_exit_panic
     call zx48_process_lookup
-    jr c,zx48_process_exit_idle
-    ld (ix+PROC_EXIT_STATUS),b
+    jr c,zx48_process_exit_panic
+    ld a,(process_temp_status)
+    ld (ix+PROC_EXIT_STATUS),a
     ld (ix+PROC_STATE),PROC_ZOMBIE
+    call zx48_process_wake_parent
     jp zx48_schedule
-zx48_process_exit_idle:
+zx48_process_exit_panic:
     ld a,PANIC_SCHEDULER
     jp zx48_panic
 
-process_info_ptr:
-    dw 0
-current_pid:
-    db 0
-process_table:
-    defs MAX_PROCESSES*PROC_DESC_SIZE,0
+zx48_process_wake_parent:
+    ld a,(ix+PROC_PARENT)
+    cp HANDLE_FREE
+    ret z
+    call zx48_process_lookup
+    ret c
+    ld a,(ix+PROC_STATE)
+    cp PROC_WAIT_CHILD
+    ret nz
+    ld (ix+PROC_STATE),PROC_READY
+    ret
+
+; A=target pid. PID1 may cancel any child; others only their direct child.
+zx48_process_kill:
+    ld (process_temp_pid),a
+    or a
+    jr z,zx48_process_perm
+    cp 1
+    jr z,zx48_process_perm
+    call zx48_process_lookup
+    ret c
+    ld a,(current_pid)
+    cp 1
+    jr z,zx48_process_kill_ok
+    ld b,a
+    ld a,(ix+PROC_PARENT)
+    cp b
+    jr nz,zx48_process_perm
+zx48_process_kill_ok:
+    ld a,(ix+PROC_PRIVATE_FLAGS)
+    and PROC_PRIVATE_STARTED
+    jr nz,zx48_process_kill_started
+    ld (ix+PROC_EXIT_STATUS),130
+    ld (ix+PROC_STATE),PROC_ZOMBIE
+    xor a
+    or a
+    ret
+zx48_process_kill_started:
+    ld a,(ix+PROC_FLAGS)
+    or PROC_FLAG_CANCEL
+    ld (ix+PROC_FLAGS),a
+    ld a,(ix+PROC_STATE)
+    cp PROC_RUNNING
+    jr z,zx48_process_kill_return
+    cp PROC_READY
+    jr z,zx48_process_kill_return
+    cp PROC_ZOMBIE
+    jr z,zx48_process_noent
+    ld (ix+PROC_STATE),PROC_READY
+zx48_process_kill_return:
+    xor a
+    or a
+    ret
+zx48_process_perm:
+    ld a,E_PERM
+    scf
+    ret
+
+; Reap one ZOMBIE child. A=target PID or FF for any; B=status pointer low-level
+; helper receives writable status address in DE. Returns HL=child pid.
+zx48_process_wait:
+    ld (process_wait_target),a
+zx48_process_wait_scan:
+    ld ix,process_table+2*PROC_DESC_SIZE
+    ld b,MAX_PROCESSES-2
+zx48_process_wait_each:
+    ld a,(ix+PROC_PARENT)
+    ld c,a
+    ld a,(current_pid)
+    cp c
+    jr nz,zx48_process_wait_next
+    ld a,(process_wait_target)
+    cp $ff
+    jr z,zx48_process_wait_state
+    ld c,a
+    ld a,(ix+PROC_PID)
+    cp c
+    jr nz,zx48_process_wait_next
+zx48_process_wait_state:
+    ld a,(ix+PROC_STATE)
+    cp PROC_ZOMBIE
+    jr z,zx48_process_wait_reap
+    ld a,1
+    ld (process_wait_has_child),a
+zx48_process_wait_next:
+    ld hl,PROC_DESC_SIZE
+    push hl
+    pop de
+    add ix,de
+    djnz zx48_process_wait_each
+    ld a,(process_wait_has_child)
+    or a
+    jr z,zx48_process_wait_none
+    xor a
+    ld (process_wait_has_child),a
+    ld a,(current_pid)
+    call zx48_process_lookup
+    ld (ix+PROC_STATE),PROC_WAIT_CHILD
+    call zx48_schedule
+    jr zx48_process_wait_scan
+zx48_process_wait_none:
+    ld a,E_CHILD
+    scf
+    ret
+zx48_process_wait_reap:
+    ld a,(ix+PROC_EXIT_STATUS)
+    ld (de),a
+    ld a,(ix+PROC_PID)
+    ld l,a
+    ld h,0
+    push hl
+    push ix
+    pop hl
+    xor a
+    ld (hl),a
+    ld d,h
+    ld e,l
+    inc de
+    ld bc,PROC_DESC_SIZE-1
+    ldir
+    pop hl
+    xor a
+    or a
+    ret
+
+process_name_sh: db 's','h',0,0,0,0,0,0,0,0
+process_info_ptr: dw 0
+process_temp_pid: db 0
+process_temp_status: db 0
+process_wait_target: db 0
+process_wait_has_child: db 0
+current_pid: db 0
+process_table: defs MAX_PROCESSES*PROC_DESC_SIZE,0
     ENDM

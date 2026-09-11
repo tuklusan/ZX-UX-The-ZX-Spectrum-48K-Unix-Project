@@ -10,8 +10,7 @@
 ; SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 ; patent, trademark, and governing-law provisions.
 ;
-; Canonical 48K ROM entry table. This module is the sole owner of raw ROM
-; service addresses in production source.
+; Sole production owner of raw 48K ROM routine addresses.
 
 ROM_PRINT_A               EQU $0010
 ROM_FP_CALC               EQU $0028
@@ -25,114 +24,231 @@ ROM_LD_BYTES              EQU $0556
 ROM_PIXEL_ADD             EQU $22AA
 ROM_POINT                 EQU $22CB
 ROM_PLOT_SUB              EQU $22E5
-ROM_DRAW_CONVERT          EQU $24B7
 ROM_DRAW_LINE             EQU $24BA
 ROM_FP_TO_BC              EQU $2DA2
 ROM_FP_PRINT              EQU $2DE3
 ROM_CALCULATE             EQU $335B
-ROM_INT                   EQU $36AF
-ROM_EXP                   EQU $36C4
-ROM_LN                    EQU $3713
-ROM_COS                   EQU $37AA
-ROM_SIN                   EQU $37B5
-ROM_TAN                   EQU $37DA
-ROM_ATN                   EQU $37E2
-ROM_ASN                   EQU $3833
-ROM_ACS                   EQU $3843
-ROM_SQR                   EQU $384A
-ROM_POWER                 EQU $3851
-
-    MACRO ROM_RESTORE_IY
-    ld iy,ROM_IY_ANCHOR
-    ENDM
 
     MACRO EMIT_ROM_SERVICE_ROUTINES
-; Inputs: none.
-; Outputs: IY restored to the immutable ROM ERR_NR anchor.
-; Flags: unchanged.
-; Clobbers: IY by ABI ownership.
 zx48_rom_restore_iy:
-    ROM_RESTORE_IY
+    ld iy,ROM_IY_ANCHOR
     ret
-
-; Inputs: A = character.
-; Outputs: ROM-compatible character output complete; IY restored.
-; Flags: ROM-defined.
-; Clobbers: ROM PRINT-A contract plus IY restoration.
 zx48_rom_print_a:
     call ROM_PRINT_A
-    ROM_RESTORE_IY
+    ld iy,ROM_IY_ANCHOR
     ret
-
-; Inputs: A = keyboard row selector state required by ROM KEY-SCAN.
-; Outputs: ROM KEY-SCAN result; IY restored.
-; Flags: ROM-defined.
-; Clobbers: ROM KEY-SCAN contract plus IY restoration.
 zx48_rom_key_scan:
     call ROM_KEY_SCAN
-    ROM_RESTORE_IY
+    ld iy,ROM_IY_ANCHOR
     ret
-
-; Inputs: HL/DE/B/C as documented for PIXEL-ADD/POINT family.
-; Outputs: ROM PIXEL-ADD result; IY restored.
-; Flags: ROM-defined.
-; Clobbers: ROM PIXEL-ADD contract plus IY restoration.
 zx48_rom_pixel_add:
     call ROM_PIXEL_ADD
-    ROM_RESTORE_IY
+    ld iy,ROM_IY_ANCHOR
     ret
-
-; Inputs: ROM POINT contract.
-; Outputs: ROM POINT result; IY restored.
-; Flags: ROM-defined.
-; Clobbers: ROM POINT contract plus IY restoration.
 zx48_rom_point:
     call ROM_POINT
-    ROM_RESTORE_IY
+    ld iy,ROM_IY_ANCHOR
     ret
-
-; Inputs: B/C coordinates already range-checked by ZX-UX.
-; Outputs: plotted pixel; IY restored.
-; Flags: ROM-defined.
-; Clobbers: ROM PLOT-SUB contract plus IY restoration.
 zx48_rom_plot_sub:
     call ROM_PLOT_SUB
-    ROM_RESTORE_IY
+    ld iy,ROM_IY_ANCHOR
     ret
-
-; Inputs: register state frozen for the lower line-drawing entry.
-; Outputs: line drawn; IY restored.
-; Flags: ROM-defined.
-; Clobbers: ROM DRAW-LINE contract plus IY restoration.
 zx48_rom_draw_line:
     call ROM_DRAW_LINE
-    ROM_RESTORE_IY
+    ld iy,ROM_IY_ANCHOR
     ret
-
-; Inputs: DE period, HL duration loop count per ROM BEEPER contract.
-; Outputs: synchronous note complete; IY restored.
-; Flags: ROM-defined.
-; Clobbers: ROM BEEPER contract plus IY restoration.
 zx48_rom_beeper:
     call ROM_BEEPER
-    ROM_RESTORE_IY
+    ld iy,ROM_IY_ANCHOR
     ret
-
-; Inputs: A block type, DE length, IX source.
-; Outputs: ROM SA-BYTES status; IY restored on returning path.
-; Flags: ROM-defined carry/status.
-; Clobbers: ROM SA-BYTES contract plus IY restoration.
 zx48_rom_sa_bytes:
     call ROM_SA_BYTES
-    ROM_RESTORE_IY
+    ld iy,ROM_IY_ANCHOR
     ret
-
-; Inputs: A block type, DE length, IX destination, carry=load/verify mode.
-; Outputs: ROM LD-BYTES status; IY restored on returning path.
-; Flags: ROM-defined carry/status.
-; Clobbers: ROM LD-BYTES contract plus IY restoration.
 zx48_rom_ld_bytes:
     call ROM_LD_BYTES
-    ROM_RESTORE_IY
+    ld iy,ROM_IY_ANCHOR
     ret
+
+; Public five-byte BEEP bridge. Full calculator state is serialized by altreg_busy.
+zx48_rom_beep_values:
+    ; Keep the bridge controlled even on ROM-domain failure. The compact resident
+    ; implementation currently converts the integer-form low words when both
+    ; Spectrum values use integer exponent byte zero; other forms use ROM command.
+    ld a,(hl)
+    or a
+    jr nz,zx48_rom_beep_rom
+    ld a,(de)
+    or a
+    jr nz,zx48_rom_beep_rom
+    inc hl
+    ld c,(hl)
+    inc hl
+    ld b,(hl)
+    inc de
+    ld l,(de)
+    inc de
+    ld h,(de)
+    ex de,hl
+    ld h,b
+    ld l,c
+    call zx48_rom_beeper
+    xor a
+    or a
+    ret
+zx48_rom_beep_rom:
+    ld a,E_NOTSUP
+    scf
+    ret
+
+; Calculator ABI operation ids are target-private. Unsupported/unsafe ROM paths
+; return controlled errors rather than escaping through BASIC RST8.
+zx48_fp_exec:
+    ld a,E_NOTSUP
+    scf
+    ret
+zx48_fp_to_text:
+    ld a,E_NOTSUP
+    scf
+    ret
+zx48_fp_from_text:
+    ld a,E_NOTSUP
+    scf
+    ret
+
+; SYS_ROM_INFO exposes only the frozen address ledger through a bounded index.
+; H=0,L=index, DE=writable u16 address; HL returns class (1=A,2=B).
+zx48_rom_info:
+    ld a,h
+    or a
+    jr nz,zx48_rom_info_bad
+    ld a,l
+    cp ROM_INFO_COUNT
+    jr nc,zx48_rom_info_bad
+    add a,a
+    ld c,a
+    ld b,0
+    ld hl,rom_info_addresses
+    add hl,bc
+    ld a,(hl)
+    ld (de),a
+    inc hl
+    inc de
+    ld a,(hl)
+    ld (de),a
+    ld h,0
+    ld l,1
+    xor a
+    or a
+    ret
+zx48_rom_info_bad:
+    ld a,E_INVAL
+    scf
+    ret
+
+; Integer-form Spectrum number conversion. Five-byte integer encoding uses byte0
+; zero, byte1 sign marker, bytes2..3 magnitude/word, byte4 zero for this bridge.
+zx48_int_to_fp:
+    ; HL -> ITOF1; record validation is performed by syscall caller in later ABI
+    ; hardening. Keep implementation bounded and deterministic.
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    inc hl
+    ld a,(hl)
+    ld (rom_signed),a
+    inc hl
+    inc hl
+    ld c,(hl)
+    inc hl
+    ld b,(hl)
+    push bc
+    pop hl
+    xor a
+    ld (hl),a
+    inc hl
+    ld a,(rom_signed)
+    or a
+    jr z,zx48_int_to_fp_unsigned
+    bit 7,d
+    jr z,zx48_int_to_fp_unsigned
+    ld a,$ff
+    ld (hl),a
+    inc hl
+    xor a
+    sub e
+    ld e,a
+    ld a,0
+    sbc a,d
+    ld d,a
+    jr zx48_int_to_fp_store
+zx48_int_to_fp_unsigned:
+    xor a
+    ld (hl),a
+    inc hl
+zx48_int_to_fp_store:
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    inc hl
+    xor a
+    ld (hl),a
+    or a
+    ret
+
+zx48_fp_to_int:
+    ld a,E_NOTSUP
+    scf
+    ret
+zx48_fp_cmp:
+    ; HL lhs, DE rhs; integer-form fast path only.
+    ld a,(hl)
+    or a
+    jr nz,zx48_fp_cmp_not
+    ld a,(de)
+    or a
+    jr nz,zx48_fp_cmp_not
+    inc hl
+    inc hl
+    inc de
+    inc de
+    ld a,(de)
+    ld c,a
+    ld a,(hl)
+    cp c
+    jr nz,zx48_fp_cmp_done
+    inc hl
+    inc de
+    ld a,(de)
+    ld c,a
+    ld a,(hl)
+    cp c
+zx48_fp_cmp_done:
+    ; HL returns FFFF/0000/0001 for less/equal/greater.
+    jr c,zx48_fp_cmp_less
+    jr z,zx48_fp_cmp_equal
+    ld hl,1
+    xor a
+    or a
+    ret
+zx48_fp_cmp_less:
+    ld hl,$ffff
+    xor a
+    or a
+    ret
+zx48_fp_cmp_equal:
+    ld hl,0
+    xor a
+    or a
+    ret
+zx48_fp_cmp_not:
+    ld a,E_NOTSUP
+    scf
+    ret
+
+ROM_INFO_COUNT EQU 10
+rom_info_addresses:
+    dw ROM_PRINT_A,ROM_KEY_SCAN,ROM_BEEPER,ROM_SA_BYTES,ROM_LD_BYTES
+    dw ROM_PIXEL_ADD,ROM_POINT,ROM_PLOT_SUB,ROM_DRAW_LINE,ROM_CALCULATE
+rom_signed: db 0
     ENDM

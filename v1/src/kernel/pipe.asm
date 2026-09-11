@@ -10,8 +10,8 @@
 ; SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 ; patent, trademark, and governing-law provisions.
 ;
-; Four bounded 256-byte FAST_REQUIRED circular pipes. Endpoint lifetime is owned
-; by shared open descriptions, not by process handles.
+; Four 256-byte FAST_REQUIRED circular pipes. A pipe exists while at least one
+; endpoint description exists; dup/inheritance share endpoint descriptions.
 
 PIPE_BUFFER_PTR           EQU 0
 PIPE_READ_POS             EQU 2
@@ -31,109 +31,10 @@ zx48_pipe_init:
     ldir
     ret
 
-; Inputs: HL -> two writable u8 process handle slots.
-; Outputs: carry clear HL=0; carry set errno with complete rollback.
-zx48_pipe_create:
-    ld (pipe_result_ptr),hl
-    call zx48_pipe_find_slot
-    ret c
-    ld (pipe_slot_id),a
-    push ix
-    ld bc,PIPE_BUFFER_SIZE
-    ld a,ALLOC_FAST_REQUIRED
-    call zx48_alloc
-    pop ix
-    jr c,zx48_pipe_create_fail
-    ld (ix+PIPE_BUFFER_PTR),l
-    ld (ix+PIPE_BUFFER_PTR+1),h
-    xor a
-    ld (ix+PIPE_READ_POS),a
-    ld (ix+PIPE_WRITE_POS),a
-    ld (ix+PIPE_COUNT_BYTES),a
-    ld (ix+PIPE_COUNT_BYTES+1),a
-    ld (ix+PIPE_READERS),1
-    ld (ix+PIPE_WRITERS),1
-
-    ld a,OD_KIND_PIPE_READ
-    ld b,O_READ
-    ld c,(pipe_slot_id)
-    call zx48_od_create
-    jr c,zx48_pipe_rollback_buffer
-    ld (pipe_read_od),a
-    ld a,OD_KIND_PIPE_WRITE
-    ld b,O_WRITE
-    ld c,(pipe_slot_id)
-    call zx48_od_create
-    jr c,zx48_pipe_rollback_read_od
-    ld (pipe_write_od),a
-
-    ld a,(current_pid)
-    call zx48_process_descriptor_from_pid
-    ld a,(pipe_read_od)
-    ld c,HANDLE_FREE
-    call zx48_handle_install
-    jr c,zx48_pipe_rollback_both_od
-    ld a,l
-    ld (pipe_read_handle),a
-    ld a,(pipe_write_od)
-    ld c,HANDLE_FREE
-    call zx48_handle_install
-    jr c,zx48_pipe_rollback_read_handle
-    ld a,l
-    ld (pipe_write_handle),a
-
-    ld hl,(pipe_result_ptr)
-    ld a,(pipe_read_handle)
-    ld (hl),a
-    inc hl
-    ld a,(pipe_write_handle)
-    ld (hl),a
-    ld hl,0
-    xor a
-    or a
-    ret
-zx48_pipe_rollback_read_handle:
-    ld c,(pipe_read_handle)
-    call zx48_close
-zx48_pipe_rollback_both_od:
-    ld a,(pipe_write_od)
-    call zx48_pipe_clear_od
-zx48_pipe_rollback_read_od:
-    ld a,(pipe_read_od)
-    call zx48_pipe_clear_od
-zx48_pipe_rollback_buffer:
-    ld l,(ix+PIPE_BUFFER_PTR)
-    ld h,(ix+PIPE_BUFFER_PTR+1)
-    ld bc,PIPE_BUFFER_SIZE
-    call zx48_free
-    xor a
-    ld (ix+PIPE_BUFFER_PTR),a
-    ld (ix+PIPE_BUFFER_PTR+1),a
-zx48_pipe_create_fail:
-    scf
-    ret
-
-zx48_pipe_clear_od:
-    call zx48_od_lookup
-    ret c
-    push ix
-    pop hl
-    xor a
-    ld (hl),a
-    ld de,1
-    add hl,de
-    ex de,hl
-    push ix
-    pop hl
-    ld bc,OD_DESC_SIZE-1
-    ldir
-    ret
-
-; Outputs: carry clear A=slot, IX=record; carry set E_NOSPC.
 zx48_pipe_find_slot:
     ld ix,pipe_table
-    ld b,PIPE_COUNT
     ld c,0
+    ld b,PIPE_COUNT
 zx48_pipe_find_loop:
     ld a,(ix+PIPE_BUFFER_PTR)
     or (ix+PIPE_BUFFER_PTR+1)
@@ -150,88 +51,174 @@ zx48_pipe_find_ok:
     or a
     ret
 
-; Inputs: A=slot.
-; Outputs: IX=record or carry set E_INVAL.
 zx48_pipe_lookup:
     cp PIPE_COUNT
-    jr nc,zx48_pipe_lookup_fail
+    jr nc,zx48_pipe_bad
     ld c,a
     ld ix,pipe_table
-    ld de,PIPE_RECORD_SIZE
     or a
-    jr z,zx48_pipe_lookup_done
+    jr z,zx48_pipe_lookup_check
+    ld b,a
+    ld de,PIPE_RECORD_SIZE
 zx48_pipe_lookup_loop:
     add ix,de
-    dec c
-    jr nz,zx48_pipe_lookup_loop
-zx48_pipe_lookup_done:
+    djnz zx48_pipe_lookup_loop
+zx48_pipe_lookup_check:
     ld a,(ix+PIPE_BUFFER_PTR)
     or (ix+PIPE_BUFFER_PTR+1)
-    jr z,zx48_pipe_lookup_fail
+    jr z,zx48_pipe_bad
     xor a
     or a
     ret
-zx48_pipe_lookup_fail:
+zx48_pipe_bad:
     ld a,E_INVAL
     scf
     ret
 
-; Inputs: A=pipe slot, HL=destination, BC=request count.
-; Outputs: carry clear HL=bytes read; empty/no writers => HL=0. Empty/live
-; writers cooperatively blocks current process and retries after wake.
+; HL -> two writable handle bytes.
+zx48_pipe_create:
+    ld (pipe_result_ptr),hl
+    call zx48_pipe_find_slot
+    ret c
+    ld (pipe_slot),a
+    push ix
+    ld bc,PIPE_BUFFER_SIZE
+    ld a,ALLOC_FAST_REQUIRED
+    call zx48_alloc
+    pop ix
+    ret c
+    ld (ix+PIPE_BUFFER_PTR),l
+    ld (ix+PIPE_BUFFER_PTR+1),h
+    xor a
+    ld (ix+PIPE_READ_POS),a
+    ld (ix+PIPE_WRITE_POS),a
+    ld (ix+PIPE_COUNT_BYTES),a
+    ld (ix+PIPE_COUNT_BYTES+1),a
+    ld (ix+PIPE_READERS),1
+    ld (ix+PIPE_WRITERS),1
+    ld a,OD_KIND_PIPE_READ
+    ld b,O_READ
+    ld c,(ix+PIPE_READERS)       ; overwritten below with identity
+    ld a,(pipe_slot)
+    ld c,a
+    ld a,OD_KIND_PIPE_READ
+    call zx48_od_create
+    jp c,zx48_pipe_create_rollback_buffer
+    ld (pipe_read_od),a
+    ld a,(pipe_slot)
+    ld c,a
+    ld b,O_WRITE
+    ld a,OD_KIND_PIPE_WRITE
+    call zx48_od_create
+    jp c,zx48_pipe_create_rollback_read
+    ld (pipe_write_od),a
+    ld a,(current_pid)
+    call zx48_process_lookup
+    jp c,zx48_pipe_create_rollback_both
+    ld a,(pipe_read_od)
+    ld c,HANDLE_FREE
+    call zx48_handle_install
+    jp c,zx48_pipe_create_rollback_both
+    ld a,l
+    ld (pipe_read_handle),a
+    ld a,(pipe_write_od)
+    ld c,HANDLE_FREE
+    call zx48_handle_install
+    jp c,zx48_pipe_create_rollback_handle
+    ld a,l
+    ld (pipe_write_handle),a
+    ld hl,(pipe_result_ptr)
+    ld a,(pipe_read_handle)
+    ld (hl),a
+    inc hl
+    ld a,(pipe_write_handle)
+    ld (hl),a
+    ld hl,0
+    xor a
+    or a
+    ret
+zx48_pipe_create_rollback_handle:
+    ld c,(pipe_read_handle)
+    call zx48_close
+zx48_pipe_create_rollback_both:
+    ld a,(pipe_write_od)
+    call zx48_pipe_clear_od
+zx48_pipe_create_rollback_read:
+    ld a,(pipe_read_od)
+    call zx48_pipe_clear_od
+zx48_pipe_create_rollback_buffer:
+    ld a,(pipe_slot)
+    call zx48_pipe_lookup
+    ret c
+    ld l,(ix+PIPE_BUFFER_PTR)
+    ld h,(ix+PIPE_BUFFER_PTR+1)
+    ld bc,PIPE_BUFFER_SIZE
+    call zx48_free
+    xor a
+    ld (ix+PIPE_BUFFER_PTR),a
+    ld (ix+PIPE_BUFFER_PTR+1),a
+    scf
+    ret
+zx48_pipe_clear_od:
+    call zx48_od_lookup
+    ret c
+    xor a
+    ld (ix+OD_KIND),a
+    ret
+
+; A=slot, HL=dst, BC=count. Empty+writers blocks cooperatively.
 zx48_pipe_read:
-    ld (pipe_io_ptr),hl
-    ld (pipe_io_remaining),bc
-    ld (pipe_slot_id),a
+    ld (pipe_ptr),hl
+    ld (pipe_left),bc
+    ld (pipe_slot),a
 zx48_pipe_read_retry:
-    ld a,(pipe_slot_id)
+    ld a,(pipe_slot)
     call zx48_pipe_lookup
     ret c
     ld e,(ix+PIPE_COUNT_BYTES)
     ld d,(ix+PIPE_COUNT_BYTES+1)
     ld a,d
     or e
-    jr nz,zx48_pipe_read_have_data
+    jr nz,zx48_pipe_read_data
     ld a,(ix+PIPE_WRITERS)
     or a
-    jr z,zx48_pipe_read_eof
+    jr z,zx48_pipe_zero
     ld a,(current_pid)
-    call zx48_process_descriptor_from_pid
+    call zx48_process_lookup
     ld (ix+PROC_STATE),PROC_WAIT_PIPE_READ
     call zx48_schedule
     jr zx48_pipe_read_retry
-zx48_pipe_read_have_data:
-    ld bc,(pipe_io_remaining)
-    ld a,b
-    or c
-    jr z,zx48_pipe_read_eof
+zx48_pipe_read_data:
+    ld bc,(pipe_left)
     ld hl,0
 zx48_pipe_read_loop:
+    ld a,b
+    or c
+    jr z,zx48_pipe_read_done
     ld a,d
     or e
     jr z,zx48_pipe_read_done
-    ld a,b
-    or c
-    jr z,zx48_pipe_read_done
     push hl
+    push de
     ld l,(ix+PIPE_BUFFER_PTR)
     ld h,(ix+PIPE_BUFFER_PTR+1)
     ld a,(ix+PIPE_READ_POS)
     add a,l
     ld l,a
-    jr nc,zx48_pipe_read_addr_ok
+    jr nc,zx48_pipe_read_addr
     inc h
-zx48_pipe_read_addr_ok:
+zx48_pipe_read_addr:
     ld a,(hl)
-    ld hl,(pipe_io_ptr)
-    ld (hl),a
-    inc hl
-    ld (pipe_io_ptr),hl
-    pop hl
-    inc hl
+    ld de,(pipe_ptr)
+    ld (de),a
+    inc de
+    ld (pipe_ptr),de
     ld a,(ix+PIPE_READ_POS)
     inc a
     ld (ix+PIPE_READ_POS),a
+    pop de
+    pop hl
+    inc hl
     dec de
     dec bc
     jr zx48_pipe_read_loop
@@ -242,41 +229,38 @@ zx48_pipe_read_done:
     xor a
     or a
     ret
-zx48_pipe_read_eof:
+zx48_pipe_zero:
     ld hl,0
     xor a
     or a
     ret
 
-; Inputs: A=slot, HL=source, BC=count.
-; Outputs: carry clear HL=count when complete. No readers => E_PIPE. Full/live
-; readers cooperatively blocks and continues from the same request.
+; A=slot, HL=src, BC=count. Completes full request or blocks; no readers E_PIPE.
 zx48_pipe_write:
-    ld (pipe_io_ptr),hl
-    ld (pipe_io_remaining),bc
-    ld (pipe_io_total),bc
-    ld (pipe_slot_id),a
+    ld (pipe_ptr),hl
+    ld (pipe_left),bc
+    ld (pipe_total),bc
+    ld (pipe_slot),a
 zx48_pipe_write_retry:
-    ld a,(pipe_slot_id)
+    ld a,(pipe_slot)
     call zx48_pipe_lookup
     ret c
     ld a,(ix+PIPE_READERS)
     or a
-    jr z,zx48_pipe_write_broken
+    jr z,zx48_pipe_broken
     ld e,(ix+PIPE_COUNT_BYTES)
     ld d,(ix+PIPE_COUNT_BYTES+1)
-    ld bc,(pipe_io_remaining)
+    ld bc,(pipe_left)
 zx48_pipe_write_loop:
     ld a,b
     or c
     jr z,zx48_pipe_write_done
     ld a,d
-    or a
-    jr nz,zx48_pipe_write_full
+    cp 1
+    jr nz,zx48_pipe_write_space
     ld a,e
     or a
-    jr z,zx48_pipe_write_space
-    ; count low wraps at 256, represented as DE=0100 only at full.
+    jr z,zx48_pipe_write_block
 zx48_pipe_write_space:
     push bc
     push de
@@ -285,37 +269,29 @@ zx48_pipe_write_space:
     ld a,(ix+PIPE_WRITE_POS)
     add a,l
     ld l,a
-    jr nc,zx48_pipe_write_addr_ok
+    jr nc,zx48_pipe_write_addr
     inc h
-zx48_pipe_write_addr_ok:
-    ld de,(pipe_io_ptr)
+zx48_pipe_write_addr:
+    ld de,(pipe_ptr)
     ld a,(de)
     ld (hl),a
     inc de
-    ld (pipe_io_ptr),de
-    pop de
-    pop bc
+    ld (pipe_ptr),de
     ld a,(ix+PIPE_WRITE_POS)
     inc a
     ld (ix+PIPE_WRITE_POS),a
+    pop de
+    pop bc
     inc de
     dec bc
-    ld (pipe_io_remaining),bc
-    ld a,d
-    cp 1
-    jr nz,zx48_pipe_write_loop
-    ld a,e
-    or a
-    jr nz,zx48_pipe_write_loop
-zx48_pipe_write_full:
+    ld (pipe_left),bc
+    jr zx48_pipe_write_loop
+zx48_pipe_write_block:
     ld (ix+PIPE_COUNT_BYTES),e
     ld (ix+PIPE_COUNT_BYTES+1),d
     call zx48_pipe_wake_waiters
-    ld a,b
-    or c
-    jr z,zx48_pipe_write_done
     ld a,(current_pid)
-    call zx48_process_descriptor_from_pid
+    call zx48_process_lookup
     ld (ix+PROC_STATE),PROC_WAIT_PIPE_WRITE
     call zx48_schedule
     jr zx48_pipe_write_retry
@@ -323,21 +299,19 @@ zx48_pipe_write_done:
     ld (ix+PIPE_COUNT_BYTES),e
     ld (ix+PIPE_COUNT_BYTES+1),d
     call zx48_pipe_wake_waiters
-    ld hl,(pipe_io_total)
+    ld hl,(pipe_total)
     xor a
     or a
     ret
-zx48_pipe_write_broken:
+zx48_pipe_broken:
     ld a,E_PIPE
     scf
     ret
 
-; Wake all pipe readers/writers; bounded table makes the coarse wake policy
-; deterministic and deadlock-free. Each task revalidates endpoint state on resume.
 zx48_pipe_wake_waiters:
     push ix
     ld ix,process_table+PROC_DESC_SIZE
-    ld b,MAX_USER_PID
+    ld b,MAX_PROCESSES-1
 zx48_pipe_wake_loop:
     ld a,(ix+PROC_STATE)
     cp PROC_WAIT_PIPE_READ
@@ -353,24 +327,50 @@ zx48_pipe_wake_next:
     pop ix
     ret
 
-pipe_result_ptr:
-    dw 0
-pipe_io_ptr:
-    dw 0
-pipe_io_remaining:
-    dw 0
-pipe_io_total:
-    dw 0
-pipe_slot_id:
-    db 0
-pipe_read_od:
-    db 0
-pipe_write_od:
-    db 0
-pipe_read_handle:
-    db 0
-pipe_write_handle:
-    db 0
-pipe_table:
-    defs PIPE_COUNT*PIPE_RECORD_SIZE,0
+; IX=open description about to lose final reference.
+zx48_pipe_reader_final_close:
+    ld a,(ix+OD_IDENTITY)
+    call zx48_pipe_lookup
+    ret c
+    ld a,(ix+PIPE_READERS)
+    or a
+    jr z,zx48_pipe_close_check
+    dec a
+    ld (ix+PIPE_READERS),a
+    jr zx48_pipe_close_check
+zx48_pipe_writer_final_close:
+    ld a,(ix+OD_IDENTITY)
+    call zx48_pipe_lookup
+    ret c
+    ld a,(ix+PIPE_WRITERS)
+    or a
+    jr z,zx48_pipe_close_check
+    dec a
+    ld (ix+PIPE_WRITERS),a
+zx48_pipe_close_check:
+    call zx48_pipe_wake_waiters
+    ld a,(ix+PIPE_READERS)
+    or (ix+PIPE_WRITERS)
+    ret nz
+    ld l,(ix+PIPE_BUFFER_PTR)
+    ld h,(ix+PIPE_BUFFER_PTR+1)
+    ld bc,PIPE_BUFFER_SIZE
+    push ix
+    call zx48_free
+    pop ix
+    xor a
+    ld (ix+PIPE_BUFFER_PTR),a
+    ld (ix+PIPE_BUFFER_PTR+1),a
+    ret
+
+pipe_result_ptr: dw 0
+pipe_ptr: dw 0
+pipe_left: dw 0
+pipe_total: dw 0
+pipe_slot: db 0
+pipe_read_od: db 0
+pipe_write_od: db 0
+pipe_read_handle: db 0
+pipe_write_handle: db 0
+pipe_table: defs PIPE_COUNT*PIPE_RECORD_SIZE,0
     ENDM
