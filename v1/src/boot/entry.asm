@@ -10,7 +10,7 @@
 ; SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 ; patent, trademark, and governing-law provisions.
 ;
-; Permanent Sinclair BASIC -> ZX-UX handoff.
+; Permanent Sinclair BASIC to ZX-UX handoff.
 
     MACRO EMIT_BOOT_GATEWAY
 boot_gateway:
@@ -23,24 +23,23 @@ zx48_boot_main:
     ENDM
 
     MACRO EMIT_BOOT_IMPL
+; in: entered only from E003 after the native loader has placed the kernel.
+; out: never returns to BASIC.
+; flags: interrupts become enabled only after IM2 is completely installed.
+; clobber: all primary registers; IY is established at the ROM anchor.
 zx48_boot_main_impl:
     di
     ld sp,BOOT_STACK_TOP
     ld iy,ROM_IY_ANCHOR
-    call zx48_memory_init
-    call zx48_process_init
-    call zx48_handles_init
-    call zx48_pipe_init
-    call zx48_objects_init
-    call zx48_ula_init
-    call zx48_console_init
-    call zx48_keyboard_init
-    call zx48_udg_init
-    jp c,zx48_boot_panic
+    xor a
+    ld (kernel_current_pid),a
+    ld (altreg_busy),a
+    ld hl,0
+    ld (kernel_ticks),hl
+    ld (kernel_ticks+2),hl
     call zx48_im2_init
     ei
-    jp zx48_idle_loop
-zx48_boot_panic:
-    ld a,PANIC_ALLOCATOR
-    jp zx48_panic
+zx48_boot_idle:
+    halt
+    jr zx48_boot_idle
     ENDM
