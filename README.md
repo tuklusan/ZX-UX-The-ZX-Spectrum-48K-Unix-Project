@@ -12,6 +12,11 @@
 
 # ZX-UX: Unix-Like Operating System, C Compiler and Development Environment for the 48K Sinclair ZX Spectrum
 
+<p align="center">
+  <a href="https://github.com/tuklusan/zx-ux-c48-sdk-sinclair-zx-spectrum-48k-unix-c-compiler-software-development-kit"><img src="https://raw.githubusercontent.com/tuklusan/zx-ux-c48-sdk-sinclair-zx-spectrum-48k-unix-c-compiler-software-development-kit/main/doc/images/demos/forest.png" alt="ZX-UX C48 Fractal Forest demo for the 48K Sinclair ZX Spectrum" width="768"></a>
+</p>
+<p align="center"><em>Created using C48 on ZX-UX platform.</em></p>
+
 **ZX-UX** is a Unix-like operating system and native software-development environment being built specifically for the original, unexpanded **48K Sinclair ZX Spectrum**. The target is the real **Z80A**, 48 KiB RAM, 16 KiB ROM, cassette storage, 256x192 Spectrum bitmap/attribute display, matrix keyboard, and the machine's actual timing and memory limits.
 
 The project combines a compact cooperative kernel with a Unix-style shell and namespace, dense 64-column text, `vi`, Z80 assembler/linker tools, graphics and UDG services, cassette persistence, and the **C48 C compiler** planned for the native ZX-UX toolchain. It is a purpose-built retrocomputing system, not a port of Unix, POSIX, CP/M, or another existing operating system.
