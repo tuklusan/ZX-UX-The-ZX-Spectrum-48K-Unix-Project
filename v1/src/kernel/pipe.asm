@@ -23,6 +23,23 @@ PIPE_WRITERS_O             EQU 9
 PIPE_RECORD_SIZE           EQU 10
 PIPE_FALLBACK_SIZE         EQU 128
 
+; The remainder of the fixed 0xFD00 fast-data block holds pipe runtime state.
+PIPE_FAST_BASE             EQU HANDLE_FAST_END
+pipe_result_ptr             EQU PIPE_FAST_BASE+0
+pipe_io_ptr                 EQU PIPE_FAST_BASE+2
+pipe_io_request             EQU PIPE_FAST_BASE+4
+pipe_io_done                EQU PIPE_FAST_BASE+6
+pipe_active_slot            EQU PIPE_FAST_BASE+8
+pipe_read_od                EQU PIPE_FAST_BASE+9
+pipe_write_od               EQU PIPE_FAST_BASE+10
+pipe_read_handle            EQU PIPE_FAST_BASE+11
+pipe_write_handle           EQU PIPE_FAST_BASE+12
+pipe_wait_state             EQU PIPE_FAST_BASE+13
+pipe_endpoint_kind          EQU PIPE_FAST_BASE+14
+pipe_table                  EQU PIPE_FAST_BASE+15
+PIPE_FAST_END               EQU pipe_table+PIPE_COUNT*PIPE_RECORD_SIZE
+    ASSERT PIPE_FAST_END <= FAST_RESERVE_END+1
+
     MACRO EMIT_PIPE_ROUTINES
 zx48_pipe_init:
     xor a
@@ -571,17 +588,4 @@ zx48_pipe_noent:
     ld a,E_NOENT
     scf
     ret
-
-pipe_result_ptr: dw 0
-pipe_io_ptr: dw 0
-pipe_io_request: dw 0
-pipe_io_done: dw 0
-pipe_active_slot: db 0
-pipe_read_od: db 0
-pipe_write_od: db 0
-pipe_read_handle: db 0
-pipe_write_handle: db 0
-pipe_wait_state: db 0
-pipe_endpoint_kind: db 0
-pipe_table: defs PIPE_COUNT*PIPE_RECORD_SIZE,0
     ENDM
