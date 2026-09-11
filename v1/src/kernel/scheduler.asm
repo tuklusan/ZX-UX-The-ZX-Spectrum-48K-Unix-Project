@@ -13,6 +13,7 @@
 ; Cooperative round-robin scheduler. AF/BC/DE/HL/IX and return PC are stack state.
 
     MACRO EMIT_SCHEDULER_ROUTINES
+; Save the current stack-resident frame and select the next READY process.
 zx48_schedule:
     push af
     push bc
@@ -22,7 +23,6 @@ zx48_schedule:
     ld a,(current_pid)
     ld (scheduler_current),a
     call zx48_process_ptr
-    ; Z80 has no LD (IX+d),SP; snapshot through HL.
     ld hl,0
     add hl,sp
     ld (ix+PROC_SAVED_SP),l
@@ -77,7 +77,6 @@ zx48_schedule_restore:
     ld iy,ROM_IY_ANCHOR
     ret
 
-; IX=SLEEPING. Signed modular 32-bit now-deadline >=0 wakes.
 zx48_scheduler_maybe_wake:
     ld hl,(kernel_ticks)
     ld e,(ix+PROC_WAKE_TICK)
@@ -93,7 +92,7 @@ zx48_scheduler_maybe_wake:
     ld (ix+PROC_STATE),PROC_READY
     ret
 
-; HL -> u32 relative ticks.
+; HL -> u32 relative frame count; values with bit31 set are invalid.
 zx48_sleep_current:
     ld e,(hl)
     inc hl
@@ -113,6 +112,7 @@ zx48_sleep_current:
     ld (scheduler_sleep_hi),bc
     ld a,(current_pid)
     call zx48_process_lookup
+    ret c
     ld hl,(kernel_ticks)
     ld de,(scheduler_sleep_lo)
     add hl,de
@@ -127,7 +127,6 @@ zx48_sleep_current:
     jp zx48_schedule
 zx48_sleep_zero:
     xor a
-    or a
     ret
 zx48_sleep_bad:
     ld a,E_INVAL
@@ -146,17 +145,11 @@ zx48_wake_scan_loop:
     djnz zx48_wake_scan_loop
     ret
 
+; PID0 idle is exactly EI;HALT followed by event/wake inspection.
 zx48_idle_loop:
     ei
     halt
     call zx48_scheduler_wake_scan
-    ld a,(tty_cursor_due)
-    or a
-    jr z,zx48_idle_no_cursor
-    call zx48_cursor_blink
-    xor a
-    ld (tty_cursor_due),a
-zx48_idle_no_cursor:
     jp zx48_schedule
 
 scheduler_current: db 0
