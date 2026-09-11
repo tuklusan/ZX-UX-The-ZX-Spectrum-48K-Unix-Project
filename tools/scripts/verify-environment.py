@@ -25,21 +25,8 @@ ROOT_MARKER = b"ZX-UX project root"
 CANONICAL_LOCK = Path("tools/manifest/toolchain.lock.json")
 RECONSTRUCTED_LOCK_SHA256 = "8a2e38fbd7b99e166f279d4e2163b0200c52e1ee95672e834e861a1a47b337bc"
 ARCHITECTURE = Path("docs/01-ZX-UX-ARCHITECTURE-REV11.md")
-ARCHITECTURE_SHA256 = "aa087094c013c7f7602845d1ee353bd37ab699eb9d8661e534a00a48445e29fd"
+ARCHITECTURE_SHA256 = "f76281fab2e5ae73b7321fc2a69e6776f7ccd8bfe3955a6ed6fb3bec44f762c7"
 FINAL_MARKER = "ZX-UX DEVELOPMENT ENVIRONMENT CERTIFICATION PASS"
-ARCHITECTURE_LICENSE_PREFIX = (
-    b"<!-- Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs. -->\n"
-    b"<!-- Proprietary rights reserved except as expressly licensed herein. -->\n"
-    b"<!-- -->\n"
-    b"<!-- ZX-UX Sinclair ZX Spectrum Unix -->\n"
-    b"<!-- This file is governed by the SANYALnet Labs Non-Commercial License in the -->\n"
-    b"<!-- root LICENSE file. Non-Commercial use is permitted; Commercial Use and use -->\n"
-    b"<!-- for AI/ML model training are prohibited unless separately authorized. -->\n"
-    b"<!-- -->\n"
-    b"<!-- Attribution is required: \"Based on original work by Supratim Sanyal of -->\n"
-    b"<!-- SANYALnet Labs.\" See LICENSE for full terms, warranty disclaimer, termination, -->\n"
-    b"<!-- patent, trademark, and governing-law provisions. -->\n"
-)
 
 EXPECTED = {
     "python": ("3.13.15", "1e66a7945a48390ee4c2a4268a0e4185884059a13c4aab6d148aa208deea4a76", 23160540),
@@ -61,10 +48,6 @@ def digest(path: Path) -> str:
         for block in iter(lambda: handle.read(1024 * 1024), b""):
             h.update(block)
     return h.hexdigest()
-
-
-def digest_bytes(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
 
 
 def find_root(start: Path) -> Path:
@@ -111,22 +94,15 @@ def load_manifest(root: Path, requested: str | None) -> tuple[Path, dict]:
     return path, data
 
 
-def verify_architecture(path: Path) -> tuple[str, str]:
+def verify_architecture(path: Path) -> str:
     require(path.is_file() and not path.is_symlink(), "canonical architecture file missing")
-    data = path.read_bytes()
-    container_sha256 = digest_bytes(data)
+    actual = digest(path)
     require(
-        data.startswith(ARCHITECTURE_LICENSE_PREFIX),
-        "canonical architecture repository license wrapper mismatch",
+        actual == ARCHITECTURE_SHA256,
+        "canonical architecture SHA-256 mismatch: "
+        f"expected={ARCHITECTURE_SHA256} actual={actual}",
     )
-    payload = data[len(ARCHITECTURE_LICENSE_PREFIX):]
-    payload_sha256 = digest_bytes(payload)
-    require(
-        payload_sha256 == ARCHITECTURE_SHA256,
-        "canonical architecture payload SHA-256 mismatch: "
-        f"expected={ARCHITECTURE_SHA256} actual={payload_sha256} container={container_sha256}",
-    )
-    return payload_sha256, container_sha256
+    return actual
 
 
 def check_program(argv: list[str], expected_text: str, label: str) -> None:
@@ -171,13 +147,12 @@ def main() -> int:
         root = find_root(Path(__file__).resolve())
         manifest_path, _ = load_manifest(root, args.manifest)
         architecture = root / ARCHITECTURE
-        architecture_sha256, architecture_container_sha256 = verify_architecture(architecture)
+        architecture_sha256 = verify_architecture(architecture)
         if not args.metadata_only:
             validate_runtime(root)
         print(f"root={root}")
         print(f"manifest={manifest_path}")
         print(f"architecture_sha256={architecture_sha256}")
-        print(f"architecture_container_sha256={architecture_container_sha256}")
         print(FINAL_MARKER)
         return 0
     except (CertificationError, OSError, ValueError, json.JSONDecodeError) as exc:
