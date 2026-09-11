@@ -45,12 +45,12 @@ kernel_emergency_reserve:
     DEFS EMERGENCY_END-EMERGENCY_START+1,0
 kernel_image_end:
 
-    ASSERT kernel_ordinary_pool_end-kernel_ordinary_pool_start = $1B00
-    ASSERT kernel_stack_storage = $FB00
-    ASSERT kernel_fast_reserve = $FD00
-    ASSERT kernel_im2_trampoline = $FDFD
-    ASSERT kernel_im2_table = $FE00
-    ASSERT kernel_emergency_reserve = $FF01
+    ASSERT kernel_ordinary_pool_end-kernel_ordinary_pool_start = KERNEL_CODE_END-KERNEL_CODE_START+1
+    ASSERT kernel_stack_storage = KERNEL_STACK_START
+    ASSERT kernel_fast_reserve = FAST_RESERVE_START
+    ASSERT kernel_im2_trampoline = IM2_TRAMPOLINE_START
+    ASSERT kernel_im2_table = IM2_TABLE_START
+    ASSERT kernel_emergency_reserve = EMERGENCY_START
     ASSERT kernel_image_end-kernel_image_start = KERNEL_IMAGE_SIZE
 
     SAVEBIN "../../build/kernel.bin",kernel_image_start,KERNEL_IMAGE_SIZE
