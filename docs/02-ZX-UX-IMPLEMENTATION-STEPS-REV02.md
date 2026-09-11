@@ -50,7 +50,7 @@ Historical certified/pinned environment (reference evidence only):
 - FUSE-utils 1.4.7;
 - Python 3.13.15 embedded distribution;
 - PortableGit 2.55.0.windows.5;
-- Codex CLI 0.153.4 as developer convenience only, never a ZX-UX build dependency;
+- developer helper CLI 0.153.4 as developer convenience only, never a ZX-UX build dependency;
 - canonical orchestrator: `<project-local-python>`;
 - canonical 48K ROM: `tools/runtime/fuse/roms/48.rom`, 16384 bytes,
   SHA-256 `d55daa439b673b0e3f5897f99ac37ecb45f974d1862b4dadb85dec34af99cb42`.
@@ -6052,7 +6052,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 ## P12.34 - Final deterministic distribution manifest
 
 1. **Purpose / REV11 requirement:** §5.6, §19.8-19.9, §58
-2. **Exact implementation work:** Hash all release artifacts, test evidence, source/demo pairs and companion image; exclude credentials/Codex auth and disposable build. Perform a release-wide user-facing naming audit over every shipped shell command, builtin, tool, executable, demo name and demo/source filename. Every ZX-UX-shipped user-facing name must be lower-case exactly; preserve case-sensitive user-created names separately. The audit must explicitly distinguish allowed non-filename conventions such as environment-variable names, ABI/constants, binary magics, Z80/ROM symbols, Sinclair BASIC bootstrap keywords and external vendor filenames so it does not invent a broader architecture rule.
+2. **Exact implementation work:** Hash all release artifacts, test evidence, source/demo pairs and companion image; exclude credentials/developer helper auth and disposable build. Perform a release-wide user-facing naming audit over every shipped shell command, builtin, tool, executable, demo name and demo/source filename. Every ZX-UX-shipped user-facing name must be lower-case exactly; preserve case-sensitive user-created names separately. The audit must explicitly distinguish allowed non-filename conventions such as environment-variable names, ABI/constants, binary magics, Z80/ROM symbols, Sinclair BASIC bootstrap keywords and external vendor filenames so it does not invent a broader architecture rule.
 3. **Files/artifacts created or modified:** dist/certification/manifest.json
 4. **Build command:** `<project-local-python> v1/tools-host/test-driver/run.py build --step P12.34`.
 5. **Host-side static checks:** root-marker/path policy, architecture constants used by this step, file/format sizes, duplicate/forbidden symbols or literals, and deterministic artifact hashes as applicable.
@@ -6066,7 +6066,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 ## P12.35 - Final clean-worktree/check-in gate
 
 1. **Purpose / REV11 requirement:** handover Git rule
-2. **Exact implementation work:** Use the host's pinned Git implementation; ensure all source/docs/evidence intended for release are committed and the worktree is clean. Codex is not a build dependency.
+2. **Exact implementation work:** Use the host's pinned Git implementation; ensure all source/docs/evidence intended for release are committed and the worktree is clean. developer helper is not a build dependency.
 3. **Files/artifacts created or modified:** repository state
 4. **Build command:** `<project-local-python> v1/tools-host/test-driver/run.py build --step P12.35`.
 5. **Host-side static checks:** root-marker/path policy, architecture constants used by this step, file/format sizes, duplicate/forbidden symbols or literals, and deterministic artifact hashes as applicable.
