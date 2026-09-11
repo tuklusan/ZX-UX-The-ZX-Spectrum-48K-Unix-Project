@@ -10,7 +10,7 @@
 ; SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 ; patent, trademark, and governing-law provisions.
 ;
-; Resident-kernel image layout through Phase P0.05.
+; Resident ZX-UX kernel composition through Phase 1.
 
     DEVICE ZXSPECTRUM48
     INCLUDE "../../include/zx48ux.inc"
@@ -19,6 +19,17 @@
     INCLUDE "interrupt.asm"
     INCLUDE "im2.asm"
     INCLUDE "rom_services.asm"
+    INCLUDE "errors.asm"
+    INCLUDE "memory.asm"
+    INCLUDE "process.asm"
+    INCLUDE "scheduler.asm"
+    INCLUDE "z80_primitives.asm"
+    INCLUDE "ula_io.asm"
+    INCLUDE "tty32.asm"
+    INCLUDE "tty64.asm"
+    INCLUDE "cursor.asm"
+    INCLUDE "console.asm"
+    INCLUDE "keyboard.asm"
 
     ORG KERNEL_START
 kernel_image_start:
@@ -34,6 +45,17 @@ kernel_ordinary_pool_start:
     EMIT_INTERRUPT_ROUTINE
     EMIT_IM2_ROUTINES
     EMIT_ROM_SERVICE_ROUTINES
+    EMIT_ERROR_ROUTINES
+    EMIT_MEMORY_ROUTINES
+    EMIT_PROCESS_ROUTINES
+    EMIT_SCHEDULER_ROUTINES
+    EMIT_Z80_PRIMITIVES
+    EMIT_ULA_ROUTINES
+    EMIT_TTY32_ROUTINES
+    EMIT_TTY64_ROUTINES
+    EMIT_CURSOR_ROUTINES
+    EMIT_CONSOLE_ROUTINES
+    EMIT_KEYBOARD_ROUTINES
 kernel_ordinary_used_end:
     ASSERT $ <= KERNEL_CODE_END+1
     DEFS KERNEL_CODE_END+1-$,0
@@ -63,7 +85,6 @@ kernel_image_end:
     ASSERT kernel_ordinary_pool_end-kernel_ordinary_pool_start = KERNEL_CODE_END-KERNEL_CODE_START+1
     ASSERT kernel_stack_storage = KERNEL_STACK_START
     ASSERT kernel_fast_reserve = FAST_RESERVE_START
-    ASSERT kernel_im2_trampoline = IM2_TRAMPOLINE_START
     ASSERT kernel_im2_table = IM2_TABLE_START
     ASSERT kernel_emergency_reserve = EMERGENCY_START
     ASSERT kernel_image_end-kernel_image_start = KERNEL_IMAGE_SIZE

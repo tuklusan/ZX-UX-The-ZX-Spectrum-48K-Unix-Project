@@ -10,10 +10,9 @@
 ; SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 ; patent, trademark, and governing-law provisions.
 ;
-; Cooperative round-robin scheduler. AF/BC/DE/HL/IX and return PC are stack state.
+; Cooperative round-robin scheduler. saved_sp is the sole descriptor resume token.
 
     MACRO EMIT_SCHEDULER_ROUTINES
-; Save the current stack-resident frame and select the next READY process.
 zx48_schedule:
     push af
     push bc
@@ -29,9 +28,9 @@ zx48_schedule:
     ld (ix+PROC_SAVED_SP+1),h
     ld a,(ix+PROC_STATE)
     cp PROC_RUNNING
-    jr nz,zx48_schedule_scan_start
+    jr nz,zx48_schedule_begin
     ld (ix+PROC_STATE),PROC_READY
-zx48_schedule_scan_start:
+zx48_schedule_begin:
     ld a,(scheduler_current)
     inc a
     and 7
@@ -53,7 +52,7 @@ zx48_schedule_scan:
     and 7
     ld (scheduler_candidate),a
     djnz zx48_schedule_scan
-    xor a
+    ld a,(scheduler_current)
     ld (scheduler_candidate),a
     call zx48_process_ptr
     jr zx48_schedule_restore
@@ -77,6 +76,7 @@ zx48_schedule_restore:
     ld iy,ROM_IY_ANCHOR
     ret
 
+; IX sleeping descriptor; modular signed now-deadline comparison.
 zx48_scheduler_maybe_wake:
     ld hl,(kernel_ticks)
     ld e,(ix+PROC_WAKE_TICK)
@@ -92,7 +92,7 @@ zx48_scheduler_maybe_wake:
     ld (ix+PROC_STATE),PROC_READY
     ret
 
-; HL -> u32 relative frame count; values with bit31 set are invalid.
+; HL -> unsigned relative u32 ticks; top bit must be clear. Zero is yield/no sleep.
 zx48_sleep_current:
     ld e,(hl)
     inc hl
@@ -124,7 +124,7 @@ zx48_sleep_current:
     ld (ix+PROC_WAKE_TICK+2),l
     ld (ix+PROC_WAKE_TICK+3),h
     ld (ix+PROC_STATE),PROC_SLEEPING
-    jp zx48_schedule
+    call zx48_schedule
 zx48_sleep_zero:
     xor a
     ret
@@ -145,12 +145,12 @@ zx48_wake_scan_loop:
     djnz zx48_wake_scan_loop
     ret
 
-; PID0 idle is exactly EI;HALT followed by event/wake inspection.
 zx48_idle_loop:
     ei
     halt
     call zx48_scheduler_wake_scan
-    jp zx48_schedule
+    call zx48_schedule
+    jr zx48_idle_loop
 
 scheduler_current: db 0
 scheduler_candidate: db 0

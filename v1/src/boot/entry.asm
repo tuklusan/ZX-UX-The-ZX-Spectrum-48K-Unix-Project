@@ -10,7 +10,7 @@
 ; SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 ; patent, trademark, and governing-law provisions.
 ;
-; Permanent Sinclair BASIC -> ZX-UX handoff.
+; Permanent Sinclair BASIC -> ZX-UX handoff and resident subsystem initialization.
 
     MACRO EMIT_BOOT_GATEWAY
 boot_gateway:
@@ -18,10 +18,6 @@ boot_gateway:
     ENDM
 
     MACRO EMIT_BOOT_BODY
-; Inputs: machine state handed off by Sinclair BASIC USR.
-; Outputs: never returns through the BASIC USR frame.
-; Flags: interrupts disabled until IM2 installation is complete.
-; Clobbers: AF/BC/DE/HL/IY/SP plus OS-private alternate bank during init.
 zx48_boot_main:
     jp zx48_boot_main_impl
     ENDM
@@ -31,9 +27,11 @@ zx48_boot_main_impl:
     di
     ld sp,BOOT_STACK_TOP
     ld iy,ROM_IY_ANCHOR
+    call zx48_memory_init
+    call zx48_process_init
+    call zx48_ula_init
+    call zx48_console_init
+    call zx48_keyboard_init
     call zx48_im2_init
-    ei
-zx48_boot_idle:
-    halt
-    jr zx48_boot_idle
+    jp zx48_idle_loop
     ENDM
