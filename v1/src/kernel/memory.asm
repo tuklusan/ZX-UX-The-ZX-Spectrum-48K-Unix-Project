@@ -116,7 +116,8 @@ zx48_alloc_next:
     ld de,4
     add ix,de
     pop bc
-    djnz zx48_alloc_loop
+    dec b
+    jp nz,zx48_alloc_loop
     ld a,(memory_policy)
     and $7f
     cp ALLOC_COLD_PREFERRED
