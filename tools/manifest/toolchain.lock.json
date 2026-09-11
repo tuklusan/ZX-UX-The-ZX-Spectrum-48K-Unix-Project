@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "project": "ZX-UX",
+  "root_marker": "ZX-UX project root",
+  "aggregate_freeze": {
+    "handover_manifest_sha256": "2847e76becf27fe1c7decabd09deb6beb017bf90d4e6906e31889f3b10cf9bd3",
+    "handover_verifier_sha256": "72b93d8488cc6d3096cc90dea7ae276cf089c910971498936a0896c6b9855b86",
+    "reconstructed_under_owner_override": true,
+    "override_date": "2026-09-11",
+    "reason": "Frozen handover bytes were absent; acquire and verify the specified upstream artifacts instead of inventing historical evidence."
+  },
+  "artifacts": [
+    {
+      "id": "python",
+      "version": "3.13.15",
+      "kind": "source",
+      "url": "https://www.python.org/ftp/python/3.13.15/Python-3.13.15.tar.xz",
+      "sha256": "1e66a7945a48390ee4c2a4268a0e4185884059a13c4aab6d148aa208deea4a76",
+      "size": 23160540,
+      "runtime_path": "tools/runtime/python"
+    },
+    {
+      "id": "sjasmplus",
+      "version": "1.24.0",
+      "kind": "source",
+      "url": "https://github.com/z00m128/sjasmplus/releases/download/v1.24.0/sjasmplus-1.24.0-src.tar.xz",
+      "sha256": "0b5013f07e8d8505f9e296529655668b6fdf0268625c19e883b0fff484e209f1",
+      "size": 1290980,
+      "runtime_path": "tools/runtime/sjasmplus"
+    },
+    {
+      "id": "libspectrum",
+      "version": "1.6.4",
+      "kind": "source",
+      "url": "https://downloads.sourceforge.net/project/fuse-emulator/libspectrum/1.6.4/libspectrum-1.6.4.tar.gz",
+      "sha256": "4cce5764227f040238877d9e0ce3aede2bac1b1adfa8ed535d68bb405df395c3",
+      "size": 703518,
+      "runtime_path": "tools/runtime/libspectrum"
+    },
+    {
+      "id": "fuse",
+      "version": "1.9.2",
+      "kind": "source",
+      "url": "https://downloads.sourceforge.net/project/fuse-emulator/fuse/1.9.2/fuse-1.9.2.tar.gz",
+      "sha256": "ad04be2c67172c5387fd2cd84350ed8215958fa5b8a52a4990862867f089f489",
+      "size": 1850564,
+      "runtime_path": "tools/runtime/fuse"
+    },
+    {
+      "id": "fuse-utils",
+      "version": "1.4.7",
+      "kind": "source",
+      "url": "https://downloads.sourceforge.net/project/fuse-emulator/fuse-utils/1.4.7/fuse-utils-1.4.7.tar.gz",
+      "sha256": "1a2e7be6447476d45c606c44536805cdb0dfb29d7f41632602d9a6883bf1e4b6",
+      "size": 561628,
+      "runtime_path": "tools/runtime/fuse-utils"
+    },
+    {
+      "id": "zx48-rom",
+      "version": "1982-original",
+      "kind": "binary",
+      "url": "https://raw.githubusercontent.com/ukw100/STECCY/09cde482c41087510ef841c2972b280e1b7ba19c/rom/48.rom",
+      "sha256": "d55daa439b673b0e3f5897f99ac37ecb45f974d1862b4dadb85dec34af99cb42",
+      "size": 16384,
+      "runtime_path": "tools/runtime/fuse/roms/48.rom"
+    }
+  ]
+}
