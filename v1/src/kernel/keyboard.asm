@@ -27,45 +27,26 @@ zx48_keyboard_init:
     ret
 
 ; Decode one supported foreground key without using the BASIC line editor.
-; KEY-SCAN supplies exact shift/key numbers; K-DECODE is used in L mode.
+; KEY-SCAN/K-TEST supply exact shift/main codes; K-DECODE is used in L mode.
 zx48_keyboard_decode:
     call zx48_rom_key_scan
     jr nz,zx48_keyboard_none
-    ld a,e
-    cp $ff
-    jr z,zx48_keyboard_none
-    ld b,d
-    ld d,0
-    cp $27
+    call zx48_rom_k_test
     jr nc,zx48_keyboard_none
-    cp $18
-    jr nz,zx48_keyboard_main
-    bit 7,b
-    jr nz,zx48_keyboard_none
-zx48_keyboard_main:
-    ld hl,ROM_KEY_TABLE
-    add hl,de
-    ld a,(hl)
-    ld e,a
     ld c,0
     dec d
+    ld e,a
     call zx48_rom_key_decode
     cp $80
     jr nc,zx48_keyboard_none
     cp $20
     jr nc,zx48_keyboard_decoded
+    cp $08
+    jr c,zx48_keyboard_none
+    cp $0e
+    jr nc,zx48_keyboard_none
     cp $0c
     jr z,zx48_keyboard_delete
-    cp $08
-    jr z,zx48_keyboard_decoded
-    cp $09
-    jr z,zx48_keyboard_decoded
-    cp $0a
-    jr z,zx48_keyboard_decoded
-    cp $0b
-    jr z,zx48_keyboard_decoded
-    cp $0d
-    jr nz,zx48_keyboard_none
 zx48_keyboard_decoded:
     or a
     ret
