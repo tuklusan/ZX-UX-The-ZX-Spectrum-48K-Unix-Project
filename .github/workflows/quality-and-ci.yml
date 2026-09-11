@@ -116,6 +116,58 @@ jobs:
             exit 1
           fi
 
+  e0_foundation:
+    name: e0-foundation
+    needs:
+      - e0_metadata
+    runs-on: ubuntu-slim
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Select pinned Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13.15'
+          check-latest: false
+
+      - name: Create ephemeral project-local Python wrapper
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import sys
+
+          wrapper = Path("tools/runtime/python/bin/python")
+          wrapper.parent.mkdir(parents=True, exist_ok=True)
+          wrapper.write_text(
+              "#!/usr/bin/env bash\n"
+              f'exec "{Path(sys.executable).resolve()}" "$@"\n',
+              encoding="utf-8",
+              newline="\n",
+          )
+          wrapper.chmod(0o755)
+          PY
+
+      - name: Execute E0.03 through E0.06
+        run: |
+          set -euo pipefail
+          py="tools/runtime/python/bin/python"
+          driver="v1/tools-host/test-driver/run.py"
+          for step in E0.03 E0.04 E0.05 E0.06; do
+            "$py" "$driver" build --step "$step"
+            "$py" "$driver" test --step "$step"
+          done
+
+      - name: Upload E0 foundation evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: zxux-e0-foundation-${{ github.run_id }}-${{ github.run_attempt }}
+          path: v1/dist/certification/*.json
+          retention-days: 90
+          if-no-files-found: error
+
   license_headers:
     name: license-headers
     needs:
@@ -135,6 +187,7 @@ jobs:
     needs:
       - project_policy
       - e0_metadata
+      - e0_foundation
       - license_headers
     runs-on: ubuntu-slim
     timeout-minutes: 15
@@ -152,6 +205,7 @@ jobs:
       - legacy_policy_repair
       - project_policy
       - e0_metadata
+      - e0_foundation
       - license_headers
       - project_ci
     if: always()
@@ -207,6 +261,7 @@ jobs:
           LEGACY_POLICY_REPAIR_CONCLUSION: ${{ needs.legacy_policy_repair.result }}
           PROJECT_POLICY_CONCLUSION: ${{ needs.project_policy.result }}
           E0_METADATA_CONCLUSION: ${{ needs.e0_metadata.result }}
+          E0_FOUNDATION_CONCLUSION: ${{ needs.e0_foundation.result }}
           LICENSE_HEADERS_CONCLUSION: ${{ needs.license_headers.result }}
           PROJECT_CI_CONCLUSION: ${{ needs.project_ci.result }}
         run: |
@@ -237,6 +292,7 @@ jobs:
             "legacy_policy_repair_conclusion": "${LEGACY_POLICY_REPAIR_CONCLUSION}",
             "project_policy_conclusion": "${PROJECT_POLICY_CONCLUSION}",
             "e0_metadata_conclusion": "${E0_METADATA_CONCLUSION}",
+            "e0_foundation_conclusion": "${E0_FOUNDATION_CONCLUSION}",
             "license_headers_conclusion": "${LICENSE_HEADERS_CONCLUSION}",
             "job_conclusion": "${PROJECT_CI_CONCLUSION}"
           }
