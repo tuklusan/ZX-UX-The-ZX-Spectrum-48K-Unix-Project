@@ -44,21 +44,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Repair inherited policy and text quality
+      - name: Repair inherited artifacts and generate frozen resources
         id: repair
         run: |
           python3 tools/repair_legacy_policy.py
           python3 tools/repair_text_quality.py
+          python3 tools/generate_phase0_resources.py
           if git diff --quiet -- \
             docs/01-ZX-UX-ARCHITECTURE-REV11.md \
             docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV02.md \
-            tools/scripts/verify-environment.py; then
+            tools/scripts/verify-environment.py \
+            v1/assets/; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Check in repaired inherited artifacts
+      - name: Check in repaired and generated artifacts
         if: steps.repair.outputs.changed == 'true'
         run: |
           git config user.name "github-actions[bot]"
@@ -66,8 +68,9 @@ jobs:
           git add -- \
             docs/01-ZX-UX-ARCHITECTURE-REV11.md \
             docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV02.md \
-            tools/scripts/verify-environment.py
-          git commit -m "Repair inherited text quality and hash contract"
+            tools/scripts/verify-environment.py \
+            v1/assets/
+          git commit -m "Generate frozen Phase 0 resource artifacts"
           git push origin HEAD:main
 
   project_policy:
