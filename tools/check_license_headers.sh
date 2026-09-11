@@ -37,7 +37,10 @@ required_phrases=(
   "governing-law provisions."
 )
 
-declare -A explicit_header_exemptions=()
+declare -A explicit_header_exemptions=(
+  [".zxux-root"]="Exact root-marker bytes are fixed by the implementation contract."
+  ["tools/manifest/toolchain.lock.json"]="JSON does not permit comments; this exact manifest path is required by E0.01."
+)
 
 fail=0
 checked=0
