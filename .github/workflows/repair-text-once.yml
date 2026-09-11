@@ -1,0 +1,65 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: ZX-UX One-Time Text Repair
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: zxux-one-time-text-repair
+  cancel-in-progress: true
+
+jobs:
+  repair:
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Repair trailing horizontal whitespace
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('docs/04-ZX-UX-CHANGE-REQUEST-DEFERRED-WRAP-REV01.md')
+          data = path.read_bytes()
+          out = []
+          for line in data.splitlines(keepends=True):
+              if line.endswith(b'\r\n'):
+                  body, ending = line[:-2], b'\n'
+              elif line.endswith(b'\n') or line.endswith(b'\r'):
+                  body, ending = line[:-1], b'\n'
+              else:
+                  body, ending = line, b''
+              out.append(body.rstrip(b' \t') + ending)
+          path.write_bytes(b''.join(out))
+          PY
+
+      - name: Check in repaired bytes
+        run: |
+          if git diff --quiet -- docs/04-ZX-UX-CHANGE-REQUEST-DEFERRED-WRAP-REV01.md; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- docs/04-ZX-UX-CHANGE-REQUEST-DEFERRED-WRAP-REV01.md
+          git commit -m "docs: repair text quality"
+          git push origin HEAD:main
