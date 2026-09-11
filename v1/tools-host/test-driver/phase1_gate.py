@@ -17,6 +17,7 @@ from pathlib import Path
 import sys
 
 from driver_core import DriverError, find_root, run_command
+import phase1_probe
 
 # Each entry is admitted only after its implementation and deterministic driver
 # have passed the normal check-in review. The workflow executes every admitted
@@ -39,6 +40,7 @@ def main() -> int:
     if not runner.is_file():
         raise DriverError("deterministic test driver missing")
 
+    phase1_probe.run(root)
     for step in CERTIFIED_STEPS:
         for action in ("build", "test"):
             result = run_command(
