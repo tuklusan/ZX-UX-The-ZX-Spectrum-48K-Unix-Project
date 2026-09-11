@@ -12,11 +12,11 @@
 
 # ZX-UX Change Request: Deferred Right-Margin Wrap and Bottom-Right Cursor Semantics
 
-**Status:** Proposed change for developer implementation  
-**Target:** ZX-UX version 1 console subsystem  
-**Affected terminal modes:** `tty64` (64x24) and `tty32` (32x24)  
-**Primary architectural area:** REV11 Section 13, especially Sections 13.4, 13.4A, and 13.5A  
-**Primary implementation area:** Phase 1 console/cursor work, especially P1.20, P1.23, P1.24, P1.35-P1.39, and P1.41  
+**Status:** Proposed change for developer implementation
+**Target:** ZX-UX version 1 console subsystem
+**Affected terminal modes:** `tty64` (64x24) and `tty32` (32x24)
+**Primary architectural area:** REV11 Section 13, especially Sections 13.4, 13.4A, and 13.5A
+**Primary implementation area:** Phase 1 console/cursor work, especially P1.20, P1.23, P1.24, P1.35-P1.39, and P1.41
 **Compatibility principle:** No new syscall, no new public IOCTL, no change to public row/column ranges, and no phantom column 64 or row 24.
 
 ---
