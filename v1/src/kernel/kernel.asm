@@ -35,28 +35,46 @@
     ORG KERNEL_START
 kernel_image_start:
 kernel_ordinary_pool_start:
+kernel_mod_gateways:
     EMIT_SYSCALL_GATEWAY
     ASSERT $ = BOOT_GATEWAY
     EMIT_BOOT_GATEWAY
     ASSERT $ = BOOT_GATEWAY+3
     EMIT_SYSCALL_BODY
     EMIT_BOOT_BODY
+kernel_mod_syscall:
     EMIT_SYSCALL_IMPL
+kernel_mod_boot:
     EMIT_BOOT_IMPL
+kernel_mod_interrupt:
     EMIT_INTERRUPT_ROUTINE
+kernel_mod_im2:
     EMIT_IM2_ROUTINES
+kernel_mod_rom:
     EMIT_ROM_SERVICE_ROUTINES
+kernel_mod_errors:
     EMIT_ERROR_ROUTINES
+kernel_mod_memory:
     EMIT_MEMORY_ROUTINES
+kernel_mod_process:
     EMIT_PROCESS_ROUTINES
+kernel_mod_scheduler:
     EMIT_SCHEDULER_ROUTINES
+kernel_mod_primitives:
     EMIT_Z80_PRIMITIVES
+kernel_mod_ula:
     EMIT_ULA_ROUTINES
+kernel_mod_tty32:
     EMIT_TTY32_ROUTINES
+kernel_mod_tty64:
     EMIT_TTY64_ROUTINES
+kernel_mod_cursor:
     EMIT_CURSOR_ROUTINES
+kernel_mod_console:
     EMIT_CONSOLE_ROUTINES
+kernel_mod_keyboard:
     EMIT_KEYBOARD_ROUTINES
+kernel_mod_udg:
     EMIT_UDG_ROUTINES
 kernel_ordinary_used_end:
     ASSERT $ <= KERNEL_CODE_END+1

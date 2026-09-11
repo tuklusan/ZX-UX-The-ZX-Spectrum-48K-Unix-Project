@@ -71,7 +71,7 @@ jobs:
           mkdir -p v1/build
           (cd v1/src/kernel && /tmp/sjasmplus/bin/sjasmplus --nologo --lst=../../build/kernel.lst kernel.asm)
           test "$(wc -c < v1/build/kernel.bin)" -eq 8192
-          grep -E 'kernel_(ordinary_pool_start|ordinary_used_end)' v1/build/kernel.lst
+          grep -E 'kernel_(ordinary_pool_start|ordinary_used_end|mod_)' v1/build/kernel.lst
           sha256sum v1/build/kernel.bin
 
       - name: Validate executable and object inspectors
