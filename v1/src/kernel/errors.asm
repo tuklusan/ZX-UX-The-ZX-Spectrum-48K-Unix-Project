@@ -37,4 +37,6 @@ zx48_panic_unknown:
     ld a,PANIC_ROM_CONTRACT
     ld (kernel_panic_code),a
     jr zx48_panic_halt
+kernel_panic_code:
+    db 0
     ENDM
