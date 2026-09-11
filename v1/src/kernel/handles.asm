@@ -34,7 +34,7 @@ zx48_handles_init:
 ; A=index -> IX record.
 zx48_od_ptr:
     cp OPEN_DESCRIPTION_COUNT
-    jr nc,zx48_handle_noent
+    jp nc,zx48_handle_noent
     ld ix,open_description_table
     or a
     ret z
@@ -55,9 +55,7 @@ zx48_od_create_scan:
     ld a,(ix+OD_KIND_O)
     or a
     jr z,zx48_od_create_found
-    ld a,e
-    inc a
-    ld e,a
+    inc e
     ld bc,OD_COMPACT_SIZE
     add ix,bc
     ld a,(handle_scan_left)
@@ -85,7 +83,7 @@ zx48_od_create_found:
 ; A=handle in current process -> C=OD index, IX=OD.
 zx48_handle_lookup:
     cp MAX_HANDLES_PER_PROCESS
-    jr nc,zx48_handle_noent
+    jp nc,zx48_handle_noent
     ld e,a
     ld d,0
     push de
@@ -100,21 +98,22 @@ zx48_handle_lookup:
     add hl,de
     ld a,(hl)
     cp HANDLE_FREE
-    jr z,zx48_handle_noent
+    jp z,zx48_handle_noent
     ld c,a
     call zx48_od_ptr
     ret c
     ld a,(ix+OD_KIND_O)
     or a
-    jr z,zx48_handle_noent
+    jp z,zx48_handle_noent
     xor a
     ret
 
 ; A=requested handle or FF, C=OD index. Does not change OD refcount.
 ; Returns A=installed handle.
 zx48_handle_install:
-    ld (handle_od),c
     ld (handle_requested),a
+    ld a,c
+    ld (handle_od),a
     ld a,(current_pid)
     call zx48_process_lookup
     ret c
