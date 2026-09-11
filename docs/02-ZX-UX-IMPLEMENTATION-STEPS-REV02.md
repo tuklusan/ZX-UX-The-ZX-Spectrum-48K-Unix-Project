@@ -19,7 +19,7 @@ https://supratim-sanyal.blogspot.com/
 Status: Revision-11 implementation and certification plan
 Revision: 02
 Architecture baseline: `v1/docs/01-ZX-UX-ARCHITECTURE-REV11.md`
-Architecture SHA-256: `F76281FAB2E5AE73B7321FC2A69E6776F7CCD8BFE3955A6ED6FB3BEC44F762C7`
+Architecture SHA-256: `1D736641E685C1D6136B66FC57D0C16FC662CE6CA4DFD640991743BB01BB706F`
 Target: Original unexpanded 48K ZX Spectrum
 
 ---
@@ -6844,7 +6844,7 @@ No lower layer is allowed to claim evidence strength belonging to a higher layer
 **Status: DOUBLE-FORENSIC-ACCURACY CERTIFIED.**
 
 This Revision-02 implementation plan is subordinate to canonical REV11 SHA-256
-`F76281FAB2E5AE73B7321FC2A69E6776F7CCD8BFE3955A6ED6FB3BEC44F762C7` and is delivered
+`1D736641E685C1D6136B66FC57D0C16FC662CE6CA4DFD640991743BB01BB706F` and is delivered
 only after the anti-circular certification sequence below has completed without changing
 these final document bytes.
 

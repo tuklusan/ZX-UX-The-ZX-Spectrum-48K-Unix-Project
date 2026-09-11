@@ -3649,7 +3649,7 @@ The default `/etc/issue` contains those same two lines followed by:
 The shell displays `/etc/issue` exactly once; that single display is the boot
 heading required above. It does not separately print a duplicate heading. It then asks:
 
-    login: 
+    login:
 
 This is session identity, not password security. The username is 1..8 characters
 and must match:
