@@ -25,6 +25,13 @@ ISSUE = (
     b"48K. One Z80. No excuses.\n"
 )
 
+BIN_COMMANDS = tuple(sorted((
+    "cron", "crontab", "vi", "as", "cc", "ld", "ls", "cat", "echo", "cp",
+    "mv", "rm", "pack", "unpack", "hexdump", "grep", "wc", "head", "tail", "cmp",
+    "true", "false", "sleep", "which", "env", "stty", "date", "man", "whoami", "uname",
+    "uptime", "cal", "fortune", "banner", "rev", "yes", "udg", "gfxdemo", "demo", "sh",
+)))
+
 
 def find_root(start: Path) -> Path:
     for candidate in (start, *start.parents):
@@ -35,9 +42,6 @@ def find_root(start: Path) -> Path:
 
 
 def loading_screen() -> bytes:
-    # Native 6912-byte Spectrum screen: 6144 bitmap bytes followed by 768 attributes.
-    # The frozen Phase-0 artwork is deliberately minimal: black bitmap with bright-white
-    # ink on black paper. Later terminal initialization deliberately replaces it.
     bitmap = bytes(6144)
     attributes = bytes([0x47]) * 768
     result = bitmap + attributes
@@ -47,24 +51,39 @@ def loading_screen() -> bytes:
 
 
 def font4x8() -> bytes:
-    # 98 glyphs x 4 bytes. Each byte contains two 4-pixel rows packed high/low nibble.
-    # Phase 0 freezes size/identity; the deliberately simple seed font is replaced only
-    # by an explicit resource revision, never by implicit host-font conversion.
-    out = bytearray()
-    for code in range(0x20, 0x82):
-        nibble = code & 0x0F
-        out.extend((nibble << 4 | nibble,) * 4)
-    if len(out) != 392:
+    # F4X8 header plus 96 glyphs x 4 packed bytes, codes 0x20..0x7f.
+    header = b"F4X8" + bytes((1, 0x20, 96, 0))
+    glyphs = bytearray()
+    for code in range(0x20, 0x80):
+        if code == 0x20:
+            rows = (0, 0, 0, 0, 0, 0, 0, 0)
+        elif code == 0x7F:
+            rows = (0x6, 0x9, 0xA, 0xA, 0xA, 0x9, 0x6, 0x0)
+        else:
+            # Deterministic compact seed glyph. The format, code coverage, and byte
+            # identity are frozen; no host font or locale can influence the result.
+            low = code & 0x0F
+            high = (code >> 4) & 0x0F
+            rows = (low, high, low ^ 0x0F, high ^ 0x0F, high, low, high ^ low, 0)
+        for row in range(0, 8, 2):
+            glyphs.append(((rows[row] & 0x0F) << 4) | (rows[row + 1] & 0x0F))
+    result = header + bytes(glyphs)
+    if len(glyphs) != 384 or len(result) != 392:
         raise AssertionError("font4x8 size")
-    return bytes(out)
+    return result
 
 
 def bincat() -> bytes:
-    # Frozen BCAT bootstrap shape: 8-byte header + forty 12-byte empty records.
-    # Records are deliberately empty in Phase 0; later phases replace entries in place.
-    header = b"BCAT" + bytes((1, 40, 0, 0))
-    records = bytes(40 * 12)
-    result = header + records
+    if len(BIN_COMMANDS) != 40 or len(set(BIN_COMMANDS)) != 40:
+        raise AssertionError("BCAT command-set cardinality")
+    records = bytearray()
+    for name in BIN_COMMANDS:
+        encoded = name.encode("ascii")
+        if name != name.lower() or not (1 <= len(encoded) <= 10):
+            raise AssertionError(f"invalid BCAT command name: {name}")
+        records.extend(encoded.ljust(10, b"\0"))
+        records.extend((2, 1))  # object type BIN, tape-backed flag only
+    result = b"BCAT" + bytes((1, 40, 0, 0)) + bytes(records)
     if len(result) != 488:
         raise AssertionError("BCAT size")
     return result
