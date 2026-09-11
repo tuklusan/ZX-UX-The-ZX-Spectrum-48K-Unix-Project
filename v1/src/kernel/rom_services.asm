@@ -41,44 +41,49 @@ ROM_SQR                   EQU $384A
 ROM_POWER                 EQU $3851
 
     MACRO EMIT_ROM_SERVICE_ROUTINES
-; Each wrapper restores IY exactly before returning to kernel/application code.
+; Every raw ROM return samples/checks the dedicated kernel stack while preserving
+; the ROM routine's complete AF/BC/DE/HL result contract, then canonicalizes IY.
 zx48_rom_restore_iy:
+    ld iy,ROM_IY_ANCHOR
+    ret
+zx48_rom_checked_return:
+    push af
+    push bc
+    push de
+    push hl
+    call zx48_kernel_stack_sample
+    call zx48_kernel_stack_check
+    pop hl
+    pop de
+    pop bc
+    pop af
     ld iy,ROM_IY_ANCHOR
     ret
 zx48_rom_print_a:
     call ROM_PRINT_A
-    ld iy,ROM_IY_ANCHOR
-    ret
+    jp zx48_rom_checked_return
 zx48_rom_key_scan:
     call ROM_KEY_SCAN
-    ld iy,ROM_IY_ANCHOR
-    ret
+    jp zx48_rom_checked_return
 zx48_rom_pixel_add:
     call ROM_PIXEL_ADD
-    ld iy,ROM_IY_ANCHOR
-    ret
+    jp zx48_rom_checked_return
 zx48_rom_point:
     call ROM_POINT
-    ld iy,ROM_IY_ANCHOR
-    ret
+    jp zx48_rom_checked_return
 zx48_rom_plot_sub:
     call ROM_PLOT_SUB
-    ld iy,ROM_IY_ANCHOR
-    ret
+    jp zx48_rom_checked_return
 zx48_rom_draw_line:
     call ROM_DRAW_LINE
-    ld iy,ROM_IY_ANCHOR
-    ret
+    jp zx48_rom_checked_return
 zx48_rom_beeper:
     call ROM_BEEPER
-    ld iy,ROM_IY_ANCHOR
-    ret
+    jp zx48_rom_checked_return
 zx48_rom_sa_bytes:
     call ROM_SA_BYTES
-    ld iy,ROM_IY_ANCHOR
-    ret
+    jp zx48_rom_checked_return
 zx48_rom_ld_bytes:
     call ROM_LD_BYTES
-    ld iy,ROM_IY_ANCHOR
-    ret
+    jp zx48_rom_checked_return
     ENDM
