@@ -10,12 +10,14 @@
 ; SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 ; patent, trademark, and governing-law provisions.
 ;
-; Resident-kernel image layout and Phase-P0.03 gateway scaffold.
+; Resident-kernel image layout through Phase P0.04.
 
     DEVICE ZXSPECTRUM48
     INCLUDE "../../include/zx48ux.inc"
     INCLUDE "syscall.asm"
     INCLUDE "../boot/entry.asm"
+    INCLUDE "interrupt.asm"
+    INCLUDE "im2.asm"
 
     ORG KERNEL_START
 kernel_image_start:
@@ -28,6 +30,8 @@ kernel_ordinary_pool_start:
     EMIT_BOOT_BODY
     EMIT_SYSCALL_IMPL
     EMIT_BOOT_IMPL
+    EMIT_INTERRUPT_ROUTINE
+    EMIT_IM2_ROUTINES
 kernel_ordinary_used_end:
     ASSERT $ <= KERNEL_CODE_END+1
     DEFS KERNEL_CODE_END+1-$,0
@@ -42,8 +46,8 @@ kernel_fast_reserve:
     DEFS FAST_RESERVE_END-FAST_RESERVE_START+1,0
 
     ASSERT $ = IM2_TRAMPOLINE_START
-kernel_im2_trampoline:
-    DEFS IM2_TRAMPOLINE_END-IM2_TRAMPOLINE_START+1,0
+    EMIT_IM2_TRAMPOLINE
+    ASSERT $ = IM2_TRAMPOLINE_END+1
 
     ASSERT $ = IM2_TABLE_START
 kernel_im2_table:

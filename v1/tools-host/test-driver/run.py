@@ -23,6 +23,7 @@ import foundation
 import phase0
 import phase0_layout
 import phase0_boot
+import phase0_im2
 from driver_core import (
     DriverError,
     find_root,
@@ -45,6 +46,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase0_layout.dispatch(root, action, step, **kwargs)
     if step == "P0.03":
         return phase0_boot.dispatch(root, action, step, **kwargs)
+    if step == "P0.04":
+        return phase0_im2.dispatch(root, action, step, **kwargs)
     if step.startswith("P0."):
         return phase0.dispatch(root, action, step, **kwargs)
     raise DriverError(f"step is not registered with the deterministic test driver: {step}")
