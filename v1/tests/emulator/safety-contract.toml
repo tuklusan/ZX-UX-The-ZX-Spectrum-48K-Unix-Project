@@ -1,0 +1,41 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+schema = 1
+
+[static]
+duplicate_symbols = true
+section_overflow = true
+kernel_subranges = true
+im2_vector_and_trampoline = true
+kernel_stack_placement = true
+arena_boundaries = true
+syscall_table_duplication = true
+forbidden_user_register_ownership = true
+object_format_sizes = true
+
+[emulator]
+fast_inner_format = "SNA"
+boot_format = "TAP"
+tape_format = "TZX"
+state_assertions = true
+screenshot_only_oracle = false
+known_writable_stack_before_synthetic_rom_call = true
+hard_timeout_seconds = 30
+
+[release]
+independent_emulators_minimum = 2
+
+[physical]
+trap_only_counts_as_physical = false
+tap_tzx_counts_as_physical = false
+requires_real_or_hardware_faithful_loop = true
