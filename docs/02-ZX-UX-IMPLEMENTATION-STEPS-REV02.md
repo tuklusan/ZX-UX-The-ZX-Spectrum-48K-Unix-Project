@@ -19,7 +19,7 @@ https://supratim-sanyal.blogspot.com/
 Status: Revision-11 implementation and certification plan
 Revision: 02
 Architecture baseline: `v1/docs/01-ZX-UX-ARCHITECTURE-REV11.md`
-Architecture SHA-256: `AA087094C013C7F7602845D1EE353BD37AB699EB9D8661E534A00A48445E29FD`
+Architecture SHA-256: `F76281FAB2E5AE73B7321FC2A69E6776F7CCD8BFE3955A6ED6FB3BEC44F762C7`
 Target: Original unexpanded 48K ZX Spectrum
 
 ---
@@ -226,7 +226,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 5. **Host-side static checks:** root-marker/path policy, architecture constants used by this step, file/format sizes, duplicate/forbidden symbols or literals, and deterministic artifact hashes as applicable.
 6. **Emulator test artifact:** N/A: this is a host-only contract/format/policy step; target behavior is closed by later dependent steps.
 7. **Exact FUSE assertions/checkpoints:** N/A except where the host test deliberately launches a timeout/argv self-test.
-8. **Expected PASS result:** Hash equals `AA087094C013C7F7602845D1EE353BD37AB699EB9D8661E534A00A48445E29FD` and no superseded architecture is consumed.
+8. **Expected PASS result:** Hash equals `F76281FAB2E5AE73B7321FC2A69E6776F7CCD8BFE3955A6ED6FB3BEC44F762C7` and no superseded architecture is consumed.
 9. **Negative/failure test:** Point the audit helper at a wrong hash and require refusal.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
 11. **Evidence:** `v1/dist/certification/E0.02.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
@@ -6844,7 +6844,7 @@ No lower layer is allowed to claim evidence strength belonging to a higher layer
 **Status: DOUBLE-FORENSIC-ACCURACY CERTIFIED.**
 
 This Revision-02 implementation plan is subordinate to canonical REV11 SHA-256
-`AA087094C013C7F7602845D1EE353BD37AB699EB9D8661E534A00A48445E29FD` and is delivered
+`F76281FAB2E5AE73B7321FC2A69E6776F7CCD8BFE3955A6ED6FB3BEC44F762C7` and is delivered
 only after the anti-circular certification sequence below has completed without changing
 these final document bytes.
 
