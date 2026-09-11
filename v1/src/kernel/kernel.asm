@@ -10,7 +10,7 @@
 ; SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 ; patent, trademark, and governing-law provisions.
 ;
-; Resident ZX-UX kernel composition through the Phase-8 service surface.
+; Resident ZX-UX kernel composition through Phase 1.
 
     DEVICE ZXSPECTRUM48
     INCLUDE "../../include/zx48ux.inc"
@@ -23,7 +23,6 @@
     INCLUDE "memory.asm"
     INCLUDE "process.asm"
     INCLUDE "scheduler.asm"
-    INCLUDE "handles.asm"
     INCLUDE "z80_primitives.asm"
     INCLUDE "ula_io.asm"
     INCLUDE "tty32.asm"
@@ -31,12 +30,6 @@
     INCLUDE "cursor.asm"
     INCLUDE "console.asm"
     INCLUDE "keyboard.asm"
-    INCLUDE "zxpack.asm"
-    INCLUDE "objects.asm"
-    INCLUDE "pipe.asm"
-    INCLUDE "graphics.asm"
-    INCLUDE "sound.asm"
-    INCLUDE "tape.asm"
     INCLUDE "udg.asm"
 
     ORG KERNEL_START
@@ -57,7 +50,6 @@ kernel_ordinary_pool_start:
     EMIT_MEMORY_ROUTINES
     EMIT_PROCESS_ROUTINES
     EMIT_SCHEDULER_ROUTINES
-    EMIT_HANDLE_ROUTINES
     EMIT_Z80_PRIMITIVES
     EMIT_ULA_ROUTINES
     EMIT_TTY32_ROUTINES
@@ -65,12 +57,6 @@ kernel_ordinary_pool_start:
     EMIT_CURSOR_ROUTINES
     EMIT_CONSOLE_ROUTINES
     EMIT_KEYBOARD_ROUTINES
-    EMIT_ZXPACK_ROUTINES
-    EMIT_OBJECT_ROUTINES
-    EMIT_PIPE_ROUTINES
-    EMIT_GRAPHICS_ROUTINES
-    EMIT_SOUND_ROUTINES
-    EMIT_TAPE_ROUTINES
     EMIT_UDG_ROUTINES
 kernel_ordinary_used_end:
     ASSERT $ <= KERNEL_CODE_END+1
