@@ -236,9 +236,9 @@ zx48_process_exit:
     ld (process_temp_status),a
     ld a,(current_pid)
     or a
-    jp z,zx48_process_exit_panic
+    jr z,zx48_process_exit_panic
     call zx48_process_lookup
-    jp c,zx48_process_exit_panic
+    jr c,zx48_process_exit_panic
     ld a,(process_temp_status)
     ld (ix+PROC_EXIT_STATUS),a
     ld (ix+PROC_STATE),PROC_ZOMBIE
@@ -269,6 +269,9 @@ zx48_process_tty_owner_set:
     ret
 
 zx48_process_wake_parent:
+    ld a,(current_pid)
+    call zx48_process_lookup
+    ret c
     ld a,(ix+PROC_PARENT)
     cp HANDLE_FREE
     ret z
@@ -281,11 +284,13 @@ zx48_process_wake_parent:
     ret
 
 zx48_process_kill:
-    ld (process_temp_pid),a
     cp 2
     jr c,zx48_process_perm
     call zx48_process_lookup
     ret c
+    ld a,(ix+PROC_STATE)
+    cp PROC_ZOMBIE
+    jp z,zx48_process_noent
     ld a,(current_pid)
     cp 1
     jr z,zx48_process_kill_ok
@@ -305,13 +310,10 @@ zx48_process_kill_started:
     ld a,(ix+PROC_FLAGS)
     or PROC_FLAG_CANCEL
     ld (ix+PROC_FLAGS),a
-    ld a,(ix+PROC_STATE)
-    cp PROC_ZOMBIE
-    jp z,zx48_process_noent
-    cp PROC_RUNNING
-    jr z,zx48_process_kill_okret
-    cp PROC_READY
-    jr z,zx48_process_kill_okret
+    ; Any started non-zombie target is not the current cooperative task.
+    ; Make it runnable; scheduler delivers E_INTR at the next safe restore.
+    xor a
+    ld (ix+PROC_WAIT_OBJECT),a
     ld (ix+PROC_STATE),PROC_READY
 zx48_process_kill_okret:
     xor a
@@ -359,8 +361,7 @@ zx48_process_wait_next:
     ld a,(current_pid)
     call zx48_process_lookup
     ld (ix+PROC_STATE),PROC_WAIT_CHILD
-    call zx48_schedule
-    jp zx48_process_wait_again
+    jp zx48_schedule
 zx48_process_wait_none:
     ld a,E_CHILD
     scf

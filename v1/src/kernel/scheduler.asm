@@ -13,25 +13,30 @@
 ; Cooperative round-robin scheduler. saved_sp is the sole descriptor resume token.
 
     MACRO EMIT_SCHEDULER_ROUTINES
+; Finish a blocking/yielding syscall successfully when this task next runs.
+zx48_schedule_finish_syscall:
+    ld hl,(syscall_frame_sp)
+    ld de,SYSCALL_FRAME_PC_O
+    add hl,de
+    ld de,zx48_syscall_resume_ok
+    ld (hl),e
+    inc hl
+    ld (hl),d
+
+; A user syscall already materialized IX/HL/DE/BC/AF/PC on its FAST stack.
+; Commit that frame only for a non-zombie user task, then choose the next task.
 zx48_schedule:
-    push af
     ld a,(current_pid)
     ld (scheduler_current),a
     or a
     jr z,zx48_schedule_from_idle
-    push bc
-    push de
-    push hl
-    push ix
     call zx48_process_ptr
     ld a,(ix+PROC_STATE)
     cp PROC_ZOMBIE
     jr z,zx48_schedule_begin
-    ld hl,0
-    add hl,sp
+    ld hl,(syscall_frame_sp)
     ld (ix+PROC_SAVED_SP),l
     ld (ix+PROC_SAVED_SP+1),h
-    ld a,(ix+PROC_STATE)
     cp PROC_RUNNING
     jr nz,zx48_schedule_begin
     ld (ix+PROC_STATE),PROC_READY
@@ -76,6 +81,20 @@ zx48_schedule_restore:
     ld (ix+PROC_STATE),PROC_RUNNING
     or a
     jr z,zx48_schedule_idle_restore
+    ld a,(ix+PROC_FLAGS)
+    and PROC_FLAG_CANCEL
+    jr z,zx48_schedule_not_cancelled
+    ld l,(ix+PROC_SAVED_SP)
+    ld h,(ix+PROC_SAVED_SP+1)
+    ld de,SYSCALL_FRAME_PC_O
+    add hl,de
+    ld de,zx48_syscall_resume_intr
+    ld (hl),e
+    inc hl
+    ld (hl),d
+zx48_schedule_not_cancelled:
+    call zx48_kernel_stack_sample
+    call zx48_kernel_stack_check
     ld a,(ix+PROC_PRIVATE_FLAGS)
     or PROC_PRIVATE_STARTED
     ld (ix+PROC_PRIVATE_FLAGS),a
@@ -142,7 +161,7 @@ zx48_sleep_current:
     ld (ix+PROC_WAKE_TICK+2),l
     ld (ix+PROC_WAKE_TICK+3),h
     ld (ix+PROC_STATE),PROC_SLEEPING
-    call zx48_schedule
+    jp zx48_schedule_finish_syscall
 zx48_sleep_zero:
     xor a
     ret

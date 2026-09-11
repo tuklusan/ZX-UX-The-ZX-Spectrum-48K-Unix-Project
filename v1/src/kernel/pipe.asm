@@ -38,7 +38,7 @@ pipe_wait_state             EQU PIPE_FAST_BASE+13
 pipe_endpoint_kind          EQU PIPE_FAST_BASE+14
 pipe_table                  EQU PIPE_FAST_BASE+15
 PIPE_FAST_END               EQU pipe_table+PIPE_COUNT*PIPE_RECORD_SIZE
-    ASSERT PIPE_FAST_END <= FAST_RESERVE_END+1
+    ASSERT PIPE_FAST_END <= syscall_frame_sp
 
     MACRO EMIT_PIPE_ROUTINES
 zx48_pipe_init:
@@ -87,7 +87,7 @@ zx48_pipe_free_handle_next:
     djnz zx48_pipe_free_handle_scan
     ld a,c
     cp 2
-    jp c,zx48_pipe_nospc
+    jr c,zx48_pipe_nospc
 
     ld ix,open_description_table
     ld b,OPEN_DESCRIPTION_COUNT
@@ -103,7 +103,7 @@ zx48_pipe_free_od_next:
     djnz zx48_pipe_free_od_scan
     ld a,c
     cp 2
-    jp c,zx48_pipe_nospc
+    jr c,zx48_pipe_nospc
 
     ld ix,pipe_table
     ld b,PIPE_COUNT
@@ -168,7 +168,7 @@ zx48_pipe_allocated:
     ld a,(pipe_active_slot)
     ld d,a
     call zx48_od_create
-    jp c,zx48_pipe_rollback_buffer
+    jr c,zx48_pipe_rollback_buffer
     ld (pipe_read_od),a
 
     ld b,OD_KIND_PIPE_WRITE
@@ -176,21 +176,21 @@ zx48_pipe_allocated:
     ld a,(pipe_active_slot)
     ld d,a
     call zx48_od_create
-    jp c,zx48_pipe_rollback_read_od
+    jr c,zx48_pipe_rollback_read_od
     ld (pipe_write_od),a
 
     ld a,(pipe_read_od)
     ld c,a
     ld a,HANDLE_FREE
     call zx48_handle_install
-    jp c,zx48_pipe_rollback_write_od
+    jr c,zx48_pipe_rollback_write_od
     ld (pipe_read_handle),a
 
     ld a,(pipe_write_od)
     ld c,a
     ld a,HANDLE_FREE
     call zx48_handle_install
-    jp c,zx48_pipe_rollback_read_handle
+    jr c,zx48_pipe_rollback_read_handle
     ld (pipe_write_handle),a
 
     ld hl,(pipe_result_ptr)
@@ -225,7 +225,10 @@ zx48_pipe_rollback_buffer:
     ld a,h
     or l
     jr z,zx48_pipe_rollback_clear
+    push ix
     call zx48_free
+    pop ix
+    jp c,zx48_pipe_free_panic
 zx48_pipe_rollback_clear:
     xor a
     ld (ix+PIPE_PTR_O),a
@@ -245,7 +248,7 @@ zx48_pipe_read:
     ld (pipe_io_done),hl
     ld a,b
     or c
-    jp z,zx48_pipe_io_success
+    jr z,zx48_pipe_io_success
 zx48_pipe_read_retry:
     ld a,(pipe_active_slot)
     call zx48_pipe_ptr
@@ -255,7 +258,7 @@ zx48_pipe_read_retry:
     jr nz,zx48_pipe_read_copy
     ld a,(ix+PIPE_WRITERS_O)
     or a
-    jp z,zx48_pipe_io_success
+    jr z,zx48_pipe_io_success
     ld a,(pipe_active_slot)
     ld c,a
     call zx48_pipe_block_read
@@ -406,42 +409,14 @@ zx48_pipe_broken:
     scf
     ret
 
-; C=pipe slot. Save caller-local transfer state on its FAST stack while blocked.
+; C=pipe slot. Blocking is restartable because zero bytes have transferred.
 zx48_pipe_block_read:
     ld a,PROC_WAIT_PIPE_READ
-    jr zx48_pipe_block_io
+    jr zx48_pipe_block
 zx48_pipe_block_write:
     ld a,PROC_WAIT_PIPE_WRITE
-zx48_pipe_block_io:
-    ld hl,(pipe_io_ptr)
-    push hl
-    ld hl,(pipe_io_request)
-    push hl
-    ld hl,(pipe_io_done)
-    push hl
-    call zx48_pipe_block
-    ld e,a
-    sbc a,a
-    ld d,a
-    pop hl
-    ld (pipe_io_done),hl
-    pop hl
-    ld (pipe_io_request),hl
-    pop hl
-    ld (pipe_io_ptr),hl
-    ld a,c
-    ld (pipe_active_slot),a
-    ld a,d
-    or a
-    jr z,zx48_pipe_block_ok
-    ld a,e
-    scf
-    ret
-zx48_pipe_block_ok:
-    xor a
-    ret
 
-; A=wait state,C=pipe slot. Link current process, schedule, then unlink.
+; A=wait state,C=pipe slot. Link current process and restart the syscall on wake.
 zx48_pipe_block:
     ld d,a
     ld a,(current_pid)
@@ -456,33 +431,7 @@ zx48_pipe_block:
     inc c
     ld (ix+PROC_WAIT_OBJECT),c
     ld (ix+PROC_STATE),d
-    call zx48_schedule
-    push bc
-    ld a,(current_pid)
-    call zx48_process_lookup
-    pop bc
-    ret c
-    xor a
-    ld (ix+PROC_WAIT_OBJECT),a
-    ld a,(ix+PROC_FLAGS)
-    and PROC_FLAG_CANCEL
-    jr nz,zx48_pipe_interrupted
-    dec c
-    push bc
-    ld a,c
-    call zx48_pipe_try_free
-    pop bc
-    xor a
-    ret
-zx48_pipe_interrupted:
-    dec c
-    push bc
-    ld a,c
-    call zx48_pipe_try_free
-    pop bc
-    ld a,E_INTR
-    scf
-    ret
+    jp zx48_schedule
 
 ; C=slot. Wake only waiters attached to this pipe and matching direction.
 zx48_pipe_wake_readers:
@@ -504,6 +453,8 @@ zx48_pipe_wake_loop:
     ld a,(pipe_wait_state)
     cp d
     jr nz,zx48_pipe_wake_next
+    xor a
+    ld (ix+PROC_WAIT_OBJECT),a
     ld (ix+PROC_STATE),PROC_READY
 zx48_pipe_wake_next:
     ld de,PROC_DESC_SIZE
@@ -569,7 +520,12 @@ zx48_pipe_waiter_scan:
     ld b,(ix+PIPE_CAPACITY_O+1)
     ld a,h
     or l
-    call nz,zx48_free
+    jr z,zx48_pipe_free_clear
+    push ix
+    call zx48_free
+    pop ix
+    jr c,zx48_pipe_free_panic
+zx48_pipe_free_clear:
     xor a
     ld (ix+PIPE_PTR_O),a
     ld (ix+PIPE_PTR_O+1),a
@@ -584,8 +540,13 @@ zx48_pipe_waiter_exists:
     pop ix
     ret
 
+zx48_pipe_free_panic:
+    ld a,PANIC_ALLOCATOR
+    jp zx48_panic
+
 zx48_pipe_noent:
     ld a,E_NOENT
     scf
     ret
+
     ENDM

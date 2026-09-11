@@ -12,18 +12,63 @@
 ;
 ; Bounded version-1 syscall dispatcher. IX is preserved and IY is canonicalized.
 
+SYSCALL_FRAME_PC_O       EQU 10
+syscall_frame_sp          EQU FAST_RESERVE_END-1
+
     MACRO EMIT_SYSCALL_GATEWAY
 syscall_gateway:
     jp zx48_syscall
     ENDM
 
     MACRO EMIT_SYSCALL_BODY
+; The user CALL return word remains below a canonical 12-byte task frame.
+; Kernel work then runs only on the dedicated 0xFB00-0xFCFF stack.
 zx48_syscall:
+    ld (syscall_user_sp),sp
+    ld (syscall_saved_ix),ix
+    push hl
+    ld hl,zx48_syscall
+    ex (sp),hl
+    push af
+    push bc
+    push de
+    push hl
     push ix
+    ld (syscall_frame_sp),sp
+    ld sp,BOOT_STACK_TOP
+    call zx48_kernel_stack_sample
     call zx48_syscall_impl
-    pop ix
+zx48_syscall_return:
+    push af
+    push hl
+    call zx48_kernel_stack_sample
+    call zx48_kernel_stack_check
+    ld ix,(syscall_saved_ix)
+    pop de
+    pop af
+    ld hl,(syscall_user_sp)
+    ld sp,hl
+    ex de,hl
     ld iy,ROM_IY_ANCHOR
     ret
+
+; Scheduler continuation for yield/sleep: SP again points at the user CALL return.
+zx48_syscall_resume_ok:
+    ld (syscall_user_sp),sp
+    ld (syscall_saved_ix),ix
+    ld sp,BOOT_STACK_TOP
+    ld hl,0
+    xor a
+    jr zx48_syscall_return
+
+; Cancellation continuation for a blocked started process.
+zx48_syscall_resume_intr:
+    ld (syscall_user_sp),sp
+    ld (syscall_saved_ix),ix
+    ld sp,BOOT_STACK_TOP
+    ld a,E_INTR
+    scf
+    jr zx48_syscall_return
     ENDM
 
     MACRO EMIT_SYSCALL_IMPL
@@ -90,8 +135,7 @@ zx48_sys_exit:
     ld a,l
     jp zx48_process_exit
 zx48_sys_yield:
-    call zx48_schedule
-    jp zx48_sys_zero_result
+    jp zx48_schedule_finish_syscall
 zx48_sys_sleep:
     ld hl,(syscall_arg_hl)
     ld bc,4
@@ -625,6 +669,8 @@ zx48_sys_console_table:
 zx48_sys_info_table:
     dw zx48_sys_mem_info,zx48_sys_proc_info,zx48_sys_ticks,zx48_sys_time_get,zx48_sys_time_set
 
+syscall_user_sp: dw 0
+syscall_saved_ix: dw 0
 syscall_arg_hl: dw 0
 syscall_arg_de: dw 0
 syscall_arg_bc: dw 0
