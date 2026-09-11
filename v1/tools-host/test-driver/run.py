@@ -155,13 +155,21 @@ def self_build(root: Path) -> tuple[list[CommandResult], dict[str, str], list[di
             raise DriverError(f"E0.03 required file missing: {required.relative_to(root)}")
 
     python_tool = require_project_tool(root, "tools/runtime/python/bin/python")
+    syntax_code = (
+        "import ast,pathlib,sys; "
+        "p=pathlib.Path(sys.argv[1]); "
+        "ast.parse(p.read_text(encoding='utf-8'), filename=str(p))"
+    )
     check = run_command(
-        [python_tool, "-m", "py_compile", driver],
+        [python_tool, "-c", syntax_code, driver],
         cwd=root,
         timeout_seconds=15.0,
     )
     if check.timed_out or check.exit_code != 0:
         raise DriverError("E0.03 driver syntax check failed")
+    bytecode_dir = driver.parent / "__pycache__"
+    if bytecode_dir.exists():
+        raise DriverError("E0.03 syntax check created repository bytecode")
 
     hashes = {
         str(driver.relative_to(root)): sha256_file(driver),
@@ -174,6 +182,7 @@ def self_build(root: Path) -> tuple[list[CommandResult], dict[str, str], list[di
         {"name": "project-local-python", "passed": True, "detail": str(python_tool.relative_to(root))},
         {"name": "absolute-tool-path", "passed": Path(check.argv[0]).is_absolute()},
         {"name": "argv-is-list", "passed": isinstance(check.argv, list)},
+        {"name": "syntax-check-no-bytecode", "passed": not bytecode_dir.exists()},
     ]
     return [check], hashes, assertions
 
