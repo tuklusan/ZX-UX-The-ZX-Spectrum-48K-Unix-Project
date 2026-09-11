@@ -13,10 +13,9 @@
 
 from __future__ import annotations
 
-from copy import deepcopy
 from pathlib import Path
 import re
-from typing import Any
+from typing import Any, Callable
 
 EQU = re.compile(r"^([A-Z][A-Z0-9_]*)\s+EQU\s+(\$[0-9A-Fa-f]+|[0-9]+)\s*$")
 
@@ -179,7 +178,7 @@ def p001_negative_fixtures(include_path: Path) -> list[tuple[str, bool]]:
     constants = parse_equ_constants(include_path.read_text(encoding="utf-8"))
     results: list[tuple[str, bool]] = []
 
-    for start_name, end_name in RANGES:
+    for _start_name, end_name in RANGES:
         broken = dict(constants)
         broken[end_name] += 1
         rejected = False
@@ -221,3 +220,45 @@ def p001_negative_fixtures(include_path: Path) -> list[tuple[str, bool]]:
         results.append(("silent-pal-wall-clock-on-nonpal", True))
 
     return results
+
+
+def dispatch(
+    root: Path,
+    action: str,
+    step: str,
+    *,
+    sha256_file: Callable[[Path], str],
+    run_command: Callable[..., Any],
+    require_project_tool: Callable[[Path, str | Path], Path],
+) -> tuple[list[Any], dict[str, str], list[dict[str, object]]]:
+    del run_command, require_project_tool
+    if step != "P0.01":
+        raise Phase0Error(f"Phase-0 step is not registered: {step}")
+
+    include_path = root / "v1/include/zx48ux.inc"
+    oracle_path = root / "v1/tools-host/test-driver/phase0.py"
+    require(include_path.is_file(), "P0.01 canonical include missing")
+
+    if action == "build":
+        profile = p001_positive(include_path)
+        assertions = [
+            {"name": "memory-map-exact", "passed": True},
+            {"name": "pal-50hz-profile", "passed": profile["frame_hz"] == 50},
+            {"name": "contention-split", "passed": True},
+            {"name": "base-io-complete", "passed": profile["required_io"] == REQUIRED_IO},
+            {"name": "extensions-not-mandatory", "passed": not profile["mandatory_extensions"]},
+        ]
+    else:
+        negative = p001_negative_fixtures(include_path)
+        failed = [name for name, rejected in negative if not rejected]
+        require(not failed, f"P0.01 negative fixtures unexpectedly passed: {failed}")
+        assertions = [{"name": name, "passed": True} for name, _ in negative]
+
+    return (
+        [],
+        {
+            "v1/include/zx48ux.inc": sha256_file(include_path),
+            "v1/tools-host/test-driver/phase0.py": sha256_file(oracle_path),
+        },
+        assertions,
+    )
