@@ -40,6 +40,7 @@ required_phrases=(
 declare -A explicit_header_exemptions=(
   [".zxux-root"]="Exact root-marker bytes are fixed by the implementation contract."
   ["tools/manifest/toolchain.lock.json"]="JSON does not permit comments; this exact manifest path is required by E0.01."
+  ["v1/src/boot/loader.bas"]="The P0.07 production loader is exactly five semantic Sinclair BASIC lines; an added comment line would violate the frozen bootstrap contract."
 )
 
 fail=0
@@ -57,7 +58,6 @@ for exempt_path in "${!explicit_header_exemptions[@]}"; do
     exit 1
   fi
 done
-
 
 if [[ -e .gitmodules ]]; then
   echo "ERROR: submodules are not permitted unless the license-header gate is explicitly extended and approved" >&2
