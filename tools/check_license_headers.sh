@@ -41,6 +41,11 @@ declare -A explicit_header_exemptions=(
   [".zxux-root"]="Exact root-marker bytes are fixed by the implementation contract."
   ["tools/manifest/toolchain.lock.json"]="JSON does not permit comments; this exact manifest path is required by E0.01."
   ["v1/src/boot/loader.bas"]="The P0.07 production loader is exactly five semantic Sinclair BASIC lines; an added comment line would violate the frozen bootstrap contract."
+  ["v1/assets/loading.scr"]="P0.08 requires an exact native 6912-byte Spectrum screen image."
+  ["v1/assets/font4x8.bin"]="P0.10 requires the exact raw 392-byte font resource representation."
+  ["v1/assets/issue.txt"]="P0.10 freezes exact logical issue bytes, leaving no room for a source header."
+  ["v1/assets/crontab.txt"]="P0.10 freezes this resource as zero-length RAW."
+  ["v1/assets/bincat.bin"]="P0.10 freezes the raw 488-byte BCAT resource shape."
 )
 
 fail=0
