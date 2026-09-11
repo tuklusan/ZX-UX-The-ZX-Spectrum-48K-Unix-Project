@@ -36,7 +36,13 @@ zx48_syscall:
     push ix
     ld (syscall_frame_sp),sp
     ld sp,BOOT_STACK_TOP
+    push af
+    push de
+    push hl
     call zx48_kernel_stack_sample
+    pop hl
+    pop de
+    pop af
     call zx48_syscall_impl
 zx48_syscall_return:
     push af
@@ -453,14 +459,6 @@ zx48_sys_mem_info:
     ret c
     ld hl,(syscall_arg_hl)
     call zx48_mem_info
-    ld hl,(syscall_arg_hl)
-    ld de,14
-    add hl,de
-    call zx48_process_count
-    ld (hl),a
-    inc hl
-    xor a
-    ld (hl),a
     ld hl,(syscall_arg_hl)
     xor a
     ret
