@@ -26,6 +26,15 @@ KERNEL_SIZE = 8192
 BOOT_GATEWAY = 0xE003
 BOOT_GATEWAY_DECIMAL = 57347
 
+M48O_TXT = 1
+M48O_BIN = 2
+M48O_FNT = 9
+M48O_CFG = 10
+M48O_SYS = 11
+DIR_BIN = 1
+DIR_ETC = 3
+DIR_SYSTEM = 7
+
 TOK_SCREEN = 0xAA
 TOK_CODE = 0xAF
 TOK_USR = 0xC0
@@ -51,6 +60,14 @@ class LogicalFile:
     param2: int
 
 
+@dataclass(frozen=True)
+class M48OObject:
+    name: str
+    object_type: int
+    target_directory: int
+    payload: bytes
+
+
 def _require(condition: bool, message: str) -> None:
     if not condition:
         raise TapeError(message)
@@ -59,6 +76,15 @@ def _require(condition: bool, message: str) -> None:
 def _u16(value: int) -> bytes:
     _require(0 <= value <= 0xFFFF, "u16 out of range")
     return struct.pack("<H", value)
+
+
+def crc16_ccitt_false(data: bytes) -> int:
+    crc = 0xFFFF
+    for byte in data:
+        crc ^= byte << 8
+        for _ in range(8):
+            crc = ((crc << 1) ^ 0x1021) & 0xFFFF if crc & 0x8000 else (crc << 1) & 0xFFFF
+    return crc
 
 
 def _integer_number(value: int) -> bytes:
@@ -87,7 +113,7 @@ def tokenized_loader(source: str) -> bytes:
     n7 = _integer_number(7)
     n24575 = _integer_number(24575)
     n57347 = _integer_number(BOOT_GATEWAY_DECIMAL)
-    lines = (
+    return b"".join((
         _basic_line(
             10,
             bytes((TOK_BORDER, 0x20)) + n0 + b": "
@@ -99,8 +125,7 @@ def tokenized_loader(source: str) -> bytes:
         _basic_line(30, bytes((TOK_LOAD, 0x20, 0x22, 0x22, 0x20, TOK_SCREEN))),
         _basic_line(40, bytes((TOK_LOAD, 0x20, 0x22, 0x22, 0x20, TOK_CODE))),
         _basic_line(50, bytes((TOK_RANDOMIZE, 0x20, TOK_USR, 0x20)) + n57347),
-    )
-    return b"".join(lines)
+    ))
 
 
 def _checksum(payload_without_checksum: bytes) -> int:
@@ -135,13 +160,81 @@ def logical_file_blocks(file: LogicalFile) -> bytes:
     return tap_block(0x00, header_body(file)) + tap_block(0xFF, file.data)
 
 
+def minimal_shell_mex1() -> bytes:
+    # LD A,SYS_EXIT ; LD HL,0 ; JP 0xE000. No relocations are required because
+    # the syscall gateway is fixed by the public ABI.
+    image = bytes((0x3E, 0x01, 0x21, 0x00, 0x00, 0xC3, 0x00, 0xE0))
+    header = bytearray(24)
+    header[0:4] = b"MEX1"
+    header[4] = 1
+    header[5] = 0
+    header[6:8] = _u16(24)
+    header[8:10] = _u16(len(image))
+    header[10:12] = _u16(0)
+    header[12:14] = _u16(0)
+    header[14:16] = _u16(128)
+    header[16:18] = _u16(0)
+    header[18:20] = _u16(24 + len(image))
+    header[20:22] = _u16(crc16_ccitt_false(image))
+    header[22:24] = b"\0\0"
+    header[22:24] = _u16(crc16_ccitt_false(bytes(header)))
+    return bytes(header) + image
+
+
+def m48o_header(obj: M48OObject) -> bytes:
+    encoded = obj.name.encode("ascii")
+    _require(obj.name == obj.name.lower(), "M48O bootstrap name must be lower-case")
+    _require(1 <= len(encoded) <= 10, "M48O base name must be 1..10 bytes")
+    _require(obj.object_type in (M48O_TXT, M48O_BIN, M48O_FNT, M48O_CFG, M48O_SYS), "invalid bootstrap object type")
+    allowed = {
+        M48O_BIN: {DIR_BIN},
+        M48O_TXT: {DIR_ETC},
+        M48O_CFG: {DIR_ETC},
+        M48O_FNT: {DIR_SYSTEM},
+        M48O_SYS: {DIR_SYSTEM},
+    }
+    _require(obj.target_directory in allowed[obj.object_type], "invalid bootstrap object placement")
+    _require(len(obj.payload) <= 32768, "M48O payload too large")
+
+    header = bytearray(32)
+    header[0:4] = b"M48O"
+    header[4] = 1
+    header[5] = obj.object_type
+    header[6] = 0  # RAW
+    header[7] = obj.target_directory
+    header[8:10] = _u16(len(obj.payload))
+    header[10:12] = _u16(len(obj.payload))
+    header[12:14] = _u16(0)
+    header[14:16] = _u16(crc16_ccitt_false(obj.payload))
+    header[16:26] = encoded.ljust(10, b"\0")
+    header[26:28] = b"\0\0"
+    header[28:32] = b"\0\0\0\0"
+    header[26:28] = _u16(crc16_ccitt_false(bytes(header)))
+    return bytes(header)
+
+
+def m48o_blocks(obj: M48OObject) -> bytes:
+    out = bytearray(tap_block(0xFF, m48o_header(obj)))
+    for offset in range(0, len(obj.payload), 512):
+        out.extend(tap_block(0xFF, obj.payload[offset:offset + 512]))
+    return bytes(out)
+
+
+def bootstrap_resources(*, font: bytes, issue: bytes, crontab: bytes, bincat: bytes) -> tuple[M48OObject, ...]:
+    resources = (
+        M48OObject("sh", M48O_BIN, DIR_BIN, minimal_shell_mex1()),
+        M48OObject("font4x8", M48O_FNT, DIR_SYSTEM, font),
+        M48OObject("issue", M48O_TXT, DIR_ETC, issue),
+        M48OObject("crontab", M48O_CFG, DIR_ETC, crontab),
+        M48OObject("bincat", M48O_SYS, DIR_SYSTEM, bincat),
+    )
+    _require(tuple(item.name for item in resources) == ("sh", "font4x8", "issue", "crontab", "bincat"), "bootstrap resource order")
+    return resources
+
+
 def validate_bootstrap_contract(
-    *,
-    loader_source: str,
-    screen: bytes,
-    kernel: bytes,
-    kernel_start: int = KERNEL_START,
-    boot_gateway: int = BOOT_GATEWAY,
+    *, loader_source: str, screen: bytes, kernel: bytes,
+    kernel_start: int = KERNEL_START, boot_gateway: int = BOOT_GATEWAY,
     names: tuple[str, str, str] = ("zx48ux", "zx48uxscr", "kernel"),
 ) -> tuple[LogicalFile, LogicalFile, LogicalFile]:
     _require(len(screen) == SCREEN_SIZE, "loading screen must be exactly 6912 bytes")
@@ -149,34 +242,31 @@ def validate_bootstrap_contract(
     _require(kernel_start == KERNEL_START, "kernel CODE start must be E000")
     _require(boot_gateway == BOOT_GATEWAY, "loader boot gateway must be E003")
     _require(names == ("zx48ux", "zx48uxscr", "kernel"), "bootstrap native-file name/order mismatch")
-
     program = tokenized_loader(loader_source)
-    files = (
+    return (
         LogicalFile("zx48ux", PROGRAM_TYPE, program, 10, len(program)),
         LogicalFile("zx48uxscr", CODE_TYPE, screen, SCREEN_START, 0x8000),
         LogicalFile("kernel", CODE_TYPE, kernel, KERNEL_START, 0x8000),
     )
-    return files
 
 
 def build_bootstrap_prefix(
-    *,
-    loader_source: str,
-    screen: bytes,
-    kernel: bytes,
-    kernel_start: int = KERNEL_START,
-    boot_gateway: int = BOOT_GATEWAY,
+    *, loader_source: str, screen: bytes, kernel: bytes,
+    kernel_start: int = KERNEL_START, boot_gateway: int = BOOT_GATEWAY,
     names: tuple[str, str, str] = ("zx48ux", "zx48uxscr", "kernel"),
 ) -> bytes:
     files = validate_bootstrap_contract(
-        loader_source=loader_source,
-        screen=screen,
-        kernel=kernel,
-        kernel_start=kernel_start,
-        boot_gateway=boot_gateway,
-        names=names,
+        loader_source=loader_source, screen=screen, kernel=kernel,
+        kernel_start=kernel_start, boot_gateway=boot_gateway, names=names,
     )
     return b"".join(logical_file_blocks(item) for item in files)
+
+
+def build_boot_tape(*, loader_source: str, screen: bytes, kernel: bytes, font: bytes, issue: bytes, crontab: bytes, bincat: bytes) -> bytes:
+    out = bytearray(build_bootstrap_prefix(loader_source=loader_source, screen=screen, kernel=kernel))
+    for obj in bootstrap_resources(font=font, issue=issue, crontab=crontab, bincat=bincat):
+        out.extend(m48o_blocks(obj))
+    return bytes(out)
 
 
 def append_logical_files(prefix: bytes, files: Iterable[LogicalFile]) -> bytes:
