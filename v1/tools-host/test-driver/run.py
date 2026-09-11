@@ -25,6 +25,7 @@ import tempfile
 import time
 from typing import Sequence
 
+import asm_policy
 import evidence as evidence_contract
 
 ROOT_MARKER = b"ZX-UX project root"
@@ -218,7 +219,8 @@ def self_test(root: Path) -> tuple[list[CommandResult], dict[str, str], list[dic
         copied_driver.parent.mkdir(parents=True)
         (copied_root / ".zxux-root").write_bytes(ROOT_MARKER)
         shutil.copyfile(Path(__file__).resolve(), copied_driver)
-        shutil.copyfile(Path(__file__).with_name("evidence.py"), copied_driver.with_name("evidence.py"))
+        for module_name in ("evidence.py", "asm_policy.py"):
+            shutil.copyfile(Path(__file__).with_name(module_name), copied_driver.with_name(module_name))
         relocated = run_command(
             [python_tool, copied_driver, "build", "--step", "E0.03", "--probe-root"],
             cwd=Path(temporary),
@@ -303,6 +305,79 @@ def e004_test(root: Path) -> tuple[list[CommandResult], dict[str, str], list[dic
     return [], {str(validator.relative_to(root)): sha256_file(validator)}, assertions
 
 
+def e005_build(root: Path) -> tuple[list[CommandResult], dict[str, str], list[dict[str, object]]]:
+    oracle = root_path(root, "v1/tools-host/test-driver/asm_policy.py")
+    abi = root_path(root, "v1/docs/abi.md")
+    include = root_path(root, "v1/include/zx48ux.inc")
+    for required in (oracle, abi, include):
+        if not required.is_file():
+            raise DriverError(f"E0.05 required file missing: {required.relative_to(root)}")
+
+    fixture_path, fixture_text, review_evidence = asm_policy.positive_fixture()
+    findings = asm_policy.scan_source(fixture_path, fixture_text)
+    findings.extend(asm_policy.review_findings(review_evidence))
+    if findings:
+        raise DriverError(f"E0.05 positive policy fixture failed: {findings!r}")
+
+    repository_findings: list[str] = []
+    candidate_paths = [include]
+    source_root = root_path(root, "v1/src")
+    if source_root.is_dir():
+        candidate_paths.extend(sorted(source_root.rglob("*.asm")))
+        candidate_paths.extend(sorted(source_root.rglob("*.inc")))
+    for candidate in candidate_paths:
+        relative = candidate.relative_to(root)
+        for finding in asm_policy.scan_source(relative, candidate.read_text(encoding="utf-8")):
+            repository_findings.append(f"{relative}:{finding.line}:{finding.rule}:{finding.detail}")
+    if repository_findings:
+        raise DriverError("E0.05 repository policy findings: " + " | ".join(repository_findings))
+
+    hashes = {
+        str(oracle.relative_to(root)): sha256_file(oracle),
+        str(abi.relative_to(root)): sha256_file(abi),
+        str(include.relative_to(root)): sha256_file(include),
+    }
+    assertions = [
+        {"name": "positive-policy-fixture", "passed": True},
+        {"name": "repository-assembly-policy", "passed": True},
+        {"name": "review-evidence-complete", "passed": True},
+    ]
+    return [], hashes, assertions
+
+
+def e005_test(root: Path) -> tuple[list[CommandResult], dict[str, str], list[dict[str, object]]]:
+    oracle = root_path(root, "v1/tools-host/test-driver/asm_policy.py")
+    assertions: list[dict[str, object]] = []
+
+    for expected_rule, path, text in asm_policy.negative_fixtures():
+        rules = {finding.rule for finding in asm_policy.scan_source(path, text)}
+        if expected_rule not in rules:
+            raise DriverError(f"E0.05 negative fixture did not trigger {expected_rule}: {sorted(rules)}")
+        assertions.append({"name": f"reject-{expected_rule}", "passed": True})
+
+    seed_rules = {
+        finding.rule
+        for finding in asm_policy.scan_source(
+            Path("v1/src/kernel/keyboard.asm"),
+            "    ld a,r ; NONSECURITY_SEED_ONLY\n",
+        )
+    }
+    if "r-not-correctness-source" in seed_rules:
+        raise DriverError("E0.05 legal non-security R seed fixture was rejected")
+    assertions.append({"name": "allow-r-nonsecurity-seed", "passed": True})
+
+    for review_rule in asm_policy.REVIEW_ONLY_RULES:
+        review = {name: True for name in asm_policy.REVIEW_ONLY_RULES}
+        review[review_rule] = False
+        rules = {finding.rule for finding in asm_policy.review_findings(review)}
+        expected = f"review-evidence:{review_rule}"
+        if expected not in rules:
+            raise DriverError(f"E0.05 missing review evidence did not trigger {expected}")
+        assertions.append({"name": f"require-{review_rule}", "passed": True})
+
+    return [], {str(oracle.relative_to(root)): sha256_file(oracle)}, assertions
+
+
 def fuse_probe(root: Path) -> tuple[list[CommandResult], dict[str, str], list[dict[str, object]]]:
     fuse = require_project_tool(root, "tools/runtime/fuse/bin/fuse")
     result = run_command([fuse, "--version"], cwd=root, timeout_seconds=15.0)
@@ -324,6 +399,8 @@ def dispatch(root: Path, action: str, step: str) -> tuple[list[CommandResult], d
         return self_build(root) if action == "build" else self_test(root)
     if step == "E0.04":
         return e004_build(root) if action == "build" else e004_test(root)
+    if step == "E0.05":
+        return e005_build(root) if action == "build" else e005_test(root)
     if step == "E0.FUSE":
         return fuse_probe(root)
     raise DriverError(f"step is not registered with the test driver: {step}")
