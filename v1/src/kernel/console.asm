@@ -22,6 +22,16 @@ TTY_REQ_GET_CURSOR       EQU 5
 TTY_REQ_GET_OWNER        EQU 6
 TTY_REQ_SET_OWNER        EQU 7
 
+CONSOLE_STATE_BASE       EQU CURSOR_STATE_END
+console_count            EQU CONSOLE_STATE_BASE+0
+tty_mode                 EQU CONSOLE_STATE_BASE+2
+tty_row                  EQU CONSOLE_STATE_BASE+3
+tty_col                  EQU CONSOLE_STATE_BASE+4
+tty_cursor_shape         EQU CONSOLE_STATE_BASE+5
+tty_cursor_visible       EQU CONSOLE_STATE_BASE+6
+tty_cursor_due           EQU CONSOLE_STATE_BASE+7
+CONSOLE_STATE_END        EQU CONSOLE_STATE_BASE+8
+
     MACRO EMIT_CONSOLE_ROUTINES
 zx48_console_init:
     ld a,TTY_MODE_64
@@ -316,12 +326,4 @@ zx48_tty_perm:
     ld a,E_PERM
     scf
     ret
-
-console_count: dw 0
-tty_mode: db TTY_MODE_64
-tty_row: db 0
-tty_col: db 0
-tty_cursor_shape: db TTY_CURSOR_UNDERLINE
-tty_cursor_visible: db 0
-tty_cursor_due: db 0
     ENDM
