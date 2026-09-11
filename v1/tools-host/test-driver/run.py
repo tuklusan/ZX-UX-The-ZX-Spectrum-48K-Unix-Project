@@ -25,6 +25,8 @@ import tempfile
 import time
 from typing import Sequence
 
+import evidence as evidence_contract
+
 ROOT_MARKER = b"ZX-UX project root"
 DEFAULT_TIMEOUT_SECONDS = 30.0
 CERT_DIR = Path("v1/dist/certification")
@@ -216,6 +218,7 @@ def self_test(root: Path) -> tuple[list[CommandResult], dict[str, str], list[dic
         copied_driver.parent.mkdir(parents=True)
         (copied_root / ".zxux-root").write_bytes(ROOT_MARKER)
         shutil.copyfile(Path(__file__).resolve(), copied_driver)
+        shutil.copyfile(Path(__file__).with_name("evidence.py"), copied_driver.with_name("evidence.py"))
         relocated = run_command(
             [python_tool, copied_driver, "build", "--step", "E0.03", "--probe-root"],
             cwd=Path(temporary),
@@ -234,6 +237,70 @@ def self_test(root: Path) -> tuple[list[CommandResult], dict[str, str], list[dic
         {"name": "relocated-root", "passed": True},
     ]
     return [echo, timed, relocated], hashes, assertions
+
+
+def e004_build(root: Path) -> tuple[list[CommandResult], dict[str, str], list[dict[str, object]]]:
+    validator = root_path(root, "v1/tools-host/test-driver/evidence.py")
+    plan = root_path(root, "v1/docs/test-plan.md")
+    readme = root_path(root, "v1/dist/certification/README.md")
+    for required in (validator, plan, readme):
+        if not required.is_file():
+            raise DriverError(f"E0.04 required file missing: {required.relative_to(root)}")
+
+    fixture = evidence_contract.valid_fixture()
+    try:
+        evidence_contract.validate_final_record(fixture)
+    except evidence_contract.EvidenceError as exc:
+        raise DriverError(f"E0.04 valid evidence fixture rejected: {exc}") from exc
+
+    hashes = {
+        str(validator.relative_to(root)): sha256_file(validator),
+        str(plan.relative_to(root)): sha256_file(plan),
+        str(readme.relative_to(root)): sha256_file(readme),
+    }
+    assertions = [
+        {"name": "valid-final-record-accepted", "passed": True},
+        {"name": "required-hashes-present", "passed": True},
+        {"name": "pass-marker-present", "passed": True},
+        {"name": "clean-worktree-claim-present", "passed": True},
+    ]
+    return [], hashes, assertions
+
+
+def e004_test(root: Path) -> tuple[list[CommandResult], dict[str, str], list[dict[str, object]]]:
+    validator = root_path(root, "v1/tools-host/test-driver/evidence.py")
+    cases: list[tuple[str, dict[str, object]]] = []
+
+    missing_hash = evidence_contract.valid_fixture()
+    missing_hash.pop("toolchain_lock_sha256")
+    cases.append(("missing-hash", missing_hash))
+
+    missing_marker = evidence_contract.valid_fixture()
+    missing_marker.pop("pass_marker")
+    cases.append(("missing-pass-marker", missing_marker))
+
+    dirty = evidence_contract.valid_fixture()
+    dirty["worktree_clean"] = False
+    cases.append(("dirty-worktree", dirty))
+
+    failed_prerequisite = evidence_contract.valid_fixture()
+    failed_prerequisite["prerequisites"] = {"E0.03": "FAIL"}
+    cases.append(("failed-prerequisite", failed_prerequisite))
+
+    assertions: list[dict[str, object]] = []
+    for name, record in cases:
+        rejected = False
+        detail = ""
+        try:
+            evidence_contract.validate_final_record(record)
+        except evidence_contract.EvidenceError as exc:
+            rejected = True
+            detail = str(exc)
+        if not rejected:
+            raise DriverError(f"E0.04 negative fixture unexpectedly passed: {name}")
+        assertions.append({"name": name, "passed": True, "detail": detail})
+
+    return [], {str(validator.relative_to(root)): sha256_file(validator)}, assertions
 
 
 def fuse_probe(root: Path) -> tuple[list[CommandResult], dict[str, str], list[dict[str, object]]]:
@@ -255,6 +322,8 @@ def fuse_probe(root: Path) -> tuple[list[CommandResult], dict[str, str], list[di
 def dispatch(root: Path, action: str, step: str) -> tuple[list[CommandResult], dict[str, str], list[dict[str, object]]]:
     if step == "E0.03":
         return self_build(root) if action == "build" else self_test(root)
+    if step == "E0.04":
+        return e004_build(root) if action == "build" else e004_test(root)
     if step == "E0.FUSE":
         return fuse_probe(root)
     raise DriverError(f"step is not registered with the test driver: {step}")
@@ -275,7 +344,7 @@ def main() -> int:
         commands, hashes, assertions = dispatch(root, args.action, args.step)
         failed_assertions = [item for item in assertions if item.get("passed") is not True]
         status = "PASS" if not failed_assertions else "FAIL"
-        evidence = write_evidence(
+        evidence_path = write_evidence(
             root,
             args.step,
             args.action,
@@ -287,7 +356,7 @@ def main() -> int:
         if failed_assertions:
             raise DriverError(f"{len(failed_assertions)} assertion(s) failed")
         print(f"ZX-UX {args.step} {args.action.upper()} PASS")
-        print(f"evidence={evidence.relative_to(root)}")
+        print(f"evidence={evidence_path.relative_to(root)}")
         return 0
     except (DriverError, OSError, ValueError) as exc:
         print(f"ZX-UX TEST DRIVER FAIL: {exc}", file=sys.stderr)
