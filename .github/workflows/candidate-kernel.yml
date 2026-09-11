@@ -21,6 +21,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: zxux-kernel-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   kernel-build:
     runs-on: ubuntu-slim
