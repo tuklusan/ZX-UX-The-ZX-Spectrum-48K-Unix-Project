@@ -433,9 +433,10 @@ zx48_mem_next:
     call zx48_mem_put
     ld de,(memory_pinned_bytes)
     call zx48_mem_put
-    xor a
+    call zx48_process_count
     ld (hl),a
     inc hl
+    xor a
     ld (hl),a
     ret
 zx48_mem_put:
