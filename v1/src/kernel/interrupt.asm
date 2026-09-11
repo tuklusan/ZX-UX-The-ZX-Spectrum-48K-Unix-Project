@@ -12,6 +12,18 @@
 ;
 ; Bounded IM2 heartbeat. No process scheduling, allocation, ROM call, or screen edit.
 
+; IM2/time state belongs in the fixed interrupt/emergency data block.
+INTERRUPT_STATE_BASE      EQU EMERGENCY_START
+altreg_busy               EQU INTERRUPT_STATE_BASE+0
+scheduler_tick_due        EQU INTERRUPT_STATE_BASE+1
+cursor_frame_count        EQU INTERRUPT_STATE_BASE+2
+kernel_ticks              EQU INTERRUPT_STATE_BASE+3
+wall_seconds              EQU INTERRUPT_STATE_BASE+7
+wall_revision             EQU INTERRUPT_STATE_BASE+11
+wall_subsecond            EQU INTERRUPT_STATE_BASE+13
+wall_valid                EQU INTERRUPT_STATE_BASE+14
+INTERRUPT_STATE_END       EQU INTERRUPT_STATE_BASE+15
+
     MACRO EMIT_INTERRUPT_ROUTINE
 zx48_interrupt:
     push af
@@ -106,13 +118,4 @@ zx48_interrupt_break:
     ld (break_pending),a
 zx48_interrupt_done:
     ret
-
-altreg_busy: db 0
-scheduler_tick_due: db 0
-cursor_frame_count: db 0
-kernel_ticks: dw 0,0
-wall_seconds: dw 0,0
-wall_revision: dw 0
-wall_subsecond: db 0
-wall_valid: db 0
     ENDM
