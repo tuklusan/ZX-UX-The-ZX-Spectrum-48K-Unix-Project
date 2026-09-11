@@ -1,0 +1,85 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: ZX-UX Phase 1 Certification
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/phase1-certification.yml
+      - tools/manifest/toolchain.lock.json
+      - tools/scripts/bootstrap-environment.py
+      - tools/scripts/verify-environment.py
+      - v1/include/**
+      - v1/src/boot/**
+      - v1/src/kernel/**
+      - v1/tools-host/test-driver/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zxux-phase1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  phase1-certification:
+    runs-on: ubuntu-slim
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout current commit
+        uses: actions/checkout@v7
+
+      - name: Select pinned Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13.15'
+          check-latest: false
+
+      - name: Install native build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            cmake \
+            gettext \
+            libaudiofile-dev \
+            libfreetype6-dev \
+            libgcrypt20-dev \
+            libglib2.0-dev \
+            libpng-dev \
+            libsdl1.2-dev \
+            libtool \
+            libxml2-dev \
+            perl \
+            pkg-config
+
+      - name: Acquire pinned project runtime
+        run: python tools/scripts/bootstrap-environment.py
+
+      - name: Certify pinned project runtime
+        run: tools/runtime/python/bin/python tools/scripts/verify-environment.py
+
+      - name: Execute registered Phase 1 gates
+        run: tools/runtime/python/bin/python v1/tools-host/test-driver/phase1_gate.py
+
+      - name: Upload Phase 1 evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: zxux-phase1-${{ github.run_id }}-${{ github.run_attempt }}
+          path: v1/dist/certification/P1.*.json
+          retention-days: 90
+          if-no-files-found: error
