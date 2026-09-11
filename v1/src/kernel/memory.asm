@@ -90,7 +90,7 @@ zx48_alloc_take_low:
     ld (ix+3),h
     pop hl
     pop bc
-    jr zx48_alloc_done
+    jp zx48_alloc_done
 zx48_alloc_take_high:
     push hl
     add hl,de
@@ -111,19 +111,20 @@ zx48_alloc_take_high:
     ld (ix+3),h
     pop hl
     pop bc
-    jr zx48_alloc_done
+    jp zx48_alloc_done
 zx48_alloc_next:
     ld de,4
     add ix,de
     pop bc
-    djnz zx48_alloc_loop
+    dec b
+    jp nz,zx48_alloc_loop
     ld a,(memory_policy)
     and $7f
     cp ALLOC_COLD_PREFERRED
     jr nz,zx48_alloc_fail
     xor a
     ld (memory_policy),a
-    jr zx48_alloc_retry
+    jp zx48_alloc_retry
 zx48_alloc_fail:
     ld a,E_NOMEM
     scf
@@ -145,23 +146,23 @@ zx48_free:
     or c
     ret z
     bit 0,l
-    jr nz,zx48_free_bad
+    jp nz,zx48_free_bad
     bit 0,c
-    jr nz,zx48_free_bad
+    jp nz,zx48_free_bad
     ld a,h
     cp COLD_START/256
-    jr c,zx48_free_bad
+    jp c,zx48_free_bad
     cp KERNEL_START/256
-    jr nc,zx48_free_bad
+    jp nc,zx48_free_bad
     ld (memory_free_start),hl
     ld (memory_free_length),bc
     add hl,bc
-    jr c,zx48_free_bad
+    jp c,zx48_free_bad
     ld de,ARENA_END+1
     or a
     sbc hl,de
     jr c,zx48_free_end_ok
-    jr nz,zx48_free_bad
+    jp nz,zx48_free_bad
 zx48_free_end_ok:
     add hl,de
     ld (memory_candidate),hl
@@ -188,7 +189,7 @@ zx48_free_live:
     ld d,(ix+1)
     or a
     sbc hl,de
-    jr z,zx48_free_prepend
+    jp z,zx48_free_prepend
     jr c,zx48_free_next
     ; existing_end compared with new_start.
     ld l,(ix+0)
@@ -199,9 +200,9 @@ zx48_free_live:
     ld de,(memory_free_start)
     or a
     sbc hl,de
-    jr z,zx48_free_append
+    jp z,zx48_free_append
     jr c,zx48_free_next
-    jr zx48_free_bad
+    jp zx48_free_bad
 zx48_free_next:
     ld de,4
     add ix,de
@@ -209,7 +210,7 @@ zx48_free_next:
     ld hl,(memory_info_ptr)
     ld a,h
     or l
-    jr z,zx48_free_nospc
+    jp z,zx48_free_nospc
     push hl
     pop ix
     ld hl,(memory_free_start)
@@ -218,7 +219,7 @@ zx48_free_next:
     ld (ix+1),h
     ld (ix+2),c
     ld (ix+3),b
-    jr zx48_free_normalize
+    jp zx48_free_normalize
 zx48_free_prepend:
     ld hl,(memory_free_start)
     ld (ix+0),l
@@ -382,6 +383,7 @@ zx48_mem_scan:
     pop hl
     jr c,zx48_mem_cold_whole
     jr z,zx48_mem_cold_whole
+    ; crossing extent: cold=8000-start, fast=end-8000.
     push bc
     ld de,FAST_START
     ex de,hl
