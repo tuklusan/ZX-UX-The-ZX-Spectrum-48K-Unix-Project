@@ -1,0 +1,78 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: ZX-UX Candidate Kernel
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+env:
+  CANDIDATE_SHA: 05c20843a6cf17869657061dc4ecaa836a24a4de
+
+jobs:
+  candidate-kernel:
+    runs-on: ubuntu-slim
+    timeout-minutes: 10
+    steps:
+      - name: Checkout candidate commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+          fetch-depth: 1
+
+      - name: Install native build prerequisite
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential cmake
+
+      - name: Build pinned assembler
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import pathlib
+          import tarfile
+          import urllib.request
+
+          root = pathlib.Path('.')
+          lock = json.loads((root / 'tools/manifest/toolchain.lock.json').read_text())
+          item = next(x for x in lock['artifacts'] if x['id'] == 'sjasmplus')
+          archive = pathlib.Path('/tmp/sjasmplus.tar.xz')
+          with urllib.request.urlopen(item['url'], timeout=120) as response:
+              archive.write_bytes(response.read())
+          data = archive.read_bytes()
+          assert len(data) == item['size']
+          assert hashlib.sha256(data).hexdigest() == item['sha256']
+          source_root = pathlib.Path('/tmp/sjasmplus-source')
+          source_root.mkdir(exist_ok=True)
+          with tarfile.open(archive, 'r:xz') as tf:
+              tf.extractall(source_root, filter='data')
+          source = next(p for p in source_root.iterdir() if p.is_dir())
+          print(source)
+          (pathlib.Path('/tmp/sjasmplus-source-path')).write_text(str(source))
+          PY
+          source="$(cat /tmp/sjasmplus-source-path)"
+          cmake -DENABLE_LUA=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/tmp/sjasmplus -S "$source" -B /tmp/sjasmplus-build
+          cmake --build /tmp/sjasmplus-build --parallel 2
+          cmake --install /tmp/sjasmplus-build
+
+      - name: Assemble candidate kernel
+        run: |
+          mkdir -p v1/build
+          (cd v1/src/kernel && /tmp/sjasmplus/bin/sjasmplus --nologo kernel.asm)
+          test "$(wc -c < v1/build/kernel.bin)" -eq 8192
+          sha256sum v1/build/kernel.bin
