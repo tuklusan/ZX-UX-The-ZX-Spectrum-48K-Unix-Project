@@ -168,19 +168,20 @@ zx48_free_end_ok:
     ld (memory_candidate),hl
     ld hl,0
     ld (memory_info_ptr),hl
+    ld (memory_request),hl
     ld ix,memory_free_extents
     ld b,FREE_EXTENT_COUNT
 zx48_free_scan:
     ld a,(ix+2)
     or (ix+3)
     jr nz,zx48_free_live
-    ld hl,(memory_info_ptr)
+    ld hl,(memory_request)
     ld a,h
     or l
     jr nz,zx48_free_next
     push ix
     pop hl
-    ld (memory_info_ptr),hl
+    ld (memory_request),hl
     jr zx48_free_next
 zx48_free_live:
     ; new_end compared with existing_start.
@@ -191,7 +192,8 @@ zx48_free_live:
     sbc hl,de
     jp z,zx48_free_prepend
     jr c,zx48_free_next
-    ; existing_end compared with new_start.
+    ; existing_end compared with new_start. An append is remembered until the
+    ; full table has proved that no later live extent overlaps this free.
     ld l,(ix+0)
     ld h,(ix+1)
     ld e,(ix+2)
@@ -200,14 +202,23 @@ zx48_free_live:
     ld de,(memory_free_start)
     or a
     sbc hl,de
-    jp z,zx48_free_append
+    jr z,zx48_free_note_append
     jr c,zx48_free_next
     jp zx48_free_bad
+zx48_free_note_append:
+    push ix
+    pop hl
+    ld (memory_info_ptr),hl
+    jr zx48_free_next
 zx48_free_next:
     ld de,4
     add ix,de
     djnz zx48_free_scan
     ld hl,(memory_info_ptr)
+    ld a,h
+    or l
+    jr nz,zx48_free_append_saved
+    ld hl,(memory_request)
     ld a,h
     or l
     jp z,zx48_free_nospc
@@ -220,6 +231,10 @@ zx48_free_next:
     ld (ix+2),c
     ld (ix+3),b
     jp zx48_free_normalize
+zx48_free_append_saved:
+    push hl
+    pop ix
+    jr zx48_free_append
 zx48_free_prepend:
     ld hl,(memory_free_start)
     ld (ix+0),l
