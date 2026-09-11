@@ -26,6 +26,7 @@ import time
 from typing import Sequence
 
 import asm_policy
+import emulator_safety
 import evidence as evidence_contract
 
 ROOT_MARKER = b"ZX-UX project root"
@@ -219,7 +220,7 @@ def self_test(root: Path) -> tuple[list[CommandResult], dict[str, str], list[dic
         copied_driver.parent.mkdir(parents=True)
         (copied_root / ".zxux-root").write_bytes(ROOT_MARKER)
         shutil.copyfile(Path(__file__).resolve(), copied_driver)
-        for module_name in ("evidence.py", "asm_policy.py"):
+        for module_name in ("evidence.py", "asm_policy.py", "emulator_safety.py"):
             shutil.copyfile(Path(__file__).with_name(module_name), copied_driver.with_name(module_name))
         relocated = run_command(
             [python_tool, copied_driver, "build", "--step", "E0.03", "--probe-root"],
@@ -378,6 +379,50 @@ def e005_test(root: Path) -> tuple[list[CommandResult], dict[str, str], list[dic
     return [], {str(oracle.relative_to(root)): sha256_file(oracle)}, assertions
 
 
+def e006_build(root: Path) -> tuple[list[CommandResult], dict[str, str], list[dict[str, object]]]:
+    validator = root_path(root, "v1/tools-host/test-driver/emulator_safety.py")
+    contract = root_path(root, "v1/tests/emulator/safety-contract.toml")
+    plan = root_path(root, "v1/docs/test-plan.md")
+    for required in (validator, contract, plan):
+        if not required.is_file():
+            raise DriverError(f"E0.06 required file missing: {required.relative_to(root)}")
+    try:
+        emulator_safety.validate(emulator_safety.load(contract))
+    except emulator_safety.SafetyContractError as exc:
+        raise DriverError(f"E0.06 safety contract rejected: {exc}") from exc
+    hashes = {
+        str(validator.relative_to(root)): sha256_file(validator),
+        str(contract.relative_to(root)): sha256_file(contract),
+        str(plan.relative_to(root)): sha256_file(plan),
+    }
+    assertions = [
+        {"name": "four-level-evidence-hierarchy", "passed": True},
+        {"name": "known-writable-rom-call-stack", "passed": True},
+        {"name": "hard-emulator-timeout", "passed": True},
+        {"name": "physical-claim-boundary", "passed": True},
+    ]
+    return [], hashes, assertions
+
+
+def e006_test(root: Path) -> tuple[list[CommandResult], dict[str, str], list[dict[str, object]]]:
+    validator = root_path(root, "v1/tools-host/test-driver/emulator_safety.py")
+    contract = root_path(root, "v1/tests/emulator/safety-contract.toml")
+    valid = emulator_safety.load(contract)
+    assertions: list[dict[str, object]] = []
+    for name, fixture in emulator_safety.negative_fixtures(valid):
+        rejected = False
+        detail = ""
+        try:
+            emulator_safety.validate(fixture)
+        except emulator_safety.SafetyContractError as exc:
+            rejected = True
+            detail = str(exc)
+        if not rejected:
+            raise DriverError(f"E0.06 unsafe fixture unexpectedly passed: {name}")
+        assertions.append({"name": name, "passed": True, "detail": detail})
+    return [], {str(validator.relative_to(root)): sha256_file(validator)}, assertions
+
+
 def fuse_probe(root: Path) -> tuple[list[CommandResult], dict[str, str], list[dict[str, object]]]:
     fuse = require_project_tool(root, "tools/runtime/fuse/bin/fuse")
     result = run_command([fuse, "--version"], cwd=root, timeout_seconds=15.0)
@@ -401,6 +446,8 @@ def dispatch(root: Path, action: str, step: str) -> tuple[list[CommandResult], d
         return e004_build(root) if action == "build" else e004_test(root)
     if step == "E0.05":
         return e005_build(root) if action == "build" else e005_test(root)
+    if step == "E0.06":
+        return e006_build(root) if action == "build" else e006_test(root)
     if step == "E0.FUSE":
         return fuse_probe(root)
     raise DriverError(f"step is not registered with the test driver: {step}")
