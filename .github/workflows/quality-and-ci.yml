@@ -44,23 +44,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Repair inherited policy text
+      - name: Repair inherited policy and text quality
         id: repair
         run: |
           python3 tools/repair_legacy_policy.py
-          if git diff --quiet -- docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV02.md; then
+          python3 tools/repair_text_quality.py
+          if git diff --quiet -- \
+            docs/01-ZX-UX-ARCHITECTURE-REV11.md \
+            docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV02.md \
+            tools/scripts/verify-environment.py; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Check in repaired document
+      - name: Check in repaired inherited artifacts
         if: steps.repair.outputs.changed == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV02.md
-          git commit -m "Repair inherited implementation policy text"
+          git add -- \
+            docs/01-ZX-UX-ARCHITECTURE-REV11.md \
+            docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV02.md \
+            tools/scripts/verify-environment.py
+          git commit -m "Repair inherited text quality and hash contract"
           git push origin HEAD:main
 
   project_policy:
