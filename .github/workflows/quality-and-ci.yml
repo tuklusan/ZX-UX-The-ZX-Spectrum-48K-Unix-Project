@@ -31,8 +31,43 @@ env:
   RESULT_PREFIX: zxux-result-
 
 jobs:
+  legacy_policy_repair:
+    name: legacy-policy-repair
+    runs-on: ubuntu-slim
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    outputs:
+      changed: ${{ steps.repair.outputs.changed }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Repair inherited policy text
+        id: repair
+        run: |
+          python3 tools/repair_legacy_policy.py
+          if git diff --quiet -- docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV02.md; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check in repaired document
+        if: steps.repair.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV02.md
+          git commit -m "Repair inherited implementation policy text"
+          git push origin HEAD:main
+
   project_policy:
     name: project-policy
+    needs:
+      - legacy_policy_repair
+    if: needs.legacy_policy_repair.outputs.changed != 'true'
     runs-on: ubuntu-slim
     timeout-minutes: 15
 
@@ -45,6 +80,9 @@ jobs:
 
   e0_metadata:
     name: e0-metadata
+    needs:
+      - legacy_policy_repair
+    if: needs.legacy_policy_repair.outputs.changed != 'true'
     runs-on: ubuntu-slim
     timeout-minutes: 15
 
@@ -111,6 +149,7 @@ jobs:
   record_result:
     name: record-result
     needs:
+      - legacy_policy_repair
       - project_policy
       - e0_metadata
       - license_headers
@@ -165,6 +204,7 @@ jobs:
         if: always()
         env:
           RESULT_ID: GARF-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}
+          LEGACY_POLICY_REPAIR_CONCLUSION: ${{ needs.legacy_policy_repair.result }}
           PROJECT_POLICY_CONCLUSION: ${{ needs.project_policy.result }}
           E0_METADATA_CONCLUSION: ${{ needs.e0_metadata.result }}
           LICENSE_HEADERS_CONCLUSION: ${{ needs.license_headers.result }}
@@ -194,6 +234,7 @@ jobs:
             "ref": "${GITHUB_REF}",
             "event": "${GITHUB_EVENT_NAME}",
             "created_utc": "${created_utc}",
+            "legacy_policy_repair_conclusion": "${LEGACY_POLICY_REPAIR_CONCLUSION}",
             "project_policy_conclusion": "${PROJECT_POLICY_CONCLUSION}",
             "e0_metadata_conclusion": "${E0_METADATA_CONCLUSION}",
             "license_headers_conclusion": "${LICENSE_HEADERS_CONCLUSION}",
