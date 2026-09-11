@@ -10,24 +10,17 @@
 ; SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 ; patent, trademark, and governing-law provisions.
 ;
-; Phase P0.05 syscall gateway scaffold with ABI IY restoration.
+; Phase P0.05 ROM-service IY ownership scaffold.
+;
+; All approved ROM wrappers are emitted from this module and must leave IY at
+; ROM_IY_ANCHOR on every returning path.
 
-    MACRO EMIT_SYSCALL_GATEWAY
-syscall_gateway:
-    jp zx48_syscall_dispatch
-    ENDM
-
-    MACRO EMIT_SYSCALL_BODY
-; Inputs: A syscall number; HL/DE/BC arguments.
-; Outputs: implementation-dependent syscall result.
-; Flags: implementation-dependent.
-; Clobbers: AF/BC/DE/HL; IX preserved by public ABI.
-zx48_syscall_dispatch:
-    jp zx48_syscall_dispatch_impl
-    ENDM
-
-    MACRO EMIT_SYSCALL_IMPL
-zx48_syscall_dispatch_impl:
+    MACRO EMIT_ROM_SERVICE_ROUTINES
+; Inputs: none.
+; Outputs: IY restored to the immutable ROM ERR_NR anchor.
+; Flags: unchanged.
+; Clobbers: IY by ABI ownership.
+zx48_rom_restore_iy:
     ld iy,ROM_IY_ANCHOR
     ret
     ENDM

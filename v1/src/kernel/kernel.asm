@@ -10,7 +10,7 @@
 ; SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 ; patent, trademark, and governing-law provisions.
 ;
-; Resident-kernel image layout through Phase P0.04.
+; Resident-kernel image layout through Phase P0.05.
 
     DEVICE ZXSPECTRUM48
     INCLUDE "../../include/zx48ux.inc"
@@ -18,6 +18,7 @@
     INCLUDE "../boot/entry.asm"
     INCLUDE "interrupt.asm"
     INCLUDE "im2.asm"
+    INCLUDE "rom_services.asm"
 
     ORG KERNEL_START
 kernel_image_start:
@@ -32,6 +33,7 @@ kernel_ordinary_pool_start:
     EMIT_BOOT_IMPL
     EMIT_INTERRUPT_ROUTINE
     EMIT_IM2_ROUTINES
+    EMIT_ROM_SERVICE_ROUTINES
 kernel_ordinary_used_end:
     ASSERT $ <= KERNEL_CODE_END+1
     DEFS KERNEL_CODE_END+1-$,0
