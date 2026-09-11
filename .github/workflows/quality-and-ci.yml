@@ -133,22 +133,29 @@ jobs:
           python-version: '3.13.15'
           check-latest: false
 
-      - name: Create ephemeral project-local Python wrapper
+      - name: Install native build prerequisites
         run: |
-          python - <<'PY'
-          from pathlib import Path
-          import sys
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            cmake \
+            gettext \
+            libaudiofile-dev \
+            libfreetype6-dev \
+            libgcrypt20-dev \
+            libglib2.0-dev \
+            libpng-dev \
+            libsdl1.2-dev \
+            libtool \
+            libxml2-dev \
+            perl \
+            pkg-config
 
-          wrapper = Path("tools/runtime/python/bin/python")
-          wrapper.parent.mkdir(parents=True, exist_ok=True)
-          wrapper.write_text(
-              "#!/usr/bin/env bash\n"
-              f'exec "{Path(sys.executable).resolve()}" "$@"\n',
-              encoding="utf-8",
-              newline="\n",
-          )
-          wrapper.chmod(0o755)
-          PY
+      - name: Acquire and build pinned E0 runtime
+        run: python tools/scripts/bootstrap-environment.py
+
+      - name: Certify pinned E0 runtime
+        run: tools/runtime/python/bin/python tools/scripts/verify-environment.py
 
       - name: Execute E0.03 through E0.06
         run: |
