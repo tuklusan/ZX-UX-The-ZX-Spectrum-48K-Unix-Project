@@ -137,12 +137,17 @@ def main() -> int:
         manifest_path, _ = load_manifest(root, args.manifest)
         architecture = root / ARCHITECTURE
         require(architecture.is_file() and not architecture.is_symlink(), "canonical architecture file missing")
-        require(digest(architecture) == ARCHITECTURE_SHA256, "canonical architecture SHA-256 mismatch")
+        actual_architecture_sha256 = digest(architecture)
+        require(
+            actual_architecture_sha256 == ARCHITECTURE_SHA256,
+            "canonical architecture SHA-256 mismatch: "
+            f"expected={ARCHITECTURE_SHA256} actual={actual_architecture_sha256}",
+        )
         if not args.metadata_only:
             validate_runtime(root)
         print(f"root={root}")
         print(f"manifest={manifest_path}")
-        print(f"architecture_sha256={digest(architecture)}")
+        print(f"architecture_sha256={actual_architecture_sha256}")
         print(FINAL_MARKER)
         return 0
     except (CertificationError, OSError, ValueError, json.JSONDecodeError) as exc:
