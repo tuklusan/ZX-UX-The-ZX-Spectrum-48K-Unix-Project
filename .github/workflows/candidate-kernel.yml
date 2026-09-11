@@ -72,3 +72,8 @@ jobs:
           (cd v1/src/kernel && /tmp/sjasmplus/bin/sjasmplus --nologo kernel.asm)
           test "$(wc -c < v1/build/kernel.bin)" -eq 8192
           sha256sum v1/build/kernel.bin
+
+      - name: Validate executable and object inspectors
+        run: |
+          python3 v1/tools-host/inspect-mex/inspect.py --self-test
+          python3 v1/tools-host/inspect-obj/inspect.py --self-test
