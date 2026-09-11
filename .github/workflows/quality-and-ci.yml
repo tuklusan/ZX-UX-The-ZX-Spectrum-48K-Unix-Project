@@ -43,6 +43,41 @@ jobs:
       - name: Enforce project policy
         run: ./tools/check_project_policy.py
 
+  e0_metadata:
+    name: e0-metadata
+    runs-on: ubuntu-slim
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Select pinned Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13.15'
+          check-latest: false
+
+      - name: Verify E0 metadata
+        run: python tools/scripts/verify-environment.py --metadata-only
+
+      - name: Verify E0 negative path
+        run: |
+          cp tools/manifest/toolchain.lock.json /tmp/zxux-bad-lock.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("/tmp/zxux-bad-lock.json")
+          data = json.loads(path.read_text(encoding="utf-8"))
+          data["artifacts"][0]["sha256"] = "0" * 64
+          path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+          PY
+          if python tools/scripts/verify-environment.py --metadata-only --manifest /tmp/zxux-bad-lock.json; then
+            echo "ERROR: altered E0 lock unexpectedly passed" >&2
+            exit 1
+          fi
+
   license_headers:
     name: license-headers
     needs:
@@ -61,6 +96,7 @@ jobs:
     name: project-ci
     needs:
       - project_policy
+      - e0_metadata
       - license_headers
     runs-on: ubuntu-slim
     timeout-minutes: 15
@@ -76,6 +112,7 @@ jobs:
     name: record-result
     needs:
       - project_policy
+      - e0_metadata
       - license_headers
       - project_ci
     if: always()
@@ -129,6 +166,7 @@ jobs:
         env:
           RESULT_ID: GARF-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}
           PROJECT_POLICY_CONCLUSION: ${{ needs.project_policy.result }}
+          E0_METADATA_CONCLUSION: ${{ needs.e0_metadata.result }}
           LICENSE_HEADERS_CONCLUSION: ${{ needs.license_headers.result }}
           PROJECT_CI_CONCLUSION: ${{ needs.project_ci.result }}
         run: |
@@ -157,6 +195,7 @@ jobs:
             "event": "${GITHUB_EVENT_NAME}",
             "created_utc": "${created_utc}",
             "project_policy_conclusion": "${PROJECT_POLICY_CONCLUSION}",
+            "e0_metadata_conclusion": "${E0_METADATA_CONCLUSION}",
             "license_headers_conclusion": "${LICENSE_HEADERS_CONCLUSION}",
             "job_conclusion": "${PROJECT_CI_CONCLUSION}"
           }
