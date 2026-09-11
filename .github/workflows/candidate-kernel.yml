@@ -16,6 +16,14 @@ on:
   push:
     branches:
       - main
+    paths:
+      - .github/workflows/candidate-kernel.yml
+      - tools/manifest/toolchain.lock.json
+      - v1/include/**
+      - v1/src/boot/**
+      - v1/src/kernel/**
+      - v1/tools-host/inspect-mex/**
+      - v1/tools-host/inspect-obj/**
   workflow_dispatch:
 
 permissions:
