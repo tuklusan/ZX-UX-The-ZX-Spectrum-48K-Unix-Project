@@ -20,6 +20,11 @@ PANIC_ROM_CONTRACT        EQU $05
 KSTACK_GUARD_BYTE         EQU $A5
 KSTACK_GUARD_SIZE         EQU 16
 
+; Panic/stack instrumentation is emergency state, not ordinary code/data.
+kernel_panic_code         EQU INTERRUPT_STATE_END+0
+kernel_stack_low_water    EQU INTERRUPT_STATE_END+1
+ERROR_STATE_END           EQU INTERRUPT_STATE_END+3
+
     MACRO EMIT_ERROR_ROUTINES
 zx48_kernel_stack_init:
     ld hl,KERNEL_STACK_START
@@ -74,6 +79,4 @@ zx48_panic_unknown:
     ld a,PANIC_ROM_CONTRACT
     ld (kernel_panic_code),a
     jr zx48_panic_halt
-kernel_panic_code: db 0
-kernel_stack_low_water: dw BOOT_STACK_TOP
     ENDM
