@@ -10,19 +10,10 @@
 ; SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 ; patent, trademark, and governing-law provisions.
 ;
-; Resident 8 KiB kernel image. This file owns only composition and fixed layout.
+; Resident-kernel image layout through Phase P0.05.
 
     DEVICE ZXSPECTRUM48
     INCLUDE "../../include/zx48ux.inc"
-    INCLUDE "errors.asm"
-    INCLUDE "z80_primitives.asm"
-    INCLUDE "memory.asm"
-    INCLUDE "process.asm"
-    INCLUDE "handles.asm"
-    INCLUDE "pipe.asm"
-    INCLUDE "objects.asm"
-    INCLUDE "zxpack.asm"
-    INCLUDE "scheduler.asm"
     INCLUDE "syscall.asm"
     INCLUDE "../boot/entry.asm"
     INCLUDE "interrupt.asm"
@@ -38,20 +29,11 @@ kernel_ordinary_pool_start:
     ASSERT $ = BOOT_GATEWAY+3
     EMIT_SYSCALL_BODY
     EMIT_BOOT_BODY
-    EMIT_ERROR_ROUTINES
-    EMIT_Z80_PRIMITIVES
-    EMIT_MEMORY_ROUTINES
-    EMIT_PROCESS_ROUTINES
-    EMIT_HANDLE_ROUTINES
-    EMIT_PIPE_ROUTINES
-    EMIT_OBJECT_ROUTINES
-    EMIT_ZXPACK_ROUTINES
-    EMIT_SCHEDULER_ROUTINES
+    EMIT_SYSCALL_IMPL
+    EMIT_BOOT_IMPL
     EMIT_INTERRUPT_ROUTINE
     EMIT_IM2_ROUTINES
     EMIT_ROM_SERVICE_ROUTINES
-    EMIT_SYSCALL_IMPL
-    EMIT_BOOT_IMPL
 kernel_ordinary_used_end:
     ASSERT $ <= KERNEL_CODE_END+1
     DEFS KERNEL_CODE_END+1-$,0
