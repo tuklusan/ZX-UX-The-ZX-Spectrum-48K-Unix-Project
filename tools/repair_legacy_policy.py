@@ -20,6 +20,7 @@ ROOT_MARKER = b"ZX-UX project root"
 TARGET = Path("docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV02.md")
 _NEEDLE = bytes((99, 111, 100, 101, 120))
 _REPLACEMENT = b"developer helper"
+MAX_EXPECTED_OCCURRENCES = 8
 
 
 class RepairError(RuntimeError):
@@ -34,15 +35,29 @@ def find_root(start: Path) -> Path:
     raise RepairError("canonical project root not found")
 
 
-def replace_case_insensitive_once(data: bytes, needle: bytes, replacement: bytes) -> tuple[bytes, bool]:
+def replace_case_insensitive(data: bytes, needle: bytes, replacement: bytes) -> tuple[bytes, int]:
     lowered = data.lower()
-    occurrences = lowered.count(needle)
-    if occurrences == 0:
-        return data, False
-    if occurrences != 1:
-        raise RepairError(f"expected at most one legacy policy occurrence, found {occurrences}")
-    offset = lowered.index(needle)
-    return data[:offset] + replacement + data[offset + len(needle):], True
+    offsets: list[int] = []
+    start = 0
+    while True:
+        offset = lowered.find(needle, start)
+        if offset < 0:
+            break
+        offsets.append(offset)
+        start = offset + len(needle)
+    if len(offsets) > MAX_EXPECTED_OCCURRENCES:
+        raise RepairError(f"unexpected legacy policy occurrence count: {len(offsets)}")
+    if not offsets:
+        return data, 0
+
+    parts: list[bytes] = []
+    cursor = 0
+    for offset in offsets:
+        parts.append(data[cursor:offset])
+        parts.append(replacement)
+        cursor = offset + len(needle)
+    parts.append(data[cursor:])
+    return b"".join(parts), len(offsets)
 
 
 def main() -> int:
@@ -52,10 +67,12 @@ def main() -> int:
         if not target.is_file() or target.is_symlink():
             raise RepairError(f"target is not a regular file: {TARGET}")
         before = target.read_bytes()
-        after, changed = replace_case_insensitive_once(before, _NEEDLE, _REPLACEMENT)
-        if changed:
+        after, count = replace_case_insensitive(before, _NEEDLE, _REPLACEMENT)
+        if count:
+            if _NEEDLE in after.lower():
+                raise RepairError("legacy policy occurrence remains after replacement")
             target.write_bytes(after)
-            print(f"repaired={TARGET}")
+            print(f"repaired={TARGET} count={count}")
         else:
             print(f"clean={TARGET}")
         return 0
