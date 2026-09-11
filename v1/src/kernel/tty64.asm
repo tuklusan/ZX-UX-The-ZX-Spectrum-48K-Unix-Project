@@ -13,46 +13,45 @@
 ; 64x24 renderer using validated/pinned F4X8. Adjacent columns share attributes.
 
     MACRO EMIT_TTY64_ROUTINES
-; HL points to an exact 392-byte F4X8 object; BC must equal 392.
 zx48_tty64_install_font:
     ld a,b
     cp F4X8_SIZE/256
-    jr nz,zx48_tty64_bad
+    jp nz,zx48_tty64_bad
     ld a,c
     cp F4X8_SIZE&$ff
-    jr nz,zx48_tty64_bad
+    jp nz,zx48_tty64_bad
     ld (tty64_source_ptr),hl
     ld a,(hl)
     cp 'F'
-    jr nz,zx48_tty64_bad
+    jp nz,zx48_tty64_bad
     inc hl
     ld a,(hl)
     cp '4'
-    jr nz,zx48_tty64_bad
+    jp nz,zx48_tty64_bad
     inc hl
     ld a,(hl)
     cp 'X'
-    jr nz,zx48_tty64_bad
+    jp nz,zx48_tty64_bad
     inc hl
     ld a,(hl)
     cp '8'
-    jr nz,zx48_tty64_bad
+    jp nz,zx48_tty64_bad
     inc hl
     ld a,(hl)
     cp 1
-    jr nz,zx48_tty64_bad
+    jp nz,zx48_tty64_bad
     inc hl
     ld a,(hl)
     cp $20
-    jr nz,zx48_tty64_bad
+    jp nz,zx48_tty64_bad
     inc hl
     ld a,(hl)
     cp 96
-    jr nz,zx48_tty64_bad
+    jp nz,zx48_tty64_bad
     inc hl
     ld a,(hl)
     or a
-    jr nz,zx48_tty64_bad
+    jp nz,zx48_tty64_bad
     ld bc,F4X8_SIZE
     ld a,ALLOC_FAST_REQUIRED
     call zx48_alloc

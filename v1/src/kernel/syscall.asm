@@ -220,7 +220,7 @@ zx48_sys_time_get:
     jp c,zx48_sys_error
     ld a,(wall_valid)
     or a
-    jr z,zx48_sys_again
+    jp z,zx48_sys_again
     di
     ld de,(wall_seconds)
     ld (syscall_tick_lo),de
@@ -283,8 +283,6 @@ zx48_sys_time_valid:
     ei
     jp zx48_sys_ok
 
-; Generic nonzero user range: wholly display 4000-5AFF or arena 6000-DFFF.
-; Zero count never dereferences and accepts any pointer.
 zx48_user_range_validate:
     ld a,b
     or c

@@ -32,14 +32,12 @@ zx48_udg_init:
     ld bc,UDG_BANK_SIZE
     call zx48_memory_pin_bytes
     xor a
-    or a
     ret
 
-; C=slot -> HL slot bytes.
 zx48_udg_slot_ptr:
     ld a,c
     cp 32
-    jr nc,zx48_udg_bad
+    jp nc,zx48_udg_bad
     add a,a
     add a,a
     add a,a
@@ -48,14 +46,12 @@ zx48_udg_slot_ptr:
     ld hl,(udg_bank_ptr)
     add hl,de
     xor a
-    or a
     ret
 
-; C=slot,B=0,HL=source.
 zx48_udg_define:
     ld a,b
     or a
-    jr nz,zx48_udg_bad
+    jp nz,zx48_udg_bad
     ld (udg_io_ptr),hl
     call zx48_udg_slot_ptr
     ret c
@@ -64,14 +60,12 @@ zx48_udg_define:
     ld bc,8
     ldir
     xor a
-    or a
     ret
 
-; C=slot,B=0,HL=destination.
 zx48_udg_get:
     ld a,b
     or a
-    jr nz,zx48_udg_bad
+    jp nz,zx48_udg_bad
     ld (udg_io_ptr),hl
     call zx48_udg_slot_ptr
     ret c
@@ -79,14 +73,12 @@ zx48_udg_get:
     ld bc,8
     ldir
     xor a
-    or a
     ret
 
-; H=0,L=slot.
 zx48_udg_clear:
     ld a,h
     or a
-    jr nz,zx48_udg_bad
+    jp nz,zx48_udg_bad
     ld c,l
     call zx48_udg_slot_ptr
     ret c
@@ -99,18 +91,17 @@ zx48_udg_clear_loop:
     or a
     ret
 
-; HL -> {slot,row,col}; row 0..23, col 0..31 physical 8x8 cell.
 zx48_udg_draw:
     ld c,(hl)
     inc hl
     ld a,(hl)
     cp 24
-    jr nc,zx48_udg_bad
+    jp nc,zx48_udg_bad
     ld (udg_row),a
     inc hl
     ld a,(hl)
     cp 32
-    jr nc,zx48_udg_bad
+    jp nc,zx48_udg_bad
     ld (udg_col),a
     call zx48_udg_slot_ptr
     ret c
@@ -148,7 +139,6 @@ zx48_udg_draw_loop:
 zx48_udg_draw_done:
     call zx48_cursor_show
     xor a
-    or a
     ret
 zx48_udg_bad:
     ld a,E_INVAL
