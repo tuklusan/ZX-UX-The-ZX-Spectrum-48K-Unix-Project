@@ -30,6 +30,9 @@ zx48_boot_main_impl:
     call zx48_kernel_stack_init
     call zx48_memory_init
     call zx48_process_init
+    call zx48_handles_init
+    call zx48_objects_init
+    call zx48_pipe_init
     call zx48_ula_init
     call zx48_console_init
     call zx48_keyboard_init
