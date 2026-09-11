@@ -11,7 +11,7 @@
 ; patent, trademark, and governing-law provisions.
 ;
 ; Canonical Z80 copy/move/search primitives. Repeated block instructions remain
-; interruptible; callers may not use them as critical-section boundaries.
+; interruptible; no caller may treat them as a critical-section boundary.
 
     MACRO EMIT_Z80_PRIMITIVES
 zx48_memcpy:
@@ -21,7 +21,7 @@ zx48_memcpy:
     ldir
     ret
 
-; HL=source, DE=destination, BC=count.
+; HL=source, DE=destination, BC=count. Overlap chooses LDIR or LDDR.
 zx48_memmove:
     ld a,b
     or c
@@ -46,21 +46,52 @@ zx48_memmove_fwd:
     ldir
     ret
 
-; HL=buffer, BC=count, A=needle; carry clear at match, carry set if absent.
+; Single-step forms are canonical fixed/small-transfer primitives.
+zx48_copy_one_fwd:
+    ldi
+    ret
+zx48_copy_one_back:
+    ldd
+    ret
+
+; HL=buffer, BC=count, A=needle. HL returns matching byte, carry set if absent.
 zx48_memchr:
     ld d,a
-zx48_memchr_loop:
     ld a,b
     or c
     jr z,zx48_memchr_miss
-    ld a,(hl)
-    cp d
-    ret z
-    inc hl
-    dec bc
-    jr zx48_memchr_loop
+    ld a,d
+    cpir
+    jr nz,zx48_memchr_miss
+    dec hl
+    or a
+    ret
 zx48_memchr_miss:
     scf
+    ret
+
+; HL=end byte, BC=count, A=needle. Reverse CPDR search, HL returns match.
+zx48_memrchr:
+    ld d,a
+    ld a,b
+    or c
+    jr z,zx48_memrchr_miss
+    ld a,d
+    cpdr
+    jr nz,zx48_memrchr_miss
+    inc hl
+    or a
+    ret
+zx48_memrchr_miss:
+    scf
+    ret
+
+; Single-step compare families retained for bounded parser/editor scans.
+zx48_compare_one_fwd:
+    cpi
+    ret
+zx48_compare_one_back:
+    cpd
     ret
 
 ; HL=NUL string; BC=length, HL points to NUL.

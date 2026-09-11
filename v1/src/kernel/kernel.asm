@@ -30,6 +30,7 @@
     INCLUDE "cursor.asm"
     INCLUDE "console.asm"
     INCLUDE "keyboard.asm"
+    INCLUDE "udg.asm"
 
     ORG KERNEL_START
 kernel_image_start:
@@ -56,6 +57,7 @@ kernel_ordinary_pool_start:
     EMIT_CURSOR_ROUTINES
     EMIT_CONSOLE_ROUTINES
     EMIT_KEYBOARD_ROUTINES
+    EMIT_UDG_ROUTINES
 kernel_ordinary_used_end:
     ASSERT $ <= KERNEL_CODE_END+1
     DEFS KERNEL_CODE_END+1-$,0
@@ -85,6 +87,7 @@ kernel_image_end:
     ASSERT kernel_ordinary_pool_end-kernel_ordinary_pool_start = KERNEL_CODE_END-KERNEL_CODE_START+1
     ASSERT kernel_stack_storage = KERNEL_STACK_START
     ASSERT kernel_fast_reserve = FAST_RESERVE_START
+    ASSERT kernel_im2_trampoline = IM2_TRAMPOLINE_START
     ASSERT kernel_im2_table = IM2_TABLE_START
     ASSERT kernel_emergency_reserve = EMERGENCY_START
     ASSERT kernel_image_end-kernel_image_start = KERNEL_IMAGE_SIZE

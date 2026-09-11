@@ -10,20 +10,80 @@
 ; SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 ; patent, trademark, and governing-law provisions.
 ;
-; 64x24 renderer using pinned F4X8. Adjacent logical columns share attributes.
+; 64x24 renderer using validated/pinned F4X8. Adjacent columns share attributes.
 
     MACRO EMIT_TTY64_ROUTINES
-zx48_tty64_set_font:
+; HL points to an exact 392-byte F4X8 object; BC must equal 392.
+zx48_tty64_install_font:
+    ld a,b
+    cp F4X8_SIZE/256
+    jr nz,zx48_tty64_bad
+    ld a,c
+    cp F4X8_SIZE&$ff
+    jr nz,zx48_tty64_bad
+    ld (tty64_source_ptr),hl
+    ld a,(hl)
+    cp 'F'
+    jr nz,zx48_tty64_bad
+    inc hl
+    ld a,(hl)
+    cp '4'
+    jr nz,zx48_tty64_bad
+    inc hl
+    ld a,(hl)
+    cp 'X'
+    jr nz,zx48_tty64_bad
+    inc hl
+    ld a,(hl)
+    cp '8'
+    jr nz,zx48_tty64_bad
+    inc hl
+    ld a,(hl)
+    cp 1
+    jr nz,zx48_tty64_bad
+    inc hl
+    ld a,(hl)
+    cp $20
+    jr nz,zx48_tty64_bad
+    inc hl
+    ld a,(hl)
+    cp 96
+    jr nz,zx48_tty64_bad
+    inc hl
+    ld a,(hl)
+    or a
+    jr nz,zx48_tty64_bad
+    ld bc,F4X8_SIZE
+    ld a,ALLOC_FAST_REQUIRED
+    call zx48_alloc
+    ret c
+    ld (tty64_resource_ptr),hl
+    ex de,hl
+    ld hl,(tty64_source_ptr)
+    ld bc,F4X8_SIZE
+    call zx48_memcpy
+    ld bc,F4X8_SIZE
+    call zx48_memory_pin_bytes
+    ld hl,(tty64_resource_ptr)
     ld de,8
     add hl,de
     ld (tty64_font_ptr),hl
+    ld a,64
+    ld (tty_mode),a
+    xor a
     ret
 
 zx48_tty64_draw_char:
+    ld (tty64_char),a
     cp $20
     jp c,zx48_tty64_bad
     cp $80
     jp nc,zx48_tty64_bad
+    ld hl,(tty64_font_ptr)
+    ld a,h
+    or l
+    jp z,zx48_tty64_bad
+    ld a,(tty64_char)
     sub $20
     ld e,a
     ld d,0
@@ -112,15 +172,17 @@ zx48_tty64_attr:
     ld a,(tty_current_attr)
     ld (hl),a
     xor a
-    or a
     ret
 zx48_tty64_bad:
     ld a,E_INVAL
     scf
     ret
 
+tty64_resource_ptr: dw 0
+tty64_source_ptr: dw 0
 tty64_font_ptr: dw 0
 tty64_glyph: dw 0
 tty64_scan: db 0
+tty64_char: db 0
 tty_current_attr: db 7
     ENDM

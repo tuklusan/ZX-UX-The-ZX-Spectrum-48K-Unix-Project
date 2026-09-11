@@ -10,19 +10,56 @@
 ; SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 ; patent, trademark, and governing-law provisions.
 ;
-; Five and only five release PANIC classes.
+; Five and only five release PANIC classes plus the frozen kernel-stack guard.
 
 PANIC_PROCESS_TABLE       EQU $01
 PANIC_ALLOCATOR           EQU $02
 PANIC_SCHEDULER           EQU $03
 PANIC_KERNEL_STACK        EQU $04
 PANIC_ROM_CONTRACT        EQU $05
+KSTACK_GUARD_BYTE         EQU $A5
+KSTACK_GUARD_SIZE         EQU 16
 
     MACRO EMIT_ERROR_ROUTINES
-; Inputs: A = PANIC code 1..5.
-; Outputs: never returns.
-; Flags: unspecified.
-; Clobbers: AF,BC,DE,HL.
+zx48_kernel_stack_init:
+    ld hl,KERNEL_STACK_START
+    ld b,KSTACK_GUARD_SIZE
+    ld a,KSTACK_GUARD_BYTE
+zx48_kernel_stack_init_loop:
+    ld (hl),a
+    inc hl
+    djnz zx48_kernel_stack_init_loop
+    ld hl,BOOT_STACK_TOP
+    ld (kernel_stack_low_water),hl
+    ret
+
+zx48_kernel_stack_check:
+    ld hl,KERNEL_STACK_START
+    ld b,KSTACK_GUARD_SIZE
+zx48_kernel_stack_check_loop:
+    ld a,(hl)
+    cp KSTACK_GUARD_BYTE
+    jr nz,zx48_kernel_stack_panic
+    inc hl
+    djnz zx48_kernel_stack_check_loop
+    ret
+zx48_kernel_stack_panic:
+    ld a,PANIC_KERNEL_STACK
+    jp zx48_panic
+
+; Sample current SP and retain the numerically smallest value as high-water mark.
+zx48_kernel_stack_sample:
+    ld hl,0
+    add hl,sp
+    ld de,(kernel_stack_low_water)
+    push hl
+    or a
+    sbc hl,de
+    pop hl
+    ret nc
+    ld (kernel_stack_low_water),hl
+    ret
+
 zx48_panic:
     di
     cp PANIC_PROCESS_TABLE
@@ -37,6 +74,6 @@ zx48_panic_unknown:
     ld a,PANIC_ROM_CONTRACT
     ld (kernel_panic_code),a
     jr zx48_panic_halt
-kernel_panic_code:
-    db 0
+kernel_panic_code: db 0
+kernel_stack_low_water: dw BOOT_STACK_TOP
     ENDM

@@ -10,7 +10,9 @@
 ; SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 ; patent, trademark, and governing-law provisions.
 ;
-; Spectrum bitmap addressing and 32-column compatibility renderer.
+; Spectrum bitmap addressing and direct 32-column renderer.
+
+ROM_CHARSET_BITMAP       EQU $3D00
 
     MACRO EMIT_TTY32_ROUTINES
 ; B=pixel row 0..191, C=byte column 0..31 -> HL bitmap address.
@@ -34,9 +36,60 @@ zx48_bitmap_address:
     ld l,a
     ret
 
-; A=printable. Phase-0-approved ROM output is retained for tty32 fallback.
+; A=target code 20h..7Fh. Draw directly from frozen 48K ROM font bitmap.
 zx48_tty32_draw_char:
-    jp zx48_rom_print_a
+    cp $20
+    jr c,zx48_tty32_bad
+    cp $80
+    jr nc,zx48_tty32_bad
+    sub $20
+    ld e,a
+    ld d,0
+    sla e
+    rl d
+    sla e
+    rl d
+    sla e
+    rl d
+    ld hl,ROM_CHARSET_BITMAP
+    add hl,de
+    ld (tty32_glyph),hl
+    xor a
+    ld (tty32_scan),a
+zx48_tty32_draw_loop:
+    ld a,(tty32_scan)
+    cp 8
+    jr nc,zx48_tty32_draw_done
+    ld e,a
+    ld a,(tty_row)
+    add a,a
+    add a,a
+    add a,a
+    add a,e
+    ld b,a
+    ld a,(tty_col)
+    ld c,a
+    call zx48_bitmap_address
+    push hl
+    ld hl,(tty32_glyph)
+    ld a,(tty32_scan)
+    ld e,a
+    ld d,0
+    add hl,de
+    ld a,(hl)
+    pop hl
+    ld (hl),a
+    ld a,(tty32_scan)
+    inc a
+    ld (tty32_scan),a
+    jr zx48_tty32_draw_loop
+zx48_tty32_draw_done:
+    xor a
+    ret
+zx48_tty32_bad:
+    ld a,E_INVAL
+    scf
+    ret
 
 zx48_tty_clear_last_bitmap_row:
     ld b,184
@@ -104,6 +157,8 @@ zx48_tty_scroll_next_row:
     ld (tty_scroll_row),a
     jr zx48_tty_scroll_row_loop
 
+tty32_glyph: dw 0
+tty32_scan: db 0
 tty_scroll_row: db 0
 tty_scroll_scan: db 0
 tty_scroll_src: dw 0
