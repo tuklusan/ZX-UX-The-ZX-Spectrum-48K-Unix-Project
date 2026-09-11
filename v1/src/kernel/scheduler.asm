@@ -15,13 +15,18 @@
     MACRO EMIT_SCHEDULER_ROUTINES
 zx48_schedule:
     push af
+    ld a,(current_pid)
+    ld (scheduler_current),a
+    or a
+    jr z,zx48_schedule_from_idle
     push bc
     push de
     push hl
     push ix
-    ld a,(current_pid)
-    ld (scheduler_current),a
     call zx48_process_ptr
+    ld a,(ix+PROC_STATE)
+    cp PROC_ZOMBIE
+    jr z,zx48_schedule_begin
     ld hl,0
     add hl,sp
     ld (ix+PROC_SAVED_SP),l
@@ -29,6 +34,10 @@ zx48_schedule:
     ld a,(ix+PROC_STATE)
     cp PROC_RUNNING
     jr nz,zx48_schedule_begin
+    ld (ix+PROC_STATE),PROC_READY
+    jr zx48_schedule_begin
+zx48_schedule_from_idle:
+    call zx48_process_ptr
     ld (ix+PROC_STATE),PROC_READY
 zx48_schedule_begin:
     ld a,(scheduler_current)
@@ -39,6 +48,8 @@ zx48_schedule_begin:
 zx48_schedule_scan:
     push bc
     ld a,(scheduler_candidate)
+    or a
+    jr z,zx48_schedule_next
     call zx48_process_ptr
     ld a,(ix+PROC_STATE)
     cp PROC_SLEEPING
@@ -46,13 +57,14 @@ zx48_schedule_scan:
     ld a,(ix+PROC_STATE)
     cp PROC_READY
     jr z,zx48_schedule_choose
+zx48_schedule_next:
     pop bc
     ld a,(scheduler_candidate)
     inc a
     and 7
     ld (scheduler_candidate),a
     djnz zx48_schedule_scan
-    ld a,(scheduler_current)
+    xor a
     ld (scheduler_candidate),a
     call zx48_process_ptr
     jr zx48_schedule_restore
@@ -62,6 +74,8 @@ zx48_schedule_restore:
     ld a,(scheduler_candidate)
     ld (current_pid),a
     ld (ix+PROC_STATE),PROC_RUNNING
+    or a
+    jr z,zx48_schedule_idle_restore
     ld a,(ix+PROC_PRIVATE_FLAGS)
     or PROC_PRIVATE_STARTED
     ld (ix+PROC_PRIVATE_FLAGS),a
@@ -75,6 +89,10 @@ zx48_schedule_restore:
     pop af
     ld iy,ROM_IY_ANCHOR
     ret
+zx48_schedule_idle_restore:
+    ld sp,BOOT_STACK_TOP
+    ld iy,ROM_IY_ANCHOR
+    jp zx48_idle_loop
 
 ; IX sleeping descriptor; modular signed now-deadline comparison.
 zx48_scheduler_maybe_wake:
@@ -149,8 +167,7 @@ zx48_idle_loop:
     ei
     halt
     call zx48_scheduler_wake_scan
-    call zx48_schedule
-    jr zx48_idle_loop
+    jp zx48_schedule
 
 scheduler_current: db 0
 scheduler_candidate: db 0
