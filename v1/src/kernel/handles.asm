@@ -34,7 +34,7 @@ zx48_handles_init:
 ; A=index -> IX record. A is preserved on success.
 zx48_od_ptr:
     cp OPEN_DESCRIPTION_COUNT
-    jr nc,zx48_handle_noent
+    jp nc,zx48_handle_noent
     ld l,a
     ld h,0
     add hl,hl
@@ -94,10 +94,10 @@ zx48_od_retain:
     ret c
     ld a,(ix+OD_KIND_O)
     or a
-    jr z,zx48_handle_noent
+    jp z,zx48_handle_noent
     ld a,(ix+OD_REFS_O)
     cp $ff
-    jr z,zx48_handle_busy
+    jp z,zx48_handle_busy
     inc a
     ld (ix+OD_REFS_O),a
     ld a,c
@@ -110,7 +110,7 @@ zx48_od_release:
     ret c
     ld a,(ix+OD_KIND_O)
     or a
-    jr z,zx48_handle_noent
+    jp z,zx48_handle_noent
     ld a,(ix+OD_REFS_O)
     dec a
     ld (ix+OD_REFS_O),a
@@ -140,7 +140,7 @@ zx48_od_release_pipe:
 ; A=handle -> HL=current-process slot.
 zx48_handle_slot_ptr:
     cp MAX_HANDLES_PER_PROCESS
-    jr nc,zx48_handle_noent
+    jp nc,zx48_handle_noent
     ld e,a
     ld d,0
     push de
@@ -162,15 +162,15 @@ zx48_handle_lookup:
     ret c
     ld a,(hl)
     cp HANDLE_FREE
-    jr z,zx48_handle_noent
+    jp z,zx48_handle_noent
     cp OPEN_DESCRIPTION_COUNT
-    jr nc,zx48_handle_noent
+    jp nc,zx48_handle_noent
     ld c,a
     call zx48_od_ptr
     ret c
     ld a,(ix+OD_KIND_O)
     or a
-    jr z,zx48_handle_noent
+    jp z,zx48_handle_noent
     xor a
     ret
 
@@ -180,7 +180,7 @@ zx48_handle_install:
     ld (handle_requested),a
     ld a,c
     cp OPEN_DESCRIPTION_COUNT
-    jr nc,zx48_handle_noent
+    jp nc,zx48_handle_noent
     ld (handle_od),a
     ld a,(current_pid)
     call zx48_process_lookup
@@ -193,13 +193,13 @@ zx48_handle_install:
     cp HANDLE_FREE
     jr z,zx48_handle_install_auto
     cp MAX_HANDLES_PER_PROCESS
-    jr nc,zx48_handle_nospc
+    jp nc,zx48_handle_nospc
     ld e,a
     ld d,0
     add hl,de
     ld a,(hl)
     cp HANDLE_FREE
-    jr nz,zx48_handle_busy
+    jp nz,zx48_handle_busy
     ld a,(handle_requested)
     jr zx48_handle_install_here
 zx48_handle_install_auto:
@@ -212,7 +212,7 @@ zx48_handle_install_scan:
     inc hl
     inc a
     djnz zx48_handle_install_scan
-    jr zx48_handle_nospc
+    jp zx48_handle_nospc
 zx48_handle_install_here:
     ld c,a
     ld a,(handle_od)
@@ -227,7 +227,7 @@ zx48_handle_close:
     ret c
     ld a,(hl)
     cp HANDLE_FREE
-    jr z,zx48_handle_noent
+    jp z,zx48_handle_noent
     ld (hl),HANDLE_FREE
     call zx48_od_release
     ret nc
