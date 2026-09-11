@@ -69,7 +69,6 @@ zx48_process_init_handles:
     ld (current_pid),a
     ret
 
-; A pid -> IX descriptor, including FREE slots.
 zx48_process_ptr:
     cp MAX_PROCESSES
     jr nc,zx48_process_noent
@@ -97,7 +96,6 @@ zx48_process_noent:
     scf
     ret
 
-; Reserve PID2..7 without publication. Return A pid, IX descriptor.
 zx48_process_reserve_slot:
     ld ix,process_table+2*PROC_DESC_SIZE
     ld c,2
@@ -154,14 +152,11 @@ zx48_process_prepare_pid1:
     xor a
     ld (ix+PROC_PARENT),a
     ld (ix+PROC_CWD),DIR_ROOT
-    ld hl,process_name_sh
     push ix
     pop de
-    push de
     ld hl,PROC_NAME
     add hl,de
     ex de,hl
-    pop hl
     ld hl,process_name_sh
     ld bc,10
     ldir
@@ -188,7 +183,6 @@ zx48_process_count_next:
     ld a,c
     ret
 
-; A pid, HL exact PINFO1 destination: pid,parent,state,flags,name[10],owned u16.
 zx48_process_info:
     ld (process_info_ptr),hl
     call zx48_process_lookup
@@ -229,7 +223,6 @@ zx48_process_info_name:
     xor a
     ret
 
-; A exit status. PID0 is fatal; normal process becomes ZOMBIE.
 zx48_process_exit:
     ld (process_temp_status),a
     ld a,(current_pid)
@@ -258,7 +251,6 @@ zx48_process_wake_parent:
     ld (ix+PROC_STATE),PROC_READY
     ret
 
-; A target. PID0/PID1 protected. PID1 can cancel any child; others direct children.
 zx48_process_kill:
     ld (process_temp_pid),a
     cp 2
@@ -286,7 +278,7 @@ zx48_process_kill_started:
     ld (ix+PROC_FLAGS),a
     ld a,(ix+PROC_STATE)
     cp PROC_ZOMBIE
-    jr z,zx48_process_noent
+    jp z,zx48_process_noent
     cp PROC_RUNNING
     jr z,zx48_process_kill_okret
     cp PROC_READY
@@ -300,7 +292,6 @@ zx48_process_perm:
     scf
     ret
 
-; A target or FF any, DE status byte. Blocks when children exist but none zombie.
 zx48_process_wait:
     ld (process_wait_target),a
 zx48_process_wait_again:
