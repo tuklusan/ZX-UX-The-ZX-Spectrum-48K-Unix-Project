@@ -23,10 +23,12 @@ import phase1
 # Includes IM2 acknowledge/vector fetch (19 T), FDFD JP (10 T), handler path,
 # the maximal zx48_interrupt_work branch combination, and RETI.
 INTERRUPT_WORK_MAX_TSTATES = 537
-FAST_ISR_MAX_TSTATES = 662
-SAFE_ISR_MAX_TSTATES = 714
-FAST_ISR_MAX_STACK_BYTES = 4
-SAFE_ISR_MAX_STACK_BYTES = 12
+# P1.33 adds the kernel-stack-only sampler to both paths. Its maximal
+# update path costs 169 T-states including CALL and its temporary push.
+FAST_ISR_MAX_TSTATES = 831
+SAFE_ISR_MAX_TSTATES = 883
+FAST_ISR_MAX_STACK_BYTES = 6
+SAFE_ISR_MAX_STACK_BYTES = 14
 PRIMARY_BC = 0x1122
 PRIMARY_DE = 0x3344
 PRIMARY_HL = 0x5566
@@ -134,17 +136,17 @@ def _patched_safe_failure(kernel_bytes: bytes, safe_address: int) -> bytes:
 def _source_contract(root: Path) -> list[dict[str, object]]:
     interrupt = (root / "v1/src/kernel/interrupt.asm").read_text(encoding="utf-8")
     lowered = interrupt.lower()
-    fast_sequence = ("pop af", "ex af,af'", "exx", "call zx48_interrupt_work", "exx", "ex af,af'", "ei", "reti")
-    safe_sequence = ("push bc", "push de", "push hl", "call zx48_interrupt_work", "pop hl", "pop de", "pop bc", "pop af", "ei", "reti")
+    fast_sequence = ("pop af", "ex af,af'", "exx", "call zx48_kernel_stack_sample", "call zx48_interrupt_work", "exx", "ex af,af'", "ei", "reti")
+    safe_sequence = ("push bc", "push de", "push hl", "call zx48_kernel_stack_sample", "call zx48_interrupt_work", "pop hl", "pop de", "pop bc", "pop af", "ei", "reti")
     return [
         {"name": "altreg-busy-gate", "passed": "ld a,(altreg_busy)" in lowered and "jr nz,zx48_interrupt_safe" in lowered},
         {"name": "fast-path-balanced-banks", "passed": all(token in lowered for token in fast_sequence)},
         {"name": "safe-path-stack-preservation", "passed": all(token in lowered for token in safe_sequence)},
         {"name": "isr-never-calls-rom", "passed": "call rom_" not in lowered and "call zx48_rom_" not in lowered},
-        {"name": "fast-isr-frame-cost", "passed": FAST_ISR_MAX_STACK_BYTES == 4, "bytes": FAST_ISR_MAX_STACK_BYTES},
-        {"name": "safe-isr-frame-cost", "passed": SAFE_ISR_MAX_STACK_BYTES == 12, "bytes": SAFE_ISR_MAX_STACK_BYTES},
-        {"name": "fast-isr-max-cycle-cost", "passed": FAST_ISR_MAX_TSTATES == 662, "tstates": FAST_ISR_MAX_TSTATES},
-        {"name": "safe-isr-max-cycle-cost", "passed": SAFE_ISR_MAX_TSTATES == 714, "tstates": SAFE_ISR_MAX_TSTATES},
+        {"name": "fast-isr-frame-cost", "passed": FAST_ISR_MAX_STACK_BYTES == 6, "bytes": FAST_ISR_MAX_STACK_BYTES},
+        {"name": "safe-isr-frame-cost", "passed": SAFE_ISR_MAX_STACK_BYTES == 14, "bytes": SAFE_ISR_MAX_STACK_BYTES},
+        {"name": "fast-isr-max-cycle-cost", "passed": FAST_ISR_MAX_TSTATES == 831, "tstates": FAST_ISR_MAX_TSTATES},
+        {"name": "safe-isr-max-cycle-cost", "passed": SAFE_ISR_MAX_TSTATES == 883, "tstates": SAFE_ISR_MAX_TSTATES},
         {"name": "pal-frame-bounded", "passed": SAFE_ISR_MAX_TSTATES < 69888, "tstates": SAFE_ISR_MAX_TSTATES},
     ]
 

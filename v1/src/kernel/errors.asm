@@ -52,13 +52,18 @@ zx48_kernel_stack_panic:
     ld a,PANIC_KERNEL_STACK
     jp zx48_panic
 
-; Sample current SP and retain the true deepest value, including this helper's
-; own temporary push, as the kernel high-water mark.
+; Sample current SP and retain the true deepest kernel-stack value, including
+; this helper's own temporary push. Interrupts on user FAST stacks are ignored.
 zx48_kernel_stack_sample:
     ld hl,0
     add hl,sp
     dec hl
     dec hl
+    ld a,h
+    cp $fb
+    ret c
+    cp $fd
+    ret nc
     ld de,(kernel_stack_low_water)
     push hl
     or a

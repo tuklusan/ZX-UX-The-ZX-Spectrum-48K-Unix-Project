@@ -33,6 +33,7 @@ zx48_interrupt:
     pop af
     ex af,af'
     exx
+    call zx48_kernel_stack_sample
     call zx48_interrupt_work
     exx
     ex af,af'
@@ -42,6 +43,7 @@ zx48_interrupt_safe:
     push bc
     push de
     push hl
+    call zx48_kernel_stack_sample
     call zx48_interrupt_work
     pop hl
     pop de
