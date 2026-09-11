@@ -52,10 +52,13 @@ zx48_kernel_stack_panic:
     ld a,PANIC_KERNEL_STACK
     jp zx48_panic
 
-; Sample current SP and retain the numerically smallest value as high-water mark.
+; Sample current SP and retain the true deepest value, including this helper's
+; own temporary push, as the kernel high-water mark.
 zx48_kernel_stack_sample:
     ld hl,0
     add hl,sp
+    dec hl
+    dec hl
     ld de,(kernel_stack_low_water)
     push hl
     or a

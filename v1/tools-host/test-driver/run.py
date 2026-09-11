@@ -28,6 +28,7 @@ import phase0_rom
 import phase0_alt
 import phase0_loader
 import phase0_media
+import phase1
 from driver_core import (
     DriverError,
     find_root,
@@ -62,6 +63,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase0_media.dispatch(root, action, step)
     if step.startswith("P0."):
         return phase0.dispatch(root, action, step, **kwargs)
+    if step.startswith("P1."):
+        return phase1.dispatch(root, action, step, **kwargs)
     raise DriverError(f"step is not registered with the deterministic test driver: {step}")
 
 
