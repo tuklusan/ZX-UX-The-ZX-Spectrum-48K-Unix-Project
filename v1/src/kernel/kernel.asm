@@ -23,6 +23,7 @@
     INCLUDE "memory.asm"
     INCLUDE "process.asm"
     INCLUDE "handles.asm"
+    INCLUDE "pipe.asm"
     INCLUDE "scheduler.asm"
     INCLUDE "z80_primitives.asm"
     INCLUDE "ula_io.asm"
@@ -61,6 +62,8 @@ kernel_mod_process:
     EMIT_PROCESS_ROUTINES
 kernel_mod_handles:
     EMIT_HANDLE_ROUTINES
+kernel_mod_pipe:
+    EMIT_PIPE_ROUTINES
 kernel_mod_scheduler:
     EMIT_SCHEDULER_ROUTINES
 kernel_mod_primitives:
