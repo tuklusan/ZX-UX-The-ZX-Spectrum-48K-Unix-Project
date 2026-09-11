@@ -107,7 +107,10 @@ def _labels(listing: Path, names: tuple[str, ...]) -> dict[str, int]:
             before = line.split(label_marker, 1)[0] if label_marker in line else line[:equ_marker.start()]
             words = re.findall(r"\b[0-9A-Fa-f]{4}\b", before)
             if words:
-                found[name] = int(words[-1], 16)
+                address = int(words[-1], 16)
+                if address < KERNEL_BASE:
+                    continue
+                found[name] = address
                 break
         require(name in found, f"kernel listing label missing: {name}")
     return found
