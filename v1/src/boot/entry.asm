@@ -10,7 +10,7 @@
 ; SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 ; patent, trademark, and governing-law provisions.
 ;
-; Phase P0.03 production boot-gateway scaffold.
+; Permanent Sinclair BASIC -> ZX-UX handoff.
 
     MACRO EMIT_BOOT_GATEWAY
 boot_gateway:
@@ -19,14 +19,21 @@ boot_gateway:
 
     MACRO EMIT_BOOT_BODY
 ; Inputs: machine state handed off by Sinclair BASIC USR.
-; Outputs: control remains in the operating environment after Phase P0.12.
-; Flags: implementation-dependent.
-; Clobbers: implementation-dependent.
+; Outputs: never returns through the BASIC USR frame.
+; Flags: interrupts disabled until IM2 installation is complete.
+; Clobbers: AF/BC/DE/HL/IY/SP plus OS-private alternate bank during init.
 zx48_boot_main:
     jp zx48_boot_main_impl
     ENDM
 
     MACRO EMIT_BOOT_IMPL
 zx48_boot_main_impl:
-    ret
+    di
+    ld sp,BOOT_STACK_TOP
+    ld iy,ROM_IY_ANCHOR
+    call zx48_im2_init
+    ei
+zx48_boot_idle:
+    halt
+    jr zx48_boot_idle
     ENDM
