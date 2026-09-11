@@ -1,0 +1,178 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: ZX-UX Quality and CI
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: zxux-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  MAX_RESULTS: 25
+  RESULT_PREFIX: zxux-result-
+
+jobs:
+  project_policy:
+    name: project-policy
+    runs-on: ubuntu-slim
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Enforce project policy
+        run: ./tools/check_project_policy.py
+
+  license_headers:
+    name: license-headers
+    needs:
+      - project_policy
+    runs-on: ubuntu-slim
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Enforce license headers
+        run: ./tools/check_license_headers.sh
+
+  project_ci:
+    name: project-ci
+    needs:
+      - project_policy
+      - license_headers
+    runs-on: ubuntu-slim
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Validate repository policy
+        run: ./tools/ci.sh
+
+  record_result:
+    name: record-result
+    needs:
+      - project_policy
+      - license_headers
+      - project_ci
+    if: always()
+    runs-on: ubuntu-slim
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Build continuity list
+        uses: actions/github-script@v9
+        env:
+          CURRENT_RESULT_ID: GARF-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}
+        with:
+          script: |
+            const fs = require('fs');
+            const maxResults = Number(process.env.MAX_RESULTS);
+            const prefix = process.env.RESULT_PREFIX;
+            const current = process.env.CURRENT_RESULT_ID;
+
+            if (!Number.isInteger(maxResults) || maxResults < 1 || maxResults > 25) {
+              core.setFailed(`MAX_RESULTS must be an integer from 1 through 25; got ${process.env.MAX_RESULTS}`);
+              return;
+            }
+
+            const response = await github.paginate(
+              github.rest.actions.listArtifactsForRepo,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                per_page: 100
+              }
+            );
+
+            const previous = response
+              .filter((artifact) => !artifact.expired && artifact.name.startsWith(prefix))
+              .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+              .map((artifact) => artifact.name.slice(prefix.length))
+              .filter((id) => id !== current);
+
+            const identifiers = [current, ...previous].slice(0, maxResults);
+            fs.mkdirSync('.zxux-results', { recursive: true });
+            fs.writeFileSync(
+              '.zxux-results/continuity.json',
+              `${JSON.stringify({ schema: 1, max_results: maxResults, identifiers }, null, 2)}\n`
+            );
+
+      - name: Record result metadata
+        if: always()
+        env:
+          RESULT_ID: GARF-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}
+          PROJECT_POLICY_CONCLUSION: ${{ needs.project_policy.result }}
+          LICENSE_HEADERS_CONCLUSION: ${{ needs.license_headers.result }}
+          PROJECT_CI_CONCLUSION: ${{ needs.project_ci.result }}
+        run: |
+          mkdir -p .zxux-results
+          if [[ ! -f .zxux-results/continuity.json ]]; then
+            cat > .zxux-results/continuity.json <<JSON
+          {
+            "schema": 1,
+            "max_results": 25,
+            "identifiers": ["${RESULT_ID}"],
+            "incomplete": true
+          }
+          JSON
+          fi
+
+          created_utc="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          cat > .zxux-results/result.json <<JSON
+          {
+            "schema": 1,
+            "result_id": "${RESULT_ID}",
+            "repository": "${GITHUB_REPOSITORY}",
+            "run_id": "${GITHUB_RUN_ID}",
+            "run_attempt": "${GITHUB_RUN_ATTEMPT}",
+            "commit_sha": "${GITHUB_SHA}",
+            "ref": "${GITHUB_REF}",
+            "event": "${GITHUB_EVENT_NAME}",
+            "created_utc": "${created_utc}",
+            "project_policy_conclusion": "${PROJECT_POLICY_CONCLUSION}",
+            "license_headers_conclusion": "${LICENSE_HEADERS_CONCLUSION}",
+            "job_conclusion": "${PROJECT_CI_CONCLUSION}"
+          }
+          JSON
+
+      - name: Validate generated result bundle policy
+        id: bundle_policy
+        if: always()
+        run: ./tools/check_project_policy.py
+
+      - name: Upload result bundle
+        if: steps.bundle_policy.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: zxux-result-GARF-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}
+          path: .zxux-results/
+          retention-days: 90
+          if-no-files-found: error
+          include-hidden-files: true
