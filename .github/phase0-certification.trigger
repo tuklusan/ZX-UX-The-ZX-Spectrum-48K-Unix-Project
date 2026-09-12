@@ -19,3 +19,4 @@
 # Refreeze after fixing P0.14 negative contract mutation coverage.
 # Refreeze after making static prose contract matching whitespace-aware.
 # Final R&R-07 source freeze after durable cleanliness and post-evidence validation hardening.
+# Final refreeze after excluding hash-verified generated certification JSON from source-header checks.
