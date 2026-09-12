@@ -56,9 +56,9 @@
         "kernel.asm"
       ],
       "cwd": "v1/src/kernel",
-      "duration_ms": 26,
+      "duration_ms": 27,
       "exit_code": 0,
-      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8462 lines, work time: 0.025 seconds\n",
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8462 lines, work time: 0.026 seconds\n",
       "stdout": "",
       "timed_out": false
     }
@@ -72,7 +72,7 @@
     "P0.01": "PASS"
   },
   "schema": 2,
-  "source_commit": "b5db4883d69539b451323cf47c758c9b392aec44",
+  "source_commit": "8c0eccfb704e717e9a10c48912cebc81cdca6293",
   "status": "PASS",
   "step": "P0.02",
   "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
