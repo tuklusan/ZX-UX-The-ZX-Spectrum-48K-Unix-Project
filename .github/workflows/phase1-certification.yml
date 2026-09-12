@@ -36,8 +36,8 @@ concurrency:
 
 jobs:
   phase1-certification:
-    runs-on: ubuntu-slim
-    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
     env:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-phase1-evidence-${{ github.run_id }}-${{ github.run_attempt }}
 
