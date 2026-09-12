@@ -22,6 +22,10 @@ readonly GENERATED_CERTIFICATION_DIR="v1/dist/certification"
 # The source quarantine subtree is intentionally excluded from the approved H03 scope.
 readonly PRESERVED_REFERENCE_DIR="reference"
 readonly PRESERVED_REFERENCE_TREE_SHA1="a4e06de3b8b193b43597cdb4d259b5b206e7e3ad"
+# H04 preserves these SDK compiler assets byte-for-byte from the read-only source.
+# Source: tuklusan/zx-ux-c48-sdk-sinclair-zx-spectrum-48k-unix-c-compiler-software-development-kit
+# at 1bebc6288a1cdfa1bdfb5a6694e1986b6c3d7ee0; compiler/assets tree
+# 979039b5c636f0578f8bccd19ae49a669a5b7e0e.
 
 required_phrases=(
   "Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs."
@@ -52,6 +56,23 @@ declare -A explicit_header_exemptions=(
   ["v1/assets/issue.txt"]="P0.10 freezes exact logical issue bytes, leaving no room for a source header."
   ["v1/assets/crontab.txt"]="P0.10 freezes this resource as zero-length RAW."
   ["v1/assets/bincat.bin"]="P0.10 freezes the raw 488-byte BCAT resource shape."
+)
+
+declare -A preserved_h04_sdk_assets=(
+  ["v1/assets/48.rom"]="4d6895e0bbf3fa543f192a66a297192b3c969ac9"
+  ["v1/assets/README-48K-ROM.md"]="58319da0b2ce81313ad936ec7b298d9998119368"
+  ["v1/assets/SANYALnet-Labs-4x8-font-1.bin"]="abe61b7591014dc0b4b9b8e432fe35978d42c939"
+  ["v1/assets/SANYALnet-Labs-4x8-font-1.txt"]="b41886d252bfa9dc22a6a7790977002c04d21c4c"
+  ["v1/assets/SANYALnet-Labs-4x8-font-2.bin"]="cbdb78595a780358ce2b26077c4de72d45d44adf"
+  ["v1/assets/SANYALnet-Labs-4x8-font-2.txt"]="38acc70bf2fbdf8bba1ba2dd46a886839d6140d3"
+  ["v1/assets/SANYALnet-Labs-4x8-font-3.bin"]="ec5eb988e28182c766b5a0d94437d92f6be5a468"
+  ["v1/assets/SANYALnet-Labs-4x8-font-3.txt"]="fc18a3d9109e50ab2e36b2db616dcb45643ae736"
+  ["v1/assets/SANYALnet-Labs-4x8-font-4.bin"]="00e30d85fccf9029d6aea2c39a14f46973f7666d"
+  ["v1/assets/SANYALnet-Labs-4x8-font-4.txt"]="158991f59af2fe195736e09192c553604c7155b0"
+  ["v1/assets/SANYALnet-Labs-4x8-font-5.bin"]="96657ff6940da15ca77e1eff4c8e0780c4047107"
+  ["v1/assets/SANYALnet-Labs-4x8-font-5.txt"]="79ee3f0b546c49e5dae8617f1cee3cdaff0ecdfe"
+  ["v1/assets/font4x8-tasword.bin"]="6efc46eb1d7e940e027097ad76e27ac719aeb59f"
+  ["v1/assets/font4x8-zxux.bin"]="6efc46eb1d7e940e027097ad76e27ac719aeb59f"
 )
 
 fail=0
@@ -131,6 +152,26 @@ for exempt_path in "${!explicit_header_exemptions[@]}"; do
   fi
 done
 
+for asset_path in "${!preserved_h04_sdk_assets[@]}"; do
+  expected_blob="${preserved_h04_sdk_assets[$asset_path]}"
+  if [[ -L "$asset_path" || ! -f "$asset_path" ]]; then
+    echo "ERROR: preserved H04 SDK asset must exist as a real regular file: $asset_path" >&2
+    exit 1
+  fi
+  actual_blob="$(git hash-object -- "$asset_path")"
+  if [[ "$actual_blob" != "$expected_blob" ]]; then
+    echo "ERROR: preserved H04 SDK asset bytes changed: $asset_path" >&2
+    echo "ERROR: expected blob $expected_blob, got $actual_blob" >&2
+    exit 1
+  fi
+  index_record="$(git ls-files --stage -- "$asset_path")"
+  expected_record_prefix="100644 $expected_blob 0"
+  if [[ "$index_record" != "$expected_record_prefix"$'\t'"$asset_path" ]]; then
+    echo "ERROR: preserved H04 SDK asset Git mode/index identity changed: $asset_path" >&2
+    exit 1
+  fi
+done
+
 if [[ -e .gitmodules ]]; then
   echo "ERROR: submodules are not permitted unless the license-header gate is explicitly extended and approved" >&2
   exit 1
@@ -163,6 +204,11 @@ while IFS= read -r -d '' file; do
   [[ "$file" == "$LICENSE_PATH" ]] && continue
 
   if [[ "$file" == "$PRESERVED_REFERENCE_DIR"/* ]]; then
+    explicitly_exempt=$((explicitly_exempt + 1))
+    continue
+  fi
+
+  if [[ -n "${preserved_h04_sdk_assets[$file]+approved}" ]]; then
     explicitly_exempt=$((explicitly_exempt + 1))
     continue
   fi
