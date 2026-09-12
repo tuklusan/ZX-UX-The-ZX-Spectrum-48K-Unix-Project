@@ -12,6 +12,8 @@
 
 # ZX-UX Baseline Repair and Reconciliation Plan
 
+**Execution note:** This R&R was executed successfully. The pinned commit for that execution is `0ad2113c7f22f62e479fafa2246338c9d6af6771`. This document is not retired and may be re-executed in the future, but only with explicit authorization from the repository owner.
+
 Status: CLOSED-COMPLETE
 Revision: 01
 Starting implementation baseline: `d464c59ac9bf8d3f82cf109c6d4266ad4f4ba64a`
