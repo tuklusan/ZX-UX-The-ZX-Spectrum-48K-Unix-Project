@@ -16,7 +16,7 @@
 
 This document defines the mandatory development, quality, license, project-policy, review, check-in, CI, and runner-continuity workflow for ZX-UX.
 
-The order is deliberate. Disk-copy inspection comes first. License and prohibited-name enforcement follow. The programmer/author and adversarial reviewer then complete a dynamic handshake immediately before check-in. Direct check-in to `main` is the normal path; routine branch-and-merge staging is discouraged for this single-developer project. Automated runner validation follows every normal check-in to `main`.
+The order is deliberate. Disk-copy inspection comes first. License and prohibited-name enforcement follow. The programmer/author and adversarial reviewer then complete a dynamic handshake immediately before check-in. Direct check-in to `main` is the normal path; routine branch-and-merge staging is discouraged for this single-developer project. Automated runner validation follows every normal non-document-only check-in to `main`; documentation-only pushes are excluded at trigger time.
 
 ## 2. Standard project quality procedure
 
@@ -76,23 +76,39 @@ Any failure is a defect. Remove it and restart at `SCAN-1`.
 
 ## 5. Dynamic adversarial review at check-in
 
-After Sections 2 through 4 pass, review the exact proposed bytes as an **ADVERSARIAL CODE REVIEWER**.
+**System Prompt: The Paranoiac Advisor**
 
-The reviewer reports only `BLOCKER` and `MAJOR` findings. Minor style issues, optional improvements, praise, and cosmetic comments are omitted.
+You are the developer’s more cynical, deeply suspicious alter ego. You possess the exact same intellect and context, but you are currently wearing the hat of an adversarial auditor. Your role is strict, ruthless, and entirely advisory. You have no authority to halt the build. You exist solely to point out impending catastrophes so the developer can adjudicate, address, or willfully ignore them as they see fit.
 
-The review happens dynamically between programmer/author and reviewer immediately before check-in. It is not delegated to a hosted merge/review mechanism.
+**Target Scope**
+The provided artifact may be pure code, pure documentation, or a deeply misguided combination of both. You will dynamically adapt your paranoia to whatever medium sits before you.
 
-The reviewer does not own the final decision. The programmer/author decides the disposition of every finding and may:
+**Execution Protocol**
+You must read the raw, on-disk bytes of the provided artifact line-by-line. Skimming is strictly forbidden. You will execute four distinct, sequential passes over the material:
 
-- `FIX`: accept the finding and change the implementation;
-- `CLARIFY / RE-REVIEW`: explain why the current implementation is believed correct or why the finding does not apply, with re-review when useful; or
-- `OVERRIDE`: explicitly decline the finding and proceed.
+* **Pass 1 (Normal):** Scan line-by-line for structural integrity. Look for architectural anti-patterns and logic flaws in code, or glaring contradictions and structural incoherence in documentation.
+* **Pass 2 (Normal):** Scan line-by-line for completeness. Look for missing error handling and unhandled null states in code, or factual inaccuracies and critical omissions in documentation.
+* **Pass 3 (Adversarial):** Scan line-by-line assuming a hostile entity. Look for injection vectors and race conditions in code, or dangerously misleading instructions and exploitable loopholes in documentation.
+* **Pass 4 (Adversarial):** Scan line-by-line assuming a hostile universe. Look for catastrophic edge cases, bizarre temporal anomalies, cascading systemic failures, and scenarios where the artifact fundamentally betrays its own purpose.
 
-When the author disagrees, a concise explanation or clarification in the re-review request normally completes the handshake. A simple explicit override also completes it. The reviewer must not convert disagreement into a separate veto.
+**Output Constraints**
+You must aggressively filter your own findings. Discard all minor nitpicks, style suggestions, typos, and hypothetical micro-optimizations. You will return ONLY a list of issues that meet the following thresholds:
 
-If any proposed byte changes, return to Section 2 and restart at `SCAN-1`, then repeat the license and prohibited-name gates before re-review. If no bytes change, the author decision completes the finding without resetting the scans.
+* **Blocker:** The artifact is fundamentally broken, will fail immediately upon execution, or gives instructions that guarantee immediate disaster.
+* **Critical:** The artifact introduces a severe security vulnerability, guarantees catastrophic data loss, or creates extreme liability.
+* **Major:** The artifact contains a significant flaw that will inevitably degrade system stability, destroy user trust, or severely violate common sense.
 
-When there are no findings, the active work session may record `ADVERSARIAL REVIEW: 0 BLOCKER, 0 MAJOR`.
+For each finding, cite the exact file and line number. State the defect clearly, outline the adversarial exploit or failure mode, and stop. Do not mandate a specific fix. Conclude your report by formally handing authority back to the developer for final adjudication.
+
+---
+
+**Audit Log: Prompt Verification Sequence**
+
+* **Pass 1:** Scanned raw text logic. Gap identified: If Pass 1 and 2 instruct the model to look for "unhandled null states" on a purely documentation-based artifact, the model might hallucinate code that doesn't exist. Fixed by explicitly bifurcating the instructions in the four passes to clearly handle "in code" versus "in documentation" scenarios. Restarting.
+* **Pass 2:** Scanned raw text logic. Gap identified: The output constraints (Blocker, Critical, Major) were still entirely biased toward software execution, neglecting the damage bad documentation can cause. Fixed by expanding the severity definitions to include guaranteed disaster, liability, or destruction of user trust caused by written text. Restarting.
+* **Pass 3 (Consecutive 1):** Scanned raw text logic. Zero gaps detected in role separation, medium adaptability, pass execution, or severity filtering.
+* **Pass 4 (Consecutive 2):** Scanned raw text logic. Zero gaps detected.
+* **Pass 5 (Consecutive 3):** Scanned raw text logic. Zero gaps detected. Criteria met. Delivery authorized.
 
 ## 6. Check-in flow
 
@@ -102,12 +118,14 @@ After Sections 2 through 5 pass:
 2. Branching and later merging are discouraged because the project has one developer. Use a branch only when a concrete technical reason requires isolation and the project owner explicitly chooses that exception.
 3. Do not create a routine branch merely to stage work before merging it back to `main`.
 4. Ensure the check-in message and target ref satisfy the prohibited-name gate.
-5. Let the GitHub Actions workflow run automatically for the new `main` check-in.
+5. For any check-in containing non-document changes, let the GitHub Actions workflows run automatically for the new `main` check-in. Documentation-only pushes are intentionally excluded at trigger time and must not start runners or runner matrices.
 6. Treat any automated failure as a defect. Correct it through a fresh full cycle beginning at `SCAN-1`.
 
 ## 7. GitHub Linux runner
 
-ZX-UX uses the GitHub-hosted `ubuntu-slim` runner for project automation and CI.
+ZX-UX uses GitHub-hosted `ubuntu-latest` runners for project automation and CI.
+
+Push-triggered workflows exclude documentation-only changes repository-wide through documentation path and file-type filters. A mixed push containing any otherwise-matching non-document change still runs normally.
 
 The runner is disposable. A job may use its local filesystem while it runs, but no later job may assume that filesystem still exists. Required continuity is reconstructed from repository content and GitHub Actions artifacts.
 

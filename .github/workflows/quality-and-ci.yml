@@ -15,10 +15,43 @@ on:
   push:
     branches: [main]
     paths-ignore:
-      - docs/03-ZX-UX-DEVELOPMENT-WORKFLOW.md
-      - docs/04-ZX-UX-CHANGE-REQUEST-DEFERRED-WRAP-REV01.md
-      - docs/05-ZX-UX-BASELINE-REPAIR-RECONCILIATION-REV01.md
-      - README.md
+      - '**/*.md'
+      - '**/*.markdown'
+      - '**/*.mdown'
+      - '**/*.mdx'
+      - '**/*.rst'
+      - '**/*.adoc'
+      - '**/*.asciidoc'
+      - '**/*.txt'
+      - '**/*.text'
+      - '**/*.rtf'
+      - '**/*.doc'
+      - '**/*.docx'
+      - '**/*.odt'
+      - '**/*.pdf'
+      - '**/*.tex'
+      - '**/*.epub'
+      - '**/*.html'
+      - '**/*.htm'
+      - '**/*.ppt'
+      - '**/*.pptx'
+      - '**/*.odp'
+      - '**/*.pages'
+      - '**/*.key'
+      - 'LICENSE'
+      - 'LICENSE.*'
+      - 'COPYING'
+      - 'COPYING.*'
+      - 'NOTICE'
+      - 'NOTICE.*'
+      - 'CHANGELOG'
+      - 'CHANGELOG.*'
+      - 'CONTRIBUTING'
+      - 'CONTRIBUTING.*'
+      - 'AUTHORS'
+      - 'AUTHORS.*'
+      - 'docs/**'
+      - 'scratch/**'
   workflow_dispatch:
   workflow_run:
     workflows: ['ZX-UX Phase 0 Certification']
@@ -30,13 +63,13 @@ concurrency:
   cancel-in-progress: true
 jobs:
   project-policy:
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - run: ./tools/check_project_policy.py
   e0-metadata:
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
@@ -80,14 +113,14 @@ jobs:
           if-no-files-found: error
   license-headers:
     needs: project-policy
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - run: ./tools/check_license_headers.sh
   phase0-evidence:
     needs: project-policy
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
@@ -96,7 +129,7 @@ jobs:
       - run: python3 tools/test_phase0_evidence_negative.py
   project-ci:
     needs: [project-policy, e0-metadata, e0-foundation, license-headers, phase0-evidence]
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7

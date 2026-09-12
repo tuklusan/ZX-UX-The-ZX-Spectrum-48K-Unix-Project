@@ -24,6 +24,43 @@ on:
       - v1/src/kernel/**
       - v1/tools-host/inspect-mex/**
       - v1/tools-host/inspect-obj/**
+      - '!**/*.md'
+      - '!**/*.markdown'
+      - '!**/*.mdown'
+      - '!**/*.mdx'
+      - '!**/*.rst'
+      - '!**/*.adoc'
+      - '!**/*.asciidoc'
+      - '!**/*.txt'
+      - '!**/*.text'
+      - '!**/*.rtf'
+      - '!**/*.doc'
+      - '!**/*.docx'
+      - '!**/*.odt'
+      - '!**/*.pdf'
+      - '!**/*.tex'
+      - '!**/*.epub'
+      - '!**/*.html'
+      - '!**/*.htm'
+      - '!**/*.ppt'
+      - '!**/*.pptx'
+      - '!**/*.odp'
+      - '!**/*.pages'
+      - '!**/*.key'
+      - '!LICENSE'
+      - '!LICENSE.*'
+      - '!COPYING'
+      - '!COPYING.*'
+      - '!NOTICE'
+      - '!NOTICE.*'
+      - '!CHANGELOG'
+      - '!CHANGELOG.*'
+      - '!CONTRIBUTING'
+      - '!CONTRIBUTING.*'
+      - '!AUTHORS'
+      - '!AUTHORS.*'
+      - '!docs/**'
+      - '!scratch/**'
   workflow_dispatch:
 
 permissions:
@@ -35,7 +72,7 @@ concurrency:
 
 jobs:
   kernel-build:
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - name: Checkout current commit

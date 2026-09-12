@@ -54,15 +54,39 @@ Every proposed check-in must pass these gates in this exact order.
 
 ### Gate 4: Dynamic adversarial review at check-in
 
-1. The programmer/author and reviewer handshake happens dynamically immediately before check-in. It is not delegated to a hosted merge/review mechanism.
-2. Review the exact proposed bytes as an **ADVERSARIAL CODE REVIEWER**.
-3. Report only findings at `BLOCKER` or `MAJOR` priority.
-4. Findings are advisory to the programmer/author and do not themselves veto check-in. The programmer/author is the final judge of what action, if any, to take.
-5. For a finding, the programmer/author may `FIX`, provide a `CLARIFY / RE-REVIEW` explanation, or `OVERRIDE` it. A clarification is normally sufficient when the author disagrees; a simple explicit override is also sufficient.
-6. If the author changes any proposed bytes, restart Gate 1 from `SCAN-1`, then repeat Gates 2 through 4 on the changed bytes.
-7. If the author does not change bytes, a clarification, re-review exchange, or override completes the handshake for that finding. The reviewer must not turn disagreement into an independent block.
-8. Zero findings may be recorded transiently as `ADVERSARIAL REVIEW: 0 BLOCKER, 0 MAJOR`.
-9. Minor comments, style preferences, praise, and non-blocking suggestions are intentionally omitted.
+**System Prompt: The Paranoiac Advisor**
+
+You are the developer’s more cynical, deeply suspicious alter ego. You possess the exact same intellect and context, but you are currently wearing the hat of an adversarial auditor. Your role is strict, ruthless, and entirely advisory. You have no authority to halt the build. You exist solely to point out impending catastrophes so the developer can adjudicate, address, or willfully ignore them as they see fit.
+
+**Target Scope**
+The provided artifact may be pure code, pure documentation, or a deeply misguided combination of both. You will dynamically adapt your paranoia to whatever medium sits before you.
+
+**Execution Protocol**
+You must read the raw, on-disk bytes of the provided artifact line-by-line. Skimming is strictly forbidden. You will execute four distinct, sequential passes over the material:
+
+* **Pass 1 (Normal):** Scan line-by-line for structural integrity. Look for architectural anti-patterns and logic flaws in code, or glaring contradictions and structural incoherence in documentation.
+* **Pass 2 (Normal):** Scan line-by-line for completeness. Look for missing error handling and unhandled null states in code, or factual inaccuracies and critical omissions in documentation.
+* **Pass 3 (Adversarial):** Scan line-by-line assuming a hostile entity. Look for injection vectors and race conditions in code, or dangerously misleading instructions and exploitable loopholes in documentation.
+* **Pass 4 (Adversarial):** Scan line-by-line assuming a hostile universe. Look for catastrophic edge cases, bizarre temporal anomalies, cascading systemic failures, and scenarios where the artifact fundamentally betrays its own purpose.
+
+**Output Constraints**
+You must aggressively filter your own findings. Discard all minor nitpicks, style suggestions, typos, and hypothetical micro-optimizations. You will return ONLY a list of issues that meet the following thresholds:
+
+* **Blocker:** The artifact is fundamentally broken, will fail immediately upon execution, or gives instructions that guarantee immediate disaster.
+* **Critical:** The artifact introduces a severe security vulnerability, guarantees catastrophic data loss, or creates extreme liability.
+* **Major:** The artifact contains a significant flaw that will inevitably degrade system stability, destroy user trust, or severely violate common sense.
+
+For each finding, cite the exact file and line number. State the defect clearly, outline the adversarial exploit or failure mode, and stop. Do not mandate a specific fix. Conclude your report by formally handing authority back to the developer for final adjudication.
+
+---
+
+**Audit Log: Prompt Verification Sequence**
+
+* **Pass 1:** Scanned raw text logic. Gap identified: If Pass 1 and 2 instruct the model to look for "unhandled null states" on a purely documentation-based artifact, the model might hallucinate code that doesn't exist. Fixed by explicitly bifurcating the instructions in the four passes to clearly handle "in code" versus "in documentation" scenarios. Restarting.
+* **Pass 2:** Scanned raw text logic. Gap identified: The output constraints (Blocker, Critical, Major) were still entirely biased toward software execution, neglecting the damage bad documentation can cause. Fixed by expanding the severity definitions to include guaranteed disaster, liability, or destruction of user trust caused by written text. Restarting.
+* **Pass 3 (Consecutive 1):** Scanned raw text logic. Zero gaps detected in role separation, medium adaptability, pass execution, or severity filtering.
+* **Pass 4 (Consecutive 2):** Scanned raw text logic. Zero gaps detected.
+* **Pass 5 (Consecutive 3):** Scanned raw text logic. Zero gaps detected. Criteria met. Delivery authorized.
 
 ### Gate 5: Direct check-in to `main` and automated validation
 
@@ -70,13 +94,13 @@ Every proposed check-in must pass these gates in this exact order.
 2. The dynamic review handshake is completed before the check-in is created.
 3. Direct check-in to `main` is the normal project workflow. Branching and later merging are discouraged because this is a single-developer project.
 4. Create a branch only when a concrete technical reason requires isolation and the project owner explicitly chooses that exception. Do not create branches merely to stage ordinary work before merging it back to `main`.
-5. Every normal check-in to `main` triggers the GitHub Actions quality workflow on `ubuntu-slim`.
+5. Push-triggered GitHub Actions workflows run relevant non-document changes on `ubuntu-latest`; documentation-only pushes are excluded at trigger time and must not start runners or runner matrices.
 6. Automated failure after check-in is a defect requiring correction through the complete process beginning again at Gate 1.
 7. No reviewer approval status is required or used as an automated blocking condition.
 
 ## GitHub Actions development environment
 
-- Project automation and CI use GitHub-hosted `ubuntu-slim` Linux runners.
+- Project automation and CI use GitHub-hosted `ubuntu-latest` Linux runners.
 - Runners are ephemeral. Do not depend on local runner state surviving a job.
 - Durable continuity is carried only through repository data and GitHub Actions artifacts.
 - The canonical result identifier is `GARF-<run_id>-<run_attempt>-<commit_sha>`.
@@ -86,6 +110,6 @@ Every proposed check-in must pass these gates in this exact order.
 
 ## Canonical process
 
-`task -> develop disk copy -> quality scan x3 clean -> license-header gate -> prohibited-name gate -> dynamic adversarial review -> author decision -> direct check-in to main -> ubuntu-slim automated validation`
+`task -> develop disk copy -> quality scan x3 clean -> license-header gate -> prohibited-name gate -> dynamic adversarial review -> author decision -> direct check-in to main -> ubuntu-latest automated validation for non-document changes`
 
 The detailed procedure is in `docs/03-ZX-UX-DEVELOPMENT-WORKFLOW.md`.
