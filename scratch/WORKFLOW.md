@@ -44,12 +44,12 @@ implementation authority, certification evidence, or a GitHub Actions workflow.
 - [x] CR-2 exists at
   `docs/06-ZX-UX-CHANGE-REQUEST-BOOT-WALL-CLOCK-EPOCH-REV01.md`.
 
-## Housekeeping and infrastructure prerequisites
+## Tracked work items
 
-Add owner-directed housekeeping and infrastructure items here before CR execution.
-Items that affect architecture identity, certification, runner behavior, repository
-policy, or implementation ordering must be resolved before the dependent rebaseline
-step is marked complete.
+H01-H06 are owner-directed housekeeping and infrastructure work. H07-H08 are the two
+change-request execution umbrellas. Items that affect architecture identity,
+certification, runner behavior, repository policy, or implementation ordering must be
+resolved before the dependent rebaseline or change-request step is marked complete.
 
 ### H01 — Prevent document-only changes from firing CI runners
 
@@ -154,11 +154,19 @@ For each finding, cite the exact file and line number. State the defect clearly,
   evidence; screenshots are mandatory proof artifacts but are not a screenshot-only
   PASS oracle.
 
-### H07 — Reserved for next owner-directed item
+### H07 — Execute CR-1: deferred wrap, canonical tty64 font, and cursor semantics
 
-- [ ] TBD: owner to specify additional housekeeping/infrastructure work.
-- [ ] Classify each populated item as prerequisite, independent work, or post-CR work.
-- [ ] Complete all prerequisite housekeeping/infrastructure items.
+- [ ] Execute `docs/04-ZX-UX-CHANGE-REQUEST-DEFERRED-WRAP-REV01.md` through its
+  required pre-execution revision, architecture/implementation-plan synchronization,
+  implementation, tests, certification, and closure. Use the detailed `CR-1` section
+  below as the subtask checklist. H07 closes only when the CR-1 completion gate closes.
+
+### H08 — Execute CR-2: deterministic cold-boot wall-clock epoch
+
+- [ ] Execute `docs/06-ZX-UX-CHANGE-REQUEST-BOOT-WALL-CLOCK-EPOCH-REV01.md` through
+  architecture/implementation-plan synchronization, implementation, tests,
+  certification, and closure. Use the detailed `CR-2` section below as the subtask
+  checklist. H08 closes only when the CR-2 completion gate closes.
 
 ## CR-1 — Deferred wrap, canonical tty64 font, and cursor semantics
 
