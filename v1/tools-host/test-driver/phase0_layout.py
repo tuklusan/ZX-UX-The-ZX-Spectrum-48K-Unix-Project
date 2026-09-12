@@ -185,7 +185,11 @@ def dispatch(
     require(len(data) == 8192, "P0.02 kernel image size drift")
     require(data[0x1B00:0x1D00] == bytes(0x200), "P0.02 kernel stack storage drift")
     require(data[0x1D00:0x1DFD] == bytes(0xFD), "P0.02 fast reserve drift")
-    require(data[0x1DFD:0x1E00] == bytes(3), "P0.02 trampoline scaffold must be three zero bytes")
+    trampoline = data[0x1DFD:0x1E00]
+    require(len(trampoline) == 3, "P0.02 trampoline slot must be exactly three bytes")
+    require(trampoline[0] == 0xC3, "P0.02 trampoline must begin with absolute JP opcode")
+    trampoline_target = trampoline[1] | (trampoline[2] << 8)
+    require(0xE000 <= trampoline_target <= 0xFAFF, "P0.02 trampoline target outside ordinary pool")
     require(data[0x1E00:0x1F01] == bytes([0xFD]) * 0x101, "P0.02 IM2 table initialization drift")
     require(data[0x1F01:0x2000] == bytes(0xFF), "P0.02 emergency reserve drift")
 
@@ -196,6 +200,7 @@ def dispatch(
         {"name": "budget-planned-6784", "passed": sum(size for _, size in BUDGET) == 6784},
         {"name": "budget-margin-128", "passed": ORDINARY_POOL_BYTES - PLANNED_BYTES == 128},
         {"name": "fixed-ranges-contiguous", "passed": True},
+        {"name": "im2-trampoline-absolute-jp", "passed": True, "detail": f"{trampoline_target:#06x}"},
     ]
 
     if action == "test":
