@@ -42,6 +42,7 @@ import phase1_context
 import phase1_idle
 import phase1_abi
 import phase1_syscalls
+import phase1_getpid
 from driver_core import (
     DriverError,
     find_root,
@@ -107,6 +108,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase1_abi.dispatch(root, action, step, **kwargs)
     if step == "P1.10":
         return phase1_syscalls.dispatch(root, action, step, **kwargs)
+    if step == "P1.11":
+        return phase1_getpid.dispatch(root, action, step, **kwargs)
     if step == "P1.30":
         return phase1_alt.dispatch(root, action, step, **kwargs)
     if step == "P1.31":
