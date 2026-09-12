@@ -35,6 +35,7 @@ import phase1_alt
 import phase1_keyboard
 import phase1_cursor
 import phase1_stack
+import phase1_memory
 from driver_core import (
     DriverError,
     find_root,
@@ -86,6 +87,8 @@ def dispatch(root: Path, action: str, step: str):
         return module.dispatch(root, action, step, **kwargs)
     if step.startswith(("E0.", "P0.")):
         raise DriverError(f"numbered foundation/Phase-0 step is not registered: {step}")
+    if step in ("P1.02", "P1.03", "P1.04", "P1.05"):
+        return phase1_memory.dispatch(root, action, step, **kwargs)
     if step == "P1.30":
         return phase1_alt.dispatch(root, action, step, **kwargs)
     if step == "P1.31":
