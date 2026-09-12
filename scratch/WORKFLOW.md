@@ -58,6 +58,34 @@ implementation authority, certification evidence, or a GitHub Actions workflow.
 - Before selecting the next work, re-read the remaining open list rather than
   automatically proceeding to the numerically next H-item.
 
+## Locked execution queue
+
+Owner-approved on 2026-09-12. This queue is the required execution order until the
+owner explicitly changes it. The dependency, architecture, certification, safety, and
+project-policy constraints above remain mandatory: a blocker may stop the current queue
+item for diagnosis, but the queue must not be silently reordered to bypass it.
+
+1. Revise CR-1 (`docs/04-ZX-UX-CHANGE-REQUEST-DEFERRED-WRAP-REV01.md`) first and
+   close all currently tracked change-control gaps before execution.
+2. Freeze CR-2 synchronization requirements for the `1982-04-23 00:00:00` boot epoch,
+   `TIME1`, independent `SYS_TICKS`, `date`, `cron`, and every old unset-at-boot rule.
+3. Fold the remaining H06 SDK `usr/src` corpus contract into the same next
+   implementation-plan revision, preserving H06 as a distinct acceptance obligation.
+4. Prepare one combined next architecture + implementation-plan rebaseline for H06,
+   CR-1, and CR-2 while keeping each item's acceptance responsibilities distinct.
+5. Apply the full project SoP, activate the new architecture identity as one controlled
+   transaction, then recertify E0 and Phase 0 and revalidate P1.01 through P1.12.
+6. Resume P1.13 immediately after rebaseline; instrument and eliminate the retained
+   `sys-ticks-snapshot-is-coherent-and-four-bytes` failure, reconcile the revised
+   cursor/IM2 contract, and admit P1.13 only after all revised requirements pass.
+7. Continue Phase 1 in revised plan order; land CR-1 and CR-2 implementation only at
+   their revised owning steps rather than implementing either change early.
+8. Carry H06 forward to P11.45, where the complete recursive SDK corpus must be
+   imported/accounted, target-native compiled, native-linked, executed under ZX-UX,
+   and evidenced with deterministic proof plus screenshots.
+9. Close CR-1 and CR-2 only at their actual completion gates, then close H07/H08 and
+   update this tracker with durable evidence references.
+
 ## Durable starting state
 
 - [x] Baseline Repair and Reconciliation Revision 01 is closed and complete.
