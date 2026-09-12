@@ -11,4 +11,4 @@
 # patent, trademark, and governing-law provisions.
 #
 # R&R-06 source-freeze certification trigger. This file is inert project metadata.
-# Refreeze after Quality CI policy/path-filter reconciliation.
+# Refreeze after Phase-0 failure-observability instrumentation.

@@ -42,8 +42,16 @@ jobs:
       - name: Execute complete ordered E0 and Phase 0 set
         run: |
           set -euo pipefail; py=tools/runtime/python/bin/python; driver=v1/tools-host/test-driver/run.py
-          for n in 01 02 03 04 05 06; do "$py" "$driver" build --step "E0.$n"; "$py" "$driver" test --step "E0.$n"; done
-          for n in $(seq -w 1 34); do "$py" "$driver" build --step "P0.$n"; "$py" "$driver" test --step "P0.$n"; done
+          mkdir -p "$ZXUX_EVIDENCE_DIR"; progress="$ZXUX_EVIDENCE_DIR/progress.txt"
+          for n in 01 02 03 04 05 06; do
+            printf 'E0.%s build\n' "$n" > "$progress"; "$py" "$driver" build --step "E0.$n"
+            printf 'E0.%s test\n' "$n" > "$progress"; "$py" "$driver" test --step "E0.$n"
+          done
+          for n in $(seq -w 1 34); do
+            printf 'P0.%s build\n' "$n" > "$progress"; "$py" "$driver" build --step "P0.$n"
+            printf 'P0.%s test\n' "$n" > "$progress"; "$py" "$driver" test --step "P0.$n"
+          done
+          printf 'finalize\n' > "$progress"
           "$py" tools/finalize_phase0_evidence.py --root "$GITHUB_WORKSPACE" --evidence-dir "$ZXUX_EVIDENCE_DIR"
       - name: Assert source still clean and current
         run: |
@@ -69,8 +77,9 @@ jobs:
           git commit -m "R&R-06 activate Phase-0 certification evidence for $GITHUB_SHA"
           git push origin HEAD:main
       - uses: actions/upload-artifact@v7
+        if: always()
         with:
           name: zxux-phase0-${{ github.sha }}
-          path: /tmp/zxux-phase0-${{ github.sha }}-${{ github.run_id }}/*.json
+          path: /tmp/zxux-phase0-${{ github.sha }}-${{ github.run_id }}/*
           retention-days: 90
-          if-no-files-found: error
+          if-no-files-found: warn
