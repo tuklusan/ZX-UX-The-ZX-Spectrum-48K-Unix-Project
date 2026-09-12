@@ -38,6 +38,8 @@ jobs:
   phase1-certification:
     runs-on: ubuntu-slim
     timeout-minutes: 15
+    env:
+      ZXUX_EVIDENCE_DIR: ${{ runner.temp }}/zxux-phase1-evidence
 
     steps:
       - name: Checkout current commit
@@ -80,6 +82,6 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: zxux-phase1-${{ github.run_id }}-${{ github.run_attempt }}
-          path: v1/dist/certification/P1.*.json
+          path: ${{ runner.temp }}/zxux-phase1-evidence/P1.*.json
           retention-days: 90
           if-no-files-found: error

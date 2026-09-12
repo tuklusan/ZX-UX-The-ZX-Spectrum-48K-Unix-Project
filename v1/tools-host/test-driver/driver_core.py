@@ -16,14 +16,17 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 import hashlib
 import json
+import os
 from pathlib import Path
 import subprocess
+import tempfile
 import time
 from typing import Sequence
 
 ROOT_MARKER = b"ZX-UX project root"
 DEFAULT_TIMEOUT_SECONDS = 30.0
-CERT_DIR = Path("v1/dist/certification")
+TOOLCHAIN_LOCK = Path("tools/manifest/toolchain.lock.json")
+ARCHITECTURE = Path("docs/01-ZX-UX-ARCHITECTURE-REV11.md")
 
 
 class DriverError(RuntimeError):
@@ -39,6 +42,14 @@ class CommandResult:
     duration_ms: int
     stdout: str
     stderr: str
+
+
+@dataclass(frozen=True)
+class SourceState:
+    source_commit: str
+    toolchain_lock_sha256: str
+    architecture_sha256: str
+    worktree_clean: bool
 
 
 def find_root(start: Path) -> Path:
@@ -112,24 +123,104 @@ def run_command(
     )
 
 
+def _git(root: Path, *args: str) -> str:
+    result = subprocess.run(
+        ["git", *args],
+        cwd=root,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+    if result.returncode != 0:
+        raise DriverError(f"git {' '.join(args)} failed: {result.stderr.strip()}")
+    return result.stdout
+
+
+def read_source_state(root: Path) -> SourceState:
+    source_commit = _git(root, "rev-parse", "--verify", "HEAD").strip()
+    if len(source_commit) != 40 or any(ch not in "0123456789abcdef" for ch in source_commit):
+        raise DriverError(f"invalid source commit identity: {source_commit!r}")
+    status = _git(root, "status", "--porcelain=v1", "--untracked-files=all")
+    return SourceState(
+        source_commit=source_commit,
+        toolchain_lock_sha256=sha256_file(root_path(root, TOOLCHAIN_LOCK)),
+        architecture_sha256=sha2556_file(root_path(root, ARCHITECTURE)),
+        worktree_clean=(status == ""),
+    )
+
+
+def require_clean_source(root: Path) -> SourceState:
+    state = read_source_state(root)
+    if not state.worktree_clean:
+        raise DriverError("source worktree must be clean before certification")
+    return state
+
+
+def resolve_evidence_dir(root: Path, source_commit: str, requested: str | Path | None = None) -> Path:
+    if requested is None:
+        configured = os.environ.get("ZXUX_EVIDENCE_DIR")
+        requested = configured if configured else Path(tempfile.gettempdir()) / "zxux-certification" / source_commit
+    destination = Path(requested).expanduser().resolve()
+    root_resolved = root.resolve()
+    try:
+        destination.relative_to(root_resolved)
+    except ValueError:
+        pass
+    else:
+        raise DriverError("certification staging directory must be outside the source worktree")
+    destination.mkdir(parents=True, exist_ok=True)
+    return destination
+
+
+def _normalize_project_path(root: Path, value: str) -> str:
+    candidate = Path(value)
+    if not candidate.is_absolute():
+        return value
+    try:
+        return candidate.resolve().relative_to(root.resolve()).as_posix()
+    except (OSError, ValueError):
+        return value
+
+
+def serialize_command(root: Path, command: CommandResult) -> dict[str, object]:
+    data = asdict(command)
+    data["argv"] = [_normalize_project_path(root, item) for item in command.argv]
+    cwd = Path(command.cwd)
+    try:
+        data["cwd"] = cwd.resolve().relative_to(root.resolve()).as_posix() or "."
+    except (OSError, ValueError):
+        data["cwd"] = command.cwd
+    if data["cwd"] == "":
+        data["cwd"] = "."
+    return data
+
+
 def write_evidence(
     root: Path,
+    evidence_dir: Path,
+    source_state: SourceState,
     step: str,
     action: str,
     *,
     status: str,
+    prerequisites: dict[str, str],
     commands: list[CommandResult],
     hashes: dict[str, str],
     assertions: list[dict[str, object]],
 ) -> Path:
-    destination = root_path(root, CERT_DIR / f"{step}.{action}.json")
-    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination = evidence_dir / f"{step}.{action}.json"
     payload = {
-        "schema": 1,
+        "schema": 2,
         "step": step,
         "action": action,
         "status": status,
-        "commands": [asdict(item) for item in commands],
+        "source_commit": source_state.source_commit,
+        "toolchain_lock_sha256": source_state.toolchain_lock_sha256,
+        "architecture_sha256": source_state.architecture_sha256,
+        "worktree_clean": source_state.worktree_clean,
+        "prerequisites": dict(sorted(prerequisites.items())),
+        "commands": [serialize_command(root, item) for item in commands],
         "hashes": dict(sorted(hashes.items())),
         "assertions": assertions,
     }

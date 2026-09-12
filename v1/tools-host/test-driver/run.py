@@ -36,7 +36,10 @@ import phase1_stack
 from driver_core import (
     DriverError,
     find_root,
+    read_source_state,
+    require_clean_source,
     require_project_tool,
+    resolve_evidence_dir,
     run_command,
     sha256_file,
     write_evidence,
@@ -80,10 +83,43 @@ def dispatch(root: Path, action: str, step: str):
     raise DriverError(f"step is not registered with the deterministic test driver: {step}")
 
 
+def prerequisite_statuses(step: str) -> dict[str, str]:
+    if step.startswith("E0."):
+        try:
+            number = int(step.split(".", 1)[1])
+        except ValueError as exc:
+            raise DriverError(f"invalid E0 step identifier: {step}") from exc
+        if number == 1:
+            return {}
+        if 2 <= number <= 6:
+            return {f"E0.{number - 1:02d}": "PASS"}
+        return {}
+    if step.startswith("P0."):
+        try:
+            number = int(step.split(".", 1)[1])
+        except ValueError as exc:
+            raise DriverError(f"invalid Phase-0 step identifier: {step}") from exc
+        if number == 1:
+            return {"E0.06": "PASS"}
+        if 2 <= number <= 34:
+            return {f"P0.{number - 1:02d}": "PASS"}
+    return {}
+
+
+def source_state_unchanged(before, after) -> bool:
+    return (
+        before.source_commit == after.source_commit
+        and before.toolchain_lock_sha256 == after.toolchain_lock_sha256
+        and before.architecture_sha256 == after.architecture_sha256
+        and after.worktree_clean
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="ZX-UX deterministic host build/test driver.")
     parser.add_argument("action", choices=("build", "test"))
     parser.add_argument("--step", required=True)
+    parser.add_argument("--evidence-dir", help="external scratch evidence directory")
     parser.add_argument("--probe-root", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
 
@@ -92,14 +128,22 @@ def main() -> int:
         if args.probe_root:
             print(root)
             return 0
+        source_state = require_clean_source(root)
+        evidence_dir = resolve_evidence_dir(root, source_state.source_commit, args.evidence_dir)
         commands, hashes, assertions = dispatch(root, args.action, args.step)
+        after = read_source_state(root)
+        if not source_state_unchanged(source_state, after):
+            raise DriverError("step changed the source checkout or certification inputs")
         failed_assertions = [item for item in assertions if item.get("passed") is not True]
         status = "PASS" if not failed_assertions else "FAIL"
         evidence_path = write_evidence(
             root,
+            evidence_dir,
+            source_state,
             args.step,
             args.action,
             status=status,
+            prerequisites=prerequisite_statuses(args.step),
             commands=commands,
             hashes=hashes,
             assertions=assertions,
@@ -107,7 +151,7 @@ def main() -> int:
         if failed_assertions:
             raise DriverError(f"{len(failed_assertions)} assertion(s) failed")
         print(f"ZX-UX {args.step} {args.action.upper()} PASS")
-        print(f"evidence={evidence_path.relative_to(root)}")
+        print(f"evidence={evidence_path}")
         return 0
     except (DriverError, OSError, ValueError) as exc:
         print(f"ZX-UX TEST DRIVER FAIL: {exc}", file=sys.stderr)
