@@ -18,3 +18,4 @@
 # Refreeze after reconciling P0.06 with the guarded alternate-bank ISR contract.
 # Refreeze after fixing P0.14 negative contract mutation coverage.
 # Refreeze after making static prose contract matching whitespace-aware.
+# Final R&R-07 source freeze after durable cleanliness and post-evidence validation hardening.
