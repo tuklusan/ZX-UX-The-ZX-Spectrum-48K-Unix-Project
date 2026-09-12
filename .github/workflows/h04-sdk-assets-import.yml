@@ -1,0 +1,276 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: ZX-UX H04 SDK Asset Import
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/h04-sdk-assets-import.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  import-sdk-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Import pinned missing SDK compiler assets
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          readonly SOURCE_REPO='https://github.com/tuklusan/zx-ux-c48-sdk-sinclair-zx-spectrum-48k-unix-c-compiler-software-development-kit.git'
+          readonly SOURCE_COMMIT='1bebc6288a1cdfa1bdfb5a6694e1986b6c3d7ee0'
+          readonly SOURCE_ASSETS_TREE='979039b5c636f0578f8bccd19ae49a669a5b7e0e'
+          readonly PRE_ASSETS_TREE='79207db22fff6f922b01ada15dc831b56a85351c'
+          readonly POST_ASSETS_TREE='0c363f650345696481070fba571be3a61e61111b'
+          readonly PRE_LICENSE_CHECKER_BLOB='e1ee005c474e6b1e8d9a76d45d3e5bb94655c82f'
+          readonly POST_LICENSE_CHECKER_BLOB='969fec78673ab64f9a57d6195beed84b3735299e'
+          readonly TRACKER_BLOB='8cb16a46ab67157b0b7a0969ef47b483794fb43e'
+
+          if [[ "$(git rev-parse HEAD:v1/assets)" != "$PRE_ASSETS_TREE" ]]; then
+            echo 'ERROR: canonical v1/assets changed after H04 reconnaissance' >&2
+            exit 1
+          fi
+          if [[ "$(git rev-parse HEAD:tools/check_license_headers.sh)" != "$PRE_LICENSE_CHECKER_BLOB" ]]; then
+            echo 'ERROR: license checker changed after H04 review base was frozen' >&2
+            exit 1
+          fi
+          if [[ "$(git rev-parse HEAD:scratch/WORKFLOW.md)" != "$TRACKER_BLOB" ]]; then
+            echo 'ERROR: H04 tracker base changed after reconnaissance' >&2
+            exit 1
+          fi
+
+          src="$RUNNER_TEMP/h04-sdk-source"
+          rm -rf "$src"
+          git init -q "$src"
+          git -C "$src" remote add origin "$SOURCE_REPO"
+          git -C "$src" fetch --depth=1 origin "$SOURCE_COMMIT"
+          git -C "$src" checkout -q --detach FETCH_HEAD
+          if [[ "$(git -C "$src" rev-parse HEAD)" != "$SOURCE_COMMIT" ]]; then
+            echo 'ERROR: read-only SDK source did not resolve to the pinned commit' >&2
+            exit 1
+          fi
+          if [[ "$(git -C "$src" rev-parse HEAD:compiler/assets)" != "$SOURCE_ASSETS_TREE" ]]; then
+            echo 'ERROR: pinned SDK compiler/assets tree identity mismatch' >&2
+            exit 1
+          fi
+
+          cat > "$RUNNER_TEMP/h04-source.expected" <<'EOF_EXPECTED'
+          100644 blob 4d6895e0bbf3fa543f192a66a297192b3c969ac9	compiler/assets/48.rom
+          100644 blob 58319da0b2ce81313ad936ec7b298d9998119368	compiler/assets/README-48K-ROM.md
+          100644 blob abe61b7591014dc0b4b9b8e432fe35978d42c939	compiler/assets/SANYALnet-Labs-4x8-font-1.bin
+          100644 blob b41886d252bfa9dc22a6a7790977002c04d21c4c	compiler/assets/SANYALnet-Labs-4x8-font-1.txt
+          100644 blob cbdb78595a780358ce2b26077c4de72d45d44adf	compiler/assets/SANYALnet-Labs-4x8-font-2.bin
+          100644 blob 38acc70bf2fbdf8bba1ba2dd46a886839d6140d3	compiler/assets/SANYALnet-Labs-4x8-font-2.txt
+          100644 blob ec5eb988e28182c766b5a0d94437d92f6be5a468	compiler/assets/SANYALnet-Labs-4x8-font-3.bin
+          100644 blob fc18a3d9109e50ab2e36b2db616dcb45643ae736	compiler/assets/SANYALnet-Labs-4x8-font-3.txt
+          100644 blob 00e30d85fccf9029d6aea2c39a14f46973f7666d	compiler/assets/SANYALnet-Labs-4x8-font-4.bin
+          100644 blob 158991f59af2fe195736e09192c553604c7155b0	compiler/assets/SANYALnet-Labs-4x8-font-4.txt
+          100644 blob 96657ff6940da15ca77e1eff4c8e0780c4047107	compiler/assets/SANYALnet-Labs-4x8-font-5.bin
+          100644 blob 79ee3f0b546c49e5dae8617f1cee3cdaff0ecdfe	compiler/assets/SANYALnet-Labs-4x8-font-5.txt
+          100644 blob 6efc46eb1d7e940e027097ad76e27ac719aeb59f	compiler/assets/font4x8-tasword.bin
+          100644 blob 6efc46eb1d7e940e027097ad76e27ac719aeb59f	compiler/assets/font4x8-zxux.bin
+          EOF_EXPECTED
+          sed -i 's/^          //' "$RUNNER_TEMP/h04-source.expected"
+          git -C "$src" ls-tree -r HEAD -- compiler/assets > "$RUNNER_TEMP/h04-source.actual"
+          diff -u "$RUNNER_TEMP/h04-source.expected" "$RUNNER_TEMP/h04-source.actual"
+          if [[ "$(wc -l < "$RUNNER_TEMP/h04-source.actual")" -ne 14 ]]; then
+            echo 'ERROR: pinned SDK compiler/assets must contain exactly 14 files' >&2
+            exit 1
+          fi
+
+          while IFS=$'\t' read -r metadata source_path; do
+            read -r mode type blob <<<"$metadata"
+            [[ "$mode" == '100644' && "$type" == 'blob' ]] || {
+              echo "ERROR: unsupported SDK asset entry: $metadata $source_path" >&2
+              exit 1
+            }
+            rel="${source_path#compiler/assets/}"
+            dest="v1/assets/$rel"
+            if [[ -e "$dest" || -L "$dest" ]]; then
+              echo "ERROR: H04 same-path conflict requires explicit adjudication: $dest" >&2
+              exit 1
+            fi
+            cp -- "$src/$source_path" "$dest"
+            actual_blob="$(git hash-object -- "$dest")"
+            if [[ "$actual_blob" != "$blob" ]]; then
+              echo "ERROR: copied SDK asset bytes changed in transport: $dest" >&2
+              exit 1
+            fi
+          done < "$RUNNER_TEMP/h04-source.actual"
+
+          python3 - <<'PY_PATCH'
+          from pathlib import Path
+          import subprocess
+          
+          path = Path('tools/check_license_headers.sh')
+          text = path.read_text(encoding='utf-8')
+          before = subprocess.check_output(['git', 'hash-object', str(path)], text=True).strip()
+          expected_before = 'e1ee005c474e6b1e8d9a76d45d3e5bb94655c82f'
+          if before != expected_before:
+              raise SystemExit(f'license checker preimage mismatch: expected {expected_before}, got {before}')
+          
+          lines = text.splitlines(keepends=True)
+          
+          def find_exact(line: str) -> int:
+              hits = [i for i, item in enumerate(lines) if item == line]
+              if len(hits) != 1:
+                  raise SystemExit(f'expected exactly one checker anchor {line!r}, found {len(hits)}')
+              return hits[0]
+          
+          # Provenance comment after H03 immutable-tree constant.
+          i = find_exact('readonly PRESERVED_REFERENCE_TREE_SHA1="a4e06de3b8b193b43597cdb4d259b5b206e7e3ad"\n')
+          lines[i + 1:i + 1] = [
+              '# H04 preserves these SDK compiler assets byte-for-byte from the read-only source.\n',
+              '# Source: tuklusan/zx-ux-c48-sdk-sinclair-zx-spectrum-48k-unix-c-compiler-software-development-kit\n',
+              '# at 1bebc6288a1cdfa1bdfb5a6694e1986b6c3d7ee0; compiler/assets tree\n',
+              '# 979039b5c636f0578f8bccd19ae49a669a5b7e0e.\n',
+          ]
+          
+          # New exact-blob map immediately after the existing explicit exemption map.
+          start = find_exact('declare -A explicit_header_exemptions=(\n')
+          end = next((j for j in range(start + 1, len(lines)) if lines[j] == ')\n'), None)
+          if end is None:
+              raise SystemExit('explicit exemption map terminator missing')
+          map_lines = [
+              '\n',
+              'declare -A preserved_h04_sdk_assets=(\n',
+              '  ["v1/assets/48.rom"]="4d6895e0bbf3fa543f192a66a297192b3c969ac9"\n',
+              '  ["v1/assets/README-48K-ROM.md"]="58319da0b2ce81313ad936ec7b298d9998119368"\n',
+              '  ["v1/assets/SANYALnet-Labs-4x8-font-1.bin"]="abe61b7591014dc0b4b9b8e432fe35978d42c939"\n',
+              '  ["v1/assets/SANYALnet-Labs-4x8-font-1.txt"]="b41886d252bfa9dc22a6a7790977002c04d21c4c"\n',
+              '  ["v1/assets/SANYALnet-Labs-4x8-font-2.bin"]="cbdb78595a780358ce2b26077c4de72d45d44adf"\n',
+              '  ["v1/assets/SANYALnet-Labs-4x8-font-2.txt"]="38acc70bf2fbdf8bba1ba2dd46a886839d6140d3"\n',
+              '  ["v1/assets/SANYALnet-Labs-4x8-font-3.bin"]="ec5eb988e28182c766b5a0d94437d92f6be5a468"\n',
+              '  ["v1/assets/SANYALnet-Labs-4x8-font-3.txt"]="fc18a3d9109e50ab2e36b2db616dcb45643ae736"\n',
+              '  ["v1/assets/SANYALnet-Labs-4x8-font-4.bin"]="00e30d85fccf9029d6aea2c39a14f46973f7666d"\n',
+              '  ["v1/assets/SANYALnet-Labs-4x8-font-4.txt"]="158991f59af2fe195736e09192c553604c7155b0"\n',
+              '  ["v1/assets/SANYALnet-Labs-4x8-font-5.bin"]="96657ff6940da15ca77e1eff4c8e0780c4047107"\n',
+              '  ["v1/assets/SANYALnet-Labs-4x8-font-5.txt"]="79ee3f0b546c49e5dae8617f1cee3cdaff0ecdfe"\n',
+              '  ["v1/assets/font4x8-tasword.bin"]="6efc46eb1d7e940e027097ad76e27ac719aeb59f"\n',
+              '  ["v1/assets/font4x8-zxux.bin"]="6efc46eb1d7e940e027097ad76e27ac719aeb59f"\n',
+              ')\n',
+          ]
+          lines[end + 1:end + 1] = map_lines
+          
+          # Verify every preserved path before any exemption is honored.
+          loop_start = find_exact('for exempt_path in "${!explicit_header_exemptions[@]}"; do\n')
+          loop_end = next((j for j in range(loop_start + 1, len(lines)) if lines[j] == 'done\n'), None)
+          if loop_end is None:
+              raise SystemExit('explicit exemption validation loop terminator missing')
+          verify_lines = [
+              '\n',
+              'for asset_path in "${!preserved_h04_sdk_assets[@]}"; do\n',
+              '  expected_blob="${preserved_h04_sdk_assets[$asset_path]}"\n',
+              '  if [[ -L "$asset_path" || ! -f "$asset_path" ]]; then\n',
+              '    echo "ERROR: preserved H04 SDK asset must exist as a real regular file: $asset_path" >&2\n',
+              '    exit 1\n',
+              '  fi\n',
+              '  actual_blob="$(git hash-object -- "$asset_path")"\n',
+              '  if [[ "$actual_blob" != "$expected_blob" ]]; then\n',
+              '    echo "ERROR: preserved H04 SDK asset bytes changed: $asset_path" >&2\n',
+              '    echo "ERROR: expected blob $expected_blob, got $actual_blob" >&2\n',
+              '    exit 1\n',
+              '  fi\n',
+              '  index_record="$(git ls-files --stage -- "$asset_path")"\n',
+              '  expected_record_prefix="100644 $expected_blob 0"\n',
+              '  if [[ "$index_record" != "$expected_record_prefix"$\'\\t\'"$asset_path" ]]; then\n',
+              '    echo "ERROR: preserved H04 SDK asset Git mode/index identity changed: $asset_path" >&2\n',
+              '    exit 1\n',
+              '  fi\n',
+              'done\n',
+          ]
+          lines[loop_end + 1:loop_end + 1] = verify_lines
+          
+          # Skip only the pre-verified exact H04 paths in the header scan.
+          ref_if = find_exact('  if [[ "$file" == "$PRESERVED_REFERENCE_DIR"/* ]]; then\n')
+          ref_fi = next((j for j in range(ref_if + 1, len(lines)) if lines[j] == '  fi\n'), None)
+          if ref_fi is None:
+              raise SystemExit('H03 reference exemption terminator missing')
+          skip_lines = [
+              '\n',
+              '  if [[ -n "${preserved_h04_sdk_assets[$file]+approved}" ]]; then\n',
+              '    explicitly_exempt=$((explicitly_exempt + 1))\n',
+              '    continue\n',
+              '  fi\n',
+          ]
+          lines[ref_fi + 1:ref_fi + 1] = skip_lines
+          
+          path.write_text(''.join(lines), encoding='utf-8')
+          after = subprocess.check_output(['git', 'hash-object', str(path)], text=True).strip()
+          expected_after = '969fec78673ab64f9a57d6195beed84b3735299e'
+          if after != expected_after:
+              raise SystemExit(f'license checker postimage mismatch: expected {expected_after}, got {after}')
+          PY_PATCH
+
+          bash -n tools/check_license_headers.sh
+          git add tools/check_license_headers.sh v1/assets
+
+          cat > "$RUNNER_TEMP/h04-staged.expected" <<'EOF_STAGED'
+          M	tools/check_license_headers.sh
+          A	v1/assets/48.rom
+          A	v1/assets/README-48K-ROM.md
+          A	v1/assets/SANYALnet-Labs-4x8-font-1.bin
+          A	v1/assets/SANYALnet-Labs-4x8-font-1.txt
+          A	v1/assets/SANYALnet-Labs-4x8-font-2.bin
+          A	v1/assets/SANYALnet-Labs-4x8-font-2.txt
+          A	v1/assets/SANYALnet-Labs-4x8-font-3.bin
+          A	v1/assets/SANYALnet-Labs-4x8-font-3.txt
+          A	v1/assets/SANYALnet-Labs-4x8-font-4.bin
+          A	v1/assets/SANYALnet-Labs-4x8-font-4.txt
+          A	v1/assets/SANYALnet-Labs-4x8-font-5.bin
+          A	v1/assets/SANYALnet-Labs-4x8-font-5.txt
+          A	v1/assets/font4x8-tasword.bin
+          A	v1/assets/font4x8-zxux.bin
+          EOF_STAGED
+          sed -i 's/^          //' "$RUNNER_TEMP/h04-staged.expected"
+          git diff --cached --name-status > "$RUNNER_TEMP/h04-staged.actual"
+          diff -u "$RUNNER_TEMP/h04-staged.expected" "$RUNNER_TEMP/h04-staged.actual"
+
+          staged_root="$(git write-tree)"
+          actual_post_assets_tree="$(git rev-parse "$staged_root:v1/assets")"
+          if [[ "$actual_post_assets_tree" != "$POST_ASSETS_TREE" ]]; then
+            echo "ERROR: post-import v1/assets tree mismatch: expected $POST_ASSETS_TREE, got $actual_post_assets_tree" >&2
+            exit 1
+          fi
+
+          ./tools/ci.sh
+
+          printf '\x00' >> v1/assets/SANYALnet-Labs-4x8-font-1.bin
+          if ./tools/check_license_headers.sh >"$RUNNER_TEMP/h04-negative.out" 2>&1; then
+            echo 'ERROR: H04 preserved-asset negative test unexpectedly passed' >&2
+            cat "$RUNNER_TEMP/h04-negative.out" >&2
+            exit 1
+          fi
+          git checkout -- v1/assets/SANYALnet-Labs-4x8-font-1.bin
+          ./tools/check_license_headers.sh
+
+          if [[ -n "$(git status --porcelain --untracked-files=all | grep -v '^?? ' || true)" ]]; then
+            # Staged H04 changes are expected; inspect only unstaged tracked changes.
+            if ! git diff --quiet; then
+              echo 'ERROR: H04 validation left unstaged tracked changes' >&2
+              git status --short >&2
+              exit 1
+            fi
+          fi
+
+          git config user.name 'Supratim Sanyal'
+          git config user.email 'tuklusan@users.noreply.github.com'
+          git commit -m 'assets: import missing C48 SDK assets'
+          git push origin HEAD:main
