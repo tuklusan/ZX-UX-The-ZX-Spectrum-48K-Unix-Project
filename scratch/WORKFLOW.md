@@ -158,12 +158,22 @@ For each finding, cite the exact file and line number. State the defect clearly,
 
 ### H04 — Import missing SDK compiler assets
 
-- [ ] Compare the read-only SDK source directory
-  `https://github.com/tuklusan/zx-ux-c48-sdk-sinclair-zx-spectrum-48k-unix-c-compiler-software-development-kit/tree/main/compiler/assets`
-  against this repository's `v1/assets/` and copy every source item that is not already
-  present. Preserve copied bytes and provenance. Do not overwrite an existing canonical
-  asset merely because a source item has the same or a similar purpose; any same-path
-  conflict requires explicit adjudication. The SDK repository remains read-only.
+- [x] Compared the read-only SDK `compiler/assets` scope pinned at source commit
+  `1bebc6288a1cdfa1bdfb5a6694e1986b6c3d7ee0` / source tree
+  `979039b5c636f0578f8bccd19ae49a669a5b7e0e` against canonical `v1/assets`
+  pre-import tree `79207db22fff6f922b01ada15dc831b56a85351c`. The source contained 14 files;
+  all 14 were missing and there were zero same-path conflicts, so no existing canonical
+  asset was overwritten.
+- [x] Imported all 14 source files byte-for-byte in commit
+  `c52f4eb4d52140510367674abce30873a6bef51c`. The resulting canonical `v1/assets`
+  tree is exactly `0c363f650345696481070fba571be3a61e61111b`.
+  `tools/check_license_headers.sh` binds the preserved SDK files to their exact pinned
+  Git blob IDs and modes and fails closed on mutation.
+- [x] Importer run `34719541127` succeeded after staged CI and a deliberate negative
+  mutation test. Temporary H04 transport automation was removed by cleanup commit
+  `b5bee52eefe6a208bf1143d3277090d0e85a06c4`; final normal Quality/CI run
+  `34719595619` on the cleaned canonical tree succeeded. The SDK source repository
+  remained read-only; only the canonical ZX-UX repository was modified.
 
 ### H05 — Standardize GitHub-hosted runners on ubuntu-latest
 
