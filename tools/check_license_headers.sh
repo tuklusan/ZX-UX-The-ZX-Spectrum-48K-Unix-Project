@@ -78,6 +78,7 @@ declare -A preserved_h04_sdk_assets=(
 fail=0
 checked=0
 explicitly_exempt=0
+declare -a generated_certification_jsons=()
 
 is_explicit_header_exemption() {
   local candidate="$1"
@@ -217,11 +218,10 @@ while IFS= read -r -d '' file; do
     # Durable certification records are machine-generated strict JSON whose exact
     # bytes are independently hash-verified by tools/check_phase0_evidence.py.
     # JSON comments would invalidate the records and destroy evidence identity.
-    if ! python3 -m json.tool "$file" >/dev/null; then
-      echo "ERROR: generated certification exemption is only valid for parseable JSON: $file" >&2
-      fail=1
-      continue
-    fi
+    # Defer parsing so all exempt JSON is validated in one interpreter process;
+    # cloud Python startup is expensive enough that one process per file turns this
+    # gate into minutes of overhead without increasing coverage.
+    generated_certification_jsons+=("$file")
     explicitly_exempt=$((explicitly_exempt + 1))
     continue
   fi
@@ -258,13 +258,38 @@ while IFS= read -r -d '' file; do
   checked=$((checked + 1))
   header="$(head -n "$HEADER_SCAN_LINES" "$file")"
 
+  # Keep this check in-process. Spawning one grep per phrase multiplied the gate
+  # into thousands of child processes and made cloud rebaseline diagnostics
+  # needlessly slow without adding any coverage.
   for phrase in "${required_phrases[@]}"; do
-    if ! grep -Fq -- "$phrase" <<<"$header"; then
+    if [[ "$header" != *"$phrase"* ]]; then
       echo "ERROR: required license-header phrase missing near top of $file" >&2
       fail=1
     fi
   done
 done < <(find . -path './.git' -prune -o ! -type d -print0)
+
+if (( ${#generated_certification_jsons[@]} > 0 )); then
+  if ! python3 - "${generated_certification_jsons[@]}" <<'PYJSON'
+import json
+from pathlib import Path
+import sys
+
+failed = False
+for arg in sys.argv[1:]:
+    path = Path(arg)
+    try:
+        with path.open("r", encoding="utf-8") as stream:
+            json.load(stream)
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        print(f"ERROR: generated certification exemption is only valid for parseable JSON: {path}: {exc}", file=sys.stderr)
+        failed = True
+raise SystemExit(1 if failed else 0)
+PYJSON
+  then
+    exit 1
+  fi
+fi
 
 if (( checked == 0 )); then
   echo "ERROR: no project text files were checked" >&2
