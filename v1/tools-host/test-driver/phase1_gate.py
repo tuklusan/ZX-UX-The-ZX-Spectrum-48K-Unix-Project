@@ -19,6 +19,17 @@ import sys
 from driver_core import DriverError, find_root, run_command
 import phase1_probe
 
+# These probes exercise implementation that is not yet admitted to the ordered
+# Phase-1 certification set because P1.01 still owns the preceding startup/BSS
+# gate. They run on every relevant push so allocator/accounting regressions are
+# caught without pretending the phase order has been satisfied.
+PRE_ADMISSION_STEPS = (
+    "P1.02",
+    "P1.03",
+    "P1.04",
+    "P1.05",
+)
+
 # Each entry is admitted only after its implementation and deterministic driver
 # have passed the normal check-in review. The workflow executes every admitted
 # step on every relevant push, so later changes cannot silently regress an
@@ -33,15 +44,8 @@ CERTIFIED_STEPS = (
 )
 
 
-def main() -> int:
-    root = find_root(Path(__file__))
-    runner = root / "v1/tools-host/test-driver/run.py"
-    python = Path(sys.executable).resolve()
-    if not runner.is_file():
-        raise DriverError("deterministic test driver missing")
-
-    phase1_probe.run(root)
-    for step in CERTIFIED_STEPS:
+def _run_step_set(root: Path, runner: Path, python: Path, steps: tuple[str, ...], label: str) -> None:
+    for step in steps:
         for action in ("build", "test"):
             result = run_command(
                 [python, runner, action, "--step", step],
@@ -50,10 +54,22 @@ def main() -> int:
             )
             if result.timed_out or result.exit_code != 0:
                 raise DriverError(
-                    f"{step} {action} failed: exit={result.exit_code} "
+                    f"{label} {step} {action} failed: exit={result.exit_code} "
                     f"timed_out={result.timed_out} stdout={result.stdout!r} "
                     f"stderr={result.stderr!r}"
                 )
+
+
+def main() -> int:
+    root = find_root(Path(__file__))
+    runner = root / "v1/tools-host/test-driver/run.py"
+    python = Path(sys.executable).resolve()
+    if not runner.is_file():
+        raise DriverError("deterministic test driver missing")
+
+    phase1_probe.run(root)
+    _run_step_set(root, runner, python, PRE_ADMISSION_STEPS, "pre-admission")
+    _run_step_set(root, runner, python, CERTIFIED_STEPS, "certified")
     print("ZX-UX PHASE 1 REGISTERED CERTIFICATION PASS")
     return 0
 
