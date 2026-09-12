@@ -33,11 +33,17 @@ def find_root(start: Path) -> Path:
     raise RepairError("canonical project root not found")
 
 
-def replace_once(text: str, old: str, new: str, label: str) -> str:
-    count = text.count(old)
-    if count != 1:
-        raise RepairError(f"{label}: expected one source block, found {count}")
-    return text.replace(old, new, 1)
+def replace_transition(text: str, old: str, new: str, label: str) -> str:
+    old_count = text.count(old)
+    new_count = text.count(new)
+    if old_count == 1 and new_count == 0:
+        return text.replace(old, new, 1)
+    if old_count == 0 and new_count == 1:
+        return text
+    raise RepairError(
+        f"{label}: expected exactly one legacy or repaired form; "
+        f"legacy={old_count} repaired={new_count}"
+    )
 
 
 def replace_between(text: str, start: str, end: str, replacement: str, label: str) -> str:
@@ -58,7 +64,7 @@ def main() -> int:
             raise RepairError(f"target is not a regular file: {TARGET}")
         text = target.read_text(encoding="utf-8")
 
-        text = replace_once(
+        text = replace_transition(
             text,
             "Architecture baseline: `v1/docs/01-ZX-UX-ARCHITECTURE-REV11.md`",
             "Architecture baseline: `docs/01-ZX-UX-ARCHITECTURE-REV11.md`",
@@ -186,9 +192,7 @@ PATH tool resolution:
             "REV11 §40; handover SNA/ROM-call stack lesson.": "REV11 §40; deterministic SNA/ROM-call stack safety lesson.",
         }
         for old, new in replacements.items():
-            if old not in text:
-                raise RepairError(f"foundation wording missing: {old}")
-            text = text.replace(old, new)
+            text = replace_transition(text, old, new, f"foundation wording: {old}")
 
         stale_foundation = (
             "Windows-host results",
