@@ -96,12 +96,12 @@ zx48_udg_draw:
     inc hl
     ld a,(hl)
     cp 24
-    jp nc,zx48_udg_bad
+    jr nc,zx48_udg_bad
     ld (udg_row),a
     inc hl
     ld a,(hl)
     cp 32
-    jp nc,zx48_udg_bad
+    jr nc,zx48_udg_bad
     ld (udg_col),a
     call zx48_udg_slot_ptr
     ret c
