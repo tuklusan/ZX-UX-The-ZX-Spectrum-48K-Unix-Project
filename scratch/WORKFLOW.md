@@ -100,7 +100,61 @@ For each finding, cite the exact file and line number. State the defect clearly,
 * **Pass 5 (Consecutive 3):** Scanned raw text logic. Zero gaps detected. Criteria met. Delivery authorized.
 ```
 
-### H03 — Reserved for next owner-directed item
+### H03 — Import the external reference tree into the repository root
+
+- [ ] Recursively copy the complete `reference/` directory from the read-only source
+  repository at
+  `https://github.com/tuklusan/zxuslinuxtestproject/tree/main/reference` into this
+  repository root as `reference/`, preserving source-relative paths and file bytes.
+  Record source provenance and verify the recursive copy is complete. The source
+  repository remains read-only; only the canonical ZX-UX repository may be modified.
+
+### H04 — Import missing SDK compiler assets
+
+- [ ] Compare the read-only SDK source directory
+  `https://github.com/tuklusan/zx-ux-c48-sdk-sinclair-zx-spectrum-48k-unix-c-compiler-software-development-kit/tree/main/compiler/assets`
+  against this repository's `v1/assets/` and copy every source item that is not already
+  present. Preserve copied bytes and provenance. Do not overwrite an existing canonical
+  asset merely because a source item has the same or a similar purpose; any same-path
+  conflict requires explicit adjudication. The SDK repository remains read-only.
+
+### H05 — Standardize GitHub-hosted runners on ubuntu-latest
+
+- [x] Inventory the current workflow runner labels. Current state is mixed:
+  `phase0-certification.yml`, `phase1-certification.yml`, and the Quality/CI
+  `e0-foundation` job use `ubuntu-latest`; `candidate-kernel.yml` and the other
+  Quality/CI jobs use `ubuntu-slim`.
+- [ ] Change every GitHub-hosted workflow job that does not already use
+  `ubuntu-latest` to `ubuntu-latest`, then verify no unintended non-`ubuntu-latest`
+  runner labels remain.
+
+### H06 — Import and execute the SDK usr/src C48 corpus at the compiler acceptance gate
+
+- [x] Forensically locate the owning implementation-plan gate. The correct primary
+  owner is P11.45, `Complete Section-41.9 compiler acceptance matrix`, because that
+  gate already requires actual compile-and-run coverage of the C48 compiler, linker,
+  runtime, syscalls, and language surface. P11.38 only proves the 13 shipped demos
+  compile/link; P11.48 is the Phase-11 aggregate acceptance gate; P12.26 replays the
+  mandatory matrix at integrated-release scope.
+- [ ] In the next authorized implementation-plan revision, extend the current REV02
+  P11.45 owning contract, with corresponding P11.48/P12.26 closure obligations, to add
+  a formal recursive SDK `usr/src` corpus contract sourced from
+  `https://github.com/tuklusan/zx-ux-c48-sdk-sinclair-zx-spectrum-48k-unix-c-compiler-software-development-kit/tree/main/usr/src`.
+- [ ] The contract must recursively discover and copy every C48 `.c` source at the
+  top level and below, preserve source-relative paths/bytes, record source commit and
+  hashes, and account for every discovered `.c` file. A source that is not itself a
+  standalone program must be tied to the program/build unit that exercises it rather
+  than silently exempted.
+- [ ] The contract must require the target-native C48 compiler to compile the complete
+  imported corpus, native `ld` to link every resulting executable program, and ZX-UX
+  to execute every resulting program successfully under the required emulator/runtime
+  test path. No host-only compile result satisfies this contract.
+- [ ] Proof for every executed program must include a screenshot in addition to the
+  normal deterministic debugger/register/RAM/process-state assertions and exit/result
+  evidence; screenshots are mandatory proof artifacts but are not a screenshot-only
+  PASS oracle.
+
+### H07 — Reserved for next owner-directed item
 
 - [ ] TBD: owner to specify additional housekeeping/infrastructure work.
 - [ ] Classify each populated item as prerequisite, independent work, or post-CR work.
