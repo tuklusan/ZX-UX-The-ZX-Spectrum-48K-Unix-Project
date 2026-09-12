@@ -44,6 +44,7 @@ import phase1_abi
 import phase1_syscalls
 import phase1_getpid
 import phase1_scheduler
+import phase1_ticks
 from driver_core import (
     DriverError,
     find_root,
@@ -113,6 +114,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase1_getpid.dispatch(root, action, step, **kwargs)
     if step == "P1.12":
         return phase1_scheduler.dispatch(root, action, step, **kwargs)
+    if step == "P1.13":
+        return phase1_ticks.dispatch(root, action, step, **kwargs)
     if step == "P1.30":
         return phase1_alt.dispatch(root, action, step, **kwargs)
     if step == "P1.31":
@@ -137,7 +140,7 @@ def prerequisite_statuses(step: str) -> dict[str, str]:
         number = int(step.split(".", 1)[1])
         if number == 1:
             return {"P0.34": "PASS"}
-        if 2 <= number <= 12:
+        if 2 <= number <= 13:
             return {f"P1.{number - 1:02d}": "PASS"}
     return {}
 
