@@ -29,16 +29,16 @@ def joined(*parts: str) -> str:
 
 
 LEGACY_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
-    ("legacy-transfer-vocabulary", re.compile(joined("transfer", r"\s*-\s*", "era"), re.IGNORECASE)),
-    ("transfer-provenance-vocabulary", re.compile(joined("transfer", r"\s*-\s*", "time", r"\s+provenance"), re.IGNORECASE)),
-    ("historical-host-vocabulary", re.compile(joined("historical", r"\s*-?\s*", "host"), re.IGNORECASE)),
-    ("historical-workstation-vocabulary", re.compile(joined("historical", r"\s+", "workstation"), re.IGNORECASE)),
-    ("legacy-windows-installation", re.compile(joined("windows", r"\s+", "installation"), re.IGNORECASE)),
-    ("fixed-drive-vocabulary", re.compile(joined("fixed", r"\s+", "drive", r"\s+", "letter"), re.IGNORECASE)),
-    ("fixed-profile-vocabulary", re.compile(joined("fixed", r"\s+", "user", r"\s+", "profile"), re.IGNORECASE)),
-    ("owner-override-vocabulary", re.compile(joined("owner", r"\s*-?\s*", "override", r"s?"), re.IGNORECASE)),
-    ("preexisting-runtime-vocabulary", re.compile(joined("pre", r"\s*-?\s*", "existing", r"(?:\s+project\s*-?\s*local)?\s+runtime"), re.IGNORECASE)),
-    ("alternative-acceptance-vocabulary", re.compile(joined("alternative", r"\s+", "acceptance", r"\s+path"), re.IGNORECASE)),
+    ("L01", re.compile(joined("transfer", r"\s*-\s*", "era"), re.IGNORECASE)),
+    ("L02", re.compile(joined("transfer", r"\s*-\s*", "time", r"\s+provenance"), re.IGNORECASE)),
+    ("L03", re.compile(joined("historical", r"\s*-?\s*", "host"), re.IGNORECASE)),
+    ("L04", re.compile(joined("historical", r"\s+", "workstation"), re.IGNORECASE)),
+    ("L05", re.compile(joined("windows", r"\s+", "installation"), re.IGNORECASE)),
+    ("L06", re.compile(joined("fixed", r"\s+", "drive", r"\s+", "letter"), re.IGNORECASE)),
+    ("L07", re.compile(joined("fixed", r"\s+", "user", r"\s+", "profile"), re.IGNORECASE)),
+    ("L08", re.compile(joined("owner", r"\s*-?\s*", "override", r"s?"), re.IGNORECASE)),
+    ("L09", re.compile(joined("pre", r"\s*-?\s*", "existing", r"(?:\s+project\s*-?\s*local)?\s+runtime"), re.IGNORECASE)),
+    ("L10", re.compile(joined("alternative", r"\s+", "acceptance", r"\s+path"), re.IGNORECASE)),
 )
 
 WINDOWS_ABSOLUTE_PATH = re.compile(
