@@ -71,8 +71,11 @@ record frozen by the architecture: 0x4000-0x7FFF contended and
 Every adopted wrapper records the source above, exact address, input/output
 registers in source comments, clobbers, IY restoration and the serialization
 rule. Class-B services are globally serialized and permit no cooperative yield
-between state save and restoration. Any routine whose RST8/BREAK recovery path
-cannot be trapped safely remains unavailable rather than escaping into BASIC.
+between state save and restoration. Class-B wrapper reentrancy is forbidden;
+a second entry cannot begin until the first wrapper has restored protected ROM
+state and released the global serialization lock. Any routine whose RST8/BREAK
+recovery path cannot be trapped safely remains unavailable rather than escaping
+into BASIC.
 
 ## Rejected Class-C reuse
 
