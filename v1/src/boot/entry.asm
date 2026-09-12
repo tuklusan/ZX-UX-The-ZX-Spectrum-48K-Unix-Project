@@ -19,7 +19,6 @@ boot_gateway:
 
     MACRO EMIT_BOOT_BODY
 zx48_boot_main:
-    jp zx48_boot_main_impl
     ENDM
 
     MACRO EMIT_BOOT_IMPL
@@ -27,15 +26,10 @@ zx48_boot_main_impl:
     di
     ld sp,BOOT_STACK_TOP
     ld iy,ROM_IY_ANCHOR
-    ; Do not rely on zero-filled load bytes for mutable emergency/interrupt state.
-    ; Clear only the documented state block; stack, display, ROM workspace and
-    ; IM2 trampoline/table remain outside this initialization range.
-    xor a
-    ld hl,EMERGENCY_START
-    ld de,EMERGENCY_START+1
-    ld bc,ERROR_STATE_END-EMERGENCY_START-1
-    ld (hl),a
-    ldir
+    ; IM2 setup also clears the bounded interrupt/emergency state block while
+    ; interrupts are disabled. It intentionally leaves stack/display/ROM work
+    ; space and the fixed trampoline outside that state-clear range.
+    call zx48_im2_init
     call zx48_kernel_stack_init
     call zx48_memory_init
     call zx48_process_init
@@ -45,10 +39,9 @@ zx48_boot_main_impl:
     call zx48_console_init
     call zx48_keyboard_init
     call zx48_udg_init
-    jp nc,zx48_boot_udg_ok
+    jr nc,zx48_boot_udg_ok
     ld a,PANIC_ALLOCATOR
     jp zx48_panic
 zx48_boot_udg_ok:
-    call zx48_im2_init
     jp zx48_idle_loop
     ENDM
