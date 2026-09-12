@@ -86,8 +86,10 @@ pre-existing project-local runtime.
 7. The implementation plan, `v1/dist/certification/README.md`, the evidence validator,
    and the deterministic test driver must use the same filenames, required fields, and
    acceptance rules.
-8. Durable evidence must include stable root-relative hashes and enough command/assertion
-   data to reproduce why a step passed or failed.
+8. Every durable build/test/result record must identify the certified `source_commit`,
+   toolchain-lock SHA-256, architecture SHA-256, clean-worktree state, and prerequisite
+   status in addition to stable root-relative artifact hashes and enough command/assertion
+   data to reproduce why the step passed or failed.
 
 Exit gate: the repository contains no contradiction between documented evidence rules,
 validator rules, driver output, and CI retention behavior.
@@ -98,34 +100,43 @@ validator rules, driver output, and CI retention behavior.
 
 1. Implementation/source corrections are committed first.
 2. The exact committed source check-in is then re-tested from a clean checkout/worktree.
-3. Evidence records identify that already-existing source check-in as `source_commit`.
-4. The generated evidence is committed in a subsequent evidence-only check-in.
-5. The evidence-only check-in does not change the source bytes being certified.
-6. `worktree_clean: true` means the source checkout was clean when certification ran;
+3. During certification, generated evidence is written to an external staging directory or
+   equivalent location outside the source worktree so one step's output cannot make later
+   clean-worktree assertions false.
+4. Each step verifies the source worktree is clean before executing and records that state.
+5. Evidence records identify that already-existing source check-in as `source_commit`.
+6. Only after the complete clean-source certification run passes are staged records copied
+   into `v1/dist/certification`.
+7. The generated evidence is committed in a subsequent evidence-only check-in.
+8. The evidence-only check-in does not change the source bytes being certified.
+9. `worktree_clean: true` means the source checkout was clean when certification ran;
    it does not pretend that a check-in can contain its own hash.
-7. Phase aggregate evidence names the certified source check-in and all required step
-   records.
+10. Phase aggregate evidence names the certified source check-in and all required step
+    records.
 
 Exit gate: every committed final record can be validated without an impossible
 self-reference or a dirty-source exception.
 
 ---
 
-## 5. R&R-04 - Complete deterministic Phase-0 registration
+## 5. R&R-04 - Complete deterministic E0 and Phase-0 registration
 
-1. Audit the canonical Phase-0 step range `P0.01` through `P0.34`.
-2. Every step must be directly registered with the deterministic host driver or have an
-   explicitly documented pre-driver foundation path where the driver does not yet exist.
+1. Audit the canonical foundation range `E0.01` through `E0.06` and Phase-0 range
+   `P0.01` through `P0.34`.
+2. Every numbered E0 and Phase-0 step must be directly registered with the deterministic
+   host driver. E0.01 and E0.02 may call the canonical environment/architecture verifier
+   internally, but they must still be addressable through their exact step identifiers.
 3. No generic fallback may silently claim support for an unregistered numbered step.
-4. Each registered Phase-0 step must execute its plan-defined positive assertions and its
-   intended negative/failure test.
+4. Each registered E0 and Phase-0 step must execute its plan-defined positive assertions
+   and its intended negative/failure test.
 5. Existing grouped implementations may share helper modules, but each numbered step must
    emit evidence under its own exact step identifier.
-6. P0.34 must aggregate and verify all Phase-0 prerequisites and produce the Phase-0
-   acceptance record rather than relying on prose or commit history.
+6. P0.34 must aggregate and verify all E0 and Phase-0 prerequisites and produce the
+   Phase-0 acceptance record rather than relying on prose or commit history.
 
-Exit gate: invoking build and test for every `P0.01` through `P0.34` succeeds on the
-certified baseline, and an unknown Phase-0 step is rejected deterministically.
+Exit gate: invoking build and test for every `E0.01` through `E0.06` and `P0.01` through
+`P0.34` succeeds on the certified baseline, and any unknown E0 or Phase-0 step is rejected
+deterministically.
 
 ---
 
@@ -138,14 +149,21 @@ certified baseline, and an unknown Phase-0 step is rejected deterministically.
 3. The completeness requirement activates monotonically when `phase-0.json` first appears:
    - before that first aggregate exists, CI may run regenerated scratch evidence while R&R
      is still constructing the durable baseline;
-   - once the current or immediately preceding check-in contains `phase-0.json`, CI requires
-     the complete durable evidence set;
-   - removing the aggregate after activation is itself a hard failure.
+   - the completeness job must inspect the complete reachable `main` ancestry, using a
+     full-history checkout or equivalent, to determine whether `phase-0.json` has ever
+     existed in the current branch history;
+   - once any ancestor contains `phase-0.json`, every descendant requires the complete
+     durable evidence set; removing the aggregate or required records is a hard failure and
+     cannot be laundered through a later commit.
 4. CI regeneration of scratch evidence may continue for diagnostics, but regenerated
    scratch output must not mask missing durable repository evidence after activation.
-5. CI must verify that the implementation plan and certification README agree on the
+5. Documentation-only pushes must not launch GitHub Actions CI workflows. Workflow path
+   filters must exclude canonical non-executable documentation paths; a change that also
+   modifies executable policy, verifier, source, workflow, or certification evidence is
+   not documentation-only and continues to trigger the relevant gates.
+6. CI must verify that the implementation plan and certification README agree on the
    evidence naming convention.
-6. Existing exact kernel-size, project-policy, license-header, and Phase-1 certification
+7. Existing exact kernel-size, project-policy, license-header, and Phase-1 certification
    gates remain intact; this R&R effort must not weaken them.
 
 Exit gate: the enforcement code is present before the final source freeze, and after
@@ -161,7 +179,8 @@ CI failure for the intended reason.
 3. Execute and retain E0.01 through E0.06 evidence using the reconciled evidence rules.
 4. Execute and retain `P0.01` through `P0.34` build/test evidence.
 5. Generate and validate all required step result records.
-6. Generate and validate `phase-0.json` against the same source check-in.
+6. Generate and validate `phase-0.json` against the same source check-in; the aggregate
+   must cover all required `E0.01` through `E0.06` and `P0.01` through `P0.34` records.
 7. Commit only the generated certification evidence in the evidence-only check-in. The
    first committed `phase-0.json` activates the monotonic CI completeness requirement.
 8. Re-run repository policy, license-header policy, project CI, environment certification,
@@ -182,7 +201,8 @@ Before normal implementation resumes:
    evidence records.
 3. Verify E0.01 can start from a clean Linux checkout with no `tools/runtime` directory.
 4. Verify final E0 certification uses the project-local runtime.
-5. Verify every `P0.01` through `P0.34` build/test invocation is registered and PASS.
+5. Verify every `E0.01` through `E0.06` and `P0.01` through `P0.34` build/test invocation
+   is registered and PASS.
 6. Verify all required E0/P0 evidence is committed under `v1/dist/certification`.
 7. Verify `phase-0.json` is valid and closes the same certified source check-in.
 8. Run project policy, license headers, Quality/CI, kernel build where applicable, and all
@@ -204,3 +224,22 @@ is paused.
   execute; register and test the step first.
 - Do not modify any GitHub repository other than the canonical ZX-UX repository.
 - Do not begin new Phase-1 or later implementation work until R&R-07 closes green.
+
+---
+
+## 10. Mandatory SoP three-scan delivery gate
+
+Every R&R change follows the repository's standard zero-defect delivery rule without
+shortcut or substitution:
+
+1. Start from the latest fresh disk copy of every file in the proposed change and scan it
+   manually, line by line, from first line through last line.
+2. Fix every gap or defect found during that scan.
+3. Any byte change invalidates the scan count and requires a fresh scan from the first line.
+4. Delivery is permitted only after three successive complete manual line-by-line scans of
+   identical proposed bytes each find zero new gaps or defects.
+5. License, project-policy, and adversarial-review gates run only after the third qualifying
+   zero-defect scan; any later byte change resets the scan count to zero.
+
+This rule applies to documentation, scripts, workflow files, evidence, assembly, host tools,
+and every other text artifact changed during R&R.
