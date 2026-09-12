@@ -13,6 +13,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 import sys
 
@@ -73,9 +74,20 @@ def main() -> int:
     return 0
 
 
+def _persist_failure(message: str) -> None:
+    evidence = os.environ.get("ZXUX_EVIDENCE_DIR")
+    if not evidence:
+        return
+    path = Path(evidence)
+    path.mkdir(parents=True, exist_ok=True)
+    (path / "phase1-failure.txt").write_text(message + "\n", encoding="utf-8")
+
+
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
     except (DriverError, OSError, ValueError) as exc:
-        print(f"ZX-UX PHASE 1 CERTIFICATION FAIL: {exc}", file=sys.stderr)
+        message = f"ZX-UX PHASE 1 CERTIFICATION FAIL: {exc}"
+        _persist_failure(message)
+        print(message, file=sys.stderr)
         raise SystemExit(1)
