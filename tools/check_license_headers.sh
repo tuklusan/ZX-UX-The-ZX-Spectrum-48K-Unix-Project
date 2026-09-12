@@ -16,6 +16,7 @@ set -euo pipefail
 readonly LICENSE_PATH="LICENSE"
 readonly LICENSE_SHA256="dac0b24bb71563c0eec7c34f3ad07adad8c65f35706ea1f0f8557ea736ffd785"
 readonly HEADER_SCAN_LINES=40
+readonly GENERATED_CERTIFICATION_DIR="v1/dist/certification"
 
 required_phrases=(
   "Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs."
@@ -57,6 +58,11 @@ is_explicit_header_exemption() {
   [[ -n "${explicit_header_exemptions[$candidate]+approved}" ]]
 }
 
+is_generated_certification_json() {
+  local candidate="$1"
+  [[ "$candidate" == "$GENERATED_CERTIFICATION_DIR"/*.json ]]
+}
+
 for exempt_path in "${!explicit_header_exemptions[@]}"; do
   if [[ -z "$exempt_path" || -z "${explicit_header_exemptions[$exempt_path]}" ]]; then
     echo "ERROR: each license-header exemption must have an exact non-empty path and reason" >&2
@@ -83,6 +89,19 @@ fi
 while IFS= read -r -d '' file; do
   file="${file#./}"
   [[ "$file" == "$LICENSE_PATH" ]] && continue
+
+  if is_generated_certification_json "$file"; then
+    # Durable certification records are machine-generated strict JSON whose exact
+    # bytes are independently hash-verified by tools/check_phase0_evidence.py.
+    # JSON comments would invalidate the records and destroy evidence identity.
+    if ! python3 -m json.tool "$file" >/dev/null; then
+      echo "ERROR: generated certification exemption is only valid for parseable JSON: $file" >&2
+      fail=1
+      continue
+    fi
+    explicitly_exempt=$((explicitly_exempt + 1))
+    continue
+  fi
 
   if is_explicit_header_exemption "$file"; then
     explicitly_exempt=$((explicitly_exempt + 1))
