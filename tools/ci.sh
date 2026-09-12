@@ -21,6 +21,9 @@ required_files=(
   "README.md"
   "docs/03-ZX-UX-DEVELOPMENT-WORKFLOW.md"
   ".github/workflows/quality-and-ci.yml"
+  ".github/workflows/candidate-kernel.yml"
+  ".github/workflows/phase0-certification.yml"
+  ".github/workflows/phase1-certification.yml"
   "tools/check_project_policy.py"
   "tools/check_license_headers.sh"
   "tools/check_rr07_cleanliness.py"
@@ -64,13 +67,13 @@ fi
 python3 ./tools/check_rr07_cleanliness.py
 
 workflow=.github/workflows/quality-and-ci.yml
-if ! grep -Fq 'runs-on: ubuntu-slim' "$workflow"; then
-  echo "ERROR: workflow must retain ubuntu-slim for short policy jobs" >&2
-  fail=1
-fi
 
-if ! grep -Fq 'runs-on: ubuntu-latest' "$workflow"; then
-  echo "ERROR: fresh bootstrap job must use ubuntu-latest" >&2
+runner_mismatch="$({
+  grep -HnE '^[[:space:]]*runs-on:' .github/workflows/*.yml .github/workflows/*.yaml 2>/dev/null || true
+} | grep -vE 'runs-on:[[:space:]]+ubuntu-latest[[:space:]]*$' || true)"
+if [[ -n "$runner_mismatch" ]]; then
+  printf '%s\n' "$runner_mismatch" >&2
+  echo "ERROR: all GitHub-hosted workflow jobs must use ubuntu-latest" >&2
   fail=1
 fi
 
@@ -84,24 +87,89 @@ if ! grep -Fq "workflows: ['ZX-UX Phase 0 Certification']" "$workflow"; then
   fail=1
 fi
 
-for ignored in \
-  'docs/03-ZX-UX-DEVELOPMENT-WORKFLOW.md' \
-  'docs/04-ZX-UX-CHANGE-REQUEST-DEFERRED-WRAP-REV01.md' \
-  'docs/05-ZX-UX-BASELINE-REPAIR-RECONCILIATION-REV01.md' \
-  'README.md'; do
-  if ! grep -Fq -- "- $ignored" "$workflow"; then
-    echo "ERROR: non-executable documentation ignore missing: $ignored" >&2
-    fail=1
-  fi
-done
+if ! python3 - <<'PY_POLICY'
+from pathlib import Path
+import sys
 
-if grep -Eq "^[[:space:]]*-[[:space:]]*['\"]?(docs|v1/docs)/\*\*['\"]?[[:space:]]*$" "$workflow"; then
-  echo "ERROR: workflow must not blanket-ignore normative documentation trees" >&2
-  fail=1
-fi
+patterns = (
+    '**/*.md', '**/*.markdown', '**/*.mdown', '**/*.mdx', '**/*.rst',
+    '**/*.adoc', '**/*.asciidoc', '**/*.txt', '**/*.text', '**/*.rtf',
+    '**/*.doc', '**/*.docx', '**/*.odt', '**/*.pdf', '**/*.tex',
+    '**/*.epub', '**/*.html', '**/*.htm', '**/*.ppt', '**/*.pptx',
+    '**/*.odp', '**/*.pages', '**/*.key', 'LICENSE', 'LICENSE.*', 'COPYING',
+    'COPYING.*', 'NOTICE', 'NOTICE.*', 'CHANGELOG', 'CHANGELOG.*',
+    'CONTRIBUTING', 'CONTRIBUTING.*', 'AUTHORS', 'AUTHORS.*', 'docs/**',
+    'scratch/**',
+)
 
-if ! grep -Fq 'handshake happens dynamically immediately before check-in' AGENTS.md; then
-  echo "ERROR: dynamic author/reviewer handshake rule missing from AGENTS.md" >&2
+quality = Path('.github/workflows/quality-and-ci.yml').read_text(encoding='utf-8').splitlines()
+quality_items = {line.strip() for line in quality}
+missing = [pattern for pattern in patterns if f"- '{pattern}'" not in quality_items]
+if missing:
+    print('ERROR: Quality/CI documentation exclusions missing: ' + ', '.join(missing), file=sys.stderr)
+    raise SystemExit(1)
+
+for name in ('candidate-kernel.yml', 'phase1-certification.yml'):
+    lines = Path('.github/workflows', name).read_text(encoding='utf-8').splitlines()
+    items = {line.strip() for line in lines}
+    missing = [pattern for pattern in patterns if f"- '!{pattern}'" not in items]
+    if missing:
+        print(f"ERROR: {name} documentation exclusions missing: " + ', '.join(missing), file=sys.stderr)
+        raise SystemExit(1)
+
+document_suffixes = (
+    '.md', '.markdown', '.mdown', '.mdx', '.rst', '.adoc', '.asciidoc', '.txt',
+    '.text', '.rtf', '.doc', '.docx', '.odt', '.pdf', '.tex', '.epub', '.html',
+    '.htm', '.ppt', '.pptx', '.odp', '.pages', '.key',
+)
+document_basenames = ('LICENSE', 'COPYING', 'NOTICE', 'CHANGELOG', 'CONTRIBUTING', 'AUTHORS')
+
+def is_document_path(path: str) -> bool:
+    lower = path.lower()
+    base = Path(path).name
+    return (
+        lower.startswith(('docs/', 'scratch/'))
+        or lower.endswith(document_suffixes)
+        or any(base == name or base.startswith(name + '.') for name in document_basenames)
+    )
+
+phase0_lines = Path('.github/workflows/phase0-certification.yml').read_text(encoding='utf-8').splitlines()
+in_push_paths = False
+for line in phase0_lines:
+    if line == '    paths:':
+        in_push_paths = True
+        continue
+    if in_push_paths and line and not line.startswith('      '):
+        break
+    if not in_push_paths:
+        continue
+    item = line.strip()
+    if not item.startswith('- '):
+        continue
+    path = item[2:].strip().strip("'\"")
+    if is_document_path(path):
+        print(f'ERROR: phase0-certification.yml push allow-list contains documentation path: {path}', file=sys.stderr)
+        raise SystemExit(1)
+
+prompt_start = '**System Prompt: The Paranoiac Advisor**'
+prompt_end = '* **Pass 5 (Consecutive 3):** Scanned raw text logic. Zero gaps detected. Criteria met. Delivery authorized.'
+
+def reviewer_prompt(name: str) -> str:
+    text = Path(name).read_text(encoding='utf-8')
+    if text.count(prompt_start) != 1 or text.count(prompt_end) != 1:
+        print(f'ERROR: reviewer prompt boundaries missing or duplicated in {name}', file=sys.stderr)
+        raise SystemExit(1)
+    start = text.index(prompt_start)
+    end = text.index(prompt_end, start) + len(prompt_end)
+    return text[start:end]
+
+agents_prompt = reviewer_prompt('AGENTS.md')
+workflow_prompt = reviewer_prompt('docs/03-ZX-UX-DEVELOPMENT-WORKFLOW.md')
+if agents_prompt != workflow_prompt:
+    print('ERROR: reviewer prompt copies are not byte-identical', file=sys.stderr)
+    raise SystemExit(1)
+PY_POLICY
+then
   fail=1
 fi
 
