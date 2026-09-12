@@ -14,7 +14,9 @@ name: ZX-UX Phase 0 Certification
 on:
   push:
     branches: [main]
-    paths: ['.github/phase0-certification.trigger']
+    paths:
+      - '.github/phase0-certification.trigger'
+      - '.github/workflows/phase0-certification.yml'
   workflow_dispatch:
 permissions:
   contents: write
