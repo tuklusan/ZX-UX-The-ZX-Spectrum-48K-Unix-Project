@@ -1,0 +1,90 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: ZX-UX Lock Execution Queue
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/lock-execution-queue.yml
+
+permissions:
+  contents: write
+
+jobs:
+  lock-queue:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Lock owner-approved queue and remove transport workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object scratch/WORKFLOW.md)" = "fc56474c023f6be7a310c407aa56c06cecf22661"
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("scratch/WORKFLOW.md")
+          s = p.read_text()
+          needle = """- Before selecting the next work, re-read the remaining open list rather than
+            automatically proceeding to the numerically next H-item.
+
+          ## Durable starting state
+          """
+          replacement = """- Before selecting the next work, re-read the remaining open list rather than
+            automatically proceeding to the numerically next H-item.
+
+          ## Locked execution queue
+
+          Owner-approved on 2026-09-12. This queue is the required execution order until the
+          owner explicitly changes it. The dependency, architecture, certification, safety, and
+          project-policy constraints above remain mandatory: a blocker may stop the current queue
+          item for diagnosis, but the queue must not be silently reordered to bypass it.
+
+          1. Revise CR-1 (`docs/04-ZX-UX-CHANGE-REQUEST-DEFERRED-WRAP-REV01.md`) first and
+             close all currently tracked change-control gaps before execution.
+          2. Freeze CR-2 synchronization requirements for the `1982-04-23 00:00:00` boot epoch,
+             `TIME1`, independent `SYS_TICKS`, `date`, `cron`, and every old unset-at-boot rule.
+          3. Fold the remaining H06 SDK `usr/src` corpus contract into the same next
+             implementation-plan revision, preserving H06 as a distinct acceptance obligation.
+          4. Prepare one combined next architecture + implementation-plan rebaseline for H06,
+             CR-1, and CR-2 while keeping each item's acceptance responsibilities distinct.
+          5. Apply the full project SoP, activate the new architecture identity as one controlled
+             transaction, then recertify E0 and Phase 0 and revalidate P1.01 through P1.12.
+          6. Resume P1.13 immediately after rebaseline; instrument and eliminate the retained
+             `sys-ticks-snapshot-is-coherent-and-four-bytes` failure, reconcile the revised
+             cursor/IM2 contract, and admit P1.13 only after all revised requirements pass.
+          7. Continue Phase 1 in revised plan order; land CR-1 and CR-2 implementation only at
+             their revised owning steps rather than implementing either change early.
+          8. Carry H06 forward to P11.45, where the complete recursive SDK corpus must be
+             imported/accounted, target-native compiled, native-linked, executed under ZX-UX,
+             and evidenced with deterministic proof plus screenshots.
+          9. Close CR-1 and CR-2 only at their actual completion gates, then close H07/H08 and
+             update this tracker with durable evidence references.
+
+          ## Durable starting state
+          """
+          if s.count(needle) != 1:
+              raise SystemExit("queue insertion anchor mismatch")
+          p.write_text(s.replace(needle, replacement, 1))
+          PY
+          test "$(git hash-object scratch/WORKFLOW.md)" = "bf60fed20a20a020683b5d7ebba19a5ce29b075a"
+          rm .github/workflows/lock-execution-queue.yml
+          git add scratch/WORKFLOW.md .github/workflows/lock-execution-queue.yml
+          test "$(git diff --cached --name-only | sort)" = $'.github/workflows/lock-execution-queue.yml\nscratch/WORKFLOW.md'
+          git config user.name "Supratim Sanyal"
+          git config user.email "tuklusan@users.noreply.github.com"
+          git commit -m "tracker: lock execution queue"
+          git push origin HEAD:main
