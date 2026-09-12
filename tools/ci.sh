@@ -23,6 +23,7 @@ required_files=(
   ".github/workflows/quality-and-ci.yml"
   "tools/check_project_policy.py"
   "tools/check_license_headers.sh"
+  "tools/check_rr07_cleanliness.py"
 )
 
 for file in "${required_files[@]}"; do
@@ -60,14 +61,26 @@ else
   fail=1
 fi
 
+python3 ./tools/check_rr07_cleanliness.py
+
 workflow=.github/workflows/quality-and-ci.yml
 if ! grep -Fq 'runs-on: ubuntu-slim' "$workflow"; then
-  echo "ERROR: workflow must use ubuntu-slim" >&2
+  echo "ERROR: workflow must retain ubuntu-slim for short policy jobs" >&2
+  fail=1
+fi
+
+if ! grep -Fq 'runs-on: ubuntu-latest' "$workflow"; then
+  echo "ERROR: fresh bootstrap job must use ubuntu-latest" >&2
   fail=1
 fi
 
 if ! grep -Eq 'branches:[[:space:]]*\[main\]|^[[:space:]]*-[[:space:]]+main[[:space:]]*$' "$workflow"; then
   echo "ERROR: automatic push validation must target main" >&2
+  fail=1
+fi
+
+if ! grep -Fq "workflows: ['ZX-UX Phase 0 Certification']" "$workflow"; then
+  echo "ERROR: post-certification validation trigger missing" >&2
   fail=1
 fi
 
