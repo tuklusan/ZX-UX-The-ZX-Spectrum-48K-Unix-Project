@@ -12,45 +12,29 @@
 
 # ZX-UX Version-1 Test Plan
 
-This plan defines the deterministic host-side test contract used from E0.03 onward.
-Revision 11 remains the architecture authority.
+This plan defines the deterministic host-side test contract. Revision 11 remains the architecture authority.
 
 ## Root and tool resolution
 
-The project root is the nearest ancestor whose regular file `.zxux-root` contains
-exactly `ZX-UX project root`. Build and test programs resolve every project-owned
-tool from that root and pass the resulting absolute path to the operating system.
-Ambient `PATH` lookup is not a valid way to select the canonical assembler,
-emulator, cassette utilities, ROM, or Python interpreter.
+The project root is the nearest ancestor whose regular file `.zxux-root` contains exactly `ZX-UX project root`. Project-owned tools are resolved from that root. Ambient `PATH` is not a valid selector for the canonical assembler, emulator, cassette utilities, ROM, or final Python interpreter.
 
-The canonical host interpreter entry is:
-
-`tools/runtime/python/bin/python`
-
-The canonical host test driver is:
-
-`v1/tools-host/test-driver/run.py`
-
-All subprocess arguments are represented as argument lists. Shell-flattened command
-strings are not used for emulator or certification execution.
+The canonical final host interpreter is `tools/runtime/python/bin/python`. The canonical host test driver is `v1/tools-host/test-driver/run.py`. Subprocesses use argument lists rather than shell-flattened command strings.
 
 ## Driver interface
 
-A registered implementation step has two standard entry points:
+Every registered E0 and Phase-0 step has the exact entry points:
 
 `<project-local-python> v1/tools-host/test-driver/run.py build --step <STEP-ID>`
 
 `<project-local-python> v1/tools-host/test-driver/run.py test --step <STEP-ID>`
 
-Every subprocess has a finite timeout. A timeout is a test failure unless the test
-is specifically proving timeout enforcement. Captured stdout and stderr are retained
-in machine-readable evidence together with the exact argument vector and exit code.
+Unknown numbered E0 or Phase-0 identifiers are rejected; there is no generic prefix fallback. Every subprocess has a finite timeout. Captured command, stdout, stderr, outcome, hashes, and named assertions are retained in machine-readable evidence.
 
 ## E0.03 driver acceptance
 
 E0.03 requires all of the following:
 
-1. the exact root marker is found without a drive-letter or user-profile assumption;
+1. the exact root marker is found without drive-letter or user-profile assumptions;
 2. the project-local Python entry exists and is invoked by absolute path;
 3. arguments containing spaces and wildcard characters arrive unchanged;
 4. a deliberately sleeping child is terminated by the hard timeout;
@@ -58,101 +42,40 @@ E0.03 requires all of the following:
 6. driver, plan, environment verifier, and toolchain manifest hashes are recorded;
 7. the pinned FUSE program is invoked as an argument list when emulator probing is used.
 
-The relocation test is a negative portability test: success depends on the copied
-root marker, not on the original checkout path.
+The relocation test depends only on the copied root marker, never the original checkout path.
 
 ## Evidence record
 
-The driver writes deterministic JSON records below:
+Certification starts from an already-committed clean source checkout. Build and test records are written first to an external staging directory, never into the source worktree. Every E0.01-E0.06 and P0.01-P0.34 step requires `<STEP-ID>.build.json` and `<STEP-ID>.test.json`. E0.04 and P0.34 additionally require `<STEP-ID>.result.json`; Phase 0 additionally requires `phase-0.json`.
 
-`v1/dist/certification/<STEP-ID>.<action>.json`
+Every schema-2 record includes exact `source_commit`, `toolchain_lock_sha256`, `architecture_sha256`, Boolean `worktree_clean`, prerequisite states, command data, stable root-relative hashes, and named assertions. Result records also include their exact PASS marker. A missing or malformed field, failed assertion, wrong source/digest, false clean-state claim, or missing prerequisite is a hard failure.
 
-Each record contains at least:
-
-- schema version;
-- step identifier and action;
-- PASS or FAIL status;
-- subprocess argument vectors;
-- working directory;
-- exit code or timeout state;
-- elapsed milliseconds;
-- captured stdout and stderr;
-- hashes for relevant inputs;
-- named assertions and their results.
-
-Step-specific certification logs may additionally be written as
-`v1/dist/certification/<STEP-ID>.log`. Release and phase gates may aggregate these
-records, but must not discard the underlying step evidence.
+After the complete ordered certification passes, staged JSON bytes are copied unchanged into `v1/dist/certification/` in a separate evidence-only commit. Durable records continue to name the certified source commit. GitHub Actions artifacts are transport/diagnostics only and cannot replace committed evidence.
 
 ## Emulator evidence hierarchy
 
-Target behavior uses the four-level hierarchy required by Revision 11.
+Static checks cover symbol uniqueness, section bounds, fixed kernel ranges, IM2 layout, stack placement, arena bounds, syscall declaration ownership, detectable reserved-register misuse, and object-format sizes.
 
-First, static checks cover symbol uniqueness, section bounds, fixed kernel ranges,
-IM2 layout, stack placement, arena bounds, syscall declaration ownership, statically
-detectable reserved-register misuse, and object-format sizes.
+Deterministic emulator tests use SNA for the fast inner loop and TAP/TZX when boot or cassette semantics matter. Tests assert registers, RAM, process state, object state, or format bytes directly; screenshots are supplemental. Synthetic programs that call ROM routines establish a known writable stack first.
 
-Second, deterministic emulator tests use SNA for the fast inner loop and TAP or TZX
-when boot or cassette semantics matter. Tests assert registers, RAM, process state,
-object state, or format bytes directly. Screenshot comparison is supplemental only.
-Synthetic programs that call ROM routines establish a known writable stack first.
-
-Third, release-critical emulator behavior is repeated on a second independent
-Spectrum emulator where practical.
-
-Fourth, claims about physical cassette robustness require real compatible hardware
-with an audio path, or a hardware-faithful EAR/MIC loop. Emulator tape traps and
-container parsing do not satisfy that hardware claim.
+Release-critical emulator behavior is repeated on a second independent Spectrum emulator where practical. Physical cassette robustness requires real compatible hardware with an audio path, or a hardware-faithful EAR/MIC loop; emulator tape traps and container parsing alone do not prove that claim.
 
 ## Timeout and process discipline
 
-Host tests never assume a child exits merely because it should. Every emulator,
-assembler, linker, cassette utility, and helper process has a hard timeout. On
-timeout, the driver records the condition and treats it as failure. Tests must not
-leave background emulator processes behind.
+Every emulator, assembler, linker, cassette utility, and helper process has a hard timeout. Timeout is failure unless timeout enforcement itself is under test. Tests must not leave background processes behind.
 
 ## Determinism rules
 
-Identical source inputs, pinned host-tool inputs, and fixed command options must
-produce identical binary artifacts. Every certification boundary records hashes.
-Tests that use time, random input, or generated temporary names either supply a fixed
-seed/input or exclude the nondeterministic host metadata from binary acceptance.
+Identical source inputs, pinned host-tool inputs, and fixed options must produce identical binary artifacts. Every certification boundary records hashes. Tests using time or random input use fixed seeds/inputs or exclude nondeterministic host metadata from binary acceptance.
 
-The Z80 refresh register may not be a correctness, identity, uniqueness, or security
-oracle. Precise ULA contention phase may not be a correctness dependency.
+The Z80 refresh register is never a correctness, identity, uniqueness, or security oracle. Precise ULA contention phase is not a correctness dependency.
 
 ## Step completion
 
-A normal implementation step is complete only after:
-
-1. the intended files exist at their architecture-defined paths;
-2. the project-local build succeeds;
-3. static checks pass;
-4. required SNA, TAP, TZX, or host tests pass;
-5. the required negative test fails for the intended reason;
-6. certification evidence required by that step is retained;
-7. the exact proposed bytes complete three successive defect-free scans;
-8. the license-header and project-policy gates pass;
-9. the adversarial review reports only BLOCKER or MAJOR findings and the author
-   resolves, clarifies, or overrides each finding;
-10. the exact reviewed bytes are checked directly into `main`;
-11. the automated Linux validation result is retained.
-
-Any byte change after a clean scan resets the scan count.
-
-## E0 handoff note
-
-The original frozen aggregate wrapper bytes were absent from the repository at the
-start of this implementation. The owner directed implementation to acquire the
-artifacts. The reconstructed lock records that override explicitly and pins the
-available upstream sources and canonical ROM by version, size, URL, and SHA-256.
-No historical PASS is inferred from that reconstruction.
+A normal implementation step is complete only after the intended architecture-defined files exist; project-local build/static/positive/negative tests pass; required emulator or host tests pass; required evidence is retained; the exact proposed bytes complete three successive defect-free scans; license-header/project-policy/adversarial review gates pass; the reviewed bytes are checked into `main`; and the automated Linux result is retained. Any byte change after a clean scan resets the scan count.
 
 ## Phase boundary rule
 
-A phase aggregate may pass only when every numbered step in that phase has passing
-evidence and the phase-specific integration tests pass. A later phase does not
-retroactively waive an earlier failed assertion.
+A phase aggregate may pass only when every numbered step in that phase has passing evidence and the phase-specific integration tests pass. A later phase never retroactively waives an earlier failed assertion. Once Phase-0 durable evidence is activated on reachable `main`, deletion or rewriting of any required record is a certification failure.
 
-Implementation is authorized through Phase 10. Phase 11 is not admitted until the
-project owner explicitly approves the compiler phase.
+Implementation is authorized through Phase 10. Phase 11 is not admitted until the project owner explicitly approves the compiler phase.
