@@ -43,11 +43,11 @@ kernel_mod_gateways:
     EMIT_BOOT_GATEWAY
     ASSERT $ = BOOT_GATEWAY+3
     EMIT_SYSCALL_BODY
+kernel_mod_boot:
     EMIT_BOOT_BODY
+    EMIT_BOOT_IMPL
 kernel_mod_syscall:
     EMIT_SYSCALL_IMPL
-kernel_mod_boot:
-    EMIT_BOOT_IMPL
 kernel_mod_interrupt:
     EMIT_INTERRUPT_ROUTINE
 kernel_mod_im2:
@@ -116,4 +116,4 @@ kernel_image_end:
     ASSERT kernel_emergency_reserve = EMERGENCY_START
     ASSERT kernel_image_end-kernel_image_start = KERNEL_IMAGE_SIZE
 
-    SAVEBIN "../../build/kernel.bin",kernel_image_start,KERNEL_IMAGE_SIZE
+    SAVEBIN "../../build/kernel.bin",KERNEL_START,KERNEL_IMAGE_SIZE
