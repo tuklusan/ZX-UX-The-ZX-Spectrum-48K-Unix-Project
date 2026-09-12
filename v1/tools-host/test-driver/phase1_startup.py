@@ -26,8 +26,8 @@ ROM_WORKSPACE_PROBE = 0x5B00
 STACK_PROBE = 0xFB20
 TRAMPOLINE_PROBE = 0xFDFD
 IM2_TABLE_PROBE = 0xFE00
+IM2_VECTOR_BYTE = 0xFD
 EMERGENCY_START = 0xFF01
-INTERRUPT_STATE_END = 0xFF10
 KERNEL_PANIC_CODE = 0xFF10
 KERNEL_STACK_LOW_WATER = 0xFF11
 ERROR_STATE_END = 0xFF13
@@ -63,17 +63,19 @@ def _expect(address: int, value: int) -> bytes:
 
 
 def _source_contract(root: Path) -> list[dict[str, object]]:
-    boot = (root / "v1/src/boot/entry.asm").read_text(encoding="utf-8")
+    boot = (root / "v1/src/boot/entry.asm").read_text(encoding="utf-8").lower()
+    im2 = (root / "v1/src/kernel/im2.asm").read_text(encoding="utf-8").lower()
     kernel = (root / "v1/src/kernel/kernel.asm").read_text(encoding="utf-8")
-    lowered = boot.lower()
-    clear_at = lowered.index("ld hl,emergency_start") if "ld hl,emergency_start" in lowered else -1
-    memory_at = lowered.index("call zx48_memory_init") if "call zx48_memory_init" in lowered else -1
+    im2_call = boot.index("call zx48_im2_init") if "call zx48_im2_init" in boot else -1
+    memory_call = boot.index("call zx48_memory_init") if "call zx48_memory_init" in boot else -1
+    di_at = boot.index("    di") if "    di" in boot else -1
     return [
-        {"name": "boot-di-before-state-init", "passed": lowered.index("    di") < clear_at if clear_at >= 0 else False},
-        {"name": "boot-establishes-fixed-stack", "passed": "ld sp,boot_stack_top" in lowered},
-        {"name": "boot-establishes-rom-iy", "passed": "ld iy,rom_iy_anchor" in lowered},
-        {"name": "bounded-emergency-state-clear", "passed": all(token in lowered for token in ("ld hl,emergency_start", "ld de,emergency_start+1", "ld bc,error_state_end-emergency_start-1", "ldir"))},
-        {"name": "state-clear-precedes-arena-init", "passed": 0 <= clear_at < memory_at},
+        {"name": "boot-di-before-state-init", "passed": 0 <= di_at < im2_call},
+        {"name": "boot-establishes-fixed-stack", "passed": "ld sp,boot_stack_top" in boot},
+        {"name": "boot-establishes-rom-iy", "passed": "ld iy,rom_iy_anchor" in boot},
+        {"name": "state-init-precedes-arena-init", "passed": 0 <= im2_call < memory_call},
+        {"name": "bounded-emergency-state-clear", "passed": all(token in im2 for token in ("ld de,im2_table_start+1", "ld bc,im2_table_end-im2_table_start", "ldir", "ld b,error_state_end-emergency_start", "zx48_im2_clear_state:", "ld (de),a", "inc de", "djnz zx48_im2_clear_state"))},
+        {"name": "pinned-im2-sequence-retained", "passed": all(token in im2 for token in ("ld a,im2_i_value", "ld i,a", "im 2")) and im2.index("ld i,a") > im2.index("ldir")},
         {"name": "fixed-kernel-subranges-asserted", "passed": all(token in kernel for token in ("ASSERT $ = KERNEL_STACK_START", "ASSERT $ = FAST_RESERVE_START", "ASSERT $ = IM2_TRAMPOLINE_START", "ASSERT $ = IM2_TABLE_START", "ASSERT $ = EMERGENCY_START"))},
         {"name": "kernel-image-exact-8192", "passed": "ASSERT kernel_image_end-kernel_image_start = KERNEL_IMAGE_SIZE" in kernel},
     ]
@@ -95,7 +97,7 @@ def _runtime_test(root: Path, labels: dict[str, int], kernel_bytes: bytes) -> No
     verifier += _expect(ROM_WORKSPACE_PROBE, 0x66)
     verifier += _expect(STACK_PROBE, 0x77)
     verifier += _expect(TRAMPOLINE_PROBE, 0x88)
-    verifier += _expect(IM2_TABLE_PROBE, 0x99)
+    verifier += _expect(IM2_TABLE_PROBE, IM2_VECTOR_BYTE)
     verifier += _jp(PASS_PC)
 
     patched = bytearray(kernel_bytes)
@@ -120,8 +122,6 @@ def _runtime_test(root: Path, labels: dict[str, int], kernel_bytes: bytes) -> No
     code += _jp(boot)
     run_sna(root, bytes(code), patch=patch)
 
-    # Negative fixture: prove the excluded-range oracle notices a write rather
-    # than merely checking that a chosen byte happened to contain zero.
     negative = bytearray(b"\xF3")
     negative += _poke(STACK_PROBE, 0x77)
     negative += _poke(STACK_PROBE, 0x00)
@@ -161,13 +161,14 @@ def dispatch(
         assertions.extend(
             [
                 {"name": "emergency-state-poison-cleared", "passed": True},
-                {"name": "excluded-ranges-preserved-before-arena-init", "passed": True},
+                {"name": "protected-ranges-preserved-and-vector-init-documented", "passed": True},
                 {"name": "excluded-range-negative-oracle", "passed": True},
             ]
         )
 
     paths = (
         root / "v1/src/boot/entry.asm",
+        root / "v1/src/kernel/im2.asm",
         root / "v1/src/kernel/kernel.asm",
         root / "v1/tools-host/test-driver/phase1_startup.py",
         kernel,
