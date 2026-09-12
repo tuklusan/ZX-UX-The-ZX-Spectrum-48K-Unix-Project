@@ -19,22 +19,21 @@ import sys
 from driver_core import DriverError, find_root, run_command
 import phase1_probe
 
-# These probes exercise new ordered Phase-1 implementation before admission to
-# the certified set. They run on every relevant push so a red early gate cannot
-# be hidden by the already-certified later correction suite.
+# New ordered Phase-1 implementation runs here before admission to the certified
+# set. A red early gate cannot be hidden by the already-certified correction set.
 PRE_ADMISSION_STEPS = (
+    "P1.06",
+)
+
+# P1.01-P1.05 were admitted after a clean pinned-environment run of their exact
+# build/test pairs plus Quality/CI. P1.28-P1.33 remain the earlier certified
+# correction suite. Every admitted step is replayed on every relevant push.
+CERTIFIED_STEPS = (
     "P1.01",
     "P1.02",
     "P1.03",
     "P1.04",
     "P1.05",
-)
-
-# Each entry is admitted only after its implementation and deterministic driver
-# have passed the normal check-in review. The workflow executes every admitted
-# step on every relevant push, so later changes cannot silently regress an
-# earlier Phase-1 correction gate.
-CERTIFIED_STEPS = (
     "P1.28",
     "P1.29",
     "P1.30",
