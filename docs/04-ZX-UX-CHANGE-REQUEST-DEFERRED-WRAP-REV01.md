@@ -10,703 +10,187 @@
 <!-- SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination, -->
 <!-- patent, trademark, and governing-law provisions. -->
 
-# ZX-UX Change Request: Deferred Right-Margin Wrap and Bottom-Right Cursor Semantics
+# ZX-UX Change Request: Canonical tty64 Font, Deferred Wrap, and Cursor Semantics
 
-**Status:** Proposed change for developer implementation
-**Target:** ZX-UX version 1 console subsystem
-**Affected terminal modes:** `tty64` (64x24) and `tty32` (32x24)
-**Primary architectural area:** REV11 Section 13, especially Sections 13.4, 13.4A, and 13.5A
-**Primary implementation area:** Phase 1 console/cursor work, especially P1.20, P1.23, P1.24, P1.35-P1.39, and P1.41
-**Compatibility principle:** No new syscall, no new public IOCTL, no change to public row/column ranges, and no phantom column 64 or row 24.
+**Status:** Proposed architecture-first version-1 console correction; modes `tty64` 64x24 and `tty32` 32x24; no new syscall/IOCTL or public coordinate-range change.
 
 ---
 
-## 1. Change summary
+## 1. Normative goals
 
-Replace the current **immediate right-margin wrap** rule with a **deferred wrap / pending-wrap** rule.
+Version 1 shall:
 
-When a printable character is written into the final text cell of a line:
+1. use the exact canonical Tasword-derived F4X8 bytes defined in Section 2 for final `tty64` output;
+2. keep all persistent cursor coordinates inside real cells;
+3. use deferred right-margin wrap so filling the last cell does not itself wrap or scroll; and
+4. provide a 4x8 VT-style blinking software cursor clocked from the Spectrum frame interrupt but drawn only at safe non-ISR kernel points.
 
-- draw the character in that final cell;
-- leave the logical cursor at that final cell;
-- set an internal one-bit `wrap_pending` state;
-- do **not** advance to a nonexistent column;
-- do **not** wrap yet;
-- do **not** scroll merely because the final cell was filled.
-
-The wrap is resolved only if the next applicable operation requires it. In particular, the **next printable character** first resolves the pending wrap, moving to column 0 of the next row and scrolling exactly one row if the current row is row 23, and only then draws the new character.
-
-For `tty64`, the final cell is `(row=23, col=63)`. For `tty32`, it is `(row=23, col=31)`.
-
-This produces the required bottom-right behavior: after a printable character fills the final screen cell, the complete 64x24 screen may remain visible and stable with the cursor blinking on `(23,63)`. The screen scrolls only when a subsequent printable character actually needs another cell, or when an explicit control operation independently requires a line advance.
+Tasword supplies the font/rendering model; deferred wrap is ZX-UX terminal behavior, not Tasword behavior.
 
 ---
 
-## 2. Reason for change
+## 2. Canonical tty64 font
 
-The current architecture says that printable output advances after drawing and that output past the final column wraps immediately. At the bottom-right corner this implies an immediate scroll as soon as the last screen cell is written.
-
-That behavior prevents the terminal from representing a completely filled 64x24 screen with the active cursor still visibly located in the bottom-right cell.
-
-The requested terminal model instead uses a classic hardware-terminal-style **last-column flag**: the final cell is a real active cursor position, while the fact that the *next printable byte* needs a wrap is stored separately as hidden terminal state.
-
-The result must preserve all existing ZX-UX constraints:
-
-- cursor row and column are always valid physical logical-cell coordinates;
-- the cursor remains software-rendered over the Spectrum bitmap;
-- IM2 never writes the bitmap;
-- cursor XOR remains exactly reversible;
-- no cooperative task switch occurs during a console screen mutation;
-- `tty64` and `tty32` use the same logical rules with different final columns.
-
----
-
-## 3. Mandatory architecture-first change
-
-Do **not** implement this by changing P1.35 alone.
-
-REV11 Section 13.5A currently freezes immediate-wrap behavior, and the implementation plan is subordinate to the architecture. The developer shall therefore:
-
-1. create the next architecture revision from REV11;
-2. change the normative Section 13.5A text first;
-3. update architecture acceptance tests/invariants that refer to wrap and scroll behavior;
-4. only then create/update the corresponding implementation-plan revision;
-5. make code changes only against the revised architecture contract.
-
-The old rule:
-
-> printable bytes draw at the current cell then advance one column; writing past the final column wraps to column 0 of the next row
-
-shall no longer be normative.
-
-The replacement semantics shall be equivalent to Sections 4-11 of this change request.
-
----
-
-## 4. New console state
-
-Add one kernel-global terminal state bit:
+Final `v1/assets/font4x8.bin` shall be byte-identical to the read-only C48 SDK reference:
 
 ```text
-wrap_pending : boolean
+tuklusan/zx-ux-c48-sdk-sinclair-zx-spectrum-48k-unix-c-compiler-software-development-kit
+compiler/assets/font4x8-tasword.bin
 ```
 
-It may be stored as a dedicated byte or packed into an existing console/cursor flags byte. The choice is an implementation detail, but its semantics are normative.
-
-The console state relevant to this change is conceptually:
+Required final logical payload; this digest is normative and the SDK path above records provenance/reference:
 
 ```text
-tty_mode       = 32 or 64
-cursor_row     = 0..23
-cursor_col     = 0..(tty_mode-1)
-wrap_pending   = 0 or 1
-cursor_shape   = off / underline / block
-cursor_phase   = blink phase
-cursor_drawn   = whether the XOR cursor is currently present in bitmap memory
+size       392 bytes
+SHA-256    90f6818cf81cf3f13509cff32c091075691195d9638dbe801d12daceec1c9339
 ```
 
-`wrap_pending` is **not** part of the public ABI and must not require a new syscall or IOCTL.
+F4X8 remains unchanged: `F4X8`, version 1, first code `0x20`, 96 glyphs, flags 0, then 384 packed bytes. Each four-byte glyph encodes eight 4-bit rows; high nibble is the earlier row, low nibble the following row, bit3 is leftmost and bit0 rightmost. Codes are `0x20..0x7F`.
 
-### 4.1 Required invariants
+This freezes release identity, not target ABI. The Z80 loader keeps structural/transport checks; SHA-256 stays host-side. Release certification proves the asset hash and that RAW/PACKED M48O decode yields the same 392 bytes.
 
-At every externally observable boundary:
+A generator is allowed only if byte-identical. Explicitly permitted development/Phase-0 fixtures are non-final and cannot pass P12.05 or later final gates unless canonical. Final certification is local; SDK network access is unnecessary.
 
-```text
-0 <= cursor_row <= 23
-0 <= cursor_col <= last_col
-last_col = 63 when tty_mode == 64
-last_col = 31 when tty_mode == 32
-```
-
-A logical `cursor_col == 64` in tty64, `cursor_col == 32` in tty32, or `cursor_row == 24` in either mode must never exist, even temporarily as persistent console state.
-
-If `wrap_pending == 1`, then all of the following must be true:
-
-```text
-cursor_col == last_col
-cursor_row is still the row containing the last character written
-no automatic line advance has yet occurred for that last character
-```
-
-`wrap_pending == 1` does not itself mean that the bitmap contains the cursor XOR. Cursor visibility remains controlled independently by shape, blink phase, ownership rules, and `cursor_drawn`.
+64x24 geometry, nibble mapping/preservation, and shared 8x8 attributes remain unchanged.
 
 ---
 
-## 5. Printable-character algorithm
+## 3. Console and cursor state
 
-All printable bytes shall use one shared logical-output path for both terminal modes. Mode-specific code should supply only rendering width/font details and `last_col`.
-
-Normative pseudocode:
+Conceptual private kernel state is:
 
 ```text
-function console_put_printable(ch):
-    cursor_screen_begin()          // remove XOR cursor if currently drawn
+tty_mode            32 or 64
+cursor_row          0..23
+cursor_col          0..last_col
+wrap_pending        boolean
+cursor_shape        off / underline / block
+cursor_phase        logical blink phase: off / on
+cursor_drawn        whether cursor XOR is physically present
+cursor_service_due  deferred blink-service request
+screen_mutating     screen-mutation exclusion state or equivalent
+```
 
+`last_col=63` in tty64 and `31` in tty32. No persistent col64, col32 in tty32, or row24 is permitted. `wrap_pending=1` implies `cursor_col==last_col`; the row remains the row containing the last printable written there.
+
+`cursor_phase` and `cursor_drawn` are distinct. Cold console init starts phase `on`; temporary removal, clear, positioning, mode/shape change, graphics, or UDG mutation shall not change phase. Shape `off` suppresses drawing without resetting it.
+
+---
+
+## 4. Printable and deferred-wrap state machine
+
+Printable bytes are `0x20..0x7F`. PUTCHAR and WRITE shall use one kernel byte-state machine.
+
+```text
+put_printable(ch):
+    screen_begin()
     if wrap_pending:
-        wrap_pending = false
-        line_advance_for_wrap()    // may scroll exactly once
+        wrap_pending = 0
+        if cursor_row < 23:
+            cursor_row += 1
+        else:
+            scroll_exactly_one_text_row()
+            cursor_row = 23
+        cursor_col = 0
 
-    draw_glyph_at(cursor_row, cursor_col, ch)
+    draw ch at (cursor_row,cursor_col)
 
     if cursor_col < last_col:
         cursor_col += 1
-        wrap_pending = false
+        wrap_pending = 0
     else:
-        // Character was written in the real final cell.
-        // Cursor stays on that cell. No wrap and no scroll yet.
         cursor_col = last_col
-        wrap_pending = true
-
-    cursor_screen_end()            // reconcile latest position/shape/blink phase
+        wrap_pending = 1
+    screen_end()
 ```
 
-Where:
-
-```text
-function line_advance_for_wrap():
-    if cursor_row < 23:
-        cursor_row += 1
-        cursor_col = 0
-    else:
-        scroll_one_text_row()
-        cursor_row = 23
-        cursor_col = 0
-```
-
-`scroll_one_text_row()` must obey the existing tty-specific screen-scroll contract and must not perform a second cursor remove/redraw that corrupts the XOR state. The cursor-screen bracketing must remain properly nested or centralized so the cursor is XORed at most once on entry and once on exit.
-
-### 5.1 Bottom-right example
-
-Initial state:
-
-```text
-cursor_row   = 23
-cursor_col   = 63
-wrap_pending = 0
-```
-
-Write printable `X`:
-
-```text
-X is drawn at (23,63)
-cursor_row   = 23
-cursor_col   = 63
-wrap_pending = 1
-NO SCROLL
-```
-
-The cursor may blink on top of `X` at `(23,63)`.
-
-Then write printable `Y`:
-
-```text
-pending wrap is resolved first
-screen scrolls upward exactly one text row
-cursor becomes (23,0)
-Y is drawn at (23,0)
-cursor advances to (23,1)
-wrap_pending = 0
-```
-
-There must be exactly one scroll, not zero and not two.
+The final-cell write stays there with no scroll. The next pending bottom-right printable scrolls exactly once, draws at `(23,0)`, then advances; tty32 is identical with `last_col=31`. A scroll invoked inside an existing screen-mutation bracket shall not independently hide/show the cursor; bracketing must be centralized or safely nested so one mutation cannot double-XOR it.
 
 ---
 
-## 6. Control-character behavior while wrap is pending
+## 5. Controls, positioning, and call boundaries
 
-A pending printable wrap must never hijack an explicit control operation. Before executing a cursor-moving/control operation, cancel the pending printable wrap and then execute that control according to its own defined semantics.
-
-### 6.1 CR, 0x0D
+A cursor-moving control cancels pending wrap before its own semantics:
 
 ```text
-wrap_pending = false
-cursor_col = 0
-cursor_row unchanged
+CR  0x0D   col=0; row unchanged; no implicit scroll
+LF  0x0A   col=0; row++ or, at row23, exactly one scroll and row=23
+BS  0x08   col-- if col>0; col0 remains col0; never wraps backward
+TAB 0x09   next=(col+8)&~7; if next<=last_col use it; otherwise col=0 and
+           advance one row or scroll exactly once at row23
+FF  0x0C   clear text display and home to (0,0)
 ```
 
-At bottom-right pending state, `CR` therefore moves from `(23,63)` to `(23,0)` with **no scroll**.
+Successful `SYS_CON_SETPOS`, clear/home, mode switch, and reset clear pending. `SETPOS` validates first; invalid input preserves coordinates, pending, cursor/XOR, and screen bytes. SETPOS to the last cell alone does not set pending.
 
-### 6.2 LF, 0x0A
+`SYS_CON_GETPOS` returns only the real coordinate and does not expose/change pending. Shape/blink changes do not clear pending. An ignored unsupported control retains the existing policy and does not clear/resolve pending merely by being observed.
 
-Preserve the existing ZX-UX rule that LF also sets column 0.
-
-```text
-wrap_pending = false
-if cursor_row < 23:
-    cursor_row += 1
-    cursor_col = 0
-else:
-    scroll_one_text_row()
-    cursor_row = 23
-    cursor_col = 0
-```
-
-At bottom-right pending state, LF explicitly requests a new line and therefore causes exactly one scroll.
-
-### 6.3 BS, 0x08
-
-```text
-wrap_pending = false
-if cursor_col > 0:
-    cursor_col -= 1
-else:
-    cursor_col = 0
-```
-
-BS does not delete and never wraps to the previous row. From pending `(23,63)`, BS produces `(23,62)` in tty64.
-
-### 6.4 TAB, 0x09
-
-Cancel pending state, then apply the existing logical multiple-of-8 rule.
-
-Conceptually:
-
-```text
-wrap_pending = false
-next = (cursor_col + 8) & ~7
-
-if next <= last_col:
-    cursor_col = next
-else:
-    if cursor_row < 23:
-        cursor_row += 1
-        cursor_col = 0
-    else:
-        scroll_one_text_row()
-        cursor_row = 23
-        cursor_col = 0
-```
-
-TAB uses **logical terminal columns**, not physical Spectrum bitmap bytes.
-
-### 6.5 FF, 0x0C
-
-```text
-wrap_pending = false
-clear_text_display()
-cursor_row = 0
-cursor_col = 0
-```
-
-### 6.6 Other explicit positioning/reset operations
-
-The following must clear `wrap_pending` when they successfully change/reset logical terminal position or layout:
-
-- `SYS_CON_SETPOS`;
-- console clear/home;
-- terminal mode switch between tty32 and tty64;
-- any internal reset that reinitializes logical console coordinates.
-
-A failed operation must remain atomic. For example, an invalid `SYS_CON_SETPOS` must leave `cursor_row`, `cursor_col`, `wrap_pending`, cursor XOR state, and screen bytes unchanged.
-
-Operations that do not alter logical cursor position, such as `GETPOS`, cursor blink timing, or changing cursor shape, must not clear `wrap_pending` merely because they were called.
-
-Bytes outside the printable range and the defined CR/LF/BS/TAB/FF control set retain the existing unsupported-control policy. If such a byte is ignored, it must not clear or resolve `wrap_pending`. Any future control definition that moves or resets the logical cursor must explicitly clear pending state before applying that movement.
+WRITE return never resolves pending wrap; split WRITE/PUTCHAR delivery must be state/screen identical to one stream.
 
 ---
 
-## 7. GETPOS and SETPOS semantics
+## 6. Cursor rendering and timing
 
-### 7.1 `SYS_CON_GETPOS`
+For tty64, block cursor XORs the selected 4-pixel nibble on all eight scanlines; underline XORs that nibble on scanline 7 only; off draws nothing. The adjacent nibble and attribute byte are never changed. tty32 uses the same logical cursor model at 8-pixel width.
 
-`GETPOS` continues to return only the real logical cell coordinate.
-
-If the terminal is in pending-wrap state at the bottom-right corner:
+All screen mutations use one discipline equivalent to:
 
 ```text
-H = 23
-L = 63       // tty64
+screen_begin():
+    prevent cooperative task switch for the mutation
+    mark screen_mutating
+    if cursor_drawn: XOR it away and set cursor_drawn=0
+    do not change cursor_phase
+
+screen_end():
+    clear screen_mutating while mutation exclusion remains held
+    consume/reconcile any safe deferred cursor service
+    make cursor_drawn match shape + cursor_phase at the current coordinate
+    end mutation exclusion
 ```
 
-or:
+The PAL baseline target is one blink transition every 25 50-Hz frames. IM2 may count frames and set/accumulate a cursor-service request; IM2 shall not XOR the bitmap, draw a glyph, scroll, alter row/column, or resolve/change `wrap_pending`. Servicing a due request toggles `cursor_phase` then reconciles `cursor_drawn`. ISR/service handoff must be race-safe: consuming/clearing due state shall not erase an event posted after the service decision; brief interrupt exclusion or an equivalent atomic protocol is permitted.
 
-```text
-H = 23
-L = 31       // tty32
-```
-
-There is no ABI-visible representation of a phantom next column, and the hidden `wrap_pending` bit is not returned.
-
-### 7.2 `SYS_CON_SETPOS`
-
-Validation occurs before mutation.
-
-On a valid coordinate:
-
-```text
-remove visible XOR cursor if required
-cursor_row = H
-cursor_col = L
-wrap_pending = false
-redraw/reconcile cursor if required
-```
-
-On an invalid coordinate, return the existing error and preserve all prior console/cursor state byte-for-byte.
-
-Setting the cursor explicitly to `(23,63)` does **not** itself set `wrap_pending`. A subsequent printable byte first writes into that cell and only then sets `wrap_pending`.
+In interactive input-wait/idle, service due requests at the first safe non-ISR point before ordinary scheduling/input work resumes. Mutation may delay only to its safe end. Cooperative v1 does not promise bitmap blinking while arbitrary non-yielding user code never re-enters the kernel; delayed/coalesced service resumes safely on re-entry.
 
 ---
 
-## 8. Cursor behavior at the final cell
+## 7. Mandatory document synchronization
 
-The bottom-right cell is a normal cursor location.
+Create the next architecture revision first, then its implementation-plan revision, then code.
 
-After a printable byte is written at `(23,63)` in tty64 or `(23,31)` in tty32:
+Architecture update set: at minimum §§4.3A, 5.1, 5.5, 13.1, 13.4, 13.4A, 13.5A, 41, 58 plus duplicated font/wrap/scroll/cursor invariants and acceptance text.
 
-- the logical cursor remains on that cell;
-- `wrap_pending` becomes 1;
-- if cursor shape and blink phase call for a visible cursor, the cursor is XOR-rendered on that same cell;
-- the character beneath it remains recoverable exactly by XOR removal;
-- no attribute byte is changed by the cursor;
-- no scrolling occurs until separately required.
+Plan update set: fixed-contract summary; P0.10; P1.20-P1.24; P1.32; P1.35-P1.39; P1.41; P12.05/.07/.09/.30; and later duplicate matrices. P0.10 distinguishes non-final fixtures; P1.21 stays the target structural validator; P12.05 is the decisive exact-byte/digest gate.
 
-For tty64:
-
-- block cursor XORs the selected four-bit nibble on all eight scanlines;
-- underline cursor XORs the selected four-bit nibble on **scanline 7 only**;
-- the neighboring nibble is preserved on every scanline;
-- the attribute byte is never changed by cursor draw/hide.
-
-This wording intentionally removes any ambiguity in the existing phrase "bottom 4-pixel row": underline means one horizontal scanline four pixels wide, not four scanlines high.
-
-The pending-wrap bit and the cursor blink state are independent. A blink transition must not resolve a pending wrap.
+Pending wrap belongs only to the kernel console. Do not add target font SHA-256 absent a later independent architecture requirement.
 
 ---
 
-## 9. Cursor/screen critical-section discipline
+## 8. Deterministic certification tests
 
-The existing console-managed rendering rule remains mandatory.
+Certification is byte/state based; screenshots are supplemental.
 
-Use one centralized bracketing discipline equivalent to:
-
-```text
-function cursor_screen_begin():
-    prevent_cooperative_switch_for_screen_mutation()
-    if cursor_drawn:
-        xor_cursor_at(cursor_row, cursor_col, cursor_shape)
-        cursor_drawn = false
-
-function cursor_screen_end():
-    reconcile_cursor_with_current_position_shape_and_blink_phase()
-    end_screen_mutation_no_switch_region()
-```
-
-During a pending-wrap printable at `(23,63)`, the next printable operation must therefore perform this order:
-
-```text
-1. remove visible XOR cursor from (23,63)
-2. clear wrap_pending
-3. scroll exactly one row
-4. set logical position to (23,0)
-5. draw the new printable character
-6. advance/update pending state normally
-7. redraw cursor at its new logical position if currently visible
-```
-
-The old cursor must never be copied upward as a real bitmap artifact during scroll.
-
-IM2 may update cursor timing state or set a deferred service flag, but it must never resolve `wrap_pending`, scroll, draw a glyph, or XOR the cursor bitmap.
+1. **Font:** prove size/hash/F4X8 packing and RAW/PACKED logical equality. Render all 96 codes in even and odd tty64 columns; each selected nibble equals the canonical row while a nonzero neighbor sentinel survives. A one-bit structurally valid mutation may be a permitted fixture but must fail P12.05 and later final gates.
+2. **Right edge:** tty64 from col62: `A` -> col63 pending0; `B` -> col63 pending1 no wrap; `C` -> wrap first, draw `(1,0)`, end `(1,1)` pending0. Repeat tty32 from col30/31.
+3. **Full screen:** 1536 tty64 bytes -> `(23,63)`, pending1, no scroll; byte1537 scrolls once and draws `(23,0)`. Repeat 768/769 tty32. Compare with cursor hidden/reconciled; prove scroll via test instrumentation/sentinels, not a production counter.
+4. **Pending controls:** at bottom-right pending state test CR, LF, BS, TAB, FF exactly as Section 5, in both modes.
+5. **GETPOS/SETPOS:** pending GETPOS returns the real final cell; valid SETPOS clears pending; SETPOS-to-final-cell leaves pending0 until a printable is written; invalid row24/col64 or tty32 col32 is atomic.
+6. **Chunking:** one WRITE, split WRITEs, and mixed WRITE/PUTCHAR over boundaries yield identical final state and screen.
+7. **Cursor reversibility:** at pending bottom-right, repeated block/underline show/hide is byte-exact; attributes and tty64 neighbor nibble never change; the subsequent wrap-scroll never copies visible cursor XOR into retained rows.
+8. **Blink:** cold phase is on; while pending bottom-right and waiting interactively, multiple 25-frame intervals cause safe non-ISR transitions while row/col/pending stay fixed. IM2 does not edit bitmap/wrap/scroll. Mutation/shape change preserves phase. Force an interrupt at the due-consume boundary and prove no event is lost. Code never re-entering the cooperative kernel is outside the async-blink guarantee.
+9. **Regression:** existing console/cursor tests remain green except revised expected results.
 
 ---
 
-## 10. `SYS_CON_WRITE` and multi-byte writes
+## 9. Forbidden implementations
 
-`SYS_CON_WRITE` must call/use exactly the same per-byte state machine as `SYS_CON_PUTCHAR`.
-
-Do not add special end-of-buffer wrapping.
-
-Required behavior:
-
-- if a write buffer ends immediately after filling the final column, leave `wrap_pending=1` and do not wrap merely because the syscall is returning;
-- if the next `SYS_CON_WRITE` or `SYS_CON_PUTCHAR` begins with a printable byte, resolve the pending wrap before drawing it;
-- if the next byte is CR/LF/BS/TAB/FF, cancel pending state and apply that control's own semantics;
-- splitting the same byte stream across multiple syscalls must produce the same final screen and console state as sending it in one syscall.
-
-This call-boundary independence is mandatory.
+Certification fails for: wrong final font/hash or transport bytes; noncanonical fixture passing a final gate; target font SHA-256 added only for release identity; immediate final-column wrap/scroll; out-of-range persistent coordinates; wrong pending clearing; non-atomic invalid SETPOS; syscall-return wrap; tty32/tty64 semantic divergence; private shell/`vi` wrap state; blink changing wrap/phase incorrectly; due service skipped despite safe interactive opportunity; false async-blink claims during non-yielding user code; IM2 bitmap/coordinate/wrap edits; cursor artifacts/attribute/neighbor corruption; or bottom-right pending resolution scrolling other than once.
 
 ---
 
-## 11. tty32 parity
+## 10. Acceptance and completion gate
 
-The exact same state machine applies to tty32 with:
+Completion requires architecture, plan, code, tests, and release assets to agree. Required: canonical font hash/bytes PASS; production-tape logical font-byte equality PASS; no target font SHA-256 requirement PASS; all-96-glyph even/odd render matrix PASS; fixture rejection at final gate PASS; no phantom coordinates PASS; tty64 1536/1537 PASS; tty32 768/769 PASS; pending-control matrix PASS; GETPOS/SETPOS matrix PASS; chunking equivalence PASS; cursor XOR/scroll reversibility PASS; cursor phase independent of physical XOR PASS; interactive 25-frame non-ISR service and race-safe due handoff PASS; cooperative no-kernel-entry limitation stated/tested PASS; IM2 no bitmap/wrap mutation PASS; existing revised tests PASS.
 
-```text
-last_col = 31
-```
-
-Do not create a tty64-only special case.
-
-Required tty32 corner behavior:
-
-```text
-write printable at (23,31)
-=> stay at (23,31), wrap_pending=1, no scroll
-
-next printable
-=> scroll exactly once, draw at (23,0), continue normally
-```
-
-Mode switching clears/reinitializes the logical console under the existing architecture rule and must also clear `wrap_pending`.
-
----
-
-## 12. Required document changes
-
-The developer shall update all duplicated/frozen statements so there is one consistent semantic contract.
-
-### 12.1 Architecture document
-
-At minimum inspect and update:
-
-- Section 13.4, if needed to state that the final logical cell remains a valid cursor position during pending wrap;
-- Section 13.4A, to ensure cursor removal/redraw wording covers deferred-wrap scroll;
-- Section 13.5A, replacing immediate wrap with the normative pending-wrap state machine;
-- console acceptance tests that currently say wrap/scroll must match Section 13.5A;
-- any invariant/summary/ledger entry that assumes "draw then advance past final column".
-
-The architecture must explicitly state that no column outside 0..63/0..31 and no row outside 0..23 exists as logical cursor state.
-
-### 12.2 Implementation-plan document
-
-At minimum inspect and update:
-
-- P1.20 `tty32 fallback core`;
-- P1.23 `tty64 scroll`;
-- P1.24 `Software cursor core`;
-- P1.32 `Cursor/direct-screen reversibility correction matrix` as needed for bottom-right/pending-wrap coverage;
-- P1.35 `SYS_CON_PUTCHAR exact ABI`;
-- P1.36 `SYS_CON_WRITE`;
-- P1.37 clear/home behavior;
-- P1.38 `SYS_CON_GETPOS`;
-- P1.39 `SYS_CON_SETPOS`;
-- P1.41 Phase-1 acceptance gate;
-- all later console/terminal acceptance matrices that repeat immediate-wrap assumptions.
-
-P1.35 must no longer say that a printable byte always "draws then advances" in a way that implies a logical position beyond the last column.
-
----
-
-## 13. Required implementation structure
-
-A single shared logical state machine is strongly preferred. Do not independently reproduce wrap logic in tty32, tty64, PUTCHAR, WRITE, shell, or `vi`.
-
-Recommended internal helpers:
-
-```text
-console_put_byte(byte)
-console_put_printable(byte)
-console_resolve_pending_wrap()
-console_line_advance()
-console_tab()
-console_clear_and_home()
-console_setpos(row, col)
-cursor_screen_begin()
-cursor_screen_end()
-```
-
-Suggested dispatch:
-
-```text
-function console_put_byte(ch):
-    if 0x20 <= ch <= 0x7F:
-        console_put_printable(ch)
-        return
-
-    switch ch:
-        case 0x08: console_backspace(); return
-        case 0x09: console_tab();       return
-        case 0x0A: console_linefeed();  return
-        case 0x0C: console_formfeed();  return
-        case 0x0D: console_carriage_return(); return
-        default:   apply_existing_unsupported_control_policy()
-```
-
-Each cursor-moving control helper begins by clearing `wrap_pending` after any necessary argument validation and while under the normal cursor/screen mutation bracket.
-
-Do not let shell or `vi` maintain their own competing wrap flag. This is terminal state and belongs to the kernel console subsystem.
-
----
-
-## 14. Required deterministic tests
-
-Add byte-level tests for both tty64 and tty32. Screenshot-only evidence is insufficient.
-
-### 14.1 tty64 right-edge tests
-
-1. Start `(0,62)`, write `A`: `A` at col62, cursor `(0,63)`, pending=0.
-2. Write `B`: `B` at col63, cursor `(0,63)`, pending=1, no wrap.
-3. Write `C`: wrap before `C`; `C` at `(1,0)`, final cursor `(1,1)`, pending=0.
-4. Verify neighboring nibble and attributes remain exact.
-
-### 14.2 Exact 64-character line
-
-From `(0,0)`, write exactly 64 printable characters.
-
-Expected after byte 64:
-
-```text
-cursor = (0,63)
-wrap_pending = 1
-row 1 unchanged
-no scroll
-```
-
-Byte 65 must appear at `(1,0)` and leave cursor `(1,1)`.
-
-### 14.3 Exact full-screen fill
-
-Clear/home, then write exactly `64 * 24 = 1536` printable bytes.
-
-Expected after byte 1536:
-
-```text
-all 1536 cells contain the intended characters
-cursor = (23,63)
-wrap_pending = 1
-scroll_count = 0
-```
-
-Then write byte 1537.
-
-Expected:
-
-```text
-scroll_count increases by exactly 1
-old rows 1..23 become rows 0..22 exactly
-new character is drawn at (23,0)
-cursor becomes (23,1)
-wrap_pending = 0
-```
-
-### 14.4 Bottom-right control tests
-
-Create pending state at `(23,63)`, then separately test:
-
-- CR => `(23,0)`, no scroll, pending=0;
-- LF => one scroll, `(23,0)`, pending=0;
-- BS => `(23,62)`, no scroll, pending=0;
-- TAB => one logical wrap/scroll to `(23,0)`, pending=0;
-- FF => clear screen, `(0,0)`, pending=0.
-
-### 14.5 GETPOS/SETPOS tests
-
-- `GETPOS` during pending bottom-right returns exactly `(23,63)` in tty64.
-- valid `SETPOS` clears pending.
-- `SETPOS(23,63)` leaves pending=0 until a printable byte is actually written there.
-- invalid row 24 or col64 fails atomically and preserves the prior pending state and bitmap.
-
-Repeat with col31/col32 boundaries in tty32.
-
-### 14.6 Split-write equivalence
-
-Feed one byte stream in these forms:
-
-```text
-one SYS_CON_WRITE
-multiple SYS_CON_WRITE chunks
-mixed SYS_CON_WRITE + SYS_CON_PUTCHAR calls
-```
-
-Choose chunk boundaries exactly before and after final-column characters.
-
-Final bitmap, attributes, `(row,col)`, and `wrap_pending` must be identical for all forms.
-
-### 14.7 Cursor reversibility at bottom-right
-
-With a printable character at `(23,63)` and pending=1:
-
-- show block cursor;
-- hide it;
-- show/hide repeatedly;
-- repeat with underline;
-- verify the hidden bitmap is byte-identical to the underlying glyph every time;
-- verify attributes are unchanged;
-- then write the next printable and prove the scroll does not copy cursor XOR pixels into row 22.
-
-### 14.8 Deferred blink-service test
-
-While pending at bottom-right, allow cursor blink phase to change for multiple 25-frame intervals without console output.
-
-Expected:
-
-- cursor may appear/disappear according to blink phase;
-- `(row,col)` stays `(23,63)`;
-- `wrap_pending` stays 1;
-- no scroll occurs;
-- ISR performs no bitmap write.
-
-### 14.9 tty32 full-screen parity
-
-Repeat the corresponding full-screen test with exactly `32 * 24 = 768` printable bytes.
-
-Byte 768 leaves `(23,31)`, pending=1, no scroll. Byte 769 causes exactly one scroll, writes at `(23,0)`, and advances to `(23,1)`.
-
----
-
-## 15. Negative tests / forbidden implementations
-
-The implementation must fail certification if any of the following occurs:
-
-- a printable character at the final column immediately wraps before another byte requires space;
-- writing the bottom-right cell immediately scrolls;
-- persistent cursor state ever becomes col64, col32 in tty32, or row24;
-- the next printable while pending overwrites the final cell instead of wrapping first;
-- pending state survives CR/LF/BS/TAB/FF, successful SETPOS, clear/home, or terminal mode reset;
-- GETPOS exposes a phantom coordinate or changes pending state;
-- invalid SETPOS clears pending or changes the display;
-- syscall return from a buffer ending at the final cell forces a wrap;
-- tty32 and tty64 use different logical wrap rules;
-- shell or `vi` carries a second private pending-wrap state;
-- cursor blink resolves pending wrap;
-- IM2 modifies bitmap, scroll state, row/column, or `wrap_pending`;
-- scroll copies an XOR-visible cursor into retained screen data;
-- cursor block/underline changes attributes or the adjacent tty64 nibble;
-- more than one scroll occurs when a pending bottom-right wrap is resolved;
-- the 1536th tty64 printable causes any scroll before byte 1537 arrives.
-
----
-
-## 16. Acceptance criteria
-
-This change is complete only when all of the following are true:
-
-1. The architecture and implementation plan specify the same deferred-wrap semantics.
-2. `tty64` cursor coordinates are always row 0..23 and col 0..63.
-3. `tty32` cursor coordinates are always row 0..23 and col 0..31.
-4. A printable in the final column leaves the cursor there and sets hidden pending state.
-5. Filling `(23,63)` does not itself scroll.
-6. The next printable after pending bottom-right causes exactly one scroll before being drawn.
-7. Explicit controls cancel pending state and perform their own documented behavior.
-8. `GETPOS` reports only real coordinates; `SETPOS` validly clears pending and invalid SETPOS is atomic.
-9. PUTCHAR and WRITE share one byte-state machine and are independent of syscall chunking.
-10. tty32 and tty64 have identical logical semantics except for `last_col` and rendering width.
-11. Cursor XOR remains exactly reversible at the final cell and through the subsequent scroll.
-12. IM2 remains timing-only with respect to cursor/screen output.
-13. The exact 64x24 and 32x24 fill tests pass with zero premature scrolls.
-14. All existing console/cursor tests remain green after their expected results are updated to the new architecture.
-15. The project quality gate completes with three successive zero-defect scans of the final changed artifacts.
-
----
-
-## 17. Developer completion note
-
-When reporting completion, explicitly state:
-
-```text
-Architecture immediate-wrap rule removed: YES/NO
-Implementation plan synchronized: YES/NO
-wrap_pending kernel-global state implemented: YES/NO
-No phantom cursor column/row state: PASS/FAIL
-tty64 1536-byte no-premature-scroll test: PASS/FAIL
-tty64 byte-1537 exactly-one-scroll test: PASS/FAIL
-tty32 768-byte no-premature-scroll test: PASS/FAIL
-tty32 byte-769 exactly-one-scroll test: PASS/FAIL
-Bottom-right CR/LF/BS/TAB/FF matrix: PASS/FAIL
-GETPOS/SETPOS pending-wrap matrix: PASS/FAIL
-Split-write equivalence: PASS/FAIL
-Cursor XOR bottom-right/scroll reversibility: PASS/FAIL
-IM2 performs no bitmap/wrap mutation: PASS/FAIL
-Three successive zero-defect final scans: PASS/FAIL
-```
-
-A `NO` or `FAIL` on any line blocks check-in.
+Before check-in, apply the repository SoP to the exact changed bytes: scan every changed file line-by-line from a fresh disk copy; fix every defect; any fix resets the scan count; deliver/check in only after **three successive complete scans find zero new defects**, then pass the remaining repository license, policy, adversarial-review, and direct-main validation gates. Any `NO` or `FAIL` blocks check-in.
