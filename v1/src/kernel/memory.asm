@@ -13,6 +13,10 @@
 ; Sixteen-entry address-ordered arena allocator. Requests are rounded even.
 ; ANY takes the lowest fit, FAST_REQUIRED carves a high fit, COLD_PREFERRED
 ; first stays wholly below 0x8000 and otherwise retries as ANY.
+; Exact live allocation extents are recorded in the fixed FAST reserve so a
+; wrong-bounds free or double free can never mutate the free-extent map.
+
+ALLOC_RECORD_COUNT EQU 63
 
     MACRO EMIT_MEMORY_ROUTINES
 zx48_memory_init:
@@ -20,6 +24,11 @@ zx48_memory_init:
     ld hl,memory_free_extents
     ld de,memory_free_extents+1
     ld bc,FREE_EXTENT_COUNT*4-1
+    ld (hl),a
+    ldir
+    ld hl,FAST_RESERVE_START
+    ld de,FAST_RESERVE_START+1
+    ld bc,ALLOC_RECORD_COUNT*4-1
     ld (hl),a
     ldir
     ld hl,ARENA_START
@@ -42,6 +51,8 @@ zx48_alloc:
     inc bc
 zx48_alloc_even:
     ld (memory_request),bc
+    call zx48_alloc_find_slot
+    jp c,zx48_alloc_fail
 zx48_alloc_retry:
     ld ix,memory_free_extents
     ld b,FREE_EXTENT_COUNT
@@ -134,13 +145,40 @@ zx48_alloc_zero:
     xor a
     ret
 zx48_alloc_done:
+    ld ix,(memory_alloc_record_ptr)
+    ld (ix+0),l
+    ld (ix+1),h
+    ld de,(memory_request)
+    ld (ix+2),e
+    ld (ix+3),d
     ld de,(memory_live_allocations)
     inc de
     ld (memory_live_allocations),de
     xor a
     ret
 
-; HL=base, BC=rounded length. Reject overlaps/double free before mutation.
+; Reserve one zero-length live-allocation record without mutating it. The slot
+; becomes live only after the free-extent mutation has succeeded.
+zx48_alloc_find_slot:
+    ld ix,FAST_RESERVE_START
+    ld b,ALLOC_RECORD_COUNT
+zx48_alloc_find_slot_loop:
+    ld a,(ix+2)
+    or (ix+3)
+    jr z,zx48_alloc_find_slot_found
+    ld de,4
+    add ix,de
+    djnz zx48_alloc_find_slot_loop
+    scf
+    ret
+zx48_alloc_find_slot_found:
+    push ix
+    pop hl
+    ld (memory_alloc_record_ptr),hl
+    or a
+    ret
+
+; HL=base, BC=rounded length. Reject wrong bounds/double free before mutation.
 zx48_free:
     ld a,b
     or c
@@ -166,6 +204,8 @@ zx48_free:
 zx48_free_end_ok:
     add hl,de
     ld (memory_candidate),hl
+    call zx48_free_find_record
+    jp c,zx48_free_bad
     ld hl,0
     ld (memory_info_ptr),hl
     ld (memory_request),hl
@@ -293,6 +333,12 @@ zx48_extent_merge_next:
     dec c
     jr nz,zx48_extent_merge_loop
 zx48_free_commit:
+    ld ix,(memory_alloc_record_ptr)
+    xor a
+    ld (ix+0),a
+    ld (ix+1),a
+    ld (ix+2),a
+    ld (ix+3),a
     ld hl,(memory_live_allocations)
     ld a,h
     or l
@@ -308,6 +354,39 @@ zx48_free_nospc:
     ret
 zx48_free_bad:
     ld a,E_INVAL
+    scf
+    ret
+
+; Find the exact base/length pair recorded for the requested free. Carry set
+; means no live allocation owns precisely these bounds.
+zx48_free_find_record:
+    ld ix,FAST_RESERVE_START
+    ld b,ALLOC_RECORD_COUNT
+zx48_free_find_record_loop:
+    ld a,(ix+2)
+    or (ix+3)
+    jr z,zx48_free_find_record_next
+    ld l,(ix+0)
+    ld h,(ix+1)
+    ld de,(memory_free_start)
+    or a
+    sbc hl,de
+    jr nz,zx48_free_find_record_next
+    ld l,(ix+2)
+    ld h,(ix+3)
+    ld de,(memory_free_length)
+    or a
+    sbc hl,de
+    jr nz,zx48_free_find_record_next
+    push ix
+    pop hl
+    ld (memory_alloc_record_ptr),hl
+    or a
+    ret
+zx48_free_find_record_next:
+    ld de,4
+    add ix,de
+    djnz zx48_free_find_record_loop
     scf
     ret
 
@@ -497,6 +576,7 @@ memory_free_length: dw 0
 memory_live_allocations: dw 0
 memory_pinned_bytes: dw 0
 memory_info_ptr: dw 0
+memory_alloc_record_ptr: dw 0
 memory_fast_total: dw 0
 memory_fast_largest: dw 0
 memory_cold_total: dw 0
