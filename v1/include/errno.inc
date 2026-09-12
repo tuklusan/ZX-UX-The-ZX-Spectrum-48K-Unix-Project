@@ -10,7 +10,8 @@
 ; SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 ; patent, trademark, and governing-law provisions.
 ;
-; Public errno aliases. Numeric ownership remains in zx48ux.inc.
+; P1.09 public errno aliases. Numeric ownership remains only in zx48ux.inc;
+; these aliases deliberately contain no independent numeric assignments.
 
 ZX_E_OK                  EQU E_OK
 ZX_E_INVAL               EQU E_INVAL

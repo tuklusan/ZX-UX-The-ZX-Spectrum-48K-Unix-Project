@@ -40,6 +40,7 @@ import phase1_memory
 import phase1_process
 import phase1_context
 import phase1_idle
+import phase1_abi
 from driver_core import (
     DriverError,
     find_root,
@@ -101,6 +102,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase1_context.dispatch(root, action, step, **kwargs)
     if step == "P1.08":
         return phase1_idle.dispatch(root, action, step, **kwargs)
+    if step == "P1.09":
+        return phase1_abi.dispatch(root, action, step, **kwargs)
     if step == "P1.30":
         return phase1_alt.dispatch(root, action, step, **kwargs)
     if step == "P1.31":

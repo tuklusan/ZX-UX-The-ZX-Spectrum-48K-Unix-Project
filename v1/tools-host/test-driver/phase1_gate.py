@@ -23,10 +23,10 @@ import phase1_probe
 # New ordered Phase-1 implementation runs here before admission to the certified
 # set. A red early gate cannot be hidden by the already-certified correction set.
 PRE_ADMISSION_STEPS = (
-    "P1.08",
+    "P1.09",
 )
 
-# P1.01-P1.07 were admitted after clean pinned-environment runs of their exact
+# P1.01-P1.08 were admitted after clean pinned-environment runs of their exact
 # build/test pairs plus Quality/CI. P1.28-P1.33 remain the earlier certified
 # correction suite. Every admitted step is replayed on every relevant push.
 CERTIFIED_STEPS = (
@@ -37,6 +37,7 @@ CERTIFIED_STEPS = (
     "P1.05",
     "P1.06",
     "P1.07",
+    "P1.08",
     "P1.28",
     "P1.29",
     "P1.30",

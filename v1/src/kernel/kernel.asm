@@ -14,6 +14,7 @@
 
     DEVICE ZXSPECTRUM48
     INCLUDE "../../include/zx48ux.inc"
+    INCLUDE "../../include/syscall.inc"
     INCLUDE "syscall.asm"
     INCLUDE "../boot/entry.asm"
     INCLUDE "interrupt.asm"
