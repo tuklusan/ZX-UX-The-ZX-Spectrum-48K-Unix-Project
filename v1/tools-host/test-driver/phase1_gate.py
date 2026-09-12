@@ -19,11 +19,11 @@ import sys
 from driver_core import DriverError, find_root, run_command
 import phase1_probe
 
-# These probes exercise implementation that is not yet admitted to the ordered
-# Phase-1 certification set because P1.01 still owns the preceding startup/BSS
-# gate. They run on every relevant push so allocator/accounting regressions are
-# caught without pretending the phase order has been satisfied.
+# These probes exercise new ordered Phase-1 implementation before admission to
+# the certified set. They run on every relevant push so a red early gate cannot
+# be hidden by the already-certified later correction suite.
 PRE_ADMISSION_STEPS = (
+    "P1.01",
     "P1.02",
     "P1.03",
     "P1.04",
