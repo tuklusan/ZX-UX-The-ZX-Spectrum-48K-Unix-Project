@@ -14,321 +14,103 @@ name: ZX-UX Quality and CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - 'v1/docs/**'
+      - 'README.md'
   workflow_dispatch:
 
 permissions:
   contents: read
-  actions: read
 
 concurrency:
   group: zxux-ci-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  MAX_RESULTS: 25
-  RESULT_PREFIX: zxux-result-
-
 jobs:
-  legacy_policy_repair:
-    name: legacy-policy-repair
+  project-policy:
     runs-on: ubuntu-slim
     timeout-minutes: 15
-    permissions:
-      contents: write
-    outputs:
-      changed: ${{ steps.repair.outputs.changed }}
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+      - run: ./tools/check_project_policy.py
 
-      - name: Repair inherited artifacts and generate frozen resources
-        id: repair
-        run: |
-          python3 tools/repair_legacy_policy.py
-          python3 tools/repair_evidence_contract.py
-          python3 tools/repair_text_quality.py
-          python3 tools/generate_phase0_resources.py
-          if git diff --quiet -- \
-            docs/01-ZX-UX-ARCHITECTURE-REV11.md \
-            docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV02.md \
-            tools/scripts/verify-environment.py \
-            v1/assets/; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Check in repaired and generated artifacts
-        if: steps.repair.outputs.changed == 'true'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- \
-            docs/01-ZX-UX-ARCHITECTURE-REV11.md \
-            docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV02.md \
-            tools/scripts/verify-environment.py \
-            v1/assets/
-          git commit -m "Generate frozen Phase 0 resource artifacts"
-          git push origin HEAD:main
-
-  project_policy:
-    name: project-policy
-    needs:
-      - legacy_policy_repair
-    if: needs.legacy_policy_repair.outputs.changed != 'true'
+  e0-metadata:
     runs-on: ubuntu-slim
     timeout-minutes: 15
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Enforce project policy
-        run: ./tools/check_project_policy.py
-
-  e0_metadata:
-    name: e0-metadata
-    needs:
-      - legacy_policy_repair
-    if: needs.legacy_policy_repair.outputs.changed != 'true'
-    runs-on: ubuntu-slim
-    timeout-minutes: 15
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Select pinned Python
-        uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.13.15'
           check-latest: false
-
-      - name: Verify E0 metadata
-        run: python tools/scripts/verify-environment.py --metadata-only
-
-      - name: Verify E0 negative path
+      - run: python tools/scripts/verify-environment.py --metadata-only
+      - name: Reject altered lock
         run: |
           cp tools/manifest/toolchain.lock.json /tmp/zxux-bad-lock.json
           python - <<'PY'
           import json
           from pathlib import Path
-
-          path = Path("/tmp/zxux-bad-lock.json")
-          data = json.loads(path.read_text(encoding="utf-8"))
-          data["artifacts"][0]["sha256"] = "0" * 64
-          path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+          p=Path('/tmp/zxux-bad-lock.json'); d=json.loads(p.read_text()); d['artifacts'][0]['sha256']='0'*64; p.write_text(json.dumps(d))
           PY
-          if python tools/scripts/verify-environment.py --metadata-only --manifest /tmp/zxux-bad-lock.json; then
-            echo "ERROR: altered E0 lock unexpectedly passed" >&2
-            exit 1
-          fi
+          ! python tools/scripts/verify-environment.py --metadata-only --manifest /tmp/zxux-bad-lock.json
 
-  e0_foundation:
-    name: e0-foundation
-    needs:
-      - e0_metadata
+  e0-foundation:
+    needs: e0-metadata
     runs-on: ubuntu-slim
-    timeout-minutes: 15
+    timeout-minutes: 30
     env:
-      ZXUX_EVIDENCE_DIR: /tmp/zxux-evidence-${{ github.run_id }}-${{ github.run_attempt }}
-
+      ZXUX_EVIDENCE_DIR: /tmp/zxux-e0-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Select pinned Python
-        uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.13.15'
           check-latest: false
-
-      - name: Install native build prerequisites
+      - name: Native prerequisites
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            build-essential \
-            cmake \
-            gettext \
-            libaudiofile-dev \
-            libfreetype6-dev \
-            libgcrypt20-dev \
-            libglib2.0-dev \
-            libpng-dev \
-            libsdl1.2-dev \
-            libtool \
-            libxml2-dev \
-            perl \
-            pkg-config
-
-      - name: Acquire and build pinned E0 runtime
-        run: python tools/scripts/bootstrap-environment.py
-
-      - name: Certify pinned E0 runtime
-        run: tools/runtime/python/bin/python tools/scripts/verify-environment.py
-
-      - name: Execute E0.03 through E0.06
+          sudo apt-get install -y --no-install-recommends build-essential cmake gettext libaudiofile-dev libfreetype6-dev libgcrypt20-dev libglib2.0-dev libpng-dev libsdl1.2-dev libtool libxml2-dev perl pkg-config
+      - run: python tools/scripts/bootstrap-environment.py
+      - run: tools/runtime/python/bin/python tools/scripts/verify-environment.py
+      - name: Execute all exact E0 steps
         run: |
           set -euo pipefail
-          py="tools/runtime/python/bin/python"
-          driver="v1/tools-host/test-driver/run.py"
-          for step in E0.03 E0.04 E0.05 E0.06; do
-            "$py" "$driver" build --step "$step"
-            "$py" "$driver" test --step "$step"
+          py=tools/runtime/python/bin/python; driver=v1/tools-host/test-driver/run.py
+          for n in 01 02 03 04 05 06; do
+            "$py" "$driver" build --step "E0.$n"
+            "$py" "$driver" test --step "E0.$n"
           done
-
-      - name: Upload E0 foundation evidence
-        uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v7
         with:
-          name: zxux-e0-foundation-${{ github.run_id }}-${{ github.run_attempt }}
-          path: /tmp/zxux-evidence-${{ github.run_id }}-${{ github.run_attempt }}/*.json
+          name: zxux-e0-${{ github.run_id }}-${{ github.run_attempt }}
+          path: /tmp/zxux-e0-${{ github.run_id }}-${{ github.run_attempt }}/*.json
           retention-days: 90
           if-no-files-found: error
 
-  license_headers:
-    name: license-headers
-    needs:
-      - project_policy
+  license-headers:
+    needs: project-policy
     runs-on: ubuntu-slim
     timeout-minutes: 15
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+      - run: ./tools/check_license_headers.sh
 
-      - name: Enforce license headers
-        run: ./tools/check_license_headers.sh
-
-  project_ci:
-    name: project-ci
-    needs:
-      - project_policy
-      - e0_metadata
-      - e0_foundation
-      - license_headers
+  phase0-evidence:
+    needs: project-policy
     runs-on: ubuntu-slim
     timeout-minutes: 15
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Validate repository policy
-        run: ./tools/ci.sh
-
-  record_result:
-    name: record-result
-    needs:
-      - legacy_policy_repair
-      - project_policy
-      - e0_metadata
-      - e0_foundation
-      - license_headers
-      - project_ci
-    if: always()
-    runs-on: ubuntu-slim
-    timeout-minutes: 15
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Build continuity list
-        uses: actions/github-script@v9
-        env:
-          CURRENT_RESULT_ID: GARF-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}
+      - uses: actions/checkout@v7
         with:
-          script: |
-            const fs = require('fs');
-            const maxResults = Number(process.env.MAX_RESULTS);
-            const prefix = process.env.RESULT_PREFIX;
-            const current = process.env.CURRENT_RESULT_ID;
+          fetch-depth: 0
+      - run: python3 tools/check_phase0_evidence.py
 
-            if (!Number.isInteger(maxResults) || maxResults < 1 || maxResults > 25) {
-              core.setFailed(`MAX_RESULTS must be an integer from 1 through 25; got ${process.env.MAX_RESULTS}`);
-              return;
-            }
-
-            const response = await github.paginate(
-              github.rest.actions.listArtifactsForRepo,
-              {
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                per_page: 100
-              }
-            );
-
-            const previous = response
-              .filter((artifact) => !artifact.expired && artifact.name.startsWith(prefix))
-              .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-              .map((artifact) => artifact.name.slice(prefix.length))
-              .filter((id) => id !== current);
-
-            const identifiers = [current, ...previous].slice(0, maxResults);
-            fs.mkdirSync('.zxux-results', { recursive: true });
-            fs.writeFileSync(
-              '.zxux-results/continuity.json',
-              `${JSON.stringify({ schema: 1, max_results: maxResults, identifiers }, null, 2)}\n`
-            );
-
-      - name: Record result metadata
-        if: always()
-        env:
-          RESULT_ID: GARF-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}
-          LEGACY_POLICY_REPAIR_CONCLUSION: ${{ needs.legacy_policy_repair.result }}
-          PROJECT_POLICY_CONCLUSION: ${{ needs.project_policy.result }}
-          E0_METADATA_CONCLUSION: ${{ needs.e0_metadata.result }}
-          E0_FOUNDATION_CONCLUSION: ${{ needs.e0_foundation.result }}
-          LICENSE_HEADERS_CONCLUSION: ${{ needs.license_headers.result }}
-          PROJECT_CI_CONCLUSION: ${{ needs.project_ci.result }}
-        run: |
-          mkdir -p .zxux-results
-          if [[ ! -f .zxux-results/continuity.json ]]; then
-            cat > .zxux-results/continuity.json <<JSON
-          {
-            "schema": 1,
-            "max_results": 25,
-            "identifiers": ["${RESULT_ID}"],
-            "incomplete": true
-          }
-          JSON
-          fi
-
-          created_utc="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-          cat > .zxux-results/result.json <<JSON
-          {
-            "schema": 1,
-            "result_id": "${RESULT_ID}",
-            "repository": "${GITHUB_REPOSITORY}",
-            "run_id": "${GITHUB_RUN_ID}",
-            "run_attempt": "${GITHUB_RUN_ATTEMPT}",
-            "commit_sha": "${GITHUB_SHA}",
-            "ref": "${GITHUB_REF}",
-            "event": "${GITHUB_EVENT_NAME}",
-            "created_utc": "${created_utc}",
-            "legacy_policy_repair_conclusion": "${LEGACY_POLICY_REPAIR_CONCLUSION}",
-            "project_policy_conclusion": "${PROJECT_POLICY_CONCLUSION}",
-            "e0_metadata_conclusion": "${E0_METADATA_CONCLUSION}",
-            "e0_foundation_conclusion": "${E0_FOUNDATION_CONCLUSION}",
-            "license_headers_conclusion": "${LICENSE_HEADERS_CONCLUSION}",
-            "job_conclusion": "${PROJECT_CI_CONCLUSION}"
-          }
-          JSON
-
-      - name: Validate generated result bundle policy
-        id: bundle_policy
-        if: always()
-        run: ./tools/check_project_policy.py
-
-      - name: Upload result bundle
-        if: steps.bundle_policy.outcome == 'success'
-        uses: actions/upload-artifact@v7
-        with:
-          name: zxux-result-GARF-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}
-          path: .zxux-results/
-          retention-days: 90
-          if-no-files-found: error
-          include-hidden-files: true
+  project-ci:
+    needs: [project-policy, e0-metadata, e0-foundation, license-headers, phase0-evidence]
+    runs-on: ubuntu-slim
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - run: ./tools/ci.sh

@@ -1,0 +1,86 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: ZX-UX Phase 0 Certification
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: zxux-phase0-certification
+  cancel-in-progress: false
+
+jobs:
+  certify:
+    runs-on: ubuntu-slim
+    timeout-minutes: 45
+    env:
+      ZXUX_EVIDENCE_DIR: /tmp/zxux-phase0-${{ github.sha }}-${{ github.run_id }}
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13.15'
+          check-latest: false
+      - name: Native prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential cmake gettext libaudiofile-dev libfreetype6-dev libgcrypt20-dev libglib2.0-dev libpng-dev libsdl1.2-dev libtool libxml2-dev perl pkg-config
+      - name: Bootstrap exact runtime
+        run: python tools/scripts/bootstrap-environment.py
+      - name: Certify exact runtime
+        run: tools/runtime/python/bin/python tools/scripts/verify-environment.py
+      - name: Execute complete ordered E0 and Phase 0 set
+        run: |
+          set -euo pipefail
+          py=tools/runtime/python/bin/python; driver=v1/tools-host/test-driver/run.py
+          for n in 01 02 03 04 05 06; do "$py" "$driver" build --step "E0.$n"; "$py" "$driver" test --step "E0.$n"; done
+          for n in $(seq -w 1 34); do "$py" "$driver" build --step "P0.$n"; "$py" "$driver" test --step "P0.$n"; done
+          "$py" tools/finalize_phase0_evidence.py --root "$GITHUB_WORKSPACE" --evidence-dir "$ZXUX_EVIDENCE_DIR"
+      - name: Assert source still clean and current
+        run: |
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          git fetch origin main
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
+      - name: Install durable evidence unchanged
+        run: |
+          find v1/dist/certification -maxdepth 1 -type f -name '*.json' -delete
+          cp "$ZXUX_EVIDENCE_DIR"/*.json v1/dist/certification/
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, json, os
+          src=Path(os.environ['ZXUX_EVIDENCE_DIR']); dst=Path('v1/dist/certification')
+          for p in src.glob('*.json'):
+              assert hashlib.sha256(p.read_bytes()).digest()==hashlib.sha256((dst/p.name).read_bytes()).digest()
+          print('ZX-UX EVIDENCE COPY IDENTITY PASS')
+          PY
+      - name: Commit evidence only
+        run: |
+          bad="$(git diff --name-only | grep -v '^v1/dist/certification/' || true)"
+          test -z "$bad"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add v1/dist/certification/*.json
+          git commit -m "R&R-06 activate Phase-0 certification evidence for $GITHUB_SHA"
+          git push origin HEAD:main
+      - uses: actions/upload-artifact@v7
+        with:
+          name: zxux-phase0-${{ github.sha }}
+          path: /tmp/zxux-phase0-${{ github.sha }}-${{ github.run_id }}/*.json
+          retention-days: 90
+          if-no-files-found: error
