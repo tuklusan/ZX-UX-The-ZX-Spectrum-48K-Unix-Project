@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Spectrum ROM: Routine at 04132</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../style.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html"><img alt="Spectrum ROM" src="../images/logo-dec.png" /></a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="4126.html">04126</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#4132">Map</a></td>
+<td class="next">
+Next: <a href="4145.html">04145</a>
+</td>
+</tr>
+</table>
+<div class="description">04132: THE 'ENTER EDITING' SUBROUTINE</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Used by the routines at <a href="4083.html">ED_DOWN</a> and <a href="4214.html">ED_SYMBOL</a>.
+</div>
+<div class="paragraph">
+The routine at <a href="4126.html">ED_IGNORE</a> continues here.
+</div>
+<div class="paragraph">
+The address of this routine is derived from an offset found in the <a href="4000.html">editing keys table</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="asm-label">ED_ENTER</td>
+<td class="address-2"><span id="4132"></span>04132</td>
+<td class="instruction">POP HL</td>
+<td class="comment-1" rowspan="2">The addresses of <a href="3884.html#3896">ED_LOOP</a> and <a href="4223.html">ED_ERROR</a> are discarded.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="4133"></span>04133</td>
+<td class="instruction">POP HL</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="4134"></span>
+<div class="comments">
+<div class="paragraph">
+This entry point is used by the routine at <a href="4223.html">ED_ERROR</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="asm-label">ED_END</td>
+<td class="address-2"><span id="4134"></span>04134</td>
+<td class="instruction">POP HL</td>
+<td class="comment-1" rowspan="2">The old value of <a href="23613.html">ERR-SP</a> is restored.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="4135"></span>04135</td>
+<td class="instruction">LD (23613),HL</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="4138"></span>04138</td>
+<td class="instruction">BIT 7,(IY+0)</td>
+<td class="comment-1" rowspan="2">Now return if there were no errors (<a href="23610.html">ERR-NR</a> is 255).</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="4142"></span>04142</td>
+<td class="instruction">RET NZ</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="4143"></span>04143</td>
+<td class="instruction">LD SP,HL</td>
+<td class="comment-1" rowspan="2">Otherwise make an indirect jump to the error routine.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="4144"></span>04144</td>
+<td class="instruction">RET</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="4126.html">04126</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#4132">Map</a></td>
+<td class="next">
+Next: <a href="4145.html">04145</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release">The Complete Spectrum ROM Disassembly 20260409</div>
+<div class="copyright">&#169; 1982 Amstrad. &#169; 1983 Dr Ian Logan &amp; Dr Frank O'Hara. &#169; 2026 Richard Dymond.</div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 10.0.</div>
+<div><a href="../hex/asm/1024.html">Switch to hexadecimal</a>.</div>
+</footer>
+</body>
+</html>

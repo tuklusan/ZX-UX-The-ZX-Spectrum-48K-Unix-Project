@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Spectrum ROM: Routine at 3674</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../style.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html"><img alt="Spectrum ROM" src="../../images/logo-hex.png" /></a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="3669.html">3669</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#3674">Map</a></td>
+<td class="next">
+Next: <a href="367A.html">367A</a>
+</td>
+</tr>
+</table>
+<div class="description">3674: THE 'LEN' FUNCTION (offset +1E)</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+The address of this routine is found in the <a href="32D7.html">table of addresses</a>. It is called indirectly via <a href="33A2.html">fp_calc_2</a>.
+</div>
+<div class="paragraph">
+This subroutine handles the function LEN A$ and returns a 'last value' that is equal to the length of the string.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="asm-label">len</td>
+<td class="address-2"><span id="3674"></span>3674</td>
+<td class="instruction">CALL <a href="2BF1.html">STK_FETCH</a></td>
+<td class="comment-1" rowspan="1">The parameters of the string are fetched.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="3677"></span>3677</td>
+<td class="instruction">JP <a href="2D2B.html">STACK_BC</a></td>
+<td class="comment-1" rowspan="1">The subroutine exits via <a href="2D2B.html">STACK_BC</a> which gives the correct 'last value'.</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="3669.html">3669</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#3674">Map</a></td>
+<td class="next">
+Next: <a href="367A.html">367A</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release">The Complete Spectrum ROM Disassembly 20260409</div>
+<div class="copyright">&#169; 1982 Amstrad. &#169; 1983 Dr Ian Logan &amp; Dr Frank O'Hara. &#169; 2026 Richard Dymond.</div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 10.0.</div>
+<div><a href="../../asm/13940.html">Switch to decimal</a>.</div>
+</footer>
+</body>
+</html>

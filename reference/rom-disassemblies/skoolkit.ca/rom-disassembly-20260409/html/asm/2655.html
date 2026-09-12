@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Spectrum ROM: Routine at 02655</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../style.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html"><img alt="Spectrum ROM" src="../images/logo-dec.png" /></a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="2639.html">02639</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#2655">Map</a></td>
+<td class="next">
+Next: <a href="2665.html">02665</a>
+</td>
+</tr>
+</table>
+<div class="description">02655: THE 'PRINT COMMA' SUBROUTINE</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+The address of this routine is derived from an offset found in the <a href="2577.html">control character table</a>.
+</div>
+<div class="paragraph">
+The current column value is manipulated and the <span class="register">A</span> register set to hold 0 (for TAB 0) or 16 (for TAB 16).
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="asm-label">PO_COMMA</td>
+<td class="address-2"><span id="2655"></span>02655</td>
+<td class="instruction">CALL <a href="2819.html">PO_FETCH</a></td>
+<td class="comment-1" rowspan="1">Why again?</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="2658"></span>02658</td>
+<td class="instruction">LD A,C</td>
+<td class="comment-1" rowspan="1">Current column number.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="2659"></span>02659</td>
+<td class="instruction">DEC A</td>
+<td class="comment-1" rowspan="2">Move rightwards by two columns and then test.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="2660"></span>02660</td>
+<td class="instruction">DEC A</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="2661"></span>02661</td>
+<td class="instruction">AND 16</td>
+<td class="comment-1" rowspan="1">The <span class="register">A</span> register will be 0 or 16.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="2663"></span>02663</td>
+<td class="instruction">JR <a href="2669.html#2755">PO_FILL</a></td>
+<td class="comment-1" rowspan="1">Exit via <a href="2669.html#2755">PO_FILL</a>.</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="2639.html">02639</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#2655">Map</a></td>
+<td class="next">
+Next: <a href="2665.html">02665</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release">The Complete Spectrum ROM Disassembly 20260409</div>
+<div class="copyright">&#169; 1982 Amstrad. &#169; 1983 Dr Ian Logan &amp; Dr Frank O'Hara. &#169; 2026 Richard Dymond.</div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 10.0.</div>
+<div><a href="../hex/asm/0A5F.html">Switch to hexadecimal</a>.</div>
+</footer>
+</body>
+</html>

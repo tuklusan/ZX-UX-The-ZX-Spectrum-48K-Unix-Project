@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Spectrum ROM: Routine at 13940</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../style.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html"><img alt="Spectrum ROM" src="../images/logo-dec.png" /></a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="13929.html">13929</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#13940">Map</a></td>
+<td class="next">
+Next: <a href="13946.html">13946</a>
+</td>
+</tr>
+</table>
+<div class="description">13940: THE 'LEN' FUNCTION (offset 30)</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+The address of this routine is found in the <a href="13015.html">table of addresses</a>. It is called indirectly via <a href="13218.html">fp_calc_2</a>.
+</div>
+<div class="paragraph">
+This subroutine handles the function LEN A$ and returns a 'last value' that is equal to the length of the string.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="asm-label">len</td>
+<td class="address-2"><span id="13940"></span>13940</td>
+<td class="instruction">CALL <a href="11249.html">STK_FETCH</a></td>
+<td class="comment-1" rowspan="1">The parameters of the string are fetched.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="13943"></span>13943</td>
+<td class="instruction">JP <a href="11563.html">STACK_BC</a></td>
+<td class="comment-1" rowspan="1">The subroutine exits via <a href="11563.html">STACK_BC</a> which gives the correct 'last value'.</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="13929.html">13929</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#13940">Map</a></td>
+<td class="next">
+Next: <a href="13946.html">13946</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release">The Complete Spectrum ROM Disassembly 20260409</div>
+<div class="copyright">&#169; 1982 Amstrad. &#169; 1983 Dr Ian Logan &amp; Dr Frank O'Hara. &#169; 2026 Richard Dymond.</div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 10.0.</div>
+<div><a href="../hex/asm/3674.html">Switch to hexadecimal</a>.</div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Spectrum ROM: Routine at 1652</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../style.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html"><img alt="Spectrum ROM" src="../../images/logo-hex.png" /></a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="164D.html">164D</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#1652">Map</a></td>
+<td class="next">
+Next: <a href="1664.html">1664</a>
+</td>
+</tr>
+</table>
+<div class="description">1652: THE 'MAKE-ROOM' SUBROUTINE</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Used by the routine at <a href="0F2C.html">EDITOR</a>.
+</div>
+<div class="paragraph">
+This is a very important subroutine. It is called on many occasions to 'open up' an area. In all cases the <span class="register">HL</span> register pair points to the location after the place where 'room' is required and the <span class="register">BC</span> register pair holds the length of the 'room' needed.
+</div>
+</div>
+<table class="input">
+<tr class="asm-input-header">
+<th colspan="2">Input</th>
+</tr>
+<tr>
+<td class="register">HL</td>
+<td class="register-desc">Address at which to create the new space</td>
+</tr>
+</table>
+<table class="output">
+<tr class="asm-output-header">
+<th colspan="2">Output</th>
+</tr>
+<tr>
+<td class="register">DE</td>
+<td class="register-desc">Address of the last byte of the new space</td>
+</tr>
+<tr>
+<td class="register">HL</td>
+<td class="register-desc">Address of the byte before the start of the new space</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="1652"></span>
+<div class="comments">
+<div class="paragraph">
+When a single space only is required then the subroutine is entered here.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="asm-label">ONE_SPACE</td>
+<td class="address-2"><span id="1652"></span>1652</td>
+<td class="instruction">LD BC,$0001</td>
+<td class="comment-1" rowspan="1">Just the single extra location is required.</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="1655"></span>
+<div class="comments">
+<div class="paragraph">
+This entry point is used by the routines at <a href="0808.html">LD_CONTRL</a>, <a href="092C.html">ME_ENTER</a>, <a href="0F2C.html">EDITOR</a>, <a href="155D.html">MAIN_ADD</a>, <a href="169E.html">RESERVE</a>, <a href="1D03.html">FOR</a>, <a href="1F60.html">DEF_FN</a>, <a href="268D.html">S_DECIMAL</a>, <a href="2AFF.html">LET</a> and <a href="2C02.html">DIM</a> with <span class="register">BC</span> holding the size of the space to create.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="asm-label">MAKE_ROOM</td>
+<td class="address-2"><span id="1655"></span>1655</td>
+<td class="instruction">PUSH HL</td>
+<td class="comment-1" rowspan="1">Save the pointer.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="1656"></span>1656</td>
+<td class="instruction">CALL <a href="1F05.html">TEST_ROOM</a></td>
+<td class="comment-1" rowspan="1">Make sure that there is sufficient memory available for the task being undertaken.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="1659"></span>1659</td>
+<td class="instruction">POP HL</td>
+<td class="comment-1" rowspan="1">Restore the pointer.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="165A"></span>165A</td>
+<td class="instruction">CALL <a href="1664.html">POINTERS</a></td>
+<td class="comment-1" rowspan="1">Alter all the pointers before making the 'room'.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="165D"></span>165D</td>
+<td class="instruction">LD HL,($5C65)</td>
+<td class="comment-1" rowspan="1">Make <span class="register">HL</span> hold the new <a href="5C65.html">STKEND</a>.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="1660"></span>1660</td>
+<td class="instruction">EX DE,HL</td>
+<td class="comment-1" rowspan="1">Switch 'old' and 'new'.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="1661"></span>1661</td>
+<td class="instruction">LDDR</td>
+<td class="comment-1" rowspan="2">Now make the 'room' and return.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="1663"></span>1663</td>
+<td class="instruction">RET</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="comments">
+<div class="paragraph">
+Note: this subroutine returns with the <span class="register">HL</span> register pair pointing to the location before the new 'room' and the <span class="register">DE</span> register pair pointing to the last of the new locations. The new 'room' therefore has the description '(<span class="register">HL</span>)+1' to '(<span class="register">DE</span>)' inclusive.
+</div>
+<div class="paragraph">
+However as the 'new locations' still retain their 'old values' it is also possible to consider the new 'room' as having been made after the original location '(<span class="register">HL</span>)' and it thereby has the description '(<span class="register">HL</span>)+2' to '(<span class="register">DE</span>)+1'.
+</div>
+<div class="paragraph">
+In fact the programmer appears to have a preference for the 'second description' and this can be confusing.
+</div>
+</div>
+</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="164D.html">164D</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#1652">Map</a></td>
+<td class="next">
+Next: <a href="1664.html">1664</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release">The Complete Spectrum ROM Disassembly 20260409</div>
+<div class="copyright">&#169; 1982 Amstrad. &#169; 1983 Dr Ian Logan &amp; Dr Frank O'Hara. &#169; 2026 Richard Dymond.</div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 10.0.</div>
+<div><a href="../../asm/5714.html">Switch to decimal</a>.</div>
+</footer>
+</body>
+</html>

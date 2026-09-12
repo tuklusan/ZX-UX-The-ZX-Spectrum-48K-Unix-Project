@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Spectrum ROM: Routine at 1E4F</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../style.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html"><img alt="Spectrum ROM" src="../../images/logo-hex.png" /></a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="1E42.html">1E42</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#1E4F">Map</a></td>
+<td class="next">
+Next: <a href="1E5F.html">1E5F</a>
+</td>
+</tr>
+</table>
+<div class="description">1E4F: THE 'RANDOMIZE' COMMAND ROUTINE</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+The address of this routine is found in the <a href="1A48.html#1AB5">parameter table</a>.
+</div>
+<div class="paragraph">
+The operand is compressed into the <span class="register">BC</span> register pair and transferred to the required system variable. However if the operand is zero the value in <a href="5C78.html">FRAMES1 and FRAMES2</a> is used instead.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="asm-label">RANDOMIZE</td>
+<td class="address-2"><span id="1E4F"></span>1E4F</td>
+<td class="instruction">CALL <a href="1E94.html#1E99">FIND_INT2</a></td>
+<td class="comment-1" rowspan="1">Fetch the operand.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="1E52"></span>1E52</td>
+<td class="instruction">LD A,B</td>
+<td class="comment-1" rowspan="3">Jump forward unless the value of the operand is zero.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="1E53"></span>1E53</td>
+<td class="instruction">OR C</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="1E54"></span>1E54</td>
+<td class="instruction">JR NZ,<a href="1E4F.html#1E5A">RAND_1</a></td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="1E56"></span>1E56</td>
+<td class="instruction">LD BC,($5C78)</td>
+<td class="comment-1" rowspan="1">Fetch the two low order bytes of <a href="5C78.html">FRAMES</a> instead.</td>
+</tr>
+<tr>
+<td class="asm-label">RAND_1</td>
+<td class="address-2"><span id="1E5A"></span>1E5A</td>
+<td class="instruction">LD ($5C76),BC</td>
+<td class="comment-1" rowspan="2">Now enter the result into the system variable <a href="5C76.html">SEED</a> before returning.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="1E5E"></span>1E5E</td>
+<td class="instruction">RET</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="1E42.html">1E42</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#1E4F">Map</a></td>
+<td class="next">
+Next: <a href="1E5F.html">1E5F</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release">The Complete Spectrum ROM Disassembly 20260409</div>
+<div class="copyright">&#169; 1982 Amstrad. &#169; 1983 Dr Ian Logan &amp; Dr Frank O'Hara. &#169; 2026 Richard Dymond.</div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 10.0.</div>
+<div><a href="../../asm/7759.html">Switch to decimal</a>.</div>
+</footer>
+</body>
+</html>

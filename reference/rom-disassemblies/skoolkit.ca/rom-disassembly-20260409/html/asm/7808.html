@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Spectrum ROM: Routine at 07808</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../style.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html"><img alt="Spectrum ROM" src="../images/logo-dec.png" /></a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="7802.html">07802</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#7808">Map</a></td>
+<td class="next">
+Next: <a href="7813.html">07813</a>
+</td>
+</tr>
+</table>
+<div class="description">07808: THE 'POKE' COMMAND ROUTINE</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+The address of this routine is found in the <a href="6728.html#6833">parameter table</a>.
+</div>
+<div class="paragraph">
+In a similar manner to <a href="7802.html">OUT</a>, the POKE operation is performed.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="asm-label">POKE</td>
+<td class="address-2"><span id="7808"></span>07808</td>
+<td class="instruction">CALL <a href="7813.html">TWO_PARAM</a></td>
+<td class="comment-1" rowspan="1">The operands are fetched.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="7811"></span>07811</td>
+<td class="instruction">LD (BC),A</td>
+<td class="comment-1" rowspan="1">The actual POKE operation.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="7812"></span>07812</td>
+<td class="instruction">RET</td>
+<td class="comment-1" rowspan="1">Return - to <a href="7030.html">STMT_RET</a>.</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="7802.html">07802</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#7808">Map</a></td>
+<td class="next">
+Next: <a href="7813.html">07813</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release">The Complete Spectrum ROM Disassembly 20260409</div>
+<div class="copyright">&#169; 1982 Amstrad. &#169; 1983 Dr Ian Logan &amp; Dr Frank O'Hara. &#169; 2026 Richard Dymond.</div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 10.0.</div>
+<div><a href="../hex/asm/1E80.html">Switch to hexadecimal</a>.</div>
+</footer>
+</body>
+</html>

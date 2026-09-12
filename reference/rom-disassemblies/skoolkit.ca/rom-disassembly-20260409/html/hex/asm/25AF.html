@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Spectrum ROM: Routine at 25AF</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../style.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html"><img alt="Spectrum ROM" src="../../images/logo-hex.png" /></a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="2596.html">2596</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#25AF">Map</a></td>
+<td class="next">
+Next: <a href="25B3.html">25B3</a>
+</td>
+</tr>
+</table>
+<div class="description">25AF: THE 'SCANNING UNARY PLUS' ROUTINE</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+The address of this routine is derived from an offset found in the <a href="2596.html">scanning function table</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="asm-label">S_U_PLUS</td>
+<td class="address-2"><span id="25AF"></span>25AF</td>
+<td class="instruction">RST <a href="0020.html">$20</a></td>
+<td class="comment-1" rowspan="2">For unary plus, simply move on to the next character and jump back to the main re-entry of <a href="24FB.html">SCANNING</a>.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="25B0"></span>25B0</td>
+<td class="instruction">JP <a href="24FB.html#24FF">S_LOOP_1</a></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="2596.html">2596</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#25AF">Map</a></td>
+<td class="next">
+Next: <a href="25B3.html">25B3</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release">The Complete Spectrum ROM Disassembly 20260409</div>
+<div class="copyright">&#169; 1982 Amstrad. &#169; 1983 Dr Ian Logan &amp; Dr Frank O'Hara. &#169; 2026 Richard Dymond.</div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 10.0.</div>
+<div><a href="../../asm/9647.html">Switch to decimal</a>.</div>
+</footer>
+</body>
+</html>

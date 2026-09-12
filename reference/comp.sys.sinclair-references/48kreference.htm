@@ -1,0 +1,813 @@
+<!--
+Warajevo ZX Spectrum Next
+Copyright (c) 2026 Supratim Sanyal, SANYALnet Labs, for new original project material.
+New original material is licensed under GNU GPL v2 or later (GPL-2.0-or-later), as stated in LICENSE.txt.
+Upstream Warajevo and third-party material retain their applicable copyrights and licenses.
+See LICENSE.txt and NOTICE.md for complete terms and provenance.
+-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<title>48K ZX Spectrum Technical Information</title>
+	<meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
+<link href="../styles/cssFAQ.css" title="CSSFAQStyle" id="CSSFAQStyle" type="text/css" rel="stylesheet" media="screen" />
+<link href="../styles/cssFAQPrint.css" title="CSSFAQStylePrint" id="CSSFAQStylePrint" type="text/css" rel="stylesheet" media="print" />
+</head>
+<body>
+<!-- Title -->
+<div id="pageHeader" class="pageHeader"><h1>comp.sys.sinclair FAQ</h1></div>
+<!-- End Title -->
+<br />
+<!-- Context Bar -->
+<div class="siteNavigation">
+<a title="SinclairFAQ [on master site]" href="http://www.sinclairfaq.com/">SinclairFAQ</a> &raquo;
+<a title="comp.sys.sinclair FAQ" href="../index.html">c.s.s FAQ</a> |
+<a title="Documentation" href="../resources/documents.htm">Documents</a> |
+<a title="Essential Sites" href="../essential.htm">Essential Sites</a> |
+<a title="Emulators" href="../emulators/emulators.htm">Emulators</a> |
+<a title="Reference" href="../reference/reference.htm">Reference</a> |
+<a title="Links" href="../resources/links.htm">Links</a> |
+<a title="Resources" href="../resources/resources.htm">Resources</a> |
+<a title="Help" href="../help.htm">Help</a>
+</div>
+<!-- End Context Bar -->
+<br />
+	<table id="Content" cellspacing="1" cellpadding="1" width="100%" border="0">
+		<tr>
+			<td width="75" colspan="1" rowspan="1" />
+			<td>
+	<table id="SectionTitle" cellspacing="1" cellpadding="1" width="95%" align="center" border="0">
+		<tr>
+			<td class="sectionTitle">16K / 48K ZX Spectrum Reference</td></tr>
+	</table>
+	<table id="SectionContent" cellspacing="1" cellpadding="1" width="95%" align="center" border="0">
+		<tr>
+			<td class="bodyTable">
+<!-- 16K / 48K ZX Spectrum Reference -->
+			<p>This section is broken into several parts: <a href="#Channels">Channels &amp; Streams</a>,
+				<a href="#Hardware">Hardware</a>, <a href="#ZXInterfaceI">ZX Interface I</a> and <a href="#TapeDataStructure">Tape Data Structure</a>.
+					Each of these may have several sub-sections. Within each section, you may find links to additional information elsewhere in this FAQ, or to other
+					reference documents. Commented ROM listings are available from <a href="http://www.wearmouth.demon.co.uk/">Geoff Wearmouth</a>,
+					author of the <a href="../resources/links.htm#Projects">SEA Change ROM</a>.</p>
+<!-- Channels & Streams -->
+			<p><strong><a id="Channels">Channels &amp; Streams:</a></strong><br />
+				There are 5 subsections:
+				<a href="#Introduction">Introduction</a>,
+				<a href="#Open">Opening and Closing</a>,
+				<a href="#Devices">Device Independence</a>,
+				<a href="#MoreCommands">More Stream Commands</a> and
+				<a href="#Memory">Memory Formats</a>.</p>
+			<ul>
+<!-- Introduction -->
+				<li><strong><a id="Introduction">Introduction</a></strong><br />
+					The Spectrum has a surprisingly modern system of input and output when the age of the Spectrum is considered.
+					However, what is more surprising is the fact that the Spectrum manual barely scratches the surface of what is possible.<br /><br />
+					I/O on the Spectrum is based on channels and streams. Since the standard Spectrum has only a limited range of I/O devices
+					is makes sense that different commands are available for each I/O device. For example, PRINT is used to send output to the
+					screen, whereas LPRINT is used to send output to the printer.<br /><br />
+					The extra devices catered for by the <a href="#ZXInterfaceI">ZX Interface I</a> (microdrives, RS-232, and
+					networking) reduced the practicality of continuing to invent new commands, although this was provided for in the case of the
+					microdrives.<br /><br />
+					Streams and channels intuitively correspond to the software and hardware parts of I/O respectively. That is, a stream should be
+					thought of merely as a collection of data going to or coming from a piece of hardware, and a channel should be associated with a
+					particular piece of hardware such as a printer. On the Spectrum streams are numbered from 0 through 15, and their basic operations
+					are reading and writing data.<br /><br />
+					The BASIC statement INPUT #s; [input-list] will read data from stream number s, 0 &lt;= s &lt;= 15, into the variables specified in the
+					input-list. Conversely, the BASIC statement PRINT #s; [print-list] will write data to stream s, 0 &lt;= s &lt;= 15. In general both
+					INPUT # and PRINT # can be used in the same way as their ordinary counterparts INPUT and PRINT. In particular all the normal
+					complexity of a PRINT statement can be used equally well in a PRINT # statement. In each case the data sent to the stream is exactly
+					the same as the data which would be sent to the screen by the PRINT statement. The INPUT # statement is slightly more complicated
+					in that is can both read and write data, as in INPUT "What is your name? "; A$. In fact each stream really has two components, an input
+					stream and an output stream. Data written to the stream by either PRINT # or INPUT # goes to the output stream while input comes from
+					the input stream.<br /><br />
+					It is even possible to change streams part way through a PRINT statement, as in PRINT #3; "hello"; #6; "there". This is obviously fairly
+					confusing though, so should probably be avoided unless their is a good reason for using this construct.<br /><br /></li>
+<!-- End Introduction -->
+<!-- Opening and Closing -->
+				<li><strong><a id="Open">Opening and Closing</a></strong><br />
+					How do you know which stream numbers are associated with which channel? Before a stream is used it must be OPENed. Opening a stream
+					serves two purposes. It associates the given stream with a particular piece of hardware (the channel), and actually signals the relevant device
+					that it is going to be used. Stream are opened in BASIC using the syntax OPEN #s, c where s is the stream number being opened and c is a
+					string specifying the channel to associate the stream with. Following this command, any data sent to stream s will go to the specified channel.
+					It is possible to open several streams to the same device, but each stream can only be associated with a single channel.<br /><br />
+					The statement CLOSE #s is used to end the association of stream s with a channel. If you attempt to close a channel which is already closed
+					on an unexpanded Spectrum then the machine might crash due to two bugs in the ROM.<br /><br />
+					The unexpanded Spectrum supports four channels: "K" the keyboard channel, "S" the screen channel, "P" the printer channel, and "R" an
+					internal channel used by the Spectrum to send data to the edit buffer. In practice the only channel that has both input and output of these is
+					the keyboard channel. When the Spectrum is first powered up the following streams are opened automatically: 0: "K", 1: "K", 2: "S", 3: "P".
+					Thus, the command LPRINT is really an alternative to writing PRINT #3. The "R" channel cannot be opened from BASIC. It is possible to
+					redefine the standard channels, thus OPEN #2, "P" will cause output normally sent to the screen to be redirected to the printer.<br /><br />
+					For example, OPEN #5, "K" associates stream 5 with the keyboard, and thereafter INPUT #5; A$ would behave in an identical manner to
+					INPUT A$.<br /><br /></li>
+<!-- End Opening and Closing -->
+<!-- Device Independence -->
+				<li><strong><a id="Devices">Device Independence</a></strong><br />
+					The most important advantage of using streams is in the writing of device independent programs. Say that you wish to give the user the option
+					of having all output go to either the screen or to the printer. Without using streams it is necessary then to have separate output statements for
+					each device, as in;<br /><br />
+					IF (output = printer) THEN LPRINT "Hello" ELSE PRINT "Hello"<br /><br />
+					By using streams we can just open a particular stream (say 4) to the desired output device and thereafter use only one output statement;<br /><br />
+					PRINT #4; "Hello"<br /><br />
+					Obviously this will result is a much shorter program, particularly, if there are many output statements in the program. Further, it is an easy
+					matter to add even further output devices if they become an option later in the programs development.<br /><br />
+					You could also hack an existing program by adding somewhere near the start;<br /><br />
+					IF [printer required] THEN OPEN #2,"P"<br /><br />
+					which will make all ordinary PRINT instructions go to the printer.<br /><br /></li>
+<!-- End Device Independence -->
+<!-- More Stream Commands -->
+				<li><strong><a id="MoreCommands">More Stream Commands</a></strong><br />
+					BASIC also allows LIST and INKEY$ to be used to streams. LIST #s will send a copy of the program to stream s; e.g. normally LIST #3 is the
+					same thing as LLIST. However, on the standard Spectrum INKEY$ can only be used with the keyboard channel.<br /><br />
+					Note that INKEY$ is not the same as INKEY$ #1 because the former does a stand-alone key scan whereas the latter attempts to read a key
+					from the "K" device (which might involve changing the cursor mode and listing the editing area if you happen to press both shifts, for example).<br /><br /></li>
+<!-- End More Stream Commands -->
+<!-- Memory Formats -->
+				<li><strong><a id="Memory">Memory Formats</a></strong><br />
+					Knowing about the actual layout of the stream records in memory is useful if you want to add your own hardware devices to the Spectrum,
+					or if you which to make you own specialized streams. The information that defines each channel is stored in the channel information area
+					starting at CHANS and ending at PROG - 2. Each channel record has the following format:<br /><br />
+					<ul>
+						<li>two-byte address of the output routine,</li>
+						<li>two-byte address of the input routine,</li>
+						<li>one-byte channel code letter.<br /><br /></li>
+					</ul>
+					where the input and output routines are address of machine code sub- routines. The output routine must accept Spectrum character codes
+					passed to it in the A register. The input routine must return data in the form of Spectrum character codes, and signal that data is available by
+					setting the carry flag. If no data is available then this is indicated be resetting both the carry and zero flags. Stubs should be provided if a
+					channel does not support either input or output (e.g. the stub may simply call RST 8 with an error code)<br /><br />
+					With the <a href="#ZXInterfaceI">ZX Interface I</a> attached, an extended format is used;
+<pre>offset len description
+     0  2  0x0008 (address of Spectrum error routine)
+     2  2  0x0008 (ditto)
+     4  1  A character describing the channel
+     5  2  Address of output routine in the shadow ROM
+     7  2  Address of input routine in the shadow ROM
+     9  2  Total length of channel information
+    11  *  Any other data needed by the channel</pre>
+					The first two words being 8 denotes that the input and output routines are to be found in the shadow ROM. Either of them could be an ordinary
+					number instead, in which case the shadow ROM will not be paged in and the word at offset 5 or 7 (as appropriate) could contain any data.<br /><br />
+					Data about which streams are associated with which channels is in a 38-byte area of memory starting at STRMS. The table is a series of
+					16-bit offsets to the channel record vectored from CHANS. A value of one indicates the channel record starting at CHANS, and so on. This
+					accounts for 32 bytes of the 38 - the remaining 6 bytes are for three hidden streams (253, 254, 255) used internally by BASIC. A zero entry
+					in the table indicates a stream not open.<br /><br />
+					It is possible to redirect existing channels to your own I/O routines. This can be used among other things to cause LPRINT to use your own
+					printer driver rather than the one provided in the ROM. It allows you to perform I/O for your own hardware devices, or for you to write your
+					own handlers from PRINT and INPUT.<br /><br />
+					It is easiest to modify the existing "P" channel record. The "K" channel is not a good option for modification because its values are constantly
+					being restored by BASIC.<br /><br />
+					It is not possible to create a new channel from BASIC. Another difficulty is that without Interface I, OPEN will only work with K, S, and P and so
+					it is necessary to provide some other way of opening your own channels. This short assembler routine will create a new channel and associate
+					a stream with it:
+<pre>     LD HL,(PROG)  ; A new channel starts below PROG
+     DEC HL        ;
+     LD BC,0x0005  ; Make space
+     CALL 0x1655   ; 
+     INC HL        ; HL points to 1st byte of new channel data
+     LD A,0xfd     ; LSB of output routine
+     LD (HL),A     ;
+     INC HL        ;
+     PUSH HL       ; Save address of 2nd byte of new channel data
+     LD A,0xfd     ; MSB of output routine
+     LD (HL),A     ;
+     INC HL        ;
+     LD A,0xc4     ; LSB of input routine
+     LD (HL),A     ;
+     INC HL        ;
+     LD A,0x15     ; MSB of input routine
+     LD (HL),A     ;
+     INC HL        ;
+     LD A,0x55     ; Channel name 'U' 
+     LD (HL),A     ;
+     POP HL        ; Get address of 2nd byte of output routine
+     LD DE,(CHANS) ; Calculate the offset to the channel data
+     AND A         ; and store it in DE
+     SBC HL,DE     ;
+     EX DE,HL      ;
+     LD HL,'STRMS' ;
+     LD A,0x04     ; Stream to open, in this case #4.
+     ADD A,0x03    ; Calculate the offset and store it in HL
+     ADD A,A       ;
+     LD B,0x00     ;
+     LD C,A        ;
+     ADD HL,BC     ;
+     LD (HL),E     ; LSB of 2nd byte of new channel data
+     INC HL        ;
+     LD (HL),D     ; MSB of 2nd byte of new channel data
+     RET</pre>
+				This routine will create a channel "U" (any ASCII character from 0 to 255 will be accepted by the standard ROM since it ignores this information).
+				This channel has an output routine at 65021 and an input routine at 5572 (generates error report 'J'). A new entry is created in the STRMS table
+				which points to the address of the second byte of new channel data. The stream number can be from -3 to 15, but it is best to stick to the range
+				4 to 15 and not modify the system streams (-3 to -1) or the standard streams (0 to 3).</li>
+<!-- End Memory Formats -->
+			</ul>
+<!-- End Channels & Streams -->
+<!-- Hardware -->
+			<p><strong><a id="Hardware">Hardware:</a></strong><br />
+				At the hardware level, the Spectrum is a very simple machine. There's the 16K ROM which occupies the lowest part of the address space, and
+				48K of RAM which fills up the rest. An <a href="pinouts.htm#ULA">ULA</a> which reads the lowest 6912 bytes of RAM to display
+				the screen, and contains the logic for just one I/O port completes the machine, from a software point of view at least.<br /><br />
+				There are 4 subsections available:
+				<a href="#PortFE">Port 0xfe</a>,
+				<a href="#ZXSpectrum">48K Spectrum</a>,
+				<a href="#Contention">Contended Memory</a> and
+				<a href="#IOContention">Contended Input/Output</a>. Within each section, you may find links to additional information elsewhere in this FAQ, or to
+					reference documents located elsewhere.</p>
+			<ul>
+<!-- Port 0xfe -->
+				<li><strong><a id="PortFE">Port 0xfe</a></strong><br />
+					Every even I/O address will address the <a href="pinouts.htm#ULA">ULA</a>, but to avoid problems with
+					other I/O devices only Port 0xfe should be used. If this port is written to, bits have the following meaning:<br /><br />
+					<ul>
+						<li>
+<pre>        Bit   7   6   5   4   3   2   1   0
+            +-------------------------------+
+            |   |   |   | E | M |   Border  |
+            +-------------------------------+</pre></li>
+					</ul>
+					The lowest three bits specify the border colour; a zero in bit 3 activates the MIC output, whilst a one in bit 4 activates the EAR output
+					and the internal speaker. However, the EAR and MIC sockets are connected only by resistors, so activating one activates the other; the
+					EAR is generally used for output as it produces a louder sound. The upper two bits are unused.<br /><br />
+					If Port 0xfe is read from, the highest eight address lines are important too. A zero on one of these lines selects a particular half-row of
+					five keys:<br /><br />
+					<ul>
+						<li>
+<pre>      IN:    Reads keys (bit 0 to bit 4 inclusive)
+
+      0xfefe  SHIFT, Z, X, C, V            0xeffe  0, 9, 8, 7, 6
+      0xfdfe  A, S, D, F, G                0xdffe  P, O, I, U, Y
+      0xfbfe  Q, W, E, R, T                0xbffe  ENTER, L, K, J, H
+      0xf7fe  1, 2, 3, 4, 5                0x7ffe  SPACE, SYM SHFT, M, N, B</pre></li>
+					</ul>
+					A zero in one of the five lowest bits means that the corresponding key is pressed. If more than one address line is made low, the result is
+					the logical AND of all single inputs, so a zero in a bit means that at least one of the appropriate keys is pressed. For example, only if each
+					of the five lowest bits of the result from reading from Port 00FE (for instance by XOR A/IN A,(FE)) is one, no key is pressed. A final remark
+					about the keyboard. It is connected in a matrix-like fashion, with 8 rows of 5 columns, as is obvious from the above remarks. Any two keys
+					pressed simultaneously can be uniquely decoded by reading from the IN ports. However, if more than two keys are pressed decoding may
+					not be uniquely possible. For instance, if you press CAPS, B and V, the Spectrum will think also the Space key is pressed, and react by giving
+					the "Break into Program" report. Without this matrix behaviour Zynaps, for instance, won't pause when you press 5,6,7,8 and 0 simultaneously.<br /><br />
+					Bit 6 of IN-Port 0xfe is the EAR input bit. The value read from this port is not trivial, as can be seen from the following program:<br /><br />
+<pre>      10 OUT 254,BIN 11101111
+      20 PRINT IN 254
+      30 OUT 254,BIN 11111111
+      40 PRINT IN 254
+      50 GOTO 10</pre>
+					For a correct test do not press any key while running, and have no EAR input.<br /><br />
+					<ul>
+						<li>If the output is 191,255,191,255 etc, you are on real Spectrum Issue 3.</li>
+						<li>If output is always 191 or always 255, change the value in line 10 to BIN 11100111.</li>
+						<li>If output is then 191,255,191,255 etc, then you are on Spectrum Issue 2.</li>
+						<li>If output is still always 191 or always 255 you are on Spectrum emulator.<br /><br /></li>
+					</ul>
+					The <a href="pinouts.htm#ULA">ULA</a> chip uses the same pin (28) for all of the MIC socket, EAR socket and the
+					internal speaker, so bits 3 and 4 of an OUT to Port 0xfe will affect bit 6 as read by an IN from Port 0xfe. The difference between Issue 2
+					and 3 machines is:<br /><br />
+<pre><u>Value output to bit: 4  3  |  Iss 2  Iss 3   Iss 2 V    Iss 3 V</u>
+                     1  1  |    1      1       3.79       3.70
+                     1  0  |    1      1       3.66       3.56
+                     0  1  |    1      0       0.73       0.66
+                     0  0  |    0      0       0.39       0.34</pre>
+					Iss 2 is value of bit 6 read by IN 254 after the appropriate OUT from an Issue 2, and Iss 3 is same for an Issue 3. Iss 2 V and Iss 3 V are
+					voltage levels on pin 28 of the <a href="pinouts.htm#ULA">ULA</a> chip after the OUT, with no input signal on
+					the EAR socket.<br /><br />
+					From the above, it is clear that the difference between Issue 2 and 3 is:<br /><br />
+					<ul>
+						<li>On an Issue 3, an OUT 254 with bit 4 reset will give a reset bit 6 from IN 254.</li>
+						<li>On an Issue 2, both bits 3 and 4 must be reset for the same effect to occur.<br /><br /></li>
+					</ul>
+					Pera Putnik tested the level at pin 28 at which input bit 6 changes from 0 to 1 or reverse. This is exactly 0.70 Volts on both Issue 2 and
+					Issue 3, with no inverting or hysteresis; this means that bit 6 is 1 if the voltage on pin 28 is over 0.70 V, and otherwise it is 0, on both
+					Issues. At the hardware level, the only apparent difference between Issue 2 and 3 is that there are slightly higher voltages from Issue 2
+					machines. As can be seen from the table, the input combination '0 1' gives output voltages that are very close to the crucial 0.7 V.<br /><br />
+					The BASIC program used above is relatively slow, and for faster programs the situation isn't so simple, as <strong>there is some delay when output
+					bit 4 changes from 1 to 0</strong>. To illustrate this, here are 2 short assembler routines:<br /><br />
+<pre>       ORG 45000
+       LD A,0x18
+       OR 0xf8
+       OUT (254),A
+       LD A,0x08
+       OR 0xe8
+       OUT (254),A
+TIMING LD B,7      ;crucial value
+DL     LD IX,0
+       DJNZ DL
+       IN A,(254)  ;query state</pre>
+					In this case IN A,(254), or output of this value sometimes gives 255 and sometimes 191. If you make the constant in the TIMING line smaller
+					then result will be always 255, if delay is longer then result will be always 191. Of course, the effect occurs only for Issue 3 machines.<br /><br />
+					The situation is again slightly different for a longer duration of high output level on port 254:<br /><br />
+<pre>       ORG 50000
+       HALT        ;synchronize with interrupts
+       LD A,0x18
+       OUT (254),A
+       HALT        ;wait 20ms
+       LD A,0x08
+       OUT (254),A
+       LD B,107    ;crucial value
+DL     LD IX,0
+       DJNZ DL
+       IN A,(254)</pre>
+					As you can see, after a longer high level duration, the delay is also much longer. The delay varies from approximately 180 T
+					states (about 50 microsec) to 2800 T states (about 800 microsec), depending from duration of high level on port 254. The explanation for
+					this delay is that there are capacitors connected between pin 28 of the <a href="pinouts.htm#ULA">ULA</a> and
+					the EAR and MIC connectors, but note that <strong>there is no delay when bit 4 changes from 0 to 1</strong>.<br /><br />
+					The 'traditional' explanation of the difference between Issue 2 and 3 Spectrum (from techinfo.doc) is that PRINT IN 254 gives bit 6 reset on an
+					Issue 3 and set on an Issue 2 machine occurs because, as PRINT IN 254 is typed at a BASIC prompt, the speaker is called for every
+					keystroke, and the ROM beep routine contains a OR 8 before OUT (0xfe),A, so bit 3 is always set, and therefore an Issue 2 machine will always
+					return a set bit 6.<br /><br />
+					Bits 5 and 7 as read by INning from Port 0xfe are always one. The <a href="pinouts.htm#ULA">ULA</a> with the
+					lower 16K of RAM, and the processor with the upper 32K RAM and 16K ROM are working independently of each other. The data and address
+					buses of the <a href="z80reference.htm">Z80</a> and the <a href="pinouts.htm#ULA">ULA</a> are
+					connected by small resistors; normally, these do effectively decouple the buses. However, if the <a href="z80reference.htm">Z80</a>
+					wants to read or write the lower 16K, the <a href="pinouts.htm#ULA">ULA</a> halts the processor if it is busy reading,
+					and after it's finished lets the processor access lower memory through the resistors. A very fast, cheap and neat design indeed!<br /><br />
+					If you read from a port that activates both the keyboard and a joystick port (e.g. Kempston), the joystick takes priority.<br /><br /></li>
+<!-- End Port 0xfe -->
+<!-- 48K ZX Spectrum -->
+				<li><strong><a id="ZXSpectrum">48K ZX Spectrum</a></strong><br />
+					If you run a program in the lower 16K of RAM, or read or write in that memory, the processor is halted sometimes, as the
+					<a href="pinouts.htm#ULA">ULA</a> needs to access the video memory to keep the TV updated; the electron beam
+					can't be interrupted, so the <a href="pinouts.htm#ULA">ULA</a> is given a higher priority to access the
+					<a href="#Contention">contended memory</a>. This part of memory is therefore somewhat slower than the upper 32K block. This is also
+					the reason that you cannot write a sound- or save-routine in lower memory; the timing won't be exact, and the music will sound harsh.
+					Also, INning from <a href="#PortFE">Port 0xfe</a> (or any other even port) will halt the processor, because the
+					<a href="pinouts.htm#ULA">ULA</a> has to supply the result. Therefore, INning from
+					<a href="#PortFE">Port 0xfe</a> is slower on average than INning from other ports; whilst normally an IN A,(nn) instruction
+					would take 11 T states, it takes slightly longer if nn=0xfe. There is also an effect if the high byte of the port address is between 0x40 and 0x7f, and this looks similar to a <a href="#Contention">contended memory</a> access to the <a href="pinouts.htm#ULA">ULA</a>. See the <a href="#IOContention">Contended Input/Output</a> section for
+					more information.<br /><br />
+					If the processor reads from a non-existing IN port, for instance FF, the <a href="pinouts.htm#ULA">ULA</a> won't
+					stop (unless the high byte of the port address is between 0x40 and 0x7f), but nothing will put anything on the data bus. Therefore, you'll read a mixture of 0xff (idle bus), and screen and ATTR data bytes. This will only happen when the <a href="pinouts.htm#ULA">ULA</a> is reading
+					the screen memory, about 60% of the 1/50th second time slice in which a frame is generated. The other 40%
+					the <a href="pinouts.htm#ULA">ULA</a> is building the border or generating a vertical retrace. This behaviour is
+					actually used in some programs, for instance, in Arkanoid.<br /><br />
+					Finally, there is an interesting bug in the <a href="pinouts.htm#ULA">ULA</a> which also has to do with this split bus.
+					After each instruction fetch cycle of the processor, the processor puts the I-R register "pair" (not the 8 bit internal Instruction Register, but the
+					Interrupt and <a href="z80reference.htm#RRegister">R register</a>s) on the address bus. The lowest 7 bits, the
+					<a href="z80reference.htm#RRegister">R register</a>, are used for memory refresh. However, the
+					<a href="pinouts.htm#ULA">ULA</a> gets confused if I is in the range 64-127, because it thinks the processor wants to read
+					from lower 16K RAM very, very often. The <a href="pinouts.htm#ULA">ULA</a> can't cope with this read-frequency,
+					and regularly misses a screen byte. Instead of the actual byte, the byte previously read is used to build up the video signal. The screen seems
+					to be filled with 'snow'; however, the Spectrum won't crash, and program will continue to run normally. One program which uses this to
+					generate a nice effect is Vectron.<br /><br />
+					The 50 Hz interrupt is synchronized with the video signal generation by the <a href="pinouts.htm#ULA">ULA</a>; both the
+					interrupt and the video signal are generated by it. Many programs use the interrupt to synchronize with the frame cycle. Some use it to
+					generate fantastic effects, such as full-screen characters, full-screen horizon (Aquaplane) or pixel colour (Uridium, for instance) Very many
+					modern programs use the fact that the screen is "written" (or "fired") to the CRT in a finite time to do as much time-consuming screen
+					calculations as possible without causing character flickering: although the <a href="pinouts.htm#ULA">ULA</a> has
+					started displaying the screen for this frame already, the electron beam will for a moment not "pass" this or that part of the screen so it's safe
+					to change something there. So the exact time in the 1/50 second time-slice at which the screen is updated is very important. Each line takes
+					exactly 224 T states.<br /><br />
+					After an interrupt occurs, 64 line times (14336 T states; see below for exact timings) pass before the first byte of the screen (16384) is displayed. At least the last 48 of these are actual
+					border-lines; the others may be either border or vertical retrace.<br /><br />
+					Then the 192 screen+border lines are displayed, followed by 56 border lines again. Note that this means that a frame is
+					(64+192+56)*224=69888 T states long, which means that the '50 Hz' interrupt is actually a 3.5MHz/69888=50.08 Hz interrupt. This fact can
+					be seen by taking a clock program, and running it for an hour, after which it will be the expected 6 seconds fast. However, on a real Spectrum,
+					the frequency of the interrupt varies slightly as the Spectrum gets hot; the reason for this is unknown, but placing a cooler onto the
+					<a href="pinouts.htm#ULA">ULA</a> has been observed to remove this effect.<br /><br />
+					Now for the timings of each line itself: define a screen line to start with 256 screen pixels, then border, then horizontal retrace, and then
+					border again. All this takes 224 T states. Every half T state a pixel is written to the CRT, so if the
+					<a href="pinouts.htm#ULA">ULA</a> is reading bytes it does so each 4 T states (and then it reads two: a screen and an
+					ATTR byte). The border is 48 pixels wide at each side. A video screen line is therefore timed as follows: 128 T states of screen, 24 T states of
+					right border, 48 T states of horizontal retrace and 24 T states of left border.<br /><br />
+					Now when to OUT to the border to change it at the place you want? First of all, you cannot change the border within a "byte", an 8-pixel chunk.
+					If we forget about the screen for a moment, if you execute an OUT to <a href="#PortFE">Port 0xfe</a> such that the OUT ends when 14339, 14340, 14341 or 14342 T states
+					have passed since the <a href="pinouts.htm#ULA">ULA</a> pulled /INT low, the border will change at exactly the position of byte 16384 of the screen.
+					The other positions can be computed by remembering that 8 pixels take 4 T states, and a line takes 224 T states. However, there are
+					complications due to the fact that <a href="#PortFE">Port 0xfe</a> is contended (as the
+					<a href="pinouts.htm#ULA">ULA</a> must supply the result); see the
+					<a href="#IOContention">Contended Input/Output</a> section for details.<br /><br />
+					<strong>NB:</strong> Investigations in May 2004 have revealed that the machine timings vary, even between machines with the same model of <a href="pinouts.htm#ULA">ULA</a>. Some machines use the timings given in this FAQ, while others are one T state later for all timings. The reason for this is not currently understood.<br /><br />
+					The Spectrum's 'FLASH' effect is also produced by the <a href="pinouts.htm#ULA">ULA</a>:
+					Every 16 frames, the ink and paper of all flashing bytes is swapped; ie a normal to inverted to normal cycle takes 32 frames,
+					which is (good as) 0.64 seconds.<br /><br /></li>
+<!-- End 48K ZX Spectrum -->
+<!-- Contended Memory -->
+				<li><strong><a id="Contention">Contended Memory</a></strong><br />
+					When the <a href="pinouts.htm#ULA">ULA</a> is drawing the screen, it needs to access video memory;
+					the RAM cannot be read by two devices (the <a href="pinouts.htm#ULA">ULA</a> and the processor) at once,
+					and the <a href="pinouts.htm#ULA">ULA</a> is given higher priority (as the electron beam cannot be
+					interrupted), so programs which run in the contended memory (from 0x4000 to 0x7fff) or try to read from
+					<a href="#PortFE">Port 0xfe</a> (when the <a href="pinouts.htm#ULA">ULA</a> must supply the
+					result) will be slowed if the <a href="pinouts.htm#ULA">ULA</a> is reading the screen. Note this effect occurs
+					only when the actual screen is being drawn; when the border is being drawn, the
+					<a href="pinouts.htm#ULA">ULA</a> supplies the result and no delays occur. The precise details are as follows:<br /><br />
+					<ul>
+						<li>At cycle 14335 (just one cycle before the top left corner is reached) the delay is 6 cycles.</li>
+						<li>At cycle 14336 the delay is 5 cycles, and so on according to the following table:</li></ul>
+<pre>      Cycle #    Delay
+      -------    -----
+       14335       6 (until 14341)
+       14336       5 (  "     "  )
+       14337       4 (  "     "  )
+       14338       3 (  "     "  )
+       14339       2 (  "     "  )
+       14340       1 (  "     "  )
+       14341   No delay
+       14342   No delay
+       14343       6 (until 14349)
+       14344       5 (  "     "  )
+       14345       4 (  "     "  )
+       14346       3 (  "     "  )
+       14347       2 (  "     "  )
+       14348       1 (  "     "  )
+       14349   No delay
+       14350   No delay</pre>
+					etc., until the cycle 14463 (always relative to the start of the interrupt), in which the electron beam reaches the border again for 96 more
+					cycles. At cycle 14559 the same situation repeats. This is valid for all 192 lines of screen data. While the
+					<a href="pinouts.htm#ULA">ULA</a> is updating the border the delay does not happen at any time.<br /><br />
+					When counting cycles several things must be taken into account. One is the interrupt setup time; another one is the precise moment within
+					an instruction in which the R/W or I/O operation is performed (see the table below). And one more thing: the fact that an interrupt can't happen
+					in the middle of an instruction (and a HALT counts as many NOPs), so some cycles may be lost while waiting for the current instruction to end.
+					That's an additional difficulty e.g. for byte-precision colour changes.<br /><br />
+					Now all that remains is to know exactly in which point(s) within an instruction is the R/W or I/O operation acting, to know where to apply the
+					delay. That depends on each instruction. For those one-byte ops which do not perform memory or I/O access, the only affected point is the
+					opcode fetch which happens at the first cycle of the instruction, and the address to test for contention is the current value of the program
+					counter PC.<br /><br />
+					For example, for a NOP (4 cycles), only the first cycle will be affected and only if PC lies within the contended memory range. So if it's executed
+					in contended memory at cycle 14334, no delay will happen and the next instruction will (try to) be executed at cycle 14338, but if the NOP is
+					executed at cycle 14335, it will be delayed for 6 cycles thus taking 6+4=10 cycles so the next instruction will (try to) be executed at cycle
+					14345. This case will be annotated in the table below as pc:4, meaning that if PC lies within contended memory then the first cycle will be
+					subject to delay and the remaining three will be free of delays.<br /><br />
+					The "try to" in the above paragraph is because, unless the NOP is at PC=32767, the next instruction will be subject to another delay when its
+					opcode is fetched (the first cycle in an opcode fetch is always subject to delays) since the cycle number relative to the start of the frame is also
+					delayed.<br /><br />
+					So an entry like 'hl+1:3' means that if HL+1 is in range 16384-32767 and the current cycle number is subject to delays, then the delay
+					corresponding to the current cycle must be inserted before the number of T-states that figure after the colon.<br /><br />
+					Things get a bit more difficult with more-than-one-byte-long instructions. Here's the sample pseudocode to apply delays to an instruction
+					with an entry in the table which reads 'pc:4,hl:3' (e.g. LD (HL),A):<br /><br />
+<pre>  If 16384&lt;=PC&lt;=32767 then
+     (Insert the delay corresponding to the current cycle, relative to the start of the frame)
+     (according to the above table)
+  (end if)
+  Delay for 4 cycles (time after 'pc:').
+  If 16384&lt;=HL&lt;=32767 then
+     (Insert the delay corresponding to the current cycle...)
+  (end if)
+  Store A into (HL)
+  Delay for 3 cycles (time taken to store A)</pre>
+					<u><strong>Example 1</strong></u>: if PC = 25000 and HL = 26000 and the instruction at address 25000 is LD (HL),A and we're in
+						cycle 14335:<br /><br />
+					<ul>
+						<li>Insert 6 cycles (count for cycle 14335) going to 14341.</li>
+						<li>Read the opcode.</li>
+						<li>Insert 4 cycles (opcode fetch). We're at cycle 14345.</li>
+						<li>Insert 4 cycles (count for cycle 14345). We're at 14349.</li>
+						<li>Store the byte.</li>
+						<li>Insert 3 cycles (write to (HL)).</li>
+					</ul><br />
+					Next opcode will be read at cycle 14352 (and 5 cycles will be inserted then for sure because PC=25001).<br /><br />
+					<u><strong>Example 2</strong></u>: same but PC=40000 (not contended):<br /><br />
+					<ul>
+						<li>Read the opcode.</li>
+						<li>Insert 4 cycles (opcode fetch). We're at cycle 14339.</li>
+						<li>Insert 2 cycles (count for cycle 14339). We're at 14341.</li>
+						<li>Store the byte.</li>
+						<li>Insert 3 cycles (write to (HL)).</li>
+					</ul><br />
+					Access to I/O ports is treated slightly differently to access to memory; full details are given in the <a href="#IOContention">Contended Input/Output</a> section. The delays specified there should be applied when an I/O port is accessed; this is designated by "IO" in the table below.<br /><br />
+					The values for the registers listed in the table below are relative to the starting value of the register when the instruction is about to be
+						executed.<br /><br />
+					In the table below:<br /><br />
+					<ul>
+						<li>dd is any of the registers BC,DE,HL,SP</li>
+						<li>qq is any of the registers BC,DE,HL,AF</li>
+						<li>ss is any of the registers BC,DE,HL</li>
+						<li>ii is either of the index registers IX or IY.</li>
+						<li>cc is any (applicable) condition NZ,Z,NC,C,PO,PE,P,M</li>
+						<li>nn is a 16-bit number</li>
+						<li>n is an 8-bit number</li>
+						<li>b is a number from 0 to 7 (BIT/SET/RES instructions)</li>
+						<li>r and r' are any of the registers A,B,C,D,E,H,L</li>
+						<li>alo is an arithmetic or logical operation: ADD/ADC/SUB/SBC/AND/XOR/OR and CP</li>
+						<li>sro is a shift/rotate operation: RLC/RRC/RL/RR/SLA/SRA/SRL and SLL (undocumented)</li>
+					</ul><br />
+					Further notes:<br /><br />
+					<ul>
+						<li>For conditional instructions, entries in [square brackets] are applied if the condition is met. If the instruction is not conditional (e.g. CALL nn) the entries in [] always apply.</li>
+						<li>The replacement of HL by either IX or IY does not affect the timings, except for the addition of an initial pc:4 for the DD or FD prefix; similarly, a DD or FD prefix on an instruction which does not involve HL just adds an initial pc:4.</li>
+						<li>The <a href="z80reference.htm#DDFDOpcodes">undocumented variants</a> of the doubly shifted DDCB and FDCB opcodes have the same timings as the documented versions.</li>
+						<li>In some read-modify-write operations (like INC (HL)), the write operation is always the last one. That may be important to know the exact point in which video is updated, for example. In such instructions that point is annotated for clarity as "(write)" after the address.</li>
+					</ul><br />
+
+<pre>    Instruction    Breakdown
+    -----------    ---------
+    NOP            pc:4
+    LD r,r' 
+    alo A,r 
+    INC/DEC r 
+    EXX 
+    EX AF,AF' 
+    EX DE,HL 
+    DAA 
+    CPL 
+    CCF 
+    SCF 
+    DI 
+    EI 
+    RLA 
+    RRA 
+    RLCA 
+    RRCA 
+    JP (HL)
+
+    NOPD           pc:4,pc+1:4
+    sro r
+    BIT b,r 
+    SET b,r 
+    RES b,r 
+    NEG 
+    IM 0/1/2 
+
+    LD A,I         pc:4,pc+1:5
+    LD A,R 
+    LD I,A 
+    LD R,A
+
+    INC/DEC dd     pc:6
+    LD SP,HL
+
+    ADD HL,dd      pc:11
+
+    ADC HL,dd      pc:4,pc+1:11
+    SBC HL,dd
+
+    LD r,n         pc:4,pc+1:3
+    alo A,n
+
+    LD r,(ss)      pc:4,ss:3
+    LD (ss),r
+
+    alo A,(HL)     pc:4,hl:3
+
+    LD r,(ii+n)    pc:4,pc+1:4,pc+2:3,pc+2:1 x 5,ii+n:3
+    LD (ii+n),r    
+    alo A,(ii+n)
+    
+    BIT b,(HL)     pc:4,pc+1:4,hl:3,hl:1
+
+    BIT b,(ii+n)   pc+1:4,pc+2:3,pc+3:3,pc+3:1 x 2,ii+n:3,ii+n:1
+
+    LD dd,nn       pc:4,pc+1:3,pc+2:3
+    JP nn 
+    JP cc,nn
+
+    LD (HL),n      pc:4,pc+1:3,hl:3
+
+    LD (ii+n),n    pc:4,pc+1:4,pc+2:3,pc+3:3,pc+3:1 x 2,ii+n:3
+
+    LD A,(nn)      pc:4,pc+1:3,pc+2:3,nn:3
+    LD (nn),A
+
+    The following entry applies to the unprefixed version of these
+    opcodes (22 and 2A)
+
+    LD HL,(nn)     pc:4,pc+1:3,pc+2:3,nn:3,nn+1:3
+    LD (nn),HL
+
+    The following entry applies to the prefixed version of these
+    opcodes (ED43, ED4B, ED53, ED5B, ED63, ED6B, ED73 and ED7B)
+
+    LD dd,(nn)     pc:4,pc+1:4,pc+2:3,pc+3:3,nn:3,nn+1:3
+    LD (nn),dd
+
+    INC/DEC (HL)   pc:4,hl:3,hl:1,hl(write):3
+
+    SET b,(HL)     pc:4,pc+1:4,hl:3,hl:1,hl(write):3
+    RES b,(HL) 
+    sro (HL)
+
+    INC/DEC (ii+n) pc:4,pc+1:4,pc+2:3,pc+2:1 x 5,ii+n:3,ii+n:1,ii+n(write):3
+
+    SET b,(ii+n)   pc:4,pc+1:4,pc+2:3,pc+3:3,pc+3:1 x 2,ii+n:3,ii+n:1,ii+n(write):3
+    RES b,(ii+n)   
+    sro (ii+n)
+
+    POP dd         pc:4,sp:3,sp+1:3
+    RET 
+
+    RETI           pc:4,pc+1:4,sp:3,sp+1:3
+    RETN
+
+    RET cc         pc:5,[sp:3,sp+1:3]
+
+    PUSH dd        pc:5,sp-1:3,sp-2:3
+    RST n
+
+    CALL nn        pc:4,pc+1:3,pc+2:3,[pc+2:1,sp-1:3,sp-2:3]
+    CALL cc,nn     
+
+    JR n           pc:4,pc+1:3,[pc+1:1 x 5]
+    JR cc,n        
+
+    DJNZ n         pc:5,pc+1:3,[pc+1:1 x 5]
+
+    RLD            pc:4,pc+1:4,hl:3,hl:1 x 4,hl(write):3
+    RRD
+
+    IN A,(n)       pc:4,pc+1:3,IO
+    OUT (n),A
+
+    IN r,(C)       pc:4,pc+1:4,IO
+    OUT (C),r
+
+    EX (SP),HL     pc:4,sp:3,sp+1:4,sp(write):3,sp+1(write):3,sp+1(write):1 x 2
+
+    LDI/LDIR       pc:4,pc+1:4,hl:3,de:3,de:1 x 2,[de:1 x 5]
+    LDD/LDDR       
+
+    CPI/CPIR       pc:4,pc+1:4,hl:3,hl:1 x 5,[hl:1 x 5]
+    CPD/CPDR       
+
+    INI/INIR       pc:4,pc+1:5,IO,hl:3,[hl:1 x 5]
+    IND/INDR
+
+    OUTI/OTIR      pc:4,pc+1:5,hl:3,IO,[hl:1 x 5]
+    OUTD/OTDR</pre>
+                   The above information is correct for the 48K ZX Spectrum - for the 128k/+2 models the contention sequence starts at cycle 14361.<br /><br />
+		   </li>
+<!-- End Contended Memory -->
+<!-- Contended Input/Output -->
+				<li><strong><a id="IOContention">Contended Input/Output</a></strong><br />
+					It takes four T states for the <a href="z80reference.htm">Z80</a> to read a value from an I/O port, or write a value to a port. As is the case with memory access, this can be lengthened by the <a href="pinouts.htm#ULA">ULA</a>. There are two effects which occur here:<br /><br />
+					<ol>
+						<li>If the port address being accessed has its low bit reset, the <a href="pinouts.htm#ULA">ULA</a> is required to supply the result, which leads to a delay if it is currently busy handling the screen.</li>
+						<li>The address of the port being accessed is placed on the data bus. If this is in the range 0x4000 to 0x7fff, the <a href="pinouts.htm#ULA">ULA</a> treats this as an attempted access to contended memory and therefore introduces a delay. If the port being accessed is between 0xc000 and 0xffff, this effect does <em>not</em> apply, even on a 128K machine if a contended memory bank is paged into the range 0xc000 to 0xffff.</li>
+					</ol><br />
+					These two effects combine to lead to the following contention patterns:
+					<pre>
+    High byte   |         | 
+    in 40 - 7F? | Low bit | Contention pattern  
+    ------------+---------+-------------------
+         No     |  Reset  | N:1, C:3
+         No     |   Set   | N:4
+        Yes     |  Reset  | C:1, C:3
+        Yes     |   Set   | C:1, C:1, C:1, C:1</pre>
+					The 'Contention pattern' column should be interpreted from left to right. An "N:n" entry means that no delay is applied at this cycle, and the <a href="z80reference.htm">Z80</a> continues uninterrupted for 'n' T states. A "C:n" entry means that the <a href="pinouts.htm#ULA">ULA</a> halts the <a href="z80reference.htm">Z80</a>; the delay is exactly the same as would occur for a contended memory access at this cycle (eg 6 T states at cycle 14335, 5 at 14336, etc on the 48K machine). After this delay, the <a href="z80reference.htm">Z80</a> then continues for 'n' cycles.<br /><br />
+<!-- End Contended Input/Output -->
+
+					For reference, the following changes have been made to the previous two sections since version 1.1.4 of the FAQ (10 April 2004):<br /><br />
+					<ul>
+						<li>Version 1.1.5
+						<ul>
+							<li>Correct the values for the first contended cycle to be 14335 and 14361 for the 48K and 128K machines respectively.</li>
+							<li>The table above now includes any prefixes on the instruction.</li>
+							<li>The pc+2:3 entry in CALL cc,nn applies when the condition is false.</li>
+							<li>The hl:4 entry in BIT b,(HL), INC/DEC (HL), SET b,(HL), RES b,(HL) and sro (HL) corrected to hl:3,hl:1.</li>
+							<li>The hl:7 entry in RLD and RRD corrected to hl:3,hl:1 x 4.</li>
+							<li>The sp+1(write):5 entry in EX (SP),HL corrected to sp+1(write):3,sp+1(write):1 x 2.</li>
+							<li>Added information about the (IX+n) and (IY+n) instructions.</li>
+							<li>Corrected information on INI, IND, INIR, INDR, OUTI, OUTD, OTIR and OTDR.</li>
+							<li>Added information on the delays that port address being between 0x4000 and 0x7fff introduces.</li>
+						</ul></li>
+					</ul><br />
+					<div class="pageNavigation">| special thanks to <a href="mailto:jsn@spectaculator.com.remove.this">Jonathan Needle</a> for correcting and clarifying the previous two entries |</div></li>
+				</ul>
+<!-- End Hardware -->
+<!-- ZX Interface I -->
+		<p><strong><a id="ZXInterfaceI">ZX Interface I:</a></strong><br />
+			The ZX Interface I uses three different I/O ports, and contains logic to page and unpage an 8K ROM if new commands are used.
+			The ROM is paged if the processor executes the instruction at ROM address 0x0008 or 0x1708, the error and close# routines.
+			It is inactivated when the <a href="z80reference.htm">Z80</a> executes the RET at address 0x0700.<br /><br />
+			<a href="mailto:geoff@wearmouth.demon.co.uk.remove.this">Geoff Wearmouth</a> provides complete assembly listings of version 1
+			and 2 (used after serial number 87315) of the ZX Interface I ROM at his <a href="http://www.wearmouth.demon.co.uk/">web site</a>.
+			You may find these helpful while reading this section.<br /><br />
+			There are 3 subsections available:
+			<a href="#PortE7">Port 0xe7</a>,
+			<a href="#PortEF">Port 0xef</a> and
+			<a href="#PortF7">Port 0xf7</a>.</p>
+		<ul>
+<!-- Port E7 -->
+			<li><strong><a id="PortE7">Port 0xe7</a></strong><br />
+				I/O Port 0xe7 is used to send or receive data to and from the microdrive. Accessing this port will halt the
+				<a href="z80reference.htm">Z80</a> until the Interface I has collected 8 bits from the microdrive head; therefore, it the microdrive
+				motor isn't running, or there is no formatted cartridge in the microdrive, the Spectrum hangs. This is the famous 'IN 0 crash'.<br /><br /></li>
+<!-- End Port E7 -->
+<!-- Port EF -->
+			<li><strong><a id="PortEF">Port 0xef</a></strong><br />
+				Bits DTR and CTS are used by the RS232 interface. The WAIT bit is used by the Network to synchronise, GAP, SYNC, WR_PROT, ERASE, R/W,
+				COMMS CLK and COMMS DATA are used by the microdrive system.<br /><br />
+				<ul>
+					<li>
+<pre>       Bit    7   6    5    4    3    2    1     0
+            +---------------------------------------+
+        READ|   |   |    |busy| dtr |gap| sync|write|
+            |   |   |    |    |     |   |     |prot.|
+            |---+---+----+----+-----+---+-----+-----|
+       WRITE|   |   |wait| cts|erase|r/w|comms|comms|
+            |   |   |    |    |     |   | clk | data|
+            +---------------------------------------+</pre></li>
+				</ul></li>
+<!-- End Port EF -->
+<!-- Port F7 -->
+			<li><strong><a id="PortF7">Port 0xf7</a></strong><br />
+				If the microdrive is not being used, the COMMS DATA output selects the function of bit 0 of OUT-Port 0xf7:<br /><br />
+				<ul>
+					<li>
+<pre>       Bit      7    6   5   4   3   2   1       0
+            +------------------------------------------+
+        READ|txdata|   |   |   |   |   |   |    net    |
+            |      |   |   |   |   |   |   |   input   |
+            |------+---+---+---+---+---+---+-----------|
+       WRITE|      |   |   |   |   |   |   |net output/|
+            |      |   |   |   |   |   |   |   rxdata  |
+            +------------------------------------------+</pre></li></ul>
+            TXDATA and RXDATA are the input and output of the RS232 port. COMMS DATA determines whether bit 0 of 0xf7 is output
+            for the RS232 or the network.</li>
+<!-- End Port F7 -->
+		</ul>
+		<div class="pageNavigation">| please note that the busy signal on Port 0xef is not used by software - just hardware. Thanks to Geoff Wearmouth for pointing this out |</div>
+<!-- End ZX Interface I -->
+<!-- Tape Data Structure  -->
+
+<p><strong><a id="TapeDataStructure">Tape Data Structure:</a></strong><br />
+The SAVE command produces two blocks on tape: a 19 byte header block
+and a variable length data block.</p>
+
+<p>Each block has the following structure:</p>
+
+<ul>
+	<li> A leader consisting of 8063 (for header blocks) or 3223
+	(data blocks) pulses, each of which has a duration of 2168
+	tstates.
+	<li>A first sync pulse of 667 tstates.
+	<li>A second sync pulse of 735 tstates.
+	<li>The block data: a reset bit is encoded as two pulses of
+	855 tstates each, a set bit as two pulses of 1710 tstates
+	each. The lowest byte in memory is first on tape, with the
+	most significant bit first within each byte.
+</ul>
+
+<p>Notes:</p>
+
+<ol>
+	<li>The <a
+	href="http://www.worldofspectrum.org/TZXformat.html">TZX
+	format specification</a> incorrectly states that header pulses
+	contain 8064 leader pulses and data blocks 3220.
+	<li>All timings above are without taking <a
+	href="#IOContention">output contention</a> into account.
+</ol>
+
+<p>Within each block, the data has the following structure:</p>
+
+<ul>
+	<li>A flag byte: this is 0x00 for header blocks and 0xff for
+	data blocks.
+	<li>The actual data.
+	<li>A checksum byte, calculated such that XORing all the data
+	bytes together (including the flag byte) produces 0x00.
+</ul>
+
+<p>The structure of the 17 byte tape header is as follows.</p>
+
+<pre>Byte    Length  Description
+---------------------------
+0       1       Type (0,1,2 or 3)
+1       10      Filename (padded with blanks)
+11      2       Length of data block
+13      2       Parameter 1
+15      2       Parameter 2
+</pre>
+
+<p>These 17 bytes are prefixed by the flag byte (0x00) and suffixed by
+the checksum byte to produce the 19 byte block seen on tape. The type
+is 0,1,2 or 3 for a PROGRAM, Number array, Character array or CODE
+file. A SCREEN$ file is regarded as a CODE file with start address
+16384 and length 6912 decimal. If the file is a PROGRAM file,
+parameter 1 holds the autostart line number (or a number >=32768 if no
+LINE parameter was given) and parameter 2 holds the start of the
+variable area relative to the start of the program. If it's a CODE
+file, parameter 1 holds the start of the code block when saved, and
+parameter 2 holds 32768. For data files finally, the byte at position
+14 decimal holds the variable name.</p>
+
+<p>For example, SAVE "ROM" CODE 0,2 will produce the following data on
+tape (the vertical bar denotes the break between blocks):</p>
+
+<pre>00 03 52 4f 4d 7x20 02 00 00 00 00 80 f1 | ff f3 af a3
+
+^^ ................ flag byte
+   ^^ ............. first byte of header, indicating a code block
+      ^^^^^^^^^^^^^ file name
+header info ........^^^^^^^^^^^^^^^^^
+checksum of header ...................^^
+
+flag byte .................................^^
+first two bytes of rom .......................^^^^^
+checksum ...........................................^^
+</pre>
+
+<!-- End Tape Data Structure -->
+
+<!-- End 16K / 48K ZX Spectrum Reference -->
+			</td>
+		</tr>
+	</table></td>
+			<td width="75" /></tr>
+	</table>
+<!-- Copyright Notice -->
+<div class="pageFooter">$Id: 48kreference.htm,v 1.21 2005/09/18 22:26:16 pak21 Exp $<br />
+Please read the
+	<a title="Copyright Notice and Distribution Policy" href="../distributions.htm">Copyright Notice</a> for distribution policies, and the
+	<a title="Contributors" href="../credits.htm">Credits</a> page for a list of contributors.</div>
+<!-- End Copyright Notice -->
+</body>
+</html>

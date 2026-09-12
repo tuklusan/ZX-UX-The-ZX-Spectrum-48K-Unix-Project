@@ -1,0 +1,254 @@
+<!--
+Warajevo ZX Spectrum Next
+Copyright (c) 2026 Supratim Sanyal, SANYALnet Labs, for new original project material.
+New original material is licensed under GNU GPL v2 or later (GPL-2.0-or-later), as stated in LICENSE.txt.
+Upstream Warajevo and third-party material retain their applicable copyrights and licenses.
+See LICENSE.txt and NOTICE.md for complete terms and provenance.
+-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<title>128K ZX Spectrum Technical Information</title>
+	<meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
+<link href="../styles/cssFAQ.css" title="CSSFAQStyle" id="CSSFAQStyle" type="text/css" rel="stylesheet" media="screen" />
+<link href="../styles/cssFAQPrint.css" title="CSSFAQStylePrint" id="CSSFAQStylePrint" type="text/css" rel="stylesheet" media="print" />
+</head>
+<body>
+<!-- Title -->
+<div id="pageHeader" class="pageHeader"><h1>comp.sys.sinclair FAQ</h1></div>
+<!-- End Title -->
+<br />
+<!-- Context Bar -->
+<div class="siteNavigation">
+<a title="SinclairFAQ [on master site]" href="http://www.sinclairfaq.com/">SinclairFAQ</a> &raquo;
+<a title="comp.sys.sinclair FAQ" href="../index.html">c.s.s FAQ</a> |
+<a title="Documentation" href="../resources/documents.htm">Documents</a> |
+<a title="Essential Sites" href="../essential.htm">Essential Sites</a> |
+<a title="Emulators" href="../emulators/emulators.htm">Emulators</a> |
+<a title="Reference" href="../reference/reference.htm">Reference</a> |
+<a title="Links" href="../resources/links.htm">Links</a> |
+<a title="Resources" href="../resources/resources.htm">Resources</a> |
+<a title="Help" href="../help.htm">Help</a>
+</div>
+<!-- End Context Bar -->
+<br />
+	<table id="Content" cellspacing="1" cellpadding="1" width="100%" border="0">
+		<tr>
+			<td width="75" colspan="1" rowspan="1" />
+			<td>
+	<table id="SectionTitle" cellspacing="1" cellpadding="1" width="95%" align="center" border="0">
+		<tr>
+			<td class="sectionTitle">128K ZX Spectrum Reference</td></tr>
+	</table>
+	<table id="SectionContent" cellspacing="1" cellpadding="1" width="95%" align="center" border="0">
+		<tr>
+			<td class="bodyTable">
+			<p>This section is broken into two parts: <a href="#Plus2">The ZX Spectrum 128K / +2</a> and
+				<a href="#Plus3">ZX Spectrum +2A / +3</a>. Each of these may have several sub-sections. Within each section, you
+				may find links to additional information elsewhere in this FAQ, or to other reference documents. Several original User
+				and Technical Manuals are available - these are listed in the
+				<a title="Documentation" href="../resources/documents.htm">documentation</a> section.</p>
+<!-- ZX Spectrum 128K / +2 -->
+			<p><strong><a id="Plus2">The ZX Spectrum 128K / +2</a>:</strong><br />
+				The 128K machine is similar to the 48K machine, but with extra memory accessed by paging it into the top 16K of RAM. There are
+				also some timing differences:</p>
+			<ul>
+				<li>The main processor runs at 3.54690 MHz, as opposed to 3.50000 MHz.</li>
+				<li>There are 228 T-states per scanline, as opposed to 224.</li>
+				<li>There are 311 scanlines per frame, as opposed to 312.</li>
+				<li>There are 63 scanlines before the television picture, as opposed to 64.</li>
+				<li>To modify the border at the position of the first byte of the screen (see the <a href="48kreference.htm#ZXSpectrum">48K ZX Spectrum</a> section for details), the OUT must finish after 14365, 14366, 14367 or 14368 T states have passed since interrupt. As with the 48K machine, on some machines all timings (including contended memory timings) are one T state later.</li>
+			</ul>
+			Note that this means that there are 70908 T states per frame, and the '50 Hz' interrupt occurs at 50.01 Hz, as compared
+			with 50.08 Hz on the 48K machine. The <a href="pinouts.htm#ULA">ULA</a> bug which causes snow when I is set
+			to point to contended memory still occurs, and also appears to crash the machine shortly after I is set to point to contended memory.<br /><br />
+			There are 4 subsections available:
+				<a href="#ZX128Memory">Memory</a>,
+				<a href="#Keypad">Keypad</a>,
+				<a href="#Sound">Sound</a> and
+				<a href="#Joysticks">Joysticks</a>.
+			<ul>
+<!-- Memory -->
+				<li><p><strong><a id="ZX128Memory">Memory</a></strong></p>
+					<p>The additional memory features of the 128K/+2 are controlled to by writes to port 0x7ffd. As normal on Sinclair hardware, the port address is in fact only partially decoded and the hardware will respond to any port address with bits 1 and 15 reset. However, 0x7ffd should be used if at all possible to avoid conflicts with other hardware.</p>
+
+					<p>When memory is being paged, interrupts should be disabled and the stack should be in an area which is not going to change.
+					If normal interrupt code is to run, then the system variable at 0x5b5c (23388) must be kept updated with the last value sent to
+					port 0x7ffd. Reading from 0x7ffd produces no special results: floating bus values will be returned as would be returned from any other port not attached to any hardware.</p>
+					<p>The byte output will be interpreted as follows:</p>
+					<p><strong>Bits 0-2</strong>: RAM page (0-7) to map into memory at 0xc000.</p>
+					<p><strong>Bit 3</strong>: Select normal (0) or shadow (1) screen to be displayed. The normal screen is in bank 5, whilst the shadow screen is
+						in bank 7. Note that this does not affect the memory between 0x4000 and 0x7fff, which is always bank 5.</p>
+					<p><strong>Bit 4</strong>: ROM select. ROM 0 is the 128k editor and menu system; ROM 1 contains 48K BASIC.</p>
+					<p><strong>Bit 5</strong>: If set, memory paging will be disabled and further output to this port will be ignored until the computer is reset.</p>
+					<p>The memory map of these computers is:</p>
+<pre>0xffff +--------+--------+--------+--------+--------+--------+--------+--------+
+       | Bank 0 | Bank 1 | Bank 2 | Bank 3 | Bank 4 | Bank 5 | Bank 6 | Bank 7 |
+       |        |        |(also at|        |        |(also at|        |        |
+       |        |        | 0x8000)|        |        | 0x4000)|        |        |
+       |        |        |        |        |        | screen |        | screen |
+0xc000 +--------+--------+--------+--------+--------+--------+--------+--------+
+       | Bank 2 |        Any one of these pages may be switched in.
+       |        |
+       |        |
+       |        |
+0x8000 +--------+
+       | Bank 5 |
+       |        |
+       |        |
+       | screen |
+0x4000 +--------+--------+
+       | ROM 0  | ROM 1  | Either ROM may be switched in.
+       |        |        |
+       |        |        |
+       |        |        |
+0x0000 +--------+--------+</pre>
+						RAM banks 1,3,4,6 and most of 7 are used for the silicon disc; the rest of 7 contains editor scratchpads.<br /><br />
+						An example of a typical bank switch on the 128 is:
+<pre>     LD      A,(0x5b5c)      ;Previous value of port
+     AND     0xf8
+     OR      4               ;Select bank 4
+     LD      BC,0x7ffd
+     DI
+     LD      (0x5b5c),A
+     OUT     (C),A
+     EI</pre>
+						The principle is the same for all bank switching: change only the bits you need to.<br /><br />
+						Memory banks 1,3,5 and 7 are contended, which reduces the speed of memory access in these banks as detailed in the <a href="48kreference.htm#Contention">Contended Memory</a> section.
+						As on the 48K machine, <a href="48kreference.htm#PortFE">Port 0xfe</a> (and all other even ports) are contended. Port 0x7ffd is not contended as of itself, but the high byte of the port address being 0x7f causes delays. See the <a href="48kreference.htm#IOContention">Contended Input/Output</a> section for full details.<br /><br />
+					The contended memory timings for these machines are similar to that for the 48K machine, except that the 6,5,4,3,2,1,0,0 pattern starts at 14361 T states after the interrupt as opposed to 14335, and repeats every 228 T states, as opposed to 224.<br /><br /></li>
+<!-- End Memory -->				
+<!-- Keypad -->
+				<li><strong><a id="Keypad">Keypad</a></strong><br />
+					The 128K machine's keypad extra editing facilities are also available via the normal keyboard:
+<pre>                 FUNCTION                        KEYS
+                 -----------------------------------------
+                 Beginning of next word          [E] [S] J
+                 Beginning of previous word      [E] I
+                 Up ten lines                    [E] P
+                 Down ten lines                  [S] I
+                 Start of line                   [E] [S] 2
+                 End of line                     [E] M
+                 First line                      [E] N
+                 Last line                       [E] T
+                 Screen                          [E] [S] 8
+                 Delete this character           [E] [S] K
+                 Delete word left                [E] E
+                 Delete word right               [E] W
+                 Delete to start of line         [E] K
+                 Delete to end of line           [E] J
+
+                 [E] = Extended Mode
+                 [S] = Symbol Shift</pre></li>
+<!-- End Keypad -->
+<!-- Sound Chip -->
+				<li><strong><a id="Sound">Sound Chip</a></strong><br />
+					The <a href="pinouts.htm#AY">AY-3-8912</a> sound chip is a widely used one, to be found in the MSX,
+					Vectrex, Amstrad CPC range, etc. It is controlled by two I/O ports:
+<pre>OUT (0xfffd)   - Select a register 0-14
+IN  (0xfffd)   - Read the value of the selected register
+OUT (0xbffd)   - Write to the selected register</pre></li>
+<!-- End Sound Chip -->
+<!-- Joysticks -->
+				<li><p><strong><a id="Joysticks">Joysticks</a></strong></p>
+					<p>The +2 (but not the 128K) had two Sinclair-type joystick ports built in (see the <a href="peripherals.htm#Joysticks">Peripherals</a> section for technical details on the Sinclair joysticks). These used the normal 9-pin connector, but, in an attempt to produce vendor lock-in, wired the pins differently to the standard used by other manufacturers. Cross-over cables to work around this were very quickly available, or Sinclair User published an article on <a href="ftp://ftp.worldofspectrum.org/pub/sinclair/magazines/SinclairUser/Issue056/Pages/SinclairUser05600103.jpg">how to make your own</a>.</p></li>
+<!-- End Joysticks -->
+			</ul>
+<!-- End ZX Spectrum 128K / +2 -->
+<!-- ZX Spectrum +2A / +3 -->
+			<p><strong><a id="Plus3">ZX Spectrum +2A / +3</a>:</strong><br />The +2A/+3 share the same timing information, sound chip, etc as
+				the 128K/+2 machines; see above for details.<br /><br />
+				Bit 6 of <a href="48kreference.htm#PortFE">Port 0xfe</a> of the +2A/+3 does not show the same dependence on what was
+				written to <a href="48kreference.htm#PortFE">Port 0xfe</a> as it does on the other machines, and always returns 0 if there
+				is no signal. Finally, reading from a non-existing port (eg 0xff) will always return 255, and not give any screen/attribute bytes as it does on
+				the 48K/128K/+2:</p>
+			<ul>
+<!-- Memory -->
+				<li><p><strong><a id="Plus3Memory">Memory</a></strong></p>
+					<p>The basic principle of paging on the +2A and +3 is the same as for the 128K/+2. However, the +2A and +3 have four ROMs
+					rather than two, and certain extra memory configurations.</p>
+					<p>Port 0x7ffd behaves in the almost exactly the same way as on the 128K/+2, with two exceptions:</p>
+					<ul>
+						<li>Bit 4 is now the low bit of the ROM selection.</li>
+						<li>The partial decoding used is now slightly different: the hardware will respond only to those port addresses with bit 1 reset, bit 14 set and bit 15 reset (as opposed to just bits 1 and 15 reset on the 128K/+2).</li>
+					</ul>
+					<p>The extra paging features of the +2A/+3 are controlled by port 0x1ffd (again, partial decoding applies here: the hardware will respond to all port addresses with bit 1 reset, bit 12 set and bits 13, 14 and 15 reset). This port is also write-only, and its last value should be saved at 0x5b67 (23399).</p>
+					<p>Port 0x1ffd responds as follows:</p>
+<pre>  Bit 0: Paging mode. 0=normal, 1=special
+  Bit 1: In normal mode, ignored.
+  Bit 2: In normal mode, high bit of ROM selection. The four ROMs are:
+          ROM 0: 128k editor, menu system and self-test program
+          ROM 1: 128k syntax checker
+          ROM 2: +3DOS
+          ROM 3: 48 BASIC
+  Bit 3: Disk motor; 1=on, 0=off
+  Bit 4: Printer port strobe.</pre>
+					When special mode is selected, the memory map changes to one of four configurations specified in bits 1 and 2 of port 0x1ffd:
+<pre>         Bit 2 =0    Bit 2 =0    Bit 2 =1    Bit 2 =1
+         Bit 1 =0    Bit 1 =1    Bit 1 =0    Bit 1 =1
+ 0xffff +--------+  +--------+  +--------+  +--------+
+        | Bank 3 |  | Bank 7 |  | Bank 3 |  | Bank 3 |
+        |        |  |        |  |        |  |        |
+        |        |  |        |  |        |  |        |
+        |        |  | screen |  |        |  |        |
+ 0xc000 +--------+  +--------+  +--------+  +--------+
+        | Bank 2 |  | Bank 6 |  | Bank 6 |  | Bank 6 |
+        |        |  |        |  |        |  |        |
+        |        |  |        |  |        |  |        |
+        |        |  |        |  |        |  |        |
+ 0x8000 +--------+  +--------+  +--------+  +--------+
+        | Bank 1 |  | Bank 5 |  | Bank 5 |  | Bank 7 |
+        |        |  |        |  |        |  |        |
+        |        |  |        |  |        |  |        |
+        |        |  | screen |  | screen |  | screen |
+ 0x4000 +--------+  +--------+  +--------+  +--------+
+        | Bank 0 |  | Bank 4 |  | Bank 4 |  | Bank 4 |
+        |        |  |        |  |        |  |        |
+        |        |  |        |  |        |  |        |
+        |        |  |        |  |        |  |        |
+ 0x0000 +--------+  +--------+  +--------+  +--------+</pre>
+					RAM banks 1,3,4 and 6 are used for the disc cache and RAMdisc, while Bank 7 contains editor scratchpads and +3DOS
+					workspace.<br /><br />
+					The contended memory timings differ on the +2A/+3 from the earlier machines; firstly, the timing differences mean that
+					the top-left pixel of the screen is displayed 14364 T-states after the 50 Hz interrupt occurs, as opposed to 14336. The T-states
+					(relative to the interrupt) at which delays occur are given in the following table:
+<pre>      Cycle #    Delay
+      -------    -----
+       14365       1
+       14366   No delay
+       14367       7
+       14368       6
+       14369       5
+       14370       4
+       14371       3
+       14372       2
+       14373       1
+       14374   No delay
+       14375       7
+       14376       6</pre>
+					and so on, until cycle 14494, when the display of the first scanline on the screen has been completed, and no more delays are
+					inserted until 14593 (=14365+228) when the cycle repeats. The other difference occurs for instructions which have multiple
+					'pc+1' or 'hl' entries in the breakdown for the other machines: on the +2A/+3, these entries are combined into just one. This
+					means that, for example, JR becomes pc:4,pc+1:8.<br /><br />
+					Unlike the base 128K machine, RAM banks 4, 5, 6 and 7 are contended. However,
+					<a href="48kreference.htm#PortFE">Port 0xfe</a> is not; whether ports 0x7ffd and 0x1ffd are
+					contended is currently unknown.<br /><br /></li>
+<!-- End Memory -->
+<!-- Disk Drive -->
+				<li><strong><a id="Disk">Disk Drive</a></strong><br />
+					Please refer to the <a href="diskreference.htm#ZX">Disk Reference</a> page for details of the +3 Disk Drive.</li>
+			</ul>
+<!-- End Disk Drive -->
+<!-- End ZX Spectrum +2A / +3 -->
+		</td></tr>
+	</table></td>
+			<td width="75" /></tr>
+	</table>
+<!-- Copyright Notice -->
+<div class="pageFooter">$Id: 128kreference.htm,v 1.16 2004/07/05 08:20:12 pak21 Exp $<br />
+Please read the
+	<a title="Copyright Notice and Distribution Policy" href="../distributions.htm">Copyright Notice</a> for distribution policies, and the
+	<a title="Contributors" href="../credits.htm">Credits</a> page for a list of contributors.</div>
+<!-- End Copyright Notice -->
+</body>
+</html>

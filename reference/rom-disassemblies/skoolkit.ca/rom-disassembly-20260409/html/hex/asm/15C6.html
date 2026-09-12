@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Spectrum ROM: Data at 15C6</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../style.css" />
+</head>
+<body class="Asm-w">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html"><img alt="Spectrum ROM" src="../../images/logo-hex.png" /></a></td>
+<td class="page-header">Data</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="15C4.html">15C4</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#15C6">Map</a></td>
+<td class="next">
+Next: <a href="15D4.html">15D4</a>
+</td>
+</tr>
+</table>
+<div class="description">15C6: THE 'INITIAL STREAM DATA'</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Used by the routines at <a href="11B7.html">NEW</a> and <a href="16E5.html">CLOSE</a>.
+</div>
+<div class="paragraph">
+Initially there are seven streams - +FD to +03.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="asm-label">STRMDATA</td>
+<td class="address-1"><span id="15C6"></span>15C6</td>
+<td class="instruction">DEFW $0001</td>
+<td class="comment-1" rowspan="1">+FD: Leads to channel 'K' (keyboard)</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="15C8"></span>15C8</td>
+<td class="instruction">DEFW $0006</td>
+<td class="comment-1" rowspan="1">+FE: Leads to channel 'S' (screen)</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="15CA"></span>15CA</td>
+<td class="instruction">DEFW $000B</td>
+<td class="comment-1" rowspan="1">+FF: Leads to channel 'R' (work space)</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="15CC"></span>15CC</td>
+<td class="instruction">DEFW $0001</td>
+<td class="comment-1" rowspan="1">+00: Leads to channel 'K' (keyboard)</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="15CE"></span>15CE</td>
+<td class="instruction">DEFW $0001</td>
+<td class="comment-1" rowspan="1">+01: Leads to channel 'K' (keyboard)</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="15D0"></span>15D0</td>
+<td class="instruction">DEFW $0006</td>
+<td class="comment-1" rowspan="1">+02: Leads to channel 'S' (screen)</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="15D2"></span>15D2</td>
+<td class="instruction">DEFW $0010</td>
+<td class="comment-1" rowspan="1">+03: Leads to channel 'P' (printer)</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="15C4.html">15C4</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#15C6">Map</a></td>
+<td class="next">
+Next: <a href="15D4.html">15D4</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release">The Complete Spectrum ROM Disassembly 20260409</div>
+<div class="copyright">&#169; 1982 Amstrad. &#169; 1983 Dr Ian Logan &amp; Dr Frank O'Hara. &#169; 2026 Richard Dymond.</div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 10.0.</div>
+<div><a href="../../asm/5574.html">Switch to decimal</a>.</div>
+</footer>
+</body>
+</html>

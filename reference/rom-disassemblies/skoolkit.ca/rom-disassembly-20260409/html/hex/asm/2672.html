@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Spectrum ROM: Routine at 2672</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../style.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html"><img alt="Spectrum ROM" src="../../images/logo-hex.png" /></a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="2668.html">2668</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#2672">Map</a></td>
+<td class="next">
+Next: <a href="267B.html">267B</a>
+</td>
+</tr>
+</table>
+<div class="description">2672: THE 'SCANNING ATTR' ROUTINE</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+The address of this routine is derived from an offset found in the <a href="2596.html">scanning function table</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="asm-label">S_ATTR</td>
+<td class="address-2"><span id="2672"></span>2672</td>
+<td class="instruction">CALL <a href="2522.html">S_2_COORD</a></td>
+<td class="comment-1" rowspan="1">Check that 2 co-ordinates are given.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="2675"></span>2675</td>
+<td class="instruction">CALL NZ,<a href="2580.html">S_ATTR_S</a></td>
+<td class="comment-1" rowspan="1">Call the subroutine unless checking syntax.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="2678"></span>2678</td>
+<td class="instruction">RST <a href="0020.html">$20</a></td>
+<td class="comment-1" rowspan="2">Then get the next character and jump forward.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="2679"></span>2679</td>
+<td class="instruction">JR <a href="268D.html#26C3">S_NUMERIC</a></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="2668.html">2668</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#2672">Map</a></td>
+<td class="next">
+Next: <a href="267B.html">267B</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release">The Complete Spectrum ROM Disassembly 20260409</div>
+<div class="copyright">&#169; 1982 Amstrad. &#169; 1983 Dr Ian Logan &amp; Dr Frank O'Hara. &#169; 2026 Richard Dymond.</div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 10.0.</div>
+<div><a href="../../asm/9842.html">Switch to decimal</a>.</div>
+</footer>
+</body>
+</html>

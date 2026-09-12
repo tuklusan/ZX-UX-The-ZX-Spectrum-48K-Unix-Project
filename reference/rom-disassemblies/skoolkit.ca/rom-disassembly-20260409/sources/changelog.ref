@@ -1,0 +1,122 @@
+; © 2013-2020, 2022, 2025, 2026 Richard Dymond (rjdymond@gmail.com)
+
+[Page:Changelog]
+SectionType=BulletPoints
+
+[Changelog:20260409]
+-
+
+- Ported the disassembly to SkoolKit 10
+
+[Changelog:20221121]
+-
+
+- Added audio files for the #SYSVAR(RASP) and #SYSVAR(PIP) sounds
+
+[Changelog:20200807]
+-
+
+- Added <i>@refs</i> directives
+
+[Changelog:20191113]
+-
+
+- Ported the disassembly to SkoolKit 8
+
+[Changelog:20190603]
+-
+
+- Added the #IF({vars[pub]}==1)(<a href="../hex/reference/changelog.html">)
+  hexadecimal version of the disassembly#IF({vars[pub]}==1)(</a>) to the
+  distribution
+
+[Changelog:20181017]
+-
+
+- Ported the disassembly to SkoolKit 7
+
+[Changelog:20180102]
+-
+
+- Added a logo image
+- Documented bugs:
+  - #BUG(gotoAndlargeNumbers)()
+  - #BUG(scrollingTokens)()
+  - #BUG(impatientScrollPrompt)()
+- Added <i>@bfix</i> directives for the following bugs:
+  - #BUG(noStepBack)()
+  - #BUG(stepBackTooFar)()
+  - #BUG(anythingEqualsSCREEN$xy)()
+  - #BUG(34thBitOfDivision)()
+- Made various improvements to the decimal version of the disassembly
+
+[Changelog:20170519]
+-
+
+- Added register tables to the #LINK(RoutinesMap)(routines) that have input or
+  output values
+- Added more links to the #LINK(GameStatusBuffer)(system variables) wherever
+  they are accessed
+- Improved the descriptions of the #SYSVAR(KSTATE), #SYSVAR(TVDATA),
+  #SYSVAR(STRMS), #SYSVAR(MODE), #SYSVAR(COORDS), #SYSVAR(SCR-CT),
+  #SYSVAR(ATTR-P), #SYSVAR(MASK-P), #SYSVAR(ATTR-T), #SYSVAR(MASK-T) and
+  #SYSVAR(CHINFO) system variables
+
+[Changelog:20170114]
+-
+
+- Documented bugs:
+  - #BUG(noStepForward)()
+  - #BUG(noStepBack)()
+  - #BUG(stepBackTooFar)()
+  - #BUG(savingASimpleString)()
+  - #BUG(neverendingRestore)()
+  - #BUG(curseTheCursor)()
+  - #BUG(str$AndSmallNumbers)()
+  - #BUG(dontCloseTheStreams)()
+  - #BUG(pressAlmostAnyKey)()
+  - #BUG(anythingEqualsSCREEN$xy)()
+  - #BUG(34thBitOfDivision)()
+  - #BUG(troubleWith-65536)()
+
+[Changelog:20161023]
+Added the #LINK(GameStatusBuffer)(system variables).
+
+[Changelog:20160709]
+The disassembly is now 'complete'.
+
+- Added annotations from <i>The Complete Spectrum ROM Disassembly</i> by Dr Ian
+  Logan and Dr Frank O'Hara
+
+[Changelog:20150704]
+Included in SkoolKit 4.5.
+
+- Added <i>@label</i> directives, <i>@ssub</i> directives, <i>@nowarn</i>
+  directives, and more <i>@keep</i> directives
+- Replaced DEFB statements with DEFS statements in the #LINK(UnusedMap)(unused
+  areas)
+- Revealed the calculator literals in the routine at #R$3449
+
+[Changelog:20150523]
+Included in SkoolKit 4.4.
+
+- Added character operands where appropriate (e.g. see #R$0A69)
+- Reformatted the #LINK(DataMap)(data tables)
+- Revealed the 'scroll?' message at #R$0CF9
+- Added <i>@keep</i> directives
+
+[Changelog:20150214]
+Included in SkoolKit 4.3.
+
+- Converted disassembly page filenames and address anchors to hexadecimal
+  format
+- Hyperlinked the operands of 'RST' instructions
+
+[Changelog:20140308]
+Included in SkoolKit 3.7.
+
+- Recast the character set at #R$3D00 as binary DEFB statements with a single
+  image for each character
+
+[Changelog:20131102]
+Initial version, included in SkoolKit 3.6.

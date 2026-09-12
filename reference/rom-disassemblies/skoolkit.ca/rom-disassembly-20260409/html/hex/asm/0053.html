@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Spectrum ROM: Routine at 0053</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../style.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html"><img alt="Spectrum ROM" src="../../images/logo-hex.png" /></a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="0038.html">0038</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#0053">Map</a></td>
+<td class="next">
+Next: <a href="005F.html">005F</a>
+</td>
+</tr>
+</table>
+<div class="description">0053: THE 'ERROR-2' ROUTINE</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Used by the routine at <a href="0008.html">ERROR_1</a>.
+</div>
+<div class="paragraph">
+The return address to the interpreter points to the 'DEFB' that signifies which error has occurred. This 'DEFB' is fetched and transferred to <a href="5C3A.html">ERR-NR</a>.
+</div>
+<div class="paragraph">
+The machine stack is cleared before jumping forward to clear the calculator stack.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="asm-label">ERROR_2</td>
+<td class="address-2"><span id="0053"></span>0053</td>
+<td class="instruction">POP HL</td>
+<td class="comment-1" rowspan="2">The address on the stack points to the error code.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="0054"></span>0054</td>
+<td class="instruction">LD L,(HL)</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<span id="0055"></span>
+<div class="comments">
+<div class="paragraph">
+This entry point is used by the routine at <a href="1F05.html">TEST_ROOM</a>.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="asm-label">ERROR_3</td>
+<td class="address-2"><span id="0055"></span>0055</td>
+<td class="instruction">LD (IY+$00),L</td>
+<td class="comment-1" rowspan="1">It is transferred to <a href="5C3A.html">ERR-NR</a>.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="0058"></span>0058</td>
+<td class="instruction">LD SP,($5C3D)</td>
+<td class="comment-1" rowspan="2">The machine stack is cleared by setting the stack pointer to <a href="5C3D.html">ERR-SP</a> before exiting via <a href="16B0.html#16C5">SET_STK</a>.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="005C"></span>005C</td>
+<td class="instruction">JP <a href="16B0.html#16C5">SET_STK</a></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="0038.html">0038</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#0053">Map</a></td>
+<td class="next">
+Next: <a href="005F.html">005F</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release">The Complete Spectrum ROM Disassembly 20260409</div>
+<div class="copyright">&#169; 1982 Amstrad. &#169; 1983 Dr Ian Logan &amp; Dr Frank O'Hara. &#169; 2026 Richard Dymond.</div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 10.0.</div>
+<div><a href="../../asm/83.html">Switch to decimal</a>.</div>
+</footer>
+</body>
+</html>

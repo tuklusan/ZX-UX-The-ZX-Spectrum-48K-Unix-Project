@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Spectrum ROM: System variable at 5C8F</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../style.css" />
+</head>
+<body class="Asm-g">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html"><img alt="Spectrum ROM" src="../../images/logo-hex.png" /></a></td>
+<td class="page-header">System variables</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="5C8E.html">5C8E</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#5C8F">Map</a></td>
+<td class="next">
+Next: <a href="5C90.html">5C90</a>
+</td>
+</tr>
+</table>
+<div class="description">5C8F: ATTR-T - Temporary current colours</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Initialised by the routine at <a href="11B7.html">NEW</a>, read by the routines at <a href="0BDB.html">PO_ATTR</a>, <a href="1C96.html">CLASS_07</a> and <a href="21E1.html">CO_TEMP_1</a>, and updated by the routines at <a href="0C55.html">PO_SCR</a>, <a href="0D4D.html">TEMPS</a> and <a href="18C1.html">OUT_FLASH</a>. Holds the attribute byte that is used for printing to the main part of the display, which will be the same as <a href="5C8D.html">ATTR-P</a> unless temporary colours have been specified.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="asm-label">ATTR_T</td>
+<td class="address-1"><span id="5C8F"></span>5C8F</td>
+<td class="instruction">DEFB $38</td>
+<td class="comment-1" rowspan="1">FLASH 0: BRIGHT 0: PAPER 7: INK 0</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="5C8E.html">5C8E</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#5C8F">Map</a></td>
+<td class="next">
+Next: <a href="5C90.html">5C90</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release">The Complete Spectrum ROM Disassembly 20260409</div>
+<div class="copyright">&#169; 1982 Amstrad. &#169; 1983 Dr Ian Logan &amp; Dr Frank O'Hara. &#169; 2026 Richard Dymond.</div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 10.0.</div>
+<div><a href="../../asm/23695.html">Switch to decimal</a>.</div>
+</footer>
+</body>
+</html>

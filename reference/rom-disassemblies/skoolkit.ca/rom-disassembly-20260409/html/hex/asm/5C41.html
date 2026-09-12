@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Spectrum ROM: System variable at 5C41</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../style.css" />
+</head>
+<body class="Asm-g">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html"><img alt="Spectrum ROM" src="../../images/logo-hex.png" /></a></td>
+<td class="page-header">System variables</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="5C3F.html">5C3F</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#5C41">Map</a></td>
+<td class="next">
+Next: <a href="5C42.html">5C42</a>
+</td>
+</tr>
+</table>
+<div class="description">5C41: MODE - Specifies K, L, C, E or G cursor</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+Read by the routines at <a href="02BF.html">KEYBOARD</a> and <a href="18E1.html">OUT_CURS</a>, and updated by the routines at <a href="0F2C.html">EDITOR</a>, <a href="1097.html">CLEAR_SP</a> and <a href="10A8.html">KEY_INPUT</a>. This system variable is accessed by some routines via the <span class="register">IY</span> register at <span class="register">IY</span>+$07. It holds one of the following values:
+</div>
+<div class="paragraph">
+<table class="default">
+<tr>
+<th colspan="1" rowspan="1">Value</th>
+<th colspan="1" rowspan="1">Cursor</th>
+</tr>
+<tr>
+<td class="centre" colspan="1" rowspan="1">0</td>
+<td class="" colspan="1" rowspan="1">C, K or L</td>
+</tr>
+<tr>
+<td class="centre" colspan="1" rowspan="1">1</td>
+<td class="" colspan="1" rowspan="1">E</td>
+</tr>
+<tr>
+<td class="centre" colspan="1" rowspan="1">2</td>
+<td class="" colspan="1" rowspan="1">G</td>
+</tr>
+</table>
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="asm-label">MODE</td>
+<td class="address-1"><span id="5C41"></span>5C41</td>
+<td class="instruction">DEFB $00</td>
+<td class="comment-0" rowspan="1"></td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="5C3F.html">5C3F</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#5C41">Map</a></td>
+<td class="next">
+Next: <a href="5C42.html">5C42</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release">The Complete Spectrum ROM Disassembly 20260409</div>
+<div class="copyright">&#169; 1982 Amstrad. &#169; 1983 Dr Ian Logan &amp; Dr Frank O'Hara. &#169; 2026 Richard Dymond.</div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 10.0.</div>
+<div><a href="../../asm/23617.html">Switch to decimal</a>.</div>
+</footer>
+</body>
+</html>

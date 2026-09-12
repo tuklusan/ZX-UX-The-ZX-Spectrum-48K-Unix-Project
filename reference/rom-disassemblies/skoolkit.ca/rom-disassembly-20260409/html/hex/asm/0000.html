@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Spectrum ROM: Routine at 0000</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../style.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html"><img alt="Spectrum ROM" src="../../images/logo-hex.png" /></a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+</td>
+<td class="up">Up: <a href="../maps/all.html#0000">Map</a></td>
+<td class="next">
+Next: <a href="0008.html">0008</a>
+</td>
+</tr>
+</table>
+<div class="description">0000: THE 'START'</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+It all starts here when the Spectrum is powered on.
+</div>
+<div class="paragraph">
+The maskable interrupt is disabled and the <span class="register">DE</span> register pair set to hold the 'top of possible RAM'.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="asm-label">START</td>
+<td class="address-2"><span id="0000"></span>0000</td>
+<td class="instruction">DI</td>
+<td class="comment-1" rowspan="1">Disable the 'keyboard interrupt'.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="0001"></span>0001</td>
+<td class="instruction">XOR A</td>
+<td class="comment-1" rowspan="1">+00 for start (but +FF for 'NEW').</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="0002"></span>0002</td>
+<td class="instruction">LD DE,$FFFF</td>
+<td class="comment-1" rowspan="1">Top of possible RAM.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="0005"></span>0005</td>
+<td class="instruction">JP <a href="11B7.html#11CB">START_NEW</a></td>
+<td class="comment-1" rowspan="1">Jump forward.</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+</td>
+<td class="up">Up: <a href="../maps/all.html#0000">Map</a></td>
+<td class="next">
+Next: <a href="0008.html">0008</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release">The Complete Spectrum ROM Disassembly 20260409</div>
+<div class="copyright">&#169; 1982 Amstrad. &#169; 1983 Dr Ian Logan &amp; Dr Frank O'Hara. &#169; 2026 Richard Dymond.</div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 10.0.</div>
+<div><a href="../../asm/0.html">Switch to decimal</a>.</div>
+</footer>
+</body>
+</html>

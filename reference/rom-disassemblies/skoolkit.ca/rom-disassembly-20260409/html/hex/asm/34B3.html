@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Spectrum ROM: Routine at 34B3</title>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../style.css" />
+</head>
+<body class="Asm-c">
+<table class="header">
+<tr>
+<td class="logo"><a href="../index.html"><img alt="Spectrum ROM" src="../../images/logo-hex.png" /></a></td>
+<td class="page-header">Routines</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="34AC.html">34AC</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#34B3">Map</a></td>
+<td class="next">
+Next: <a href="34BC.html">34BC</a>
+</td>
+</tr>
+</table>
+<div class="description">34B3: THE 'USR' FUNCTION (offset +2D)</div>
+<table class="disassembly">
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="details">
+<div class="paragraph">
+The address of this routine is found in the <a href="32D7.html">table of addresses</a>. It is called indirectly via <a href="33A2.html">fp_calc_2</a>.
+</div>
+<div class="paragraph">
+This subroutine ('USR number' as distinct from 'USR string') handles the function USR X, where X is a number. The value of X is obtained in <span class="register">BC</span>, a return address is stacked and the machine code is executed from location X.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td class="asm-label">usr_no</td>
+<td class="address-2"><span id="34B3"></span>34B3</td>
+<td class="instruction">CALL <a href="1E94.html#1E99">FIND_INT2</a></td>
+<td class="comment-1" rowspan="1">Evaluate the 'last value', rounded to the nearest integer; test that it is in range and return it in <span class="register">BC</span>.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="34B6"></span>34B6</td>
+<td class="instruction">LD HL,$2D2B</td>
+<td class="comment-1" rowspan="2">Make the return address be that of the subroutine <a href="2D2B.html">STACK_BC</a>.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="34B9"></span>34B9</td>
+<td class="instruction">PUSH HL</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="34BA"></span>34BA</td>
+<td class="instruction">PUSH BC</td>
+<td class="comment-1" rowspan="2">Make an indirect jump to the required location.</td>
+</tr>
+<tr>
+<td class="asm-label"></td>
+<td class="address-1"><span id="34BB"></span>34BB</td>
+<td class="instruction">RET</td>
+</tr>
+<tr>
+<td class="routine-comment" colspan="5">
+<div class="comments">
+<div class="paragraph">
+Note: it is interesting that the <span class="register">IY</span> register pair is re-initialised when the return to <a href="2D2B.html">STACK_BC</a> has been made, but the important <span class="register">HL'</span> that holds the next literal pointer is not restored should it have been disturbed. For a successful return to BASIC, <span class="register">HL'</span> must on exit from the machine code contain the address of the 'end-calc' instruction at <a href="26C9.html#2758">+2758</a>.
+</div>
+</div>
+</td>
+</tr>
+</table>
+<table class="asm-navigation">
+<tr>
+<td class="prev">
+Prev: <a href="34AC.html">34AC</a>
+</td>
+<td class="up">Up: <a href="../maps/all.html#34B3">Map</a></td>
+<td class="next">
+Next: <a href="34BC.html">34BC</a>
+</td>
+</tr>
+</table>
+<footer>
+<div class="release">The Complete Spectrum ROM Disassembly 20260409</div>
+<div class="copyright">&#169; 1982 Amstrad. &#169; 1983 Dr Ian Logan &amp; Dr Frank O'Hara. &#169; 2026 Richard Dymond.</div>
+<div class="created">Created using <a href="https://skoolkit.ca">SkoolKit</a> 10.0.</div>
+<div><a href="../../asm/13491.html">Switch to decimal</a>.</div>
+</footer>
+</body>
+</html>
