@@ -13,40 +13,22 @@
 ; Sixteen-entry address-ordered arena allocator. Requests are rounded even.
 ; ANY takes the lowest fit, FAST_REQUIRED carves a high fit, COLD_PREFERRED
 ; first stays wholly below 0x8000 and otherwise retries as ANY.
-; Exact live allocation extents are recorded in the fixed FAST reserve so a
-; wrong-bounds free or double free cannot mutate the free-extent map.
-
-; Allocator metadata lives entirely in the 253-byte fixed FAST reserve. This
-; keeps ownership checking outside the fixed 8192-byte kernel image.
-memory_free_extents      EQU FAST_RESERVE_START
-memory_request           EQU FAST_RESERVE_START+64
-memory_policy            EQU FAST_RESERVE_START+66
-memory_candidate         EQU FAST_RESERVE_START+67
-memory_free_start        EQU FAST_RESERVE_START+69
-memory_free_length       EQU FAST_RESERVE_START+71
-memory_live_allocations  EQU FAST_RESERVE_START+73
-memory_pinned_bytes      EQU FAST_RESERVE_START+75
-memory_info_ptr          EQU FAST_RESERVE_START+77
-memory_alloc_record_ptr  EQU FAST_RESERVE_START+79
-memory_fast_total        EQU FAST_RESERVE_START+81
-memory_fast_largest      EQU FAST_RESERVE_START+83
-memory_cold_total        EQU FAST_RESERVE_START+85
-memory_cold_largest      EQU FAST_RESERVE_START+87
-ALLOC_RECORDS_START      EQU FAST_RESERVE_START+89
-ALLOC_RECORD_COUNT       EQU 41
 
     MACRO EMIT_MEMORY_ROUTINES
 zx48_memory_init:
     xor a
-    ld hl,FAST_RESERVE_START
-    ld de,FAST_RESERVE_START+1
-    ld bc,FAST_RESERVE_END-FAST_RESERVE_START
+    ld hl,memory_free_extents
+    ld de,memory_free_extents+1
+    ld bc,FREE_EXTENT_COUNT*4-1
     ld (hl),a
     ldir
     ld hl,ARENA_START
     ld (memory_free_extents),hl
     ld hl,ARENA_SIZE
     ld (memory_free_extents+2),hl
+    ld hl,0
+    ld (memory_live_allocations),hl
+    ld (memory_pinned_bytes),hl
     ret
 
 ; A=policy, BC=request -> HL=base.
@@ -54,25 +36,12 @@ zx48_alloc:
     ld (memory_policy),a
     ld a,b
     or c
-    jr nz,zx48_alloc_nonzero
-    ld h,b
-    ld l,c
-    ret
-zx48_alloc_nonzero:
+    jp z,zx48_alloc_zero
     bit 0,c
     jr z,zx48_alloc_even
     inc bc
 zx48_alloc_even:
     ld (memory_request),bc
-    ld hl,(memory_live_allocations)
-    ld a,l
-    cp ALLOC_RECORD_COUNT
-    jp nc,zx48_alloc_fail
-    add hl,hl
-    add hl,hl
-    ld de,ALLOC_RECORDS_START
-    add hl,de
-    ld (memory_alloc_record_ptr),hl
 zx48_alloc_retry:
     ld ix,memory_free_extents
     ld b,FREE_EXTENT_COUNT
@@ -160,51 +129,43 @@ zx48_alloc_fail:
     ld a,E_NOMEM
     scf
     ret
+zx48_alloc_zero:
+    ld hl,0
+    xor a
+    ret
 zx48_alloc_done:
-    ld ix,(memory_alloc_record_ptr)
-    ld (ix+0),l
-    ld (ix+1),h
-    ld de,(memory_request)
-    ld (ix+2),e
-    ld (ix+3),d
-    ld a,(memory_live_allocations)
-    inc a
-    ld (memory_live_allocations),a
+    ld de,(memory_live_allocations)
+    inc de
+    ld (memory_live_allocations),de
     xor a
     ret
 
-zx48_free_bad:
-    ld a,E_INVAL
-    scf
-    ret
-
-; HL=base, BC=rounded length. Reject wrong bounds/double free before mutation.
+; HL=base, BC=rounded length. Reject overlaps/double free before mutation.
 zx48_free:
     ld a,b
     or c
     ret z
     bit 0,l
-    jr nz,zx48_free_bad
+    jp nz,zx48_free_bad
     bit 0,c
-    jr nz,zx48_free_bad
+    jp nz,zx48_free_bad
     ld a,h
     cp COLD_START/256
-    jr c,zx48_free_bad
+    jp c,zx48_free_bad
     cp KERNEL_START/256
-    jr nc,zx48_free_bad
+    jp nc,zx48_free_bad
     ld (memory_free_start),hl
     ld (memory_free_length),bc
     add hl,bc
-    jr c,zx48_free_bad
-    ld (memory_candidate),hl
+    jp c,zx48_free_bad
     ld de,ARENA_END+1
     or a
     sbc hl,de
     jr c,zx48_free_end_ok
-    jr nz,zx48_free_bad
+    jp nz,zx48_free_bad
 zx48_free_end_ok:
-    call zx48_free_find_record
-    jr c,zx48_free_bad
+    add hl,de
+    ld (memory_candidate),hl
     ld hl,0
     ld (memory_info_ptr),hl
     ld (memory_request),hl
@@ -223,6 +184,7 @@ zx48_free_scan:
     ld (memory_request),hl
     jr zx48_free_next
 zx48_free_live:
+    ; new_end compared with existing_start.
     ld hl,(memory_candidate)
     ld e,(ix+0)
     ld d,(ix+1)
@@ -230,6 +192,8 @@ zx48_free_live:
     sbc hl,de
     jp z,zx48_free_prepend
     jr c,zx48_free_next
+    ; existing_end compared with new_start. An append is remembered until the
+    ; full table has proved that no later live extent overlaps this free.
     ld l,(ix+0)
     ld h,(ix+1)
     ld e,(ix+2)
@@ -329,58 +293,25 @@ zx48_extent_merge_next:
     dec c
     jr nz,zx48_extent_merge_loop
 zx48_free_commit:
-    ld de,(memory_alloc_record_ptr)
     ld hl,(memory_live_allocations)
+    ld a,h
+    or l
+    jr z,zx48_free_ok
     dec hl
     ld (memory_live_allocations),hl
-    push de
-    add hl,hl
-    add hl,hl
-    ld de,ALLOC_RECORDS_START
-    add hl,de
-    pop de
-    ld bc,4
-    ldir
+zx48_free_ok:
     xor a
     ret
 zx48_free_nospc:
     ld a,E_NOSPC
     scf
     ret
-
-zx48_free_find_record:
-    ld a,(memory_live_allocations)
-    or a
-    jr z,zx48_free_find_record_fail
-    ld b,a
-    ld ix,ALLOC_RECORDS_START
-zx48_free_find_record_loop:
-    ld l,(ix+0)
-    ld h,(ix+1)
-    ld de,(memory_free_start)
-    or a
-    sbc hl,de
-    jr nz,zx48_free_find_record_next
-    ld l,(ix+2)
-    ld h,(ix+3)
-    ld de,(memory_free_length)
-    or a
-    sbc hl,de
-    jr nz,zx48_free_find_record_next
-    push ix
-    pop hl
-    ld (memory_alloc_record_ptr),hl
-    or a
-    ret
-zx48_free_find_record_next:
-    ld de,4
-    add ix,de
-    djnz zx48_free_find_record_loop
-zx48_free_find_record_fail:
+zx48_free_bad:
+    ld a,E_INVAL
     scf
     ret
 
-; Stable bounded sort: active free extents by ascending start, empty records last.
+; Stable bounded sort: active records by ascending start, zero-length records last.
 zx48_extent_sort:
     ld b,FREE_EXTENT_COUNT-1
 zx48_extent_sort_pass:
@@ -467,6 +398,7 @@ zx48_mem_scan:
     pop hl
     jr c,zx48_mem_cold_whole
     jr z,zx48_mem_cold_whole
+    ; crossing extent: cold=8000-start, fast=end-8000.
     push bc
     ld de,FAST_START
     ex de,hl
@@ -556,4 +488,18 @@ zx48_mem_add_fast:
     add hl,de
     ld (memory_fast_largest),hl
     ret
+
+memory_request: dw 0
+memory_policy: db 0
+memory_candidate: dw 0
+memory_free_start: dw 0
+memory_free_length: dw 0
+memory_live_allocations: dw 0
+memory_pinned_bytes: dw 0
+memory_info_ptr: dw 0
+memory_fast_total: dw 0
+memory_fast_largest: dw 0
+memory_cold_total: dw 0
+memory_cold_largest: dw 0
+memory_free_extents: defs FREE_EXTENT_COUNT*4,0
     ENDM

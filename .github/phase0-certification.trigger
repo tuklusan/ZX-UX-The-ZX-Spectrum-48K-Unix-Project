@@ -21,3 +21,4 @@
 # Final R&R-07 source freeze after durable cleanliness and post-evidence validation hardening.
 # Final refreeze after excluding hash-verified generated certification JSON from source-header checks.
 # Refreeze after binding durable evidence validation to the latest evidence-only activation.
+# R&R-07 regenerated closure freeze after preserving premature Phase-1 work on a safety branch.

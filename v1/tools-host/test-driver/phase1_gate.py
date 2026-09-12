@@ -13,35 +13,17 @@
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 import sys
 
 from driver_core import DriverError, find_root, run_command
 import phase1_probe
 
-# New ordered Phase-1 implementation runs here before admission to the certified
-# set. A red early gate cannot be hidden by the already-certified correction set.
-PRE_ADMISSION_STEPS = (
-    "P1.13",
-)
-
-# P1.01-P1.12 were admitted after clean pinned-environment runs of their exact
-# build/test pairs plus Quality/CI. P1.28-P1.33 remain the earlier certified
-# correction suite. Every admitted step is replayed on every relevant push.
+# Each entry is admitted only after its implementation and deterministic driver
+# have passed the normal check-in review. The workflow executes every admitted
+# step on every relevant push, so later changes cannot silently regress an
+# earlier Phase-1 correction gate.
 CERTIFIED_STEPS = (
-    "P1.01",
-    "P1.02",
-    "P1.03",
-    "P1.04",
-    "P1.05",
-    "P1.06",
-    "P1.07",
-    "P1.08",
-    "P1.09",
-    "P1.10",
-    "P1.11",
-    "P1.12",
     "P1.28",
     "P1.29",
     "P1.30",
@@ -49,22 +31,6 @@ CERTIFIED_STEPS = (
     "P1.32",
     "P1.33",
 )
-
-
-def _run_step_set(root: Path, runner: Path, python: Path, steps: tuple[str, ...], label: str) -> None:
-    for step in steps:
-        for action in ("build", "test"):
-            result = run_command(
-                [python, runner, action, "--step", step],
-                cwd=root,
-                timeout_seconds=60.0,
-            )
-            if result.timed_out or result.exit_code != 0:
-                raise DriverError(
-                    f"{label} {step} {action} failed: exit={result.exit_code} "
-                    f"timed_out={result.timed_out} stdout={result.stdout!r} "
-                    f"stderr={result.stderr!r}"
-                )
 
 
 def main() -> int:
@@ -75,26 +41,26 @@ def main() -> int:
         raise DriverError("deterministic test driver missing")
 
     phase1_probe.run(root)
-    _run_step_set(root, runner, python, PRE_ADMISSION_STEPS, "pre-admission")
-    _run_step_set(root, runner, python, CERTIFIED_STEPS, "certified")
+    for step in CERTIFIED_STEPS:
+        for action in ("build", "test"):
+            result = run_command(
+                [python, runner, action, "--step", step],
+                cwd=root,
+                timeout_seconds=60.0,
+            )
+            if result.timed_out or result.exit_code != 0:
+                raise DriverError(
+                    f"{step} {action} failed: exit={result.exit_code} "
+                    f"timed_out={result.timed_out} stdout={result.stdout!r} "
+                    f"stderr={result.stderr!r}"
+                )
     print("ZX-UX PHASE 1 REGISTERED CERTIFICATION PASS")
     return 0
-
-
-def _persist_failure(message: str) -> None:
-    evidence = os.environ.get("ZXUX_EVIDENCE_DIR")
-    if not evidence:
-        return
-    path = Path(evidence)
-    path.mkdir(parents=True, exist_ok=True)
-    (path / "phase1-failure.txt").write_text(message + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
     except (DriverError, OSError, ValueError) as exc:
-        message = f"ZX-UX PHASE 1 CERTIFICATION FAIL: {exc}"
-        _persist_failure(message)
-        print(message, file=sys.stderr)
+        print(f"ZX-UX PHASE 1 CERTIFICATION FAIL: {exc}", file=sys.stderr)
         raise SystemExit(1)

@@ -35,16 +35,6 @@ import phase1_alt
 import phase1_keyboard
 import phase1_cursor
 import phase1_stack
-import phase1_startup
-import phase1_memory
-import phase1_process
-import phase1_context
-import phase1_idle
-import phase1_abi
-import phase1_syscalls
-import phase1_getpid
-import phase1_scheduler
-import phase1_ticks
 from driver_core import (
     DriverError,
     find_root,
@@ -96,26 +86,6 @@ def dispatch(root: Path, action: str, step: str):
         return module.dispatch(root, action, step, **kwargs)
     if step.startswith(("E0.", "P0.")):
         raise DriverError(f"numbered foundation/Phase-0 step is not registered: {step}")
-    if step == "P1.01":
-        return phase1_startup.dispatch(root, action, step, **kwargs)
-    if step in ("P1.02", "P1.03", "P1.04", "P1.05"):
-        return phase1_memory.dispatch(root, action, step, **kwargs)
-    if step == "P1.06":
-        return phase1_process.dispatch(root, action, step, **kwargs)
-    if step == "P1.07":
-        return phase1_context.dispatch(root, action, step, **kwargs)
-    if step == "P1.08":
-        return phase1_idle.dispatch(root, action, step, **kwargs)
-    if step == "P1.09":
-        return phase1_abi.dispatch(root, action, step, **kwargs)
-    if step == "P1.10":
-        return phase1_syscalls.dispatch(root, action, step, **kwargs)
-    if step == "P1.11":
-        return phase1_getpid.dispatch(root, action, step, **kwargs)
-    if step == "P1.12":
-        return phase1_scheduler.dispatch(root, action, step, **kwargs)
-    if step == "P1.13":
-        return phase1_ticks.dispatch(root, action, step, **kwargs)
     if step == "P1.30":
         return phase1_alt.dispatch(root, action, step, **kwargs)
     if step == "P1.31":
@@ -136,12 +106,6 @@ def prerequisite_statuses(step: str) -> dict[str, str]:
     if step in P0_MODULE:
         number = int(step.split(".", 1)[1])
         return {"E0.06": "PASS"} if number == 1 else {f"P0.{number - 1:02d}": "PASS"}
-    if step.startswith("P1."):
-        number = int(step.split(".", 1)[1])
-        if number == 1:
-            return {"P0.34": "PASS"}
-        if 2 <= number <= 13:
-            return {f"P1.{number - 1:02d}": "PASS"}
     return {}
 
 

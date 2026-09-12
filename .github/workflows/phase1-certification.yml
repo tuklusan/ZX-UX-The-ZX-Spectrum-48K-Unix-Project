@@ -79,10 +79,9 @@ jobs:
         run: tools/runtime/python/bin/python v1/tools-host/test-driver/phase1_gate.py
 
       - name: Upload Phase 1 evidence
-        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: zxux-phase1-${{ github.run_id }}-${{ github.run_attempt }}
-          path: /tmp/zxux-phase1-evidence-${{ github.run_id }}-${{ github.run_attempt }}/**
+          path: /tmp/zxux-phase1-evidence-${{ github.run_id }}-${{ github.run_attempt }}/P1.*.json
           retention-days: 90
           if-no-files-found: error

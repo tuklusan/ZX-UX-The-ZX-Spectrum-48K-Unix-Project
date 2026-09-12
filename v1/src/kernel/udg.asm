@@ -78,7 +78,7 @@ zx48_udg_get:
 zx48_udg_clear:
     ld a,h
     or a
-    jr nz,zx48_udg_bad
+    jp nz,zx48_udg_bad
     ld c,l
     call zx48_udg_slot_ptr
     ret c
@@ -96,12 +96,12 @@ zx48_udg_draw:
     inc hl
     ld a,(hl)
     cp 24
-    jr nc,zx48_udg_bad
+    jp nc,zx48_udg_bad
     ld (udg_row),a
     inc hl
     ld a,(hl)
     cp 32
-    jr nc,zx48_udg_bad
+    jp nc,zx48_udg_bad
     ld (udg_col),a
     call zx48_udg_slot_ptr
     ret c

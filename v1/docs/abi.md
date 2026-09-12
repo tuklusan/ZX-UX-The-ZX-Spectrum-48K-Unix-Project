@@ -42,137 +42,32 @@ OS-private and volatile from user code.
 ## Syscall convention
 
 The complete version-1 syscall number ownership is in `v1/include/zx48ux.inc`.
-No target source may redeclare a syscall number. ABI-visible syscall record
-operations and offsets are shared through `v1/include/syscall.inc`.
+No target source may redeclare a syscall number.
 
-Entry registers are `A=syscall number`, `HL=primary argument/pointer`,
-`DE=secondary argument/pointer`, and `BC=count/tertiary argument`. Unless a call
-has a documented special return, success returns carry clear with `HL=primary
-result` and A=`E_OK`; failure returns carry set with A containing the frozen error
-number and leaves HL undefined unless that call says otherwise.
+Unless a call has a documented special return, success returns carry clear with
+A=`E_OK`. Failure returns carry set with A containing the frozen error number.
+Wrappers restore IY=`5C3A` before returning to conforming applications.
 
-AF/BC/DE/HL are volatile across a syscall; IX is preserved; IY is OS/ROM-reserved
-and is restored to `5C3A` on every returning user boundary. The alternate register
-bank is OS-private/volatile, I is OS-owned, and R has no preservation guarantee.
+Version 1 uses these syscall ranges:
 
-Version 1 has exactly 59 assigned syscall IDs:
+- `00-08`: process;
+- `10-1C`: namespace and ordinary I/O;
+- `20-22`: pipes, duplication, ioctl;
+- `30-35`: console;
+- `40-46`: graphics and sound;
+- `48-4B`: UDG;
+- `50-53`: cassette;
+- `60-65`: memory/process/time/compression information;
+- `68-6E`: serialized ROM floating-point and ROM information.
 
-| Syscall | ID |
-| --- | ---: |
-| `SYS_VERSION` | `0x00` |
-| `SYS_EXIT` | `0x01` |
-| `SYS_YIELD` | `0x02` |
-| `SYS_SLEEP` | `0x03` |
-| `SYS_GETPID` | `0x04` |
-| `SYS_SPAWN` | `0x05` |
-| `SYS_EXEC` | `0x06` |
-| `SYS_WAIT` | `0x07` |
-| `SYS_KILL` | `0x08` |
-| `SYS_OPEN` | `0x10` |
-| `SYS_CLOSE` | `0x11` |
-| `SYS_READ` | `0x12` |
-| `SYS_WRITE` | `0x13` |
-| `SYS_SEEK` | `0x14` |
-| `SYS_STAT` | `0x15` |
-| `SYS_REMOVE` | `0x16` |
-| `SYS_RENAME` | `0x17` |
-| `SYS_LIST` | `0x18` |
-| `SYS_CHDIR` | `0x19` |
-| `SYS_GETCWD` | `0x1A` |
-| `SYS_PACK` | `0x1B` |
-| `SYS_UNPACK` | `0x1C` |
-| `SYS_PIPE` | `0x20` |
-| `SYS_DUP` | `0x21` |
-| `SYS_IOCTL` | `0x22` |
-| `SYS_CON_GETKEY` | `0x30` |
-| `SYS_CON_PUTCHAR` | `0x31` |
-| `SYS_CON_WRITE` | `0x32` |
-| `SYS_CON_CLEAR` | `0x33` |
-| `SYS_CON_GETPOS` | `0x34` |
-| `SYS_CON_SETPOS` | `0x35` |
-| `SYS_GFX_PLOT` | `0x40` |
-| `SYS_GFX_DRAW` | `0x41` |
-| `SYS_GFX_CIRCLE` | `0x42` |
-| `SYS_GFX_ATTR` | `0x43` |
-| `SYS_GFX_BORDER` | `0x44` |
-| `SYS_GFX_POINT` | `0x45` |
-| `SYS_BEEP` | `0x46` |
-| `SYS_UDG_DEFINE` | `0x48` |
-| `SYS_UDG_DRAW` | `0x49` |
-| `SYS_UDG_GET` | `0x4A` |
-| `SYS_UDG_CLEAR` | `0x4B` |
-| `SYS_TAPE_SAVE` | `0x50` |
-| `SYS_TAPE_LOAD` | `0x51` |
-| `SYS_TAPE_VERIFY` | `0x52` |
-| `SYS_TAPE_SCAN` | `0x53` |
-| `SYS_MEM_INFO` | `0x60` |
-| `SYS_PROC_INFO` | `0x61` |
-| `SYS_TICKS` | `0x62` |
-| `SYS_TIME_GET` | `0x63` |
-| `SYS_TIME_SET` | `0x64` |
-| `SYS_ZXPACK_INFO` | `0x65` |
-| `SYS_FP_EXEC` | `0x68` |
-| `SYS_FP_TO_TEXT` | `0x69` |
-| `SYS_FP_FROM_TEXT` | `0x6A` |
-| `SYS_ROM_INFO` | `0x6B` |
-| `SYS_INT_TO_FP` | `0x6C` |
-| `SYS_FP_TO_INT` | `0x6D` |
-| `SYS_FP_CMP` | `0x6E` |
-
-Every value not listed above is an unassigned expansion gap. Invalid syscall
-numbers return `E_NOTSUP` before any handler-table index can be formed. Adding an
-alias or consuming a gap requires a later architecture/ABI revision.
-
-The selected dispatcher uses bounds/range checks followed by compact handler-address
-tables and indirect `JP (HL)`. Certification measures that built form against the
-equivalent long compare/branch chain; table indexing is never reached until the
-numeric range has been validated.
+Number gaps are reserved expansion space.
 
 ## Error values
 
 `E_OK` is 0. Errors 1 through 16 are, in order: `E_INVAL`, `E_NOENT`,
 `E_NOMEM`, `E_BUSY`, `E_IO`, `E_EOF`, `E_PERM`, `E_CHILD`, `E_PIPE`,
 `E_TOOLONG`, `E_FORMAT`, `E_NOSPC`, `E_AGAIN`, `E_NOTSUP`, `E_INTR`, and
-`E_EXIST`. `v1/include/errno.inc` contains aliases only; it does not own a
-second numeric errno table.
-
-## Packed syscall records
-
-`FPOP1` is exactly 8 bytes: `u8 op`, `u8 reserved=0`, `u16 lhs`, `u16 rhs`,
-`u16 out`. Offsets are op=0, reserved=1, lhs=2, rhs=4, out=6. `FPOP1.op`
-values are fixed: 0 INVALID, 1 ADD, 2 SUB, 3 MUL, 4 DIV, 5 POW, 6 ABS,
-7 SGN, 8 INT, 9 EXP, 10 LN, 11 SIN, 12 COS, 13 TAN, 14 ASN, 15 ACS,
-16 ATN, 17 SQR.
-
-`ROMQ1` is exactly 4 bytes: `u8 index`, `u8 category`, `u16 out_ptr`, at
-offsets 0, 1, and 2. Categories are 0 ALL, 1 KEYBOARD, 2 CONSOLE, 3 TAPE,
-4 GRAPHICS, 5 SOUND, and 6 MATH.
-
-`ROMOUT1` is exactly 24 bytes: `name[16]`, `u16 address`, `u8 classification`,
-`u8 category`, `u16 contract_flags`, `u16 reserved=0`, at offsets 0, 16, 18,
-19, 20, and 22. Classification values are 1=A, 2=B, 3=C. Name uses 1..15
-visible bytes plus NUL/zero padding. Contract flag bit0 is MAY_ERROR_RESTART,
-bit1 ALTREG_SENSITIVE, bit2 DISABLES_INTERRUPTS, and bit3 NONREENTRANT; all
-remaining bits are zero in version 1.
-
-All packed multibyte fields are little-endian and every reserved byte/word must be
-zero on input unless a later ABI revision explicitly assigns it.
-
-## User range validation
-
-For each nonzero `(start,length)`, validation computes
-`end_exclusive = widened(start) + widened(length)` in at least 17-bit arithmetic
-(32 bits or wider in host/reference tests) before narrowing. It requires
-`end_exclusive > start`, `end_exclusive <= 0x10000`, and both `start` and
-`end_exclusive-1` to lie in one single permitted region.
-
-Ordinary user buffers permit only `0x4000-0x5AFF` or `0x6000-0xDFFF`; they may
-not bridge the `0x5B00-0x5FFF` protected gap and may never overlap ROM or kernel
-space. Process-owned calls additionally require the whole widened range to lie in
-the applicable owned allocation. If a call documents `count=0` as
-non-dereferencing, the buffer pointer need not identify a readable/writable byte,
-but every non-buffer argument is still validated. NUL-terminated strings are
-scanned only inside the caller-valid region and the lexical maximum plus NUL.
+`E_EXIST`.
 
 ## Process and handle limits
 
