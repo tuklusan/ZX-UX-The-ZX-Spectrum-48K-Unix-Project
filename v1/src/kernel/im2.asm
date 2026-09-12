@@ -25,15 +25,15 @@ zx48_im2_init:
     ld (hl),IM2_VECTOR_BYTE
     ld bc,IM2_TABLE_END-IM2_TABLE_START
     ldir
-    ; LDIR leaves DE at IM2_TABLE_END+1, which is exactly EMERGENCY_START.
+    ; LDIR leaves HL at FF00 and DE at FF01. H is therefore the pinned I value.
+    ld a,h
+    ld i,a
     xor a
     ld b,ERROR_STATE_END-EMERGENCY_START
 zx48_im2_clear_state:
     ld (de),a
     inc de
     djnz zx48_im2_clear_state
-    ld a,IM2_I_VALUE
-    ld i,a
     im 2
     ret
     ENDM
