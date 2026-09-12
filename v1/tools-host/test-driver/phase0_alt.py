@@ -38,17 +38,63 @@ def classify_fast_safe(record: dict[str, object]) -> bool:
     return bool(interrupt_safe)
 
 
+def require_ordered(code: list[str], sequence: tuple[str, ...], name: str) -> None:
+    cursor = 0
+    for token in sequence:
+        try:
+            cursor = code.index(token, cursor) + 1
+        except ValueError as exc:
+            raise AltError(f"{name} ISR sequence drift: missing/out-of-order {token!r}") from exc
+
+
 def validate_interrupt_source(path: Path) -> None:
     source = path.read_text(encoding="utf-8")
     code = [line.split(";", 1)[0].strip().lower() for line in source.splitlines()]
     code = [line for line in code if line]
     try:
         start = code.index("zx48_interrupt:") + 1
+        safe = code.index("zx48_interrupt_safe:", start)
+        work = code.index("zx48_interrupt_work:", safe)
     except ValueError as exc:
-        raise AltError("zx48_interrupt label missing") from exc
-    body = code[start:]
-    expected = ["ex af,af'", "exx", "exx", "ex af,af'", "ei", "reti", "endm"]
-    require(body[: len(expected)] == expected, f"alternate-bank ISR sequence drift: {body[:len(expected)]!r}")
+        raise AltError("alternate-bank ISR labels missing") from exc
+
+    gate = code[start:safe]
+    require_ordered(
+        gate,
+        (
+            "push af",
+            "ld a,(altreg_busy)",
+            "or a",
+            "jr nz,zx48_interrupt_safe",
+            "pop af",
+            "ex af,af'",
+            "exx",
+            "call zx48_kernel_stack_sample",
+            "call zx48_interrupt_work",
+            "exx",
+            "ex af,af'",
+            "ei",
+            "reti",
+        ),
+        "fast-path",
+    )
+    require_ordered(
+        code[safe + 1:work],
+        (
+            "push bc",
+            "push de",
+            "push hl",
+            "call zx48_kernel_stack_sample",
+            "call zx48_interrupt_work",
+            "pop hl",
+            "pop de",
+            "pop bc",
+            "pop af",
+            "ei",
+            "reti",
+        ),
+        "safe-path",
+    )
 
 
 def validate_docs(path: Path) -> None:
@@ -120,7 +166,9 @@ def dispatch(
     command, image = assemble_kernel(root, run_command, require_project_tool)
     assertions = [
         {"name": "alternate-bank-os-private", "passed": True},
+        {"name": "altreg-busy-gated-fast-path", "passed": True},
         {"name": "balanced-isr-bank-switch", "passed": True},
+        {"name": "serialized-safe-fallback", "passed": True},
         {"name": "safe-wrapper-classifier", "passed": True},
         {"name": "no-persistent-shadow-only-state", "passed": True},
     ]
