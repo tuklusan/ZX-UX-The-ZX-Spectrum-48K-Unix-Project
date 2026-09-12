@@ -28,6 +28,36 @@ implementation authority, certification evidence, or a GitHub Actions workflow.
 - Any bytes promoted from this tracker into canonical project material must pass the
   normal project SoP independently.
 
+## Work-item execution policy
+
+- At the start of work on this tracker, inspect the complete set of open H-items and
+  their dependencies before choosing what to execute.
+- H-item numbering records identity, not mandatory execution order. Execute open items
+  in the order that most efficiently and safely advances the project.
+- Related open items may be grouped into one execution batch when doing so reduces
+  duplicated investigation, editing, certification, or repository churn.
+- Items grouped into one batch must be treated as one transaction for tracking
+  purposes: explicitly open the whole selected batch before implementation and close
+  the whole batch together only after every item in that batch satisfies its own
+  completion criteria.
+- Do not mark one member of a grouped batch complete while another member remains
+  incomplete. If the batch cannot be completed as a whole, leave every member of that
+  batch open and record the durable progress or blocker.
+- Dependency, architecture, certification, safety, and project-policy constraints take
+  precedence over execution efficiency. Never reorder work in a way that violates an
+  owning contract or performs implementation before a required architecture/change-
+  control step.
+- A grouped execution does not merge the requirements of its constituent items. Each
+  H-item retains its own scope, acceptance criteria, evidence, SoP obligations, and
+  closure requirements.
+- Prefer batching items that touch the same files, workflows, infrastructure, evidence
+  path, architecture revision, or certification cycle when this materially reduces
+  unnecessary repeated work.
+- After each completed item or completed batch, update this tracker with the durable
+  commit, run, evidence, or other repository reference that justifies closure.
+- Before selecting the next work, re-read the remaining open list rather than
+  automatically proceeding to the numerically next H-item.
+
 ## Durable starting state
 
 - [x] Baseline Repair and Reconciliation Revision 01 is closed and complete.
