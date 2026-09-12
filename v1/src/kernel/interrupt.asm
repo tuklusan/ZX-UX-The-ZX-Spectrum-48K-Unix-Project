@@ -80,11 +80,13 @@ zx48_interrupt_timers:
     cp 25
     jr c,zx48_interrupt_cursor_store
     xor a
-    ld (tty_cursor_due),a
+    ld (cursor_frame_count),a
     inc a
     ld (tty_cursor_due),a
+    jr zx48_interrupt_wall
 zx48_interrupt_cursor_store:
     ld (cursor_frame_count),a
+zx48_interrupt_wall:
     ld a,(wall_valid)
     or a
     jr z,zx48_interrupt_break
