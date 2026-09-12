@@ -83,8 +83,9 @@ def _assemble_kernel(root: Path, run_command: Callable[..., Any], require_projec
     build = root / "v1/build"
     build.mkdir(parents=True, exist_ok=True)
     listing = build / "kernel-p1.lst"
+    symbols = build / "kernel-p1.sym"
     result = run_command(
-        [assembler, "--nologo", "--lst=../../build/kernel-p1.lst", "kernel.asm"],
+        [assembler, "--nologo", "--lst=../../build/kernel-p1.lst", "--sym=../../build/kernel-p1.sym", "kernel.asm"],
         cwd=root / "v1/src/kernel",
         timeout_seconds=30.0,
     )
@@ -92,27 +93,26 @@ def _assemble_kernel(root: Path, run_command: Callable[..., Any], require_projec
     kernel = build / "kernel.bin"
     require(kernel.is_file() and kernel.stat().st_size == KERNEL_SIZE, "kernel image must remain exactly 8192 bytes")
     require(listing.is_file(), "kernel listing missing")
+    require(symbols.is_file(), "kernel symbol table missing")
     return result, kernel, listing
 
 
 def _labels(listing: Path, names: tuple[str, ...]) -> dict[str, int]:
-    text = listing.read_text(encoding="utf-8", errors="replace")
+    symbols = listing.with_suffix(".sym")
+    require(symbols.is_file(), "kernel symbol table missing")
+    text = symbols.read_text(encoding="utf-8", errors="replace")
     found: dict[str, int] = {}
     for name in names:
+        pattern = re.compile(rf"^{re.escape(name)}:\s+equ\s+0x([0-9A-Fa-f]+)\s*$", re.IGNORECASE)
         for line in text.splitlines():
-            label_marker = name + ":"
-            equ_marker = re.search(rf"\b{re.escape(name)}\s+EQU\b", line)
-            if label_marker not in line and equ_marker is None:
+            match = pattern.match(line.strip())
+            if match is None:
                 continue
-            before = line.split(label_marker, 1)[0] if label_marker in line else line[:equ_marker.start()]
-            words = re.findall(r"\b[0-9A-Fa-f]{4}\b", before)
-            if words:
-                address = int(words[-1], 16)
-                if address < KERNEL_BASE:
-                    continue
-                found[name] = address
-                break
-        require(name in found, f"kernel listing label missing: {name}")
+            address = int(match.group(1), 16)
+            require(KERNEL_BASE <= address <= 0xFFFF, f"kernel symbol outside high memory: {name}")
+            found[name] = address
+            break
+        require(name in found, f"kernel symbol missing: {name}")
     return found
 
 
