@@ -144,6 +144,7 @@ zx48_pipe_create:
     call zx48_alloc
     ret c
 zx48_pipe_allocated:
+    ld bc,(memory_request)
     push hl
     push bc
     ld a,(pipe_active_slot)
