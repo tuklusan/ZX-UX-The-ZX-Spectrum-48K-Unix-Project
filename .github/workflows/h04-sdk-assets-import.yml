@@ -33,6 +33,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          export PYTHONDONTWRITEBYTECODE=1
 
           readonly SOURCE_REPO='https://github.com/tuklusan/zx-ux-c48-sdk-sinclair-zx-spectrum-48k-unix-c-compiler-software-development-kit.git'
           readonly SOURCE_COMMIT='1bebc6288a1cdfa1bdfb5a6694e1986b6c3d7ee0'
