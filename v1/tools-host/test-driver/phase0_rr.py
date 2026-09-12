@@ -18,6 +18,7 @@ import json
 import os
 from pathlib import Path
 import random
+import re
 import sys
 from typing import Any, Callable
 
@@ -61,8 +62,26 @@ def _require_file(root: Path, relative: str) -> Path:
     return path
 
 
+def _token_present(text: str, token: str) -> bool:
+    if token in text:
+        return True
+    if not any(char.isspace() for char in token):
+        return False
+    return " ".join(token.split()) in " ".join(text.split())
+
+
+def _remove_token(text: str, token: str) -> str:
+    if token in text:
+        return text.replace(token, "")
+    parts = token.split()
+    if len(parts) < 2:
+        return text
+    pattern = r"\s+".join(re.escape(part) for part in parts)
+    return re.sub(pattern, "", text)
+
+
 def _validate_tokens(text: str, required: tuple[str, ...], step: str) -> None:
-    missing = [token for token in required if token not in text]
+    missing = [token for token in required if not _token_present(text, token)]
     if missing:
         raise DriverError(f"{step} contract token(s) missing: {missing}")
 
@@ -93,8 +112,7 @@ def _static_contract(root: Path, action: str, step: str, *, sha256_file: Any):
         {"name": f"{step.lower()}-artifact-present", "passed": True, "detail": relative},
     ]
     if action == "test":
-        first = required[0]
-        mutated = text.replace(first, "")
+        mutated = _remove_token(text, required[0])
         rejected = False
         try:
             _validate_tokens(mutated, required, step)
