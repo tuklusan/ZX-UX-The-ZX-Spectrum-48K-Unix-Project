@@ -12,7 +12,7 @@
 
 # ZX-UX Baseline Repair and Reconciliation Plan
 
-Status: frozen repair-and-reconciliation change-control plan
+Status: CLOSED-COMPLETE
 Revision: 01
 Starting implementation baseline: `d464c59ac9bf8d3f82cf109c6d4266ad4f4ba64a`
 Canonical implementation plan: `docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV02.md`
@@ -243,3 +243,42 @@ shortcut or substitution:
 
 This rule applies to documentation, scripts, workflow files, evidence, assembly, host tools,
 and every other text artifact changed during R&R.
+
+---
+
+## 11. R&R closure record
+
+Final R&R source anchor: `66e12b2d641b2db93d0aae949d2aac2565193989`.
+Durable Phase-0 evidence anchor: `268db8b3763f685488ffd4973859390e263db648`.
+
+The final source anchor completed the following required workflow runs:
+
+- Kernel Build run `34696500252`: success.
+- Phase-0 Certification run `34696500274`: success.
+- Phase-1 Certification run `34696500300`: success.
+- Quality/CI run `34696500334`: cancelled after it was superseded by the immediate
+  evidence-only activation commit.
+
+The evidence-only anchor retained the exact certified source bytes and completed Quality/CI
+run `34696692448` successfully. Its six jobs -- E0 metadata, project policy, Phase-0
+evidence, license headers, E0 foundation, and project CI -- all succeeded.
+
+The later `main` commit `0ad2113c7f22f62e479fafa2246338c9d6af6771` is a documentation-only
+update to the deferred cursor/tty64 change request. It is outside the R&R source/evidence
+anchors and is neither modified nor executed by this closure.
+
+The exact Phase-1 resume checkpoint is:
+
+- `P1.01` through `P1.12` are admitted.
+- `P1.13` is unadmitted; its current work is commit
+  `3245d489ad9b26c3ea55bcf0677374d2cfa5b53d`.
+- The P1.13 IM2 fixture-initialization repair is committed.
+- The retained failing certification assertion is
+  `sys-ticks-snapshot-is-coherent-and-four-bytes`.
+- `P1.14` has reconnaissance only and no admitted modification.
+
+The R&R change corpus remains the finite baseline-to-source delta: 112 text files, three
+binary assets, and two intentional deletions. This closure record changes no source,
+evidence, deferred-CR, or Phase-1 implementation bytes. The deferred cursor/tty64 change
+request remains queued after R&R closure, and Phase-1 remains parked at the checkpoint
+above until that planned operation completes.
