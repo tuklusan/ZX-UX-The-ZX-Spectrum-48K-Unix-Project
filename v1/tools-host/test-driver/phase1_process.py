@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 from typing import Any, Callable
 
 from driver_core import DriverError
@@ -50,7 +51,17 @@ OFFSETS = {
     "reserved": 47,
 }
 
-STATE_VALUES = (0, 1, 2, 3, 4, 5, 6, 7, 8)
+STATE_CONSTANTS = {
+    "PROC_FREE": 0,
+    "PROC_READY": 1,
+    "PROC_RUNNING": 2,
+    "PROC_SLEEPING": 3,
+    "PROC_WAIT_INPUT": 4,
+    "PROC_WAIT_PIPE_READ": 5,
+    "PROC_WAIT_PIPE_WRITE": 6,
+    "PROC_WAIT_CHILD": 7,
+    "PROC_ZOMBIE": 8,
+}
 
 
 class Phase1ProcessError(DriverError):
@@ -82,69 +93,60 @@ def _expect_byte(address: int, value: int) -> bytes:
     return b"\x3A" + _word(address) + bytes((0xFE, value & 0xFF)) + _jp_nz(FAIL_PC)
 
 
+def _equ_values(text: str) -> dict[str, int]:
+    values: dict[str, int] = {}
+    for raw in text.splitlines():
+        line = raw.split(";", 1)[0].strip()
+        match = re.fullmatch(r"([A-Za-z_][A-Za-z0-9_]*)\s+EQU\s+([^\s]+)", line, re.IGNORECASE)
+        if match is None:
+            continue
+        name, token = match.groups()
+        if token.startswith("$"):
+            values[name.upper()] = int(token[1:], 16)
+        elif token.isdigit():
+            values[name.upper()] = int(token, 10)
+    return values
+
+
+def _identifier_present(text: str, name: str) -> bool:
+    return re.search(rf"(?<![A-Za-z0-9_]){re.escape(name)}(?![A-Za-z0-9_])", text, re.IGNORECASE) is not None
+
+
 def _static_contract(root: Path) -> list[dict[str, object]]:
     inc = (root / "v1/include/zx48ux.inc").read_text(encoding="utf-8")
     process = (root / "v1/src/kernel/process.asm").read_text(encoding="utf-8")
     scheduler = (root / "v1/src/kernel/scheduler.asm").read_text(encoding="utf-8")
+    public = _equ_values(inc)
+    layout = _equ_values(process)
     lower_process = process.lower()
     lower_scheduler = scheduler.lower()
 
-    required_constants = (
-        "MAX_PROCESSES            EQU $08",
-        "MAX_HANDLES_PER_PROCESS  EQU $08",
-        "OPEN_DESCRIPTION_COUNT   EQU $18",
-        "PROC_FREE                EQU $00",
-        "PROC_READY               EQU $01",
-        "PROC_RUNNING             EQU $02",
-        "PROC_SLEEPING            EQU $03",
-        "PROC_WAIT_INPUT          EQU $04",
-        "PROC_WAIT_PIPE_READ      EQU $05",
-        "PROC_WAIT_PIPE_WRITE     EQU $06",
-        "PROC_WAIT_CHILD          EQU $07",
-        "PROC_ZOMBIE              EQU $08",
-        "PROC_PRIVATE_STARTED     EQU $80",
-        "PROC_DESC_SIZE           EQU $30",
-        "OD_DESC_SIZE             EQU $0C",
-    )
-    required_offsets = tuple(f"PROC_{name.upper():<21}EQU {value}" for name, value in ())
-    offset_tokens = (
-        "PROC_PID                  EQU 0",
-        "PROC_PARENT               EQU 1",
-        "PROC_STATE                EQU 2",
-        "PROC_FLAGS                EQU 3",
-        "PROC_IMAGE_BASE           EQU 4",
-        "PROC_IMAGE_SIZE           EQU 6",
-        "PROC_STACK_LOW            EQU 8",
-        "PROC_STACK_HIGH           EQU 10",
-        "PROC_SAVED_SP             EQU 12",
-        "PROC_EXIT_STATUS          EQU 14",
-        "PROC_WAIT_OBJECT          EQU 15",
-        "PROC_HANDLES              EQU 16",
-        "PROC_WAKE_TICK            EQU 24",
-        "PROC_CWD                  EQU 28",
-        "PROC_NAME                 EQU 29",
-        "PROC_OWNED_BYTES          EQU 40",
-        "PROC_ARG_PTR              EQU 42",
-        "PROC_ENV_PTR              EQU 44",
-        "PROC_PRIVATE_FLAGS        EQU 46",
-        "PROC_RESERVED             EQU 47",
-    )
     restore = lower_scheduler.find("or proc_private_started")
     saved_sp = lower_scheduler.find("ld l,(ix+proc_saved_sp)", restore)
-    return [
-        {"name": "state-ids-exact-0-through-8", "passed": all(token in inc for token in required_constants[3:12])},
-        {"name": "eight-descriptors-only", "passed": required_constants[0] in inc},
-        {"name": "descriptor-size-48-at-most-56", "passed": "PROC_DESC_SIZE           EQU $30" in inc and PROC_DESC_SIZE <= 56},
-        {"name": "descriptor-layout-complete", "passed": all(token in process for token in offset_tokens)},
+    info_start = lower_process.find("zx48_process_info:")
+    info_end = lower_process.find("zx48_process_exit:")
+    info_body = lower_process[info_start:info_end] if 0 <= info_start < info_end else ""
+    duplicate_context_names = ("PROC_PC", "PROC_AF", "PROC_BC", "PROC_DE", "PROC_HL", "PROC_IX")
+
+    assertions = [
+        {"name": "state-ids-exact-0-through-8", "passed": all(public.get(name) == value for name, value in STATE_CONSTANTS.items())},
+        {"name": "eight-descriptors-only", "passed": public.get("MAX_PROCESSES") == MAX_PROCESSES},
+        {"name": "eight-handles-per-process", "passed": public.get("MAX_HANDLES_PER_PROCESS") == MAX_HANDLES},
+        {"name": "twenty-four-open-descriptions", "passed": public.get("OPEN_DESCRIPTION_COUNT") == OPEN_DESCRIPTION_COUNT},
+        {"name": "descriptor-size-48-at-most-56", "passed": public.get("PROC_DESC_SIZE") == PROC_DESC_SIZE and PROC_DESC_SIZE <= 56},
+        {"name": "open-description-size-12", "passed": public.get("OD_DESC_SIZE") == OD_DESC_SIZE},
+        {"name": "private-started-bit-is-80", "passed": public.get("PROC_PRIVATE_STARTED") == 0x80},
+        {"name": "descriptor-layout-complete", "passed": all(layout.get(f"PROC_{name.upper()}") == value for name, value in OFFSETS.items())},
         {"name": "process-table-at-most-448", "passed": PROC_DESC_SIZE * MAX_PROCESSES <= 448},
         {"name": "process-open-description-budget-at-most-896", "passed": PROC_DESC_SIZE * MAX_PROCESSES + OPEN_DESCRIPTION_COUNT * OD_DESC_SIZE <= PROCESS_BUDGET},
-        {"name": "pid0-pid1-reservation-scan-starts-at-2", "passed": "ld ix,process_table+2*PROC_DESC_SIZE" in lower_process and "ld c,2" in lower_process},
+        {"name": "pid0-pid1-reservation-scan-starts-at-2", "passed": "ld ix,process_table+2*proc_desc_size" in lower_process and "ld c,2" in lower_process},
         {"name": "eight-handle-open-description-ids", "passed": "ld b,max_handles_per_process" in lower_process and "ld a,handle_free" in lower_process},
-        {"name": "saved-sp-only-runnable-context", "passed": not any(token in lower_process for token in ("proc_pc", "proc_af", "proc_bc", "proc_de", "proc_hl", "proc_ix"))},
-        {"name": "started-private-and-not-proc-info", "passed": "and proc_flag_cancel" in lower_process and "proc_private_flags" not in lower_process[lower_process.find("zx48_process_info:"):lower_process.find("zx48_process_exit:")]},
+        {"name": "saved-sp-only-runnable-context", "passed": not any(_identifier_present(process, name) for name in duplicate_context_names)},
+        {"name": "started-private-and-not-proc-info", "passed": "and proc_flag_cancel" in info_body and not _identifier_present(info_body, "PROC_PRIVATE_FLAGS")},
         {"name": "started-set-immediately-before-restore", "passed": 0 <= restore < saved_sp and saved_sp - restore < 96},
         {"name": "name-is-exact-ten-byte-copy", "passed": "ld bc,10" in lower_process and "process_name_sh: db 's','h',0,0,0,0,0,0,0,0" in lower_process},
     ]
+    return assertions
 
 
 def _negative_contract_tests() -> list[dict[str, object]]:
@@ -177,7 +179,7 @@ def _runtime_test(root: Path, labels: dict[str, int], kernel_bytes: bytes) -> No
         for handle in range(MAX_HANDLES):
             code += _expect_byte(base + OFFSETS["handles"] + handle, 0xFF)
     code += _call(prepare)
-    code += _jp_nz(FAIL_PC)  # A must be E_OK/zero on success.
+    code += _jp_nz(FAIL_PC)
     pid1 = table + PROC_DESC_SIZE
     code += _expect_byte(pid1 + OFFSETS["state"], 1)
     code += _expect_byte(pid1 + OFFSETS["parent"], 0)
@@ -203,7 +205,8 @@ def dispatch(
         raise Phase1ProcessError(f"Phase-1 process step is not registered: {step}")
 
     assertions = _static_contract(root)
-    require(all(item["passed"] is True for item in assertions), "P1.06 static descriptor contract failed")
+    failed = [str(item["name"]) for item in assertions if item["passed"] is not True]
+    require(not failed, f"P1.06 static descriptor contract failed: {failed}")
     command, kernel, listing = phase1._assemble_kernel(root, run_command, require_project_tool)
     labels = phase1._labels(listing, ("zx48_process_init", "zx48_process_prepare_pid1", "process_table", "current_pid"))
     kernel_bytes = kernel.read_bytes()
@@ -212,7 +215,8 @@ def dispatch(
         _runtime_test(root, labels, kernel_bytes)
         assertions.append({"name": "runtime-table-init-and-pid1-reservation", "passed": True})
         assertions.extend(_negative_contract_tests())
-        require(all(item["passed"] is True for item in assertions), "P1.06 negative fixture failed")
+        failed = [str(item["name"]) for item in assertions if item["passed"] is not True]
+        require(not failed, f"P1.06 negative/runtime contract failed: {failed}")
 
     paths = (
         root / "v1/include/zx48ux.inc",
