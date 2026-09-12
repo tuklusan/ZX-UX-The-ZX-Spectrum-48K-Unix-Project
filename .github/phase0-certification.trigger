@@ -20,3 +20,4 @@
 # Refreeze after making static prose contract matching whitespace-aware.
 # Final R&R-07 source freeze after durable cleanliness and post-evidence validation hardening.
 # Final refreeze after excluding hash-verified generated certification JSON from source-header checks.
+# Refreeze after binding durable evidence validation to the latest evidence-only activation.
