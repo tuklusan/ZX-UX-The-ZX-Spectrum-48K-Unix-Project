@@ -94,8 +94,8 @@ def validate_source(source: str) -> None:
     missing = [token for token in sorted(required) if token not in source]
     require(not missing, f"kernel scaffold missing layout tokens: {missing}")
     require(
-        re.search(r"DEFS\s+KERNEL_CODE_END-KERNEL_CODE_START\+1,0", source) is not None,
-        "ordinary pool must be explicitly materialized",
+        re.search(r"DEFS\s+KERNEL_CODE_END\+1-\$,0", source) is not None,
+        "ordinary pool remainder must be explicitly materialized",
     )
 
 
