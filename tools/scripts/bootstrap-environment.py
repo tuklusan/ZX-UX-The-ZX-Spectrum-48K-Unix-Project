@@ -17,6 +17,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import platform
 import shutil
 import subprocess
 import sys
@@ -26,7 +27,8 @@ import urllib.request
 
 ROOT_MARKER = b"ZX-UX project root"
 LOCK_PATH = Path("tools/manifest/toolchain.lock.json")
-PYTHON_VERSION = (3, 13, 15)
+BOOTSTRAP_PYTHON = (3, 13, 15)
+REQUIRED_IDS = {"python", "sjasmplus", "libspectrum", "fuse", "fuse-utils", "zx48-rom"}
 
 
 class BootstrapError(RuntimeError):
@@ -60,18 +62,52 @@ def run(argv: list[str], *, cwd: Path | None = None, env: dict[str, str] | None 
         raise BootstrapError(f"command failed ({result.returncode}): {argv!r}")
 
 
+def validate_lock(lock: dict) -> dict[str, dict]:
+    require(lock.get("schema") == 1, "manifest schema must be 1")
+    require(lock.get("project") == "ZX-UX", "manifest project identity mismatch")
+    require(lock.get("root_marker") == ROOT_MARKER.decode("ascii"), "manifest root marker mismatch")
+    bootstrap = lock.get("bootstrap")
+    require(isinstance(bootstrap, dict), "manifest bootstrap metadata missing")
+    require(bootstrap.get("platform") == "linux", "bootstrap platform must be linux")
+    require(bootstrap.get("bootstrap_python") == "3.13.15", "bootstrap Python must be 3.13.15")
+    require(bootstrap.get("certified_python") == "tools/runtime/python/bin/python", "certified Python path mismatch")
+    require(bootstrap.get("download_policy") == "https-size-sha256", "bootstrap download policy mismatch")
+    prerequisites = bootstrap.get("native_build_prerequisites")
+    require(isinstance(prerequisites, list) and prerequisites, "native build prerequisites missing")
+
+    artifacts = lock.get("artifacts")
+    require(isinstance(artifacts, list), "manifest artifacts must be a list")
+    items = {item.get("id"): item for item in artifacts if isinstance(item, dict)}
+    require(set(items) == REQUIRED_IDS and len(items) == len(artifacts), "unexpected or duplicate toolchain artifact set")
+    for artifact_id, item in items.items():
+        require(str(item.get("url", "")).startswith("https://"), f"{artifact_id}: HTTPS URL required")
+        require(isinstance(item.get("size"), int) and item["size"] > 0, f"{artifact_id}: positive size required")
+        checksum = item.get("sha256")
+        require(
+            isinstance(checksum, str)
+            and len(checksum) == 64
+            and checksum == checksum.lower()
+            and all(ch in "0123456789abcdef" for ch in checksum),
+            f"{artifact_id}: lowercase SHA-256 required",
+        )
+    return items
+
+
 def download(item: dict, cache: Path) -> Path:
-    suffix = ".tar.xz" if str(item["url"]).endswith(".tar.xz") else ".tar.gz"
+    url = str(item["url"])
     if item["id"] == "zx48-rom":
         suffix = ".rom"
+    elif url.endswith(".tar.xz"):
+        suffix = ".tar.xz"
+    elif url.endswith(".tar.gz"):
+        suffix = ".tar.gz"
+    else:
+        raise BootstrapError(f'{item["id"]}: unsupported archive suffix')
     target = cache / f'{item["id"]}-{item["version"]}{suffix}'
     if target.is_file() and target.stat().st_size == item["size"] and sha256(target) == item["sha256"]:
         return target
 
-    request = urllib.request.Request(
-        item["url"],
-        headers={"User-Agent": "ZX-UX environment bootstrap/1"},
-    )
+    request = urllib.request.Request(url, headers={"User-Agent": "ZX-UX environment bootstrap/2"})
     tmp = target.with_suffix(target.suffix + ".part")
     tmp.unlink(missing_ok=True)
     try:
@@ -92,24 +128,33 @@ def extract(archive: Path, destination: Path) -> Path:
     destination.mkdir(parents=True)
     with tarfile.open(archive, "r:*") as tf:
         tf.extractall(destination, filter="data")
-    entries = [p for p in destination.iterdir() if p.is_dir()]
+    entries = [path for path in destination.iterdir() if path.is_dir()]
     require(len(entries) == 1, f"archive must contain one top-level directory: {archive.name}")
     return entries[0]
 
 
-def write_python_wrapper(root: Path) -> None:
-    require(sys.version_info[:3] == PYTHON_VERSION, f"bootstrap Python must be 3.13.15, got {sys.version.split()[0]}")
-    wrapper = root / "tools/runtime/python/bin/python"
-    wrapper.parent.mkdir(parents=True, exist_ok=True)
-    executable = Path(sys.executable).resolve()
-    wrapper.write_text(
-        "#!/usr/bin/env bash\n"
-        "# Generated host wrapper; exact interpreter version is verified before use.\n"
-        f'exec "{executable}" "$@"\n',
-        encoding="utf-8",
-        newline="\n",
-    )
-    wrapper.chmod(0o755)
+def build_python(root: Path, archive: Path, build_root: Path, jobs: str) -> None:
+    prefix = root / "tools/runtime/python"
+    source = extract(archive, build_root / "python-src")
+    shutil.rmtree(prefix, ignore_errors=True)
+    run([
+        "./configure",
+        f"--prefix={prefix}",
+        "--with-ensurepip=no",
+        "--disable-test-modules",
+    ], cwd=source)
+    run(["make", f"-j{jobs}"], cwd=source)
+    run(["make", "install"], cwd=source)
+    versioned = prefix / "bin/python3.13"
+    require(versioned.is_file() and os.access(versioned, os.X_OK), "Python install did not create python3.13")
+    canonical = prefix / "bin/python"
+    canonical.unlink(missing_ok=True)
+    canonical.symlink_to("python3.13")
+    run([
+        str(canonical),
+        "-c",
+        "import sys; assert sys.version_info[:3] == (3, 13, 15); print(sys.executable)",
+    ])
 
 
 def build_sjasmplus(root: Path, archive: Path, build_root: Path, jobs: str) -> None:
@@ -197,11 +242,11 @@ def install_rom(root: Path, archive: Path) -> None:
 
 def main() -> int:
     try:
+        require(platform.system() == "Linux", f"Linux bootstrap required, got {platform.system()}")
         root = find_root(Path(__file__).resolve())
         lock = json.loads((root / LOCK_PATH).read_text(encoding="utf-8"))
-        items = {item["id"]: item for item in lock["artifacts"]}
-        require(set(items) == {"python", "sjasmplus", "libspectrum", "fuse", "fuse-utils", "zx48-rom"}, "unexpected toolchain artifact set")
-        require(sys.version_info[:3] == PYTHON_VERSION, f"bootstrap Python must be 3.13.15, got {sys.version.split()[0]}")
+        items = validate_lock(lock)
+        require(sys.version_info[:3] == BOOTSTRAP_PYTHON, f"bootstrap Python must be 3.13.15, got {sys.version.split()[0]}")
 
         jobs = str(max(1, min(2, os.cpu_count() or 1)))
         cache = Path(tempfile.gettempdir()) / "zxux-tool-cache"
@@ -210,7 +255,7 @@ def main() -> int:
         build_root.mkdir(parents=True, exist_ok=True)
 
         archives = {artifact_id: download(item, cache) for artifact_id, item in items.items()}
-        write_python_wrapper(root)
+        build_python(root, archives["python"], build_root, jobs)
         build_sjasmplus(root, archives["sjasmplus"], build_root, jobs)
         libspectrum_prefix = build_libspectrum(root, archives["libspectrum"], build_root, jobs)
         build_fuse(root, archives["fuse"], build_root, jobs, libspectrum_prefix)

@@ -18,24 +18,25 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import platform
+import re
 import subprocess
 import sys
 
 ROOT_MARKER = b"ZX-UX project root"
 CANONICAL_LOCK = Path("tools/manifest/toolchain.lock.json")
-RECONSTRUCTED_LOCK_SHA256 = "8a2e38fbd7b99e166f279d4e2163b0200c52e1ee95672e834e861a1a47b337bc"
 ARCHITECTURE = Path("docs/01-ZX-UX-ARCHITECTURE-REV11.md")
 ARCHITECTURE_SHA256 = "1d736641e685c1d6136b66fc57d0c16fc662ce6ca4dfd640991743bb01bb706f"
 FINAL_MARKER = "ZX-UX DEVELOPMENT ENVIRONMENT CERTIFICATION PASS"
-
-EXPECTED = {
-    "python": ("3.13.15", "1e66a7945a48390ee4c2a4268a0e4185884059a13c4aab6d148aa208deea4a76", 23160540),
-    "sjasmplus": ("1.24.0", "0b5013f07e8d8505f9e296529655668b6fdf0268625c19e883b0fff484e209f1", 1290980),
-    "libspectrum": ("1.6.4", "4cce5764227f040238877d9e0ce3aede2bac1b1adfa8ed535d68bb405df395c3", 703518),
-    "fuse": ("1.9.2", "ad04be2c67172c5387fd2cd84350ed8215958fa5b8a52a4990862867f089f489", 1850564),
-    "fuse-utils": ("1.4.7", "1a2e7be6447476d45c606c44536805cdb0dfb29d7f41632602d9a6883bf1e4b6", 561628),
-    "zx48-rom": ("1982-original", "d55daa439b673b0e3f5897f99ac37ecb45f974d1862b4dadb85dec34af99cb42", 16384),
+REQUIRED_ARTIFACTS = {
+    "python": ("source", "tools/runtime/python"),
+    "sjasmplus": ("source", "tools/runtime/sjasmplus"),
+    "libspectrum": ("source", "tools/runtime/libspectrum"),
+    "fuse": ("source", "tools/runtime/fuse"),
+    "fuse-utils": ("source", "tools/runtime/fuse-utils"),
+    "zx48-rom": ("binary", "tools/runtime/fuse/roms/48.rom"),
 }
+SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
 class CertificationError(RuntimeError):
@@ -63,35 +64,75 @@ def require(condition: bool, message: str) -> None:
         raise CertificationError(message)
 
 
-def load_manifest(root: Path, requested: str | None) -> tuple[Path, dict]:
-    path = (root / requested).resolve() if requested else (root / CANONICAL_LOCK).resolve()
+def read_json(path: Path) -> dict:
     require(path.is_file() and not path.is_symlink(), f"manifest is not a regular file: {path}")
-    canonical = (root / CANONICAL_LOCK).resolve()
-    if path == canonical:
-        require(digest(path) == RECONSTRUCTED_LOCK_SHA256, "canonical reconstructed lock hash mismatch")
     data = json.loads(path.read_text(encoding="utf-8"))
+    require(isinstance(data, dict), "manifest root must be an object")
+    return data
+
+
+def validate_manifest(data: dict) -> dict[str, dict]:
     require(data.get("schema") == 1, "manifest schema must be 1")
     require(data.get("project") == "ZX-UX", "manifest project identity mismatch")
     require(data.get("root_marker") == ROOT_MARKER.decode("ascii"), "manifest root marker mismatch")
-    freeze = data.get("aggregate_freeze", {})
-    require(freeze.get("reconstructed_under_owner_override") is True, "owner override record missing")
+
+    bootstrap = data.get("bootstrap")
+    require(isinstance(bootstrap, dict), "manifest bootstrap metadata missing")
+    require(bootstrap.get("platform") == "linux", "bootstrap platform must be linux")
+    require(bootstrap.get("bootstrap_python") == "3.13.15", "bootstrap Python must be 3.13.15")
+    require(
+        bootstrap.get("certified_python") == "tools/runtime/python/bin/python",
+        "certified Python path mismatch",
+    )
+    require(bootstrap.get("download_policy") == "https-size-sha256", "bootstrap download policy mismatch")
+    prerequisites = bootstrap.get("native_build_prerequisites")
+    require(
+        isinstance(prerequisites, list)
+        and prerequisites
+        and all(isinstance(item, str) and item for item in prerequisites)
+        and len(set(prerequisites)) == len(prerequisites),
+        "native build prerequisites must be a non-empty unique string list",
+    )
+
     artifacts = data.get("artifacts")
     require(isinstance(artifacts, list), "manifest artifacts must be a list")
-    by_id = {}
+    by_id: dict[str, dict] = {}
     for item in artifacts:
         require(isinstance(item, dict), "manifest artifact entry must be an object")
         artifact_id = item.get("id")
         require(isinstance(artifact_id, str) and artifact_id not in by_id, "duplicate/invalid artifact id")
         by_id[artifact_id] = item
-        require(str(item.get("url", "")).startswith("https://"), f"{artifact_id}: HTTPS URL required")
-        require(isinstance(item.get("runtime_path"), str) and item["runtime_path"], f"{artifact_id}: runtime_path required")
-    require(set(by_id) == set(EXPECTED), "manifest artifact set mismatch")
-    for artifact_id, (version, sha256, size) in EXPECTED.items():
+
+    require(set(by_id) == set(REQUIRED_ARTIFACTS), "manifest artifact set mismatch")
+    for artifact_id, (kind, runtime_path) in REQUIRED_ARTIFACTS.items():
         item = by_id[artifact_id]
-        require(item.get("version") == version, f"{artifact_id}: version mismatch")
-        require(item.get("sha256") == sha256, f"{artifact_id}: sha256 mismatch")
-        require(item.get("size") == size, f"{artifact_id}: size mismatch")
-    return path, data
+        require(item.get("kind") == kind, f"{artifact_id}: kind mismatch")
+        require(isinstance(item.get("version"), str) and item["version"], f"{artifact_id}: version required")
+        require(str(item.get("url", "")).startswith("https://"), f"{artifact_id}: HTTPS URL required")
+        require(
+            isinstance(item.get("sha256"), str) and SHA256_RE.fullmatch(item["sha256"]) is not None,
+            f"{artifact_id}: lowercase SHA-256 required",
+        )
+        require(isinstance(item.get("size"), int) and item["size"] > 0, f"{artifact_id}: positive size required")
+        require(item.get("runtime_path") == runtime_path, f"{artifact_id}: runtime_path mismatch")
+    return by_id
+
+
+def load_manifest(root: Path, requested: str | None) -> tuple[Path, dict, dict[str, dict]]:
+    canonical_path = (root / CANONICAL_LOCK).resolve()
+    canonical = read_json(canonical_path)
+    canonical_by_id = validate_manifest(canonical)
+
+    if requested is None:
+        return canonical_path, canonical, canonical_by_id
+
+    candidate_path = Path(requested)
+    if not candidate_path.is_absolute():
+        candidate_path = (root / candidate_path).resolve()
+    candidate = read_json(candidate_path)
+    by_id = validate_manifest(candidate)
+    require(candidate == canonical, "manifest content mismatch against canonical lock")
+    return candidate_path, candidate, by_id
 
 
 def verify_architecture(path: Path) -> str:
@@ -115,41 +156,50 @@ def check_program(argv: list[str], expected_text: str, label: str) -> None:
     require(expected_text in output, f"{label}: expected version {expected_text!r}, got {output!r}")
 
 
-def validate_runtime(root: Path) -> None:
-    require(sys.version_info[:3] == (3, 13, 15), f"Python 3.13.15 required, got {sys.version.split()[0]}")
-    wrapper = root / "tools/runtime/python/bin/python"
-    require(wrapper.is_file() and os.access(wrapper, os.X_OK), "project-local Python wrapper missing")
+def validate_runtime(root: Path, artifacts: dict[str, dict]) -> None:
+    require(platform.system() == "Linux", f"Linux certification required, got {platform.system()}")
+    python_item = artifacts["python"]
+    expected_version = tuple(int(part) for part in python_item["version"].split("."))
+    require(len(expected_version) == 3, "python version must contain three numeric components")
+    require(sys.version_info[:3] == expected_version, f"Python {python_item['version']} required, got {sys.version.split()[0]}")
 
-    sjasmplus = root / "tools/runtime/sjasmplus/bin/sjasmplus"
-    fuse = root / "tools/runtime/fuse/bin/fuse"
-    tzxlist = root / "tools/runtime/fuse-utils/bin/tzxlist"
-    rom = root / "tools/runtime/fuse/roms/48.rom"
+    certified_python = root / "tools/runtime/python/bin/python"
+    require(certified_python.is_file() and os.access(certified_python, os.X_OK), "project-local Python missing")
+    require(
+        Path(sys.executable).resolve() == certified_python.resolve(),
+        f"certification must run under {certified_python}",
+    )
+
+    sjasmplus = root / artifacts["sjasmplus"]["runtime_path"] / "bin/sjasmplus"
+    fuse = root / artifacts["fuse"]["runtime_path"] / "bin/fuse"
+    tzxlist = root / artifacts["fuse-utils"]["runtime_path"] / "bin/tzxlist"
+    rom = root / artifacts["zx48-rom"]["runtime_path"]
 
     require(sjasmplus.is_file(), "sjasmplus executable missing")
     require(fuse.is_file(), "Fuse executable missing")
     require(tzxlist.is_file(), "Fuse-utils tzxlist executable missing")
     require(rom.is_file() and not rom.is_symlink(), "canonical 48K ROM missing")
-    require(rom.stat().st_size == EXPECTED["zx48-rom"][2], "canonical 48K ROM size mismatch")
-    require(digest(rom) == EXPECTED["zx48-rom"][1], "canonical 48K ROM sha256 mismatch")
+    require(rom.stat().st_size == artifacts["zx48-rom"]["size"], "canonical 48K ROM size mismatch")
+    require(digest(rom) == artifacts["zx48-rom"]["sha256"], "canonical 48K ROM sha256 mismatch")
 
-    check_program([str(sjasmplus), "--version"], "1.24.0", "sjasmplus")
-    check_program([str(fuse), "--version"], "1.9.2", "Fuse")
-    check_program([str(tzxlist), "--version"], "1.4.7", "Fuse-utils")
+    check_program([str(sjasmplus), "--version"], artifacts["sjasmplus"]["version"], "sjasmplus")
+    check_program([str(fuse), "--version"], artifacts["fuse"]["version"], "Fuse")
+    check_program([str(tzxlist), "--version"], artifacts["fuse-utils"]["version"], "Fuse-utils")
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Verify the pinned ZX-UX development environment.")
-    parser.add_argument("--manifest", help="root-relative manifest path, used by the negative-test harness")
+    parser = argparse.ArgumentParser(description="Verify the pinned ZX-UX Linux development environment.")
+    parser.add_argument("--manifest", help="manifest path used only by the E0.01 negative-test harness")
     parser.add_argument("--metadata-only", action="store_true", help="validate lock and architecture without runtime tools")
     args = parser.parse_args()
 
     try:
         root = find_root(Path(__file__).resolve())
-        manifest_path, _ = load_manifest(root, args.manifest)
+        manifest_path, _, artifacts = load_manifest(root, args.manifest)
         architecture = root / ARCHITECTURE
         architecture_sha256 = verify_architecture(architecture)
         if not args.metadata_only:
-            validate_runtime(root)
+            validate_runtime(root, artifacts)
         print(f"root={root}")
         print(f"manifest={manifest_path}")
         print(f"architecture_sha256={architecture_sha256}")

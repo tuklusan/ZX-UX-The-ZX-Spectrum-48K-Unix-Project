@@ -2,12 +2,26 @@
   "schema": 1,
   "project": "ZX-UX",
   "root_marker": "ZX-UX project root",
-  "aggregate_freeze": {
-    "handover_manifest_sha256": "2847e76becf27fe1c7decabd09deb6beb017bf90d4e6906e31889f3b10cf9bd3",
-    "handover_verifier_sha256": "72b93d8488cc6d3096cc90dea7ae276cf089c910971498936a0896c6b9855b86",
-    "reconstructed_under_owner_override": true,
-    "override_date": "2026-09-11",
-    "reason": "Frozen handover bytes were absent; acquire and verify the specified upstream artifacts instead of inventing historical evidence."
+  "bootstrap": {
+    "platform": "linux",
+    "bootstrap_python": "3.13.15",
+    "certified_python": "tools/runtime/python/bin/python",
+    "download_policy": "https-size-sha256",
+    "native_build_prerequisites": [
+      "build-essential",
+      "cmake",
+      "gettext",
+      "libaudiofile-dev",
+      "libfreetype6-dev",
+      "libgcrypt20-dev",
+      "libglib2.0-dev",
+      "libpng-dev",
+      "libsdl1.2-dev",
+      "libtool",
+      "libxml2-dev",
+      "perl",
+      "pkg-config"
+    ]
   },
   "artifacts": [
     {

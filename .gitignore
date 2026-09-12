@@ -1,0 +1,7 @@
+# Generated host/runtime state.
+/tools/runtime/
+/v1/build/
+
+# Python cache files produced by host tools.
+__pycache__/
+*.py[cod]
