@@ -1,0 +1,103 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: ZX-UX H03 Reference Transport
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/h03-reference-transport.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  package-reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout pinned read-only source
+        uses: actions/checkout@v7
+        with:
+          repository: tuklusan/zxuslinuxtestproject
+          ref: ac520f05db734c650f67b62ba62f5490a91ab9c3
+          path: source
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Verify, package, round-trip, and checksum reference tree
+        shell: bash
+        env:
+          SOURCE_COMMIT: ac520f05db734c650f67b62ba62f5490a91ab9c3
+          SOURCE_REFERENCE_TREE: 22aa7ef43545a4746ca5dc8584bfb830509c79d0
+        run: |
+          set -euo pipefail
+          actual_commit="$(git -C source rev-parse HEAD)"
+          test "$actual_commit" = "$SOURCE_COMMIT"
+          actual_tree="$(git -C source rev-parse "$SOURCE_COMMIT:reference")"
+          test "$actual_tree" = "$SOURCE_REFERENCE_TREE"
+
+          printf '%s\n' "$actual_commit" > source-commit.txt
+          printf '%s\n' "$actual_tree" > reference-tree-sha.txt
+          git -C source ls-tree -r --full-tree "$SOURCE_COMMIT" reference > reference-git-tree.txt
+
+          while IFS=$'\t' read -r meta path; do
+            expected_sha="${meta##* }"
+            actual_sha="$(git hash-object "source/$path")"
+            test "$actual_sha" = "$expected_sha"
+          done < reference-git-tree.txt
+
+          (
+            cd source
+            find reference -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum
+          ) > reference-sha256.txt
+
+          awk '$2 == "blob" { count++ } END { print count + 0 }' reference-git-tree.txt > reference-file-count.txt
+
+          (
+            cd source
+            zip -q -X -r ../reference-source.zip reference
+          )
+
+          rm -rf roundtrip
+          mkdir roundtrip
+          unzip -q reference-source.zip -d roundtrip
+          diff -qr source/reference roundtrip/reference
+          (
+            cd roundtrip
+            sha256sum -c ../reference-sha256.txt
+          )
+
+          sha256sum \
+            reference-source.zip \
+            reference-git-tree.txt \
+            reference-sha256.txt \
+            reference-tree-sha.txt \
+            source-commit.txt \
+            reference-file-count.txt > transport-sha256.txt
+
+      - name: Upload H03 transport artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: h03-reference-ac520f05-${{ github.run_id }}
+          path: |
+            reference-source.zip
+            reference-git-tree.txt
+            reference-sha256.txt
+            reference-tree-sha.txt
+            source-commit.txt
+            reference-file-count.txt
+            transport-sha256.txt
+          compression-level: 0
+          retention-days: 7
+          if-no-files-found: error
