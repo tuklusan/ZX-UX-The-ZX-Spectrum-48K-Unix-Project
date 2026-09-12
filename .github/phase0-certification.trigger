@@ -17,3 +17,4 @@
 # Refreeze after removing stale P0.03 internal veneer-address assumptions.
 # Refreeze after reconciling P0.06 with the guarded alternate-bank ISR contract.
 # Refreeze after fixing P0.14 negative contract mutation coverage.
+# Refreeze after making static prose contract matching whitespace-aware.
