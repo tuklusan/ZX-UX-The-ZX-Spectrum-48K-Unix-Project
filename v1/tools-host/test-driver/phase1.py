@@ -108,9 +108,12 @@ def _labels(listing: Path, names: tuple[str, ...]) -> dict[str, int]:
             match = pattern.match(line.strip())
             if match is None:
                 continue
-            address = int(match.group(1), 16)
-            require(KERNEL_BASE <= address <= 0xFFFF, f"kernel symbol outside high memory: {name}")
-            found[name] = address
+            value = int(match.group(1), 16)
+            if name.startswith("E_"):
+                require(value <= 0xFF, f"error symbol outside byte range: {name}")
+            else:
+                require(KERNEL_BASE <= value <= 0xFFFF, f"kernel symbol outside high memory: {name}")
+            found[name] = value
             break
         require(name in found, f"kernel symbol missing: {name}")
     return found
