@@ -11,23 +11,16 @@
 # patent, trademark, and governing-law provisions.
 
 name: ZX-UX Quality and CI
-
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - 'docs/**'
-      - 'v1/docs/**'
-      - 'README.md'
+    paths-ignore: ['docs/**', 'v1/docs/**', 'README.md']
   workflow_dispatch:
-
 permissions:
   contents: read
-
 concurrency:
   group: zxux-ci-${{ github.ref }}
   cancel-in-progress: true
-
 jobs:
   project-policy:
     runs-on: ubuntu-slim
@@ -35,16 +28,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - run: ./tools/check_project_policy.py
-
   e0-metadata:
     runs-on: ubuntu-slim
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
-        with:
-          python-version: '3.13.15'
-          check-latest: false
+        with: {python-version: '3.13.15', check-latest: false}
       - run: python tools/scripts/verify-environment.py --metadata-only
       - name: Reject altered lock
         run: |
@@ -55,7 +45,6 @@ jobs:
           p=Path('/tmp/zxux-bad-lock.json'); d=json.loads(p.read_text()); d['artifacts'][0]['sha256']='0'*64; p.write_text(json.dumps(d))
           PY
           ! python tools/scripts/verify-environment.py --metadata-only --manifest /tmp/zxux-bad-lock.json
-
   e0-foundation:
     needs: e0-metadata
     runs-on: ubuntu-slim
@@ -65,9 +54,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
-        with:
-          python-version: '3.13.15'
-          check-latest: false
+        with: {python-version: '3.13.15', check-latest: false}
       - name: Native prerequisites
         run: |
           sudo apt-get update
@@ -76,19 +63,14 @@ jobs:
       - run: tools/runtime/python/bin/python tools/scripts/verify-environment.py
       - name: Execute all exact E0 steps
         run: |
-          set -euo pipefail
-          py=tools/runtime/python/bin/python; driver=v1/tools-host/test-driver/run.py
-          for n in 01 02 03 04 05 06; do
-            "$py" "$driver" build --step "E0.$n"
-            "$py" "$driver" test --step "E0.$n"
-          done
+          set -euo pipefail; py=tools/runtime/python/bin/python; driver=v1/tools-host/test-driver/run.py
+          for n in 01 02 03 04 05 06; do "$py" "$driver" build --step "E0.$n"; "$py" "$driver" test --step "E0.$n"; done
       - uses: actions/upload-artifact@v7
         with:
           name: zxux-e0-${{ github.run_id }}-${{ github.run_attempt }}
           path: /tmp/zxux-e0-${{ github.run_id }}-${{ github.run_attempt }}/*.json
           retention-days: 90
           if-no-files-found: error
-
   license-headers:
     needs: project-policy
     runs-on: ubuntu-slim
@@ -96,17 +78,15 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - run: ./tools/check_license_headers.sh
-
   phase0-evidence:
     needs: project-policy
     runs-on: ubuntu-slim
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
+        with: {fetch-depth: 0}
       - run: python3 tools/check_phase0_evidence.py
-
+      - run: python3 tools/test_phase0_evidence_negative.py
   project-ci:
     needs: [project-policy, e0-metadata, e0-foundation, license-headers, phase0-evidence]
     runs-on: ubuntu-slim
