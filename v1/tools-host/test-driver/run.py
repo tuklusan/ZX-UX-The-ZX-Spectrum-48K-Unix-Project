@@ -20,6 +20,7 @@ import sys
 sys.dont_write_bytecode = True
 
 import foundation
+import foundation_rr
 import phase0
 import phase0_layout
 import phase0_boot
@@ -28,6 +29,7 @@ import phase0_rom
 import phase0_alt
 import phase0_loader
 import phase0_media
+import phase0_rr
 import phase1
 import phase1_alt
 import phase1_keyboard
@@ -45,6 +47,28 @@ from driver_core import (
     write_evidence,
 )
 
+E0_MODULE = {
+    "E0.01": foundation_rr,
+    "E0.02": foundation_rr,
+    "E0.03": foundation,
+    "E0.04": foundation,
+    "E0.05": foundation,
+    "E0.06": foundation,
+}
+P0_MODULE = {
+    "P0.01": phase0,
+    "P0.02": phase0_layout,
+    "P0.03": phase0_boot,
+    "P0.04": phase0_im2,
+    "P0.05": phase0_rom,
+    "P0.06": phase0_alt,
+    "P0.07": phase0_loader,
+    "P0.08": phase0_media,
+    "P0.09": phase0_media,
+    "P0.10": phase0_media,
+    **{f"P0.{number:02d}": phase0_rr for number in range(11, 35)},
+}
+
 
 def dispatch(root: Path, action: str, step: str):
     kwargs = {
@@ -52,24 +76,16 @@ def dispatch(root: Path, action: str, step: str):
         "run_command": run_command,
         "require_project_tool": require_project_tool,
     }
-    if step.startswith("E0."):
-        return foundation.dispatch(root, action, step, **kwargs)
-    if step == "P0.02":
-        return phase0_layout.dispatch(root, action, step, **kwargs)
-    if step == "P0.03":
-        return phase0_boot.dispatch(root, action, step, **kwargs)
-    if step == "P0.04":
-        return phase0_im2.dispatch(root, action, step, **kwargs)
-    if step == "P0.05":
-        return phase0_rom.dispatch(root, action, step, **kwargs)
-    if step == "P0.06":
-        return phase0_alt.dispatch(root, action, step, **kwargs)
-    if step == "P0.07":
-        return phase0_loader.dispatch(root, action, step, **kwargs)
-    if step in ("P0.08", "P0.09", "P0.10"):
-        return phase0_media.dispatch(root, action, step)
-    if step.startswith("P0."):
-        return phase0.dispatch(root, action, step, **kwargs)
+    module = E0_MODULE.get(step)
+    if module is not None:
+        return module.dispatch(root, action, step, **kwargs)
+    module = P0_MODULE.get(step)
+    if module is not None:
+        if module is phase0_media:
+            return module.dispatch(root, action, step)
+        return module.dispatch(root, action, step, **kwargs)
+    if step.startswith(("E0.", "P0.")):
+        raise DriverError(f"numbered foundation/Phase-0 step is not registered: {step}")
     if step == "P1.30":
         return phase1_alt.dispatch(root, action, step, **kwargs)
     if step == "P1.31":
@@ -84,25 +100,12 @@ def dispatch(root: Path, action: str, step: str):
 
 
 def prerequisite_statuses(step: str) -> dict[str, str]:
-    if step.startswith("E0."):
-        try:
-            number = int(step.split(".", 1)[1])
-        except ValueError as exc:
-            raise DriverError(f"invalid E0 step identifier: {step}") from exc
-        if number == 1:
-            return {}
-        if 2 <= number <= 6:
-            return {f"E0.{number - 1:02d}": "PASS"}
-        return {}
-    if step.startswith("P0."):
-        try:
-            number = int(step.split(".", 1)[1])
-        except ValueError as exc:
-            raise DriverError(f"invalid Phase-0 step identifier: {step}") from exc
-        if number == 1:
-            return {"E0.06": "PASS"}
-        if 2 <= number <= 34:
-            return {f"P0.{number - 1:02d}": "PASS"}
+    if step in E0_MODULE:
+        number = int(step.split(".", 1)[1])
+        return {} if number == 1 else {f"E0.{number - 1:02d}": "PASS"}
+    if step in P0_MODULE:
+        number = int(step.split(".", 1)[1])
+        return {"E0.06": "PASS"} if number == 1 else {f"P0.{number - 1:02d}": "PASS"}
     return {}
 
 
