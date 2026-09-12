@@ -83,7 +83,7 @@ resolved before the dependent rebaseline or change-request step is marked comple
 
 ### H01 — Prevent document-only changes from firing CI runners
 
-- [ ] Change the project's CI workflow so that no document fires a runner or
+- [x] Change the project's CI workflow so that no document fires a runner or
   runner-matrix because documents are not executables or source files to compile and
   execute. One specific document already meets this requirement; generalize that
   behavior globally for all documents, including but not limited to Markdown files,
@@ -91,7 +91,7 @@ resolved before the dependent rebaseline or change-request step is marked comple
 
 ### H02 — Replace the reviewer-gate instructions
 
-- [ ] Completely replace the reviewer gate's instructions with the following exact
+- [x] Completely replace the reviewer gate's instructions with the following exact
   prompt:
 
 ```text
@@ -150,11 +150,11 @@ For each finding, cite the exact file and line number. State the defect clearly,
 
 ### H05 — Standardize GitHub-hosted runners on ubuntu-latest
 
-- [x] Inventory the current workflow runner labels. Current state is mixed:
+- [x] Inventory the pre-H05 workflow runner labels. The pre-change state was mixed:
   `phase0-certification.yml`, `phase1-certification.yml`, and the Quality/CI
   `e0-foundation` job use `ubuntu-latest`; `candidate-kernel.yml` and the other
   Quality/CI jobs use `ubuntu-slim`.
-- [ ] Change every GitHub-hosted workflow job that does not already use
+- [x] Change every GitHub-hosted workflow job that does not already use
   `ubuntu-latest` to `ubuntu-latest`, then verify no unintended non-`ubuntu-latest`
   runner labels remain.
 
@@ -286,3 +286,11 @@ canonical requirements. Remove stale notes when they stop helping future session
 
 - Scratch tracker established in the repository so it survives ephemeral cloud storage
   and remains visible to future project sessions.
+
+- H01 + H02 + H05 batch closed together on 2026-09-12. Implementation commit
+  `d9a73937b7fcd3882c079f595c50b059b5e6ae67`; CI regression repair commit
+  `7b522b044feae38c717f55863eb27f57983b6922`; documentation-only H01 probe
+  commit `65a0b15388397b29b16e526c2c34d3398f124a43` produced zero workflow runs.
+  Kernel Build run `34712212139` and Phase-1 run `34712212129` succeeded.
+  Quality/CI run `34712733716` succeeded, including `project-ci`; all observed jobs
+  in the batch validation runs used the `ubuntu-latest` runner label.
