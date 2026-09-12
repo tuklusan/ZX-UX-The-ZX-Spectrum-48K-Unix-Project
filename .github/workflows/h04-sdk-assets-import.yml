@@ -118,22 +118,22 @@ jobs:
           python3 - <<'PY_PATCH'
           from pathlib import Path
           import subprocess
-          
+
           path = Path('tools/check_license_headers.sh')
           text = path.read_text(encoding='utf-8')
           before = subprocess.check_output(['git', 'hash-object', str(path)], text=True).strip()
           expected_before = 'e1ee005c474e6b1e8d9a76d45d3e5bb94655c82f'
           if before != expected_before:
               raise SystemExit(f'license checker preimage mismatch: expected {expected_before}, got {before}')
-          
+
           lines = text.splitlines(keepends=True)
-          
+
           def find_exact(line: str) -> int:
               hits = [i for i, item in enumerate(lines) if item == line]
               if len(hits) != 1:
                   raise SystemExit(f'expected exactly one checker anchor {line!r}, found {len(hits)}')
               return hits[0]
-          
+
           # Provenance comment after H03 immutable-tree constant.
           i = find_exact('readonly PRESERVED_REFERENCE_TREE_SHA1="a4e06de3b8b193b43597cdb4d259b5b206e7e3ad"\n')
           lines[i + 1:i + 1] = [
@@ -142,7 +142,7 @@ jobs:
               '# at 1bebc6288a1cdfa1bdfb5a6694e1986b6c3d7ee0; compiler/assets tree\n',
               '# 979039b5c636f0578f8bccd19ae49a669a5b7e0e.\n',
           ]
-          
+
           # New exact-blob map immediately after the existing explicit exemption map.
           start = find_exact('declare -A explicit_header_exemptions=(\n')
           end = next((j for j in range(start + 1, len(lines)) if lines[j] == ')\n'), None)
@@ -168,7 +168,7 @@ jobs:
               ')\n',
           ]
           lines[end + 1:end + 1] = map_lines
-          
+
           # Verify every preserved path before any exemption is honored.
           loop_start = find_exact('for exempt_path in "${!explicit_header_exemptions[@]}"; do\n')
           loop_end = next((j for j in range(loop_start + 1, len(lines)) if lines[j] == 'done\n'), None)
@@ -197,7 +197,7 @@ jobs:
               'done\n',
           ]
           lines[loop_end + 1:loop_end + 1] = verify_lines
-          
+
           # Skip only the pre-verified exact H04 paths in the header scan.
           ref_if = find_exact('  if [[ "$file" == "$PRESERVED_REFERENCE_DIR"/* ]]; then\n')
           ref_fi = next((j for j in range(ref_if + 1, len(lines)) if lines[j] == '  fi\n'), None)
@@ -211,7 +211,7 @@ jobs:
               '  fi\n',
           ]
           lines[ref_fi + 1:ref_fi + 1] = skip_lines
-          
+
           path.write_text(''.join(lines), encoding='utf-8')
           after = subprocess.check_output(['git', 'hash-object', str(path)], text=True).strip()
           expected_after = '969fec78673ab64f9a57d6195beed84b3735299e'
