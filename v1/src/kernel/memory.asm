@@ -14,30 +14,39 @@
 ; ANY takes the lowest fit, FAST_REQUIRED carves a high fit, COLD_PREFERRED
 ; first stays wholly below 0x8000 and otherwise retries as ANY.
 ; Exact live allocation extents are recorded in the fixed FAST reserve so a
-; wrong-bounds free or double free can never mutate the free-extent map.
+; wrong-bounds free or double free cannot mutate the free-extent map.
 
-ALLOC_RECORD_COUNT EQU 63
+; Allocator metadata lives entirely in the 253-byte fixed FAST reserve. This
+; keeps ownership checking outside the fixed 8192-byte kernel image.
+memory_free_extents      EQU FAST_RESERVE_START
+memory_request           EQU FAST_RESERVE_START+64
+memory_policy            EQU FAST_RESERVE_START+66
+memory_candidate         EQU FAST_RESERVE_START+67
+memory_free_start        EQU FAST_RESERVE_START+69
+memory_free_length       EQU FAST_RESERVE_START+71
+memory_live_allocations  EQU FAST_RESERVE_START+73
+memory_pinned_bytes      EQU FAST_RESERVE_START+75
+memory_info_ptr          EQU FAST_RESERVE_START+77
+memory_alloc_record_ptr  EQU FAST_RESERVE_START+79
+memory_fast_total        EQU FAST_RESERVE_START+81
+memory_fast_largest      EQU FAST_RESERVE_START+83
+memory_cold_total        EQU FAST_RESERVE_START+85
+memory_cold_largest      EQU FAST_RESERVE_START+87
+ALLOC_RECORDS_START      EQU FAST_RESERVE_START+89
+ALLOC_RECORD_COUNT       EQU 41
 
     MACRO EMIT_MEMORY_ROUTINES
 zx48_memory_init:
     xor a
-    ld hl,memory_free_extents
-    ld de,memory_free_extents+1
-    ld bc,FREE_EXTENT_COUNT*4-1
-    ld (hl),a
-    ldir
     ld hl,FAST_RESERVE_START
     ld de,FAST_RESERVE_START+1
-    ld bc,ALLOC_RECORD_COUNT*4-1
+    ld bc,FAST_RESERVE_END-FAST_RESERVE_START
     ld (hl),a
     ldir
     ld hl,ARENA_START
     ld (memory_free_extents),hl
     ld hl,ARENA_SIZE
     ld (memory_free_extents+2),hl
-    ld hl,0
-    ld (memory_live_allocations),hl
-    ld (memory_pinned_bytes),hl
     ret
 
 ; A=policy, BC=request -> HL=base.
@@ -51,8 +60,15 @@ zx48_alloc:
     inc bc
 zx48_alloc_even:
     ld (memory_request),bc
-    call zx48_alloc_find_slot
-    jp c,zx48_alloc_fail
+    ld hl,(memory_live_allocations)
+    ld a,h
+    or a
+    jp nz,zx48_alloc_fail
+    ld a,l
+    cp ALLOC_RECORD_COUNT
+    jp nc,zx48_alloc_fail
+    call zx48_alloc_record_address
+    ld (memory_alloc_record_ptr),hl
 zx48_alloc_retry:
     ld ix,memory_free_extents
     ld b,FREE_EXTENT_COUNT
@@ -157,25 +173,11 @@ zx48_alloc_done:
     xor a
     ret
 
-; Reserve one zero-length live-allocation record without mutating it. The slot
-; becomes live only after the free-extent mutation has succeeded.
-zx48_alloc_find_slot:
-    ld ix,FAST_RESERVE_START
-    ld b,ALLOC_RECORD_COUNT
-zx48_alloc_find_slot_loop:
-    ld a,(ix+2)
-    or (ix+3)
-    jr z,zx48_alloc_find_slot_found
-    ld de,4
-    add ix,de
-    djnz zx48_alloc_find_slot_loop
-    scf
-    ret
-zx48_alloc_find_slot_found:
-    push ix
-    pop hl
-    ld (memory_alloc_record_ptr),hl
-    or a
+zx48_alloc_record_address:
+    add hl,hl
+    add hl,hl
+    ld de,ALLOC_RECORDS_START
+    add hl,de
     ret
 
 ; HL=base, BC=rounded length. Reject wrong bounds/double free before mutation.
@@ -224,7 +226,6 @@ zx48_free_scan:
     ld (memory_request),hl
     jr zx48_free_next
 zx48_free_live:
-    ; new_end compared with existing_start.
     ld hl,(memory_candidate)
     ld e,(ix+0)
     ld d,(ix+1)
@@ -232,8 +233,6 @@ zx48_free_live:
     sbc hl,de
     jp z,zx48_free_prepend
     jr c,zx48_free_next
-    ; existing_end compared with new_start. An append is remembered until the
-    ; full table has proved that no later live extent overlaps this free.
     ld l,(ix+0)
     ld h,(ix+1)
     ld e,(ix+2)
@@ -333,19 +332,15 @@ zx48_extent_merge_next:
     dec c
     jr nz,zx48_extent_merge_loop
 zx48_free_commit:
-    ld ix,(memory_alloc_record_ptr)
-    xor a
-    ld (ix+0),a
-    ld (ix+1),a
-    ld (ix+2),a
-    ld (ix+3),a
+    ld de,(memory_alloc_record_ptr)
     ld hl,(memory_live_allocations)
-    ld a,h
-    or l
-    jr z,zx48_free_ok
     dec hl
     ld (memory_live_allocations),hl
-zx48_free_ok:
+    push de
+    call zx48_alloc_record_address
+    pop de
+    ld bc,4
+    ldir
     xor a
     ret
 zx48_free_nospc:
@@ -357,15 +352,13 @@ zx48_free_bad:
     scf
     ret
 
-; Find the exact base/length pair recorded for the requested free. Carry set
-; means no live allocation owns precisely these bounds.
 zx48_free_find_record:
-    ld ix,FAST_RESERVE_START
-    ld b,ALLOC_RECORD_COUNT
+    ld a,(memory_live_allocations)
+    or a
+    jr z,zx48_free_find_record_fail
+    ld b,a
+    ld ix,ALLOC_RECORDS_START
 zx48_free_find_record_loop:
-    ld a,(ix+2)
-    or (ix+3)
-    jr z,zx48_free_find_record_next
     ld l,(ix+0)
     ld h,(ix+1)
     ld de,(memory_free_start)
@@ -387,10 +380,11 @@ zx48_free_find_record_next:
     ld de,4
     add ix,de
     djnz zx48_free_find_record_loop
+zx48_free_find_record_fail:
     scf
     ret
 
-; Stable bounded sort: active records by ascending start, zero-length records last.
+; Stable bounded sort: active free extents by ascending start, empty records last.
 zx48_extent_sort:
     ld b,FREE_EXTENT_COUNT-1
 zx48_extent_sort_pass:
@@ -477,7 +471,6 @@ zx48_mem_scan:
     pop hl
     jr c,zx48_mem_cold_whole
     jr z,zx48_mem_cold_whole
-    ; crossing extent: cold=8000-start, fast=end-8000.
     push bc
     ld de,FAST_START
     ex de,hl
@@ -567,19 +560,4 @@ zx48_mem_add_fast:
     add hl,de
     ld (memory_fast_largest),hl
     ret
-
-memory_request: dw 0
-memory_policy: db 0
-memory_candidate: dw 0
-memory_free_start: dw 0
-memory_free_length: dw 0
-memory_live_allocations: dw 0
-memory_pinned_bytes: dw 0
-memory_info_ptr: dw 0
-memory_alloc_record_ptr: dw 0
-memory_fast_total: dw 0
-memory_fast_largest: dw 0
-memory_cold_total: dw 0
-memory_cold_largest: dw 0
-memory_free_extents: defs FREE_EXTENT_COUNT*4,0
     ENDM
