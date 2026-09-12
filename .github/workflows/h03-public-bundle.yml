@@ -45,7 +45,6 @@ jobs:
           mkdir -p bundle/reference/zilog
           mkdir -p bundle/reference/comp.sys.sinclair-references
 
-          cp -a 'rom-upstream/Spectrum 48K'/.
           cp -a 'rom-upstream/Spectrum 48K'/. bundle/reference/rom-disassemblies/spectrum-48k/
           test "$(git hash-object bundle/reference/rom-disassemblies/spectrum-48k/Sinclair-Interface-1-v2.asm)" = c9d1e2f6140b8f88f9a6e426cfc7b59241bf9427
           test "$(git hash-object bundle/reference/rom-disassemblies/spectrum-48k/Sinclair-Interface-1.asm)" = d42487708138b6accf8560fe859ebce6542d9be2
