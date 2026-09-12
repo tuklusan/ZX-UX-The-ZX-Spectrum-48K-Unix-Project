@@ -16,10 +16,10 @@ from __future__ import annotations
 from pathlib import Path
 
 KERNEL_START = 0xE000
+ORDINARY_END = 0xFAFF
 SYSCALL_GATEWAY = 0xE000
 BOOT_GATEWAY = 0xE003
-SYSCALL_VENEER = 0xE006
-BOOT_VENEER = 0xE009
+FIRST_INTERNAL = 0xE006
 JP_OPCODE = 0xC3
 
 
@@ -42,14 +42,16 @@ def validate_trampolines(data: bytes) -> tuple[int, int]:
     require(len(data) == 8192, "kernel image must be exactly 8192 bytes")
     syscall_target = decode_jp(data, SYSCALL_GATEWAY - KERNEL_START)
     boot_target = decode_jp(data, BOOT_GATEWAY - KERNEL_START)
-    require(syscall_target == SYSCALL_VENEER, "E000 syscall gateway target drift")
-    require(boot_target == BOOT_VENEER, "E003 boot gateway target drift")
-    syscall_impl = decode_jp(data, syscall_target - KERNEL_START)
-    boot_impl = decode_jp(data, boot_target - KERNEL_START)
-    for name, target in (("syscall", syscall_impl), ("boot", boot_impl)):
-        require(0xE00C <= target <= 0xFAFF, f"{name} implementation target outside ordinary pool")
-    require(syscall_impl != boot_impl, "syscall and boot implementation targets must be distinct")
-    return syscall_impl, boot_impl
+    require(
+        FIRST_INTERNAL <= syscall_target <= ORDINARY_END,
+        "E000 syscall gateway target outside ordinary pool",
+    )
+    require(
+        FIRST_INTERNAL <= boot_target <= ORDINARY_END,
+        "E003 boot gateway target outside ordinary pool",
+    )
+    require(syscall_target != boot_target, "syscall and boot gateway targets must be distinct")
+    return syscall_target, boot_target
 
 
 def negative_fixtures(data: bytes) -> list[tuple[str, bool]]:
@@ -79,6 +81,15 @@ def negative_fixtures(data: bytes) -> list[tuple[str, bool]]:
         cases.append(("syscall-target-drift", False))
     except BootError:
         cases.append(("syscall-target-drift", True))
+
+    alias_target = bytearray(data)
+    alias_target[4] = alias_target[1]
+    alias_target[5] = alias_target[2]
+    try:
+        validate_trampolines(bytes(alias_target))
+        cases.append(("gateway-target-alias", False))
+    except BootError:
+        cases.append(("gateway-target-alias", True))
 
     return cases
 
@@ -112,13 +123,14 @@ def dispatch(
 
     command, image = assemble_kernel(root, run_command, require_project_tool)
     data = image.read_bytes()
-    syscall_impl, boot_impl = validate_trampolines(data)
+    syscall_target, boot_target = validate_trampolines(data)
 
     assertions = [
         {"name": "e000-absolute-jp", "passed": data[0] == JP_OPCODE},
         {"name": "e003-absolute-jp", "passed": data[3] == JP_OPCODE},
-        {"name": "syscall-target-resolves", "passed": True, "detail": f"{syscall_impl:#06x}"},
-        {"name": "boot-target-resolves", "passed": True, "detail": f"{boot_impl:#06x}"},
+        {"name": "syscall-target-in-ordinary-pool", "passed": True, "detail": f"{syscall_target:#06x}"},
+        {"name": "boot-target-in-ordinary-pool", "passed": True, "detail": f"{boot_target:#06x}"},
+        {"name": "gateway-targets-distinct", "passed": syscall_target != boot_target},
     ]
     if action == "test":
         negative = negative_fixtures(data)
