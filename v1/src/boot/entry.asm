@@ -27,6 +27,15 @@ zx48_boot_main_impl:
     di
     ld sp,BOOT_STACK_TOP
     ld iy,ROM_IY_ANCHOR
+    ; Do not rely on zero-filled load bytes for mutable emergency/interrupt state.
+    ; Clear only the documented state block; stack, display, ROM workspace and
+    ; IM2 trampoline/table remain outside this initialization range.
+    xor a
+    ld hl,EMERGENCY_START
+    ld de,EMERGENCY_START+1
+    ld bc,ERROR_STATE_END-EMERGENCY_START-1
+    ld (hl),a
+    ldir
     call zx48_kernel_stack_init
     call zx48_memory_init
     call zx48_process_init
