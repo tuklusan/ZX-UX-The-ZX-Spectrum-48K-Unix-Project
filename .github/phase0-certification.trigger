@@ -13,3 +13,4 @@
 # R&R-06 source-freeze certification trigger. This file is inert project metadata.
 # Refreeze after P0.02 remainder-layout oracle reconciliation.
 # Refreeze after moving certification to ubuntu-latest and adding failure-artifact instrumentation.
+# Refreeze after reconciling P0.02 IM2 trampoline oracle with the executable JP contract.
