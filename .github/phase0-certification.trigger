@@ -11,4 +11,4 @@
 # patent, trademark, and governing-law provisions.
 #
 # R&R-06 source-freeze certification trigger. This file is inert project metadata.
-# Refreeze after explicit ROM reentrancy contract reconciliation.
+# Refreeze after P0.02 remainder-layout oracle reconciliation.
