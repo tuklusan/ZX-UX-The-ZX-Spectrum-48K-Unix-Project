@@ -1,0 +1,157 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: ZX-UX H03 Private Reference Bridge
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/h03-private-reference-bridge.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  bridge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reconstruct source-specific reference files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/h03-private"
+          out="$root/reference"
+          mkdir -p "$out/comp.sys.sinclair-references" "$out/rom-disassemblies/spectrum-128k" "$out/rom-disassemblies"
+
+          fetch_blob() {
+            local sha="$1" dst="$2"
+            curl --fail --silent --show-error \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              "https://api.github.com/repos/$REPO/git/blobs/$sha" \
+              | python3 -c 'import base64,json,sys; d=json.load(sys.stdin); sys.stdout.buffer.write(base64.b64decode(d["content"]))' \
+              > "$dst"
+          }
+
+          assemble_chunks() {
+            local dst="$1" expected="$2"; shift 2
+            : > "$dst"
+            local first=1 sha tmp
+            for sha in "$@"; do
+              tmp="$root/chunk-$sha"
+              fetch_blob "$sha" "$tmp"
+              if (( first )); then
+                first=0
+              else
+                printf '\n' >> "$dst"
+              fi
+              cat "$tmp" >> "$dst"
+            done
+            local actual
+            actual="$(git hash-object "$dst")"
+            if [[ "$actual" != "$expected" ]]; then
+              printf '\n' >> "$dst"
+              actual="$(git hash-object "$dst")"
+            fi
+            [[ "$actual" == "$expected" ]] || {
+              echo "hash mismatch for $dst: expected=$expected actual=$actual" >&2
+              exit 1
+            }
+          }
+
+          assemble_chunks \
+            "$out/comp.sys.sinclair-references/48kreference.htm" \
+            4b3569584cb0e26ca9d150a4644cb87bcb1525dc \
+            93bec4885d72ccb19fcf9f1c41557eff433367d3 \
+            12ec9ee913d521d0f752fe48b675b0a2edabb811 \
+            85930c3c289871686e9ffb8f7651251ead00259a \
+            3640b2de321bcf22030aa5da0279503bf36764a7 \
+            55e59b0a27ebaa56acc7e352d8b99e33873e4321 \
+            48b1c5984acda427d1fe26e7acf6ffd5ee8ccafb \
+            01792f2bf29f50a3de5af4c551f6a3c5ff736c23 \
+            089fa9387ed0d8411f288a5cef3594ee2715affe
+
+          assemble_chunks \
+            "$out/comp.sys.sinclair-references/128kreference.htm" \
+            2b6d462da6c2d417d643288c1161211412ba7bb0 \
+            6092631382e2eb6a34284f01983a81d0134c96b2 \
+            074a40050b424ae0776ae9f73d0a13b7d28836c1 \
+            be00904f1c3fcb29f81f07b9080065cca70816d6
+
+          fetch_blob cd78c160f760934a4a7712d6953dc1dfd5ee1141 \
+            "$out/comp.sys.sinclair-references/README.md"
+          fetch_blob 777df6fa0292c5a0539920fa008c78d92f41347c \
+            "$out/rom-disassemblies/README.md"
+
+          upstream="$root/Spectrum128_ROM0_BugList.upstream.txt"
+          curl --fail --location --silent --show-error \
+            'https://raw.githubusercontent.com/ZXSpectrumVault/rom-disassemblies/38e96bf14b89e01eb3f011c1925df4e9491cea50/Spectrum%20128K/Spectrum128_ROM0_BugList.txt' \
+            -o "$upstream"
+          [[ "$(git hash-object "$upstream")" == dba94b1465cdada0e50aefc7db87b1f042aec7d0 ]]
+
+          bug="$out/rom-disassemblies/spectrum-128k/Spectrum128_ROM0_BugList.txt"
+          {
+            head -n 1 "$upstream"
+            cat <<'HEADER'
+          <!--
+          Warajevo ZX Spectrum Next
+          Copyright (c) 2026 Supratim Sanyal, SANYALnet Labs, for new original project material.
+          New original material is licensed under GNU GPL v2 or later (GPL-2.0-or-later), as stated in LICENSE.txt.
+          Upstream Warajevo and third-party material retain their applicable copyrights and licenses.
+          See LICENSE.txt and NOTICE.md for complete terms and provenance.
+          -->
+
+          HEADER
+            tail -n +2 "$upstream"
+          } > "$bug"
+          [[ "$(git hash-object "$bug")" == 621f59ce937973a885982d45f92e40670c8f6875 ]]
+
+          while read -r expected rel; do
+            actual="$(git hash-object "$out/$rel")"
+            [[ "$actual" == "$expected" ]] || {
+              echo "manifest mismatch $rel expected=$expected actual=$actual" >&2
+              exit 1
+            }
+          done <<'MANIFEST'
+          2b6d462da6c2d417d643288c1161211412ba7bb0 comp.sys.sinclair-references/128kreference.htm
+          4b3569584cb0e26ca9d150a4644cb87bcb1525dc comp.sys.sinclair-references/48kreference.htm
+          cd78c160f760934a4a7712d6953dc1dfd5ee1141 comp.sys.sinclair-references/README.md
+          777df6fa0292c5a0539920fa008c78d92f41347c rom-disassemblies/README.md
+          621f59ce937973a885982d45f92e40670c8f6875 rom-disassemblies/spectrum-128k/Spectrum128_ROM0_BugList.txt
+          MANIFEST
+
+          (
+            cd "$root"
+            find reference -type f -print0 | sort -z | xargs -0 sha256sum > private-reference-sha256.txt
+            zip -q -r h03-private-reference-files.zip reference
+            sha256sum h03-private-reference-files.zip > private-reference-zip-sha256.txt
+            mkdir roundtrip
+            unzip -q h03-private-reference-files.zip -d roundtrip
+            diff -qr reference roundtrip/reference
+            find roundtrip/reference -type f -print0 | sort -z | xargs -0 sha256sum > roundtrip-sha256.txt
+            diff -u private-reference-sha256.txt <(sed 's#roundtrip/##' roundtrip-sha256.txt)
+          )
+
+      - name: Upload verified source-specific archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: h03-private-reference-files
+          path: |
+            ${{ runner.temp }}/h03-private/h03-private-reference-files.zip
+            ${{ runner.temp }}/h03-private/private-reference-sha256.txt
+            ${{ runner.temp }}/h03-private/private-reference-zip-sha256.txt
+          if-no-files-found: error
+          retention-days: 1
