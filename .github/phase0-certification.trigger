@@ -11,3 +11,4 @@
 # patent, trademark, and governing-law provisions.
 #
 # R&R-06 source-freeze certification trigger. This file is inert project metadata.
+# Refreeze after durable Phase-0 evidence descendant-semantics correction.

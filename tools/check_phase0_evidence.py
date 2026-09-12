@@ -18,15 +18,25 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CERT = ROOT / "v1/dist/certification"
 ARCH_SHA = "1d736641e685c1d6136b66fc57d0c16fc662ce6ca4dfd640991743bb01bb706f"
+LOCK_PATH = "tools/manifest/toolchain.lock.json"
+ARCH_PATH = "docs/01-ZX-UX-ARCHITECTURE-REV11.md"
 
 class CertificationError(RuntimeError): pass
 
-def git(*args: str, allow_status: bool=False) -> str:
+def git(*args: str) -> str:
     p=subprocess.run(["git",*args],cwd=ROOT,text=True,capture_output=True,check=False)
-    if p.returncode and not allow_status: raise CertificationError(f"git {' '.join(args)} failed: {p.stderr.strip()}")
+    if p.returncode: raise CertificationError(f"git {' '.join(args)} failed: {p.stderr.strip()}")
     return p.stdout
 
-def sha(path: Path)->str: return hashlib.sha256(path.read_bytes()).hexdigest()
+def git_bytes(*args: str) -> bytes:
+    p=subprocess.run(["git",*args],cwd=ROOT,capture_output=True,check=False)
+    if p.returncode:
+        message=p.stderr.decode("utf-8","replace").strip()
+        raise CertificationError(f"git {' '.join(args)} failed: {message}")
+    return p.stdout
+
+def sha_bytes(value: bytes)->str: return hashlib.sha256(value).hexdigest()
+def sha(path: Path)->str: return sha_bytes(path.read_bytes())
 
 def names()->list[str]:
     result=[f"{p}.{n:02d}.{a}.json" for p,m in (("E0",6),("P0",34)) for n in range(1,m+1) for a in ("build","test")]
@@ -48,6 +58,18 @@ def activation()->str|None:
     commits=[x for x in git("log","--format=%H","--diff-filter=A","--","v1/dist/certification/phase-0.json").splitlines() if x]
     return commits[-1] if commits else None
 
+def validate_source_identity(source: str, lock: str)->None:
+    if len(source)!=40 or any(ch not in "0123456789abcdef" for ch in source):
+        raise CertificationError("invalid certified source")
+    if len(lock)!=64 or any(ch not in "0123456789abcdef" for ch in lock):
+        raise CertificationError("invalid toolchain digest")
+    p=subprocess.run(["git","merge-base","--is-ancestor",source,"HEAD"],cwd=ROOT,capture_output=True)
+    if p.returncode: raise CertificationError("certified source is not an ancestor of HEAD")
+    if sha_bytes(git_bytes("show",f"{source}:{LOCK_PATH}"))!=lock:
+        raise CertificationError("toolchain digest does not match certified source bytes")
+    if sha_bytes(git_bytes("show",f"{source}:{ARCH_PATH}"))!=ARCH_SHA:
+        raise CertificationError("architecture digest does not match certified source bytes")
+
 def validate_complete():
     v=validator(); aggregate_path=CERT/"phase-0.json"
     if not aggregate_path.is_file(): raise CertificationError("phase-0.json missing after activation")
@@ -56,8 +78,8 @@ def validate_complete():
     for key,value in exact.items():
         if agg.get(key)!=value: raise CertificationError(f"phase-0.json {key} mismatch")
     source=agg.get("source_commit"); lock=agg.get("toolchain_lock_sha256")
-    if not isinstance(source,str) or len(source)!=40: raise CertificationError("invalid certified source")
-    if not isinstance(lock,str) or len(lock)!=64: raise CertificationError("invalid toolchain digest")
+    if not isinstance(source,str) or not isinstance(lock,str): raise CertificationError("invalid certified source/toolchain identity")
+    validate_source_identity(source,lock)
     required=names(); manifest=agg.get("record_sha256")
     if agg.get("required_records")!=required: raise CertificationError("phase-0 required_records mismatch")
     if not isinstance(manifest,dict) or set(manifest)!=set(required): raise CertificationError("phase-0 record manifest mismatch")
@@ -77,11 +99,6 @@ def validate_complete():
         for prereq,status in record.get("prerequisites",{}).items():
             if status!="PASS" or not any(k[0]==prereq and r.get("status")=="PASS" for k,r in records.items()):
                 raise CertificationError(f"{step}: invalid prerequisite {prereq}")
-    p=subprocess.run(["git","merge-base","--is-ancestor",source,"HEAD"],cwd=ROOT)
-    if p.returncode: raise CertificationError("certified source is not an ancestor of HEAD")
-    changed=[x for x in git("diff","--name-only",f"{source}..HEAD").splitlines() if x]
-    bad=[x for x in changed if not x.startswith("v1/dist/certification/")]
-    if bad: raise CertificationError("durable evidence stale for current source: "+", ".join(bad))
     return agg
 
 def main()->int:
@@ -91,9 +108,13 @@ def main()->int:
         if act is None:
             if args.require_active: raise CertificationError("Phase-0 evidence has not been activated")
             print("ZX-UX PHASE 0 EVIDENCE PRE-ACTIVATION PASS"); return 0
-        agg=validate_complete(); original=json.loads(git("show",f"{act}:v1/dist/certification/phase-0.json"))
-        if agg.get("source_commit")!=original.get("source_commit") or agg.get("record_sha256")!=original.get("record_sha256"):
-            raise CertificationError("durable Phase-0 evidence changed after activation")
+        agg=validate_complete()
+        original_bytes=git_bytes("show",f"{act}:v1/dist/certification/phase-0.json")
+        if (CERT/"phase-0.json").read_bytes()!=original_bytes:
+            raise CertificationError("durable Phase-0 aggregate changed after activation")
+        original=json.loads(original_bytes)
+        if agg.get("record_sha256")!=original.get("record_sha256"):
+            raise CertificationError("durable Phase-0 evidence manifest changed after activation")
         print("ZX-UX PHASE 0 DURABLE EVIDENCE PASS"); return 0
     except Exception as exc:
         print(f"ZX-UX PHASE 0 EVIDENCE FAIL: {exc}",file=sys.stderr); return 1

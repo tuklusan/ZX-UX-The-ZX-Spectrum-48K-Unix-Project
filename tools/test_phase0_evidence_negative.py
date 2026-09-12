@@ -48,6 +48,16 @@ def main()->int:
             mutation()
             result=run(sys.executable,"tools/check_phase0_evidence.py","--require-active",cwd=work,check=False)
             if result.returncode==0: raise RuntimeError(f"negative case unexpectedly passed: {name}")
+        run("git","reset","--hard","HEAD",cwd=work); run("git","clean","-fd",cwd=work)
+        run("git","config","user.name","ZX-UX CI Probe",cwd=work)
+        run("git","config","user.email","zxux-ci-probe@example.invalid",cwd=work)
+        probe=work/".phase0-descendant-probe"
+        probe.write_text("future source descendant\n",encoding="utf-8")
+        run("git","add",probe.name,cwd=work)
+        run("git","commit","-m","Phase-0 descendant acceptance probe",cwd=work)
+        descendant=run(sys.executable,"tools/check_phase0_evidence.py","--require-active",cwd=work,check=False)
+        if descendant.returncode:
+            raise RuntimeError("valid later source descendant was rejected: "+(descendant.stderr or descendant.stdout))
         print("ZX-UX PHASE 0 EVIDENCE NEGATIVE PASS"); return 0
     except Exception as exc:
         print(f"ZX-UX PHASE 0 EVIDENCE NEGATIVE FAIL: {exc}",file=sys.stderr); return 1
