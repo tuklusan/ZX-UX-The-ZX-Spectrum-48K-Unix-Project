@@ -18,7 +18,7 @@ https://supratim-sanyal.blogspot.com/
 
 Status: Revision-11 implementation and certification plan
 Revision: 02
-Architecture baseline: `v1/docs/01-ZX-UX-ARCHITECTURE-REV11.md`
+Architecture baseline: `docs/01-ZX-UX-ARCHITECTURE-REV11.md`
 Architecture SHA-256: `1D736641E685C1D6136B66FC57D0C16FC662CE6CA4DFD640991743BB01BB706F`
 Target: Original unexpanded 48K ZX Spectrum
 
@@ -30,67 +30,38 @@ This document is subordinate to Revision 11. It does not amend the architecture.
 If this document conflicts with Revision 11, Revision 11 wins and this document
 must be corrected before implementation continues.
 
-The previously certified development environment already has individual
-certification evidence for the canonical ROM, cross-development execution chain,
-and cassette-image/ROM-trap chain. Those Windows-host results are historical
-evidence only; they do **not** require subsequent implementation or certification
-to run on Windows. Native Linux is an allowed implementation host. The final
-aggregate lock/verifier was generated at handover, but the handover does **not**
-provide evidence that the new aggregate wrapper itself has been copied into the
-repository and ended with its final PASS marker. Therefore Gate E0.01 is an
-execution prerequisite, not a historical PASS invented by this plan.
+The canonical E0 environment is a fresh Linux checkout rooted by `.zxux-root`.
+No historical workstation, Windows installation, fixed drive letter, fixed user
+profile, pre-existing `tools/runtime/` tree, or ambient PATH tool is part of the
+certified baseline.
 
-Historical certified/pinned environment (reference evidence only):
+`tools/manifest/toolchain.lock.json` is the authoritative pinned environment
+specification. A CI-selected Python 3.13.15 interpreter may validate metadata and
+run `tools/scripts/bootstrap-environment.py`; it is bootstrap tooling only. The
+Linux runner explicitly installs the native build prerequisites named by the lock.
+Bootstrap then downloads every pinned upstream artifact by HTTPS and verifies its
+exact byte size and SHA-256 before use. Source tools, including Python 3.13.15, are
+built or installed under `tools/runtime/` at the manifest-owned paths.
 
-- Windows 10 x64, project-local tooling, external/removable disk supported.
-  This records the host on which the existing evidence was produced; it is not
-  a requirement that implementation continue on Windows;
-- SjASMPlus 1.24.0;
-- FUSE 1.9.2;
-- FUSE-utils 1.4.7;
-- Python 3.13.15 embedded distribution;
-- PortableGit 2.55.0.windows.5;
-- developer helper CLI 0.153.4 as developer convenience only, never a ZX-UX build dependency;
-- canonical orchestrator: `<project-local-python>`;
-- canonical 48K ROM: `tools/runtime/fuse/roms/48.rom`, 16384 bytes,
-  SHA-256 `d55daa439b673b0e3f5897f99ac37ecb45f974d1862b4dadb85dec34af99cb42`.
-
-Already demonstrated individual markers:
-
-- `ZX-UX 48K ROM VERIFICATION PASS` from `tools/scripts/verify-zx48-rom.py`;
-- `ZX-UX CROSS-DEVELOPMENT ENVIRONMENT VERIFICATION PASS` from
-  `tools/scripts/verify-zxux-crossdev.py`;
-- `ZX-UX CASSETTE IMAGE/TRAP ENVIRONMENT VERIFICATION PASS` from
-  `tools/scripts/verify-zxux-tape.py`.
-
-The cassette/trap certification is **not** physical EAR/MIC/cassette certification.
-Real-hardware or hardware-faithful analog-loop gates remain in Phase 12.
-
-Frozen aggregate files expected before coding:
-
-- `tools/manifest/toolchain.lock.json`, SHA-256
-  `2847e76becf27fe1c7decabd09deb6beb017bf90d4e6906e31889f3b10cf9bd3`;
-- `tools/scripts/verify-environment.py`, SHA-256
-  `72b93d8488cc6d3096cc90dea7ae276cf089c910971498936a0896c6b9855b86`.
-
-Run from the root identified by `.zxux-root`, whose exact ASCII content is
-`ZX-UX project root`:
+Final certification runs only with the acquired project-local runtime:
 
 ```text
-<project-local-python> tools/scripts/verify-environment.py
+tools/runtime/python/bin/python tools/scripts/verify-environment.py
 ```
 
-Required final marker:
+The verifier requires the canonical architecture at
+`docs/01-ZX-UX-ARCHITECTURE-REV11.md` with SHA-256 `1d736641e685c1d6136b66fc57d0c16fc662ce6ca4dfd640991743bb01bb706f` and verifies
+the project-local SjASMPlus, Fuse, Fuse-utils, and 48K ROM selected by the manifest.
+Canonical tool execution uses project-local absolute or root-relative paths, never
+ambient PATH resolution. The required final marker is exactly:
 
 ```text
 ZX-UX DEVELOPMENT ENVIRONMENT CERTIFICATION PASS
 ```
 
-No canonical build/test script may require Windows or depend on a fixed drive
-letter, fixed user profile, host-specific absolute path, or ambient system PATH
-resolution. Native Linux execution is explicitly permitted and may be the primary
-implementation host. Host wrappers may differ by platform, but project-local pinned
-tools, deterministic inputs, and retained certification evidence remain required.
+E0.01 retains an adversarial pre-certification check: a temporary copy of the lock
+with one pinned digest changed must be rejected deterministically against the
+canonical lock before bootstrap output can be accepted.
 
 ---
 
@@ -99,12 +70,12 @@ tools, deterministic inputs, and retained certification evidence remain required
 Accuracy is the canonical goal. Efficiency is not a goal. The work proceeds in
 Revision-11 phase order. A later phase does not begin because its code looks fun.
 
-Every implementation step is a separately check-in-ready transaction. The default
-host runner introduced by E0.03 is plan-defined host tooling, not target ABI. The
-invocation syntax and project-local interpreter path are host-specific; native Linux
-and Windows are both valid hosts. In commands below, `<project-local-python>` means
-the project-local Python interpreter selected by the host toolchain; it is not an
-ambient PATH lookup:
+Every implementation step is a separately check-in-ready transaction. Linux is the
+canonical implementation and certification host. After E0.01, `<project-local-python>`
+means exactly `tools/runtime/python/bin/python`; the bootstrap interpreter is not a
+substitute for the certified runtime. The host runner introduced by E0.03 is
+plan-defined host tooling, not target ABI, and no canonical command relies on ambient
+PATH tool resolution:
 
 ```text
 <project-local-python> v1/tools-host/test-driver/run.py build --step <STEP-ID>
@@ -205,49 +176,49 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 
 ## E0.01 - Aggregate certified-environment gate
 
-1. **Purpose / REV11 requirement:** Handover final-freeze requirement; REV11 host tooling assumptions.
-2. **Exact implementation work:** Copy/verify the frozen lock and aggregate verifier at their exact paths; execute only project-local Python. Do not change a previously certified runtime merely to make the aggregate wrapper green.
-3. **Files/artifacts created or modified:** `tools/manifest/toolchain.lock.json`; `tools/scripts/verify-environment.py`.
-4. **Build command:** `<project-local-python> tools/scripts/verify-environment.py`.
-5. **Host-side static checks:** root-marker/path policy, architecture constants used by this step, file/format sizes, duplicate/forbidden symbols or literals, and deterministic artifact hashes as applicable.
-6. **Emulator test artifact:** N/A: this is a host-only contract/format/policy step; target behavior is closed by later dependent steps.
-7. **Exact FUSE assertions/checkpoints:** N/A except where the host test deliberately launches a timeout/argv self-test.
-8. **Expected PASS result:** Exit code 0 and final marker exactly `ZX-UX DEVELOPMENT ENVIRONMENT CERTIFICATION PASS`; lock/verifier SHA-256 values equal the handover values.
-9. **Negative/failure test:** Alter a temporary copy of one locked hash and require verifier failure; restore and re-run.
-10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/E0.01.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+1. **Purpose / REV11 requirement:** Establish the reproducible Linux environment required by REV11 host tooling assumptions before implementation or certification continues.
+2. **Exact implementation work:** From a fresh Linux checkout with no `tools/runtime/`, validate the canonical lock, install only the explicitly declared native runner prerequisites, acquire every manifest artifact from its pinned HTTPS URL, verify exact size and SHA-256, build/install the pinned Python and host tools under `tools/runtime/`, then run final certification with `tools/runtime/python/bin/python`. The manifest is the authoritative toolchain pin source; no owner override, historical-host dependency, interactive installer, or ambient PATH tool may satisfy the gate.
+3. **Files/artifacts created or modified:** `tools/manifest/toolchain.lock.json`; `tools/scripts/bootstrap-environment.py`; `tools/scripts/verify-environment.py`; Linux CI bootstrap metadata.
+4. **Build command:** bootstrap with the CI-selected Python 3.13.15 using `python tools/scripts/bootstrap-environment.py`; certify with `tools/runtime/python/bin/python tools/scripts/verify-environment.py`.
+5. **Host-side static checks:** root-marker/path policy, manifest schema, HTTPS URLs, exact pinned sizes/SHA-256 values, canonical runtime paths, architecture identity, and Linux-only certification policy.
+6. **Emulator test artifact:** N/A: this is a host-only environment gate.
+7. **Exact FUSE assertions/checkpoints:** N/A; the pinned Fuse executable is version-checked as environment input.
+8. **Expected PASS result:** Bootstrap prints `ZX-UX PINNED TOOLCHAIN ACQUISITION PASS`; final project-local certification exits 0 and ends with exactly `ZX-UX DEVELOPMENT ENVIRONMENT CERTIFICATION PASS`.
+9. **Negative/failure test:** Copy the canonical manifest to a temporary file, alter one pinned SHA-256 value, and require `verify-environment.py --metadata-only --manifest <temporary-lock>` to fail specifically because the supplied manifest no longer matches the canonical lock.
+10. **Check-in gate:** fresh-Linux fail-before-bootstrap condition is demonstrated by absence of the project-local runtime; bootstrap, metadata verification, final project-local certification, and the manifest-mutation negative test all PASS; end with a clean source worktree apart from ignored generated runtime/build output.
+11. **Evidence:** Retain the E0.01 build/test certification record under `v1/dist/certification/` according to the repository evidence contract.
 
 ## E0.02 - Canonical architecture identity gate
 
-1. **Purpose / REV11 requirement:** REV11 is the sole architecture authority.
-2. **Exact implementation work:** Hash the on-disk architecture before implementation and compare with the frozen REV11 SHA-256. Treat the architecture file as read-only for this implementation cycle.
-3. **Files/artifacts created or modified:** No architecture modification; write only `v1/dist/certification/E0.02.log` and its result JSON.
-4. **Build command:** direct host SHA-256 verification using project-local Python (or a saved host verifier) before `run.py` exists; do not invoke the test driver.
-5. **Host-side static checks:** root-marker/path policy, architecture constants used by this step, file/format sizes, duplicate/forbidden symbols or literals, and deterministic artifact hashes as applicable.
-6. **Emulator test artifact:** N/A: this is a host-only contract/format/policy step; target behavior is closed by later dependent steps.
-7. **Exact FUSE assertions/checkpoints:** N/A except where the host test deliberately launches a timeout/argv self-test.
-8. **Expected PASS result:** Hash equals `F76281FAB2E5AE73B7321FC2A69E6776F7CCD8BFE3955A6ED6FB3BEC44F762C7` and no superseded architecture is consumed.
-9. **Negative/failure test:** Point the audit helper at a wrong hash and require refusal.
-10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/E0.02.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+1. **Purpose / REV11 requirement:** REV11 at `docs/01-ZX-UX-ARCHITECTURE-REV11.md` is the sole architecture authority.
+2. **Exact implementation work:** Hash the canonical on-disk architecture before implementation and compare it with the frozen SHA-256 `1d736641e685c1d6136b66fc57d0c16fc662ce6ca4dfd640991743bb01bb706f`. Treat the architecture file as read-only during R&R and normal implementation unless architecture change control explicitly authorizes a revision.
+3. **Files/artifacts created or modified:** No architecture modification; only E0.02 certification evidence is produced.
+4. **Build command:** `tools/runtime/python/bin/python tools/scripts/verify-environment.py`; E0.02 may use the same verifier internally once the project-local runtime exists.
+5. **Host-side static checks:** canonical root marker, exact architecture path, regular-file/no-symlink rule, and exact SHA-256 comparison.
+6. **Emulator test artifact:** N/A: this is a host-only identity gate.
+7. **Exact FUSE assertions/checkpoints:** N/A.
+8. **Expected PASS result:** `docs/01-ZX-UX-ARCHITECTURE-REV11.md` hashes to `1d736641e685c1d6136b66fc57d0c16fc662ce6ca4dfd640991743bb01bb706f` and no alternate or superseded architecture is consumed.
+9. **Negative/failure test:** Supply an intentionally wrong expected architecture digest to the E0.02 audit path and require deterministic refusal.
+10. **Check-in gate:** canonical-path positive verification and wrong-hash negative verification PASS, with no architecture byte change.
+11. **Evidence:** Retain the E0.02 build/test certification record under `v1/dist/certification/` according to the repository evidence contract.
 
 ## E0.03 - Deterministic test-driver skeleton
 
-1. **Purpose / REV11 requirement:** REV11 §§37,39-41; handover canonical Python orchestration.
+1. **Purpose / REV11 requirement:** REV11 §§37,39-41; canonical Linux Python orchestration.
 2. **Exact implementation work:** Create one host-only test driver under the architecture-provided `tools-host/test-driver` directory. It resolves the root through `.zxux-root`, invokes project-local tools by absolute root-relative paths, supplies FUSE argv as an argument list, enforces hard timeouts, and records commands, exit codes, hashes, debugger assertions, and stderr/stdout.
 3. **Files/artifacts created or modified:** `v1/tools-host/test-driver/run.py`; `v1/docs/test-plan.md`.
 4. **Build command:** `<project-local-python> v1/tools-host/test-driver/run.py build --step E0.03`.
 5. **Host-side static checks:** root-marker/path policy, architecture constants used by this step, file/format sizes, duplicate/forbidden symbols or literals, and deterministic artifact hashes as applicable.
 6. **Emulator test artifact:** N/A: this is a host-only contract/format/policy step; target behavior is closed by later dependent steps.
 7. **Exact FUSE assertions/checkpoints:** N/A except where the host test deliberately launches a timeout/argv self-test.
-8. **Expected PASS result:** No PATH resolution; no drive-letter dependency; timeout kills the emulator subprocess and fails the test.
-9. **Negative/failure test:** Run from a copied project on a different drive/path and require the same root-relative behavior.
+8. **Expected PASS result:** No ambient PATH resolution; no fixed-host-path dependency; timeout kills the emulator subprocess and fails the test.
+9. **Negative/failure test:** Run from a copied project at a different Linux root path and require the same root-relative behavior.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
 11. **Evidence:** `v1/dist/certification/E0.03.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
 
 ## E0.04 - Build/check-in evidence protocol
 
-1. **Purpose / REV11 requirement:** REV11 ordered programming cycle and handover Git philosophy.
+1. **Purpose / REV11 requirement:** REV11 ordered programming cycle and deterministic Git/evidence discipline.
 2. **Exact implementation work:** Define the per-step build/test/check-in protocol and evidence manifest. A step is complete only with clean build, static checks, required emulator/format tests, required negative test, retained evidence where specified, and clean Git worktree after commit.
 3. **Files/artifacts created or modified:** `v1/docs/test-plan.md`; `v1/dist/certification/README.md`.
 4. **Build command:** `<project-local-python> v1/tools-host/test-driver/run.py build --step E0.04`.
@@ -261,21 +232,21 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 
 ## E0.05 - Assembly-language project rules
 
-1. **Purpose / REV11 requirement:** REV11 §38 and handover SjASMPlus rules.
-2. **Exact implementation work:** Freeze every REV11 §38 coding rule in one executable policy checklist: one canonical assembler syntax; explicit hexadecimal notation; documented-Z80-only portable baseline, with undocumented opcodes confined to a separately named optional CPU profile and independent compatibility tests; IY is OS/ROM-reserved; MEX1 application code may not keep persistent task state via `EXX` or `EX AF,AF'`; every exported routine documents inputs, outputs, flags and clobbers; every ROM call goes through `rom_services.asm`; each syscall number is declared exactly once; no magic addresses outside named memory-map constants; no duplicated screen-address formula; no unchecked arena-pointer arithmetic; stack assumptions are documented; substantial code/buffers have explicit hot/cold placement; `LDIR`/`LDDR`/`CPIR`/`CPDR` are considered before generic byte loops, while small fixed transfers are measured rather than blindly forced through block instructions; `DJNZ`, relative branches, conditional returns, `EX DE,HL`, documented 16-bit arithmetic, bit operations and indirect dispatch are preferred only when semantically exact and objectively smaller/faster; ULA output changes only through the central shadow/update path; no persistent kernel datum lives only in alternate/shadow registers; critical routines record byte-size and cycle-count measurements; cycle measurements touching 0x4000-0x7FFF distinguish contended from uncontended execution/data access; shipped host/source filenames are lower-case unless a format/external-tool contract requires otherwise; and case-sensitive user-object behavior is tested at module boundaries. Also retain the handover SjASMPlus rule that unlabelled directives/instructions are indented, forbid correctness/security dependence on R, and forbid correctness dependence on precise ULA contention timing. Treat documented block transfer/search instructions as first-class review candidates where they reduce code without changing semantics. The R refresh register may be used only as one input to non-security pseudorandom seeding; no correctness, identity, uniqueness, or security decision may depend on R. Correctness may never depend on precise ULA contention timing.
+1. **Purpose / REV11 requirement:** REV11 §38 and canonical SjASMPlus rules.
+2. **Exact implementation work:** Freeze every REV11 §38 coding rule in one executable policy checklist: one canonical assembler syntax; explicit hexadecimal notation; documented-Z80-only portable baseline, with undocumented opcodes confined to a separately named optional CPU profile and independent compatibility tests; IY is OS/ROM-reserved; MEX1 application code may not keep persistent task state via `EXX` or `EX AF,AF'`; every exported routine documents inputs, outputs, flags and clobbers; every ROM call goes through `rom_services.asm`; each syscall number is declared exactly once; no magic addresses outside named memory-map constants; no duplicated screen-address formula; no unchecked arena-pointer arithmetic; stack assumptions are documented; substantial code/buffers have explicit hot/cold placement; `LDIR`/`LDDR`/`CPIR`/`CPDR` are considered before generic byte loops, while small fixed transfers are measured rather than blindly forced through block instructions; `DJNZ`, relative branches, conditional returns, `EX DE,HL`, documented 16-bit arithmetic, bit operations and indirect dispatch are preferred only when semantically exact and objectively smaller/faster; ULA output changes only through the central shadow/update path; no persistent kernel datum lives only in alternate/shadow registers; critical routines record byte-size and cycle-count measurements; cycle measurements touching 0x4000-0x7FFF distinguish contended from uncontended execution/data access; shipped host/source filenames are lower-case unless a format/external-tool contract requires otherwise; and case-sensitive user-object behavior is tested at module boundaries. Also retain the canonical SjASMPlus rule that unlabelled directives/instructions are indented, forbid correctness/security dependence on R, and forbid correctness dependence on precise ULA contention timing. Treat documented block transfer/search instructions as first-class review candidates where they reduce code without changing semantics. The R refresh register may be used only as one input to non-security pseudorandom seeding; no correctness, identity, uniqueness, or security decision may depend on R. Correctness may never depend on precise ULA contention timing.
 3. **Files/artifacts created or modified:** `v1/docs/abi.md`; `v1/include/zx48ux.inc` scaffold.
 4. **Build command:** `<project-local-python> v1/tools-host/test-driver/run.py build --step E0.05`.
 5. **Host-side static checks:** root-marker/path policy, architecture constants used by this step, file/format sizes, duplicate/forbidden symbols or literals, and deterministic artifact hashes as applicable.
 6. **Emulator test artifact:** N/A: this is a host-only contract/format/policy step; target behavior is closed by later dependent steps.
 7. **Exact FUSE assertions/checkpoints:** N/A except where the host test deliberately launches a timeout/argv self-test.
-8. **Expected PASS result:** A policy-oracle fixture covers every listed §38 rule and the handover SjASMPlus indentation rule; positive source passes, while one fixture per rule is rejected or flagged for mandatory review/measurement as appropriate. Static policy also rejects correctness/security dependence on R or ULA contention phase and records whether a block instruction was considered for applicable byte loops.
+8. **Expected PASS result:** A policy-oracle fixture covers every listed §38 rule and the canonical SjASMPlus indentation rule; positive source passes, while one fixture per rule is rejected or flagged for mandatory review/measurement as appropriate. Static policy also rejects correctness/security dependence on R or ULA contention phase and records whether a block instruction was considered for applicable byte loops.
 9. **Negative/failure test:** Deliberately violate each mechanically checkable rule in isolation (including raw ROM literal, duplicate syscall declaration, magic address, persistent IY/alternate-bank use, direct ULA write, unchecked arena arithmetic, duplicate screen formula, undocumented opcode, or wrong-case shipped source name) and require deterministic policy failure; measurement/review-only rules must produce a missing-evidence failure rather than silently PASS.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
 11. **Evidence:** `v1/dist/certification/E0.05.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
 
 ## E0.06 - Emulator-test safety contract
 
-1. **Purpose / REV11 requirement:** REV11 §40; handover SNA/ROM-call stack lesson.
+1. **Purpose / REV11 requirement:** REV11 §40; deterministic SNA/ROM-call stack safety lesson.
 2. **Exact implementation work:** Freeze the complete REV11 §40 four-level evidence hierarchy: (1) static assembly/format checks cover duplicate symbols, section overflow, every fixed kernel subrange, IM2 vector/trampoline, kernel-stack placement, FAST/CONTENDED arena boundaries, syscall-table duplication, statically detectable forbidden user IY/alternate-register use, and object-format structure sizes; (2) deterministic emulator tests use SNA as the fast inner loop and TAP/TZX where boot/tape semantics matter, assert RAM/register/process state rather than screenshot-only output, establish a known writable stack before any synthetic ROM CALL, and apply hard subprocess timeouts; (3) release-critical behavior is repeated on at least two independent Spectrum emulators where practical; (4) final physical cassette robustness requires real 48K-compatible hardware with audio path or a hardware-faithful EAR/MIC loop that exercises ROM tape timing. TAP/TZX or trap-only emulator success must never be reported as physical EAR/MIC certification.
 3. **Files/artifacts created or modified:** `v1/docs/test-plan.md`; `v1/tests/emulator/` harness fixtures.
 4. **Build command:** `<project-local-python> v1/tools-host/test-driver/run.py build --step E0.06`.
