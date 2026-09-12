@@ -116,8 +116,8 @@ zx48_interrupt_break:
     jr nz,zx48_interrupt_done
     ld bc,$7FFE
     in a,(c)
-    bit 0,a
-    jr nz,zx48_interrupt_done
+    rrca
+    jr c,zx48_interrupt_done
     ld a,1
     ld (break_pending),a
 zx48_interrupt_done:

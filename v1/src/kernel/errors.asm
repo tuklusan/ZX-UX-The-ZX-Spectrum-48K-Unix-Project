@@ -75,8 +75,8 @@ zx48_kernel_stack_sample:
 
 zx48_panic:
     di
-    cp PANIC_PROCESS_TABLE
-    jr c,zx48_panic_unknown
+    or a
+    jr z,zx48_panic_unknown
     cp PANIC_ROM_CONTRACT+1
     jr nc,zx48_panic_unknown
     ld (kernel_panic_code),a
