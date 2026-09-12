@@ -78,7 +78,7 @@ zx48_udg_get:
 zx48_udg_clear:
     ld a,h
     or a
-    jp nz,zx48_udg_bad
+    jr nz,zx48_udg_bad
     ld c,l
     call zx48_udg_slot_ptr
     ret c
