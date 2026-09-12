@@ -249,6 +249,7 @@ def _enable_one_im2_interrupt() -> bytes:
 
 def _one_interrupt_runtime(root: Path, labels: dict[str, int], kernel_bytes: bytes) -> None:
     stack_init = labels["zx48_kernel_stack_init"]
+    im2_init = labels["zx48_im2_init"]
     kernel_ticks = labels["kernel_ticks"]
     wall_seconds = labels["wall_seconds"]
     wall_revision = labels["wall_revision"]
@@ -260,7 +261,7 @@ def _one_interrupt_runtime(root: Path, labels: dict[str, int], kernel_bytes: byt
     break_pending = labels["break_pending"]
     current_pid = labels["current_pid"]
 
-    code = bytearray(b"\xF3\x31" + _word(phase1.USER_STACK) + _call(stack_init))
+    code = bytearray(b"\xF3\x31" + _word(phase1.USER_STACK) + _call(stack_init) + _call(im2_init))
     code += _store_bytes(kernel_ticks, (0, 0, 0, 0))
     code += _store_bytes(ROM_FRAMES, (0xFE, 0xFF, 0x12))
     code += _store_bytes(wall_seconds, (0xFF, 0xFF, 0x00, 0x00))
@@ -290,6 +291,7 @@ def _one_interrupt_runtime(root: Path, labels: dict[str, int], kernel_bytes: byt
 
 def _wrap_runtime(root: Path, labels: dict[str, int], kernel_bytes: bytes) -> None:
     stack_init = labels["zx48_kernel_stack_init"]
+    im2_init = labels["zx48_im2_init"]
     kernel_ticks = labels["kernel_ticks"]
     wall_seconds = labels["wall_seconds"]
     wall_subsecond = labels["wall_subsecond"]
@@ -299,7 +301,7 @@ def _wrap_runtime(root: Path, labels: dict[str, int], kernel_bytes: bytes) -> No
     tty_cursor_due = labels["tty_cursor_due"]
     current_pid = labels["current_pid"]
 
-    code = bytearray(b"\xF3\x31" + _word(phase1.USER_STACK) + _call(stack_init))
+    code = bytearray(b"\xF3\x31" + _word(phase1.USER_STACK) + _call(stack_init) + _call(im2_init))
     code += _store_bytes(kernel_ticks, (0xFF, 0xFF, 0xFF, 0xFF))
     code += _store_bytes(ROM_FRAMES, (0xFF, 0xFF, 0xFF))
     code += _store_bytes(wall_seconds, (0xEF, 0xBE, 0xAD, 0xDE))
@@ -403,6 +405,7 @@ def dispatch(
         listing,
         (
             "zx48_kernel_stack_init",
+            "zx48_im2_init",
             "zx48_interrupt_work",
             "kernel_ticks",
             "wall_seconds",
