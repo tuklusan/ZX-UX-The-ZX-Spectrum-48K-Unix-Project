@@ -55,8 +55,19 @@ def load(path: Path):
     return value
 
 def activation()->str|None:
-    commits=[x for x in git("log","--format=%H","--diff-filter=A","--","v1/dist/certification/phase-0.json").splitlines() if x]
-    return commits[-1] if commits else None
+    commits=[x for x in git("log","--format=%H","--","v1/dist/certification/phase-0.json").splitlines() if x]
+    return commits[0] if commits else None
+
+def validate_activation(act: str, source: str)->None:
+    parent=git("rev-parse",f"{act}^").strip()
+    if parent!=source:
+        raise CertificationError("latest Phase-0 activation is not a direct child of its certified source")
+    subject=git("log","-1","--format=%s",act).strip()
+    if subject!=f"R&R-06 activate Phase-0 certification evidence for {source}":
+        raise CertificationError("latest Phase-0 activation commit message/source mismatch")
+    changed=[p for p in git("diff-tree","--no-commit-id","--name-only","-r",parent,act).splitlines() if p]
+    if not changed or any(not (p.startswith("v1/dist/certification/") and p.endswith(".json")) for p in changed):
+        raise CertificationError("latest Phase-0 activation is not evidence-only")
 
 def validate_source_identity(source: str, lock: str)->None:
     if len(source)!=40 or any(ch not in "0123456789abcdef" for ch in source):
@@ -109,12 +120,15 @@ def main()->int:
             if args.require_active: raise CertificationError("Phase-0 evidence has not been activated")
             print("ZX-UX PHASE 0 EVIDENCE PRE-ACTIVATION PASS"); return 0
         agg=validate_complete()
+        source=agg.get("source_commit")
+        if not isinstance(source,str): raise CertificationError("invalid certified source")
+        validate_activation(act,source)
         original_bytes=git_bytes("show",f"{act}:v1/dist/certification/phase-0.json")
         if (CERT/"phase-0.json").read_bytes()!=original_bytes:
-            raise CertificationError("durable Phase-0 aggregate changed after activation")
+            raise CertificationError("durable Phase-0 aggregate changed after latest activation")
         original=json.loads(original_bytes)
         if agg.get("record_sha256")!=original.get("record_sha256"):
-            raise CertificationError("durable Phase-0 evidence manifest changed after activation")
+            raise CertificationError("durable Phase-0 evidence manifest changed after latest activation")
         print("ZX-UX PHASE 0 DURABLE EVIDENCE PASS"); return 0
     except Exception as exc:
         print(f"ZX-UX PHASE 0 EVIDENCE FAIL: {exc}",file=sys.stderr); return 1
