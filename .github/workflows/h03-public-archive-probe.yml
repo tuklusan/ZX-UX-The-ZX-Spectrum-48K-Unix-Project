@@ -1,0 +1,71 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: ZX-UX H03 Public Archive Probe
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/h03-public-archive-probe.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify-skoolkit-archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Download and verify public SkoolKit archive
+        shell: bash
+        env:
+          URL: https://skoolkit.ca/downloads/rom-disassembly/rom-disassembly-20260409.zip
+          EXPECTED_TREE: 5336268d6a7eaa295b889853e48ae7cd34ce69eb
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --output rom-disassembly-20260409.zip "$URL"
+          sha256sum rom-disassembly-20260409.zip > archive-sha256.txt
+          mkdir extracted
+          unzip -q rom-disassembly-20260409.zip -d extracted
+          root="$(dirname "$(find extracted -type f -name asm.txt -print -quit)")"
+          test -n "$root"
+          test -f "$root/asm.txt"
+          test -f "$root/readme.txt"
+          test -d "$root/html"
+          test -d "$root/sources"
+
+          mkdir verifyrepo
+          git -C verifyrepo init -q
+          cp -a "$root"/. verifyrepo/
+          git -C verifyrepo add -A
+          actual_tree="$(git -C verifyrepo write-tree)"
+          printf '%s\n' "$EXPECTED_TREE" > expected-tree.txt
+          printf '%s\n' "$actual_tree" > actual-tree.txt
+          find "$root" -type f -printf '%P\n' | LC_ALL=C sort > archive-files.txt
+          git -C verifyrepo ls-files -s > archive-git-index.txt
+          test "$actual_tree" = "$EXPECTED_TREE"
+
+      - name: Upload verified archive probe
+        uses: actions/upload-artifact@v7
+        with:
+          name: h03-skoolkit-verified-${{ github.run_id }}
+          path: |
+            rom-disassembly-20260409.zip
+            archive-sha256.txt
+            expected-tree.txt
+            actual-tree.txt
+            archive-files.txt
+            archive-git-index.txt
+          compression-level: 0
+          retention-days: 7
+          if-no-files-found: error
