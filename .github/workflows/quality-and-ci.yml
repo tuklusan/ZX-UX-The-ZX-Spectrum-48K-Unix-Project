@@ -14,7 +14,11 @@ name: ZX-UX Quality and CI
 on:
   push:
     branches: [main]
-    paths-ignore: ['docs/**', 'v1/docs/**', 'README.md']
+    paths-ignore:
+      - docs/03-ZX-UX-DEVELOPMENT-WORKFLOW.md
+      - docs/04-ZX-UX-CHANGE-REQUEST-DEFERRED-WRAP-REV01.md
+      - docs/05-ZX-UX-BASELINE-REPAIR-RECONCILIATION-REV01.md
+      - README.md
   workflow_dispatch:
 permissions:
   contents: read

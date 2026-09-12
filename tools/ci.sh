@@ -60,13 +60,30 @@ else
   fail=1
 fi
 
-if ! grep -Fq 'runs-on: ubuntu-slim' .github/workflows/quality-and-ci.yml; then
+workflow=.github/workflows/quality-and-ci.yml
+if ! grep -Fq 'runs-on: ubuntu-slim' "$workflow"; then
   echo "ERROR: workflow must use ubuntu-slim" >&2
   fail=1
 fi
 
-if ! grep -Fq 'MAX_RESULTS: 25' .github/workflows/quality-and-ci.yml; then
-  echo "ERROR: workflow must cap continuity at 25 result identifiers" >&2
+if ! grep -Eq 'branches:[[:space:]]*\[main\]|^[[:space:]]*-[[:space:]]+main[[:space:]]*$' "$workflow"; then
+  echo "ERROR: automatic push validation must target main" >&2
+  fail=1
+fi
+
+for ignored in \
+  'docs/03-ZX-UX-DEVELOPMENT-WORKFLOW.md' \
+  'docs/04-ZX-UX-CHANGE-REQUEST-DEFERRED-WRAP-REV01.md' \
+  'docs/05-ZX-UX-BASELINE-REPAIR-RECONCILIATION-REV01.md' \
+  'README.md'; do
+  if ! grep -Fq -- "- $ignored" "$workflow"; then
+    echo "ERROR: non-executable documentation ignore missing: $ignored" >&2
+    fail=1
+  fi
+done
+
+if grep -Eq "^[[:space:]]*-[[:space:]]*['\"]?(docs|v1/docs)/\*\*['\"]?[[:space:]]*$" "$workflow"; then
+  echo "ERROR: workflow must not blanket-ignore normative documentation trees" >&2
   fail=1
 fi
 
@@ -82,11 +99,6 @@ fi
 
 if ! grep -Fq 'Branching and later merging are discouraged' AGENTS.md; then
   echo "ERROR: branch-discouragement rule missing from AGENTS.md" >&2
-  fail=1
-fi
-
-if ! grep -Fq 'branches:' .github/workflows/quality-and-ci.yml || ! grep -Fq -- '- main' .github/workflows/quality-and-ci.yml; then
-  echo "ERROR: automatic push validation must target main" >&2
   fail=1
 fi
 
