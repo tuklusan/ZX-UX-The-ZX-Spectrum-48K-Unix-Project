@@ -26,6 +26,7 @@ required_files=(
   ".github/workflows/phase1-certification.yml"
   "tools/check_project_policy.py"
   "tools/check_license_headers.sh"
+  "tools/check_reference_tree.py"
   "tools/check_rr07_cleanliness.py"
 )
 
@@ -36,7 +37,14 @@ for file in "${required_files[@]}"; do
   fi
 done
 
+if ! python3 ./tools/check_reference_tree.py; then
+  exit 1
+fi
+
 while IFS= read -r -d '' file; do
+  if [[ "$file" == "./reference/"* ]]; then
+    continue
+  fi
   if grep -Iq '' "$file"; then
     if grep -nE '[[:blank:]]+$' "$file"; then
       echo "ERROR: trailing whitespace in $file" >&2

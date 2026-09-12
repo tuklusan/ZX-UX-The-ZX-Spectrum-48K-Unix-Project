@@ -18,10 +18,17 @@ import re
 import subprocess
 import sys
 
+from check_reference_tree import PRESERVED_REFERENCE_DIR, ReferenceTreeError, verify_reference_tree
+
 ROOT = Path(__file__).resolve().parents[1]
 RECONCILIATION_PLAN = "docs/05-ZX-UX-BASELINE-REPAIR-RECONCILIATION-REV01.md"
 IMPLEMENTATION_PLAN = "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV02.md"
-SKIP_PREFIXES = ("v1/dist/certification/", "v1/build/", "tools/runtime/")
+SKIP_PREFIXES = (
+    "v1/dist/certification/",
+    "v1/build/",
+    "tools/runtime/",
+    f"{PRESERVED_REFERENCE_DIR}/",
+)
 
 
 def joined(*parts: str) -> str:
@@ -100,6 +107,12 @@ def main() -> int:
     failures: list[str] = []
     classified: list[str] = []
     text_count = 0
+
+    try:
+        verify_reference_tree()
+    except ReferenceTreeError as exc:
+        print(f"R&R-07 CLEANLINESS FAIL: {exc}", file=sys.stderr)
+        return 1
 
     for relative in tracked_paths():
         if relative.startswith(SKIP_PREFIXES) or "/build/" in relative:
