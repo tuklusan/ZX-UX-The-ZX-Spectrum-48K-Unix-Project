@@ -10,7 +10,7 @@
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
 
-name: ZX-UX H03 Private Reference Bridge
+name: ZX-UX H03 Reference Import
 
 on:
   push:
@@ -19,22 +19,39 @@ on:
       - '.github/workflows/h03-private-reference-bridge.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  bridge:
+  import-reference:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - name: Reconstruct source-specific reference files
+      - name: Checkout canonical repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Reconstruct and verify reduced H03 reference tree
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         shell: bash
         run: |
           set -euo pipefail
-          root="$RUNNER_TEMP/h03-private"
-          out="$root/reference"
-          mkdir -p "$out/comp.sys.sinclair-references" "$out/rom-disassemblies/spectrum-128k" "$out/rom-disassemblies"
+          work="$RUNNER_TEMP/h03-import"
+          rom="$work/rom-upstream"
+          mkdir -p "$work"
+          git init -q "$rom"
+          git -C "$rom" remote add origin https://github.com/ZXSpectrumVault/rom-disassemblies.git
+          git -C "$rom" fetch -q --depth=1 origin 38e96bf14b89e01eb3f011c1925df4e9491cea50
+          git -C "$rom" checkout -q --detach FETCH_HEAD
+          [[ "$(git -C "$rom" rev-parse HEAD)" == 38e96bf14b89e01eb3f011c1925df4e9491cea50 ]]
+          [[ ! -e reference ]] || { echo 'reference path already exists; refusing destructive rerun' >&2; exit 1; }
+          mkdir -p reference/comp.sys.sinclair-references
+          mkdir -p reference/rom-disassemblies/spectrum-48k
+          mkdir -p reference/rom-disassemblies/spectrum-128k
+          mkdir -p reference/rom-disassemblies/skoolkit.ca
+          mkdir -p reference/zilog
 
           fetch_blob() {
             local sha="$1" dst="$2"
@@ -49,9 +66,9 @@ jobs:
           assemble_chunks() {
             local dst="$1" expected="$2"; shift 2
             : > "$dst"
-            local first=1 sha tmp
+            local first=1 sha tmp actual
             for sha in "$@"; do
-              tmp="$root/chunk-$sha"
+              tmp="$work/chunk-$sha"
               fetch_blob "$sha" "$tmp"
               if (( first )); then
                 first=0
@@ -60,7 +77,6 @@ jobs:
               fi
               cat "$tmp" >> "$dst"
             done
-            local actual
             actual="$(git hash-object "$dst")"
             if [[ "$actual" != "$expected" ]]; then
               printf '\n' >> "$dst"
@@ -73,7 +89,7 @@ jobs:
           }
 
           assemble_chunks \
-            "$out/comp.sys.sinclair-references/48kreference.htm" \
+            reference/comp.sys.sinclair-references/48kreference.htm \
             4b3569584cb0e26ca9d150a4644cb87bcb1525dc \
             93bec4885d72ccb19fcf9f1c41557eff433367d3 \
             12ec9ee913d521d0f752fe48b675b0a2edabb811 \
@@ -86,24 +102,25 @@ jobs:
             b0a6599ee72546f67d3863ac50cf842fb6ca140d
 
           assemble_chunks \
-            "$out/comp.sys.sinclair-references/128kreference.htm" \
+            reference/comp.sys.sinclair-references/128kreference.htm \
             2b6d462da6c2d417d643288c1161211412ba7bb0 \
             6092631382e2eb6a34284f01983a81d0134c96b2 \
             074a40050b424ae0776ae9f73d0a13b7d28836c1 \
             be00904f1c3fcb29f81f07b9080065cca70816d6
 
           fetch_blob cd78c160f760934a4a7712d6953dc1dfd5ee1141 \
-            "$out/comp.sys.sinclair-references/README.md"
+            reference/comp.sys.sinclair-references/README.md
           fetch_blob 777df6fa0292c5a0539920fa008c78d92f41347c \
-            "$out/rom-disassemblies/README.md"
+            reference/rom-disassemblies/README.md
 
-          upstream="$root/Spectrum128_ROM0_BugList.upstream.txt"
-          curl --fail --location --silent --show-error \
-            'https://raw.githubusercontent.com/ZXSpectrumVault/rom-disassemblies/38e96bf14b89e01eb3f011c1925df4e9491cea50/Spectrum%20128K/Spectrum128_ROM0_BugList.txt' \
-            -o "$upstream"
+          cp -a "$rom/Spectrum 48K"/. reference/rom-disassemblies/spectrum-48k/
+          for f in Spectrum128_ROM0.asm Spectrum128_ROM0_BugFixed.asm Spectrum128_ROM1.asm; do
+            cp "$rom/Spectrum 128K/$f" reference/rom-disassemblies/spectrum-128k/
+          done
+
+          upstream="$rom/Spectrum 128K/Spectrum128_ROM0_BugList.txt"
           [[ "$(git hash-object "$upstream")" == dba94b1465cdada0e50aefc7db87b1f042aec7d0 ]]
-
-          bug="$out/rom-disassemblies/spectrum-128k/Spectrum128_ROM0_BugList.txt"
+          bug=reference/rom-disassemblies/spectrum-128k/Spectrum128_ROM0_BugList.txt
           {
             head -n 1 "$upstream"
             cat <<'HEADER'
@@ -118,41 +135,170 @@ jobs:
           HEADER
             tail -n +2 "$upstream"
           } > "$bug"
-          [[ "$(git hash-object "$bug")" == 621f59ce937973a885982d45f92e40670c8f6875 ]]
 
-          while read -r expected rel; do
-            actual="$(git hash-object "$out/$rel")"
+          curl --fail --location --retry 3 \
+            -o "$work/skoolkit.zip" \
+            https://skoolkit.ca/downloads/rom-disassembly/rom-disassembly-20260409.zip
+          mkdir "$work/skoolkit-extract"
+          unzip -q "$work/skoolkit.zip" -d "$work/skoolkit-extract"
+          skroot="$(dirname "$(find "$work/skoolkit-extract" -type f -name asm.txt -print -quit)")"
+          cp -a "$skroot" reference/rom-disassemblies/skoolkit.ca/rom-disassembly-20260409
+
+          curl --fail --location --retry 3 \
+            -o reference/zilog/UM0080-z80-user-manual.pdf \
+            https://www.zilog.com/docs/z80/um0080.pdf
+
+          check_blob() {
+            local rel="$1" expected="$2" actual
+            actual="$(git hash-object "reference/$rel")"
             [[ "$actual" == "$expected" ]] || {
-              echo "manifest mismatch $rel expected=$expected actual=$actual" >&2
+              echo "blob mismatch $rel expected=$expected actual=$actual" >&2
               exit 1
             }
-          done <<'MANIFEST'
-          2b6d462da6c2d417d643288c1161211412ba7bb0 comp.sys.sinclair-references/128kreference.htm
-          4b3569584cb0e26ca9d150a4644cb87bcb1525dc comp.sys.sinclair-references/48kreference.htm
-          cd78c160f760934a4a7712d6953dc1dfd5ee1141 comp.sys.sinclair-references/README.md
-          777df6fa0292c5a0539920fa008c78d92f41347c rom-disassemblies/README.md
-          621f59ce937973a885982d45f92e40670c8f6875 rom-disassemblies/spectrum-128k/Spectrum128_ROM0_BugList.txt
-          MANIFEST
+          }
 
-          (
-            cd "$root"
-            find reference -type f -print0 | sort -z | xargs -0 sha256sum > private-reference-sha256.txt
-            zip -q -r h03-private-reference-files.zip reference
-            sha256sum h03-private-reference-files.zip > private-reference-zip-sha256.txt
-            mkdir roundtrip
-            unzip -q h03-private-reference-files.zip -d roundtrip
-            diff -qr reference roundtrip/reference
-            find roundtrip/reference -type f -print0 | sort -z | xargs -0 sha256sum > roundtrip-sha256.txt
-            diff -u private-reference-sha256.txt <(sed 's#roundtrip/##' roundtrip-sha256.txt)
-          )
+          check_blob comp.sys.sinclair-references/128kreference.htm 2b6d462da6c2d417d643288c1161211412ba7bb0
+          check_blob comp.sys.sinclair-references/48kreference.htm 4b3569584cb0e26ca9d150a4644cb87bcb1525dc
+          check_blob comp.sys.sinclair-references/README.md cd78c160f760934a4a7712d6953dc1dfd5ee1141
+          check_blob rom-disassemblies/README.md 777df6fa0292c5a0539920fa008c78d92f41347c
+          check_blob rom-disassemblies/spectrum-128k/Spectrum128_ROM0.asm 65ef0577e0a9fb1579ca96b91592b87ae90150ad
+          check_blob rom-disassemblies/spectrum-128k/Spectrum128_ROM0_BugFixed.asm 5c0ca97bcb3fb376fa0d5dfe58336f4f9511e104
+          check_blob rom-disassemblies/spectrum-128k/Spectrum128_ROM0_BugList.txt 621f59ce937973a885982d45f92e40670c8f6875
+          check_blob rom-disassemblies/spectrum-128k/Spectrum128_ROM1.asm e10cf5fcda1f8ec881b5b0d764c962d5b26f38af
+          check_blob rom-disassemblies/spectrum-48k/Sinclair-Interface-1-v2.asm c9d1e2f6140b8f88f9a6e426cfc7b59241bf9427
+          check_blob rom-disassemblies/spectrum-48k/Sinclair-Interface-1.asm d42487708138b6accf8560fe859ebce6542d9be2
+          check_blob rom-disassemblies/spectrum-48k/Spectrum48.asm e5f042160fb83a05b2bccf6d1e2b1ebb9c76d73d
+          check_blob zilog/UM0080-z80-user-manual.pdf 3e40135b1390574b6d2d2196641935d060a79d60
 
-      - name: Upload verified source-specific archive
-        uses: actions/upload-artifact@v4
-        with:
-          name: h03-private-reference-files
-          path: |
-            ${{ runner.temp }}/h03-private/h03-private-reference-files.zip
-            ${{ runner.temp }}/h03-private/private-reference-sha256.txt
-            ${{ runner.temp }}/h03-private/private-reference-zip-sha256.txt
-          if-no-files-found: error
-          retention-days: 1
+          if find reference -type d -o -type f | grep -Eiq '(^|/)quarantine(/|$)'; then
+            echo 'quarantine path unexpectedly present' >&2
+            exit 1
+          fi
+          [[ "$(find reference -type f | wc -l)" -eq 952 ]]
+
+          check="$work/treecheck"
+          git init -q "$check"
+          cp -a reference/. "$check"/
+          git -C "$check" add -A
+          root_tree="$(git -C "$check" write-tree)"
+          comp_tree="$(git -C "$check" rev-parse "$root_tree:comp.sys.sinclair-references")"
+          rom_tree="$(git -C "$check" rev-parse "$root_tree:rom-disassemblies")"
+          zilog_tree="$(git -C "$check" rev-parse "$root_tree:zilog")"
+          skool_tree="$(git -C "$check" rev-parse "$root_tree:rom-disassemblies/skoolkit.ca/rom-disassembly-20260409")"
+          [[ "$root_tree" == a4e06de3b8b193b43597cdb4d259b5b206e7e3ad ]]
+          [[ "$comp_tree" == 42ed7a63cd10dac1d6d3b773594de762e83923dd ]]
+          [[ "$rom_tree" == 795604e32f878a0dff50973510a835d7a8d7622f ]]
+          [[ "$zilog_tree" == 7406713d2d9547fc3af6d4c78afa5791e3720f00 ]]
+          [[ "$skool_tree" == 5336268d6a7eaa295b889853e48ae7cd34ce69eb ]]
+
+          [[ "$(git hash-object tools/check_license_headers.sh)" == 000e54fa69dfebfdf384a7e404fda9eabd5b2c15 ]]
+          python3 - <<'PYPATCH'
+          from pathlib import Path
+          
+          path = Path("tools/check_license_headers.sh")
+          s = path.read_text()
+          
+          old = 'readonly GENERATED_CERTIFICATION_DIR="v1/dist/certification"\n'
+          new = old + '''# H03 preserves this project-owner-approved external reference corpus byte-for-byte.\n# Source: tuklusan/zxuslinuxtestproject at ac520f05db734c650f67b62ba62f5490a91ab9c3.\n# The source quarantine subtree is intentionally excluded from the approved H03 scope.\nreadonly PRESERVED_REFERENCE_DIR="reference"\nreadonly PRESERVED_REFERENCE_TREE_SHA1="a4e06de3b8b193b43597cdb4d259b5b206e7e3ad"\n'''
+          assert s.count(old) == 1
+          s = s.replace(old, new)
+          
+          old = '''is_generated_certification_json() {\n  local candidate="$1"\n  [[ "$candidate" == "$GENERATED_CERTIFICATION_DIR"/*.json ]]\n}\n\n'''
+          new = old + r'''compute_git_tree_sha1() {
+  local root="$1"
+  python3 - "$root" <<'PYTREE'
+from __future__ import annotations
+
+import hashlib
+import os
+from pathlib import Path
+import stat
+import sys
+
+root = Path(sys.argv[1])
+
+
+def git_object_sha1(kind: bytes, payload: bytes) -> bytes:
+    header = kind + b" " + str(len(payload)).encode("ascii") + b"\0"
+    return hashlib.sha1(header + payload).digest()
+
+
+def tree_sha1(path: Path) -> bytes | None:
+    entries: list[tuple[bytes, bytes]] = []
+    with os.scandir(path) as scan:
+        for entry in scan:
+            name = os.fsencode(entry.name)
+            if entry.is_symlink():
+                raise SystemExit(f"reference tree contains unsupported symlink: {entry.path}")
+            if entry.is_dir(follow_symlinks=False):
+                object_id = tree_sha1(Path(entry.path))
+                if object_id is None:
+                    continue
+                mode = b"40000"
+                sort_key = name + b"/"
+            elif entry.is_file(follow_symlinks=False):
+                info = entry.stat(follow_symlinks=False)
+                execute_mask = stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+                mode = b"100755" if info.st_mode & execute_mask else b"100644"
+                payload = Path(entry.path).read_bytes()
+                object_id = git_object_sha1(b"blob", payload)
+                sort_key = name
+            else:
+                raise SystemExit(f"reference tree contains unsupported artifact: {entry.path}")
+            record = mode + b" " + name + b"\0" + object_id
+            entries.append((sort_key, record))
+    if not entries:
+        return None
+    payload = b"".join(record for _, record in sorted(entries, key=lambda item: item[0]))
+    return git_object_sha1(b"tree", payload)
+
+
+tree_id = tree_sha1(root)
+if tree_id is None:
+    raise SystemExit("reference tree contains no tracked artifacts")
+print(tree_id.hex())
+PYTREE
+}
+
+'''
+          assert s.count(old) == 1
+          s = s.replace(old, new)
+          
+          old = '''actual_license_sha256="$(sha256sum "$LICENSE_PATH" | awk '{print $1}')"\nif [[ "$actual_license_sha256" != "$LICENSE_SHA256" ]]; then\n  echo "ERROR: root LICENSE does not match the approved license bytes" >&2\n  exit 1\nfi\n\n'''
+          new = old + '''if [[ -L "$PRESERVED_REFERENCE_DIR" || ! -d "$PRESERVED_REFERENCE_DIR" ]]; then\n  echo "ERROR: approved H03 reference corpus must exist as a real directory" >&2\n  exit 1\nfi\nactual_reference_tree_sha1="$(compute_git_tree_sha1 "$PRESERVED_REFERENCE_DIR")"\nif [[ "$actual_reference_tree_sha1" != "$PRESERVED_REFERENCE_TREE_SHA1" ]]; then\n  echo "ERROR: preserved reference corpus does not match the approved H03 tree identity" >&2\n  echo "ERROR: expected tree $PRESERVED_REFERENCE_TREE_SHA1, got $actual_reference_tree_sha1" >&2\n  exit 1\nfi\n\n'''
+          assert s.count(old) == 1
+          s = s.replace(old, new)
+          
+          old = '''  file="${file#./}"\n  [[ "$file" == "$LICENSE_PATH" ]] && continue\n\n'''
+          new = old + '''  if [[ "$file" == "$PRESERVED_REFERENCE_DIR"/* ]]; then\n    explicitly_exempt=$((explicitly_exempt + 1))\n    continue\n  fi\n\n'''
+          assert s.count(old) == 1
+          s = s.replace(old, new)
+          
+          path.write_text(s)
+          PYPATCH
+          [[ "$(git hash-object tools/check_license_headers.sh)" == e1ee005c474e6b1e8d9a76d45d3e5bb94655c82f ]]
+
+          ./tools/check_license_headers.sh
+          python3 tools/check_project_policy.py
+
+          cp reference/comp.sys.sinclair-references/README.md "$work/reference-readme.backup"
+          printf '\nX' >> reference/comp.sys.sinclair-references/README.md
+          if ./tools/check_license_headers.sh >/dev/null 2>&1; then
+            echo 'license-header gate accepted mutated reference tree' >&2
+            exit 1
+          fi
+          cp "$work/reference-readme.backup" reference/comp.sys.sinclair-references/README.md
+          [[ "$(git hash-object reference/comp.sys.sinclair-references/README.md)" == cd78c160f760934a4a7712d6953dc1dfd5ee1141 ]]
+          ./tools/check_license_headers.sh
+
+          git add reference tools/check_license_headers.sh
+          [[ "$(git diff --cached --name-only --diff-filter=A | wc -l)" -eq 952 ]]
+          [[ "$(git diff --cached --name-only --diff-filter=M | wc -l)" -eq 1 ]]
+          [[ "$(git diff --cached --name-only --diff-filter=M)" == tools/check_license_headers.sh ]]
+          [[ -z "$(git diff --cached --name-only | grep -Ev '^(reference/|tools/check_license_headers.sh$)' || true)" ]]
+          [[ -z "$(git diff --cached --name-only --diff-filter=DRTUXB)" ]]
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'reference: import H03 reduced external reference tree'
+          git push origin HEAD:main
