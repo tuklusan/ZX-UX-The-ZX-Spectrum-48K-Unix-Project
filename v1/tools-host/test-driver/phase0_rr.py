@@ -94,7 +94,7 @@ def _static_contract(root: Path, action: str, step: str, *, sha256_file: Any):
     ]
     if action == "test":
         first = required[0]
-        mutated = text.replace(first, "", 1)
+        mutated = text.replace(first, "")
         rejected = False
         try:
             _validate_tokens(mutated, required, step)
