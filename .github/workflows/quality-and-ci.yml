@@ -20,6 +20,9 @@ on:
       - docs/05-ZX-UX-BASELINE-REPAIR-RECONCILIATION-REV01.md
       - README.md
   workflow_dispatch:
+  workflow_run:
+    workflows: ['ZX-UX Phase 0 Certification']
+    types: [completed]
 permissions:
   contents: read
 concurrency:
@@ -51,8 +54,8 @@ jobs:
           ! python tools/scripts/verify-environment.py --metadata-only --manifest /tmp/zxux-bad-lock.json
   e0-foundation:
     needs: e0-metadata
-    runs-on: ubuntu-slim
-    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
     env:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-e0-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
