@@ -132,12 +132,29 @@ For each finding, cite the exact file and line number. State the defect clearly,
 
 ### H03 — Import the external reference tree into the repository root
 
-- [ ] Recursively copy the complete `reference/` directory from the read-only source
-  repository at
-  `https://github.com/tuklusan/zxuslinuxtestproject/tree/main/reference` into this
-  repository root as `reference/`, preserving source-relative paths and file bytes.
-  Record source provenance and verify the recursive copy is complete. The source
-  repository remains read-only; only the canonical ZX-UX repository may be modified.
+- [x] Import the owner-approved reduced `reference/` scope from the read-only source
+  repository `https://github.com/tuklusan/zxuslinuxtestproject`, pinned at source
+  commit `ac520f05db734c650f67b62ba62f5490a91ab9c3`, into this repository root as
+  `reference/`, preserving source-relative paths and file bytes. By explicit owner
+  direction, source `reference/quarantine/**` is outside the transfer scope and is not
+  present in the canonical import.
+- [x] Provenance and integrity are closed: the pinned source `reference/` tree is
+  `22aa7ef43545a4746ca5dc8584bfb830509c79d0`; the approved reduced canonical
+  `reference/` tree is `a4e06de3b8b193b43597cdb4d259b5b206e7e3ad` with 952 files. Its included
+  top-level trees are `comp.sys.sinclair-references` =
+  `42ed7a63cd10dac1d6d3b773594de762e83923dd`, `rom-disassemblies` =
+  `795604e32f878a0dff50973510a835d7a8d7622f`, and `zilog` =
+  `7406713d2d9547fc3af6d4c78afa5791e3720f00`; the included SkoolKit subtree is
+  `5336268d6a7eaa295b889853e48ae7cd34ce69eb`. The verified reduced-source transport
+  ZIP SHA-256 is `a8174007ab68cd5eb7ce13706469fe36765af37cb5e537afdab97da82efb9103`.
+- [x] Canonical import commit `845eb892ddeeae887a89c7f2dc9e6c7f296b383c` added the 952-file reduced
+  reference corpus and the immutable-tree license-gate exemption. Temporary H03
+  transport automation was removed by cleanup commit
+  `5f67e7e953f1bdd9817164a97331a9cc9f022f95`. Fail-closed reference-hygiene guard
+  commit `80d19d26bbc167b2337515b70d575f3a2ed55967` binds the CI/R&R-07 exemptions to
+  exact tree `a4e06de3b8b193b43597cdb4d259b5b206e7e3ad`; Quality/CI run `34718322677`
+  validates the cleaned canonical tree. The source repository remained read-only;
+  only the canonical ZX-UX repository was modified.
 
 ### H04 — Import missing SDK compiler assets
 
