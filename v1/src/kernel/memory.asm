@@ -54,20 +54,24 @@ zx48_alloc:
     ld (memory_policy),a
     ld a,b
     or c
-    jp z,zx48_alloc_zero
+    jr nz,zx48_alloc_nonzero
+    ld h,b
+    ld l,c
+    ret
+zx48_alloc_nonzero:
     bit 0,c
     jr z,zx48_alloc_even
     inc bc
 zx48_alloc_even:
     ld (memory_request),bc
     ld hl,(memory_live_allocations)
-    ld a,h
-    or a
-    jp nz,zx48_alloc_fail
     ld a,l
     cp ALLOC_RECORD_COUNT
     jp nc,zx48_alloc_fail
-    call zx48_alloc_record_address
+    add hl,hl
+    add hl,hl
+    ld de,ALLOC_RECORDS_START
+    add hl,de
     ld (memory_alloc_record_ptr),hl
 zx48_alloc_retry:
     ld ix,memory_free_extents
@@ -156,10 +160,6 @@ zx48_alloc_fail:
     ld a,E_NOMEM
     scf
     ret
-zx48_alloc_zero:
-    ld hl,0
-    xor a
-    ret
 zx48_alloc_done:
     ld ix,(memory_alloc_record_ptr)
     ld (ix+0),l
@@ -167,17 +167,15 @@ zx48_alloc_done:
     ld de,(memory_request)
     ld (ix+2),e
     ld (ix+3),d
-    ld de,(memory_live_allocations)
-    inc de
-    ld (memory_live_allocations),de
+    ld a,(memory_live_allocations)
+    inc a
+    ld (memory_live_allocations),a
     xor a
     ret
 
-zx48_alloc_record_address:
-    add hl,hl
-    add hl,hl
-    ld de,ALLOC_RECORDS_START
-    add hl,de
+zx48_free_bad:
+    ld a,E_INVAL
+    scf
     ret
 
 ; HL=base, BC=rounded length. Reject wrong bounds/double free before mutation.
@@ -186,28 +184,27 @@ zx48_free:
     or c
     ret z
     bit 0,l
-    jp nz,zx48_free_bad
+    jr nz,zx48_free_bad
     bit 0,c
-    jp nz,zx48_free_bad
+    jr nz,zx48_free_bad
     ld a,h
     cp COLD_START/256
-    jp c,zx48_free_bad
+    jr c,zx48_free_bad
     cp KERNEL_START/256
-    jp nc,zx48_free_bad
+    jr nc,zx48_free_bad
     ld (memory_free_start),hl
     ld (memory_free_length),bc
     add hl,bc
-    jp c,zx48_free_bad
+    jr c,zx48_free_bad
+    ld (memory_candidate),hl
     ld de,ARENA_END+1
     or a
     sbc hl,de
     jr c,zx48_free_end_ok
-    jp nz,zx48_free_bad
+    jr nz,zx48_free_bad
 zx48_free_end_ok:
-    add hl,de
-    ld (memory_candidate),hl
     call zx48_free_find_record
-    jp c,zx48_free_bad
+    jr c,zx48_free_bad
     ld hl,0
     ld (memory_info_ptr),hl
     ld (memory_request),hl
@@ -337,7 +334,10 @@ zx48_free_commit:
     dec hl
     ld (memory_live_allocations),hl
     push de
-    call zx48_alloc_record_address
+    add hl,hl
+    add hl,hl
+    ld de,ALLOC_RECORDS_START
+    add hl,de
     pop de
     ld bc,4
     ldir
@@ -345,10 +345,6 @@ zx48_free_commit:
     ret
 zx48_free_nospc:
     ld a,E_NOSPC
-    scf
-    ret
-zx48_free_bad:
-    ld a,E_INVAL
     scf
     ret
 
