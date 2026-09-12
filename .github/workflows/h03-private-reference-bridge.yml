@@ -82,7 +82,8 @@ jobs:
             55e59b0a27ebaa56acc7e352d8b99e33873e4321 \
             48b1c5984acda427d1fe26e7acf6ffd5ee8ccafb \
             01792f2bf29f50a3de5af4c551f6a3c5ff736c23 \
-            089fa9387ed0d8411f288a5cef3594ee2715affe
+            089fa9387ed0d8411f288a5cef3594ee2715affe \
+            b0a6599ee72546f67d3863ac50cf842fb6ca140d
 
           assemble_chunks \
             "$out/comp.sys.sinclair-references/128kreference.htm" \
