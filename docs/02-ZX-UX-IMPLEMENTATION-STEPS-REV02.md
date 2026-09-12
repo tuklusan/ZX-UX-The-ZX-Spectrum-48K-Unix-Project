@@ -97,9 +97,17 @@ stack. The prior certified cassette test found that blindly accepting an SNA-res
 SP can push ROM return data into ROM; this plan therefore treats stack establishment as
 a test precondition, not folklore.
 
-For every step below, evidence is retained at least as
-`v1/dist/certification/<STEP-ID>.log` plus a machine-readable result/hash record when
-the step is a certification boundary. `v1/build` is disposable; `v1/dist` is not.
+For every numbered E0 and Phase-0 step, clean-source certification writes scratch
+records outside the source worktree. After a complete pass, exact staged bytes are
+admitted to `v1/dist/certification/` in an evidence-only check-in. Every such step
+requires `<STEP-ID>.build.json` and `<STEP-ID>.test.json`. E0.04 and P0.34 are
+explicit certification-result boundaries and additionally require
+`<STEP-ID>.result.json`; Phase 0 also requires `phase-0.json`. Human-readable `.log`
+files are required only when a step explicitly calls for a transcript and are not a
+universal evidence format. Every durable build/test/result record identifies the exact
+certified source commit, toolchain-lock SHA-256, architecture SHA-256, clean-worktree
+state, prerequisite status, stable root-relative artifact hashes, command data, and
+named assertions. `v1/build` is disposable; `v1/dist` is not.
 
 A step may be committed only when:
 
@@ -186,7 +194,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Bootstrap prints `ZX-UX PINNED TOOLCHAIN ACQUISITION PASS`; final project-local certification exits 0 and ends with exactly `ZX-UX DEVELOPMENT ENVIRONMENT CERTIFICATION PASS`.
 9. **Negative/failure test:** Copy the canonical manifest to a temporary file, alter one pinned SHA-256 value, and require `verify-environment.py --metadata-only --manifest <temporary-lock>` to fail specifically because the supplied manifest no longer matches the canonical lock.
 10. **Check-in gate:** fresh-Linux fail-before-bootstrap condition is demonstrated by absence of the project-local runtime; bootstrap, metadata verification, final project-local certification, and the manifest-mutation negative test all PASS; end with a clean source worktree apart from ignored generated runtime/build output.
-11. **Evidence:** Retain the E0.01 build/test certification record under `v1/dist/certification/` according to the repository evidence contract.
+11. **Evidence:** Retain `v1/dist/certification/E0.01.build.json` and `v1/dist/certification/E0.01.test.json` under the repository evidence contract.
 
 ## E0.02 - Canonical architecture identity gate
 
@@ -200,7 +208,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** `docs/01-ZX-UX-ARCHITECTURE-REV11.md` hashes to `1d736641e685c1d6136b66fc57d0c16fc662ce6ca4dfd640991743bb01bb706f` and no alternate or superseded architecture is consumed.
 9. **Negative/failure test:** Supply an intentionally wrong expected architecture digest to the E0.02 audit path and require deterministic refusal.
 10. **Check-in gate:** canonical-path positive verification and wrong-hash negative verification PASS, with no architecture byte change.
-11. **Evidence:** Retain the E0.02 build/test certification record under `v1/dist/certification/` according to the repository evidence contract.
+11. **Evidence:** Retain `v1/dist/certification/E0.02.build.json` and `v1/dist/certification/E0.02.test.json` under the repository evidence contract.
 
 ## E0.03 - Deterministic test-driver skeleton
 
@@ -214,7 +222,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** No ambient PATH resolution; no fixed-host-path dependency; timeout kills the emulator subprocess and fails the test.
 9. **Negative/failure test:** Run from a copied project at a different Linux root path and require the same root-relative behavior.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/E0.03.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/E0.03.build.json` and `v1/dist/certification/E0.03.test.json`; add `v1/dist/certification/E0.03.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## E0.04 - Build/check-in evidence protocol
 
@@ -228,7 +236,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Evidence manifest rejects missing hashes, missing PASS marker, or dirty-worktree certification.
 9. **Negative/failure test:** Delete one required evidence field and require the certification helper to fail.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/E0.04.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/E0.04.build.json`, `v1/dist/certification/E0.04.test.json`, and the required certification-boundary record `v1/dist/certification/E0.04.result.json`.
 
 ## E0.05 - Assembly-language project rules
 
@@ -242,7 +250,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** A policy-oracle fixture covers every listed §38 rule and the canonical SjASMPlus indentation rule; positive source passes, while one fixture per rule is rejected or flagged for mandatory review/measurement as appropriate. Static policy also rejects correctness/security dependence on R or ULA contention phase and records whether a block instruction was considered for applicable byte loops.
 9. **Negative/failure test:** Deliberately violate each mechanically checkable rule in isolation (including raw ROM literal, duplicate syscall declaration, magic address, persistent IY/alternate-bank use, direct ULA write, unchecked arena arithmetic, duplicate screen formula, undocumented opcode, or wrong-case shipped source name) and require deterministic policy failure; measurement/review-only rules must produce a missing-evidence failure rather than silently PASS.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/E0.05.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/E0.05.build.json` and `v1/dist/certification/E0.05.test.json`; add `v1/dist/certification/E0.05.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## E0.06 - Emulator-test safety contract
 
@@ -256,7 +264,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Static oracle catches every §40.1 class; emulator debugger proves expected registers/RAM and safe SP; timeout is killed and reported FAIL; evidence metadata distinguishes deterministic-emulator, second-emulator, and physical EAR/MIC classes; no screenshot-only assertion can satisfy a correctness gate.
 9. **Negative/failure test:** Use the known unsafe SNA ROM-call stack, omit one §40.1 static class, supply only one emulator while claiming compatibility PASS, or supply TAP/TZX/trap evidence while claiming physical cassette robustness; each claim is rejected deterministically.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/E0.06.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/E0.06.build.json` and `v1/dist/certification/E0.06.test.json`; add `v1/dist/certification/E0.06.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 
 ---
@@ -275,7 +283,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Assert exact address/constants and no overlap; PAL profile exposes 50 Hz timing and the original 48K contention split; required base-I/O capability list is complete; non-PAL profiles cannot inherit the 50-Hz wall-clock constant without an explicit compatibility-profile definition.
 9. **Negative/failure test:** Off-by-one each upper boundary; select an NTSC/different-frame-timing fixture while silently retaining the PAL 50-Hz wall-clock constant and require failure; omit one required base I/O class or mark an extension as mandatory v1 hardware and require the baseline-policy test to fail.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.01.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.01.build.json` and `v1/dist/certification/P0.01.test.json`; add `v1/dist/certification/P0.01.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.02 - Kernel fixed-subrange linker scaffold
 
@@ -289,7 +297,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Map asserts E000-FFFF exact 8192 and code/data <=6912. The budget ledger contains all thirteen REV11 §4.2 categories with exact byte targets, sums to 6784, and leaves exactly 128 bytes unassigned inside the 6912-byte ordinary pool; fixed fast/emergency reserves are excluded from that margin.
 9. **Negative/failure test:** Force one-byte overlap into FB00 and require build failure. Also change, omit, duplicate, or silently rebalance any one of the thirteen §4.2 planning targets, make their total differ from 6784, consume the 128-byte unassigned margin on paper, or count FD00-FDFC/FF01-FFFF as ordinary growth space; the architecture-budget oracle must fail.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.02.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.02.build.json` and `v1/dist/certification/P0.02.test.json`; add `v1/dist/certification/P0.02.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.03 - Syscall and boot trampolines
 
@@ -303,7 +311,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** SNA reads first six bytes and resolves both jump targets.
 9. **Negative/failure test:** Move either trampoline by one byte.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.03.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.03.build.json` and `v1/dist/certification/P0.03.test.json`; add `v1/dist/certification/P0.03.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.04 - IM2 vector/trampoline scaffold
 
@@ -317,7 +325,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** SNA synthesizes all 256 low-vector bytes and proves every vector resolves FDFD.
 9. **Negative/failure test:** Corrupt one table byte and require one vector case to fail.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.04.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.04.build.json` and `v1/dist/certification/P0.04.test.json`; add `v1/dist/certification/P0.04.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.05 - IY ROM anchor scaffold
 
@@ -331,7 +339,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** SNA wrapper fixture checks IY before/after.
 9. **Negative/failure test:** Wrapper fixture clobbers IY and must fail.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.05.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.05.build.json` and `v1/dist/certification/P0.05.test.json`; add `v1/dist/certification/P0.05.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.06 - Alternate-register safety scaffold
 
@@ -345,7 +353,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Synthetic ROM window proves fast path and safe fallback preserve required state.
 9. **Negative/failure test:** Mark an unsafe wrapper fast-safe and require classifier test failure.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.06.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.06.build.json` and `v1/dist/certification/P0.06.test.json`; add `v1/dist/certification/P0.06.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.07 - Canonical BASIC autoloader
 
@@ -359,7 +367,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Host token inspection proves CLEAR 24575, SCREEN$, CODE, USR 57347 and auto-line 10.
 9. **Negative/failure test:** Change CLEAR or USR address.  Treating uppercase/lowercase Sinclair BASIC keyword spelling as permission for case-insensitive ZX-UX command or object lookup fails the architecture oracle.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.07.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.07.build.json` and `v1/dist/certification/P0.07.test.json`; add `v1/dist/certification/P0.07.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.08 - Canonical loading SCREEN$
 
@@ -373,7 +381,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Host exact size/hash; TAP load probe checks bytes at 4000-5AFF.
 9. **Negative/failure test:** Use 6911/6913-byte fixture and require builder rejection.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.08.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.08.build.json` and `v1/dist/certification/P0.08.test.json`; add `v1/dist/certification/P0.08.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.09 - Native bootstrap prefix builder
 
@@ -387,7 +395,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Build twice; byte-identical TAP; inspect header names, addresses, lengths.  Independent parsing verifies `zx48ux`,`zx48uxscr`,`kernel` order, lower-case Spectrum header names, SCREEN$ length 6912, kernel start 0xE000/length 8192, and loader USR 57347.
 9. **Negative/failure test:** Wrong kernel address/length/name/order rejected.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.09.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.09.build.json` and `v1/dist/certification/P0.09.test.json`; add `v1/dist/certification/P0.09.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.10 - Five-resource bootstrap-prefix validator
 
@@ -401,7 +409,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Host validator checks exact five-resource contract and rejects case-folding.
 9. **Negative/failure test:** Swap resources or uppercase a name.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.10.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.10.build.json` and `v1/dist/certification/P0.10.test.json`; add `v1/dist/certification/P0.10.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.11 - Cold boot native LOAD proof
 
@@ -415,7 +423,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** TAP/FUSE: breakpoints and RAM asserts at screen/kernel completion and USR handoff.
 9. **Negative/failure test:** Missing/corrupt screen and kernel fail before uninitialized execution.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.11.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.11.build.json` and `v1/dist/certification/P0.11.test.json`; add `v1/dist/certification/P0.11.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.12 - Permanent BASIC-to-kernel handoff
 
@@ -429,7 +437,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** SNA/TAP breakpoints prove SP=FD00 before substantial work and no BASIC return.
 9. **Negative/failure test:** Place sentinel BASIC return and fail if PC reaches it.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.12.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.12.build.json` and `v1/dist/certification/P0.12.test.json`; add `v1/dist/certification/P0.12.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.13 - Loading-screen preservation
 
@@ -443,7 +451,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Hash display before kernel init and after five-resource load; hashes identical.
 9. **Negative/failure test:** Deliberately clear one screen byte in test build and require failure.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.13.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.13.build.json` and `v1/dist/certification/P0.13.test.json`; add `v1/dist/certification/P0.13.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.14 - Panic output and safe halt
 
@@ -457,7 +465,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Each of the five corruption classes reaches its documented numeric PANIC code and deterministic safe halt; ordinary recoverable failures return errno without PANIC; no path returns to BASIC after handoff.
 9. **Negative/failure test:** An unhandled reserved corruption class, a sixth ordinary error incorrectly promoted to PANIC, a PANIC lacking numeric documentation mapping, or any return to BASIC fails the gate.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.14.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.14.build.json` and `v1/dist/certification/P0.14.test.json`; add `v1/dist/certification/P0.14.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.15 - ROM-disassembly provenance
 
@@ -471,7 +479,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Host provenance audit verifies the canonical 16K ROM identity, exact `The Complete Spectrum ROM Disassembly` / Ian Logan / Frank O'Hara / maintained SkoolKit 48K baseline identification, per-wrapper disassembly source/version fields, the project-local Zilog UM0080 normative CPU reference, and the recorded original-48K contention reference before any ROM wrapper/CPU assumption is certified.
 9. **Negative/failure test:** Wrong ROM SHA-256, unnamed/ambiguous ROM disassembly provenance, missing Ian Logan/Frank O'Hara/SkoolKit baseline, missing per-wrapper source/version, substituting undocumented CPU behavior for the Zilog documented baseline, or an untraceable contention-map claim fails the Phase-0 provenance gate.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.15.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.15.build.json` and `v1/dist/certification/P0.15.test.json`; add `v1/dist/certification/P0.15.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.16 - Complete ROM useful-routine inventory
 
@@ -485,7 +493,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Host inventory completeness checklist against disassembly headings/entry labels, exact A/B/C initial sets, exact wrapper-ledger columns and replacement-threshold decision record.
 9. **Negative/failure test:** Remove one required candidate family/ledger column or approve a RAM replacement solely because it is cleaner; audit must fail.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.16.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.16.build.json` and `v1/dist/certification/P0.16.test.json`; add `v1/dist/certification/P0.16.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.17 - ROM service-address centralization
 
@@ -499,7 +507,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Static scan, assembler symbol map and host oracle prove the exact baseline symbolic-address table and reject any production raw ROM literal outside the owning module.
 9. **Negative/failure test:** Introduce one wrong baseline address or one raw 0x0556 elsewhere and require failure.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.17.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.17.build.json` and `v1/dist/certification/P0.17.test.json`; add `v1/dist/certification/P0.17.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.18 - Keyboard and character-output ROM proof
 
@@ -513,7 +521,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** SNA scripted key path and output state; IY/shadow-register checks.
 9. **Negative/failure test:** Wrong key row or corrupted IY fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.18.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.18.build.json` and `v1/dist/certification/P0.18.test.json`; add `v1/dist/certification/P0.18.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.19 - Screen-address / PIXEL-ADD / POINT proof
 
@@ -527,7 +535,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** SNA edge vectors 0,0 / max valid / invalid contract edges.
 9. **Negative/failure test:** One out-of-range coordinate must follow documented error policy.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.19.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.19.build.json` and `v1/dist/certification/P0.19.test.json`; add `v1/dist/certification/P0.19.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.20 - PLOT-SUB proof
 
@@ -541,7 +549,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** SNA verifies target pixel only plus documented attributes.
 9. **Negative/failure test:** Clobber guard bytes around display and require failure.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.20.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.20.build.json` and `v1/dist/certification/P0.20.test.json`; add `v1/dist/certification/P0.20.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.21 - Lower DRAW proof
 
@@ -555,7 +563,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** SNA line vectors incl clipping/error contract from ROM proof.
 9. **Negative/failure test:** Call wrong DRAW entry fixture and require signature mismatch.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.21.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.21.build.json` and `v1/dist/certification/P0.21.test.json`; add `v1/dist/certification/P0.21.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.22 - BEEPER low-level proof
 
@@ -569,7 +577,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** SNA/FUSE observes return state and documented interrupt/port-shadow contract.
 9. **Negative/failure test:** Invalid direct register fixture must be rejected by wrapper test.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.22.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.22.build.json` and `v1/dist/certification/P0.22.test.json`; add `v1/dist/certification/P0.22.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.23 - BEEP-command public-wrapper proof
 
@@ -583,7 +591,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** SNA proves representative positive, negative and fractional pitch through numeric bridge where Phase0 permits.
 9. **Negative/failure test:** ROM-domain error must map to controlled E_INVAL path, never BASIC escape.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.23.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.23.build.json` and `v1/dist/certification/P0.23.test.json`; add `v1/dist/certification/P0.23.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.24 - SA-BYTES cassette-save proof
 
@@ -597,7 +605,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** TAP/TZX fixture and debugger stack/register assertions.
 9. **Negative/failure test:** Bad checksum/forced abort follows controlled policy.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.24.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.24.build.json` and `v1/dist/certification/P0.24.test.json`; add `v1/dist/certification/P0.24.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.25 - LD-BYTES cassette-load proof
 
@@ -611,7 +619,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** TAP/TZX fixture loads known bytes; RAM/regs/SP exact.
 9. **Negative/failure test:** Unsafe-stack fixture is detected; corrupt block rejected.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.25.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.25.build.json` and `v1/dist/certification/P0.25.test.json`; add `v1/dist/certification/P0.25.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.26 - FP-CALC/CALCULATE atomic calculator service proof
 
@@ -625,7 +633,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** SNA exercises every operation ID with golden five-byte values and proves the ten-step critical-section state restoration/no-yield contract.
 9. **Negative/failure test:** Unknown op, invalid pointer/domain/error path, or an injected scheduler yield inside the critical section must fail safely and never escape to BASIC.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.26.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.26.build.json` and `v1/dist/certification/P0.26.test.json`; add `v1/dist/certification/P0.26.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.27 - SIN and SQR proof
 
@@ -639,7 +647,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** SNA golden values and round-trip conversion checks.
 9. **Negative/failure test:** Malformed numeric state must fail safely.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.27.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.27.build.json` and `v1/dist/certification/P0.27.test.json`; add `v1/dist/certification/P0.27.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.28 - Numeric integer/float/text conversion proof
 
@@ -653,7 +661,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** SNA boundary integer and text vectors.
 9. **Negative/failure test:** Overflow/domain vector returns documented failure.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.28.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.28.build.json` and `v1/dist/certification/P0.28.test.json`; add `v1/dist/certification/P0.28.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.29 - Restricted calc-scanner feasibility decision
 
@@ -667,7 +675,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Host+SNA accepts every allowed grammar family and rejects every forbidden family/case variant before unsafe ROM action; selected implementation path and parser-state proof are recorded.
 9. **Negative/failure test:** `rnd`, uppercase aliases, PEEK/USR/POKE/OUT/assignment/string/BASIC-statement forms, or any unlisted token reaching unsafe ROM evaluation fails the gate.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.29.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.29.build.json` and `v1/dist/certification/P0.29.test.json`; add `v1/dist/certification/P0.29.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.30 - ROM error-recovery trampoline proof
 
@@ -681,7 +689,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** SNA forces each of the five error classes where applicable and proves return-to-caller/controlled errno or safe panic exactly, with no uncontrolled BASIC control-flow escape.
 9. **Negative/failure test:** One adopted wrapper missing one of the five classifications or a safe policy keeps Phase0 red.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.30.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.30.build.json` and `v1/dist/certification/P0.30.test.json`; add `v1/dist/certification/P0.30.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.31 - ROM system-variable ownership ledger
 
@@ -695,7 +703,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Host ledger completeness proves all live variables have one owner, exact FRAMES/UDG addresses are present, and the planned UDG target lies in a valid arena extent outside E000-FFFF/IM2.
 9. **Negative/failure test:** Missing owner, inherited BASIC FRAMES/UDG state, or UDG pointer into E000-FFFF is rejected.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.31.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.31.build.json` and `v1/dist/certification/P0.31.test.json`; add `v1/dist/certification/P0.31.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.32 - Host ZXP1 reference encoder/decoder
 
@@ -709,7 +717,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Host reference encoder/decoder is normative. Boundary vectors for token 0x00/0x3F/0x40/0x7F/0x80/0xFF, distance 1/256, overlap, empty/one-byte/random/incompressible data, malformed/truncated and declared-length under/overrun cases plus exhaustive/random round trips decode byte-identically; fixed release encoder version/options make identical inputs produce identical tape-image hashes.
 9. **Negative/failure test:** Truncated literal/RLE/BACKREF, backref before logical start, output overrun/underrun, trailing physical bytes, illegal empty PACKED object, or PACKED length not strictly smaller fails E_FORMAT-equivalent.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.32.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.32.build.json` and `v1/dist/certification/P0.32.test.json`; add `v1/dist/certification/P0.32.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.33 - ZXP1 adversarial/random corpus
 
@@ -723,7 +731,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Host reference decode identity for all corpus entries.
 9. **Negative/failure test:** Mutate one token per class and require deterministic rejection.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.33.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.33.build.json` and `v1/dist/certification/P0.33.test.json`; add `v1/dist/certification/P0.33.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P0.34 - Phase-0 zero-gap ROM and memory gate
 
@@ -737,7 +745,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Aggregate Phase0 suite incl 256 IM2 vectors, IY/alternate-register wrappers, boot, screen, kernel, tape, calculator, ZXP1.  The retained Phase-0 manifest has exactly seventeen numbered acceptance rows plus the repeated post-classification zero-gap scan; every row links to its owning earlier Phase-0 evidence and all rows PASS on the same candidate.
 9. **Negative/failure test:** Delete/mark UNREVIEWED one ROM candidate; aggregate gate must fail.  Delete, skip, merge-away, or leave unresolved any one of the seventeen acceptance rows, or leave one plausible ROM subsystem unclassified after the repeat scan; P0.34 must remain red and Phase 1 must not begin.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P0.34.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P0.34.build.json`, `v1/dist/certification/P0.34.test.json`, and the required certification-boundary record `v1/dist/certification/P0.34.result.json` and the Phase-0 aggregate `v1/dist/certification/phase-0.json`.
 
 
 ---
@@ -756,7 +764,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** All fixed subranges unchanged except documented state; code/data <=6912.
 9. **Negative/failure test:** Poison one excluded range and detect write.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.01.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.01.build.json` and `v1/dist/certification/P1.01.test.json`; add `v1/dist/certification/P1.01.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.02 - Single contiguous arena extent allocator
 
@@ -770,7 +778,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Exact-fit/split/free/coalesce/fragmentation, combined free/live-allocation accounting, cross-boundary one-allocation accounting, and debug double-free detection pass.
 9. **Negative/failure test:** Double free/invalid extent rejected without corruption.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.02.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.02.build.json` and `v1/dist/certification/P1.02.test.json`; add `v1/dist/certification/P1.02.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.03 - FAST_REQUIRED policy
 
@@ -784,7 +792,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Exhaust FAST and return E_NOMEM with COLD untouched.
 9. **Negative/failure test:** Silent spill is fatal test failure.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.03.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.03.build.json` and `v1/dist/certification/P1.03.test.json`; add `v1/dist/certification/P1.03.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.04 - COLD_PREFERRED and ANY policies
 
@@ -798,7 +806,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Cross-boundary alloc/free/coalesce preserves exact per-FAST/per-CONTENDED free totals and largest spans, combined totals, and one-allocation identity; fragmentation and class-specific exhaustion fixtures pass.
 9. **Negative/failure test:** Cross-boundary free with wrong bounds rejected.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.04.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.04.build.json` and `v1/dist/certification/P1.04.test.json`; add `v1/dist/certification/P1.04.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.05 - SYS_MEM_INFO / MINFO1 accounting scaffold
 
@@ -812,7 +820,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** MINFO1 bytes match independent host recomputation. A byte-level MINFO1 oracle checks every offset and reserved byte across empty, fragmented, pinned-resource and live-process fixtures; arithmetic is widened before narrowing.
 9. **Negative/failure test:** Counter overflow/wrong field offset fixture fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.05.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.05.build.json` and `v1/dist/certification/P1.05.test.json`; add `v1/dist/certification/P1.05.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.06 - Process-state table and bounded process descriptors
 
@@ -826,7 +834,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Host layout check plus SNA table initialization prove every required field/offset used by the implementation, descriptor size <=56, eight descriptors <=448, PID/state limits, exact 10-byte name preservation, saved_sp-only context ownership and private STARTED behavior.
 9. **Negative/failure test:** A 57-byte descriptor, ninth record, duplicated runnable CPU context, exposed STARTED bit, or process/open-description planning total >896 bytes must fail before check-in.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.06.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.06.build.json` and `v1/dist/certification/P1.06.test.json`; add `v1/dist/certification/P1.06.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.07 - Canonical task context frame
 
@@ -840,7 +848,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Synthetic context switch restores exact primary regs, IX, SP, PC.
 9. **Negative/failure test:** Persistent alternate-register assumption fails test.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.07.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.07.build.json` and `v1/dist/certification/P1.07.test.json`; add `v1/dist/certification/P1.07.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.08 - PID0 HALT idle
 
@@ -854,7 +862,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** With no user READY task, scheduler selects PID0, executes EI;HALT, resumes on IM2, performs wake/event checks and re-enters scheduling; allocator accounting proves PID0 made no user allocation.
 9. **Negative/failure test:** Force PID0 to allocate arena memory, exit, busy-spin, or execute HALT while interrupts are disabled and require deterministic failure.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.08.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.08.build.json` and `v1/dist/certification/P1.08.test.json`; add `v1/dist/certification/P1.08.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.09 - ABI syscall constants freeze
 
@@ -868,7 +876,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Host compares kernel/user constants byte-for-byte. Every frozen syscall/record constant has an existing byte-level conformance test and one generated source of truth shared by kernel/userland. The dispatcher evidence records measured size/cycle results for the table and compare/branch alternatives, proves the selected implementation follows the REV11 preference rule, and proves any table form reaches its handler through the validated indirect `JP (HL)` path only after a successful syscall-number bounds check. The ABI/table audit reports exactly 59 assigned syscall numbers and proves every other numeric value in the covered version-1 range is unassigned/reserved expansion space. It also decodes and compares the complete FPOP1 op-number table 0..17 byte-for-byte against the frozen constants, and byte-decodes ROMQ1/ROMOUT1 including every category/classification/contract-flag/reserved field. The generic range oracle also proves the exact §10.1A widened formula/inequalities, same-region rule, owned-range containment, count-zero exception, and bounded NUL scan/error behavior.
 9. **Negative/failure test:** Duplicate/redefined syscall ID fails static scan. Exercise invalid syscall-number holes, every errno number, wrapped/protected user ranges, nonzero reserved bytes and clobbered IX/IY; the ABI oracle must reject every divergence and prove no side effect before validation. A test build that indexes a handler table before validating the syscall number, omits the measured table-vs-branch comparison, uses a long compare/branch chain when the measured table+`JP (HL)` form is smaller/faster, or emits an unvalidated indirect dispatch must fail the §9.1 dispatcher oracle. Injecting any additional version-1 syscall assignment or handler into a deliberate numeric gap (for example 0x09), or aliasing a gap to an existing handler, must fail the syscall-surface completeness oracle. Renumbering, aliasing, omitting, or accepting an undefined FPOP1 op value must fail the ABI-constant oracle. Any ROMQ1/ROMOUT1 size/offset/category/classification/flag/reserved-bit drift must likewise fail before SYS_ROM_INFO can publish metadata. Any 16-bit wrapped end calculation, permitted-region bridge, missing process-owned containment check, count-zero buffer dereference, skipped validation of another count-zero argument, or NUL scan beyond the caller-valid/lexical bound must fail the §10.1A oracle before side effects.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.09.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.09.build.json` and `v1/dist/certification/P1.09.test.json`; add `v1/dist/certification/P1.09.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.10 - SYS_VERSION
 
@@ -882,7 +890,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Call 0xE000 with A=SYS_VERSION and arbitrary caller values in HL/DE/BC; return is exactly Carry=0, A=0, HL=0x0100 while IX/IY preservation rules hold.
 9. **Negative/failure test:** Add a deliberately invented selector-dependent implementation and require the ABI test to fail because SYS_VERSION has no arguments and always reports the fixed ABI version.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.10.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.10.build.json` and `v1/dist/certification/P1.10.test.json`; add `v1/dist/certification/P1.10.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.11 - SYS_GETPID
 
@@ -896,7 +904,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** PID0/PID1/synthetic task IDs exact.
 9. **Negative/failure test:** Corrupt current record detected.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.11.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.11.build.json` and `v1/dist/certification/P1.11.test.json`; add `v1/dist/certification/P1.11.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.12 - SYS_YIELD and round-robin READY selection
 
@@ -910,7 +918,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** A multi-task fixture proves ordered round-robin selection, sleeper wake during the scan, exactly one RUNNING record, PID0 fallback, and byte-exact context preservation across repeated yields.
 9. **Negative/failure test:** No READY peer must safely return to the same task when appropriate; introduce priority-biased selection, skip sleeper wake, allow two RUNNING records, or context-switch from an arbitrary interrupt and require failure.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.12.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.12.build.json` and `v1/dist/certification/P1.12.test.json`; add `v1/dist/certification/P1.12.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.13 - SYS_TICKS and 32-bit monotonic frame tick
 
@@ -924,7 +932,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Tick/FRAMES/wall-time/wake/BREAK/cursor flag responsibilities are bounded and exact; static/call-edge proof rejects forbidden ISR work; the handler returns through the documented `RETI` path with no arbitrary task switch. SYS_TICKS writes exactly four little-endian bytes and wrap 0xFFFFFFFF->0 is modulo-2^32 with no wall-clock side effect.
 9. **Negative/failure test:** Injected double interrupt accounting mismatch fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.13.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.13.build.json` and `v1/dist/certification/P1.13.test.json`; add `v1/dist/certification/P1.13.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.14 - ROM FRAMES and UDG boot compatibility
 
@@ -938,7 +946,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** FRAMES vectors across low-word wrap are exact; debugger proves UDG points to the pinned 256-byte arena bank before PID1 is READY and never into kernel/IM2; allocator accounting includes the pin.
 9. **Negative/failure test:** Skip a FRAMES carry, leave UDG at inherited BASIC/high-kernel address, allocate the bank after PID1, or free/move the pinned bank and require failure.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.14.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.14.build.json` and `v1/dist/certification/P1.14.test.json`; add `v1/dist/certification/P1.14.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.15 - Minimal BREAK sampling
 
@@ -952,7 +960,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Script BREAK transitions without task switch in ISR.
 9. **Negative/failure test:** ISR calling blocking service fails static/runtime guard.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.15.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.15.build.json` and `v1/dist/certification/P1.15.test.json`; add `v1/dist/certification/P1.15.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.16 - Fast shadow-register ISR path
 
@@ -966,7 +974,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Primary task registers survive exact.
 9. **Negative/failure test:** Synthetic primary-register corruption detected.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.16.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.16.build.json` and `v1/dist/certification/P1.16.test.json`; add `v1/dist/certification/P1.16.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.17 - ROM-safe ISR fallback
 
@@ -980,7 +988,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Fallback is selected and all documented state survives.
 9. **Negative/failure test:** Force fast path during busy flag and fail.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.17.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.17.build.json` and `v1/dist/certification/P1.17.test.json`; add `v1/dist/certification/P1.17.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.18 - SYS_SLEEP with relative-tick wrap
 
@@ -994,7 +1002,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Vectors for 0, 1, 0x7FFFFFFF and deadlines crossing 0xFFFFFFFF prove immediate return or wake at/after the exact relative interval without torn/wrapped comparison errors.
 9. **Negative/failure test:** 0x80000000 and 0xFFFFFFFF return E_INVAL with no state change; a one-tick-early wake or implementation that treats the input as an absolute target tick must fail.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.18.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.18.build.json` and `v1/dist/certification/P1.18.test.json`; add `v1/dist/certification/P1.18.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.19 - SYS_EXIT kernel primitive
 
@@ -1008,7 +1016,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Synthetic child passes status bytes 0x00 and 0xFF, ceases execution without returning through the syscall gateway, and releases every Phase-1-owned resource exactly once.
 9. **Negative/failure test:** PID0 exit, double release, or any successful SYS_EXIT path that returns to user code fails deterministically.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.19.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.19.build.json` and `v1/dist/certification/P1.19.test.json`; add `v1/dist/certification/P1.19.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.20 - tty32 fallback core
 
@@ -1022,7 +1030,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Golden codes 0x20,0x7E,0x7F at row/column edges, 32x24 scroll and cursor transitions match the shared console oracle.
 9. **Negative/failure test:** Any BASIC-editor handoff, 22+2-line behavior, code outside frozen repertoire, or write beyond row23/col31 fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.20.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.20.build.json` and `v1/dist/certification/P1.20.test.json`; add `v1/dist/certification/P1.20.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.21 - F4X8 payload validator and pin
 
@@ -1036,7 +1044,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Host decoder and target validator agree on every header byte and all 96*8 scan rows; valid 392-byte resource pins FAST and renders 0x20..0x7F exactly.
 9. **Negative/failure test:** Wrong magic/version/first-code/count/flags/length, altered nibble ordering, or inability to obtain FAST_REQUIRED storage causes explicit validation/boot failure with no COLD spill.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.21.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.21.build.json` and `v1/dist/certification/P1.21.test.json`; add `v1/dist/certification/P1.21.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.22 - tty64 4x8 renderer
 
@@ -1050,7 +1058,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Golden glyph/attribute fixtures at cols0/1/62/63 and rows0/23 prove independent nibble writes, 64*4=256 and 24*8=192 coverage, neighbor preservation, code0x7F rendering and deliberate attribute pair-sharing.
 9. **Negative/failure test:** Linear-bitmap addressing, neighbor-nibble corruption, per-4-pixel fake attributes, attribute mutation by cursor, out-of-range glyph code/resource, or UDG treated as one tty64 column fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.22.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.22.build.json` and `v1/dist/certification/P1.22.test.json`; add `v1/dist/certification/P1.22.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.23 - tty64 scroll
 
@@ -1064,7 +1072,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** A 24-row labeled screen retains exactly the former rows1..23, clears row23 bitmap/attributes, preserves display guard bytes and restores the cursor only after completion.
 9. **Negative/failure test:** Copying 6144 bytes linearly, moving 31/33 bytes per scanline, wrong attribute count, uncleared last row, or scrolling with cursor XOR still present fails golden hashes.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.23.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.23.build.json` and `v1/dist/certification/P1.23.test.json`; add `v1/dist/certification/P1.23.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.24 - Software cursor core
 
@@ -1078,7 +1086,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Rows/cols/shapes/defaults and 25-frame due flag are exact; repeated XOR hide/show returns byte-identical bitmap; every console/graphics mutation brackets cursor removal/redraw and leaves attributes/neighbor nibble unchanged.
 9. **Negative/failure test:** Saved-pixel cursor, ISR bitmap write, shape/default mismatch, cursor left visible during a screen operation/task switch, or move/change while visible without first removing it fails byte-level tests.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.24.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.24.build.json` and `v1/dist/certification/P1.24.test.json`; add `v1/dist/certification/P1.24.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.25 - Authoritative ULA port 0xFE shadow
 
@@ -1092,7 +1100,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Interleaved border/MIC/beeper and ROM BEEPER/cassette fixtures preserve unrelated shadow/BORDCR bits and end with hardware output equal to the authoritative kernel shadow.
 9. **Negative/failure test:** Any direct literal OUT(0xFE) outside the owner, clobbered MIC/beeper/border bit, BORDCR becoming authoritative, or wrapper returning with shadow/hardware disagreement fails static/runtime tests.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.25.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.25.build.json` and `v1/dist/certification/P1.25.test.json`; add `v1/dist/certification/P1.25.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.26 - Software wall-clock state
 
@@ -1106,7 +1114,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Cold state unset; set/get exact; rollover/date range helpers later. Cold TIME1 is unset; tick uptime still advances; valid set establishes seconds and changes the 16-bit revision exactly once; 50 accepted PAL IM2 frames advance one second.
 9. **Negative/failure test:** Pretend persistence across reset fails test.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.26.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.26.build.json` and `v1/dist/certification/P1.26.test.json`; add `v1/dist/certification/P1.26.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.27 - SYS_TIME_GET/SYS_TIME_SET
 
@@ -1120,7 +1128,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Packed record byte layout and invalid dates exact.
 9. **Negative/failure test:** Out-of-range 1969/2100 rejected. Malformed/out-of-range time leaves seconds, revision and subsecond state unchanged; a deliberately repeated same-value successful set must still change revision.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.27.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.27.build.json` and `v1/dist/certification/P1.27.test.json`; add `v1/dist/certification/P1.27.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.28 - Kernel stack guard/high-water instrumentation
 
@@ -1134,7 +1142,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Every enumerated depth component is represented in the high-water oracle; release high-water <=448 bytes from SP=0xFD00, >=64 bytes remain untouched, the 0xFB00-0xFB0F guard is intact at every required boundary, and no process-stack scratch use or unbounded ROM service is accepted.
 9. **Negative/failure test:** Corrupt guard and require PANIC KSTACK.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.28.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.28.build.json` and `v1/dist/certification/P1.28.test.json`; add `v1/dist/certification/P1.28.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.29 - IY end-to-end correction matrix
 
@@ -1148,7 +1156,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Debugger checkpoints at boot, every syscall-exit class, context switch, wrapper success and wrapper trapped-error return all show IY=0x5C3A.
 9. **Negative/failure test:** One synthetic syscall/wrapper deliberately returns with wrong IY and must fail the matrix.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.29.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.29.build.json` and `v1/dist/certification/P1.29.test.json`; add `v1/dist/certification/P1.29.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.30 - Alternate-register instruction-boundary correction matrix
 
@@ -1162,7 +1170,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** No interrupt observes altreg_busy=0 while foreground shadow state is live; both ISR paths preserve their promised state, use only their permitted scratch resources, and retain exact measured frame/maximum-cycle evidence.
 9. **Negative/failure test:** Deliberately clear altreg_busy one instruction early and require a deterministic failure.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.30.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.30.build.json` and `v1/dist/certification/P1.30.test.json`; add `v1/dist/certification/P1.30.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.31 - Keyboard/IM2 BREAK correction matrix
 
@@ -1176,7 +1184,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Exact BC row-select vectors and polarity produce the frozen key matrix; BREAK combinations set break_pending while negative combinations do not; static call graph contains no ISR-to-ROM keyboard/decoder edge; ordinary owner tty input decodes the required key set and blocked reads yield.
 9. **Negative/failure test:** Use an 8-bit-only port assumption, wrong row mask/polarity, synthetic ISR call to ROM KEYBOARD, non-BREAK false positive, busy-spin waiting input or command-history behavior and require deterministic failure.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.31.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.31.build.json` and `v1/dist/certification/P1.31.test.json`; add `v1/dist/certification/P1.31.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.32 - Cursor/direct-screen reversibility correction matrix
 
@@ -1190,7 +1198,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Every cursor transition is XOR-reversible and never restores stale saved pixels over later direct screen writes.
 9. **Negative/failure test:** Use a stale-pixel restore implementation in a negative fixture and require byte mismatch.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.32.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.32.build.json` and `v1/dist/certification/P1.32.test.json`; add `v1/dist/certification/P1.32.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.33 - Kernel-stack Revision-10 correction matrix
 
@@ -1204,7 +1212,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** All stress paths retain >=64-byte margin and the frozen guard; deliberate corruption reaches PANIC KSTACK.
 9. **Negative/failure test:** A test build that exceeds 448 bytes or damages guard blocks Phase 1.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.33.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.33.build.json` and `v1/dist/certification/P1.33.test.json`; add `v1/dist/certification/P1.33.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.34 - SYS_CON_GETKEY exact ABI
 
@@ -1218,7 +1226,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Owner receives exact target byte in L with H=0; non-owner cannot steal input; IY returns 0x5C3A.
 9. **Negative/failure test:** Allow a background/non-owner read or return a stale/nonzero H and require failure.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.34.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.34.build.json` and `v1/dist/certification/P1.34.test.json`; add `v1/dist/certification/P1.34.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.35 - SYS_CON_PUTCHAR exact ABI
 
@@ -1232,7 +1240,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Input byte is rendered with exact tty semantics; no adjacent bitmap/attribute corruption; IY canonical on return.  Run the same control-byte golden corpus in tty32 and tty64 at interior/right-edge/bottom-row positions; verify exact row/column, one-row scroll, bitmap/attribute bytes, neighbor nibble preservation, and reversible cursor state.
 9. **Negative/failure test:** Set H nonzero or write beyond column/row bounds in a negative fixture and require deterministic rejection/test failure.  A BS at column 0 that wraps, TAB using physical rather than logical columns, LF that preserves the old column, double-scroll, ISR-side bitmap cursor edit, or output while a cursor remains XORed into the cell fails byte-level display/cursor assertions.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.35.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.35.build.json` and `v1/dist/certification/P1.35.test.json`; add `v1/dist/certification/P1.35.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.36 - SYS_CON_WRITE exact ABI
 
@@ -1246,7 +1254,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Exact byte count is returned; valid 7FF0+0020 cross-boundary buffer works when otherwise legal; invalid/wrapped/protected ranges fail before screen mutation.
 9. **Negative/failure test:** Use 16-bit wrapped end arithmetic or dereference a count-zero poison pointer and require failure.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.36.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.36.build.json` and `v1/dist/certification/P1.36.test.json`; add `v1/dist/certification/P1.36.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.37 - SYS_CON_CLEAR exact ABI
 
@@ -1260,7 +1268,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Display and logical cursor are in the exact post-clear state; ULA shadow and protected workspace are unchanged.
 9. **Negative/failure test:** Deliberately leave one stale bitmap/cursor byte or touch 0x5B00+ protected workspace and require failure.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.37.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.37.build.json` and `v1/dist/certification/P1.37.test.json`; add `v1/dist/certification/P1.37.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.38 - SYS_CON_GETPOS exact ABI
 
@@ -1274,7 +1282,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** H/L exactly match logical row/column and the call is side-effect free.
 9. **Negative/failure test:** Return swapped row/column, out-of-range position, or mutate cursor/display and require failure.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.38.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.38.build.json` and `v1/dist/certification/P1.38.test.json`; add `v1/dist/certification/P1.38.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.39 - SYS_CON_SETPOS exact ABI
 
@@ -1288,7 +1296,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Valid coordinates become current position; invalid coordinates fail atomically with prior cursor/display state byte-identical.
 9. **Negative/failure test:** Use row=24 or column=32/64 as appropriate and require no state mutation.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.39.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.39.build.json` and `v1/dist/certification/P1.39.test.json`; add `v1/dist/certification/P1.39.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.40 - Canonical Z80 memory/string primitives
 
@@ -1302,7 +1310,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Golden copy/move/search vectors are byte-exact; overlap direction is correct; every Phase-1-live §27.2 consumer resolves to the canonical owner; measured small-copy exceptions carry evidence; interrupted repeated operations complete exactly with no corruption or false indivisibility assumption.
 9. **Negative/failure test:** Deliberately select the wrong overlap direction, duplicate an independently tuned covered byte-loop consumer, omit a required block-family consideration, remove a small-copy measurement, or inject an interrupt into a fixture that assumes a repeated instruction is indivisible; each must fail deterministically.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.40.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.40.build.json` and `v1/dist/certification/P1.40.test.json`; add `v1/dist/certification/P1.40.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P1.41 - Phase-1 acceptance gate
 
@@ -1316,7 +1324,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Every Phase1 acceptance condition PASS, including the complete P1.40 canonical primitive suite; worktree check-in-ready.
 9. **Negative/failure test:** Any reserve consumption, IY drift, unsafe alternate-register window, BREAK/ISR call-edge defect, cursor stale-pixel defect, canonical memory/string primitive ownership/overlap/measurement/interruption-restart defect, or stack defect keeps gate red.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P1.41.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P1.41.build.json` and `v1/dist/certification/P1.41.test.json`; add `v1/dist/certification/P1.41.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 
 ---
@@ -1335,7 +1343,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Host inspector accepts goldens and rejects malformed size/offset/CRC/trailing data. Prove image offset=24, relocation_table_offset=24+image_size, relocation bytes=relocation_count*2, total stored length=relocation_table_offset+relocation_count*2, header/body CRCs exact, no trailing data, flags/version/header size exact, image_size>=1, entry_offset<image_size, image_size+bss_size<=32768 and stack 64..4096.
 9. **Negative/failure test:** relocation_count>0 with image_size<2 => E_FORMAT.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P2.01.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P2.01.build.json` and `v1/dist/certification/P2.01.test.json`; add `v1/dist/certification/P2.01.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P2.02 - Host MEX1 inspector
 
@@ -1349,7 +1357,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Golden/malformed corpus exact.
 9. **Negative/failure test:** One-bit header CRC mutation rejected.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P2.02.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P2.02.build.json` and `v1/dist/certification/P2.02.test.json`; add `v1/dist/certification/P2.02.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P2.03 - ABS16 relocation validator
 
@@ -1363,7 +1371,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Golden list relocates at two bases.
 9. **Negative/failure test:** unsorted/overlap/end-overrun rejected atomically. Include widened adversarial vectors for 24+image_size, relocation_count*2, relocation_table_offset+table bytes, image_size+bss_size, actual_base+allocation size and stored_word+actual_base; low-16-bit wrap may never make an invalid MEX1 valid.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P2.03.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P2.03.build.json` and `v1/dist/certification/P2.03.test.json`; add `v1/dist/certification/P2.03.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P2.04 - Relocatable image load
 
@@ -1377,7 +1385,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Same executable at two bases runs same result.
 9. **Negative/failure test:** Allocation/relocation failure leaves no live allocation.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P2.04.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P2.04.build.json` and `v1/dist/certification/P2.04.test.json`; add `v1/dist/certification/P2.04.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P2.05 - FAST process-stack allocation
 
@@ -1391,7 +1399,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Stack always 8000-DFFF; bounds exact.
 9. **Negative/failure test:** FAST exhaustion => E_NOMEM, no COLD spill.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P2.05.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P2.05.build.json` and `v1/dist/certification/P2.05.test.json`; add `v1/dist/certification/P2.05.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P2.06 - ARG1 builder/validator
 
@@ -1405,7 +1413,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Boundary blocks accepted; malformed rejected.
 9. **Negative/failure test:** Bad argc/offset/NUL/total rejected pre-side-effect.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P2.06.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P2.06.build.json` and `v1/dist/certification/P2.06.test.json`; add `v1/dist/certification/P2.06.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P2.07 - ENV1 builder/validator
 
@@ -1419,7 +1427,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Boundary ENV1 accepted; deep stack cannot overwrite. ARG1+ENV1 live in one separate process-owned immutable bootstrap allocation (at most 512 payload bytes plus alignment), never in the downward runtime stack; both survive until exit/exec, getenv retains the ENV1 pointer, and cwd remains kernel-descriptor state rather than ENV1 data.
 9. **Negative/failure test:** 9th entry/overlength/bad byte rejected.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P2.07.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P2.07.build.json` and `v1/dist/certification/P2.07.test.json`; add `v1/dist/certification/P2.07.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P2.08 - Initial user context constructor
 
@@ -1433,7 +1441,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** First dispatch enters MEX1 with exact register contract. A plain return from the C48 entry path is redirected by crt0 to SYS_EXIT; it can never return into loader state. Image+BSS is ANY across the full contiguous arena, process stack is FAST_REQUIRED, and initial context is constructed only after all required allocations, image validation/relocation and BSS zeroing succeed.
 9. **Negative/failure test:** IY not 5C3A fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P2.08.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P2.08.build.json` and `v1/dist/certification/P2.08.test.json`; add `v1/dist/certification/P2.08.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P2.09 - SYS_SPAWN preflight PID capacity
 
@@ -1447,7 +1455,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Full table returns E_AGAIN and tape position/memory unchanged.
 9. **Negative/failure test:** Move check after allocation => negative fixture catches side effect.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P2.09.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P2.09.build.json` and `v1/dist/certification/P2.09.test.json`; add `v1/dist/certification/P2.09.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P2.10 - SYS_SPAWN atomic transaction
 
@@ -1461,7 +1469,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Injected failure at each stage rolls back all resources.
 9. **Negative/failure test:** Direct spawn non-BIN => E_FORMAT.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P2.10.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P2.10.build.json` and `v1/dist/certification/P2.10.test.json`; add `v1/dist/certification/P2.10.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P2.11 - Open-handle inheritance scaffold for spawn
 
@@ -1475,7 +1483,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Fixture inherited std handles refer same descriptions.
 9. **Negative/failure test:** Refcount overflow/allocation failure rolls back spawn.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P2.11.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P2.11.build.json` and `v1/dist/certification/P2.11.test.json`; add `v1/dist/certification/P2.11.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P2.12 - SYS_EXEC atomic replacement
 
@@ -1489,7 +1497,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Success swaps image; injected failure resumes old image byte-identically.
 9. **Negative/failure test:** Wrong-type image leaves old process intact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P2.12.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P2.12.build.json` and `v1/dist/certification/P2.12.test.json`; add `v1/dist/certification/P2.12.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P2.13 - Parent/child links
 
@@ -1503,7 +1511,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Spawn tree exact across PID reuse.
 9. **Negative/failure test:** Stale PID generation/wait state cannot alias reused record.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P2.13.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P2.13.build.json` and `v1/dist/certification/P2.13.test.json`; add `v1/dist/certification/P2.13.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P2.14 - ZOMBIE transition
 
@@ -1517,7 +1525,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Child exit wakes waiting parent; memory freed except descriptor.
 9. **Negative/failure test:** Zombie must never be scheduled.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P2.14.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P2.14.build.json` and `v1/dist/certification/P2.14.test.json`; add `v1/dist/certification/P2.14.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P2.15 - SYS_WAIT specific child
 
@@ -1531,7 +1539,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Running->WAIT_CHILD->READY->reap exact.
 9. **Negative/failure test:** Non-child PID rejected.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P2.15.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P2.15.build.json` and `v1/dist/certification/P2.15.test.json`; add `v1/dist/certification/P2.15.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P2.16 - SYS_WAIT any child
 
@@ -1545,7 +1553,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Two children exit order handled deterministically by documented scan rule.
 9. **Negative/failure test:** No child => documented errno.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P2.16.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P2.16.build.json` and `v1/dist/certification/P2.16.test.json`; add `v1/dist/certification/P2.16.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P2.17 - Child reparenting to PID1
 
@@ -1559,7 +1567,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Tree fixture parent exit then child exit/reap by PID1.
 9. **Negative/failure test:** Reparent to FREE PID rejected by invariants.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P2.17.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P2.17.build.json` and `v1/dist/certification/P2.17.test.json`; add `v1/dist/certification/P2.17.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P2.18 - SYS_KILL never-started child
 
@@ -1573,7 +1581,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** PC sentinel never executes; status130 observed.
 9. **Negative/failure test:** Unauthorized/PID0/PID1 kill rejected.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P2.18.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P2.18.build.json` and `v1/dist/certification/P2.18.test.json`; add `v1/dist/certification/P2.18.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P2.19 - SYS_KILL blocked started child
 
@@ -1587,7 +1595,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Blocked read/sleep fixture wakes E_INTR/status policy exact.
 9. **Negative/failure test:** No arbitrary instruction preemption occurs.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P2.19.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P2.19.build.json` and `v1/dist/certification/P2.19.test.json`; add `v1/dist/certification/P2.19.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P2.20 - Process-name exact-case field
 
@@ -1601,7 +1609,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** 10-char name prints byte-exact.
 9. **Negative/failure test:** 11-char creation rejected upstream.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P2.20.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P2.20.build.json` and `v1/dist/certification/P2.20.test.json`; add `v1/dist/certification/P2.20.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P2.21 - SYS_PROC_INFO/PROC1 exact ABI
 
@@ -1615,7 +1623,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Host decodes exact bytes against target memory; CANCEL_PENDING round-trips as bit0; STARTED/private flags never appear; bits1..7 are zero; PROC1 ALLOW_TAPE behavior matches the frozen ABI.
 9. **Negative/failure test:** Set a private STARTED/other kernel flag and require SYS_PROC_INFO.flags to remain zero except CANCEL_PENDING bit0; any leaked private/reserved bit fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P2.21.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P2.21.build.json` and `v1/dist/certification/P2.21.test.json`; add `v1/dist/certification/P2.21.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P2.22 - Repeated spawn/exit leak test
 
@@ -1629,7 +1637,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Hundreds of cycles end at byte-identical accounting.
 9. **Negative/failure test:** Inject one skipped free; leak detector fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P2.22.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P2.22.build.json` and `v1/dist/certification/P2.22.test.json`; add `v1/dist/certification/P2.22.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P2.23 - Two-base relocatable execution gate
 
@@ -1643,7 +1651,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Observable output and relocated words exact at both bases.
 9. **Negative/failure test:** Fixed absolute arena reference fixture fails relocation correctness.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P2.23.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P2.23.build.json` and `v1/dist/certification/P2.23.test.json`; add `v1/dist/certification/P2.23.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P2.24 - Phase-2 acceptance gate
 
@@ -1657,7 +1665,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** All Phase2 bullets PASS.
 9. **Negative/failure test:** Any failed rollback blocks check-in.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P2.24.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P2.24.build.json` and `v1/dist/certification/P2.24.test.json`; add `v1/dist/certification/P2.24.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 
 ---
@@ -1676,7 +1684,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Host layout/budget check plus SNA allocation fixture prove all architecture-owned fields/state, 24 records, <=12 bytes each, <=288 total, independent-vs-shared description ownership and combined fixed planning total <=896; 24 allocate and the 25th returns E_NOSPC with complete rollback.
 9. **Negative/failure test:** A missing architecture-owned field/state, 13-byte description, >288-byte table, >896-byte combined planning total, refcount overflow, corrupt type, accidental new description on dup/inheritance, or partially visible 25th allocation must fail deterministically.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P3.01.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P3.01.build.json` and `v1/dist/certification/P3.01.test.json`; add `v1/dist/certification/P3.01.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P3.02 - Eight-handle process table
 
@@ -1690,7 +1698,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** All eight slots encode only 0..23 or 0xFF; 0/1/2 standard-handle topology is exact; a ninth requested slot returns E_NOSPC without mutation.
 9. **Negative/failure test:** Store an offset/decoder in a process slot, accept an ID >23 other than 0xFF, or leak a description reference on failed install and require deterministic failure.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P3.02.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P3.02.build.json` and `v1/dist/certification/P3.02.test.json`; add `v1/dist/certification/P3.02.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P3.03 - /dev/tty description
 
@@ -1704,7 +1712,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** READ/WRITE through handles equal direct console contract.
 9. **Negative/failure test:** Wrong direction/invalid handle errno exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P3.03.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P3.03.build.json` and `v1/dist/certification/P3.03.test.json`; add `v1/dist/certification/P3.03.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P3.04 - /dev/null description
 
@@ -1718,7 +1726,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Read returns HL=0; writes full count.
 9. **Negative/failure test:** Invalid ioctl rejected.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P3.04.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P3.04.build.json` and `v1/dist/certification/P3.04.test.json`; add `v1/dist/certification/P3.04.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P3.05 - SYS_CLOSE final-reference semantics
 
@@ -1732,7 +1740,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** dup then close one preserves other.
 9. **Negative/failure test:** Double-close invalid handle.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P3.05.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P3.05.build.json` and `v1/dist/certification/P3.05.test.json`; add `v1/dist/certification/P3.05.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P3.06 - SYS_DUP shared description
 
@@ -1746,7 +1754,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Source=self explicit destination is no-op; 0xFF chooses lowest free; duplicate handle observes shared offset/decoder and final-close lifetime exactly.
 9. **Negative/failure test:** Dead source, occupied different destination, or no free handle returns the exact error atomically and never closes/replaces an occupied destination.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P3.06.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P3.06.build.json` and `v1/dist/certification/P3.06.test.json`; add `v1/dist/certification/P3.06.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P3.07 - Independent open offset state fixture
 
@@ -1760,7 +1768,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Two opens seek independently.
 9. **Negative/failure test:** Accidental shared offset fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P3.07.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P3.07.build.json` and `v1/dist/certification/P3.07.test.json`; add `v1/dist/certification/P3.07.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P3.08 - SYS_PIPE atomic pipe object allocation
 
@@ -1774,7 +1782,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** All required pipe state is initialized; normal buffer is exactly 256 FAST bytes or the single allowed 128-byte fallback; both endpoint descriptions/handles publish together. Output slots contain the read/write handles only after full commit; no half-pipe or leaked description exists on failure.
 9. **Negative/failure test:** Missing waiter/endpoint-count state, any other fallback size/count, or buffer/description/handle exhaustion that leaves a partial pipe/ref/handle fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P3.08.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P3.08.build.json` and `v1/dist/certification/P3.08.test.json`; add `v1/dist/certification/P3.08.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P3.09 - Pipe read available-data path
 
@@ -1788,7 +1796,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Wraparound vectors exact.
 9. **Negative/failure test:** Overcopy guard fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P3.09.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P3.09.build.json` and `v1/dist/certification/P3.09.test.json`; add `v1/dist/certification/P3.09.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P3.10 - Pipe empty/read blocking and EOF
 
@@ -1802,7 +1810,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Reader sleeps and wakes on write; EOF only final write endpoint close.
 9. **Negative/failure test:** Premature EOF under dup fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P3.10.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P3.10.build.json` and `v1/dist/certification/P3.10.test.json`; add `v1/dist/certification/P3.10.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P3.11 - Pipe write available-space path
 
@@ -1816,7 +1824,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Partial writes/indices exact.
 9. **Negative/failure test:** Bytes-used > capacity invariant fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P3.11.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P3.11.build.json` and `v1/dist/certification/P3.11.test.json`; add `v1/dist/certification/P3.11.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P3.12 - Pipe full/write blocking
 
@@ -1830,7 +1838,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Writer sleeps; reader wakes writer.
 9. **Negative/failure test:** Busy loop without blocking fails timing/state assertion.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P3.12.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P3.12.build.json` and `v1/dist/certification/P3.12.test.json`; add `v1/dist/certification/P3.12.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P3.13 - Broken pipe E_PIPE
 
@@ -1844,7 +1852,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Final read close then write returns E_PIPE.
 9. **Negative/failure test:** Shared duplicated read ref prevents E_PIPE until final close.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P3.13.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P3.13.build.json` and `v1/dist/certification/P3.13.test.json`; add `v1/dist/certification/P3.13.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P3.14 - Pipe endpoint/refcount lifetime
 
@@ -1858,7 +1866,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Dup/spawn refs do not alter logical endpoint-open counts; EOF/E_PIPE appears only after the applicable final endpoint-description reference; object frees only after both endpoint descriptions close and waiters are absent.
 9. **Negative/failure test:** Premature endpoint close/EOF/E_PIPE under duplicate refs, exposing a second independent endpoint description, freeing with any waiter/ref, or a non-atomic wait/ref transition fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P3.14.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P3.14.build.json` and `v1/dist/certification/P3.14.test.json`; add `v1/dist/certification/P3.14.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P3.15 - READ/WRITE pointer validation
 
@@ -1872,7 +1880,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Display/full arena ranges valid as specified; ROM/compat/kernel/cross-bound invalid; count=0 leaves guard bytes untouched and returns HL=0 immediately; logical EOF reads return HL=0.
 9. **Negative/failure test:** Wraparound pointer+length, invalid handle, or treating ordinary EOF as E_EOF fails; a zero-count operation that dereferences or blocks fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P3.15.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P3.15.build.json` and `v1/dist/certification/P3.15.test.json`; add `v1/dist/certification/P3.15.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P3.16 - PROC1 ALLOW_TAPE ABI bit
 
@@ -1886,7 +1894,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Set/query allowed bit exactly.
 9. **Negative/failure test:** Unknown flags rejected.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P3.16.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P3.16.build.json` and `v1/dist/certification/P3.16.test.json`; add `v1/dist/certification/P3.16.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P3.17 - Two-process pipe proof
 
@@ -1900,7 +1908,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Exact byte stream, wake states and EOF.
 9. **Negative/failure test:** Small buffer stress detects deadlock.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P3.17.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P3.17.build.json` and `v1/dist/certification/P3.17.test.json`; add `v1/dist/certification/P3.17.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P3.18 - Three-stage pipeline fixture
 
@@ -1914,7 +1922,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Data/result exact; EOF depends on final writer.
 9. **Negative/failure test:** Retain parent writer intentionally and require timeout/deadlock detector to catch it.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P3.18.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P3.18.build.json` and `v1/dist/certification/P3.18.test.json`; add `v1/dist/certification/P3.18.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P3.19 - Widened user-range and zero-count correction matrix
 
@@ -1928,7 +1936,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Exact three negative vectors fail pre-side-effect; 7FF0+0020 succeeds; zero-count leaves pointed guard bytes untouched while invalid handle still errors. The implementation-level oracle additionally logs the widened `end_exclusive` value and proves every §10.1A inequality/same-region/ownership decision, count-zero no-dereference behavior with other-argument validation, and caller-region/lexical-bound NUL termination behavior.
 9. **Negative/failure test:** Implement 16-bit wrapped end-address arithmetic in a negative fixture and require the matrix to catch it. Also inject a bridge between the two individually permitted ABI regions, a range outside the process-owned allocation, a count-zero fixture with an invalid handle plus poisoned buffer address, and unterminated strings at each region/lexical boundary; every invalid case must fail before dereference or side effect with the specified errno.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P3.19.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P3.19.build.json` and `v1/dist/certification/P3.19.test.json`; add `v1/dist/certification/P3.19.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P3.20 - SYS_IOCTL / IOCTL1 exact ABI
 
@@ -1942,7 +1950,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Every request has exact pointed argument size, atomic validation and deterministic state/result; no unsupported ioctl has a hidden effect.  Execute IDs 0x01..0x07 byte-for-byte, verify pointed read/write direction/size, 32/64 mode values, 24-row size, cursor values 0/1/2, PID values and owner restoration. Unknown ID and non-tty handles have no hidden side effect.
 9. **Negative/failure test:** Mutate IOCTL1 packing, use an unsupported request or invalid argument range and require pre-side-effect failure.  Swap any request number, accept an unknown ID, accept a TTY request on `/dev/null` or `/dev/tape`, let non-PID1 set tty ownership, accept dead PID ownership, or access an invalid pointed byte before full validation; each must fail.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P3.20.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P3.20.build.json` and `v1/dist/certification/P3.20.test.json`; add `v1/dist/certification/P3.20.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P3.21 - Phase-3 acceptance gate
 
@@ -1956,7 +1964,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** All Phase3 bullets PASS.
 9. **Negative/failure test:** Any timeout or widened-range/zero-count defect blocks gate.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P3.21.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P3.21.build.json` and `v1/dist/certification/P3.21.test.json`; add `v1/dist/certification/P3.21.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 
 ---
@@ -1975,7 +1983,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Exact directory-ID and positive/negative normalization corpus, including root-boundary, repeated-separator and pre/post-login home cases.
 9. **Negative/failure test:** Any mkdir/rmdir/general directory creation, mount operation or mount-style namespace claim, permission/ownership-bit/inode API or metadata claim, wrong compact ID, traversal above root, overlength normalization, unknown component, or mutation before full resolution is rejected by the implementation/scope oracle with the exact applicable errno or certification failure.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.01.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.01.build.json` and `v1/dist/certification/P4.01.test.json`; add `v1/dist/certification/P4.01.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.02 - Case-sensitive base-name validation
 
@@ -1989,7 +1997,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** `hello.c`, `Hello.c`, and `HELLO.C` coexist; legal dot-prefixed transaction names round-trip exactly.
 9. **Negative/failure test:** Reject empty, >10-byte, nonportable-character, exact `.`/`..`, or case-folded alias inputs before publication.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.02.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.02.build.json` and `v1/dist/certification/P4.02.test.json`; add `v1/dist/certification/P4.02.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.03 - 20-byte mutable object record
 
@@ -2003,7 +2011,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Host memory-layout decoder matches exact 20 bytes and allocator accounting shows the fixed 32-slot limit plus COLD_PREFERRED-to-FAST fallback without changing correctness.  Decode all 20 offsets independently for RAW, PACKED, zero-length and ten-character non-NUL name cases; verify 32 entries total/640 bytes and allocator ownership matches storage length, not logical length.
 9. **Negative/failure test:** 33rd mutable object returns the capacity error; a fixed pseudo/pinned entry consuming a mutable slot or an ordinary payload bypassing the declared placement/accounting policy fails.  Nonzero reserved byte, public flag bits other than bit0, RAW unequal lengths, PACKED non-smaller length, zero-length nonzero allocation, odd/out-of-arena pointer, or pinned metadata consuming a mutable slot must fail before publication.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.03.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.03.build.json` and `v1/dist/certification/P4.03.test.json`; add `v1/dist/certification/P4.03.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.04 - Directory type-placement rules
 
@@ -2017,7 +2025,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Exact type/state/placement matrix plus LF-only text corpus and TAPE_BACKED unknown-length reporting.
 9. **Negative/failure test:** Reject wrong numeric type/state/flag, M48O DIR/DEV, illegal target/type pair, public SYSTEM target, CRLF-emitting target tool, suffix inference, or C in /bin.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.04.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.04.build.json` and `v1/dist/certification/P4.04.test.json`; add `v1/dist/certification/P4.04.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.05 - SYS_OPEN typed creation
 
@@ -2031,7 +2039,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Full flag/type/path matrix including O_TRUNC|O_APPEND, absent/existing creation, type preservation and pseudo/PINNED_SYSTEM rules is exact.
 9. **Negative/failure test:** Unknown bits/illegal dependencies/type values, DIR mutation, retagging, suffix inference, or mutation before validation are rejected with byte-identical prior state. Attempt DIR open; creation/truncation/append/exclusive flags on each pseudo device; byte I/O/unsupported ioctl on `/dev/tape`; and byte-open of a BCAT-only command. Verify exact errno and zero tape motion/state mutation.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.05.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.05.build.json` and `v1/dist/certification/P4.05.test.json`; add `v1/dist/certification/P4.05.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.06 - Exclusive writer / multiple readers
 
@@ -2045,7 +2053,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Independent reader-reader opens succeed; writer conflicts with every distinct reader/writer; duplicated/inherited references to the same writer remain legal and share state.
 9. **Negative/failure test:** Pack/swap with any distinct live description or a read-open attempt during writer ownership returns E_BUSY; handle-table-only scans fail the test.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.06.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.06.build.json` and `v1/dist/certification/P4.06.test.json`; add `v1/dist/certification/P4.06.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.07 - RAW read/seek
 
@@ -2059,7 +2067,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Read EOF, seek 0, seek exact EOF and zero-length RAW behavior are exact; nonzero resident payload pointers remain even-aligned in the arena.
 9. **Negative/failure test:** Seek beyond EOF, seek on non-RAM streams, sparse-hole creation, or dereference of zero allocation sentinel fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.07.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.07.build.json` and `v1/dist/certification/P4.07.test.json`; add `v1/dist/certification/P4.07.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.08 - Atomic RAW growth/write
 
@@ -2073,7 +2081,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** In-place and extending writes return HL=BC; growth commits atomically and widened boundary vectors are exact.
 9. **Negative/failure test:** Forced E_NOMEM/E_NOSPC, wrapped offset+BC, or a positive short extending write leaves the original object hash/metadata unchanged and fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.08.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.08.build.json` and `v1/dist/certification/P4.08.test.json`; add `v1/dist/certification/P4.08.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.09 - O_APPEND semantics
 
@@ -2087,7 +2095,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Seek then append still writes EOF.
 9. **Negative/failure test:** Offset-based append bug fixture fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.09.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.09.build.json` and `v1/dist/certification/P4.09.test.json`; add `v1/dist/certification/P4.09.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.10 - O_TRUNC semantics
 
@@ -2101,7 +2109,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Lengths/data exact.
 9. **Negative/failure test:** Failure before commit preserves old object.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.10.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.10.build.json` and `v1/dist/certification/P4.10.test.json`; add `v1/dist/certification/P4.10.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.11 - SYS_STAT
 
@@ -2115,7 +2123,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** RAW/PACKED expected records.
 9. **Negative/failure test:** Reserved bytes nonzero fails ABI test.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.11.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.11.build.json` and `v1/dist/certification/P4.11.test.json`; add `v1/dist/certification/P4.11.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.12 - SYS_LIST and BCAT union
 
@@ -2129,7 +2137,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Sorted/exact-case list and duplicate precedence. Ordering is unsigned-bytewise and case-sensitive; BCAT 223 is accepted when total visible count remains <=255 and 224 is rejected at bootstrap/validation.
 9. **Negative/failure test:** BCAT duplicate/unsorted invalid at bootstrap.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.12.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.12.build.json` and `v1/dist/certification/P4.12.test.json`; add `v1/dist/certification/P4.12.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.13 - SYS_REMOVE
 
@@ -2143,7 +2151,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Closed object removed/freed.
 9. **Negative/failure test:** Open object E_BUSY.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.13.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.13.build.json` and `v1/dist/certification/P4.13.test.json`; add `v1/dist/certification/P4.13.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.14 - SYS_RENAME no-op/case-only
 
@@ -2157,7 +2165,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** No-op/case-only tests.
 9. **Negative/failure test:** Collision rollback.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.14.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.14.build.json` and `v1/dist/certification/P4.14.test.json`; add `v1/dist/certification/P4.14.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.15 - SYS_RENAME replacement/cross-dir validation
 
@@ -2171,7 +2179,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Commit transfers the existing source payload ownership, frees the old destination only after metadata commit, removes the old source name, and performs zero payload copy/recompression.
 9. **Negative/failure test:** Open source/destination returns E_BUSY; protected metadata or invalid target type returns E_PERM/E_INVAL as specified; injected pre-commit failure preserves both prior objects.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.15.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.15.build.json` and `v1/dist/certification/P4.15.test.json`; add `v1/dist/certification/P4.15.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.16 - ZXP1 target decoder
 
@@ -2185,7 +2193,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Every P0.32 token-boundary/overlap stream and host-optimized stream decodes identically through FINAL_MEMORY, CALLER_STREAM, DISCARD and TAPE_PIPE with one parser, exact physical/logical cursor completion, and required logical CRC behavior.
 9. **Negative/failure test:** Truncated token parameters/literals, distance before logical start, logical overrun/underrun, trailing physical bytes, or any target behavior differing from the host oracle returns E_FORMAT; no partial representation commit. Add adversarial physical/logical lengths and back-reference/output additions whose low 16 bits look in-range only after wrap; each must return E_FORMAT/E_INVAL before read/write/commit, while a genuinely valid boundary-crossing stream still decodes exactly.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.16.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.16.build.json` and `v1/dist/certification/P4.16.test.json`; add `v1/dist/certification/P4.16.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.17 - Per-open packed reader state
 
@@ -2199,7 +2207,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Two independent readers interleave and each matches the RAW oracle; byte-level inspection proves the 256+16 layout/control fields, dup/spawn handles of one description share decoder position/state and consume no second 272-byte allocation, and forced state-allocation failure returns E_NOMEM with the object byte-identical.
 9. **Negative/failure test:** Accidentally sharing history between independent opens, allocating duplicate state for dup/inheritance, or leaking state after final close fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.17.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.17.build.json` and `v1/dist/certification/P4.17.test.json`; add `v1/dist/certification/P4.17.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.18 - Packed seek restart
 
@@ -2213,7 +2221,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Random forward/backward seek/read sequence is byte-identical to RAW oracle, including seek-to-EOF; allocation/representation remains PACKED.
 9. **Negative/failure test:** Seek beyond logical EOF, forward restart from zero contrary to the contract, or any silent materialization fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.18.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.18.build.json` and `v1/dist/certification/P4.18.test.json`; add `v1/dist/certification/P4.18.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.19 - PACKED write materialization
 
@@ -2227,7 +2235,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Success exact; forced allocation/codec error leaves packed object untouched.
 9. **Negative/failure test:** Expose writer before complete decode fails test.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.19.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.19.build.json` and `v1/dist/certification/P4.19.test.json`; add `v1/dist/certification/P4.19.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.20 - Target greedy encoder workspace
 
@@ -2241,7 +2249,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Golden ambiguous-match/tie vectors produce the exact target-greedy stream on repeated runs, decode identically with the host oracle, and measured workspace is exactly 512 bytes per pass.
 9. **Negative/failure test:** Testing a non-nearest BACKREF candidate, choosing BACKREF on an equal-length RLE tie, failing to update consumed positions, emitting literal>64/match beyond limits, using >512 bytes workspace, recursive compaction, or committing non-smaller PACKED output fails deterministically. Force failure to obtain the exact 512-byte workspace and require E_NOMEM with the prior RAW representation byte-identical; a 513-byte or recursive-compaction implementation fails the budget/NO_COMPACT oracle.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.20.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.20.build.json` and `v1/dist/certification/P4.20.test.json`; add `v1/dist/certification/P4.20.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.21 - Non-compressible remains RAW
 
@@ -2255,7 +2263,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Random incompressible fixture unchanged representation.
 9. **Negative/failure test:** Equal-size packed result must be rejected.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.21.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.21.build.json` and `v1/dist/certification/P4.21.test.json`; add `v1/dist/certification/P4.21.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.22 - SYS_PACK atomic
 
@@ -2269,7 +2277,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Protected-type, PACKED-no-op, <64-byte, non-smaller, E_BUSY and successful exact-destination/self-validation/swap cases produce the exact metadata/logical bytes and HL result.
 9. **Negative/failure test:** Allocation/codec failure leaves byte-identical RAW.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.22.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.22.build.json` and `v1/dist/certification/P4.22.test.json`; add `v1/dist/certification/P4.22.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.23 - SYS_UNPACK atomic
 
@@ -2283,7 +2291,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** RAW no-op returns logical length; PACKED->RAW identity is exact, direct-memory BACKREF history is used only for whole-stream contiguous decode, and no extra 256-byte history allocation appears in the canonical SYS_UNPACK path.
 9. **Negative/failure test:** Failure leaves packed representation unchanged.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.23.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.23.build.json` and `v1/dist/certification/P4.23.test.json`; add `v1/dist/certification/P4.23.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.24 - Close-time pack candidate bitset
 
@@ -2297,7 +2305,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Eligibility threshold, final-reference transition, `/tmp` parity and no-synchronous-pack behavior are exact; unsuccessful opportunistic packing preserves RAW bytes.
 9. **Negative/failure test:** Marking <64-byte RAW, PACKED, pinned/live/open objects; marking on a non-final close; synchronous compression during close; or a candidate bit surviving reopen/remove/slot reuse fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.24.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.24.build.json` and `v1/dist/certification/P4.24.test.json`; add `v1/dist/certification/P4.24.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.25 - PID0 one-pack-per-idle policy
 
@@ -2311,7 +2319,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** At most one candidate is attempted; successful work is exact, while failure/no-savings/E_NOMEM clears only that attempt bit and leaves RAW bytes/previous close success unchanged; scheduler remains responsive.
 9. **Negative/failure test:** Two packs in one idle cycle fails counter assertion.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.25.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.25.build.json` and `v1/dist/certification/P4.25.test.json`; add `v1/dist/certification/P4.25.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.26 - Allocation-pressure bounded compaction
 
@@ -2325,7 +2333,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Largest-logical RAW then exact bytewise path/name tie-break, one-victim limit, 512-workspace/exact-destination free-space prerequisites, exclusions, and NO_COMPACT/depth path are exact.
 9. **Negative/failure test:** Any second victim attempt, recursive compaction, insufficient scratch/destination attempt, wrong tie-break, or attempt to pack an open/pinned/system/live-or-suspended process image/BSS/heap/stack/pipe/screen/kernel/pinned runtime allocation fails the guard and leaves committed state unchanged.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.26.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.26.build.json` and `v1/dist/certification/P4.26.test.json`; add `v1/dist/certification/P4.26.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.27 - PACKED BIN direct resident spawn
 
@@ -2339,7 +2347,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Memory accounting proves one final image plus decoder state.
 9. **Negative/failure test:** Corrupt packed executable rolls back process allocation. Use a packed MEX1 whose first post-header back-reference depends on pre-header history; resetting history at byte 24 must fail the oracle.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.27.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.27.build.json` and `v1/dist/certification/P4.27.test.json`; add `v1/dist/certification/P4.27.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.28 - SYS_ZXPACK_INFO / ZPINFO1 accounting
 
@@ -2353,7 +2361,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Exact record and wrap tests. Byte-level ZPINFO1 oracle covers >65535 aggregate logical bytes, counter wrap and packed-reader open/close accounting.
 9. **Negative/failure test:** 16-bit truncation bug fixture fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.28.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.28.build.json` and `v1/dist/certification/P4.28.test.json`; add `v1/dist/certification/P4.28.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.29 - Object-store full regression matrix
 
@@ -2367,7 +2375,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** All vectors byte-identical to host oracle.
 9. **Negative/failure test:** Any missing vector keeps matrix incomplete.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.29.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.29.build.json` and `v1/dist/certification/P4.29.test.json`; add `v1/dist/certification/P4.29.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.30 - Fixed pseudo-directory list/stat ABI
 
@@ -2381,7 +2389,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** All three listings, types, states, zero lengths, ordering and parent IDs match REV11 byte-for-byte.
 9. **Negative/failure test:** Inject one extra `.`, wrong order, nonzero length, wrong parent or mutability and require deterministic failure.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.30.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.30.build.json` and `v1/dist/certification/P4.30.test.json`; add `v1/dist/certification/P4.30.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.31 - SYS_CHDIR exact ABI
 
@@ -2395,7 +2403,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Successful cwd is canonical fixed-directory identity; each failure leaves previous cwd byte-identical.
 9. **Negative/failure test:** Attempt chdir to BIN/TXT/DEV object, wrong case, overlength or nonexistent path and require no cwd change.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.31.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.31.build.json` and `v1/dist/certification/P4.31.test.json`; add `v1/dist/certification/P4.31.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.32 - SYS_GETCWD exact ABI
 
@@ -2409,7 +2417,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Exact canonical path+NUL and count returned on success; all insufficient/invalid ranges leave destination guards byte-identical.
 9. **Negative/failure test:** Use capacity==path_len, wrapped pointer range or partial-write implementation and require failure.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.32.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.32.build.json` and `v1/dist/certification/P4.32.test.json`; add `v1/dist/certification/P4.32.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P4.33 - Phase-4 acceptance gate
 
@@ -2423,7 +2431,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** All Phase4 bullets PASS.
 9. **Negative/failure test:** One failed rollback blocks phase.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P4.33.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P4.33.build.json` and `v1/dist/certification/P4.33.test.json`; add `v1/dist/certification/P4.33.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 
 ---
@@ -2442,7 +2450,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Independent host parser golden/malformed corpus.  Load the same USERHOME M48O object under two different valid session usernames and verify it lands under each current home with identical exact-case base name and logical bytes.  Independent parser verifies every offset, little-endian field, header-CRC zeroing rule, ten-byte-name edge, type/target placement, RAW/PACKED relationships and 32768 boundaries.
 9. **Negative/failure test:** type0/DIR/DEV/unknown flags/codec rejected.  Reject embedded-NUL name garbage, nonzero reserved bytes, bad header CRC, unknown flag bits, lengths >32768, PACKED zero/equal/larger physical size, illegal target/type pairing, public SYSTEM target, and any one-byte offset/endian mutation.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P5.01.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P5.01.build.json` and `v1/dist/certification/P5.01.test.json`; add `v1/dist/certification/P5.01.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P5.02 - CRC-16/CCITT-FALSE
 
@@ -2456,7 +2464,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Host/target CRC match known vectors.
 9. **Negative/failure test:** One-bit payload corruption rejected.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P5.02.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P5.02.build.json` and `v1/dist/certification/P5.02.test.json`; add `v1/dist/certification/P5.02.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P5.03 - 512-byte ROM chunk framing
 
@@ -2470,7 +2478,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Independent TAP/TZX parser proves separate 0xFF header/chunk framing and exact boundary streams for physical lengths 0,1,511,512,513,1024,1025.
 9. **Negative/failure test:** Reject a combined header+payload block, non-0xFF data flag, bad ROM checksum, short nonfinal chunk, >512 chunk, or any payload block for zero length.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P5.03.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P5.03.build.json` and `v1/dist/certification/P5.03.test.json`; add `v1/dist/certification/P5.03.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P5.04 - M48O RAW target loader
 
@@ -2484,7 +2492,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** RAW load lands directly in the final allocation with logical_length==storage_length and exact bytes/CRC.
 9. **Negative/failure test:** Truncation, extra chunk bytes, ROM checksum failure, logical CRC mismatch, or allocation failure frees only private state and publishes no partial/replacement object.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P5.04.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P5.04.build.json` and `v1/dist/certification/P5.04.test.json`; add `v1/dist/certification/P5.04.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P5.05 - M48O PACKED target loader
 
@@ -2498,7 +2506,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Packed load retains the exact validated ZXP1 bytes and reports correct logical/physical metadata with one decoder-state high-water.
 9. **Negative/failure test:** Physical trailing/short bytes, malformed ZXP1, decoded length/CRC mismatch, decoder-allocation failure, or accidental RAW materialization returns the exact error and publishes no object.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P5.05.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P5.05.build.json` and `v1/dist/certification/P5.05.test.json`; add `v1/dist/certification/P5.05.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P5.06 - Pinned SYSTEM bootstrap decode
 
@@ -2512,7 +2520,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Valid resources pinned; malformed boot panic.
 9. **Negative/failure test:** Packed crontab zero-length rejected; it must be RAW.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P5.06.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P5.06.build.json` and `v1/dist/certification/P5.06.test.json`; add `v1/dist/certification/P5.06.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P5.07 - SYS_TAPE_SAVE RAW
 
@@ -2526,7 +2534,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Roundtrip TXT exact.
 9. **Negative/failure test:** Abort/BREAK releases lock and returns shell-ready.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P5.07.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P5.07.build.json` and `v1/dist/certification/P5.07.test.json`; add `v1/dist/certification/P5.07.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P5.08 - Streaming save compression
 
@@ -2540,7 +2548,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** RAW streaming save and already-PACKED save produce independently decoded logical bytes/CRC with bounded workspace and leave the resident representation byte-identical.
 9. **Negative/failure test:** Encoder/decoder/CRC/allocation failure before output produces zero tape blocks and no RAM-object mutation; equal/larger compression is not labeled PACKED.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P5.08.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P5.08.build.json` and `v1/dist/certification/P5.08.test.json`; add `v1/dist/certification/P5.08.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P5.09 - SYS_TAPE_LOAD explicit destination
 
@@ -2554,7 +2562,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Requested exact lower-case object loads.
 9. **Negative/failure test:** Incorrect case does not match. Corrupt the final payload chunk or logical CRC while an older same-name destination exists; old destination bytes/type/state/hash must remain unchanged.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P5.09.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P5.09.build.json` and `v1/dist/certification/P5.09.test.json`; add `v1/dist/certification/P5.09.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P5.10 - SYS_TAPE_VERIFY
 
@@ -2568,7 +2576,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Matching object success, altered target fails.
 9. **Negative/failure test:** CRC error distinguished from name miss.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P5.10.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P5.10.build.json` and `v1/dist/certification/P5.10.test.json`; add `v1/dist/certification/P5.10.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P5.11 - SYS_TAPE_SCAN bounded scratch
 
@@ -2582,7 +2590,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Mixed RAW/PACKED stream validates header, physical chunks, logical length/CRC and releases scratch completely between objects.
 9. **Negative/failure test:** Malformed header/chunk/ZXP1/CRC, retained scratch across objects, fabricated EOF, or >512 scan scratch returns controlled failure without namespace mutation.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P5.11.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P5.11.build.json` and `v1/dist/certification/P5.11.test.json`; add `v1/dist/certification/P5.11.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P5.12 - Global tape lock and blocking policy
 
@@ -2596,7 +2604,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Concurrent request gets documented busy/serialization behavior.
 9. **Negative/failure test:** Second operation may not corrupt first.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P5.12.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P5.12.build.json` and `v1/dist/certification/P5.12.test.json`; add `v1/dist/certification/P5.12.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P5.13 - Tape-positioning prompts
 
@@ -2610,7 +2618,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Prompt text/state; operation starts only after consent/input.
 9. **Negative/failure test:** cron/background must never trigger interactive tape prompt.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P5.13.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P5.13.build.json` and `v1/dist/certification/P5.13.test.json`; add `v1/dist/certification/P5.13.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P5.14 - Direct packed MEX1 tape execution
 
@@ -2624,7 +2632,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** RAW and PACKED tape-backed MEX1 execute with exact CRC/length/relocation proofs, one final process image and at most one 272-byte decoder state; externally visible commit occurs only after the last validation.
 9. **Negative/failure test:** ALLOW_TAPE=0 moves no tape; decoder-state E_NOMEM occurs before commit; corrupt late CRC/relocation/length after earlier private patches discards all new allocations and leaves no READY/partially replaced process.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P5.14.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P5.14.build.json` and `v1/dist/certification/P5.14.test.json`; add `v1/dist/certification/P5.14.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P5.15 - Deterministic Phase-5 fixture tape
 
@@ -2638,7 +2646,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Two builds byte-identical; independent FUSE-utils inspect and TZX<->TAP roundtrip where applicable.
 9. **Negative/failure test:** Any final-release label on fixture is policy failure.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P5.15.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P5.15.build.json` and `v1/dist/certification/P5.15.test.json`; add `v1/dist/certification/P5.15.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P5.16 - Text/executable/UDG cassette round trips
 
@@ -2652,7 +2660,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Reset/load/CRC/execute where applicable.
 9. **Negative/failure test:** Wrong-case load miss.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P5.16.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P5.16.build.json` and `v1/dist/certification/P5.16.test.json`; add `v1/dist/certification/P5.16.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P5.17 - BREAK/error recovery
 
@@ -2666,7 +2674,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Forced BREAK/checksum/EOF each recover.
 9. **Negative/failure test:** Lock left held fails follow-up operation.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P5.17.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P5.17.build.json` and `v1/dist/certification/P5.17.test.json`; add `v1/dist/certification/P5.17.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P5.18 - Second-emulator cassette compatibility gate
 
@@ -2680,7 +2688,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Core boot/load state matches FUSE expectations.
 9. **Negative/failure test:** Disagreement is unresolved gate, not waved away.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P5.18.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P5.18.build.json` and `v1/dist/certification/P5.18.test.json`; add `v1/dist/certification/P5.18.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P5.19 - Phase-5 acceptance gate
 
@@ -2694,7 +2702,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Every Phase5 bullet PASS; fixture explicitly non-final.
 9. **Negative/failure test:** Any byte/order mismatch blocks phase.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P5.19.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P5.19.build.json` and `v1/dist/certification/P5.19.test.json`; add `v1/dist/certification/P5.19.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 
 ---
@@ -2713,7 +2721,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Boot fixture enters PID1 with exact registers/resources. PID1 has handles 0/1/2 and tty input ownership before first dispatch; ARG1/ENV1/cwd remain canonical.
 9. **Negative/failure test:** Malformed boot sh contract panics before scheduling.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.01.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.01.build.json` and `v1/dist/certification/P6.01.test.json`; add `v1/dist/certification/P6.01.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P6.02 - Issue display and exact heading
 
@@ -2727,7 +2735,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Screen/console character buffer byte sequence exact.
 9. **Negative/failure test:** Duplicate heading fails output oracle.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.02.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.02.build.json` and `v1/dist/certification/P6.02.test.json`; add `v1/dist/certification/P6.02.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P6.03 - Login username validator
 
@@ -2741,7 +2749,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Boundary login corpus.
 9. **Negative/failure test:** Uppercase/empty/9-char rejected.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.03.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.03.build.json` and `v1/dist/certification/P6.03.test.json`; add `v1/dist/certification/P6.03.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P6.04 - Session home/cwd initialization
 
@@ -2755,7 +2763,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** pwd -> exact /home/name.
 9. **Negative/failure test:** Invalid HOME topology cannot escape fixed namespace.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.04.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.04.build.json` and `v1/dist/certification/P6.04.test.json`; add `v1/dist/certification/P6.04.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P6.05 - Initial environment
 
@@ -2769,7 +2777,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** ENV listing exact sorted order/values.
 9. **Negative/failure test:** Treat $? as ENV1 entry => fail.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.05.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.05.build.json` and `v1/dist/certification/P6.05.test.json`; add `v1/dist/certification/P6.05.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P6.06 - set/unset semantics
 
@@ -2783,7 +2791,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Boundary set/unset corpus.
 9. **Negative/failure test:** Overflow leaves table unchanged.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.06.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.06.build.json` and `v1/dist/certification/P6.06.test.json`; add `v1/dist/certification/P6.06.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P6.07 - 247-byte line input
 
@@ -2797,7 +2805,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** 247 accepted, 248 E_TOOLONG/no side effect.
 9. **Negative/failure test:** Unbounded line fails canary.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.07.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.07.build.json` and `v1/dist/certification/P6.07.test.json`; add `v1/dist/certification/P6.07.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P6.08 - Tokenizer quoting/escaping
 
@@ -2811,7 +2819,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Golden token corpus.
 9. **Negative/failure test:** Unterminated quote E_INVAL.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.08.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.08.build.json` and `v1/dist/certification/P6.08.test.json`; add `v1/dist/certification/P6.08.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P6.09 - Variable expansion
 
@@ -2825,7 +2833,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Expansion golden corpus and post-expansion bounds.
 9. **Negative/failure test:** Malformed ${} E_INVAL before side effect.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.09.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.09.build.json` and `v1/dist/certification/P6.09.test.json`; add `v1/dist/certification/P6.09.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P6.10 - Operator lexer
 
@@ -2839,7 +2847,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Golden operator corpus.
 9. **Negative/failure test:** Unsupported token/grouping rejected.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.10.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.10.build.json` and `v1/dist/certification/P6.10.test.json`; add `v1/dist/certification/P6.10.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P6.11 - Precedence/binding parser
 
@@ -2853,7 +2861,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** AST/golden execution order exact.
 9. **Negative/failure test:** Parentheses/subshell rejected.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.11.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.11.build.json` and `v1/dist/certification/P6.11.test.json`; add `v1/dist/certification/P6.11.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P6.12 - Argument/pipeline bounds
 
@@ -2867,7 +2875,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Boundary command corpus.
 9. **Negative/failure test:** 17 args/7 stages fail before spawn/redirection.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.12.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.12.build.json` and `v1/dist/certification/P6.12.test.json`; add `v1/dist/certification/P6.12.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P6.13 - Core/stateful builtin table and exact lookup
 
@@ -2881,7 +2889,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Each Phase-6 core builtin resolves only at exact lower-case spelling; mixed case misses; unresolved Phase-7 hook names remain unavailable until their owning Phase-7 step.
 9. **Negative/failure test:** Aliases/case folding or prematurely treating a Phase-7 hook as implemented fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.13.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.13.build.json` and `v1/dist/certification/P6.13.test.json`; add `v1/dist/certification/P6.13.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P6.14 - PATH external lookup
 
@@ -2895,7 +2903,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Complete lookup matrix.
 9. **Negative/failure test:** LS must not resolve ls. Matrix includes overlength component, overlength candidate, non-directory component, wrong-type candidate, direct overlength and direct non-BIN; only direct targets expose E_TOOLONG/E_FORMAT.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.14.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.14.build.json` and `v1/dist/certification/P6.14.test.json`; add `v1/dist/certification/P6.14.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P6.15 - BCAT tape-backed command discovery
 
@@ -2909,7 +2917,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Known nonresident command prompts and runs when consented.
 9. **Negative/failure test:** Decline leaves tape unmoved.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.15.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.15.build.json` and `v1/dist/certification/P6.15.test.json`; add `v1/dist/certification/P6.15.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P6.16 - External /bin/echo
 
@@ -2923,7 +2931,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** echo hello | Phase3 sink exact.
 9. **Negative/failure test:** Do not accidentally add parent-shell echo builtin.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.16.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.16.build.json` and `v1/dist/certification/P6.16.test.json`; add `v1/dist/certification/P6.16.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P6.17 - Transactional builtin redirections
 
@@ -2937,7 +2945,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Injected failure after each replacement restores exact refs and no builtin side effect.
 9. **Negative/failure test:** Leaked redirected stdout into next command fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.17.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.17.build.json` and `v1/dist/certification/P6.17.test.json`; add `v1/dist/certification/P6.17.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P6.18 - External redirections
 
@@ -2951,7 +2959,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Golden redirection cases and allocation rollback.
 9. **Negative/failure test:** Cassette /dev/tape random redirection rejected.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.18.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.18.build.json` and `v1/dist/certification/P6.18.test.json`; add `v1/dist/certification/P6.18.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P6.19 - Semicolon sequencing
 
@@ -2965,7 +2973,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** A;B order and $? exact.
 9. **Negative/failure test:** Failure must not silently skip later ; command.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.19.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.19.build.json` and `v1/dist/certification/P6.19.test.json`; add `v1/dist/certification/P6.19.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P6.20 - && and || short-circuit
 
@@ -2979,7 +2987,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Truth-table sequences exact.
 9. **Negative/failure test:** Wrong precedence fixture fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.20.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.20.build.json` and `v1/dist/certification/P6.20.test.json`; add `v1/dist/certification/P6.20.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P6.21 - Foreground pipeline launch transaction
 
@@ -2993,7 +3001,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** 3-stage real pipeline exact.  Mutate USER/HOME/PATH through valid shell state before launch and prove the child ENV1 contains the current exact case-sensitive values while `$?` is absent; the original cold zero-entry PID1 ENV1 remains unchanged process bootstrap data.
 9. **Negative/failure test:** Mid-launch failure kills/reaps created children and restores tty/cursor/handles.  Reusing PID1 cold ENV1 for children, passing a live pointer to mutable shell environment storage, or inserting `$?` into ENV1 fails the child-bootstrap oracle.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.21.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.21.build.json` and `v1/dist/certification/P6.21.test.json`; add `v1/dist/certification/P6.21.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P6.22 - Foreground tty input ownership
 
@@ -3007,7 +3015,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Non-owner read E_BUSY; owner exit restoration.
 9. **Negative/failure test:** Background stage cannot steal owner.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.22.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.22.build.json` and `v1/dist/certification/P6.22.test.json`; add `v1/dist/certification/P6.22.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P6.23 - Background job launch
 
@@ -3021,7 +3029,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Background progresses cooperatively; shell prompt returns.
 9. **Negative/failure test:** Launch failure records actual failure, no phantom job.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.23.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.23.build.json` and `v1/dist/certification/P6.23.test.json`; add `v1/dist/certification/P6.23.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P6.24 - jobs bounded table
 
@@ -3035,7 +3043,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Spawn/exit/reap updates.
 9. **Negative/failure test:** Stale PID reuse not displayed as old job.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.24.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.24.build.json` and `v1/dist/certification/P6.24.test.json`; add `v1/dist/certification/P6.24.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P6.25 - wait builtin
 
@@ -3049,7 +3057,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** No-argument wait drains exactly the current shell-managed background jobs and leaves adopted non-job services alone; one-PID wait blocks/wakes/reaps the specified valid child and propagates its status to `$?`.
 9. **Negative/failure test:** Nonchild/nonexistent PID must return E_CHILD; non-decimal/extra operands E_INVAL; no-argument wait must not block on or reap an adopted service that is not a shell-managed job, and a failure must not corrupt the job table.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.25.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.25.build.json` and `v1/dist/certification/P6.25.test.json`; add `v1/dist/certification/P6.25.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P6.26 - kill builtin and tty-owner BREAK cancellation
 
@@ -3063,7 +3071,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Exercise PID1 line cancellation, a foreground pipeline with one tty-owning stage plus non-owner stages, blocked-syscall E_INTR, never-started child kill without executing its PC, and an already-started C48 target returning status 130 at a safe point. Prove only the current tty owner receives BREAK-derived cancellation and shell tty ownership is restored after completion.
 9. **Negative/failure test:** Reject any implementation that converts BREAK into process-group/pipeline broadcast, cancels a non-owner stage merely because it shares a pipeline, preempts a CPU-bound task that never enters the kernel, allows PID0/PID1 to be killed through ordinary SYS_KILL, or executes a never-started killed child.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.26.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.26.build.json` and `v1/dist/certification/P6.26.test.json`; add `v1/dist/certification/P6.26.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P6.27 - Shell cursor restoration
 
@@ -3077,7 +3085,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Success/error/cancel paths restore exact state.
 9. **Negative/failure test:** One error path leaks hidden cursor -> fail.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.27.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.27.build.json` and `v1/dist/certification/P6.27.test.json`; add `v1/dist/certification/P6.27.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P6.28 - Shell parser/lookup golden suite
 
@@ -3091,7 +3099,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** All golden vectors exact.
 9. **Negative/failure test:** Any unsupported construct accidentally accepted fails. Run divergence vectors chosen to behave differently in common host shells; ZX-UX must follow REV11, not the host.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.28.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.28.build.json` and `v1/dist/certification/P6.28.test.json`; add `v1/dist/certification/P6.28.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P6.29 - PID1 zombie reaping and safe exit
 
@@ -3105,7 +3113,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** No zombie consumes a user slot across prompts; live child blocks exit; clean PID1 exit reaches permanent safe halt and never the BASIC return sentinel.
 9. **Negative/failure test:** Skip one reap, misclassify adopted cron as shell job, allow exit with PID2 live, or reach BASIC sentinel: each must fail.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.29.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.29.build.json` and `v1/dist/certification/P6.29.test.json`; add `v1/dist/certification/P6.29.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P6.30 - Phase-6 acceptance gate
 
@@ -3119,7 +3127,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Every Phase6 acceptance bullet PASS.
 9. **Negative/failure test:** Any side effect before E_NOTSUP blocks phase.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P6.30.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P6.30.build.json` and `v1/dist/certification/P6.30.test.json`; add `v1/dist/certification/P6.30.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 
 ---
@@ -3138,7 +3146,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** ABI vectors exact.
 9. **Negative/failure test:** Bad user params no screen corruption.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P7.01.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P7.01.build.json` and `v1/dist/certification/P7.01.test.json`; add `v1/dist/certification/P7.01.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P7.02 - Canonical pixel/scanline helper
 
@@ -3152,7 +3160,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** All 256x192 sampled/edge addresses match host oracle.
 9. **Negative/failure test:** Duplicate divergent helper blocked by static review.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P7.02.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P7.02.build.json` and `v1/dist/certification/P7.02.test.json`; add `v1/dist/certification/P7.02.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P7.03 - SYS_GFX_PLOT
 
@@ -3166,7 +3174,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** All four display corners plus interior vectors set exactly the intended pixel/attribute state and return canonical success.
 9. **Negative/failure test:** y=192 and y=255 return E_INVAL with bitmap/attributes/cursor state byte-identical; any future RAM replacement that diverges from the approved ROM-visible result fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P7.03.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P7.03.build.json` and `v1/dist/certification/P7.03.test.json`; add `v1/dist/certification/P7.03.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P7.04 - SYS_GFX_DRAW
 
@@ -3180,7 +3188,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Golden horizontal/vertical/diagonal/reverse-direction/boundary vectors match an independent bitmap oracle and the approved ROM-visible result.
 9. **Negative/failure test:** y1/y2=192 or 255, malformed record pointer, guard-byte mutation outside display, or future replacement disagreement fails before visible mutation.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P7.04.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P7.04.build.json` and `v1/dist/certification/P7.04.test.json`; add `v1/dist/certification/P7.04.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P7.05 - SYS_GFX_CIRCLE
 
@@ -3194,7 +3202,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Golden radius-0, wholly-visible and edge-clipped circles match the independent bitmap oracle and identical ROM/RAM contract.
 9. **Negative/failure test:** Invalid center y, unsafe ROM state, treating an off-screen circumference as whole-circle E_INVAL, or a ROM/RAM semantic mismatch fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P7.05.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P7.05.build.json` and `v1/dist/certification/P7.05.test.json`; add `v1/dist/certification/P7.05.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P7.06 - SYS_GFX_POINT
 
@@ -3208,7 +3216,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** 0/1 golden bitmap cases at corners/interior return exact values with a whole-display hash unchanged.
 9. **Negative/failure test:** y=192/255 returns E_INVAL and any side effect or non-0/1 success value fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P7.06.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P7.06.build.json` and `v1/dist/certification/P7.06.test.json`; add `v1/dist/certification/P7.06.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P7.07 - SYS_GFX_ATTR state API
 
@@ -3222,7 +3230,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** State get/set and rendered attribute bytes are exact for every native value; tty64 pair-sharing remains visible and deterministic.
 9. **Negative/failure test:** INK/PAPER=8, BRIGHT/FLASH>1, selector>5 or any attempted per-pixel-color state must fail before graphics state/display mutation.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P7.07.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P7.07.build.json` and `v1/dist/certification/P7.07.test.json`; add `v1/dist/certification/P7.07.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P7.08 - SYS_GFX_BORDER via central ULA shadow
 
@@ -3236,7 +3244,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Port shadow transitions exact.
 9. **Negative/failure test:** Direct OUT bypass fails static scan.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P7.08.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P7.08.build.json` and `v1/dist/certification/P7.08.test.json`; add `v1/dist/certification/P7.08.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P7.09 - SYS_BEEP five-byte operands
 
@@ -3250,7 +3258,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Mandatory vectors `beep 1,0`, `beep .5,9`, `beep .25,-12`, `beep .5,0.5` plus octave/fraction vectors complete with exact five-byte operands/status and return only when the note completes.
 9. **Negative/failure test:** Invalid pointers/domain map safely (ROM rejection => E_INVAL), no BASIC escape occurs, and a long-note test proves missed frame time is not falsely backfilled.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P7.09.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P7.09.build.json` and `v1/dist/certification/P7.09.test.json`; add `v1/dist/certification/P7.09.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P7.10 - calc final safe expression gateway
 
@@ -3264,7 +3272,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Every allowed grammar family returns a controlled numeric result; every forbidden token/family is rejected before unsafe ROM action; no BASIC statement/mutation escape occurs.
 9. **Negative/failure test:** `rnd`, uppercase aliases, forbidden operations, assignment, BASIC statements, strings or malformed expressions must fail safely without escaping into BASIC. Missing/extra arguments, pipeline/background use, mixed-case `CALC`, or any attempt to resolve calc through BCAT/PATH/tape must fail before ROM/tape/visible side effects.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P7.10.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P7.10.build.json` and `v1/dist/certification/P7.10.test.json`; add `v1/dist/certification/P7.10.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P7.11 - SYS_ROM_INFO diagnostic gateway / rom builtin
 
@@ -3278,7 +3286,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Output names/addresses/classes/contracts match ledger. Byte-level vectors cover every ROMQ1 category, first/last/past-end indices, all three classification IDs, each individual contract flag and combinations, exact 24-byte ROMOUT1 offsets/padding/reserved zeros, and prove HL=1/0 semantics exactly.
 9. **Negative/failure test:** `romcall` unknown/not exposed. Attempt to encode an arbitrary ROM-call request through SYS_ROM_INFO and require E_INVAL/E_NOTSUP with no ROM control transfer. Unknown category, malformed ROMQ1/range, classification outside 1..3, nonzero ROMOUT1 reserved field, or any contract_flags bit above bit3 must be rejected/caught by the ABI oracle; no arbitrary ROM transfer is possible.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P7.11.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P7.11.build.json` and `v1/dist/certification/P7.11.test.json`; add `v1/dist/certification/P7.11.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P7.12 - Graphics/attribute shell builtins
 
@@ -3292,7 +3300,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Representative calls change only expected state.
 9. **Negative/failure test:** Pipeline/bg returns E_NOTSUP before side effects.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P7.12.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P7.12.build.json` and `v1/dist/certification/P7.12.test.json`; add `v1/dist/certification/P7.12.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P7.13 - UDG subsystem on boot-pinned 32-slot bank
 
@@ -3306,7 +3314,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Pointer/bank identity remains the P1.14 value; slot 0/31 raster-bit vectors render bit7 leftmost; tty32 0x80/0x9F mapping and tty64 non-interpretation are exact; allocator shows one pinned 256-byte bank only.
 9. **Negative/failure test:** Phase7 reallocation/repoint, bank move/free, wrong bit orientation, slot/code alias outside 0..31/0x80..0x9F, tty64 treating a UDG code as 4x8 text, or a second UDG bank fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P7.13.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P7.13.build.json` and `v1/dist/certification/P7.13.test.json`; add `v1/dist/certification/P7.13.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P7.14 - SYS_UDG_DEFINE/GET/CLEAR
 
@@ -3320,7 +3328,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Slots 0 and 31 round-trip exact 8-byte raster patterns and CLEAR to zeros; bit-orientation display oracle is exact.
 9. **Negative/failure test:** Slot32, nonzero reserved B/H, invalid pointer/range or partial output mutation before full validation fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P7.14.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P7.14.build.json` and `v1/dist/certification/P7.14.test.json`; add `v1/dist/certification/P7.14.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P7.15 - SYS_UDG_DRAW and tty64 width
 
@@ -3334,7 +3342,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Boundary slot/row/col vectors change exactly one physical 8x8 cell and its attribute, preserve neighboring cells, and tty64 covers exactly the two corresponding logical columns.
 9. **Negative/failure test:** slot=32,row=24,col=32 or malformed record pointer returns E_INVAL with screen/attributes/cursor unchanged.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P7.15.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P7.15.build.json` and `v1/dist/certification/P7.15.test.json`; add `v1/dist/certification/P7.15.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P7.16 - UDG1 RAM persistence
 
@@ -3348,7 +3356,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Exact UDG1 byte round-trip for single/full/ranged banks; RAW/PACKED load produces identical live bytes; forced save replacement and load are atomic.
 9. **Negative/failure test:** Bad magic/version/reserved/count/base+count/length, invented second checksum requirement, decode failure or forced transaction error leaves the prior RAM object/live bank byte-identical and causes no tape motion.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P7.16.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P7.16.build.json` and `v1/dist/certification/P7.16.test.json`; add `v1/dist/certification/P7.16.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P7.17 - 2x2 UDG library helper
 
@@ -3362,7 +3370,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Golden 2x2 pattern proves exact quadrant/slot order and current-attribute behavior.
 9. **Negative/failure test:** base_slot>28, row/col whose 2x2 cells do not all fit, or a failure that partially draws before validation fails the helper test.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P7.17.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P7.17.build.json` and `v1/dist/certification/P7.17.test.json`; add `v1/dist/certification/P7.17.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P7.18 - C48 beep ABI bridge fixture
 
@@ -3376,7 +3384,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Return 0/errno and operands exact.
 9. **Negative/failure test:** Hidden/pointer convention mismatch fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P7.18.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P7.18.build.json` and `v1/dist/certification/P7.18.test.json`; add `v1/dist/certification/P7.18.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P7.19 - GFX golden program
 
@@ -3390,7 +3398,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Screen hash, attrs, UDG bytes, ROM UDG pointer exact.
 9. **Negative/failure test:** Guard regions detect stray write.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P7.19.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P7.19.build.json` and `v1/dist/certification/P7.19.test.json`; add `v1/dist/certification/P7.19.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P7.20 - beep shell builtin
 
@@ -3404,7 +3412,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Every valid vector is parsed as one shell argument with one top-level comma, preserves BASIC-compatible duration/pitch semantics, reaches SYS_BEEP exactly once, returns cleanly to sh, and leaves builtin redirections restored.
 9. **Negative/failure test:** Malformed/unsafe expressions (`USR`, `PEEK`, `IN`, `POKE`, `OUT`), missing/extra args, ambiguous top-level commas, `BEEP` case alias, pipeline/background use, and a fixture that tries BCAT/tape lookup for `beep` must all fail before ROM/tape/visible side effects. Later `which beep` must not manufacture an external pathname.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P7.20.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P7.20.build.json` and `v1/dist/certification/P7.20.test.json`; add `v1/dist/certification/P7.20.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P7.21 - Phase-7 acceptance gate
 
@@ -3418,7 +3426,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** All Phase7 bullets PASS. Both the kernel SYS_BEEP contract and the user-facing shell builtin contract are independently green.
 9. **Negative/failure test:** Any ULA/IY/ROM-state drift blocks phase.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P7.21.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P7.21.build.json` and `v1/dist/certification/P7.21.test.json`; add `v1/dist/certification/P7.21.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 
 ---
@@ -3437,7 +3445,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/ls contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `ls`; shell survives and `$?` is exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.01.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.01.build.json` and `v1/dist/certification/P8.01.test.json`; add `v1/dist/certification/P8.01.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.02 - Utility `cat`
 
@@ -3451,7 +3459,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/cat contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `cat`; shell survives and `$?` is exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.02.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.02.build.json` and `v1/dist/certification/P8.02.test.json`; add `v1/dist/certification/P8.02.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.03 - Utility `cp`
 
@@ -3465,7 +3473,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/cp contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `cp`; shell survives and `$?` is exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.03.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.03.build.json` and `v1/dist/certification/P8.03.test.json`; add `v1/dist/certification/P8.03.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.04 - Utility `mv`
 
@@ -3479,7 +3487,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/mv contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `mv`; shell survives and `$?` is exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.04.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.04.build.json` and `v1/dist/certification/P8.04.test.json`; add `v1/dist/certification/P8.04.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.05 - Utility `rm`
 
@@ -3493,7 +3501,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/rm contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `rm`; shell survives and `$?` is exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.05.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.05.build.json` and `v1/dist/certification/P8.05.test.json`; add `v1/dist/certification/P8.05.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.06 - Utility `pack`
 
@@ -3507,7 +3515,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/pack contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `pack`; shell survives and `$?` is exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.06.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.06.build.json` and `v1/dist/certification/P8.06.test.json`; add `v1/dist/certification/P8.06.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.07 - Utility `unpack`
 
@@ -3521,7 +3529,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/unpack contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `unpack`; shell survives and `$?` is exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.07.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.07.build.json` and `v1/dist/certification/P8.07.test.json`; add `v1/dist/certification/P8.07.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.08 - Utility `grep`
 
@@ -3535,7 +3543,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/grep contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `grep`; shell survives and `$?` is exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.08.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.08.build.json` and `v1/dist/certification/P8.08.test.json`; add `v1/dist/certification/P8.08.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.09 - Utility `wc`
 
@@ -3549,7 +3557,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/wc contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `wc`; shell survives and `$?` is exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.09.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.09.build.json` and `v1/dist/certification/P8.09.test.json`; add `v1/dist/certification/P8.09.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.10 - Utility `head`
 
@@ -3563,7 +3571,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/head contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `head`; shell survives and `$?` is exact. n=0, n=256, malformed decimal, or excess arity must fail exactly and never be silently clamped.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.10.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.10.build.json` and `v1/dist/certification/P8.10.test.json`; add `v1/dist/certification/P8.10.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.11 - Utility `tail`
 
@@ -3577,7 +3585,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/tail contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `tail`; shell survives and `$?` is exact. n=0, n=256, malformed decimal, or excess arity must fail exactly and never be silently clamped.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.11.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.11.build.json` and `v1/dist/certification/P8.11.test.json`; add `v1/dist/certification/P8.11.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.12 - Utility `cmp`
 
@@ -3591,7 +3599,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/cmp contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `cmp`; shell survives and `$?` is exact. Different bytes/lengths return nonzero; missing/excess operands or non-RAM/non-openable inputs follow the documented error path without mutation.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.12.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.12.build.json` and `v1/dist/certification/P8.12.test.json`; add `v1/dist/certification/P8.12.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.13 - Utility `true`
 
@@ -3605,7 +3613,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/true contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `true`; shell survives and `$?` is exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.13.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.13.build.json` and `v1/dist/certification/P8.13.test.json`; add `v1/dist/certification/P8.13.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.14 - Utility `false`
 
@@ -3619,7 +3627,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/false contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `false`; shell survives and `$?` is exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.14.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.14.build.json` and `v1/dist/certification/P8.14.test.json`; add `v1/dist/certification/P8.14.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.15 - Utility `sleep`
 
@@ -3633,7 +3641,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/sleep contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `sleep`; shell survives and `$?` is exact. Negative, 65536, malformed decimal, or excess arity must be rejected without an accidental wrapped sleep interval.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.15.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.15.build.json` and `v1/dist/certification/P8.15.test.json`; add `v1/dist/certification/P8.15.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.16 - Utility `which`
 
@@ -3647,7 +3655,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/which contract; no case folding. `which ls` can report the exact external path; builtin-only name emits no bytes and status 1; catalog-only lookup does not move cassette.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `which`; shell survives and `$?` is exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.16.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.16.build.json` and `v1/dist/certification/P8.16.test.json`; add `v1/dist/certification/P8.16.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.17 - Utility `env`
 
@@ -3661,7 +3669,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/env contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `env`; shell survives and `$?` is exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.17.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.17.build.json` and `v1/dist/certification/P8.17.test.json`; add `v1/dist/certification/P8.17.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.18 - Utility `hexdump`
 
@@ -3675,7 +3683,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/hexdump contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `hexdump`; shell survives and `$?` is exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.18.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.18.build.json` and `v1/dist/certification/P8.18.test.json`; add `v1/dist/certification/P8.18.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.19 - Built-in `ps` Phase-8 regression
 
@@ -3689,7 +3697,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Builtin behavior and exit status match exact REV11 Section-33/ps contract; no case folding; no external `/bin/ps` object or BCAT slot exists.
 9. **Negative/failure test:** Make `ps` resolve as an external command/BCAT name, add an unlisted `src/utils/ps.asm`, or inject a process-info/type/case error; require failure while the shell survives and `$?` is exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.19.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.19.build.json` and `v1/dist/certification/P8.19.test.json`; add `v1/dist/certification/P8.19.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.20 - Built-in `mem` Phase-8 regression
 
@@ -3703,7 +3711,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Builtin behavior and exit status match exact REV11 Section-33/mem contract including `-c`; no case folding; no external `/bin/mem` object or BCAT slot exists.
 9. **Negative/failure test:** Make `mem` resolve as an external command/BCAT name, add an unlisted `src/utils/mem.asm`, or inject an accounting/type/case error; require failure while the shell survives and `$?` is exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.20.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.20.build.json` and `v1/dist/certification/P8.20.test.json`; add `v1/dist/certification/P8.20.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.21 - Utility `udg`
 
@@ -3717,7 +3725,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/udg contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `udg`; shell survives and `$?` is exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.21.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.21.build.json` and `v1/dist/certification/P8.21.test.json`; add `v1/dist/certification/P8.21.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.22 - Utility `gfxdemo`
 
@@ -3731,7 +3739,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/gfxdemo contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `gfxdemo`; shell survives and `$?` is exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.22.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.22.build.json` and `v1/dist/certification/P8.22.test.json`; add `v1/dist/certification/P8.22.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.23 - Utility `stty`
 
@@ -3745,7 +3753,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/stty contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `stty`; shell survives and `$?` is exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.23.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.23.build.json` and `v1/dist/certification/P8.23.test.json`; add `v1/dist/certification/P8.23.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.24 - Utility `date`
 
@@ -3759,7 +3767,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/date contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `date`; shell survives and `$?` is exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.24.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.24.build.json` and `v1/dist/certification/P8.24.test.json`; add `v1/dist/certification/P8.24.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.25 - Utility `cron`
 
@@ -3773,7 +3781,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Boundary corpus proves 2048-byte CFG accepted and 2049 rejected; 127-byte LF-terminated line accepted and 128 rejected; exactly 8 active entries accepted and a ninth rejected; calendar ranges/AND semantics and @boot/@hourly/@daily timing are exact. The daemon sleeps 50 ticks, reopens/fully reads/validates/closes the CFG every poll, runs jobs serially with private `$?`, never prompts for tape, observes atomic replacement on the next poll, and exits after no-active or exhausted @boot-only configurations.
 9. **Negative/failure test:** Any 2049-byte file, >127-byte physical line, ninth active entry, invalid calendar field accepted as runnable, OR semantics, interactive cassette motion, builtin/operator/redirection/background command acceptance, concurrent job launch, catch-up, config handle retained across sleep/spawn, polling cadence other than 50 ticks, failure to observe replacement, or daemon remaining resident with no future schedule is a deterministic failure.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.25.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.25.build.json` and `v1/dist/certification/P8.25.test.json`; add `v1/dist/certification/P8.25.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.26 - Utility `crontab`
 
@@ -3787,7 +3795,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** `-l` reproduces the live CFG logically; `-e` commits only a fully validated <=2048-byte, <=127-byte-per-line, <=8-active-entry file through close+atomic rename. Boundary edits and real/fixture vi paths preserve exact bytes on failure; a future-active edit can start one cron instance with explicit tape consent when needed, while empty/no-active edits start none and are observed by an existing daemon at its next poll.
 9. **Negative/failure test:** Oversize CFG/line, ninth active entry, malformed schedule/command, temp collision mishandling, editor/load/validation failure, declined tape consent, commit before close/validation, auto-start on no-active configuration, duplicate daemon bypass, or any mutation of the prior live CFG on failure must fail deterministically.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.26.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.26.build.json` and `v1/dist/certification/P8.26.test.json`; add `v1/dist/certification/P8.26.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.27 - Utility `man`
 
@@ -3801,7 +3809,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/man contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `man`; shell survives and `$?` is exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.27.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.27.build.json` and `v1/dist/certification/P8.27.test.json`; add `v1/dist/certification/P8.27.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.28 - Utility `cal`
 
@@ -3815,7 +3823,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/cal contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `cal`; shell survives and `$?` is exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.28.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.28.build.json` and `v1/dist/certification/P8.28.test.json`; add `v1/dist/certification/P8.28.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.29 - Utility `uptime`
 
@@ -3829,7 +3837,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/uptime contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `uptime`; shell survives and `$?` is exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.29.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.29.build.json` and `v1/dist/certification/P8.29.test.json`; add `v1/dist/certification/P8.29.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.30 - Utility `whoami`
 
@@ -3843,7 +3851,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/whoami contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `whoami`; shell survives and `$?` is exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.30.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.30.build.json` and `v1/dist/certification/P8.30.test.json`; add `v1/dist/certification/P8.30.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.31 - Utility `uname`
 
@@ -3857,7 +3865,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/uname contract; no case folding. Output bytes are exactly ASCII `ZX-UX z80 48k` followed by one LF byte (0x0A), with no legacy `ZX48-UX` spelling.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `uname`; shell survives and `$?` is exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.31.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.31.build.json` and `v1/dist/certification/P8.31.test.json`; add `v1/dist/certification/P8.31.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.32 - Utility `fortune`
 
@@ -3871,7 +3879,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/fortune contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `fortune`; shell survives and `$?` is exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.32.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.32.build.json` and `v1/dist/certification/P8.32.test.json`; add `v1/dist/certification/P8.32.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.33 - Utility `banner`
 
@@ -3885,7 +3893,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/banner contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `banner`; shell survives and `$?` is exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.33.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.33.build.json` and `v1/dist/certification/P8.33.test.json`; add `v1/dist/certification/P8.33.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.34 - Utility `rev`
 
@@ -3899,7 +3907,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/rev contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `rev`; shell survives and `$?` is exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.34.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.34.build.json` and `v1/dist/certification/P8.34.test.json`; add `v1/dist/certification/P8.34.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.35 - Utility `yes`
 
@@ -3913,7 +3921,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/yes contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `yes`; shell survives and `$?` is exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.35.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.35.build.json` and `v1/dist/certification/P8.35.test.json`; add `v1/dist/certification/P8.35.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.36 - Utility `demo`
 
@@ -3927,7 +3935,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Behavior and exit status match exact REV11 Section-33/demo contract; no case folding.
 9. **Negative/failure test:** Inject I/O/allocation/type/case error appropriate to `demo`; shell survives and `$?` is exact. Wrong-case demo name, wrong-type resident pair member, declined/failed tape load, or one invalid pair member must not run the demo or overwrite the existing pair member.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.36.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.36.build.json` and `v1/dist/certification/P8.36.test.json`; add `v1/dist/certification/P8.36.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.37 - External echo regression
 
@@ -3941,7 +3949,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** No parent-shell echo alias; output/status exact.
 9. **Negative/failure test:** Replace echo with builtin in negative manifest and require policy failure.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.37.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.37.build.json` and `v1/dist/certification/P8.37.test.json`; add `v1/dist/certification/P8.37.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.38 - Utility pipeline/error propagation matrix
 
@@ -3955,7 +3963,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Multi-stage bytes and statuses are exact; bounded pipelines terminate without deadlock; E_PIPE/read/write/allocation failures propagate through utility exit status.
 9. **Negative/failure test:** Inject ignored E_PIPE, ignored downstream write error, swallowed read/allocation failure, or a deadlock; the harness must fail or hit its hard timeout deterministically.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.38.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.38.build.json` and `v1/dist/certification/P8.38.test.json`; add `v1/dist/certification/P8.38.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.39 - Cron lock and TIME1 dedupe transaction
 
@@ -3969,7 +3977,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Lock is exactly PID+LF; valid live owner rejects duplicate; stale invalid data heals safely; no duplicate per key and no catch-up after clock set or long blocking interval.
 9. **Negative/failure test:** Malformed lock length/content treated as live, deleting an unknown live lock by name, duplicate firing in one key, or catch-up firing are failures.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.39.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.39.build.json` and `v1/dist/certification/P8.39.test.json`; add `v1/dist/certification/P8.39.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P8.40 - Phase-8 acceptance gate
 
@@ -3983,7 +3991,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Every required lower-case Phase-8 command is present in its architecture-defined builtin/external form; `ps`/`mem` remain builtins, the 40-entry external-command/BCAT set is unchanged, `echo hello | wc` proves final external `/bin/echo` -> `/bin/wc` stdin/stdout composition with exact output/status, utility errors propagate through shell exit status, and the contract-valid demo fixture plus crontab editor fixture both pass.
 9. **Negative/failure test:** Remove one required command; replace the required `echo hello | wc` with a fixture/non-final consumer; swallow a utility error status; move `ps` or `mem` into BCAT/external utility space; add an unlisted target source module; break the demo/editor fixture contracts; or introduce any BCAT/name/type mismatch. The Phase-8 aggregate must fail before check-in.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P8.40.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P8.40.build.json` and `v1/dist/certification/P8.40.test.json`; add `v1/dist/certification/P8.40.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 
 ---
@@ -4002,7 +4010,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Entry forces tty64 only after saving prior state; normal exit, forced error and cancellation each restore the exact previous mode/shape/visibility.
 9. **Negative/failure test:** Any exit/error path that leaves tty64 or an editor cursor shape active when it was not the prior shell state fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P9.01.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P9.01.build.json` and `v1/dist/certification/P9.01.test.json`; add `v1/dist/certification/P9.01.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P9.02 - Buffer load/type validation
 
@@ -4016,7 +4024,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Valid types byte-exact; handle count returns baseline. After load, the source input handle is closed before the first edit is accepted; handle/open-description counts return to the expected baseline.
 9. **Negative/failure test:** BIN/wrong type rejected.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P9.02.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P9.02.build.json` and `v1/dist/certification/P9.02.test.json`; add `v1/dist/certification/P9.02.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P9.03 - Gap buffer and compact line index
 
@@ -4030,7 +4038,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Buffer bytes/index remain coherent after every edit; undo never requires a full second file image; failed growth preserves the last valid text.
 9. **Negative/failure test:** Force gap growth/index allocation failure at each update boundary; previous buffer/index/dirty state must remain valid and byte-identical.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P9.03.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P9.03.build.json` and `v1/dist/certification/P9.03.test.json`; add `v1/dist/certification/P9.03.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P9.04 - Unnamed/new buffer state
 
@@ -4044,7 +4052,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Insert creates dirty unnamed buffer.
 9. **Negative/failure test:** Unnamed :w/:wq => E_NOENT and `vi: no file name`. Two paths E_INVAL; unnamed :w/:wq without path gives exact no-file-name refusal; failed `:w path` leaves buffer unnamed and dirty.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P9.04.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P9.04.build.json` and `v1/dist/certification/P9.04.test.json`; add `v1/dist/certification/P9.04.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P9.05 - Normal/insert/command-line mode state machine
 
@@ -4058,7 +4066,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Golden mode transitions prove normal=block, insert=underline plus exact `-- INSERT --` on row 23, command-line=underline, and status cleanup on return to normal; cursor/state survive viewport redraws.
 9. **Negative/failure test:** Any fourth/ambiguous mode, wrong cursor shape, altered/missing insert literal, indicator outside row 23, stale indicator after leaving insert, or invalid command that mutates the buffer/status contract fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P9.05.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P9.05.build.json` and `v1/dist/certification/P9.05.test.json`; add `v1/dist/certification/P9.05.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P9.06 - h j k l 0 $ movement
 
@@ -4072,7 +4080,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Boundary cursor positions exact.
 9. **Negative/failure test:** No under/overflow.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P9.06.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P9.06.build.json` and `v1/dist/certification/P9.06.test.json`; add `v1/dist/certification/P9.06.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P9.07 - w b e word motions
 
@@ -4086,7 +4094,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Golden ASCII text positions.
 9. **Negative/failure test:** End/begin edges stable.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P9.07.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P9.07.build.json` and `v1/dist/certification/P9.07.test.json`; add `v1/dist/certification/P9.07.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P9.08 - gg and G case-sensitive motions
 
@@ -4100,7 +4108,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** g/G golden.
 9. **Negative/failure test:** Single g unsupported/no wrong G alias.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P9.08.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P9.08.build.json` and `v1/dist/certification/P9.08.test.json`; add `v1/dist/certification/P9.08.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P9.09 - i a insert commands
 
@@ -4114,7 +4122,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Buffer bytes exact.
 9. **Negative/failure test:** Growth failure leaves source intact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P9.09.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P9.09.build.json` and `v1/dist/certification/P9.09.test.json`; add `v1/dist/certification/P9.09.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P9.10 - o O open-line commands
 
@@ -4128,7 +4136,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** o/O golden bytes/cursor.
 9. **Negative/failure test:** Allocation failure atomic.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P9.10.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P9.10.build.json` and `v1/dist/certification/P9.10.test.json`; add `v1/dist/certification/P9.10.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P9.11 - x dd D deletions
 
@@ -4142,7 +4150,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Golden edits.
 9. **Negative/failure test:** Delete at empty/end safe.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P9.11.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P9.11.build.json` and `v1/dist/certification/P9.11.test.json`; add `v1/dist/certification/P9.11.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P9.12 - yy p P yank/put
 
@@ -4156,7 +4164,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** p/P golden.
 9. **Negative/failure test:** Memory failure no partial insert.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P9.12.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P9.12.build.json` and `v1/dist/certification/P9.12.test.json`; add `v1/dist/certification/P9.12.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P9.13 - r J replacement/join
 
@@ -4170,7 +4178,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Golden.
 9. **Negative/failure test:** Missing replacement char/no next line safe.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P9.13.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P9.13.build.json` and `v1/dist/certification/P9.13.test.json`; add `v1/dist/certification/P9.13.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P9.14 - One-level undo
 
@@ -4184,7 +4192,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Each edit then u restores prior bytes/state.
 9. **Negative/failure test:** Second unsupported history not invented.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P9.14.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P9.14.build.json` and `v1/dist/certification/P9.14.test.json`; add `v1/dist/certification/P9.14.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P9.15 - Literal /text search and n/N repeat
 
@@ -4198,7 +4206,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Cursor/search state matches the exact required `/text`, n and N semantics; unsupported `?` is not accepted as a hidden vi extension.
 9. **Negative/failure test:** Not-found leaves state per contract; a test expecting `?` reverse-search support must fail because it is outside the version-1 required subset.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P9.15.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P9.15.build.json` and `v1/dist/certification/P9.15.test.json`; add `v1/dist/certification/P9.15.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P9.16 - Ex :e and :r
 
@@ -4212,7 +4220,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** `:e hello.c` distinct from HELLO.C; :r inserts exact bytes.
 9. **Negative/failure test:** Failed load leaves current buffer intact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P9.16.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P9.16.build.json` and `v1/dist/certification/P9.16.test.json`; add `v1/dist/certification/P9.16.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P9.17 - Transactional :w
 
@@ -4226,7 +4234,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Destination replaced atomically; prior bytes unchanged on forced write/rename failure.  Force collisions at n=0..8 and prove n=9 succeeds; force all ten E_EXIST and require controlled failure with every unknown temp untouched. Test existing C/ASM/TXT/CFG type preservation and new `.c`/`.asm`/other explicit type selection.
 9. **Negative/failure test:** Collision never clobbers unknown temp.  Retry an error other than E_EXIST, delete an unknown colliding temp, infer type in the kernel, clear/replace destination before complete close, or alter prior bytes on write/rename failure; each is a hard failure.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P9.17.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P9.17.build.json` and `v1/dist/certification/P9.17.test.json`; add `v1/dist/certification/P9.17.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P9.18 - :w path, :wq and retarget rules
 
@@ -4240,7 +4248,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Golden named/renamed write flows.  Exercise named/unnamed `:w`, `:w path`, `:wq`, clean/dirty `:e`, and `:r` with forced load/write/rename failures; assert current-target identity, dirty flag, buffer bytes, exit state and exact no-file-name message after every branch.
 9. **Negative/failure test:** Failed write must not clear dirty or quit.  A failed write that retargets/clears dirty/exits, dirty `:e` that replaces the buffer, `:r` that changes current target, or unnamed write that creates an implicit name fails state-machine assertions.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P9.18.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P9.18.build.json` and `v1/dist/certification/P9.18.test.json`; add `v1/dist/certification/P9.18.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P9.19 - :q and :q!
 
@@ -4254,7 +4262,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Dirty :q stays; :q! exits/restores tty.
 9. **Negative/failure test:** No silent data loss on :q.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P9.19.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P9.19.build.json` and `v1/dist/certification/P9.19.test.json`; add `v1/dist/certification/P9.19.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P9.20 - Real crontab -e integration
 
@@ -4268,7 +4276,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Edit valid crontab commits; invalid returns to editor/does not replace.
 9. **Negative/failure test:** Declined tape consent does not move tape.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P9.20.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P9.20.build.json` and `v1/dist/certification/P9.20.test.json`; add `v1/dist/certification/P9.20.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P9.21 - :set, :set number and :set nonumber
 
@@ -4282,7 +4290,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Option state and five-column gutter are exact; without numbering all 64 columns are available; with numbering visible text width is reduced by exactly five columns.
 9. **Negative/failure test:** Unknown option or malformed :set form must not mutate buffer or persistent file bytes.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P9.21.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P9.21.build.json` and `v1/dist/certification/P9.21.test.json`; add `v1/dist/certification/P9.21.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P9.22 - tty64 viewport and column-63 safety
 
@@ -4296,7 +4304,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Logical editing is independent of visible slice; canaries remain intact and no vi terminal write addresses a logical column >63.
 9. **Negative/failure test:** Instrument a test build to attempt column 64 from one viewport path; harness must detect/reject the out-of-contract write.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P9.22.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P9.22.build.json` and `v1/dist/certification/P9.22.test.json`; add `v1/dist/certification/P9.22.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P9.23 - Freeze vi user/developer documentation
 
@@ -4310,7 +4318,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** `docs/vi.md` contains every required REV11 vi contract with no invented command or stronger claim than the tests prove; it names `:udg` as deferred, lists all eight §22.8 deferred feature families exactly, and states that any temporary line-oriented bootstrap editor is not the shipped editor and cannot replace the `vi` acceptance gate.
 9. **Negative/failure test:** In separate negative fixture copies, delete one required command/dirty-state rule; omit the §22.7 `:udg` deferral; omit any one of the eight §22.8 deferred feature families; weaken/remove the bootstrap-editor restriction; or add an unsupported command such as `?`. Each mutation must make the documentation consistency test fail.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P9.23.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P9.23.build.json` and `v1/dist/certification/P9.23.test.json`; add `v1/dist/certification/P9.23.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P9.24 - Phase-9 acceptance/size gate
 
@@ -4324,7 +4332,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Every Phase9 bullet PASS.
 9. **Negative/failure test:** Any prior-destination hash change on failed transaction blocks phase.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P9.24.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P9.24.build.json` and `v1/dist/certification/P9.24.test.json`; add `v1/dist/certification/P9.24.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 
 ---
@@ -4343,7 +4351,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Host inspector goldens/malformed.
 9. **Negative/failure test:** nonzero reloc with text_size<2 E_FORMAT.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.01.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.01.build.json` and `v1/dist/certification/P10.01.test.json`; add `v1/dist/certification/P10.01.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.02 - OBJ1 symbol record
 
@@ -4357,7 +4365,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Boundary names/duplicate resolution plus exact assembly-name grammar, C48-external-name subset, section/value/flag rules, and NUL/zero-padding checks.
 9. **Negative/failure test:** Overlength/empty/illegal-character name, embedded-NUL/nonzero tail, non-GLOBAL UNDEF, nonzero UNDEF value, invalid section/flag bits, and out-of-range TEXT/BSS values are rejected; no silent truncation.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.02.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.02.build.json` and `v1/dist/certification/P10.02.test.json`; add `v1/dist/certification/P10.02.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.03 - OBJ1 relocation record
 
@@ -4371,7 +4379,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Golden offsets/symbol refs/addends.
 9. **Negative/failure test:** Overrun/unsorted invalid.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.03.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.03.build.json` and `v1/dist/certification/P10.03.test.json`; add `v1/dist/certification/P10.03.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.04 - Host OBJ1 inspector
 
@@ -4385,7 +4393,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Positive/malformed corpus.
 9. **Negative/failure test:** One-bit mutation rejected.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.04.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.04.build.json` and `v1/dist/certification/P10.04.test.json`; add `v1/dist/certification/P10.04.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.05 - Assembler lexer/line parser
 
@@ -4399,7 +4407,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Golden source lines parse exactly; independent modules assemble/link through OBJ1 without source inclusion.
 9. **Negative/failure test:** Malformed token or any source-inclusion/INCLUDE directive reports failure without output mutation.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.05.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.05.build.json` and `v1/dist/certification/P10.05.test.json`; add `v1/dist/certification/P10.05.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.06 - Assembler labels and EQU
 
@@ -4413,7 +4421,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Forward/known rules exact.
 9. **Negative/failure test:** Duplicate symbol error.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.06.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.06.build.json` and `v1/dist/certification/P10.06.test.json`; add `v1/dist/certification/P10.06.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.07 - DB DW DS directives
 
@@ -4427,7 +4435,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Golden object text/data.
 9. **Negative/failure test:** Negative/overflow size rejected.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.07.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.07.build.json` and `v1/dist/certification/P10.07.test.json`; add `v1/dist/certification/P10.07.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.08 - Assembler expressions
 
@@ -4441,7 +4449,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Golden expression corpus.
 9. **Negative/failure test:** Divide by zero/overflow policy exact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.08.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.08.build.json` and `v1/dist/certification/P10.08.test.json`; add `v1/dist/certification/P10.08.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.09 - global/export and extern/import
 
@@ -4455,7 +4463,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Two-module reference resolves later.
 9. **Negative/failure test:** Undefined local/reference reported.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.09.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.09.build.json` and `v1/dist/certification/P10.09.test.json`; add `v1/dist/certification/P10.09.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.10 - Assembler required-opcode/addressing inventory
 
@@ -4469,7 +4477,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Independent host scan lists every source mnemonic/form and proves every entry has at least one positive encoding vector plus relevant range/error vectors.
 9. **Negative/failure test:** Remove one used addressing form from the inventory or add an undocumented form and require coverage/policy failure.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.10.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.10.build.json` and `v1/dist/certification/P10.10.test.json`; add `v1/dist/certification/P10.10.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.11 - Assembler load/store encoder
 
@@ -4483,7 +4491,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** For every inventoried LD form, native `as` bytes/relocations equal certified SjASMPlus output plus independent OBJ1 inspection.
 9. **Negative/failure test:** Reject illegal register combinations, displacement outside -128..127, immediate overflow, and unsupported/undocumented prefix forms without committing output.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.11.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.11.build.json` and `v1/dist/certification/P10.11.test.json`; add `v1/dist/certification/P10.11.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.12 - Assembler arithmetic/logical encoder
 
@@ -4497,7 +4505,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Native `as` bytes for every inventoried arithmetic/logical form match certified SjASMPlus and execute expected results in a tiny target corpus.
 9. **Negative/failure test:** Invalid widths/register pairs/immediates fail transactionally; no undocumented opcode alias is accepted.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.12.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.12.build.json` and `v1/dist/certification/P10.12.test.json`; add `v1/dist/certification/P10.12.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.13 - Assembler control-flow encoder
 
@@ -4511,7 +4519,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Boundary relative branches -128 and +127 and all inventoried conditions encode byte-for-byte equal to SjASMPlus; linked absolute references relocate correctly.
 9. **Negative/failure test:** Relative -129/+128, invalid condition, illegal external JR/DJNZ target, or RST vector outside documented set fails before commit.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.13.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.13.build.json` and `v1/dist/certification/P10.13.test.json`; add `v1/dist/certification/P10.13.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.14 - Assembler rotate/shift/bit encoder
 
@@ -4525,7 +4533,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Every inventoried documented rotate/shift/bit form matches certified SjASMPlus bytes and indexed displacement boundaries.
 9. **Negative/failure test:** SLL or another forbidden undocumented form, illegal bit number, or displacement overflow is rejected transactionally.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.14.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.14.build.json` and `v1/dist/certification/P10.14.test.json`; add `v1/dist/certification/P10.14.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.15 - Assembler stack/exchange/interrupt/special encoder
 
@@ -4539,7 +4547,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Every inventoried documented special/stack/interrupt form matches certified SjASMPlus bytes; OS-only forms assemble where required by kernel sources.
 9. **Negative/failure test:** Invalid IM value/register pair or undocumented special opcode spelling is rejected.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.15.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.15.build.json` and `v1/dist/certification/P10.15.test.json`; add `v1/dist/certification/P10.15.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.16 - Assembler block-transfer/search and I/O encoder
 
@@ -4553,7 +4561,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Every inventoried block/I/O form matches certified SjASMPlus bytes and a representative target execution/port harness proves operand selection.
 9. **Negative/failure test:** Illegal port/register syntax or undocumented ED form fails without output commit.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.16.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.16.build.json` and `v1/dist/certification/P10.16.test.json`; add `v1/dist/certification/P10.16.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.17 - Assembler opcode coverage closure
 
@@ -4567,7 +4575,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Coverage report has zero missing/extra undocumented forms; every positive vector is byte-identical to SjASMPlus and every negative/range vector fails for the intended reason.
 9. **Negative/failure test:** Delete one encoder case or allow one undocumented opcode in a negative build; coverage/policy gate must fail deterministically.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.17.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.17.build.json` and `v1/dist/certification/P10.17.test.json`; add `v1/dist/certification/P10.17.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.18 - Assembler OBJ1 writer
 
@@ -4581,7 +4589,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Two identical native assemblies produce byte-identical OBJ1; the host inspector validates all records/offsets/CRCs and relocation records are strictly increasing/non-overlapping exactly as REV11 requires.
 9. **Negative/failure test:** Any malformed symbol/relocation record, relocation-order/overlap violation, CRC mismatch, nondeterministic output for identical input, or documentation/test that falsely claims REV11 mandates symbol-table sorting fails before commit.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.18.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.18.build.json` and `v1/dist/certification/P10.18.test.json`; add `v1/dist/certification/P10.18.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.19 - Assembler default names/-o
 
@@ -4595,7 +4603,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** hello.asm -> hello.obj.
 9. **Negative/failure test:** HELLO.asm distinct. Wrong object type, uppercase/missing `.asm` under default form, or derived >10-byte output is rejected before temp creation; explicit -o remains exact/case-sensitive.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.19.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.19.build.json` and `v1/dist/certification/P10.19.test.json`; add `v1/dist/certification/P10.19.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.20 - Assembler transactional output
 
@@ -4609,7 +4617,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Success commit; failure prior destination hash identical.
 9. **Negative/failure test:** Temp collision safe.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.20.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.20.build.json` and `v1/dist/certification/P10.20.test.json`; add `v1/dist/certification/P10.20.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.21 - Linker input loader
 
@@ -4623,7 +4631,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Malformed object rejected before output mutation.
 9. **Negative/failure test:** Wrong type rejected.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.21.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.21.build.json` and `v1/dist/certification/P10.21.test.json`; add `v1/dist/certification/P10.21.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.22 - crt0 built-in archive
 
@@ -4637,7 +4645,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** hello link resolves `_start` and libc symbols.
 9. **Negative/failure test:** Missing required member yields link error.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.22.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.22.build.json` and `v1/dist/certification/P10.22.test.json`; add `v1/dist/certification/P10.22.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.23 - Archive fixed-point selection
 
@@ -4651,7 +4659,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** A transitive dependency golden reaches the same fixed member set/order on repeated links, including inputs that reference `__heap_start`/`__heap_end` before those values exist.
 9. **Negative/failure test:** A single-pass archive scan, different member order, unresolved non-heap global, or archive-selection failure caused solely by a legal reserved heap-symbol reference fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.23.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.23.build.json` and `v1/dist/certification/P10.23.test.json`; add `v1/dist/certification/P10.23.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.24 - Module order/alignment/padding
 
@@ -4665,7 +4673,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Golden map proves exact module order, TEXT/BSS addresses, zero padding, final image_size and final_bss_size, including an odd-size module in both TEXT and BSS.
 9. **Negative/failure test:** Any reordered module, nonzero alignment byte, odd final boundary where even is required, differing BSS order, or image_size+final_bss_size overflow fails with no committed output.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.24.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.24.build.json` and `v1/dist/certification/P10.24.test.json`; add `v1/dist/certification/P10.24.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.25 - Symbol resolution
 
@@ -4679,7 +4687,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Golden map proves the exact TEXT/BSS/ABS formulas and case-sensitive resolution.
 9. **Negative/failure test:** Case mismatch remains unresolved.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.25.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.25.build.json` and `v1/dist/certification/P10.25.test.json`; add `v1/dist/certification/P10.25.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.26 - ABS vs runtime relocations
 
@@ -4693,7 +4701,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Golden vectors prove positive/negative signed addends, ABS versus TEXT/BSS behavior, widened 0 and 0xFFFF boundaries, and exact sorted unique final runtime relocation table.
 9. **Negative/failure test:** Underflow/overflow, duplicate/overlapping/out-of-range final relocation, or a fixed ROM/syscall ABS reference incorrectly emitted as runtime relocation fails before commit.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.26.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.26.build.json` and `v1/dist/certification/P10.26.test.json`; add `v1/dist/certification/P10.26.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.27 - Entry `_start` default
 
@@ -4707,7 +4715,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** MEX1 entry offset exact.
 9. **Negative/failure test:** Missing, unresolved, duplicate, or non-TEXT `_start` fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.27.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.27.build.json` and `v1/dist/certification/P10.27.test.json`; add `v1/dist/certification/P10.27.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.28 - `-nostart -e symbol`
 
@@ -4721,7 +4729,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Goldens.
 9. **Negative/failure test:** `-nostart` without `-e`, with an unresolved/duplicate entry, or with an entry resolving outside TEXT is rejected.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.28.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.28.build.json` and `v1/dist/certification/P10.28.test.json`; add `v1/dist/certification/P10.28.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.29 - Linker-reserved heap symbols
 
@@ -4735,7 +4743,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Address values match final BSS heap.
 9. **Negative/failure test:** User definition rejected.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.29.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.29.build.json` and `v1/dist/certification/P10.29.test.json`; add `v1/dist/certification/P10.29.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.30 - `-stack` option
 
@@ -4749,7 +4757,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Boundary options exact.
 9. **Negative/failure test:** Odd/63/4097 rejected.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.30.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.30.build.json` and `v1/dist/certification/P10.30.test.json`; add `v1/dist/certification/P10.30.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.31 - `-heap` option and defaults
 
@@ -4763,7 +4771,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Boundary tests for default normal=1024, default -nostart=0, and explicit 0,2,1024,8192 produce exact BSS/symbol values.
 9. **Negative/failure test:** Odd values, negative/non-numeric values, >8192, or any requested heap that makes final image+BSS impossible are rejected with no output mutation.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.31.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.31.build.json` and `v1/dist/certification/P10.31.test.json`; add `v1/dist/certification/P10.31.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.32 - MEX1 final writer
 
@@ -4777,7 +4785,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Host inspect and two-base run.
 9. **Negative/failure test:** Invalid relocation rejected before commit.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.32.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.32.build.json` and `v1/dist/certification/P10.32.test.json`; add `v1/dist/certification/P10.32.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.33 - Linker transactional output
 
@@ -4791,7 +4799,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Failure preserves previous executable byte-for-byte.
 9. **Negative/failure test:** Temp collision safe.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.33.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.33.build.json` and `v1/dist/certification/P10.33.test.json`; add `v1/dist/certification/P10.33.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.34 - On-target assembly/link lifecycle
 
@@ -4805,7 +4813,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Output and CRC exact after roundtrip.
 9. **Negative/failure test:** Wrong-case reload miss.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.34.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.34.build.json` and `v1/dist/certification/P10.34.test.json`; add `v1/dist/certification/P10.34.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.35 - Multi-module golden link
 
@@ -4819,7 +4827,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Host+target agree byte-for-byte.
 9. **Negative/failure test:** Perturb input order where architecture says fixed and detect changed/invalid golden.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.35.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.35.build.json` and `v1/dist/certification/P10.35.test.json`; add `v1/dist/certification/P10.35.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P10.36 - Phase-10 acceptance/size gate
 
@@ -4833,7 +4841,7 @@ emulator field says N/A. A hardware step cannot be closed by FUSE.
 8. **Expected PASS result:** Every Phase10 bullet PASS.
 9. **Negative/failure test:** Prior output mutation on failure blocks phase.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P10.36.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P10.36.build.json` and `v1/dist/certification/P10.36.test.json`; add `v1/dist/certification/P10.36.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 
 ---
@@ -4893,7 +4901,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Spec checklist against §25 names every supported/deferred language family, data-model rule and operator exclusion explicitly; no generic “subset” sentence substitutes for a missing item. The evidence records the pinned Python SDK commit, the reviewed SDK design/docs, and every intentional REV11-over-SDK divergence.
 9. **Negative/failure test:** Unsupported feature accidentally claimed, missing SDK provenance, or an unexplained REV11/SDK contract difference is documentation failure.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.01.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.01.build.json` and `v1/dist/certification/P11.01.test.json`; add `v1/dist/certification/P11.01.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.02 - Streaming compiler architecture and bounded symbol tables
 
@@ -4907,7 +4915,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Compilation advances incrementally from source stream to OBJ1 with no whole-source or whole-program-AST allocation; bounded expression trees are released immediately; each symbol table accepts its exact capacity and 15-character case-sensitive identifiers without truncation or aliasing.
 9. **Negative/failure test:** Instrument or force a whole-source/whole-AST allocation, exceed any bounded expression/symbol table, use a 16-character identifier, or create names that would collide if truncated/hashed; each must fail deterministically with prior output preserved and without compiler-memory overwrite.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.02.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.02.build.json` and `v1/dist/certification/P11.02.test.json`; add `v1/dist/certification/P11.02.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.03 - Version-1 C48 preprocessor
 
@@ -4921,7 +4929,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** All three supported preprocessing forms produce deterministic equivalent compilation while preserving streaming bounds and case sensitivity; local include depth never exceeds one and `<c48.h>` is supplied entirely from the compiler image.
 9. **Negative/failure test:** Function-like macro, recursive/nested local include, unknown angle-bracket header, conditional directive, token paste/stringification, include cycle/path violation, overlength expanded token/source bound, or attempted tape lookup for `<c48.h>` must fail before output commit.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.03.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.03.build.json` and `v1/dist/certification/P11.03.test.json`; add `v1/dist/certification/P11.03.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.04 - C48 lexer
 
@@ -4935,7 +4943,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Golden lexical corpus.
 9. **Negative/failure test:** Overlength/malformed token fails transactionally.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.04.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.04.build.json` and `v1/dist/certification/P11.04.test.json`; add `v1/dist/certification/P11.04.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.05 - C48 parser declarations/types
 
@@ -4949,7 +4957,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Golden AST/code fixtures.
 9. **Negative/failure test:** struct/union/long/double rejected. Reject unsupported complex/nonconstant initializer forms rather than silently generating a different C dialect.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.05.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.05.build.json` and `v1/dist/certification/P11.05.test.json`; add `v1/dist/certification/P11.05.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.06 - C48 statements/control flow
 
@@ -4963,7 +4971,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Golden control-flow output.
 9. **Negative/failure test:** Invalid break context rejected.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.06.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.06.build.json` and `v1/dist/certification/P11.06.test.json`; add `v1/dist/certification/P11.06.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.07 - C48 expression precedence
 
@@ -4977,7 +4985,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Golden evaluation corpus.
 9. **Negative/failure test:** ?:/comma/unsupported compound op rejected.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.07.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.07.build.json` and `v1/dist/certification/P11.07.test.json`; add `v1/dist/certification/P11.07.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.08 - 16-bit integer semantics
 
@@ -4991,7 +4999,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Boundary runtime oracle proves modulo-width arithmetic, signed/unsigned comparisons, truncation/remainder signs, 8-bit shift-count masking at 0/7/8/15/255, 16-bit shift-count masking at 0/15/16/31/255, arithmetic signed right shift, logical unsigned right shift, and status-1 division/remainder-by-zero handling.
 9. **Negative/failure test:** A fixture that uses an unmasked shift count, applies logical right shift to a signed value, arithmetic right shift to an unsigned value, fails modulo-width wrap, or allows division/remainder by zero to continue normally must fail the C48 integer-semantics oracle.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.08.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.08.build.json` and `v1/dist/certification/P11.08.test.json`; add `v1/dist/certification/P11.08.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.09 - Pointer arithmetic
 
@@ -5005,7 +5013,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Array/object goldens prove pointer +/- integer scaling for 1-, 2-, and 5-byte element sizes and positive/zero/negative same-array pointer subtraction as signed 16-bit element counts.
 9. **Negative/failure test:** Out-of-supported compile forms are rejected, and the language/spec oracle fails if ordering or subtraction of unrelated pointers is claimed as portable defined C48 behavior.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.09.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.09.build.json` and `v1/dist/certification/P11.09.test.json`; add `v1/dist/certification/P11.09.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.10 - String/char literals
 
@@ -5019,7 +5027,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Golden OBJ1 data.
 9. **Negative/failure test:** Unsupported escape rejected/documented.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.10.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.10.build.json` and `v1/dist/certification/P11.10.test.json`; add `v1/dist/certification/P11.10.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.11 - Globals/statics/externs
 
@@ -5033,7 +5041,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Multi-module C/ASM link goldens.
 9. **Negative/failure test:** Duplicate definition error.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.11.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.11.build.json` and `v1/dist/certification/P11.11.test.json`; add `v1/dist/certification/P11.11.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.12 - Local variable frame layout
 
@@ -5047,7 +5055,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Stack offsets/alignment are exact; leaf/simple goldens omit IX frames where locals remain directly addressable, frame-requiring goldens use IX, restore it exactly, and preserve an even SP at every call boundary.
 9. **Negative/failure test:** IY use as a frame pointer, an unnecessary mandatory IX frame in a qualifying leaf/simple golden, a non-restored IX frame, or an odd-SP call boundary fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.12.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.12.build.json` and `v1/dist/certification/P11.12.test.json`; add `v1/dist/certification/P11.12.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.13 - C48_REGCALL integer/pointer args
 
@@ -5061,7 +5069,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Byte-for-byte call fixtures prove argument counts 0..6, right-to-left stack arguments/caller cleanup/even SP, exact scalar return registers, AF/BC/DE/HL caller-clobber freedom, IX preservation when used, IY=0x5C3A before/after every generated call/return boundary, and no OBJ1 calling-convention metadata or alternate CDECL entry surface.
 9. **Negative/failure test:** Odd SP, wrong argument/return register, callee damage to required-preserved IX, generated write/re-purpose of IY, return with IY!=0x5C3A, alternate-register task ownership, any second CDECL-style ABI, or invented OBJ1 calling-convention metadata fails even if the computed result is otherwise correct.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.13.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.13.build.json` and `v1/dist/certification/P11.13.test.json`; add `v1/dist/certification/P11.13.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.14 - Five-byte float representation
 
@@ -5075,7 +5083,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Known values bytes equal ROM conversions.
 9. **Negative/failure test:** 4-byte float assumption fails ABI test.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.14.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.14.build.json` and `v1/dist/certification/P11.14.test.json`; add `v1/dist/certification/P11.14.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.15 - C48_REGCALL float arguments
 
@@ -5089,7 +5097,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Byte-exact callee fixture.
 9. **Negative/failure test:** Pass-by-value fixture fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.15.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.15.build.json` and `v1/dist/certification/P11.15.test.json`; add `v1/dist/certification/P11.15.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.16 - C48 float return hidden pointer
 
@@ -5103,7 +5111,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Byte-exact caller/callee fixture.
 9. **Negative/failure test:** Wrong shifted register assignment fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.16.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.16.build.json` and `v1/dist/certification/P11.16.test.json`; add `v1/dist/certification/P11.16.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.17 - SYS_FP_EXEC ROM calculator runtime bridge
 
@@ -5117,7 +5125,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Arithmetic/transcendentals goldens plus an exhaustive op-ID 0..17 ABI table test: 0 rejects, each 1..17 selects exactly its frozen operation, binary/unary pointer rules are exact, out=0 rejects, and out aliasing lhs/rhs produces the same five-byte result as non-aliasing execution.
 9. **Negative/failure test:** Concurrent fixture cannot reenter calculator workspace. Renumber any op, accept 0 or >17, allow missing rhs for a binary op, allow nonzero rhs for a unary op, allow zero lhs/out where forbidden, or write aliased output before copying operands; the FPOP1 ABI oracle must fail before exposing a result.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.17.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.17.build.json` and `v1/dist/certification/P11.17.test.json`; add `v1/dist/certification/P11.17.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.18 - SYS_INT_TO_FP / SYS_FP_TO_INT casts
 
@@ -5131,7 +5139,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Boundary conversions exact.
 9. **Negative/failure test:** Overflow follows specified behavior.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.18.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.18.build.json` and `v1/dist/certification/P11.18.test.json`; add `v1/dist/certification/P11.18.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.19 - SYS_FP_CMP float comparisons
 
@@ -5145,7 +5153,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** < <= == != > >= goldens.
 9. **Negative/failure test:** NaN-like unsupported/domain state handled per ROM contract.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.19.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.19.build.json` and `v1/dist/certification/P11.19.test.json`; add `v1/dist/certification/P11.19.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.20 - ROM-backed math library
 
@@ -5159,7 +5167,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Golden tolerance/byte conversions based on ROM behavior. Link and execute all eleven public math symbols plus their required internal helpers across representative finite/domain/boundary values and cooperative switches; compare target five-byte results or documented errors.
 9. **Negative/failure test:** Domain errors controlled.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.20.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.20.build.json` and `v1/dist/certification/P11.20.test.json`; add `v1/dist/certification/P11.20.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.21 - C48 malloc/free BSS heap
 
@@ -5173,7 +5181,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** default1024, heap0, heap8192 accounting; heap0 proves `malloc` returns NULL and no kernel allocation syscall is attempted.
 9. **Negative/failure test:** Static scan rejects SYS_ALLOC dependency.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.21.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.21.build.json` and `v1/dist/certification/P11.21.test.json`; add `v1/dist/certification/P11.21.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.22 - C48 process/environment runtime API
 
@@ -5187,7 +5195,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Wrapper conformance suite. Compile/link/run one focused C48 test that calls every function named in this step, including unset/missing getenv, cwd change/get, sleep/yield, child lifecycle and exact errno propagation.
 9. **Negative/failure test:** Duplicate syscall number literal fails static scan. The step fails if any of its ten required public symbols is absent from the built-in libc48 archive or resolves to a host-only/stub implementation.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.22.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.22.build.json` and `v1/dist/certification/P11.22.test.json`; add `v1/dist/certification/P11.22.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.23 - C48 object/handle runtime API
 
@@ -5201,7 +5209,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** All fifteen symbols resolve from the built-in libc48 archive and behavior matches the underlying REV11 syscall contracts, including short I/O and typed creation.
 9. **Negative/failure test:** Omit one archive symbol, force short read/write then error, pass illegal creation type, or corrupt a packed open; require exact failure with destination/object state preserved.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.23.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.23.build.json` and `v1/dist/certification/P11.23.test.json`; add `v1/dist/certification/P11.23.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.24 - C48 string/memory library
 
@@ -5215,7 +5223,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Golden memcpy/memmove/string cases. One C matrix links and executes every one of these eleven functions, including empty strings, NUL boundaries, overlapping memmove in both directions, memchr hit/miss, and tty EOF/input/output cases.
 9. **Negative/failure test:** Overlap memmove correctness. Missing symbol, accidental host libc dependency, unsafe overlap or out-of-bounds test guard mutation fails the step.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.24.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.24.build.json` and `v1/dist/certification/P11.24.test.json`; add `v1/dist/certification/P11.24.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.25 - Graphics/UDG library
 
@@ -5229,7 +5237,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** colors/lines fixture. Compile/link/run a C matrix that invokes all eighteen names and compares bitmap/attribute/UDG RAM plus cursor/ULA shadow to exact expected bytes.
 9. **Negative/failure test:** IY preserved.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.25.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.25.build.json` and `v1/dist/certification/P11.25.test.json`; add `v1/dist/certification/P11.25.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.26 - C48 beep wrapper
 
@@ -5243,7 +5251,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Compile/link/run the exact mandatory and fractional/octave vectors; return is 0 on success and positive errno on failure, with five-byte operands unchanged across the C48/syscall boundary.
 9. **Negative/failure test:** Invalid ROM numeric domain maps to positive errno without BASIC escape; a wrapper that returns before synchronous note completion or narrows the accepted pitch domain fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.26.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.26.build.json` and `v1/dist/certification/P11.26.test.json`; add `v1/dist/certification/P11.26.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.27 - C48 tape/zxpack wrappers
 
@@ -5257,7 +5265,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Representative calls exact. Compile/link/run all five names, including unset wall time, revision increment, tick wrap fixture, exact-case tape paths and controlled cassette error/cancel propagation.
 9. **Negative/failure test:** Random tape seek API absent.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.27.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.27.build.json` and `v1/dist/certification/P11.27.test.json`; add `v1/dist/certification/P11.27.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.28 - Compiler OBJ1 writer
 
@@ -5271,7 +5279,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Host inspector exact.
 9. **Negative/failure test:** Malformed internal state never committed.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.28.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.28.build.json` and `v1/dist/certification/P11.28.test.json`; add `v1/dist/certification/P11.28.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.29 - Compiler transactional output
 
@@ -5285,7 +5293,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Fault injection each stage.
 9. **Negative/failure test:** Any destination hash change blocks. Wrong input type, uppercase/missing `.c` default form, output >10 bytes, temp E_EXIST, compile failure, allocation failure and rename failure all preserve prior output and unknown temps.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.29.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.29.build.json` and `v1/dist/certification/P11.29.test.json`; add `v1/dist/certification/P11.29.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.30 - Portable documented-opcode scanner
 
@@ -5299,7 +5307,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** All goldens pass documented Z80 baseline.
 9. **Negative/failure test:** Inject undocumented opcode and fail.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.30.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.30.build.json` and `v1/dist/certification/P11.30.test.json`; add `v1/dist/certification/P11.30.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.31 - Codegen JR/DJNZ opportunities
 
@@ -5313,7 +5321,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Golden code bytes prove selected DJNZ, JR Z/NZ/C/NC, conditional RET and JP(HL) cases plus semantically identical fallback cases.
 9. **Negative/failure test:** Out-of-range JR falls back correctly.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.31.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.31.build.json` and `v1/dist/certification/P11.31.test.json`; add `v1/dist/certification/P11.31.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.32 - Bit/rotate/16-bit codegen
 
@@ -5327,7 +5335,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Golden opcode sequences + runtime results.
 9. **Negative/failure test:** Signedness mismatch caught.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.32.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.32.build.json` and `v1/dist/certification/P11.32.test.json`; add `v1/dist/certification/P11.32.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.33 - Block primitive codegen/runtime
 
@@ -5341,7 +5349,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Golden and interrupted copy/search fixtures prove LDIR/LDDR direction, CPIR/CPDR searches, tiny-copy fallback, contended/uncontended semantic identity, and preserved C48-visible state.
 9. **Negative/failure test:** Precise contention timing never required.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.33.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.33.build.json` and `v1/dist/certification/P11.33.test.json`; add `v1/dist/certification/P11.33.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.34 - `sizeof`/alignment/array stride suite
 
@@ -5355,7 +5363,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** char1 short/int/pointer2 float5, alignments exact.  Compile/runtime goldens verify sizeof values, alignment addresses, array strides including float[2] stride5 and int[2] stride2, minimum struct-free local/global padding, plain-char 0x80->128, sizeof result type behavior, 16-bit argument slots and even SP across 0..6 argument calls.
 9. **Negative/failure test:** Host compiler intuition must not override spec.  Host ABI padding/alignment, signed plain char, float alignment2/4, array rounding, 8-bit stack argument slots, or odd-SP call boundaries fail the C48 ABI oracle.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.34.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.34.build.json` and `v1/dist/certification/P11.34.test.json`; add `v1/dist/certification/P11.34.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.35 - hello.c target-native lifecycle
 
@@ -5369,7 +5377,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** No host participates in runtime compile/link; output hello exact.
 9. **Negative/failure test:** Wrong-case source lookup fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.35.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.35.build.json` and `v1/dist/certification/P11.35.test.json`; add `v1/dist/certification/P11.35.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.36 - Graphics/UDG C program
 
@@ -5383,7 +5391,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Screen/UDG result exact.
 9. **Negative/failure test:** No direct kernel-memory write.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.36.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.36.build.json` and `v1/dist/certification/P11.36.test.json`; add `v1/dist/certification/P11.36.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.37 - Pipe-aware C program
 
@@ -5397,7 +5405,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** True bounded pipe behavior.
 9. **Negative/failure test:** Broken pipe handled.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.37.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.37.build.json` and `v1/dist/certification/P11.37.test.json`; add `v1/dist/certification/P11.37.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.38 - Every shipped demo compiles/links
 
@@ -5411,7 +5419,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Every source -> OBJ1 -> MEX1 passes inspectors.
 9. **Negative/failure test:** Any precompiled-only demo fails gate.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.38.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.38.build.json` and `v1/dist/certification/P11.38.test.json`; add `v1/dist/certification/P11.38.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.39 - Compiler complete golden suite
 
@@ -5425,7 +5433,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** All native exact outputs/status/hashes pass with known nondeterminism=none; the complete copied SDK corpus also passes from the ZX-UX repository at the pinned test count (205 for baseline `84d144de2721cda5075c3a6610a422663b5e2f77`), and every imported SDK test has a passing target-native mapping or a documented host-only adapter that still checks the original C48 intent.
 9. **Negative/failure test:** One intentionally wrong native expected result must fail the harness. Deleting, skipping, xfail-marking, weakening, silently editing, or leaving unmapped any imported SDK test must also fail the compiler golden-suite gate.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.39.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.39.build.json` and `v1/dist/certification/P11.39.test.json`; add `v1/dist/certification/P11.39.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.40 - Compiler simultaneous residency/20KiB gate
 
@@ -5439,7 +5447,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** All FAST_REQUIRED allocations are satisfied; the <=20480 live-footprint measurement is physical, placement policy matches REV11, and the memory-short path reports `not enough memory for compiler` without corruption; no paper-only total.
 9. **Negative/failure test:** Heap8192 or packed hello stress that cannot fit must fail recoverably, not corrupt.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.40.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.40.build.json` and `v1/dist/certification/P11.40.test.json`; add `v1/dist/certification/P11.40.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.41 - Built-in c48.h contract
 
@@ -5453,7 +5461,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Every declared prototype/type agrees byte-for-byte with the generated-call ABI and links through the normal built-in runtime/archive path.
 9. **Negative/failure test:** Mutate one prototype/type/ABI declaration in a negative fixture; compile/link or ABI oracle must fail rather than accepting drift.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.41.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.41.build.json` and `v1/dist/certification/P11.41.test.json`; add `v1/dist/certification/P11.41.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.42 - Compiler error and resource-boundary matrix
 
@@ -5467,7 +5475,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Each required failure is deterministic, reports failure, leaks no compiler-owned allocation/open description and preserves the prior output object.
 9. **Negative/failure test:** A deliberately swallowed compiler error or a one-byte prior-output change must fail the harness.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.42.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.42.build.json` and `v1/dist/certification/P11.42.test.json`; add `v1/dist/certification/P11.42.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.43 - PACKED C source streaming equivalence
 
@@ -5481,7 +5489,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** RAW and PACKED source produce byte-identical OBJ1; PACKED compile never allocates a second whole uncompressed source copy and frees decoder state on final close.
 9. **Negative/failure test:** Instrument a forbidden whole-file materialization or perturb one decoded byte; residency/hash oracle must fail.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.43.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.43.build.json` and `v1/dist/certification/P11.43.test.json`; add `v1/dist/certification/P11.43.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.44 - Recursion and control-flow stack-budget runtime
 
@@ -5495,7 +5503,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Valid recursion/control flow returns exact results without corrupting ARG1/ENV1, heap, IY or adjacent allocations; stack evidence remains within the test budget.
 9. **Negative/failure test:** Use an intentionally undersized stack/depth fixture and require controlled failure/test detection rather than silent overwrite.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.44.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.44.build.json` and `v1/dist/certification/P11.44.test.json`; add `v1/dist/certification/P11.44.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.45 - Complete Section-41.9 compiler acceptance matrix
 
@@ -5509,7 +5517,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Every Section-41.9 requirement and every imported SDK test has a passing, traceable row; no generic “compiler suite passed” result may substitute for a missing native or SDK-derived row.
 9. **Negative/failure test:** Delete or invert one required row, remove one SDK test mapping, or change an imported SDK expected result merely to match native behavior; the aggregate must fail and name the uncovered/incorrect contract.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.45.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.45.build.json` and `v1/dist/certification/P11.45.test.json`; add `v1/dist/certification/P11.45.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.46 - SYS_FP_TO_TEXT exact ABI
 
@@ -5523,7 +5531,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Formatted bytes/count/status match the REV11 ABI; no partial write on insufficient/invalid destination; IY/calculator state restored.
 9. **Negative/failure test:** One-byte-short buffer, protected/wrapped pointer and forced ROM error must leave output guards and calculator ownership intact.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.46.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.46.build.json` and `v1/dist/certification/P11.46.test.json`; add `v1/dist/certification/P11.46.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.47 - SYS_FP_FROM_TEXT exact ABI
 
@@ -5537,7 +5545,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Exact five-byte target value and status are produced for valid input; malformed or unsafe input fails atomically with no BASIC escape or destination mutation.
 9. **Negative/failure test:** Attempt BASIC token/statement text, malformed numeric text or wrapped range and require controlled rejection.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.47.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.47.build.json` and `v1/dist/certification/P11.47.test.json`; add `v1/dist/certification/P11.47.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P11.48 - Phase-11 acceptance gate
 
@@ -5551,7 +5559,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Every Phase11 bullet PASS; SDK source commit/provenance is recorded; the copied SDK corpus is complete and hash-accounted; every imported SDK test passes; every SDK-derived C48 expectation has a passing target-native mapping; and the native compiler/runtime suite passes independently.
 9. **Negative/failure test:** Any missing demo/compiler feature, missing/altered SDK test, SDK test failure, skipped/xfail admission test, missing SDK provenance, unexplained SDK/REV11 difference, or unmapped SDK C48 expectation blocks Phase 11.
 10. **Check-in gate:** build + static + positive + negative tests PASS; the complete copied SDK admission corpus and all target-native mappings PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P11.48.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P11.48.build.json` and `v1/dist/certification/P11.48.test.json`; add `v1/dist/certification/P11.48.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 
 ---
@@ -5570,7 +5578,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** All thirteen named source/executable pairs exist in lower case, compile/link on target, return cleanly where intended, and demonstrate their distinct required behavior; interactive loops yield; `sine` uses ROM-backed float math; `tune` includes fractional pitch; `pipe` proves >=3 tasks; `multi` proves cooperative progress and non-yielding starvation without claiming preemption.
 9. **Negative/failure test:** Remove one demo/source pair, change case, alter the canonical `hello.c` entry signature/`puts("hello");`/`return 0;` program contract, substitute a precompiled-only demo, bypass the required API/feature proof, omit the fractional-pitch note or >=3-task pipeline, or let a non-yielding `multi` peer continue as if preempted; the §42 demo matrix fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.01.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.01.build.json` and `v1/dist/certification/P12.01.test.json`; add `v1/dist/certification/P12.01.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.02 - Finalize demo runner
 
@@ -5584,7 +5592,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Listing contains exact lower-case executable/source pairs; only missing members trigger interactive tape load; correct resident objects are preserved byte-for-byte; wrong-type collisions refuse; failed pair validation never launches; named success runs the precompiled executable, waits, and prints the rebuild hint.
 9. **Negative/failure test:** Overwrite a resident edited source, load tape for an already-present member, run after one pair member failed validation, accept a wrong-type collision, omit source names/rebuild hint from discovery, or case-fold `demo SHIP`; each must fail.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.02.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.02.build.json` and `v1/dist/certification/P12.02.test.json`; add `v1/dist/certification/P12.02.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.03 - Finalize BCAT exact 40 entries
 
@@ -5598,7 +5606,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Host parser exact names/order/length; boot pins COLD.
 9. **Negative/failure test:** Missing/extra/unsorted/duplicate/case mismatch rejects release.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.03.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.03.build.json` and `v1/dist/certification/P12.03.test.json`; add `v1/dist/certification/P12.03.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.04 - Finalize issue and crontab frozen bytes
 
@@ -5612,7 +5620,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Independent hash/byte checks.
 9. **Negative/failure test:** UTF-8 © bytes passed raw to target instead of 0x7F rejected.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.04.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.04.build.json` and `v1/dist/certification/P12.04.test.json`; add `v1/dist/certification/P12.04.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.05 - Finalize font4x8 F4X8 resource
 
@@ -5626,7 +5634,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Header/data length/hash; tty64 goldens.
 9. **Negative/failure test:** Bad glyph count blocks release.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.05.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.05.build.json` and `v1/dist/certification/P12.05.test.json`; add `v1/dist/certification/P12.05.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.06 - Finalize sh release MEX1
 
@@ -5640,7 +5648,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** MEX inspector + boot.
 9. **Negative/failure test:** Stub marker/fixture hash forbidden.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.06.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.06.build.json` and `v1/dist/certification/P12.06.test.json`; add `v1/dist/certification/P12.06.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.07 - Final reference system tape manifest order
 
@@ -5654,7 +5662,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Independent manifest checker compares every entry/type/target/name.
 9. **Negative/failure test:** Swap two later tools => release failure.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.07.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.07.build.json` and `v1/dist/certification/P12.07.test.json`; add `v1/dist/certification/P12.07.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.08 - Byte-exact final production tape build
 
@@ -5668,7 +5676,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Two builds hashes identical; FUSE-utils inspect; TZX->TAP logical equivalence where tool semantics permit.
 9. **Negative/failure test:** Any fixture/stub resource detected blocks release.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.08.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.08.build.json` and `v1/dist/certification/P12.08.test.json`; add `v1/dist/certification/P12.08.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.09 - Final cold boot 29-step ownership/resource sequence
 
@@ -5682,7 +5690,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** All twenty-nine numbered checkpoints occur in REV11 order on the same final release tape; debugger/RAM/object/open-description assertions prove each state transition and prove `EI` occurs only after the IM2 table/trampoline, boot trampolines, `sh`, `font4x8`, `issue`, `crontab`, `bincat`, and ownership/refcount bounds are valid.
 9. **Negative/failure test:** Delete, reorder, merge-away, or skip any checkpoint; enable interrupts before checkpoint 28; corrupt/mistype/mistarget any bootstrap resource; create persistent `/bin/sh` during bootstrap; give PID1 wrong cwd/ARG1/ENV1/tty topology/refcounts; or allow failure to fall into BASIC/uninitialized RAM: the boot gate must fail safely.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.09.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.09.build.json` and `v1/dist/certification/P12.09.test.json`; add `v1/dist/certification/P12.09.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.10 - Final login/session demonstration
 
@@ -5696,7 +5704,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Character/output/object state exact.
 9. **Negative/failure test:** Invalid login/case lookups negative.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.10.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.10.build.json` and `v1/dist/certification/P12.10.test.json`; add `v1/dist/certification/P12.10.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.11 - Final date/cron demonstration
 
@@ -5710,7 +5718,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Time/job state exact.
 9. **Negative/failure test:** Tape/tty interactive prompt from cron forbidden.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.11.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.11.build.json` and `v1/dist/certification/P12.11.test.json`; add `v1/dist/certification/P12.11.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.12 - Final vi/cc/ld/hello lifecycle
 
@@ -5724,7 +5732,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Output exact; artifacts valid.
 9. **Negative/failure test:** Wrong-case source fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.12.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.12.build.json` and `v1/dist/certification/P12.12.test.json`; add `v1/dist/certification/P12.12.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.13 - Final case-sensitivity demonstration
 
@@ -5738,7 +5746,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Explicit failing lookup captured.
 9. **Negative/failure test:** If alias succeeds release fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.13.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.13.build.json` and `v1/dist/certification/P12.13.test.json`; add `v1/dist/certification/P12.13.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.14 - Final real pipeline/background demonstration
 
@@ -5752,7 +5760,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** No deadlock; status/jobs exact.
 9. **Negative/failure test:** Parent retained writer/background tty steal fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.14.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.14.build.json` and `v1/dist/certification/P12.14.test.json`; add `v1/dist/certification/P12.14.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.15 - Final UDG/ROM state demonstration
 
@@ -5766,7 +5774,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Bank bytes/pointer exact.
 9. **Negative/failure test:** Pointer overlap fails release.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.15.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.15.build.json` and `v1/dist/certification/P12.15.test.json`; add `v1/dist/certification/P12.15.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.16 - Final ship edit/rebuild demonstration
 
@@ -5780,7 +5788,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Rebuilt output/behavior executes.
 9. **Negative/failure test:** Precompiled binary without compile path not acceptable.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.16.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.16.build.json` and `v1/dist/certification/P12.16.test.json`; add `v1/dist/certification/P12.16.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.17 - Final sine and multi demonstrations
 
@@ -5794,7 +5802,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Math/task outputs exact.
 9. **Negative/failure test:** Host-built substitution forbidden.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.17.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.17.build.json` and `v1/dist/certification/P12.17.test.json`; add `v1/dist/certification/P12.17.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.18 - Final beep/fun-command demonstration
 
@@ -5808,7 +5816,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Return/status/tty state exact.
 9. **Negative/failure test:** Long beep clock gap not falsely backfilled.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.18.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.18.build.json` and `v1/dist/certification/P12.18.test.json`; add `v1/dist/certification/P12.18.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.19 - Final zxpack demonstration
 
@@ -5822,7 +5830,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Bytes and accounting exact.
 9. **Negative/failure test:** Live-process compression guard remains zero violations.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.19.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.19.build.json` and `v1/dist/certification/P12.19.test.json`; add `v1/dist/certification/P12.19.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.20 - Final cassette logical round trip
 
@@ -5836,7 +5844,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Restored CRCs and execution exact.
 9. **Negative/failure test:** Incorrect-case request fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.20.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.20.build.json` and `v1/dist/certification/P12.20.test.json`; add `v1/dist/certification/P12.20.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.21 - Companion word design and implementation
 
@@ -5850,7 +5858,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Functional target scenario.
 9. **Negative/failure test:** No privileged/private kernel dependency.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.21.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.21.build.json` and `v1/dist/certification/P12.21.test.json`; add `v1/dist/certification/P12.21.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.22 - Companion sheet design and implementation
 
@@ -5864,7 +5872,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Functional target scenario.
 9. **Negative/failure test:** No private ABI.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.22.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.22.build.json` and `v1/dist/certification/P12.22.test.json`; add `v1/dist/certification/P12.22.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.23 - Deterministic companion cassette
 
@@ -5878,7 +5886,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Two builds byte-identical; target explicit load installs /bin apps.
 9. **Negative/failure test:** Wrong first-two order/type fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.23.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.23.build.json` and `v1/dist/certification/P12.23.test.json`; add `v1/dist/certification/P12.23.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.24 - Kernel and tool size gates
 
@@ -5892,7 +5900,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** screen=6912; kernel=8192; pool<=6912. The measured §4.2 ledger contains all thirteen exact planning targets 128/896/448/640/704/832/608/192/672/640/384/448/192, totals exactly 6784, and demonstrates exactly 128 bytes unassigned in the 6912-byte ordinary pool without reserve borrowing. zxpack resident codec/manager target<=384 bytes of ordinary kernel code/data, explicitly excluding arena-owned per-open 272-byte decoder states and transient exactly 512-byte encoder workspace while keeping both visible to allocator/mem accounting; if the resident target cannot be met while preserving the codec checks, require an architecture revision rather than borrowing IM2, kernel-stack or reserve regions. sh<=4096; simple utility target<=2048 each; vi<=8192; as<=12288; ld<=8192; compiler process-owned live footprint<=20480; font=392 FAST_REQUIRED; UDG=256 COLD_PREFERRED; BCAT<=512 COLD_PREFERRED; required simultaneous-residency scenario fits the 32 KiB arena with FAST_REQUIRED honored.
 9. **Negative/failure test:** Artificially exceed fixed kernel boundary => hard fail. A missing/mislabeled §4.2 category, any changed target, total other than 6784, less than 128 bytes unassigned margin, or use of FD00-FDFC/FF01-FFFF to hide ordinary code/data growth also blocks release.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.24.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.24.build.json` and `v1/dist/certification/P12.24.test.json`; add `v1/dist/certification/P12.24.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.25 - Kernel stack final worst-case gate
 
@@ -5906,7 +5914,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Final report enumerates every §35 depth contributor and proves high-water<=448, >=64 untouched margin, intact guard, correct stack-switch/frame ordering, and zero enabled unbounded-stack ROM services.
 9. **Negative/failure test:** Guard damage PANIC KSTACK.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.25.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.25.build.json` and `v1/dist/certification/P12.25.test.json`; add `v1/dist/certification/P12.25.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.26 - Full Section-41 mandatory matrix
 
@@ -5920,7 +5928,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Zero unrun/skip/xfail unless REV11 itself marks conditional and evidence explains condition. All §41 rows plus cross-format wrap vectors execute; invalid wrapping cases reject before access/commit and the valid cross-boundary control succeeds exactly.  The matrix also proves allocation failure remains recoverable at system level, including foreground allocation failure returning control to a usable shell, and proves every frozen ABI-visible number/format has test-before-freeze evidence. The retained replay result contains exactly 228 §41 row IDs and every one maps back to the §5.5 ledger and its owning phase evidence.
 9. **Negative/failure test:** Delete one matrix row => certification script fails completeness.  Remove the conformance-test provenance for one frozen ABI field, or inject one foreground E_NOMEM path that kills/corrupts the shell; the release matrix must fail. Renumber, drop, duplicate, or merge any §5.5 acceptance row and require the completeness oracle to fail before release certification.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.26.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.26.build.json` and `v1/dist/certification/P12.26.test.json`; add `v1/dist/certification/P12.26.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.27 - Second independent emulator pass
 
@@ -5934,7 +5942,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** No emulator-specific correctness assumption discovered.
 9. **Negative/failure test:** Mismatch remains open defect.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.27.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.27.build.json` and `v1/dist/certification/P12.27.test.json`; add `v1/dist/certification/P12.27.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.28 - Physical EAR boot gate
 
@@ -5948,7 +5956,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Boot reaches shell with correct resources.
 9. **Negative/failure test:** TAP-only evidence cannot satisfy this gate.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.28.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.28.build.json` and `v1/dist/certification/P12.28.test.json`; add `v1/dist/certification/P12.28.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.29 - Physical MIC save/load gate
 
@@ -5962,7 +5970,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Saved object reloads CRC-exact and executable runs.
 9. **Negative/failure test:** Emulator trap-only result not accepted as analog certification.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.29.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.29.build.json` and `v1/dist/certification/P12.29.test.json`; add `v1/dist/certification/P12.29.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.30 - Version-1 definitive 20-step acceptance
 
@@ -5976,7 +5984,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Every item PASS; all within 48K.  The final acceptance record has exactly twenty numbered rows in REV11 order, each with target-state/evidence references, and all twenty PASS on the same official release tape and 48K candidate.
 9. **Negative/failure test:** Any failed item means no release.  Omit/reorder/skip any of the twenty checks, satisfy a physical cassette requirement only with emulator evidence, or exceed the 48K architecture at any point; the version-1 architecture gate fails.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.30.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.30.build.json` and `v1/dist/certification/P12.30.test.json`; add `v1/dist/certification/P12.30.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.31 - Section-63 success demonstration
 
@@ -5990,7 +5998,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** All architecture success capabilities demonstrated.  Every enumerated Section-63 capability and every command/transcript checkpoint is present in the retained final demonstration evidence; no host performs target compile/link/runtime work, and the ending restored program executes after the second ordinary `LOAD ""` boot.
 9. **Negative/failure test:** Host-assisted target compile/link invalidates this gate.  Missing one Section-63 capability/transcript checkpoint, accepting an incorrect-case alias, host-assisted target compile/link, or omitting the real post-reset cassette restore/execute sequence fails the success demonstration.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.31.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.31.build.json` and `v1/dist/certification/P12.31.test.json`; add `v1/dist/certification/P12.31.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.32 - Deferred-feature scope guard
 
@@ -6004,7 +6012,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Out-of-scope list remains explicitly deferred.  The scope report contains and checks all 21 exclusions one-by-one and distinguishes them from allowed stretch goals without turning a stretch goal into a version-1 contract.
 9. **Negative/failure test:** An accidental public ABI claim for deferred feature blocks release.  Delete or silently implement/advertise any one of the 21 exclusions as a v1 requirement/ABI feature; the release scope gate must fail.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.32.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.32.build.json` and `v1/dist/certification/P12.32.test.json`; add `v1/dist/certification/P12.32.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.33 - Documentation completeness gate
 
@@ -6018,7 +6026,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** All architecture-listed docs exist and match generated constants; §36 limitations and validation obligations are stated without implying protection the 48K machine cannot provide.
 9. **Negative/failure test:** Stale numeric ABI/path data, omission of any mandatory validation class, claim of memory protection/MMU, or wording that says malicious machine code is contained causes documentation certification failure.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.33.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.33.build.json` and `v1/dist/certification/P12.33.test.json`; add `v1/dist/certification/P12.33.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.34 - Final deterministic distribution manifest
 
@@ -6032,7 +6040,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Rebuild from clean source yields same release artifact hashes. The clean release manifest contains zero uppercase/mixed-case ZX-UX-shipped user-facing command/tool/executable/demo/source names; all permitted non-filename exceptions are classified, not silently ignored.
 9. **Negative/failure test:** Any path outside root or secret-like auth material rejected. Inject one mixed-case shipped demo source or command filename and require the manifest/naming audit to fail even if hashes otherwise reproduce.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.34.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.34.build.json` and `v1/dist/certification/P12.34.test.json`; add `v1/dist/certification/P12.34.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.35 - Final clean-worktree/check-in gate
 
@@ -6046,7 +6054,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** `git status --porcelain` empty after final release commit.
 9. **Negative/failure test:** Untracked generated release artifact blocks certification.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.35.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.35.build.json` and `v1/dist/certification/P12.35.test.json`; add `v1/dist/certification/P12.35.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.36 - Cross-subsystem concurrency-invariants stress gate
 
@@ -6060,7 +6068,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Debugger/event-log assertions show every BLOCKED transition already linked, every READY wake already unlinked, no scheduler entry inside transient critical state, exact pipe/tape exclusion, canonical IY, correct altreg path selection, unchanged vector/trampoline hashes and FAST-only FAST_REQUIRED allocations throughout the combined stress run.
 9. **Negative/failure test:** Inject one fault for each of the twelve rules (including publish-BLOCKED-before-link, READY-before-unlink, vector byte mutation and deliberate FAST spill); the corresponding oracle must fail deterministically rather than letting the final aggregate remain green.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.36.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.36.build.json` and `v1/dist/certification/P12.36.test.json`; add `v1/dist/certification/P12.36.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.37 - Shared-screen foreground ownership gate
 
@@ -6074,7 +6082,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** The same single hardware display is shared throughout; ordinary background work receives no automatic display virtualization, and shell/tty screen ownership is restored exactly when the foreground task exits or is cancelled.
 9. **Negative/failure test:** Instrument a fake per-process virtual display allocation or let a normal background task obtain automatic display ownership; either must fail the ownership/allocation oracle.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.37.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.37.build.json` and `v1/dist/certification/P12.37.test.json`; add `v1/dist/certification/P12.37.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.38 - Release performance measurement gate
 
@@ -6088,7 +6096,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** All seven rows contain measured final-build evidence and the correctness suites remain unchanged/green; context-switch timing is compared with the 20 ms PAL frame period, and pipe progress/deadlock is a correctness prerequisite rather than a speed score.
 9. **Negative/failure test:** Delete a target row, substitute an unmeasured adjective for data, treat cassette transport compatibility as a kernel failure, or accept an optimization that changes correctness evidence; the gate must fail.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.38.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.38.build.json` and `v1/dist/certification/P12.38.test.json`; add `v1/dist/certification/P12.38.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 ## P12.39 - Phase-12 release gate
 
@@ -6102,7 +6110,7 @@ both the copied SDK corpus and the target-native Phase-11 suite are fully green.
 8. **Expected PASS result:** Emit `ZX-UX VERSION 1 ARCHITECTURE CERTIFICATION PASS` only if every required prerequisite is PASS.
 9. **Negative/failure test:** No waiver may silently strengthen evidence; failed physical gate remains FAILED/PENDING, never emulator-PASS.
 10. **Check-in gate:** build + static + positive + negative tests PASS; dependent earlier phase gates remain PASS; commit only the intended source/docs/evidence and end with a clean Git worktree.
-11. **Evidence:** `v1/dist/certification/P12.39.log` plus hashes/debugger-state/result JSON; phase aggregate evidence is added at phase gates.
+11. **Evidence:** Retain `v1/dist/certification/P12.39.build.json` and `v1/dist/certification/P12.39.test.json`; add `v1/dist/certification/P12.39.result.json` only when this step is explicitly designated a certification-result boundary; phase aggregate evidence is retained at the phase gate.
 
 
 ---
