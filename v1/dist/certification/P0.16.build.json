@@ -1,0 +1,28 @@
+{
+  "action": "build",
+  "architecture_sha256": "1d736641e685c1d6136b66fc57d0c16fc662ce6ca4dfd640991743bb01bb706f",
+  "assertions": [
+    {
+      "name": "p0.16-positive-contract",
+      "passed": true
+    },
+    {
+      "detail": "v1/docs/rom-services.md",
+      "name": "p0.16-artifact-present",
+      "passed": true
+    }
+  ],
+  "commands": [],
+  "hashes": {
+    "v1/docs/rom-services.md": "38e8a3da72fcce5a07c9026b32c042e3e7483d8f64b35322300a1d5649618ee4"
+  },
+  "prerequisites": {
+    "P0.15": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "3400a52c90bfe112c385b3c0aa645f800bced283",
+  "status": "PASS",
+  "step": "P0.16",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

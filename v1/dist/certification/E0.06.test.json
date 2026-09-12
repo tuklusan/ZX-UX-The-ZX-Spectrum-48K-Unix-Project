@@ -1,0 +1,49 @@
+{
+  "action": "test",
+  "architecture_sha256": "1d736641e685c1d6136b66fc57d0c16fc662ce6ca4dfd640991743bb01bb706f",
+  "assertions": [
+    {
+      "detail": "synthetic ROM calls require a known writable stack",
+      "name": "synthetic-rom-stack",
+      "passed": true
+    },
+    {
+      "detail": "hard emulator timeout must be 1..120 seconds",
+      "name": "hard-timeout",
+      "passed": true
+    },
+    {
+      "detail": "screenshot-only oracle is forbidden",
+      "name": "state-not-screenshot",
+      "passed": true
+    },
+    {
+      "detail": "release-critical behavior requires at least two emulators",
+      "name": "two-emulator-release",
+      "passed": true
+    },
+    {
+      "detail": "trap-only success cannot claim physical certification",
+      "name": "trap-not-physical",
+      "passed": true
+    },
+    {
+      "detail": "TAP/TZX success cannot claim physical certification",
+      "name": "image-not-physical",
+      "passed": true
+    }
+  ],
+  "commands": [],
+  "hashes": {
+    "v1/tools-host/test-driver/emulator_safety.py": "92117b395b7b52810a829438e32ac4a56bba8712c9f3e29dadc4e1286f3dd01e"
+  },
+  "prerequisites": {
+    "E0.05": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "3400a52c90bfe112c385b3c0aa645f800bced283",
+  "status": "PASS",
+  "step": "E0.06",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

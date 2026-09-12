@@ -1,0 +1,60 @@
+{
+  "action": "test",
+  "architecture_sha256": "1d736641e685c1d6136b66fc57d0c16fc662ce6ca4dfd640991743bb01bb706f",
+  "assertions": [
+    {
+      "name": "off-by-one-rom_end",
+      "passed": true
+    },
+    {
+      "name": "off-by-one-bitmap_end",
+      "passed": true
+    },
+    {
+      "name": "off-by-one-attr_end",
+      "passed": true
+    },
+    {
+      "name": "off-by-one-rom_compat_end",
+      "passed": true
+    },
+    {
+      "name": "off-by-one-cold_end",
+      "passed": true
+    },
+    {
+      "name": "off-by-one-fast_end",
+      "passed": true
+    },
+    {
+      "name": "off-by-one-kernel_end",
+      "passed": true
+    },
+    {
+      "name": "missing-base-io",
+      "passed": true
+    },
+    {
+      "name": "mandatory-extension",
+      "passed": true
+    },
+    {
+      "name": "silent-pal-wall-clock-on-nonpal",
+      "passed": true
+    }
+  ],
+  "commands": [],
+  "hashes": {
+    "v1/include/zx48ux.inc": "4c32a778091d3d7ba6fdeb28c77fe2cbe864d1f71f20a41c845019e9d5c056c1",
+    "v1/tools-host/test-driver/phase0.py": "d1a2cc68d9df8e00798138326982623c5ec3e36e27787beac32698c58fd5a839"
+  },
+  "prerequisites": {
+    "E0.06": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "3400a52c90bfe112c385b3c0aa645f800bced283",
+  "status": "PASS",
+  "step": "P0.01",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

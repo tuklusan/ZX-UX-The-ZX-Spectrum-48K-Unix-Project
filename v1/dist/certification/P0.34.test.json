@@ -1,0 +1,95 @@
+{
+  "action": "test",
+  "architecture_sha256": "1d736641e685c1d6136b66fc57d0c16fc662ce6ca4dfd640991743bb01bb706f",
+  "assertions": [
+    {
+      "name": "rom-addresses-documented",
+      "passed": true
+    },
+    {
+      "name": "rom-addresses-centralized",
+      "passed": true
+    },
+    {
+      "name": "wrapper-contracts",
+      "passed": true
+    },
+    {
+      "name": "rom-error-recovery",
+      "passed": true
+    },
+    {
+      "name": "class-b-serialization",
+      "passed": true
+    },
+    {
+      "name": "cassette-transport",
+      "passed": true
+    },
+    {
+      "name": "graphics-edge-contract",
+      "passed": true
+    },
+    {
+      "name": "calculator-contract",
+      "passed": true
+    },
+    {
+      "name": "zero-gap-inventory",
+      "passed": true
+    },
+    {
+      "name": "im2-256-vector-prerequisite",
+      "passed": true
+    },
+    {
+      "name": "iy-anchor-prerequisite",
+      "passed": true
+    },
+    {
+      "name": "alternate-interrupt-classification",
+      "passed": true
+    },
+    {
+      "name": "native-loader-sequence",
+      "passed": true
+    },
+    {
+      "name": "permanent-e003-handoff",
+      "passed": true
+    },
+    {
+      "name": "screen-6912-preserved",
+      "passed": true
+    },
+    {
+      "name": "kernel-8192-layout-prerequisite",
+      "passed": true
+    },
+    {
+      "name": "zxp1-boundary-and-corpus",
+      "passed": true
+    },
+    {
+      "name": "aggregate-missing-prerequisite-rejected",
+      "passed": true
+    }
+  ],
+  "commands": [],
+  "hashes": {
+    "v1/assets/loading.scr": "9faa5d52fe4d8f9225aa64399a578f546ee2cbb11d01dd241ebfd00eb88b3fe7",
+    "v1/docs/rom-services.md": "38e8a3da72fcce5a07c9026b32c042e3e7483d8f64b35322300a1d5649618ee4",
+    "v1/src/boot/entry.asm": "ed714e8354df6ec9d7de75f1e26141796a0d5f2036005cab3b0117c10e76dd75",
+    "v1/src/kernel/rom_services.asm": "7e4456036007aff0c47cbfbfbfa913f3f7fac0174fea04807f0dce1a972b7446",
+    "v1/tools-host/zxpack/zxpack.py": "6683dd91f6cd214393881baf1f50621f4f7cca36543468ea84783d0dd75c09c8"
+  },
+  "prerequisites": {
+    "P0.33": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "3400a52c90bfe112c385b3c0aa645f800bced283",
+  "status": "PASS",
+  "step": "P0.34",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

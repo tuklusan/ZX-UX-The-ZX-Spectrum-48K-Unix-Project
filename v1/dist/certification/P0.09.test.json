@@ -1,0 +1,70 @@
+{
+  "action": "test",
+  "architecture_sha256": "1d736641e685c1d6136b66fc57d0c16fc662ce6ca4dfd640991743bb01bb706f",
+  "assertions": [
+    {
+      "name": "byte-identical-rebuild",
+      "passed": true
+    },
+    {
+      "name": "native-order",
+      "passed": true
+    },
+    {
+      "name": "screen-address-length",
+      "passed": true
+    },
+    {
+      "name": "kernel-address-length",
+      "passed": true
+    },
+    {
+      "name": "reject-invalid-prefix-1",
+      "passed": true
+    },
+    {
+      "name": "reject-invalid-prefix-2",
+      "passed": true
+    },
+    {
+      "name": "reject-invalid-prefix-3",
+      "passed": true
+    },
+    {
+      "name": "reject-invalid-prefix-4",
+      "passed": true
+    },
+    {
+      "name": "reject-invalid-prefix-5",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 26,
+      "exit_code": 0,
+      "stderr": "SjASMPlus Z80 Cross-Assembler v1.24.0 (https://github.com/z00m128/sjasmplus)\nPass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8462 lines, work time: 0.025 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/assets/loading.scr": "9faa5d52fe4d8f9225aa64399a578f546ee2cbb11d01dd241ebfd00eb88b3fe7",
+    "v1/build/kernel.bin": "b9d0b4a2ecf6e57946edb58ad898b61a6b344a9f51eba22d0b7bcb21e2c67d17",
+    "v1/src/boot/loader.bas": "b879d39e4015912502efd9c1d35fd5aaf8ba33990a014490717d86dbe0154ac6"
+  },
+  "prerequisites": {
+    "P0.08": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "3400a52c90bfe112c385b3c0aa645f800bced283",
+  "status": "PASS",
+  "step": "P0.09",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

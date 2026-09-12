@@ -1,0 +1,62 @@
+{
+  "action": "test",
+  "architecture_sha256": "1d736641e685c1d6136b66fc57d0c16fc662ce6ca4dfd640991743bb01bb706f",
+  "assertions": [
+    {
+      "detail": "0xe4d8",
+      "name": "fdfd-absolute-jp",
+      "passed": true
+    },
+    {
+      "name": "im2-table-257-fd",
+      "passed": true
+    },
+    {
+      "name": "all-256-low-vectors-fdfd",
+      "passed": true
+    },
+    {
+      "name": "i-set-after-table-fill",
+      "passed": true
+    },
+    {
+      "name": "corrupt-table-byte",
+      "passed": true
+    },
+    {
+      "name": "corrupt-trampoline",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 26,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8462 lines, work time: 0.024 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "b9d0b4a2ecf6e57946edb58ad898b61a6b344a9f51eba22d0b7bcb21e2c67d17",
+    "v1/src/kernel/im2.asm": "30feb36567a58d4ec5639fefaade95f4f57f14f4dd9d9cd8591bc5873fd30f1e",
+    "v1/src/kernel/interrupt.asm": "6428e286490860f8016084e16836be44b4735071df1b32e2883b467d1d8b18d0",
+    "v1/src/kernel/kernel.asm": "c7f520614d10b3510682c36183812fe8c2134a0baa167969b84301fa4207305a",
+    "v1/tools-host/test-driver/phase0_im2.py": "979545fc25dc1df228329b634d5eea58684a415ad7a6e35bb0a0a12703e8abc3"
+  },
+  "prerequisites": {
+    "P0.03": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "3400a52c90bfe112c385b3c0aa645f800bced283",
+  "status": "PASS",
+  "step": "P0.04",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

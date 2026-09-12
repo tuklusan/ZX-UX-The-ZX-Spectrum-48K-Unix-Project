@@ -1,0 +1,60 @@
+{
+  "action": "build",
+  "architecture_sha256": "1d736641e685c1d6136b66fc57d0c16fc662ce6ca4dfd640991743bb01bb706f",
+  "assertions": [
+    {
+      "detail": "/home/runner/work/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/ZX-UX-The-ZX-Spectrum-48K-Unix-Project",
+      "name": "root-marker",
+      "passed": true
+    },
+    {
+      "detail": "tools/runtime/python/bin/python3.13",
+      "name": "project-local-python",
+      "passed": true
+    },
+    {
+      "name": "absolute-tool-path",
+      "passed": true
+    },
+    {
+      "name": "argv-is-list",
+      "passed": true
+    },
+    {
+      "name": "syntax-check-no-bytecode",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "-B",
+        "-c",
+        "import ast,pathlib,sys; p=pathlib.Path(sys.argv[1]); ast.parse(p.read_text(encoding='utf-8'), filename=str(p))",
+        "v1/tools-host/test-driver/run.py"
+      ],
+      "cwd": ".",
+      "duration_ms": 28,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/manifest/toolchain.lock.json": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+    "tools/scripts/verify-environment.py": "3c6d01090b91ac22822ed8639b35d882faa99cb12f31f44316cba7fae22d8d0e",
+    "v1/docs/test-plan.md": "8d9640cfab130f330ac7cc478ab22cedc6a81735cbebd06f2abc4ebb72ad959f",
+    "v1/tools-host/test-driver/run.py": "9ed7c36ce69dcb5917a3748f20233135ac5c62782e68ee8ee8f401b95b7800c6"
+  },
+  "prerequisites": {
+    "E0.02": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "3400a52c90bfe112c385b3c0aa645f800bced283",
+  "status": "PASS",
+  "step": "E0.03",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

@@ -1,0 +1,32 @@
+{
+  "action": "test",
+  "architecture_sha256": "1d736641e685c1d6136b66fc57d0c16fc662ce6ca4dfd640991743bb01bb706f",
+  "assertions": [
+    {
+      "name": "p0.19-positive-contract",
+      "passed": true
+    },
+    {
+      "detail": "v1/src/kernel/rom_services.asm",
+      "name": "p0.19-artifact-present",
+      "passed": true
+    },
+    {
+      "name": "p0.19-negative-contract-rejected",
+      "passed": true
+    }
+  ],
+  "commands": [],
+  "hashes": {
+    "v1/src/kernel/rom_services.asm": "7e4456036007aff0c47cbfbfbfa913f3f7fac0174fea04807f0dce1a972b7446"
+  },
+  "prerequisites": {
+    "P0.18": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "3400a52c90bfe112c385b3c0aa645f800bced283",
+  "status": "PASS",
+  "step": "P0.19",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

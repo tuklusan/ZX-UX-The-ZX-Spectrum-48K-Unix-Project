@@ -1,0 +1,99 @@
+{
+  "action": "test",
+  "architecture_sha256": "1d736641e685c1d6136b66fc57d0c16fc662ce6ca4dfd640991743bb01bb706f",
+  "assertions": [
+    {
+      "name": "reject-indent-unlabelled",
+      "passed": true
+    },
+    {
+      "name": "reject-rom-service-owner",
+      "passed": true
+    },
+    {
+      "name": "reject-syscall-single-owner",
+      "passed": true
+    },
+    {
+      "name": "reject-named-memory-map",
+      "passed": true
+    },
+    {
+      "name": "reject-ula-shadow-owner",
+      "passed": true
+    },
+    {
+      "name": "reject-documented-z80-only",
+      "passed": true
+    },
+    {
+      "name": "reject-iy-os-reserved",
+      "passed": true
+    },
+    {
+      "name": "reject-alternate-bank-os-private",
+      "passed": true
+    },
+    {
+      "name": "reject-r-not-correctness-source",
+      "passed": true
+    },
+    {
+      "name": "reject-no-precise-contention-dependency",
+      "passed": true
+    },
+    {
+      "name": "reject-export-contract",
+      "passed": true
+    },
+    {
+      "name": "reject-lower-case-filename",
+      "passed": true
+    },
+    {
+      "name": "allow-r-nonsecurity-seed",
+      "passed": true
+    },
+    {
+      "name": "require-arena_arithmetic_reviewed",
+      "passed": true
+    },
+    {
+      "name": "require-block_instruction_considered",
+      "passed": true
+    },
+    {
+      "name": "require-contention_classes_recorded",
+      "passed": true
+    },
+    {
+      "name": "require-critical_size_cycles_recorded",
+      "passed": true
+    },
+    {
+      "name": "require-hot_cold_placement_documented",
+      "passed": true
+    },
+    {
+      "name": "require-screen_formula_owner_reviewed",
+      "passed": true
+    },
+    {
+      "name": "require-stack_assumptions_documented",
+      "passed": true
+    }
+  ],
+  "commands": [],
+  "hashes": {
+    "v1/tools-host/test-driver/asm_policy.py": "b7b9efe64ace221817d83f68fb9463e32af7dbb4df4a1fdd33847da99a3018ff"
+  },
+  "prerequisites": {
+    "E0.04": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "3400a52c90bfe112c385b3c0aa645f800bced283",
+  "status": "PASS",
+  "step": "E0.05",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

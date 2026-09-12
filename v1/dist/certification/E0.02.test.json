@@ -1,0 +1,24 @@
+{
+  "action": "test",
+  "architecture_sha256": "1d736641e685c1d6136b66fc57d0c16fc662ce6ca4dfd640991743bb01bb706f",
+  "assertions": [
+    {
+      "detail": "E0.02 architecture digest mismatch: 1d736641e685c1d6136b66fc57d0c16fc662ce6ca4dfd640991743bb01bb706f",
+      "name": "wrong-architecture-digest-rejected",
+      "passed": true
+    }
+  ],
+  "commands": [],
+  "hashes": {
+    "docs/01-ZX-UX-ARCHITECTURE-REV11.md": "1d736641e685c1d6136b66fc57d0c16fc662ce6ca4dfd640991743bb01bb706f"
+  },
+  "prerequisites": {
+    "E0.01": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "3400a52c90bfe112c385b3c0aa645f800bced283",
+  "status": "PASS",
+  "step": "E0.02",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

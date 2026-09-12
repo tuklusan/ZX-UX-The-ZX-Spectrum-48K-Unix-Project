@@ -1,0 +1,84 @@
+{
+  "action": "test",
+  "architecture_sha256": "1d736641e685c1d6136b66fc57d0c16fc662ce6ca4dfd640991743bb01bb706f",
+  "assertions": [
+    {
+      "name": "argv-preserved",
+      "passed": true
+    },
+    {
+      "duration_ms": 100,
+      "name": "timeout-enforced",
+      "passed": true
+    },
+    {
+      "name": "no-shell-flattening",
+      "passed": true
+    },
+    {
+      "name": "relocated-root",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "-B",
+        "-c",
+        "import sys; print(sys.argv[1]); print(sys.argv[2])",
+        "two words",
+        "literal * value"
+      ],
+      "cwd": ".",
+      "duration_ms": 12,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "two words\nliteral * value\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "-B",
+        "-c",
+        "import time; time.sleep(5)"
+      ],
+      "cwd": ".",
+      "duration_ms": 100,
+      "exit_code": null,
+      "stderr": "",
+      "stdout": "",
+      "timed_out": true
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "-B",
+        "/tmp/zxux-e003-_9lmi16u/moved-project/v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "E0.03",
+        "--probe-root"
+      ],
+      "cwd": "/tmp/zxux-e003-_9lmi16u",
+      "duration_ms": 103,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "/tmp/zxux-e003-_9lmi16u/moved-project\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/tools-host/test-driver/run.py": "9ed7c36ce69dcb5917a3748f20233135ac5c62782e68ee8ee8f401b95b7800c6"
+  },
+  "prerequisites": {
+    "E0.02": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "3400a52c90bfe112c385b3c0aa645f800bced283",
+  "status": "PASS",
+  "step": "E0.03",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

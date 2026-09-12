@@ -1,0 +1,60 @@
+{
+  "action": "build",
+  "architecture_sha256": "1d736641e685c1d6136b66fc57d0c16fc662ce6ca4dfd640991743bb01bb706f",
+  "assertions": [
+    {
+      "name": "alternate-bank-os-private",
+      "passed": true
+    },
+    {
+      "name": "altreg-busy-gated-fast-path",
+      "passed": true
+    },
+    {
+      "name": "balanced-isr-bank-switch",
+      "passed": true
+    },
+    {
+      "name": "serialized-safe-fallback",
+      "passed": true
+    },
+    {
+      "name": "safe-wrapper-classifier",
+      "passed": true
+    },
+    {
+      "name": "no-persistent-shadow-only-state",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 26,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8462 lines, work time: 0.024 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "b9d0b4a2ecf6e57946edb58ad898b61a6b344a9f51eba22d0b7bcb21e2c67d17",
+    "v1/docs/rom-services.md": "38e8a3da72fcce5a07c9026b32c042e3e7483d8f64b35322300a1d5649618ee4",
+    "v1/src/kernel/interrupt.asm": "6428e286490860f8016084e16836be44b4735071df1b32e2883b467d1d8b18d0",
+    "v1/tools-host/test-driver/phase0_alt.py": "f10f605f90930f068927bcc7d6c342c05eb2ee6ac90f24917fbeda6b4d5a4176"
+  },
+  "prerequisites": {
+    "P0.05": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "3400a52c90bfe112c385b3c0aa645f800bced283",
+  "status": "PASS",
+  "step": "P0.06",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

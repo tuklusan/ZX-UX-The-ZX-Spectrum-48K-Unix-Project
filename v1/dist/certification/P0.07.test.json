@@ -1,0 +1,56 @@
+{
+  "action": "test",
+  "architecture_sha256": "1d736641e685c1d6136b66fc57d0c16fc662ce6ca4dfd640991743bb01bb706f",
+  "assertions": [
+    {
+      "name": "five-semantic-lines",
+      "passed": true
+    },
+    {
+      "name": "auto-start-line-10",
+      "passed": true
+    },
+    {
+      "name": "clear-24575",
+      "passed": true
+    },
+    {
+      "name": "screen-code-sequence",
+      "passed": true
+    },
+    {
+      "name": "usr-57347",
+      "passed": true
+    },
+    {
+      "name": "bootstrap-name-lower-case",
+      "passed": true
+    },
+    {
+      "name": "wrong-clear",
+      "passed": true
+    },
+    {
+      "name": "wrong-usr",
+      "passed": true
+    },
+    {
+      "name": "case-folded-boot-name",
+      "passed": true
+    }
+  ],
+  "commands": [],
+  "hashes": {
+    "v1/src/boot/loader.bas": "b879d39e4015912502efd9c1d35fd5aaf8ba33990a014490717d86dbe0154ac6",
+    "v1/tools-host/test-driver/phase0_loader.py": "62a57dc61dbcf5073d6394a1b6b0f03d572809055c0c0fc261014fdddba11853"
+  },
+  "prerequisites": {
+    "P0.06": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "3400a52c90bfe112c385b3c0aa645f800bced283",
+  "status": "PASS",
+  "step": "P0.07",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

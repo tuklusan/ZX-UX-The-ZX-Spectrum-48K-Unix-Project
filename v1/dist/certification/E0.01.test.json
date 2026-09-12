@@ -1,0 +1,42 @@
+{
+  "action": "test",
+  "architecture_sha256": "1d736641e685c1d6136b66fc57d0c16fc662ce6ca4dfd640991743bb01bb706f",
+  "assertions": [
+    {
+      "name": "altered-lock-rejected",
+      "passed": true
+    },
+    {
+      "name": "negative-failure-is-deterministic",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "tools/scripts/verify-environment.py",
+        "--metadata-only",
+        "--manifest",
+        "/tmp/zxux-e001-rg1hi9r5/toolchain.lock.json"
+      ],
+      "cwd": ".",
+      "duration_ms": 42,
+      "exit_code": 1,
+      "stderr": "ZX-UX DEVELOPMENT ENVIRONMENT CERTIFICATION FAIL: manifest content mismatch against canonical lock\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/manifest/toolchain.lock.json": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+    "tools/scripts/verify-environment.py": "3c6d01090b91ac22822ed8639b35d882faa99cb12f31f44316cba7fae22d8d0e"
+  },
+  "prerequisites": {},
+  "schema": 2,
+  "source_commit": "3400a52c90bfe112c385b3c0aa645f800bced283",
+  "status": "PASS",
+  "step": "E0.01",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
