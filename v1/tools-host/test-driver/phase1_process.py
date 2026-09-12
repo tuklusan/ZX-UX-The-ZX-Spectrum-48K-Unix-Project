@@ -109,7 +109,7 @@ def _negative_contract_tests() -> list[dict[str, object]]:
         "reject-ninth-record":9>MAX_PROCESSES,
         "reject-duplicate-runnable-context":"PROC_PC" not in {f"PROC_{n.upper()}" for n in OFFSETS},
         "reject-public-started-bit":0x80&0x01==0,
-        "reject-over-896-planning-budget":56*9+OPEN_DESCRIPTION_COUNT*OD_DESC_SIZE>PROCESS_BUDGET,
+        "reject-over-896-planning-budget":56*11+OPEN_DESCRIPTION_COUNT*OD_DESC_SIZE>PROCESS_BUDGET,
     }
     return [{"name":n,"passed":p} for n,p in cases.items()]
 
