@@ -30,7 +30,7 @@
       "cwd": "v1/src/kernel",
       "duration_ms": 26,
       "exit_code": 0,
-      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8462 lines, work time: 0.024 seconds\n",
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8462 lines, work time: 0.025 seconds\n",
       "stdout": "",
       "timed_out": false
     }
@@ -46,7 +46,7 @@
     "P0.04": "PASS"
   },
   "schema": 2,
-  "source_commit": "b5db4883d69539b451323cf47c758c9b392aec44",
+  "source_commit": "66e12b2d641b2db93d0aae949d2aac2565193989",
   "status": "PASS",
   "step": "P0.05",
   "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
