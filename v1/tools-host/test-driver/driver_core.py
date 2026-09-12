@@ -145,7 +145,7 @@ def read_source_state(root: Path) -> SourceState:
     return SourceState(
         source_commit=source_commit,
         toolchain_lock_sha256=sha256_file(root_path(root, TOOLCHAIN_LOCK)),
-        architecture_sha256=sha2556_file(root_path(root, ARCHITECTURE)),
+        architecture_sha256=sha256_file(root_path(root, ARCHITECTURE)),
         worktree_clean=(status == ""),
     )
 
