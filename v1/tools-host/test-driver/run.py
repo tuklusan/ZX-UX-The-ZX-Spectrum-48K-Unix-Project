@@ -40,6 +40,7 @@ import phase1_sleep
 import phase1_exit
 import phase1_console_core
 import phase1_font4x8
+import phase1_tty64
 import phase1_alt
 import phase1_keyboard
 import phase1_cursor
@@ -113,6 +114,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase1_console_core.dispatch(root, action, step, **kwargs)
     if step == "P1.21":
         return phase1_font4x8.dispatch(root, action, step, **kwargs)
+    if step == "P1.22":
+        return phase1_tty64.dispatch(root, action, step, **kwargs)
     if step == "P1.30":
         return phase1_alt.dispatch(root, action, step, **kwargs)
     if step == "P1.31":
