@@ -1,0 +1,85 @@
+{
+  "action": "build",
+  "architecture_sha256": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+  "assertions": [
+    {
+      "name": "fixture-is-exact-392-byte-f4x8",
+      "passed": true
+    },
+    {
+      "name": "host-decoder-produces-96x8-rows",
+      "passed": true
+    },
+    {
+      "name": "host-decoder-distinguishes-altered-nibble-order",
+      "passed": true
+    },
+    {
+      "name": "target-validates-exact-length",
+      "passed": true
+    },
+    {
+      "name": "target-validates-complete-header",
+      "passed": true
+    },
+    {
+      "name": "target-uses-fast-required-without-cold-policy",
+      "passed": true
+    },
+    {
+      "name": "target-copies-and-pins-exact-resource",
+      "passed": true
+    },
+    {
+      "name": "target-font-pointer-skips-header",
+      "passed": true
+    },
+    {
+      "name": "target-decoder-high-nibble-before-low",
+      "passed": true
+    },
+    {
+      "name": "physical-pointers-not-public-abi",
+      "passed": true
+    },
+    {
+      "name": "docs-freeze-structural-contract-not-final-identity",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 29,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nkernel.asm(87): warning[shortblock]: init data for block truncated to length: 0\nPass 3 complete\nErrors: 0, warnings: 1, compiled: 8487 lines, work time: 0.028 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/assets/font4x8.bin": "1f29bb201828bbb6f0c0945c9677eb495b7b99592bd9c05ed10c0597caa69114",
+    "v1/build/kernel.bin": "9f989946cf9f6c89d92840815b3b7d1434875c731186f212a551b48683d369ca",
+    "v1/docs/font4x8.md": "c52a52d7d4fc016da4ce2b6016f7008e15f14a128609083417b867480c39c4f5",
+    "v1/include/zx48ux.inc": "4c32a778091d3d7ba6fdeb28c77fe2cbe864d1f71f20a41c845019e9d5c056c1",
+    "v1/src/kernel/memory.asm": "9188c5ada0cbc40e36b18313a57231df621d0e567b62ba8f7f0e1ca4e8ea26e0",
+    "v1/src/kernel/tty64.asm": "7890a23ed2625ce7dda4d0629bf85240e748bf5a27a30dac53279c0f0b108344",
+    "v1/tools-host/test-driver/phase1_font4x8.py": "504dcfcdca82fdc63cc5a1644520f7731b46d8d60e6b25ccbc071535cf4b148e"
+  },
+  "prerequisites": {
+    "P1.20": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "70dfffc05ca0d70515554a8e8288514c0aa27fb2",
+  "status": "PASS",
+  "step": "P1.21",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
