@@ -86,7 +86,7 @@ The Phase-1-live ownership audit covers the consumers that actually exist in the
 
 No measured small-copy exception is retained by Phase 1. Any future covered fixed-size copy that bypasses the canonical primitive must carry byte-count, byte-size comparison, cycle comparison, and a non-empty rationale in the certification manifest; a missing measurement is a deterministic failure.
 
-Emulator vectors cover memcpy, both overlapping memmove directions, forward/reverse searches, all four single-step block forms, `strlen`, `strcmp`, UDG round-trip copying, and a pipe write/read sequence that crosses the ring boundary. Guard bytes before and after tested regions must remain exact.
+Emulator vectors cover memcpy, both overlapping memmove directions, forward/reverse searches, all four single-step block forms, `strlen`, `strcmp`, UDG round-trip copying, and a pipe write/read sequence that crosses the ring boundary. Because architecture permits positive short pipe counts, a transfer that reaches the physical ring tail returns that canonical contiguous chunk and the fixture retries the remaining bytes at the ring head; the combined stream and final ring indices/count must still be exact. Guard bytes before and after tested primitive regions must remain exact.
 
 Interrupt/restart evidence uses the real ZX-UX IM2 path. The fixture enables IM2 and interrupts around a 4096-byte canonical `zx48_memcpy`; the repeated `LDIR` portion alone exceeds one 50 Hz PAL frame, so an accepted maskable interrupt must occur between iterations. The test requires `kernel_ticks` to advance, the full destination to remain byte-identical to the source, and all guards to remain intact after completion.
 
