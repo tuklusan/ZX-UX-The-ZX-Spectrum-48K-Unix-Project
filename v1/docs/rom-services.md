@@ -133,7 +133,9 @@ alternate-bank exchange only as OS-private scratch switching.
 | tape workspace used by SA/LD-BYTES | ROM compatibility zone | bounded | TAPE | valid only during the synchronous tape critical section |
 | console/graphics transient ROM workspace | ROM compatibility zone | bounded | CONSOLE/GRAPHICS | wrapper-owned only; never process ABI state |
 
-The planned UDG bank is an allocator-owned 256-byte COLD_PREFERRED extent in
-0x6000-0x7FFF; its exact runtime pointer is written to UDG only after allocation
-and can never point into 0xE000-0xFFFF. No user process may depend on unspecified
-BASIC system-variable contents across a syscall or scheduling point.
+The P1.14 UDG bank is the first arena allocation after `zx48_memory_init`; the
+exact P1.14 runtime pointer is `0x6000`, covering `0x6000..0x60FF`. Boot zeroes all
+256 bytes, writes ROM UDG at 0x5C7B-0x5C7C as little-endian bytes `00 60`, and
+accounts the full 256 bytes as pinned before IM2 is enabled or PID1 can become
+READY. The bank therefore cannot remain inherited BASIC state, move, be freed, or
+point into 0xE000-0xFFFF.

@@ -69,7 +69,7 @@ CERTIFIED_STEPS = (
 
 # Candidate steps execute in CI for diagnostic/admission proof but are not
 # admitted into CERTIFIED_STEPS until their revised-plan gate has passed.
-CANDIDATE_STEPS: tuple[str, ...] = ()
+CANDIDATE_STEPS: tuple[str, ...] = ("P1.14",)
 
 
 def main() -> int:
