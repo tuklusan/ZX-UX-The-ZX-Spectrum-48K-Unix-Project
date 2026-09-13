@@ -164,6 +164,7 @@ zx48_sleep_current:
     ld (ix+PROC_WAKE_TICK+2),l
     ld (ix+PROC_WAKE_TICK+3),h
     ld (ix+PROC_STATE),PROC_SLEEPING
+    xor a
     jp zx48_schedule_finish_syscall
 zx48_sleep_zero:
     xor a
