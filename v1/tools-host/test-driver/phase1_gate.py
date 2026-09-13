@@ -37,6 +37,7 @@ CERTIFIED_STEPS = (
 
 # Candidate steps execute in CI for diagnostic/admission proof but are not
 # admitted into CERTIFIED_STEPS until their revised-plan gate has passed.
+# P1.13 remains candidate here so this source-only trigger proves it before admission.
 CANDIDATE_STEPS = ("P1.13",)
 
 
