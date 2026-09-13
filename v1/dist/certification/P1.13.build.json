@@ -1,0 +1,113 @@
+{
+  "action": "build",
+  "architecture_sha256": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+  "assertions": [
+    {
+      "name": "isr-call-edges-are-bounded",
+      "passed": true
+    },
+    {
+      "name": "isr-work-has-no-calls-or-forbidden-services",
+      "passed": true
+    },
+    {
+      "name": "tick-is-u32-modulo-increment",
+      "passed": true
+    },
+    {
+      "name": "rom-frames-is-three-byte-carry-chain",
+      "passed": true
+    },
+    {
+      "name": "wake-flag-set-only",
+      "passed": true
+    },
+    {
+      "name": "cursor-producer-is-25-frame-one-bit-parity",
+      "passed": true
+    },
+    {
+      "name": "cursor-parity-storage-is-one-byte-zero-initialized",
+      "passed": true
+    },
+    {
+      "name": "im2-never-mutates-cursor-bitmap-coordinate-wrap-or-depth",
+      "passed": true
+    },
+    {
+      "name": "wall-clock-update-is-validity-gated",
+      "passed": true
+    },
+    {
+      "name": "break-sampling-is-minimal-matrix-io",
+      "passed": true
+    },
+    {
+      "name": "both-isr-paths-run-producer-and-end-ei-reti",
+      "passed": true
+    },
+    {
+      "name": "sys-ticks-snapshot-is-coherent-and-four-bytes",
+      "passed": true
+    },
+    {
+      "name": "sys-ticks-independent-of-wall-time",
+      "passed": true
+    },
+    {
+      "name": "architecture-freezes-divider-parity-producer",
+      "passed": true
+    },
+    {
+      "name": "parity-post-before-consume-is-consumed-once",
+      "passed": true
+    },
+    {
+      "name": "parity-post-during-exclusion-belongs-to-next-service",
+      "passed": true
+    },
+    {
+      "name": "parity-post-after-consume-is-not-erased",
+      "passed": true
+    },
+    {
+      "name": "two-delayed-transitions-coalesce-to-even-parity",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 29,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8468 lines, work time: 0.028 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "docs/01-ZX-UX-ARCHITECTURE-REV12.md": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+    "v1/build/kernel.bin": "a76d767c61ea55446ad173b558acb4ccde8f43fdf95d7bc2826fbdd59054a76d",
+    "v1/src/kernel/console.asm": "7e1bfdbe5dc4840b43465687398577a3089c3da705bf1183666647b5cf780de6",
+    "v1/src/kernel/im2.asm": "30feb36567a58d4ec5639fefaade95f4f57f14f4dd9d9cd8591bc5873fd30f1e",
+    "v1/src/kernel/interrupt.asm": "1287064ad6602130944b3a41af021400515bc77fe7a4ecfa15b1a149b8024129",
+    "v1/src/kernel/syscall.asm": "b3c2584478f6cf42cbe7a075b57cd9f0cd9a86921596ff702ba713fd89956795",
+    "v1/tools-host/test-driver/phase1_ticks.py": "8e502242b7dce8e7bb8b1ad614c2f753dc46db1bc037930d79bbf812717c5470"
+  },
+  "prerequisites": {
+    "P1.12": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "c63456a2f5e801de3a88f67a08a4efb369dce839",
+  "status": "PASS",
+  "step": "P1.13",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
