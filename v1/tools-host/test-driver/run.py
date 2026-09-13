@@ -50,6 +50,7 @@ import phase1_alt
 import phase1_keyboard
 import phase1_cursor
 import phase1_stack
+import phase1_getkey
 from driver_core import (
     DriverError,
     find_root,
@@ -139,6 +140,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase1_cursor.dispatch(root, action, step, **kwargs)
     if step == "P1.33":
         return phase1_stack.dispatch(root, action, step, **kwargs)
+    if step == "P1.34":
+        return phase1_getkey.dispatch(root, action, step, **kwargs)
     if step.startswith("P1."):
         return phase1.dispatch(root, action, step, **kwargs)
     raise DriverError(f"step is not registered with the deterministic test driver: {step}")

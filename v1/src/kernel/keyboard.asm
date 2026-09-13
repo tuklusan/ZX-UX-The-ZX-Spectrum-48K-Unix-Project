@@ -20,9 +20,8 @@ KEYBOARD_STATE_END       EQU KEYBOARD_STATE_BASE+2
 
     MACRO EMIT_KEYBOARD_ROUTINES
 zx48_keyboard_init:
-    ld a,HANDLE_FREE
-    ld (tty_input_owner),a
     xor a
+    ld (tty_input_owner),a
     ld (break_pending),a
     ret
 
@@ -59,18 +58,18 @@ zx48_keyboard_none:
     scf
     ret
 
-; Owner reads block cooperatively in WAIT_INPUT until a supported key exists.
+; Only the current nonzero tty owner may read. Owner PID 0 means unowned.
+; Service deferred cursor parity at the first safe input point before either
+; delivering a key or putting the owner back to sleep.
 zx48_keyboard_getkey:
     ld a,(current_pid)
+    or a
+    jr z,zx48_keyboard_busy
     ld b,a
     ld a,(tty_input_owner)
-    cp HANDLE_FREE
-    jr z,zx48_keyboard_claim
     cp b
     jr nz,zx48_keyboard_busy
-zx48_keyboard_claim:
-    ld a,b
-    ld (tty_input_owner),a
+    call zx48_cursor_service
     call zx48_keyboard_decode
     ret nc
     ld a,(current_pid)
