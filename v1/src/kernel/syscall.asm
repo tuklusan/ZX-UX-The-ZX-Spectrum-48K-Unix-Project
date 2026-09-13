@@ -522,20 +522,11 @@ zx48_sys_time_get:
     or a
     jp z,zx48_sys_again
     di
-    ld de,(wall_seconds)
-    ld (syscall_tick_lo),de
-    ld de,(wall_seconds+2)
-    ld (syscall_tick_hi),de
-    ld de,(wall_revision)
-    ld (syscall_time_revision),de
+    ld de,(syscall_arg_hl)
+    ld hl,wall_seconds
+    ld bc,6
+    ldir
     ei
-    ld hl,(syscall_arg_hl)
-    ld de,(syscall_tick_lo)
-    call zx48_sys_put16
-    ld de,(syscall_tick_hi)
-    call zx48_sys_put16
-    ld de,(syscall_time_revision)
-    call zx48_sys_put16
     ld hl,(syscall_arg_hl)
     xor a
     ret
@@ -675,5 +666,4 @@ syscall_arg_bc: dw 0
 syscall_temp: db 0
 syscall_tick_lo: dw 0
 syscall_tick_hi: dw 0
-syscall_time_revision: dw 0
     ENDM

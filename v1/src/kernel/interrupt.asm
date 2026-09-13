@@ -25,6 +25,20 @@ wall_valid                EQU INTERRUPT_STATE_BASE+14
 INTERRUPT_STATE_END       EQU INTERRUPT_STATE_BASE+15
 
     MACRO EMIT_INTERRUPT_ROUTINE
+; Successful cold boot enters with interrupts disabled. Seed exact TIME1 state,
+; leave independent SYS_TICKS untouched, then tail into canonical IM2 setup.
+zx48_wall_boot_init:
+    di
+    ld hl,$0680
+    ld (wall_seconds),hl
+    ld hl,$1726
+    ld (wall_seconds+2),hl
+    ld hl,0
+    ld (wall_revision),hl
+    ld hl,$0100
+    ld (wall_subsecond),hl
+    jp zx48_im2_init
+
 zx48_interrupt:
     push af
     ld a,(altreg_busy)

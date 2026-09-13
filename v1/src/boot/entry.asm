@@ -40,6 +40,6 @@ zx48_boot_main_impl:
     ld a,PANIC_ALLOCATOR
     jp zx48_panic
 zx48_boot_udg_ok:
-    call zx48_im2_init
+    call zx48_wall_boot_init
     jp zx48_idle_loop
     ENDM
