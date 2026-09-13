@@ -111,10 +111,11 @@ def _contracts(root: Path) -> list[dict[str, object]]:
         {"name": "time1-atomic-six-byte-copy", "passed": all(token in time_get for token in (
             "di", "ld de,(syscall_arg_hl)", "ld hl,wall_seconds", "ld bc,6", "ldir", "ei",
         )) and "syscall_time_revision" not in time_get},
-        {"name": "architecture-epoch", "passed": all(token in architecture for token in (
-            "wall_seconds=388368000", "0x17260680", "80 06 26 17 00 00",
-            "frames 1..49 retain that second", "frame 50 produces 388368001 exactly once",
-        ))},
+        {"name": "architecture-epoch-decimal", "passed": "wall_seconds decimal 388368000" in architecture},
+        {"name": "architecture-epoch-hex", "passed": "wall_seconds hex 0x17260680" in architecture},
+        {"name": "architecture-time1-bytes", "passed": "time1 bytes 80 06 26 17 00 00" in architecture},
+        {"name": "architecture-revision-zero", "passed": "revision 0 subsecond_frames 0 valid true" in architecture},
+        {"name": "architecture-pal-50hz-clock", "passed": "clock advances one second per 50 accepted im2 frames" in architecture},
         {"name": "architecture-no-external-clock", "passed": "not recovered from any rtc, host, emulator, tape, basic, filesystem, or network clock" in architecture},
     ]
     assertions.extend((
