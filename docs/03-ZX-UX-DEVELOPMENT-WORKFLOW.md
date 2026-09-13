@@ -18,23 +18,42 @@ This document defines the mandatory development, quality, license, project-polic
 
 The order is deliberate. Disk-copy inspection comes first. License and prohibited-name enforcement follow. The programmer/author and adversarial reviewer then complete a dynamic handshake immediately before check-in. Direct check-in to `main` is the normal path; routine branch-and-merge staging is discouraged for this single-developer project. Automated runner validation follows every normal non-document-only check-in to `main`; documentation-only pushes are excluded at trigger time.
 
-## 2. Standard project quality procedure
+## 2. Standard project quality procedure — SoP Scan
 
-For every proposed delivery or check-in:
+The **SoP Scan** is the mandatory project verification gate for every proposed delivery or check-in. It verifies the exact on-disk bytes that are intended to proceed to the next project gate. A SoP Scan passes only after three consecutive complete manual scans of the unchanged final on-disk copy find no defects and no gaps.
 
-1. Work from a disk copy of the exact files proposed for check-in.
-2. Scan every proposed file line-by-line from the first line through the last line.
-3. Look for omissions, contradictions, malformed syntax, broken references, stale assumptions, unsafe behavior, incomplete error handling, and other defects relevant to the file type.
-4. If any defect is found, fix it immediately.
-5. After any fix, restart the clean-scan count at zero and begin again from the first line of the first file.
-6. Do not change any file between clean scans. Any byte change resets the clean-scan count to zero.
-7. Delivery is permitted only after three successive complete scans find zero defects.
+### 2.1 Step 1 — manual on-disk byte scan
+
+1. Work from a disk copy of the exact files proposed for delivery or check-in.
+2. Manually scan the on-disk copy from the first byte of the first file through the last byte of the last file, line-by-line where the file format is line-oriented.
+3. Look for omissions, contradictions, malformed syntax, broken references, stale assumptions, unsafe behavior, incomplete error handling, corruption, unintended changes, missing sections, inconsistencies, and any other defect or gap relevant to the file type.
+4. If any defect or gap is found, fix it immediately in the on-disk copy.
+
+### 2.2 Step 2 — mandatory restart after any defect or byte change
+
+If any defect or gap is found during any scan, the current SoP Scan sequence is invalidated. After correcting it, reset the clean-scan count to zero and start a fresh Step-1 scan from the first byte of the first file.
+
+A partially completed scan may not be resumed or counted. Any byte change made between clean scans, for any reason, also resets the clean-scan count to zero and requires a fresh Step-1 scan of the complete on-disk copy.
+
+### 2.3 Step 3 — three consecutive clean scans
+
+Delivery or check-in is permitted only after the exact same on-disk bytes pass three successive complete manual scans with:
+
+- no defects found;
+- no gaps found; and
+- no intervening byte changes.
 
 Required evidence for the active work session is:
 
 - `SCAN-1: CLEAN`
 - `SCAN-2: CLEAN`
 - `SCAN-3: CLEAN`
+
+If a defect or gap is found during any of the three scans, fix it, reset the clean-scan count to zero, and restart at Step 1.
+
+Formally:
+
+**SoP Scan PASS = three consecutive complete manual line-by-line/byte-level scans of the final on-disk copy with zero defects, zero gaps, and zero intervening modifications.**
 
 These scans apply to the exact bytes submitted to the next gate.
 
