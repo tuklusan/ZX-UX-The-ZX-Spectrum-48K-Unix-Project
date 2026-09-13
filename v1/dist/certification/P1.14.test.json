@@ -1,0 +1,133 @@
+{
+  "action": "test",
+  "architecture_sha256": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+  "assertions": [
+    {
+      "name": "rom-frames-three-byte-carry-chain-is-exact",
+      "passed": true
+    },
+    {
+      "name": "udg-bank-bootstrap-is-exact-and-pinned",
+      "passed": true
+    },
+    {
+      "name": "boot-orders-udg-before-im2-and-normal-idle",
+      "passed": true
+    },
+    {
+      "name": "pre-udg-boot-initializers-make-no-service-calls",
+      "passed": true
+    },
+    {
+      "name": "rom-variable-and-arena-constants-are-frozen",
+      "passed": true
+    },
+    {
+      "name": "pid1-ready-probe-layout-is-frozen",
+      "passed": true
+    },
+    {
+      "name": "rom-services-records-exact-p1.14-udg-pointer",
+      "passed": true
+    },
+    {
+      "name": "reject-skipped-rom-frames-carry",
+      "passed": true
+    },
+    {
+      "name": "reject-inherited-rom-udg-pointer",
+      "passed": true
+    },
+    {
+      "name": "reject-noncold-udg-allocation",
+      "passed": true
+    },
+    {
+      "name": "reject-high-kernel-udg-pointer",
+      "passed": true
+    },
+    {
+      "name": "reject-udg-free-attempt",
+      "passed": true
+    },
+    {
+      "name": "reject-udg-move-attempt",
+      "passed": true
+    },
+    {
+      "name": "reject-udg-allocation-after-pid1-ready",
+      "passed": true
+    },
+    {
+      "name": "reject-normal-rom-service-before-udg-bootstrap",
+      "passed": true
+    },
+    {
+      "name": "accepted-im2-frame-wraps-rom-frames-exactly",
+      "passed": true
+    },
+    {
+      "name": "sys-ticks-wrap-remains-independent-of-rom-frames",
+      "passed": true
+    },
+    {
+      "name": "udg-bank-runtime-pointer-is-0x6000",
+      "passed": true
+    },
+    {
+      "name": "udg-bank-is-zeroed-before-publication",
+      "passed": true
+    },
+    {
+      "name": "udg-bank-is-pinned-before-pid1-ready",
+      "passed": true
+    },
+    {
+      "name": "allocator-accounting-includes-exact-256-byte-pin",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 22,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8468 lines, work time: 0.021 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "a76d767c61ea55446ad173b558acb4ccde8f43fdf95d7bc2826fbdd59054a76d",
+    "v1/docs/rom-services.md": "3ef3d54ca3e6c38a7aa0564639ddca1c586fa62762a2bea055eae543f34e142f",
+    "v1/include/zx48ux.inc": "4c32a778091d3d7ba6fdeb28c77fe2cbe864d1f71f20a41c845019e9d5c056c1",
+    "v1/src/boot/entry.asm": "ed714e8354df6ec9d7de75f1e26141796a0d5f2036005cab3b0117c10e76dd75",
+    "v1/src/kernel/console.asm": "7e1bfdbe5dc4840b43465687398577a3089c3da705bf1183666647b5cf780de6",
+    "v1/src/kernel/errors.asm": "cb8ceea7043472803f6e7ee20bdbb8af6c2f92c0704d5c2375dffab4d8fad858",
+    "v1/src/kernel/handles.asm": "806416074556b2d87061bd21f272a77a62191090defd176c9adc58873b51a1dc",
+    "v1/src/kernel/interrupt.asm": "1287064ad6602130944b3a41af021400515bc77fe7a4ecfa15b1a149b8024129",
+    "v1/src/kernel/keyboard.asm": "9e05bf93ac08568a70df96eb0bff90d7e76eb0f86616d0adbb7fbbada80f9031",
+    "v1/src/kernel/memory.asm": "9188c5ada0cbc40e36b18313a57231df621d0e567b62ba8f7f0e1ca4e8ea26e0",
+    "v1/src/kernel/pipe.asm": "965cf89f58ff7d66870564f150b0ebdcd6a678a315daaa40b14e506926a2be04",
+    "v1/src/kernel/process.asm": "1788d6485bc126acf4278d016db2fbc3d4005efaf53440e3016ead2933df2948",
+    "v1/src/kernel/udg.asm": "b4887c85d057feede0092a649d3912c92ac0eb4393df5aef2ea5e419358fea34",
+    "v1/src/kernel/ula_io.asm": "5b7197efd57f498c9eed16b9ef841d36c88361d51c72e858de609edda1a006cb",
+    "v1/tools-host/test-driver/phase1_romvars.py": "36c4aa12b4080fabf00a817a1506fb62b25ba590d0c62cbc64539d5a6351321b"
+  },
+  "prerequisites": {
+    "P1.13": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "5f2cc59b8d52c62da5fe0ce59ac7754ef8877023",
+  "status": "PASS",
+  "step": "P1.14",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
