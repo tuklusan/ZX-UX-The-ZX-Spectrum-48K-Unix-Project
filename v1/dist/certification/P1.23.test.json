@@ -1,0 +1,136 @@
+{
+  "action": "test",
+  "architecture_sha256": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+  "assertions": [
+    {
+      "name": "bitmap-rows-0-through-22",
+      "passed": true
+    },
+    {
+      "name": "bitmap-eight-scanlines",
+      "passed": true
+    },
+    {
+      "name": "bitmap-canonical-address-helper",
+      "passed": true
+    },
+    {
+      "name": "bitmap-exact-32-byte-ldir",
+      "passed": true
+    },
+    {
+      "name": "bitmap-not-linear-6144-copy",
+      "passed": true
+    },
+    {
+      "name": "last-eight-scans-clear-32",
+      "passed": true
+    },
+    {
+      "name": "attributes-exact-23x32",
+      "passed": true
+    },
+    {
+      "name": "last-attribute-row-default-seven",
+      "passed": true
+    },
+    {
+      "name": "scroll-does-not-toggle-cursor",
+      "passed": true
+    },
+    {
+      "name": "single-production-scroll-edge",
+      "passed": true
+    },
+    {
+      "name": "printable-wrap-is-bracketed",
+      "passed": true
+    },
+    {
+      "name": "moving-control-wrap-is-bracketed",
+      "passed": true
+    },
+    {
+      "name": "architecture-scroll-contract-present",
+      "passed": true
+    },
+    {
+      "name": "linear-negative-sensitive",
+      "passed": true
+    },
+    {
+      "name": "31-byte-negative-sensitive",
+      "passed": true
+    },
+    {
+      "name": "33-byte-negative-sensitive",
+      "passed": true
+    },
+    {
+      "name": "attribute-count-negative-sensitive",
+      "passed": true
+    },
+    {
+      "name": "uncleared-last-row-negative-sensitive",
+      "passed": true
+    },
+    {
+      "name": "cursor-copy-negative-sensitive",
+      "passed": true
+    },
+    {
+      "name": "nested-redraw-negative-sensitive",
+      "passed": true
+    },
+    {
+      "name": "golden-24-row-scroll-byte-exact",
+      "passed": true
+    },
+    {
+      "name": "display-guards-survive",
+      "passed": true
+    },
+    {
+      "name": "hidden-cursor-remains-hidden",
+      "passed": true
+    },
+    {
+      "name": "unbracketed-visible-cursor-detected",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 29,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nkernel.asm(87): warning[shortblock]: init data for block truncated to length: 0\nPass 3 complete\nErrors: 0, warnings: 1, compiled: 8487 lines, work time: 0.028 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "docs/01-ZX-UX-ARCHITECTURE-REV12.md": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+    "v1/build/kernel.bin": "9f989946cf9f6c89d92840815b3b7d1434875c731186f212a551b48683d369ca",
+    "v1/src/kernel/console.asm": "998f7cc706d1669460320a9fbb61d1823bf5f4c8f746e68307f82396aa0e2369",
+    "v1/src/kernel/cursor.asm": "77e70f9003f7cf7eef518931d4563757ac4ac1b67643c00f8b3acd9ec28f4732",
+    "v1/src/kernel/tty32.asm": "1c1b7fac888afbee7ed7413ae3962682be300d0cbade2fedeb98ab6c010c64e5",
+    "v1/tools-host/test-driver/phase1_scroll.py": "1e85bf2e49ef57fbbb16cc5601cbfa107ab724e75cec68e10451eabe72b855a2"
+  },
+  "prerequisites": {
+    "P1.22": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "e9e0d175549d6ae1552003101534e3d88b87f103",
+  "status": "PASS",
+  "step": "P1.23",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
