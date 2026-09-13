@@ -113,7 +113,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
         {"name": "private-logical-phase-state", "passed": "cursor_phase             equ cursor_state_base+0" in cursor},
         {"name": "private-physical-drawn-state", "passed": "tty_cursor_visible" in console},
         {"name": "private-mutation-depth-state", "passed": "screen_mutation_depth    equ cursor_state_base+1" in cursor},
-        {"name": "cold-defaults-phase-divider-parity-depth", "passed": all(token in init for token in ("ld hl,1", "ld (cursor_phase),hl", "ld (tty_cursor_shape),hl", "ld (tty_row),hl", "ld (cursor_service_parity),hl", "ld (cursor_blink_divider),a", "ld a,tty_mode_64", "ld (tty_mode),a"))},
+        {"name": "cold-defaults-phase-divider-parity-depth", "passed": all(token in init for token in ("ld hl,1", "ld (cursor_phase),hl", "ld (tty_cursor_shape),hl", "ld (tty_row),hl", "ld (cursor_service_parity),a", "ld (tty_wrap_pending),a", "ld (cursor_blink_divider),a", "ld a,tty_mode_64", "ld (tty_mode),a"))},
         {"name": "outer-begin-hides-only-drawn-cursor", "passed": "inc (hl)" in screen_begin and "jr nz,zx48_screen_begin_done" in screen_begin and "tty_cursor_visible" in screen_begin and "call zx48_cursor_xor" in screen_begin},
         {"name": "depth-wrap-panics", "passed": "jr z,zx48_cursor_depth_panic" in screen_begin and "panic_scheduler" in cursor},
         {"name": "strict-end-underflow-panics", "passed": "jr z,zx48_cursor_depth_panic" in screen_end and "dec (hl)" in screen_end},
