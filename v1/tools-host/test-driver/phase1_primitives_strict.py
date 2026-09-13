@@ -16,6 +16,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Callable
 
+from driver_core import DriverError
 from fuse_harness import FAIL_PC, PASS_PC, run_sna
 import phase1
 import phase1_primitives as base
@@ -95,6 +96,48 @@ def _strict_interrupt_fixture(root: Path, labels: dict[str, int], kernel: bytes)
     run_sna(root, bytes(code), patch=base._patch(kernel, extras), timeout=20.0)
 
 
+def _base_dispatch_with_named_fixtures(
+    root: Path,
+    action: str,
+    step: str,
+    *,
+    sha256_file: Callable[[Path], str],
+    run_command: Callable[..., Any],
+    require_project_tool: Callable[[Path, str | Path], Path],
+):
+    """Run the base suite while preserving the exact failing fixture in diagnostics."""
+    fixture_names = iter((
+        "copy-move",
+        "search-single-step",
+        "strings",
+        "udg",
+        "pipe-ring-wrap",
+        "interrupt-restart",
+        "wrong-overlap-negative",
+    ))
+    original_run_sna = base.run_sna
+
+    def named_run_sna(*args: Any, **kwargs: Any):  # noqa: ANN202
+        name = next(fixture_names, "unexpected-extra")
+        try:
+            return original_run_sna(*args, **kwargs)
+        except DriverError as exc:
+            raise base.PrimitiveContractError(f"P1.40 {name} fixture failed: {exc}") from exc
+
+    base.run_sna = named_run_sna
+    try:
+        return base.dispatch(
+            root,
+            action,
+            step,
+            sha256_file=sha256_file,
+            run_command=run_command,
+            require_project_tool=require_project_tool,
+        )
+    finally:
+        base.run_sna = original_run_sna
+
+
 def dispatch(
     root: Path,
     action: str,
@@ -104,7 +147,7 @@ def dispatch(
     run_command: Callable[..., Any],
     require_project_tool: Callable[[Path, str | Path], Path],
 ):
-    commands, hashes, assertions = base.dispatch(
+    commands, hashes, assertions = _base_dispatch_with_named_fixtures(
         root,
         action,
         step,
@@ -125,7 +168,10 @@ def dispatch(
             "zx48_interrupt",
             "kernel_ticks",
         ))
-        _strict_interrupt_fixture(root, labels, kernel_path.read_bytes())
+        try:
+            _strict_interrupt_fixture(root, labels, kernel_path.read_bytes())
+        except DriverError as exc:
+            raise base.PrimitiveContractError(f"P1.40 strict-mid-ldir fixture failed: {exc}") from exc
         assertions.append({
             "name": "accepted-im2-interrupt-observed-with-mid-ldir-bc",
             "passed": True,
