@@ -54,6 +54,7 @@ import phase1_getkey
 import phase1_putchar
 import phase1_conwrite
 import phase1_clear
+import phase1_getpos
 from driver_core import (
     DriverError,
     find_root,
@@ -151,6 +152,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase1_conwrite.dispatch(root, action, step, **kwargs)
     if step == "P1.37":
         return phase1_clear.dispatch(root, action, step, **kwargs)
+    if step == "P1.38":
+        return phase1_getpos.dispatch(root, action, step, **kwargs)
     if step.startswith("P1."):
         return phase1.dispatch(root, action, step, **kwargs)
     raise DriverError(f"step is not registered with the deterministic test driver: {step}")
