@@ -50,14 +50,8 @@ def _write_diagnostic(records: list[dict[str, object]], *, status: str, failure:
     )
 
 
-# Each entry is admitted only after its implementation and deterministic driver
-# have passed the normal check-in review. The workflow executes every admitted
-# step on every relevant push, so later changes cannot silently regress an
-# earlier Phase-1 correction gate.
 CERTIFIED_STEPS = (
-    # REV12 rebaseline requires the already-admitted core to be replayed before
-    # any later Phase-1 certification can provide regression credit.
-    *(f"P1.{number:02d}" for number in range(1, 15)),
+    *(f"P1.{number:02d}" for number in range(1, 16)),
     "P1.28",
     "P1.29",
     "P1.30",
@@ -66,9 +60,12 @@ CERTIFIED_STEPS = (
     "P1.33",
 )
 
-# Candidate steps execute in CI for diagnostic/admission proof but are not
-# admitted into CERTIFIED_STEPS until their revised-plan gate has passed.
-CANDIDATE_STEPS: tuple[str, ...] = ("P1.15",)
+CANDIDATE_STEPS: tuple[str, ...] = (
+    "P1.16",
+    "P1.17",
+    "P1.18",
+    "P1.19",
+)
 
 
 def main() -> int:
