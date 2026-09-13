@@ -1,3 +1,15 @@
+<!-- Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs. -->
+<!-- Proprietary rights reserved except as expressly licensed herein. -->
+<!-- -->
+<!-- ZX-UX Sinclair ZX Spectrum Unix -->
+<!-- This file is governed by the SANYALnet Labs Non-Commercial License in the -->
+<!-- root LICENSE file. Non-Commercial use is permitted; Commercial Use and use -->
+<!-- for AI/ML model training are prohibited unless separately authorized. -->
+<!-- -->
+<!-- Attribution is required: "Based on original work by Supratim Sanyal of -->
+<!-- SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination, -->
+<!-- patent, trademark, and governing-law provisions. -->
+
 # F4X8 Phase-1 font resource contract
 
 The Phase-1 tty64 font resource is an exact 392-byte F4X8 payload. Bytes 0 through 7 are the header: ASCII `F4X8` (`46 34 58 38`), version `01`, first target code `20`, glyph count `60` (96 glyphs), and flags `00`. Bytes 8 through 391 are exactly 384 packed glyph bytes.
