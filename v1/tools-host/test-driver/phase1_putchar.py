@@ -217,7 +217,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
         )
     )
     return [
-        {"name": "canonical-putchar-syscall-number", "passed": "sys_con_putchar           equ $31" in include},
+        {"name": "canonical-putchar-syscall-number", "passed": any(line.split() == ["sys_con_putchar", "equ", "$31"] for line in include.splitlines())},
         {"name": "putchar-rejects-nonzero-h-before-output", "passed": syscall_exact},
         {"name": "printable-byte-range-is-20-through-7f", "passed": "cp $20" in console and printable_exact},
         {"name": "printable-resolves-deferred-wrap-before-draw", "passed": printable_exact},
