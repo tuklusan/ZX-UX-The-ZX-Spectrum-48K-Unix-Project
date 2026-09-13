@@ -83,8 +83,6 @@ zx48_keyboard_wake_input:
     ld a,(tty_input_owner)
     or a
     ret z
-    cp HANDLE_FREE
-    ret z
     call zx48_process_live_lookup
     ret c
     ld a,(ix+PROC_STATE)
@@ -107,14 +105,14 @@ zx48_keyboard_busy:
     scf
     ret
 
-; Inputs none. Outputs owner released only by current owner.
+; Inputs none. Release only the current owner; PID 0 is the sole unowned value.
 zx48_keyboard_release:
     ld a,(current_pid)
     ld b,a
     ld a,(tty_input_owner)
     cp b
     ret nz
-    ld a,HANDLE_FREE
+    xor a
     ld (tty_input_owner),a
     ret
     ENDM

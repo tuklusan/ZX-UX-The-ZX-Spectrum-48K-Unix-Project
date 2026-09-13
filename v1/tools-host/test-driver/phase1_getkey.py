@@ -105,6 +105,8 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
     sys_getkey = _block(syscall, "zx48_sys_con_getkey:", "zx48_sys_con_putchar:")
     keyboard_init = _block(keyboard, "zx48_keyboard_init:", "zx48_keyboard_decode:")
     keyboard_getkey = _block(keyboard, "zx48_keyboard_getkey:", "zx48_keyboard_wake_input:")
+    keyboard_wake = _block(keyboard, "zx48_keyboard_wake_input:", "zx48_keyboard_busy:")
+    keyboard_release = _block(keyboard, "zx48_keyboard_release:", "endm")
     cursor_service = _block(cursor, "zx48_cursor_service:", "zx48_cursor_blink:")
 
     result_exact = _ordered(
@@ -144,6 +146,19 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
             "jp zx48_schedule",
         ),
     )
+    release_exact = _ordered(
+        keyboard_release,
+        (
+            "ld a,(current_pid)",
+            "ld b,a",
+            "ld a,(tty_input_owner)",
+            "cp b",
+            "ret nz",
+            "xor a",
+            "ld (tty_input_owner),a",
+            "ret",
+        ),
+    )
     return [
         {"name": "canonical-getkey-syscall-number", "passed": "sys_con_getkey           equ $30" in include},
         {"name": "getkey-has-no-argument-dependency", "passed": "syscall_arg_" not in sys_getkey},
@@ -151,6 +166,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
         {"name": "tty-owner-zero-is-unowned-at-init", "passed": _ordered(keyboard_init, ("xor a", "ld (tty_input_owner),a", "ld (break_pending),a", "ret"))},
         {"name": "nonzero-current-owner-is-required", "passed": owner_exact and "handle_free" not in keyboard_getkey},
         {"name": "getkey-never-auto-claims-owner", "passed": "ld (tty_input_owner),a" not in keyboard_getkey},
+        {"name": "owner-zero-is-single-unowned-representation", "passed": release_exact and "handle_free" not in keyboard_wake and "handle_free" not in keyboard_release},
         {"name": "safe-cursor-service-precedes-decode", "passed": owner_exact},
         {"name": "no-key-reblocks-cooperatively-after-service", "passed": wait_exact},
         {"name": "safe-cursor-service-does-not-write-logical-position", "passed": all(token not in cursor_service for token in ("ld (tty_row)", "ld (tty_col)", "ld (tty_wrap_pending)"))},
@@ -252,7 +268,8 @@ def _ownership_negative_fixture(root: Path, labels: dict[str, int], kernel_bytes
     code += _expect_iy_anchor()
 
     code += _store_byte(labels["current_pid"], 1)
-    code += _store_byte(labels["tty_input_owner"], 0)
+    code += _call(labels["zx48_keyboard_release"])
+    code += _expect_byte(labels["tty_input_owner"], 0)
     code += phase1._ld_iy(0x3333)
     code += bytes((0x3E, SYS_CON_GETKEY)) + _call(0xE000)
     code += _jp_nc(FAIL_PC) + bytes((0xFE, E_BUSY)) + _jp_nz(FAIL_PC)
@@ -319,6 +336,7 @@ def dispatch(
             "zx48_process_init",
             "zx48_process_prepare_pid1",
             "zx48_keyboard_decode",
+            "zx48_keyboard_release",
             "zx48_schedule",
             "process_table",
             "current_pid",
@@ -341,7 +359,7 @@ def dispatch(
         assertions.extend(
             [
                 {"name": "owner-getkey-exact-byte-and-iy-runtime", "passed": True},
-                {"name": "background-and-unowned-read-rejected-runtime", "passed": True},
+                {"name": "background-release-and-unowned-read-rejected-runtime", "passed": True},
                 {"name": "wake-boundary-parity-consumed-with-position-exact", "passed": True},
             ]
         )
