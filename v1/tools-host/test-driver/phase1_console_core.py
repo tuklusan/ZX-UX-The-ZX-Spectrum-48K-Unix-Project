@@ -64,17 +64,17 @@ def _putchar(address: int, value: int) -> bytes:
 
 def _source_contract(root: Path) -> list[dict[str, object]]:
     console = (root / "v1/src/kernel/console.asm").read_text(encoding="utf-8").lower()
+    control_block = console[console.index("zx48_console_control_begin:"):console.index("; hl=buffer")]
     return [
         {"name": "private-wrap-pending-state-exists", "passed": "tty_wrap_pending" in console},
         {"name": "cold-init-clears-pending", "passed": "ld (tty_wrap_pending),a" in console[console.index("zx48_console_init:"):console.index("zx48_console_clear:")]},
         {"name": "printable-preserved-before-cursor-work", "passed": "zx48_console_print:\n    push af\n    call zx48_cursor_hide" in console},
-        {"name": "pending-wrap-is-resolved-before-draw", "passed": all(token in console for token in ("ld a,(tty_wrap_pending)", "zx48_console_print_wrap_down:", "zx48_console_print_draw:"))},
-        {"name": "last-real-cell-sets-pending", "passed": "zx48_console_set_pending:" in console and "ld (tty_wrap_pending),a" in console},
-        {"name": "tty32-last-real-column-is-31", "passed": "cp 31\n    jr c,zx48_console_advance_one" in console},
-        {"name": "tty64-last-real-column-is-63", "passed": "cp 63\n    jr c,zx48_console_advance_one" in console},
-        {"name": "moving-controls-clear-pending", "passed": console.count("ld (tty_wrap_pending),a") >= 8},
+        {"name": "pending-wrap-is-resolved-before-draw", "passed": "call nz,zx48_console_wrap_now" in console and console.index("call nz,zx48_console_wrap_now") < console.index("call zx48_tty32_draw_char")},
+        {"name": "last-real-cell-sets-pending", "passed": "zx48_console_set_pending:" in console and "ld (tty_wrap_pending),a" in console[console.index("zx48_console_set_pending:"):console.index("zx48_console_wrap_now:")]},
+        {"name": "mode-value-derives-last-real-column", "passed": "ld a,(tty_mode)\n    dec a\n    ld b,a\n    ld a,(tty_col)\n    cp b" in console},
+        {"name": "moving-controls-clear-pending", "passed": "ld (tty_wrap_pending),a" in control_block and all(f"call zx48_console_control_begin" in console[console.index(label):console.index(label) + 100] for label in ("zx48_console_lf:", "zx48_console_cr:", "zx48_console_bs:", "zx48_console_tab:"))},
         {"name": "setpos-validates-before-mutation", "passed": console.index("zx48_console_set_commit:") > console.index("cp 64") and "ld (tty_wrap_pending),a" in console[console.index("zx48_console_set_commit:"):console.index("zx48_console_bad:")]},
-        {"name": "no-persistent-phantom-coordinate", "passed": "ld (tty_col),a\n    ld a,(tty_row)\n    inc a" not in console},
+        {"name": "no-persistent-phantom-coordinate", "passed": "cp 32\n    jr c,zx48_console_store_col" not in console and "cp 64\n    jr c,zx48_console_store_col" not in console},
     ]
 
 
@@ -91,8 +91,6 @@ def _state_matrix(root: Path, labels: dict[str, int], kernel: bytes) -> None:
     code += _call(init)
     code += _store_byte(mode, 32) + _store_byte(shape, 0)
 
-    # Interior/right edge: A advances to final cell, B fills it and defers,
-    # C resolves the pending wrap before drawing on the next row.
     code += _store_byte(row, 0) + _store_byte(col, 30) + _store_byte(pending, 0)
     code += _putchar(putchar, 0x41)
     code += _expect_byte(row, 0) + _expect_byte(col, 31) + _expect_byte(pending, 0)
@@ -101,14 +99,12 @@ def _state_matrix(root: Path, labels: dict[str, int], kernel: bytes) -> None:
     code += _putchar(putchar, 0x43)
     code += _expect_byte(row, 1) + _expect_byte(col, 1) + _expect_byte(pending, 0)
 
-    # Bottom-right write itself must not scroll; the following printable does.
     code += _store_byte(row, 23) + _store_byte(col, 31) + _store_byte(pending, 0)
     code += _putchar(putchar, 0x44)
     code += _expect_byte(row, 23) + _expect_byte(col, 31) + _expect_byte(pending, 1)
     code += _putchar(putchar, 0x45)
     code += _expect_byte(row, 23) + _expect_byte(col, 1) + _expect_byte(pending, 0)
 
-    # Every moving control starts from the real pending final cell.
     for control, expected_row, expected_col in (
         (0x0D, 5, 0),
         (0x0A, 6, 0),
@@ -119,7 +115,6 @@ def _state_matrix(root: Path, labels: dict[str, int], kernel: bytes) -> None:
         code += _putchar(putchar, control)
         code += _expect_byte(row, expected_row) + _expect_byte(col, expected_col) + _expect_byte(pending, 0)
 
-    # FF clears/home and also clears pending.
     code += _store_byte(row, 5) + _store_byte(col, 31) + _store_byte(pending, 1)
     code += _putchar(putchar, 0x0C)
     code += _expect_byte(row, 0) + _expect_byte(col, 0) + _expect_byte(pending, 0)
@@ -138,10 +133,10 @@ def _setpos_matrix(root: Path, labels: dict[str, int], kernel: bytes) -> None:
     code = bytearray(b"\xF3" + phase1._ld_sp(phase1.USER_STACK))
     code += _call(init) + _store_byte(mode, 32) + _store_byte(shape, 0)
     code += _store_byte(pending, 1)
-    code += b"\x21\x1F\x17" + _call(setpos) + _jp_c(FAIL_PC)  # H=23,L=31
+    code += b"\x21\x1F\x17" + _call(setpos) + _jp_c(FAIL_PC)
     code += _expect_byte(row, 23) + _expect_byte(col, 31) + _expect_byte(pending, 0)
-    code += b"\x21\x00\x18" + _call(setpos)                   # H=24,L=0 invalid
-    code += b"\xD2" + _word(FAIL_PC)                           # JP NC,FAIL
+    code += b"\x21\x00\x18" + _call(setpos)
+    code += b"\xD2" + _word(FAIL_PC)
     code += _expect_byte(row, 23) + _expect_byte(col, 31) + _expect_byte(pending, 0)
     code += _jp(PASS_PC)
     run_sna(root, bytes(code), patch=phase1._kernel_patch(kernel))
