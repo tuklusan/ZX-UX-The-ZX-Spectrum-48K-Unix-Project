@@ -58,7 +58,7 @@ zx48_udg_define:
     ex de,hl
     ld hl,(udg_io_ptr)
     ld bc,8
-    ldir
+    call zx48_memcpy
     xor a
     ret
 
@@ -71,7 +71,7 @@ zx48_udg_get:
     ret c
     ld de,(udg_io_ptr)
     ld bc,8
-    ldir
+    call zx48_memcpy
     xor a
     ret
 

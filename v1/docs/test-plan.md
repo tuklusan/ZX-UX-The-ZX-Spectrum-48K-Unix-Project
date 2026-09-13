@@ -12,7 +12,7 @@
 
 # ZX-UX Version-1 Test Plan
 
-This plan defines the deterministic host-side test contract. Revision 11 remains the architecture authority.
+This plan defines the deterministic host-side test contract. Revision 12 remains the architecture authority.
 
 ## Root and tool resolution
 
@@ -77,5 +77,19 @@ A normal implementation step is complete only after the intended architecture-de
 ## Phase boundary rule
 
 A phase aggregate may pass only when every numbered step in that phase has passing evidence and the phase-specific integration tests pass. A later phase never retroactively waives an earlier failed assertion. Once Phase-0 durable evidence is activated on reachable `main`, deletion or rewriting of any required record is a certification failure.
+
+## P1.40 canonical Z80 memory/string primitives
+
+P1.40 freezes `v1/src/kernel/z80_primitives.asm` as the single tuned owner of the Z80 block transfer/search families used by Phase-1-live copy/search consumers. Static certification requires direct consideration of `LDI`/`LDIR`, `LDD`/`LDDR`, `CPI`/`CPIR`, and `CPD`/`CPDR`, explicit forward/backward overlap handling for memmove, and an interruptibility contract that forbids callers from treating repeated block instructions as indivisible.
+
+The Phase-1-live ownership audit covers the consumers that actually exist in the resident Phase-1 kernel. Pipe ring-buffer traffic copies contiguous chunks through `zx48_memcpy`; UDG define/get copies use the same canonical owner. Table and arena initialization sequences that seed one byte and propagate it with `LDIR` are classified as fills rather than independent memcpy-like consumers. Loader/editor/C48/compiler consumer classes are re-audited when those components become live in later phases.
+
+No measured small-copy exception is retained by Phase 1. Any future covered fixed-size copy that bypasses the canonical primitive must carry byte-count, byte-size comparison, cycle comparison, and a non-empty rationale in the certification manifest; a missing measurement is a deterministic failure.
+
+Emulator vectors cover memcpy, both overlapping memmove directions, forward/reverse searches, all four single-step block forms, `strlen`, `strcmp`, UDG round-trip copying, and a pipe write/read sequence that crosses the ring boundary. Guard bytes before and after tested regions must remain exact.
+
+Interrupt/restart evidence uses the real ZX-UX IM2 path. The fixture enables IM2 and interrupts around a 4096-byte canonical `zx48_memcpy`; the repeated `LDIR` portion alone exceeds one 50 Hz PAL frame, so an accepted maskable interrupt must occur between iterations. The test requires `kernel_ticks` to advance, the full destination to remain byte-identical to the source, and all guards to remain intact after completion.
+
+Negative oracles deliberately use the wrong overlap direction, remove one required block family, inject an independent covered UDG copy, and declare an unmeasured small-copy exception. Each defect must be detected deterministically.
 
 Implementation is authorized through Phase 10. Phase 11 is not admitted until the project owner explicitly approves the compiler phase.

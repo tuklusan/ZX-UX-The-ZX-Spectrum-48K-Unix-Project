@@ -271,23 +271,35 @@ zx48_pipe_read_copy_loop:
     or (ix+PIPE_COUNT_O+1)
     jr z,zx48_pipe_read_done
 
+    ; Copy one contiguous ring segment through the canonical primitive.
+    ld c,(ix+PIPE_COUNT_O)
+    ld b,(ix+PIPE_COUNT_O+1)
+    ld hl,(pipe_io_request)
+    or a
+    sbc hl,bc
+    jr nc,zx48_pipe_read_candidate
+    ld bc,(pipe_io_request)
+zx48_pipe_read_candidate:
+    ld a,(ix+PIPE_RPOS_O)
+    call zx48_pipe_chunk_limit
+
     ld l,(ix+PIPE_PTR_O)
     ld h,(ix+PIPE_PTR_O+1)
     ld e,(ix+PIPE_RPOS_O)
     ld d,0
     add hl,de
-    ld a,(hl)
     ld de,(pipe_io_ptr)
-    ld (de),a
-    inc de
+    push bc
+    call zx48_memcpy
     ld (pipe_io_ptr),de
+    pop bc
 
     ld a,(ix+PIPE_RPOS_O)
-    inc a
-    ld c,a
+    add a,c
+    ld e,a
     ld a,(ix+PIPE_CAPACITY_O+1)
     or a
-    ld a,c
+    ld a,e
     jr nz,zx48_pipe_read_rpos_ok
     and $7f
 zx48_pipe_read_rpos_ok:
@@ -295,18 +307,22 @@ zx48_pipe_read_rpos_ok:
 
     ld l,(ix+PIPE_COUNT_O)
     ld h,(ix+PIPE_COUNT_O+1)
-    dec hl
+    or a
+    sbc hl,bc
     ld (ix+PIPE_COUNT_O),l
     ld (ix+PIPE_COUNT_O+1),h
 
     ld hl,(pipe_io_request)
-    dec hl
+    or a
+    sbc hl,bc
     ld (pipe_io_request),hl
+    push hl
+    ld hl,(pipe_io_done)
+    add hl,bc
+    ld (pipe_io_done),hl
+    pop hl
     ld a,h
     or l
-    ld hl,(pipe_io_done)
-    inc hl
-    ld (pipe_io_done),hl
     jr z,zx48_pipe_read_done
     jr zx48_pipe_read_copy_loop
 zx48_pipe_read_done:
@@ -353,31 +369,45 @@ zx48_pipe_write_retry:
     jr zx48_pipe_write_retry
 zx48_pipe_write_copy:
 zx48_pipe_write_copy_loop:
-    ld l,(ix+PIPE_COUNT_O)
-    ld h,(ix+PIPE_COUNT_O+1)
-    ld e,(ix+PIPE_CAPACITY_O)
-    ld d,(ix+PIPE_CAPACITY_O+1)
+    ; free = capacity-count, then limit by request and contiguous ring tail.
+    ld l,(ix+PIPE_CAPACITY_O)
+    ld h,(ix+PIPE_CAPACITY_O+1)
+    ld e,(ix+PIPE_COUNT_O)
+    ld d,(ix+PIPE_COUNT_O+1)
     or a
     sbc hl,de
     jr z,zx48_pipe_write_done
+    ld bc,(pipe_io_request)
+    or a
+    sbc hl,bc
+    jr nc,zx48_pipe_write_candidate
+    add hl,bc
+    ld b,h
+    ld c,l
+zx48_pipe_write_candidate:
+    ld a,(ix+PIPE_WPOS_O)
+    call zx48_pipe_chunk_limit
 
     ld hl,(pipe_io_ptr)
-    ld a,(hl)
-    inc hl
-    ld (pipe_io_ptr),hl
+    push hl
     ld l,(ix+PIPE_PTR_O)
     ld h,(ix+PIPE_PTR_O+1)
     ld e,(ix+PIPE_WPOS_O)
     ld d,0
     add hl,de
-    ld (hl),a
+    ex de,hl
+    pop hl
+    push bc
+    call zx48_memcpy
+    ld (pipe_io_ptr),hl
+    pop bc
 
     ld a,(ix+PIPE_WPOS_O)
-    inc a
-    ld c,a
+    add a,c
+    ld e,a
     ld a,(ix+PIPE_CAPACITY_O+1)
     or a
-    ld a,c
+    ld a,e
     jr nz,zx48_pipe_write_wpos_ok
     and $7f
 zx48_pipe_write_wpos_ok:
@@ -385,18 +415,21 @@ zx48_pipe_write_wpos_ok:
 
     ld l,(ix+PIPE_COUNT_O)
     ld h,(ix+PIPE_COUNT_O+1)
-    inc hl
+    add hl,bc
     ld (ix+PIPE_COUNT_O),l
     ld (ix+PIPE_COUNT_O+1),h
 
     ld hl,(pipe_io_request)
-    dec hl
+    or a
+    sbc hl,bc
     ld (pipe_io_request),hl
+    push hl
+    ld hl,(pipe_io_done)
+    add hl,bc
+    ld (pipe_io_done),hl
+    pop hl
     ld a,h
     or l
-    ld hl,(pipe_io_done)
-    inc hl
-    ld (pipe_io_done),hl
     jr z,zx48_pipe_write_done
     jr zx48_pipe_write_copy_loop
 zx48_pipe_write_done:
@@ -404,6 +437,27 @@ zx48_pipe_write_done:
     ld c,a
     call zx48_pipe_wake_readers
     jp zx48_pipe_io_success
+
+; A=ring position, BC=candidate. Return BC limited to bytes before ring wrap.
+zx48_pipe_chunk_limit:
+    ld d,b
+    ld e,c
+    ld l,(ix+PIPE_CAPACITY_O)
+    ld h,(ix+PIPE_CAPACITY_O+1)
+    ld c,a
+    ld b,0
+    or a
+    sbc hl,bc
+    ld b,d
+    ld c,e
+    push hl
+    or a
+    sbc hl,bc
+    pop hl
+    ret nc
+    ld b,h
+    ld c,l
+    ret
 
 zx48_pipe_broken:
     ld a,E_PIPE
