@@ -57,8 +57,7 @@ def _write_diagnostic(records: list[dict[str, object]], *, status: str, failure:
 CERTIFIED_STEPS = (
     # REV12 rebaseline requires the already-admitted core to be replayed before
     # any later Phase-1 certification can provide regression credit.
-    *(f"P1.{number:02d}" for number in range(1, 13)),
-    "P1.13",
+    *(f"P1.{number:02d}" for number in range(1, 15)),
     "P1.28",
     "P1.29",
     "P1.30",
@@ -69,7 +68,7 @@ CERTIFIED_STEPS = (
 
 # Candidate steps execute in CI for diagnostic/admission proof but are not
 # admitted into CERTIFIED_STEPS until their revised-plan gate has passed.
-CANDIDATE_STEPS: tuple[str, ...] = ("P1.14",)
+CANDIDATE_STEPS: tuple[str, ...] = ()
 
 
 def main() -> int:
