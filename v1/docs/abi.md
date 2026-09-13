@@ -12,7 +12,7 @@
 
 # ZX-UX Version-1 ABI
 
-Revision 11 is authoritative. This document is the executable-development summary
+Revision 12 is authoritative. This document is the executable-development summary
 for the target assembler sources.
 
 ## Address-space contract
@@ -61,6 +61,26 @@ Version 1 uses these syscall ranges:
 - `68-6E`: serialized ROM floating-point and ROM information.
 
 Number gaps are reserved expansion space.
+
+## Time ABI
+
+TIME1 is exactly six little-endian bytes: u32 seconds followed by u16 revision.
+The seconds field is Unix-style seconds from `1970-01-01 00:00:00` and the valid
+version-1 range is calendar years 1970 through 2099. Normal successful cold boot
+starts at seconds `388368000` (`0x17260680`) with revision 0, so the first TIME1
+record is exactly `80 06 26 17 00 00`.
+
+`SYS_TIME_GET` takes HL as a writable six-byte TIME1 pointer. It returns `E_AGAIN`
+only while the explicit wall-valid state is false; normal successful boot is already
+valid. A successful get copies one atomic snapshot of seconds and revision and does
+not derive either field from `SYS_TICKS`, ROM `FRAMES`, or an external clock.
+
+`SYS_TIME_SET` is restricted to PID1. HL points to a little-endian u32 seconds value.
+The call rejects values outside the 1970 through 2099 range before changing wall
+state. Each successful set atomically marks the wall clock valid, increments revision
+modulo 65536 even when the seconds value is unchanged, and resets the private
+subsecond frame counter to zero. The first successful set after cold boot therefore
+produces revision 1. There is no timezone offset or hidden host/emulator time source.
 
 ## Error values
 

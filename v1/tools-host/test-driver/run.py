@@ -45,6 +45,7 @@ import phase1_scroll
 import phase1_cursor_core
 import phase1_ula
 import phase1_wallclock
+import phase1_time
 import phase1_alt
 import phase1_keyboard
 import phase1_cursor
@@ -128,6 +129,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase1_ula.dispatch(root, action, step, **kwargs)
     if step == "P1.26":
         return phase1_wallclock.dispatch(root, action, step, **kwargs)
+    if step == "P1.27":
+        return phase1_time.dispatch(root, action, step, **kwargs)
     if step == "P1.30":
         return phase1_alt.dispatch(root, action, step, **kwargs)
     if step == "P1.31":
