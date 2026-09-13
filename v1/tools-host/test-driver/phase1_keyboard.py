@@ -22,7 +22,7 @@ import phase1
 
 KEY_VALUE_ADDR = 0xA100
 CAPS_ROW_PATTERN = bytes((0x01, 0xFE, 0xFE, 0xED, 0x78, 0xCB, 0x47))
-SPACE_ROW_PATTERN = bytes((0x01, 0xFE, 0x7F, 0xED, 0x78, 0xCB, 0x47))
+SPACE_ROW_PATTERN = bytes((0x01, 0xFE, 0x7F, 0xED, 0x78, 0x0F))
 
 
 class KeyboardMatrixError(DriverError):
@@ -113,7 +113,13 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
     return [
         {"name": "caps-row-16bit-bc", "passed": "ld bc,$fefe" in interrupt_lower and "in a,(c)" in interrupt_lower},
         {"name": "space-row-16bit-bc", "passed": "ld bc,$7ffe" in interrupt_lower and interrupt_lower.count("in a,(c)") >= 2},
-        {"name": "break-active-low-bit0", "passed": interrupt_lower.count("bit 0,a") >= 2},
+        {"name": "break-active-low-bit0", "passed": all(
+            token in interrupt_lower
+            for token in (
+                "ld bc,$fefe\n    in a,(c)\n    bit 0,a\n    jr nz,zx48_interrupt_done",
+                "ld bc,$7ffe\n    in a,(c)\n    rrca\n    jr c,zx48_interrupt_done",
+            )
+        )},
         {"name": "im2-does-not-call-rom-keyboard", "passed": "call zx48_rom_key" not in interrupt_lower and "call rom_key" not in interrupt_lower},
         {"name": "im2-only-publishes-break-flag", "passed": "ld (break_pending),a" in interrupt_lower and "zx48_keyboard_decode" not in interrupt_lower},
         {"name": "foreground-rom-decode", "passed": all(token in keyboard_lower for token in ("call zx48_rom_key_scan", "call zx48_rom_k_test", "call zx48_rom_key_decode"))},
