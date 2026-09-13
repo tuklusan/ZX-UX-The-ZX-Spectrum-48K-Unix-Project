@@ -44,11 +44,9 @@ ROM_POWER                 EQU $3851
     MACRO EMIT_ROM_SERVICE_ROUTINES
 ; Every raw ROM return samples/checks the dedicated kernel stack while preserving
 ; the ROM routine's complete AF/BC/DE/HL result contract, then canonicalizes IY.
-zx48_rom_restore_iy:
-    ld iy,ROM_IY_ANCHOR
-    ret
 zx48_rom_checked_return:
     push af
+zx48_rom_checked_return_af_saved:
     push bc
     push de
     push hl
@@ -58,39 +56,52 @@ zx48_rom_checked_return:
     pop de
     pop bc
     pop af
+zx48_rom_restore_iy:
     ld iy,ROM_IY_ANCHOR
     ret
 zx48_rom_print_a:
     call ROM_PRINT_A
-    jp zx48_rom_checked_return
+    jr zx48_rom_checked_return
 zx48_rom_key_scan:
     call ROM_KEY_SCAN
-    jp zx48_rom_checked_return
+    jr zx48_rom_checked_return
 zx48_rom_k_test:
     call ROM_K_TEST
-    jp zx48_rom_checked_return
+    jr zx48_rom_checked_return
 zx48_rom_key_decode:
     call ROM_KEY_DECODE
-    jp zx48_rom_checked_return
+    jr zx48_rom_checked_return
 zx48_rom_pixel_add:
     call ROM_PIXEL_ADD
-    jp zx48_rom_checked_return
+    jr zx48_rom_checked_return
 zx48_rom_point:
     call ROM_POINT
-    jp zx48_rom_checked_return
+    jr zx48_rom_checked_return
 zx48_rom_plot_sub:
     call ROM_PLOT_SUB
-    jp zx48_rom_checked_return
+    jr zx48_rom_checked_return
 zx48_rom_draw_line:
     call ROM_DRAW_LINE
-    jp zx48_rom_checked_return
+    jr zx48_rom_checked_return
+
+; These ROM services drive ULA port 0xFE. Mirror only the kernel border bits
+; into BORDCR before entry, then re-emit the authoritative shadow on return.
 zx48_rom_beeper:
+    call zx48_ula_rom_prepare
     call ROM_BEEPER
-    jp zx48_rom_checked_return
+    jr zx48_rom_ula_done
 zx48_rom_sa_bytes:
+    call zx48_ula_rom_prepare
     call ROM_SA_BYTES
-    jp zx48_rom_checked_return
+    jr zx48_rom_ula_done
 zx48_rom_ld_bytes:
+    call zx48_ula_rom_prepare
     call ROM_LD_BYTES
-    jp zx48_rom_checked_return
+zx48_rom_ula_done:
+    push af
+    xor a
+    ld (altreg_busy),a
+    ld a,(ula_shadow)
+    call zx48_ula_commit
+    jr zx48_rom_checked_return_af_saved
     ENDM

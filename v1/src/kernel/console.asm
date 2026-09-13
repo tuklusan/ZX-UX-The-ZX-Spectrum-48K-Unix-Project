@@ -54,20 +54,19 @@ zx48_console_clear_body:
     xor a
     ld hl,BITMAP_START
     ld de,BITMAP_START+1
-    ld bc,SCREEN_IMAGE_SIZE-1
+    ld bc,BITMAP_END-BITMAP_START+1
     ld (hl),a
     ldir
     ld a,7
-    ld hl,ATTR_START
-    ld de,ATTR_START+1
-    ld bc,ATTR_END-ATTR_START
     ld (hl),a
+    ld bc,ATTR_END-ATTR_START
     ldir
     xor a
-    ld (tty_row),a
-    ld (tty_col),a
+    ld h,a
+    ld l,a
+    ld (tty_row),hl
     ld (tty_wrap_pending),a
-    jp zx48_cursor_show
+    jr zx48_console_control_done
 
 ; H=row,L=column. Validate fully before mutating state.
 zx48_console_setpos:
@@ -86,7 +85,7 @@ zx48_console_set_commit:
     ld (tty_row),hl
     xor a
     ld (tty_wrap_pending),a
-    jp zx48_cursor_show
+    jr zx48_console_control_done
 zx48_console_bad:
     ld a,E_INVAL
     scf
@@ -112,7 +111,7 @@ zx48_console_putchar:
     jr z,zx48_console_lf
     dec a
     dec a
-    jp z,zx48_console_clear
+    jr z,zx48_console_clear
     dec a
     jr z,zx48_console_cr
     xor a
@@ -127,11 +126,11 @@ zx48_console_lf:
     call zx48_console_control_begin
 zx48_console_wrap_show:
     call zx48_console_wrap_now
-    jp zx48_cursor_show
+    jr zx48_console_control_done
 zx48_console_cr:
     call zx48_console_control_begin
     ld (tty_col),a
-    jp zx48_cursor_show
+    jr zx48_console_control_done
 zx48_console_bs:
     call zx48_console_control_begin
     ld a,(tty_col)
@@ -153,7 +152,7 @@ zx48_console_tab:
     jr c,zx48_console_wrap_show
     ld a,b
     ld (tty_col),a
-    jp zx48_cursor_show
+    jr zx48_console_control_done
 
 zx48_console_printable:
     cp $80
@@ -268,8 +267,7 @@ zx48_tty_ioctl:
     ret
 zx48_tty_get_mode:
     ld a,(tty_mode)
-    ld (de),a
-    jr zx48_tty_ok
+    jr zx48_tty_store_byte
 zx48_tty_set_mode:
     ld a,(de)
     cp TTY_MODE_32
@@ -297,14 +295,13 @@ zx48_tty_set_cursor:
     call zx48_cursor_hide
     pop af
     ld (tty_cursor_shape),a
-    call zx48_cursor_show
-    ret
+    jp zx48_cursor_show
 zx48_tty_get_cursor:
     ld a,(tty_cursor_shape)
-    ld (de),a
-    jr zx48_tty_ok
+    jr zx48_tty_store_byte
 zx48_tty_get_owner:
     ld a,(tty_input_owner)
+zx48_tty_store_byte:
     ld (de),a
     jr zx48_tty_ok
 zx48_tty_set_owner:
@@ -316,20 +313,16 @@ zx48_tty_set_owner:
     jr nc,zx48_tty_bad
     or a
     jr z,zx48_tty_set_owner_commit
-    push de
     call zx48_process_live_lookup
-    pop de
     ret c
-    ld a,(de)
+    ld a,c
 zx48_tty_set_owner_commit:
     ld (tty_input_owner),a
 zx48_tty_ok:
     xor a
     ret
 zx48_tty_bad:
-    ld a,E_INVAL
-    scf
-    ret
+    jp zx48_console_bad
 zx48_tty_perm:
     ld a,E_PERM
     scf
