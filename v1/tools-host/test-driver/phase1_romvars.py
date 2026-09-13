@@ -163,6 +163,11 @@ def _boot_contract(boot: str) -> bool:
     body = _block(_strip_asm(boot), "zx48_boot_main_impl:", "    endm")
     udg_position = body.find("call zx48_udg_init")
     pre_udg = body[:udg_position] if udg_position >= 0 else body
+    im2_entry = (
+        "call zx48_wall_boot_init"
+        if "call zx48_wall_boot_init" in body
+        else "call zx48_im2_init"
+    )
     return _ordered_tokens(
         body,
         (
@@ -178,7 +183,7 @@ def _boot_contract(boot: str) -> bool:
             "ld a,panic_allocator",
             "jp zx48_panic",
             "zx48_boot_udg_ok:",
-            "call zx48_im2_init",
+            im2_entry,
             "jp zx48_idle_loop",
         ),
     ) and "proc_ready" not in pre_udg and "zx48_spawn" not in pre_udg
