@@ -139,45 +139,61 @@ def _install_prefix(labels: dict[str, int], length: int = F4X8_SIZE) -> bytearra
     return code
 
 
+def _run_fixture(root: Path, name: str, code: bytes, patch) -> None:
+    try:
+        run_sna(root, code, patch=patch)
+    except DriverError as exc:
+        raise Font4x8Error(f"P1.21 runtime fixture {name} failed: {exc}") from exc
+
+
 def _valid_runtime(root: Path, labels: dict[str, int], kernel: bytes, asset: bytes, rows: bytes) -> None:
-    code = _install_prefix(labels)
-    code += _jp_c(FAIL_PC)
-    code += _expect_word(labels["tty64_resource_ptr"], EXPECTED_RESOURCE)
-    code += _expect_word(labels["tty64_font_ptr"], EXPECTED_FONT)
-    code += _expect_word(labels["memory_pinned_bytes"], F4X8_SIZE)
-    code += _expect_word(labels["memory_live_allocations"], 1)
-    code += _expect_word(labels["memory_free_extents"], 0x6000)
-    code += _expect_word(labels["memory_free_extents"] + 2, EXPECTED_FREE_LENGTH)
-    code += _expect_byte(labels["tty_mode"], 64)
+    install = _install_prefix(labels)
+    install += _jp_c(FAIL_PC)
+    install += _expect_word(labels["tty64_resource_ptr"], EXPECTED_RESOURCE)
+    install += _expect_word(labels["tty64_font_ptr"], EXPECTED_FONT)
+    install += _expect_word(labels["memory_pinned_bytes"], F4X8_SIZE)
+    install += _expect_word(labels["memory_live_allocations"], 1)
+    install += _expect_word(labels["memory_free_extents"], 0x6000)
+    install += _expect_word(labels["memory_free_extents"] + 2, EXPECTED_FREE_LENGTH)
+    install += _expect_byte(labels["tty_mode"], 64)
+    install += _jp(PASS_PC)
+    _run_fixture(root, "valid-install-state", bytes(install), _patch(kernel, ((SOURCE, asset),)))
 
-    # Compare every copied byte against the source fixture.
-    loop = len(code)
-    code += b"\x21" + _word(SOURCE) + b"\x11" + _word(EXPECTED_RESOURCE) + b"\x01" + _word(F4X8_SIZE)
-    compare_loop = len(code)
-    code += b"\x1A\xBE" + _jp_nz(FAIL_PC) + b"\x13\x23\x0B\x78\xB1"
-    rel = compare_loop - (len(code) + 2)
+    copy = _install_prefix(labels)
+    copy += _jp_c(FAIL_PC)
+    copy += b"\x21" + _word(SOURCE) + b"\x11" + _word(EXPECTED_RESOURCE) + b"\x01" + _word(F4X8_SIZE)
+    compare_loop = len(copy)
+    copy += b"\x1A\xBE" + _jp_nz(FAIL_PC) + b"\x13\x23\x0B\x78\xB1"
+    rel = compare_loop - (len(copy) + 2)
     require(-128 <= rel <= 127, "copy-compare loop displacement out of range")
-    code += bytes((0x20, rel & 0xFF))
+    copy += bytes((0x20, rel & 0xFF))
+    copy += _jp(PASS_PC)
+    _run_fixture(root, "valid-exact-copy", bytes(copy), _patch(kernel, ((SOURCE, asset),)))
 
-    # Render every target code and compare all eight decoded scan rows.
-    code += _store_byte(labels["tty_row"], 0) + _store_byte(labels["tty_col"], 0)
-    code += _store_byte(CHAR_STATE, 0x20)
-    code += _store_word(ROW_STATE, ROWS)
-    glyph_loop = len(code)
-    code += b"\x3A" + _word(CHAR_STATE) + _call(labels["zx48_tty64_draw_char"]) + _jp_c(FAIL_PC)
-    code += b"\x2A" + _word(ROW_STATE)
+    render = _install_prefix(labels)
+    render += _jp_c(FAIL_PC)
+    render += _store_byte(labels["tty_row"], 0) + _store_byte(labels["tty_col"], 0)
+    render += _store_byte(CHAR_STATE, 0x20)
+    render += _store_word(ROW_STATE, ROWS)
+    glyph_loop = len(render)
+    render += b"\x3A" + _word(CHAR_STATE) + _call(labels["zx48_tty64_draw_char"]) + _jp_c(FAIL_PC)
+    render += b"\x2A" + _word(ROW_STATE)
     for scan in range(8):
         address = 0x4000 + scan * 0x100
-        code += b"\x3A" + _word(address) + b"\xE6\xF0\xBE" + _jp_nz(FAIL_PC) + b"\x23"
-    code += b"\x22" + _word(ROW_STATE)
-    code += b"\x3A" + _word(CHAR_STATE) + b"\x3C\x32" + _word(CHAR_STATE) + b"\xFE\x80"
-    rel = glyph_loop - (len(code) + 2)
+        render += b"\x3A" + _word(address) + b"\xE6\xF0\xBE" + _jp_nz(FAIL_PC) + b"\x23"
+    render += b"\x22" + _word(ROW_STATE)
+    render += b"\x3A" + _word(CHAR_STATE) + b"\x3C\x32" + _word(CHAR_STATE) + b"\xFE\x80"
+    rel = glyph_loop - (len(render) + 2)
     require(-128 <= rel <= 127, "glyph loop displacement out of range")
-    code += bytes((0x20, rel & 0xFF))
-    code += _jp(PASS_PC)
+    render += bytes((0x20, rel & 0xFF))
+    render += _jp(PASS_PC)
     shifted_rows = bytes(value << 4 for value in rows)
-    run_sna(root, bytes(code), patch=_patch(kernel, ((SOURCE, asset), (ROWS, shifted_rows))))
-
+    _run_fixture(
+        root,
+        "valid-render-96x8",
+        bytes(render),
+        _patch(kernel, ((SOURCE, asset), (ROWS, shifted_rows))),
+    )
 
 def _invalid_runtime(root: Path, labels: dict[str, int], kernel: bytes, asset: bytes, *, offset: int | None = None, value: int | None = None, length: int = F4X8_SIZE) -> None:
     mutant = bytearray(asset)
@@ -191,7 +207,8 @@ def _invalid_runtime(root: Path, labels: dict[str, int], kernel: bytes, asset: b
     code += _expect_word(labels["memory_pinned_bytes"], 0)
     code += _expect_word(labels["tty64_resource_ptr"], 0)
     code += _jp(PASS_PC)
-    run_sna(root, bytes(code), patch=_patch(kernel, ((SOURCE, bytes(mutant)),)))
+    identity = f"invalid-header-{offset}" if offset is not None else f"invalid-length-{length}"
+    _run_fixture(root, identity, bytes(code), _patch(kernel, ((SOURCE, bytes(mutant)),)))
 
 
 def _fast_failure_runtime(root: Path, labels: dict[str, int], kernel: bytes, asset: bytes) -> None:
@@ -208,7 +225,7 @@ def _fast_failure_runtime(root: Path, labels: dict[str, int], kernel: bytes, ass
     code += _expect_word(labels["memory_free_extents"], 0x6000)
     code += _expect_word(labels["memory_free_extents"] + 2, COLD_ONLY_LENGTH)
     code += _jp(PASS_PC)
-    run_sna(root, bytes(code), patch=_patch(kernel, ((SOURCE, asset),)))
+    _run_fixture(root, "fast-required-no-cold-spill", bytes(code), _patch(kernel, ((SOURCE, asset),)))
 
 
 def dispatch(
