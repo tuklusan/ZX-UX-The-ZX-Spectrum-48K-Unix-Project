@@ -1,0 +1,128 @@
+{
+  "action": "test",
+  "architecture_sha256": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+  "assertions": [
+    {
+      "name": "tty64-accepts-exact-printable-range",
+      "passed": true
+    },
+    {
+      "name": "tty64-uses-pinned-f4x8-pointer",
+      "passed": true
+    },
+    {
+      "name": "packed-row-high-nibble-precedes-low",
+      "passed": true
+    },
+    {
+      "name": "pixel-y-is-row-times-eight-plus-scan",
+      "passed": true
+    },
+    {
+      "name": "x-byte-is-logical-column-shifted-right",
+      "passed": true
+    },
+    {
+      "name": "renderer-calls-canonical-bitmap-helper",
+      "passed": true
+    },
+    {
+      "name": "console-dispatches-64-mode-to-renderer",
+      "passed": true
+    },
+    {
+      "name": "canonical-spectrum-address-helper-is-nonlinear",
+      "passed": true
+    },
+    {
+      "name": "even-column-preserves-low-nibble",
+      "passed": true
+    },
+    {
+      "name": "odd-column-preserves-high-nibble",
+      "passed": true
+    },
+    {
+      "name": "attributes-use-paired-physical-cell",
+      "passed": true
+    },
+    {
+      "name": "cursor-xor-never-addresses-attributes",
+      "passed": true
+    },
+    {
+      "name": "udg-draw-writes-full-physical-byte",
+      "passed": true
+    },
+    {
+      "name": "architecture-defines-udg-as-two-tty64-columns",
+      "passed": true
+    },
+    {
+      "name": "canonical-copy-primitive-remains-ldir",
+      "passed": true
+    },
+    {
+      "name": "golden-boundary-cells-render-with-neighbor-preservation",
+      "passed": true
+    },
+    {
+      "name": "code-7f-renders-from-pinned-font",
+      "passed": true
+    },
+    {
+      "name": "attribute-pair-sharing-runtime",
+      "passed": true
+    },
+    {
+      "name": "cursor-does-not-mutate-attribute-runtime",
+      "passed": true
+    },
+    {
+      "name": "out-of-range-glyphs-are-atomic-errors",
+      "passed": true
+    },
+    {
+      "name": "udg-full-byte-occupies-two-tty64-columns",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 29,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nkernel.asm(87): warning[shortblock]: init data for block truncated to length: 0\nPass 3 complete\nErrors: 0, warnings: 1, compiled: 8487 lines, work time: 0.027 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "docs/01-ZX-UX-ARCHITECTURE-REV12.md": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+    "v1/assets/font4x8.bin": "1f29bb201828bbb6f0c0945c9677eb495b7b99592bd9c05ed10c0597caa69114",
+    "v1/build/kernel.bin": "9f989946cf9f6c89d92840815b3b7d1434875c731186f212a551b48683d369ca",
+    "v1/src/kernel/console.asm": "998f7cc706d1669460320a9fbb61d1823bf5f4c8f746e68307f82396aa0e2369",
+    "v1/src/kernel/cursor.asm": "77e70f9003f7cf7eef518931d4563757ac4ac1b67643c00f8b3acd9ec28f4732",
+    "v1/src/kernel/tty32.asm": "1c1b7fac888afbee7ed7413ae3962682be300d0cbade2fedeb98ab6c010c64e5",
+    "v1/src/kernel/tty64.asm": "7890a23ed2625ce7dda4d0629bf85240e748bf5a27a30dac53279c0f0b108344",
+    "v1/src/kernel/udg.asm": "b4887c85d057feede0092a649d3912c92ac0eb4393df5aef2ea5e419358fea34",
+    "v1/src/kernel/z80_primitives.asm": "7561dd9616056df26909656231257f462faa1869f27148cd3ab337350f8ee007",
+    "v1/tools-host/test-driver/phase1_tty64.py": "8fb2ed5f9e1abdc76f98e708ce366c38e0a0c8fa15cd92a239eacc839a5d8c54"
+  },
+  "prerequisites": {
+    "P1.21": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "968136a35a0b630062de906d7b966eee2867fbaf",
+  "status": "PASS",
+  "step": "P1.22",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
