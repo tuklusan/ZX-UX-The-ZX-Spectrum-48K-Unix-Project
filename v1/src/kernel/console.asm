@@ -29,7 +29,7 @@ tty_row                  EQU CONSOLE_STATE_BASE+3
 tty_col                  EQU CONSOLE_STATE_BASE+4
 tty_cursor_shape         EQU CONSOLE_STATE_BASE+5
 tty_cursor_visible       EQU CONSOLE_STATE_BASE+6
-tty_cursor_due           EQU CONSOLE_STATE_BASE+7
+cursor_service_parity    EQU CONSOLE_STATE_BASE+7
 CONSOLE_STATE_END        EQU CONSOLE_STATE_BASE+8
 
     MACRO EMIT_CONSOLE_ROUTINES
@@ -42,7 +42,7 @@ zx48_console_init:
     ld (tty_row),a
     ld (tty_col),a
     ld (tty_cursor_visible),a
-    ld (tty_cursor_due),a
+    ld (cursor_service_parity),a
     ret
 
 zx48_console_clear:

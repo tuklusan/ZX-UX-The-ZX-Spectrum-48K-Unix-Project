@@ -35,6 +35,10 @@ CERTIFIED_STEPS = (
     "P1.33",
 )
 
+# Candidate steps execute in CI for diagnostic/admission proof but are not
+# admitted into CERTIFIED_STEPS until their revised-plan gate has passed.
+CANDIDATE_STEPS = ("P1.13",)
+
 
 def main() -> int:
     root = find_root(Path(__file__))
@@ -44,7 +48,7 @@ def main() -> int:
         raise DriverError("deterministic test driver missing")
 
     phase1_probe.run(root)
-    for step in CERTIFIED_STEPS:
+    for step in (*CERTIFIED_STEPS, *CANDIDATE_STEPS):
         for action in ("build", "test"):
             result = run_command(
                 [python, runner, action, "--step", step],
@@ -57,7 +61,7 @@ def main() -> int:
                     f"timed_out={result.timed_out} stdout={result.stdout!r} "
                     f"stderr={result.stderr!r}"
                 )
-    print("ZX-UX PHASE 1 REGISTERED CERTIFICATION PASS")
+    print("ZX-UX PHASE 1 REGISTERED/CANDIDATE GATE PASS")
     return 0
 
 

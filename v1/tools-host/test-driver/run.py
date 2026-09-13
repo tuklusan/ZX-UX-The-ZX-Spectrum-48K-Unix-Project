@@ -32,6 +32,7 @@ import phase0_media
 import phase0_rr
 import phase1
 import phase1_core
+import phase1_ticks
 import phase1_alt
 import phase1_keyboard
 import phase1_cursor
@@ -89,6 +90,8 @@ def dispatch(root: Path, action: str, step: str):
         raise DriverError(f"numbered foundation/Phase-0 step is not registered: {step}")
     if step in {f"P1.{n:02d}" for n in range(1, 13)}:
         return phase1_core.dispatch(root, action, step, **kwargs)
+    if step == "P1.13":
+        return phase1_ticks.dispatch(root, action, step, **kwargs)
     if step == "P1.30":
         return phase1_alt.dispatch(root, action, step, **kwargs)
     if step == "P1.31":
@@ -111,7 +114,7 @@ def prerequisite_statuses(step: str) -> dict[str, str]:
         return {"E0.06": "PASS"} if number == 1 else {f"P0.{number - 1:02d}": "PASS"}
     if step.startswith("P1."):
         number = int(step.split(".", 1)[1])
-        if 1 <= number <= 12:
+        if 1 <= number <= 13:
             return {"P0.34": "PASS"} if number == 1 else {f"P1.{number - 1:02d}": "PASS"}
     return {}
 

@@ -16,7 +16,7 @@
 INTERRUPT_STATE_BASE      EQU EMERGENCY_START
 altreg_busy               EQU INTERRUPT_STATE_BASE+0
 scheduler_tick_due        EQU INTERRUPT_STATE_BASE+1
-cursor_frame_count        EQU INTERRUPT_STATE_BASE+2
+cursor_blink_divider      EQU INTERRUPT_STATE_BASE+2
 kernel_ticks              EQU INTERRUPT_STATE_BASE+3
 wall_seconds              EQU INTERRUPT_STATE_BASE+7
 wall_revision             EQU INTERRUPT_STATE_BASE+11
@@ -75,16 +75,19 @@ zx48_interrupt_frames:
 zx48_interrupt_timers:
     ld a,1
     ld (scheduler_tick_due),a
-    ld a,(cursor_frame_count)
+    ld a,(cursor_blink_divider)
     inc a
     cp 25
     jr c,zx48_interrupt_cursor_store
     xor a
-    ld (tty_cursor_due),a
-    inc a
-    ld (tty_cursor_due),a
 zx48_interrupt_cursor_store:
-    ld (cursor_frame_count),a
+    ld (cursor_blink_divider),a
+    jr c,zx48_interrupt_wall
+    ld hl,cursor_service_parity
+    ld a,(hl)
+    xor 1
+    ld (hl),a
+zx48_interrupt_wall:
     ld a,(wall_valid)
     or a
     jr z,zx48_interrupt_break
@@ -114,8 +117,8 @@ zx48_interrupt_break:
     jr nz,zx48_interrupt_done
     ld bc,$7FFE
     in a,(c)
-    bit 0,a
-    jr nz,zx48_interrupt_done
+    rrca
+    jr c,zx48_interrupt_done
     ld a,1
     ld (break_pending),a
 zx48_interrupt_done:
