@@ -1,0 +1,206 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: ZX-UX P1.13 Candidate Materializer
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/p1-13-materialize.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact staging commit
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Materialize exact reviewed P1.13 candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/p1-13.patch.b64" <<'PAYLOAD'
+          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
+          +YlJLbCtcfJWp+bS2Qfj3ks8kmcAAA==
+          PAYLOAD
+          tr -d '[:space:]' < "$RUNNER_TEMP/p1-13.patch.b64" \
+            | base64 -d \
+            | gzip -dc > "$RUNNER_TEMP/p1-13.patch"
+          git apply --check "$RUNNER_TEMP/p1-13.patch"
+          git apply "$RUNNER_TEMP/p1-13.patch"
+          rm -- .github/workflows/p1-13-materialize.yml
+
+      - name: Verify exact candidate bytes and changed paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/p1-13.sha256" <<'HASHES'
+          7e1bfdbe5dc4840b43465687398577a3089c3da705bf1183666647b5cf780de6  v1/src/kernel/console.asm
+          cb8ceea7043472803f6e7ee20bdbb8af6c2f92c0704d5c2375dffab4d8fad858  v1/src/kernel/errors.asm
+          1287064ad6602130944b3a41af021400515bc77fe7a4ecfa15b1a149b8024129  v1/src/kernel/interrupt.asm
+          bbb7cb28b61424307d3e22469a005483f6f562bd27bf9687433a8f889bc1eae5  v1/tools-host/test-driver/phase1_gate.py
+          bd29d5deda2b1806c7bdd61cca9dc66384da9bc7b59c4d98c3acdd45840b29d9  v1/tools-host/test-driver/run.py
+          8e502242b7dce8e7bb8b1ad614c2f753dc46db1bc037930d79bbf812717c5470  v1/tools-host/test-driver/phase1_ticks.py
+          HASHES
+          sed -i 's/^          //' "$RUNNER_TEMP/p1-13.sha256"
+          sha256sum -c "$RUNNER_TEMP/p1-13.sha256"
+          python3 - <<'PY'
+          import subprocess
+          expected = {
+              ".github/workflows/p1-13-materialize.yml",
+              "v1/src/kernel/console.asm",
+              "v1/src/kernel/errors.asm",
+              "v1/src/kernel/interrupt.asm",
+              "v1/tools-host/test-driver/phase1_gate.py",
+              "v1/tools-host/test-driver/run.py",
+              "v1/tools-host/test-driver/phase1_ticks.py",
+          }
+          rows = subprocess.run(
+              ["git", "status", "--porcelain=v1"],
+              check=True,
+              text=True,
+              capture_output=True,
+          ).stdout.splitlines()
+          actual = {row[3:] for row in rows if row}
+          if actual != expected:
+              raise SystemExit(f"unexpected materialized path set: {sorted(actual)}")
+          PY
+
+      - name: Publish prepared Git tree identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -A
+          tree="$(git write-tree)"
+          echo "P1_13_TREE=$tree"
+          git diff --cached --name-status
