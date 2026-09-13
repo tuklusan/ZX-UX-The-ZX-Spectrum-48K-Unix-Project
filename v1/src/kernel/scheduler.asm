@@ -154,10 +154,12 @@ zx48_sleep_current:
     ld hl,(kernel_ticks)
     ld de,(scheduler_sleep_lo)
     add hl,de
+    push af
     ld (ix+PROC_WAKE_TICK),l
     ld (ix+PROC_WAKE_TICK+1),h
     ld hl,(kernel_ticks+2)
     ld de,(scheduler_sleep_hi)
+    pop af
     adc hl,de
     ld (ix+PROC_WAKE_TICK+2),l
     ld (ix+PROC_WAKE_TICK+3),h
