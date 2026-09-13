@@ -40,8 +40,9 @@ zx48_console_init:
     ld (tty_cursor_shape),hl
     dec l
     ld (tty_row),hl
-    ld (cursor_service_parity),hl
     ld a,l
+    ld (cursor_service_parity),a
+    ld (tty_wrap_pending),a
     ld (cursor_blink_divider),a
     ld a,TTY_MODE_64
     ld (tty_mode),a
