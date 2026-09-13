@@ -123,7 +123,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
         {"name": "shape-phase-reconcile-is-xor", "passed": "zx48_cursor_reconcile:" in service and cursor.index("zx48_cursor_reconcile:") < cursor.index("zx48_cursor_xor:")},
         {"name": "bitmap-xor-has-32-and-64-masks", "passed": all(token in cursor for token in ("xor $ff", "xor $f0", "xor $0f"))},
         {"name": "mode-change-hides-before-commit", "passed": mode_set.index("call zx48_cursor_hide") < mode_set.index("ld (tty_mode),a") and "zx48_console_clear_body" in mode_set},
-        {"name": "shape-change-hides-before-commit", "passed": shape_set.index("call zx48_cursor_hide") < shape_set.index("ld (tty_cursor_shape),a") and "call zx48_cursor_show" in shape_set},
+        {"name": "shape-change-hides-before-commit", "passed": shape_set.index("call zx48_cursor_hide") < shape_set.index("ld (tty_cursor_shape),a") and any(token in shape_set[shape_set.index("ld (tty_cursor_shape),a"):] for token in ("call zx48_cursor_show", "jp zx48_cursor_show"))},
         {"name": "im2-only-produces-service-parity", "passed": "xor 1\n    ld (hl),a" in interrupt and "zx48_cursor_xor" not in interrupt and "screen_mutation_depth" not in interrupt},
         {"name": "architecture-nested-mutation-contract-present", "passed": all(token in architecture for token in ("cursor_phase", "cursor_drawn", "screen_mutation_depth", "atomically fetch-and-clear cursor_service_parity", "silent depth wrap is a defect"))},
         {"name": "architecture-shape-off-clock-contract-present", "passed": "shape off does not reset logical phase or the blink clock" in architecture or "shape off may span blink intervals" in architecture},
