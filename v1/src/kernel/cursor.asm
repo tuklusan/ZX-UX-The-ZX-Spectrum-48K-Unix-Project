@@ -22,6 +22,10 @@ screen_mutation_depth    EQU CURSOR_STATE_BASE+1
 CURSOR_STATE_END         EQU CURSOR_STATE_BASE+2
 
     MACRO EMIT_CURSOR_ROUTINES
+zx48_cursor_depth_panic:
+    ld a,PANIC_SCHEDULER
+    jp zx48_panic
+
 ; Begin one kernel-owned screen mutation. Only the outermost begin removes XOR.
 ; Preserve HL because graphics and console callers carry coordinates across it.
 zx48_screen_begin:
@@ -142,8 +146,4 @@ zx48_cursor_blink:
     or a
     ret nz
     jr zx48_cursor_service_core
-
-zx48_cursor_depth_panic:
-    ld a,PANIC_SCHEDULER
-    jp zx48_panic
     ENDM

@@ -149,12 +149,10 @@ zx48_console_tab:
     ld a,(tty_mode)
     dec a
     cp b
-    jr c,zx48_console_tab_wrap
+    jr c,zx48_console_wrap_show
     ld a,b
     ld (tty_col),a
     jp zx48_cursor_show
-zx48_console_tab_wrap:
-    jp zx48_console_wrap_show
 
 zx48_console_printable:
     cp $80
@@ -165,8 +163,6 @@ zx48_console_print:
     ld a,(tty_wrap_pending)
     or a
     call nz,zx48_console_wrap_now
-    pop af
-    push af
     ld a,(tty_mode)
     cp TTY_MODE_64
     jr z,zx48_console_print64
@@ -185,10 +181,11 @@ zx48_console_advance:
     jr z,zx48_console_set_pending
     inc a
     ld (tty_col),a
-    jp zx48_cursor_show
+    jr zx48_console_advance_show
 zx48_console_set_pending:
     ld a,1
     ld (tty_wrap_pending),a
+zx48_console_advance_show:
     jp zx48_cursor_show
 
 ; Resolve a previously deferred wrap. No cursor show occurs here.
@@ -251,19 +248,19 @@ zx48_tty_ioctl:
     ld e,(hl)
     inc hl
     ld d,(hl)
-    cp TTY_REQ_GET_MODE
+    dec a
     jr z,zx48_tty_get_mode
-    cp TTY_REQ_SET_MODE
+    dec a
     jr z,zx48_tty_set_mode
-    cp TTY_REQ_GET_SIZE
+    dec a
     jr z,zx48_tty_get_size
-    cp TTY_REQ_SET_CURSOR
+    dec a
     jr z,zx48_tty_set_cursor
-    cp TTY_REQ_GET_CURSOR
+    dec a
     jr z,zx48_tty_get_cursor
-    cp TTY_REQ_GET_OWNER
+    dec a
     jr z,zx48_tty_get_owner
-    cp TTY_REQ_SET_OWNER
+    dec a
     jr z,zx48_tty_set_owner
     ld a,E_NOTSUP
     scf
@@ -300,7 +297,7 @@ zx48_tty_set_cursor:
     pop af
     ld (tty_cursor_shape),a
     call zx48_cursor_show
-    jr zx48_tty_ok
+    ret
 zx48_tty_get_cursor:
     ld a,(tty_cursor_shape)
     ld (de),a
