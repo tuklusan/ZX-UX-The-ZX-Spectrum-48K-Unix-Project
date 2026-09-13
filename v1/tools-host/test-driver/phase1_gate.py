@@ -58,6 +58,7 @@ CERTIFIED_STEPS = (
     # REV12 rebaseline requires the already-admitted core to be replayed before
     # any later Phase-1 certification can provide regression credit.
     *(f"P1.{number:02d}" for number in range(1, 13)),
+    "P1.13",
     "P1.28",
     "P1.29",
     "P1.30",
@@ -68,8 +69,7 @@ CERTIFIED_STEPS = (
 
 # Candidate steps execute in CI for diagnostic/admission proof but are not
 # admitted into CERTIFIED_STEPS until their revised-plan gate has passed.
-# P1.13 remains candidate here so this source-only trigger proves it before admission.
-CANDIDATE_STEPS = ("P1.13",)
+CANDIDATE_STEPS: tuple[str, ...] = ()
 
 
 def main() -> int:
