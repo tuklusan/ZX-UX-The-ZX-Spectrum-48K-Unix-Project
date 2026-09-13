@@ -38,6 +38,7 @@ import phase1_break
 import phase1_isrpaths
 import phase1_sleep
 import phase1_exit
+import phase1_console_core
 import phase1_alt
 import phase1_keyboard
 import phase1_cursor
@@ -107,6 +108,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase1_sleep.dispatch(root, action, step, **kwargs)
     if step == "P1.19":
         return phase1_exit.dispatch(root, action, step, **kwargs)
+    if step == "P1.20":
+        return phase1_console_core.dispatch(root, action, step, **kwargs)
     if step == "P1.30":
         return phase1_alt.dispatch(root, action, step, **kwargs)
     if step == "P1.31":
@@ -129,7 +132,7 @@ def prerequisite_statuses(step: str) -> dict[str, str]:
         return {"E0.06": "PASS"} if number == 1 else {f"P0.{number - 1:02d}": "PASS"}
     if step.startswith("P1."):
         number = int(step.split(".", 1)[1])
-        if 1 <= number <= 19:
+        if 1 <= number <= 41:
             return {"P0.34": "PASS"} if number == 1 else {f"P1.{number - 1:02d}": "PASS"}
     return {}
 

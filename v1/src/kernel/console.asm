@@ -30,7 +30,8 @@ tty_col                  EQU CONSOLE_STATE_BASE+4
 tty_cursor_shape         EQU CONSOLE_STATE_BASE+5
 tty_cursor_visible       EQU CONSOLE_STATE_BASE+6
 cursor_service_parity    EQU CONSOLE_STATE_BASE+7
-CONSOLE_STATE_END        EQU CONSOLE_STATE_BASE+8
+tty_wrap_pending         EQU CONSOLE_STATE_BASE+8
+CONSOLE_STATE_END        EQU CONSOLE_STATE_BASE+9
 
     MACRO EMIT_CONSOLE_ROUTINES
 zx48_console_init:
@@ -43,6 +44,7 @@ zx48_console_init:
     ld (tty_col),a
     ld (tty_cursor_visible),a
     ld (cursor_service_parity),a
+    ld (tty_wrap_pending),a
     ret
 
 zx48_console_clear:
@@ -62,9 +64,10 @@ zx48_console_clear:
     xor a
     ld (tty_row),a
     ld (tty_col),a
+    ld (tty_wrap_pending),a
     jp zx48_cursor_show
 
-; H=row,L=column.
+; H=row,L=column. Validate first; success clears private pending wrap.
 zx48_console_setpos:
     ld a,h
     cp 24
@@ -86,6 +89,8 @@ zx48_console_set_commit:
     ld (tty_row),a
     ld a,l
     ld (tty_col),a
+    xor a
+    ld (tty_wrap_pending),a
     call zx48_cursor_show
     xor a
     ret
@@ -102,10 +107,14 @@ zx48_console_getpos:
     xor a
     ret
 
-; A=byte.
+; A=byte. Printable range is exactly 20h..7Fh.
 zx48_console_putchar:
     cp $20
-    jr nc,zx48_console_print
+    jr c,zx48_console_control
+    cp $80
+    jr nc,zx48_console_bad
+    jr zx48_console_print
+zx48_console_control:
     cp $0a
     jr z,zx48_console_lf
     cp $0d
@@ -118,32 +127,124 @@ zx48_console_putchar:
     jp z,zx48_console_clear
     xor a
     ret
+
+; Deferred right-margin state machine. The byte is preserved before cursor work.
 zx48_console_print:
+    push af
     call zx48_cursor_hide
+    ld a,(tty_wrap_pending)
+    or a
+    jr z,zx48_console_print_draw
+    xor a
+    ld (tty_wrap_pending),a
+    ld a,(tty_row)
+    cp 23
+    jr c,zx48_console_print_wrap_down
+    call zx48_console_scroll
+    ld a,23
+    jr zx48_console_print_wrap_row
+zx48_console_print_wrap_down:
+    inc a
+zx48_console_print_wrap_row:
+    ld (tty_row),a
+    xor a
+    ld (tty_col),a
+zx48_console_print_draw:
+    pop af
     push af
     ld a,(tty_mode)
     cp TTY_MODE_64
     jr z,zx48_console_print64
     pop af
     call zx48_tty32_draw_char
+    jr c,zx48_console_print_error
     jr zx48_console_advance
 zx48_console_print64:
     pop af
     call zx48_tty64_draw_char
+    jr c,zx48_console_print_error
 zx48_console_advance:
     ld a,(tty_col)
-    inc a
     ld b,a
     ld a,(tty_mode)
     cp TTY_MODE_64
     ld a,b
     jr z,zx48_console_adv64
-    cp 32
-    jr c,zx48_console_store_col
-    jr zx48_console_next_row
+    cp 31
+    jr c,zx48_console_advance_one
+    jr zx48_console_set_pending
 zx48_console_adv64:
+    cp 63
+    jr c,zx48_console_advance_one
+zx48_console_set_pending:
+    ld a,1
+    ld (tty_wrap_pending),a
+    call zx48_cursor_show
+    xor a
+    ret
+zx48_console_advance_one:
+    inc a
+    ld (tty_col),a
+    xor a
+    ld (tty_wrap_pending),a
+    call zx48_cursor_show
+    xor a
+    ret
+zx48_console_print_error:
+    push af
+    call zx48_cursor_show
+    pop af
+    scf
+    ret
+
+; Cursor-moving controls cancel pending wrap before their own semantics.
+zx48_console_lf:
+    call zx48_cursor_hide
+    xor a
+    ld (tty_wrap_pending),a
+    jr zx48_console_next_row
+zx48_console_cr:
+    call zx48_cursor_hide
+    xor a
+    ld (tty_wrap_pending),a
+    ld (tty_col),a
+    call zx48_cursor_show
+    xor a
+    ret
+zx48_console_bs:
+    call zx48_cursor_hide
+    xor a
+    ld (tty_wrap_pending),a
+    ld a,(tty_col)
+    or a
+    jr z,zx48_console_control_done
+    dec a
+    ld (tty_col),a
+zx48_console_control_done:
+    call zx48_cursor_show
+    xor a
+    ret
+zx48_console_tab:
+    call zx48_cursor_hide
+    xor a
+    ld (tty_wrap_pending),a
+    ld a,(tty_col)
+    and $f8
+    add a,8
+    ld b,a
+    ld a,(tty_mode)
+    cp TTY_MODE_64
+    ld a,b
+    jr z,zx48_console_tab64
+    cp 32
+    jr nc,zx48_console_next_row
+    ld (tty_col),a
+    jr zx48_console_control_done
+zx48_console_tab64:
     cp 64
-    jr c,zx48_console_store_col
+    jr nc,zx48_console_next_row
+    ld (tty_col),a
+    jr zx48_console_control_done
 zx48_console_next_row:
     xor a
     ld (tty_col),a
@@ -155,45 +256,7 @@ zx48_console_next_row:
     ld a,23
 zx48_console_store_row:
     ld (tty_row),a
-    jp zx48_cursor_show
-zx48_console_store_col:
-    ld (tty_col),a
-    jp zx48_cursor_show
-zx48_console_lf:
-    call zx48_cursor_hide
-    xor a
-    ld (tty_col),a
-    jr zx48_console_next_row
-zx48_console_cr:
-    call zx48_cursor_hide
-    xor a
-    ld (tty_col),a
-    jp zx48_cursor_show
-zx48_console_bs:
-    ld a,(tty_col)
-    or a
-    ret z
-    call zx48_cursor_hide
-    ld a,(tty_col)
-    dec a
-    ld (tty_col),a
-    jp zx48_cursor_show
-zx48_console_tab:
-    ld a,(tty_col)
-    and $f8
-    add a,8
-    ld b,a
-    ld a,(tty_mode)
-    cp TTY_MODE_64
-    ld a,b
-    jr z,zx48_console_tab64
-    cp 32
-    jr nc,zx48_console_next_row
-    jr zx48_console_store_col
-zx48_console_tab64:
-    cp 64
-    jr nc,zx48_console_next_row
-    jr zx48_console_store_col
+    jr zx48_console_control_done
 
 ; HL=buffer,BC=count; returns HL=bytes written.
 zx48_console_write:

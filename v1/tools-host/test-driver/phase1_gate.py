@@ -51,7 +51,7 @@ def _write_diagnostic(records: list[dict[str, object]], *, status: str, failure:
 
 
 CERTIFIED_STEPS = (
-    *(f"P1.{number:02d}" for number in range(1, 16)),
+    *(f"P1.{number:02d}" for number in range(1, 20)),
     "P1.28",
     "P1.29",
     "P1.30",
@@ -61,10 +61,7 @@ CERTIFIED_STEPS = (
 )
 
 CANDIDATE_STEPS: tuple[str, ...] = (
-    "P1.16",
-    "P1.17",
-    "P1.18",
-    "P1.19",
+    "P1.20",
 )
 
 
