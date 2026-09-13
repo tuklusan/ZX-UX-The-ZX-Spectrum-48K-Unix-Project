@@ -34,6 +34,7 @@ import phase1
 import phase1_core
 import phase1_ticks
 import phase1_romvars
+import phase1_break
 import phase1_alt
 import phase1_keyboard
 import phase1_cursor
@@ -95,6 +96,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase1_ticks.dispatch(root, action, step, **kwargs)
     if step == "P1.14":
         return phase1_romvars.dispatch(root, action, step, **kwargs)
+    if step == "P1.15":
+        return phase1_break.dispatch(root, action, step, **kwargs)
     if step == "P1.30":
         return phase1_alt.dispatch(root, action, step, **kwargs)
     if step == "P1.31":
@@ -117,7 +120,7 @@ def prerequisite_statuses(step: str) -> dict[str, str]:
         return {"E0.06": "PASS"} if number == 1 else {f"P0.{number - 1:02d}": "PASS"}
     if step.startswith("P1."):
         number = int(step.split(".", 1)[1])
-        if 1 <= number <= 14:
+        if 1 <= number <= 15:
             return {"P0.34": "PASS"} if number == 1 else {f"P1.{number - 1:02d}": "PASS"}
     return {}
 
