@@ -269,7 +269,7 @@ def dispatch(
     kernel = kernel_path.read_bytes()
     if action == "test":
         _valid_runtime(root, labels, kernel, asset, rows)
-        for offset, value in ((0, ord("X")), (1, ord("X")), (2, ord("X")), (3, ord("X")), (4, 2), (5, 0x21), (6, 95), (7, 1)):
+        for offset, value in ((0, ord("X")), (1, ord("X")), (2, ord("Y")), (3, ord("X")), (4, 2), (5, 0x21), (6, 95), (7, 1)):
             _invalid_runtime(root, labels, kernel, asset, offset=offset, value=value)
         _invalid_runtime(root, labels, kernel, asset, length=F4X8_SIZE - 1)
         _invalid_runtime(root, labels, kernel, asset, length=F4X8_SIZE + 1)
