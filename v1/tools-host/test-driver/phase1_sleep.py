@@ -198,7 +198,7 @@ def _kernel_patch(kernel_bytes: bytes, schedule_finish: int):
     patched = bytearray(kernel_bytes)
     offset = schedule_finish - phase1.KERNEL_BASE
     require(0 <= offset < len(patched), "schedule-finish label outside kernel")
-    patched[offset] = 0xC9  # fixture-only RET: expose the prepared sleep state without scheduling.
+    patched[offset] = 0xC9
     return phase1._kernel_patch(bytes(patched))
 
 
@@ -258,6 +258,13 @@ def _wake_boundary(root: Path, labels: dict[str, int], kernel_bytes: bytes, *, d
     run_sna(root, bytes(code), patch=phase1._kernel_patch(kernel_bytes))
 
 
+def _run_stage(name: str, thunk: Callable[[], None]) -> None:
+    try:
+        thunk()
+    except DriverError as exc:
+        raise Phase1SleepError(f"P1.18 runtime stage {name} failed: {exc}") from exc
+
+
 def dispatch(
     root: Path,
     action: str,
@@ -292,13 +299,17 @@ def dispatch(
     kernel_bytes = kernel.read_bytes()
 
     if action == "test":
-        _sleep_vector(root, labels, kernel_bytes, now=0x12345678, relative=0, expect_carry=False, expected_state=PROC_RUNNING, expected_wake=None)
-        _sleep_vector(root, labels, kernel_bytes, now=0x12345678, relative=1, expect_carry=False, expected_state=PROC_SLEEPING, expected_wake=0x12345679)
-        _sleep_vector(root, labels, kernel_bytes, now=0x00000001, relative=0x7FFFFFFF, expect_carry=False, expected_state=PROC_SLEEPING, expected_wake=0x80000000)
-        _sleep_vector(root, labels, kernel_bytes, now=0xFFFFFFFE, relative=3, expect_carry=False, expected_state=PROC_SLEEPING, expected_wake=1)
-        _sleep_vector(root, labels, kernel_bytes, now=0x11223344, relative=0x80000000, expect_carry=True, expected_state=PROC_RUNNING, expected_wake=None)
-        _sleep_vector(root, labels, kernel_bytes, now=0x11223344, relative=0xFFFFFFFF, expect_carry=True, expected_state=PROC_RUNNING, expected_wake=None)
-        _wake_boundary(root, labels, kernel_bytes, deadline=0x00000001)
+        stages = (
+            ("zero", lambda: _sleep_vector(root, labels, kernel_bytes, now=0x12345678, relative=0, expect_carry=False, expected_state=PROC_RUNNING, expected_wake=None)),
+            ("one", lambda: _sleep_vector(root, labels, kernel_bytes, now=0x12345678, relative=1, expect_carry=False, expected_state=PROC_SLEEPING, expected_wake=0x12345679)),
+            ("max-positive", lambda: _sleep_vector(root, labels, kernel_bytes, now=0x00000001, relative=0x7FFFFFFF, expect_carry=False, expected_state=PROC_SLEEPING, expected_wake=0x80000000)),
+            ("wrap", lambda: _sleep_vector(root, labels, kernel_bytes, now=0xFFFFFFFE, relative=3, expect_carry=False, expected_state=PROC_SLEEPING, expected_wake=1)),
+            ("reject-80000000", lambda: _sleep_vector(root, labels, kernel_bytes, now=0x11223344, relative=0x80000000, expect_carry=True, expected_state=PROC_RUNNING, expected_wake=None)),
+            ("reject-ffffffff", lambda: _sleep_vector(root, labels, kernel_bytes, now=0x11223344, relative=0xFFFFFFFF, expect_carry=True, expected_state=PROC_RUNNING, expected_wake=None)),
+            ("wake-boundary", lambda: _wake_boundary(root, labels, kernel_bytes, deadline=0x00000001)),
+        )
+        for name, thunk in stages:
+            _run_stage(name, thunk)
         assertions.extend(_negative_contracts(root))
         assertions.extend(
             [
