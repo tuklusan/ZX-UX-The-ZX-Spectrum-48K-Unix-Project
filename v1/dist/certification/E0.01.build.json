@@ -1,6 +1,6 @@
 {
   "action": "build",
-  "architecture_sha256": "1d736641e685c1d6136b66fc57d0c16fc662ce6ca4dfd640991743bb01bb706f",
+  "architecture_sha256": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
   "assertions": [
     {
       "name": "project-local-runtime",
@@ -22,20 +22,20 @@
         "tools/scripts/verify-environment.py"
       ],
       "cwd": ".",
-      "duration_ms": 56,
+      "duration_ms": 63,
       "exit_code": 0,
       "stderr": "",
-      "stdout": "root=/home/runner/work/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/ZX-UX-The-ZX-Spectrum-48K-Unix-Project\nmanifest=/home/runner/work/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/tools/manifest/toolchain.lock.json\narchitecture_sha256=1d736641e685c1d6136b66fc57d0c16fc662ce6ca4dfd640991743bb01bb706f\nZX-UX DEVELOPMENT ENVIRONMENT CERTIFICATION PASS\n",
+      "stdout": "root=/home/runner/work/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/ZX-UX-The-ZX-Spectrum-48K-Unix-Project\nmanifest=/home/runner/work/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/tools/manifest/toolchain.lock.json\narchitecture_sha256=ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0\nZX-UX DEVELOPMENT ENVIRONMENT CERTIFICATION PASS\n",
       "timed_out": false
     }
   ],
   "hashes": {
     "tools/manifest/toolchain.lock.json": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
-    "tools/scripts/verify-environment.py": "3c6d01090b91ac22822ed8639b35d882faa99cb12f31f44316cba7fae22d8d0e"
+    "tools/scripts/verify-environment.py": "0692f954af73da43e449d6097fb0d2f864280bec9b770d2a23953ce94118dc14"
   },
   "prerequisites": {},
   "schema": 2,
-  "source_commit": "66e12b2d641b2db93d0aae949d2aac2565193989",
+  "source_commit": "104723b9111314630e9057ad9a9002b982fc2598",
   "status": "PASS",
   "step": "E0.01",
   "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",

@@ -1,6 +1,6 @@
 {
   "action": "test",
-  "architecture_sha256": "1d736641e685c1d6136b66fc57d0c16fc662ce6ca4dfd640991743bb01bb706f",
+  "architecture_sha256": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
   "assertions": [
     {
       "name": "argv-preserved",
@@ -31,7 +31,7 @@
         "literal * value"
       ],
       "cwd": ".",
-      "duration_ms": 12,
+      "duration_ms": 13,
       "exit_code": 0,
       "stderr": "",
       "stdout": "two words\nliteral * value\n",
@@ -55,28 +55,28 @@
       "argv": [
         "tools/runtime/python/bin/python3.13",
         "-B",
-        "/tmp/zxux-e003-0fh83h2n/moved-project/v1/tools-host/test-driver/run.py",
+        "/tmp/zxux-e003-srk98ofn/moved-project/v1/tools-host/test-driver/run.py",
         "build",
         "--step",
         "E0.03",
         "--probe-root"
       ],
-      "cwd": "/tmp/zxux-e003-0fh83h2n",
-      "duration_ms": 106,
+      "cwd": "/tmp/zxux-e003-srk98ofn",
+      "duration_ms": 113,
       "exit_code": 0,
       "stderr": "",
-      "stdout": "/tmp/zxux-e003-0fh83h2n/moved-project\n",
+      "stdout": "/tmp/zxux-e003-srk98ofn/moved-project\n",
       "timed_out": false
     }
   ],
   "hashes": {
-    "v1/tools-host/test-driver/run.py": "9ed7c36ce69dcb5917a3748f20233135ac5c62782e68ee8ee8f401b95b7800c6"
+    "v1/tools-host/test-driver/run.py": "6fde1cb8db96b7bd43fb91707153e399478da9a8a80fb7dd24f596ca9f83ec0c"
   },
   "prerequisites": {
     "E0.02": "PASS"
   },
   "schema": 2,
-  "source_commit": "66e12b2d641b2db93d0aae949d2aac2565193989",
+  "source_commit": "104723b9111314630e9057ad9a9002b982fc2598",
   "status": "PASS",
   "step": "E0.03",
   "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",

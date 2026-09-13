@@ -1,0 +1,68 @@
+{
+  "action": "test",
+  "architecture_sha256": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+  "assertions": [
+    {
+      "name": "kernel-image-size-frozen",
+      "passed": true
+    },
+    {
+      "name": "arena-is-one-contiguous-6000-dfff-range",
+      "passed": true
+    },
+    {
+      "name": "maximum-process-count-is-eight",
+      "passed": true
+    },
+    {
+      "name": "descriptor-size-within-frozen-bound",
+      "passed": true
+    },
+    {
+      "name": "syscall-gateway-is-e000",
+      "passed": true
+    },
+    {
+      "name": "pid0-idle-is-ei-halt",
+      "passed": true
+    },
+    {
+      "name": "pid0-fallback-is-explicit",
+      "passed": true
+    },
+    {
+      "name": "p1-08-deterministic-emulator-revalidation",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 29,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8462 lines, work time: 0.027 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "b9d0b4a2ecf6e57946edb58ad898b61a6b344a9f51eba22d0b7bcb21e2c67d17",
+    "v1/include/zx48ux.inc": "4c32a778091d3d7ba6fdeb28c77fe2cbe864d1f71f20a41c845019e9d5c056c1"
+  },
+  "prerequisites": {
+    "P1.07": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "104723b9111314630e9057ad9a9002b982fc2598",
+  "status": "PASS",
+  "step": "P1.08",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
