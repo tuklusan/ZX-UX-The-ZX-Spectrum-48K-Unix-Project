@@ -93,7 +93,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
         {"name": "show-does-not-save-background", "passed": "zx48_cursor_show:" in cursor and "call zx48_cursor_xor" in cursor},
         {"name": "tty64-neighbor-nibble-preserved", "passed": "and $0f" in tty64 and "and $f0" in tty64},
         {"name": "console-mutations-hide-cursor", "passed": console.count("call zx48_cursor_hide") + console.count("jp zx48_cursor_hide") >= 5},
-        {"name": "console-restores-cursor", "passed": console.count("zx48_cursor_show") >= 5},
+        {"name": "console-restores-cursor", "passed": all(token in console for token in ("zx48_console_control_done:\n    jp zx48_cursor_show", "zx48_console_advance_show:\n    jp zx48_cursor_show", "ld (tty_cursor_shape),a\n    jp zx48_cursor_show"))},
     ]
 
 
