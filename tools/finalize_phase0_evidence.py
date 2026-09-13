@@ -15,7 +15,7 @@ from __future__ import annotations
 import argparse, hashlib, importlib.util, json, sys
 from pathlib import Path
 
-ARCH_SHA="1d736641e685c1d6136b66fc57d0c16fc662ce6ca4dfd640991743bb01bb706f"
+ARCH_SHA="ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0"
 class FinalizeError(RuntimeError): pass
 
 def sha(path:Path)->str: return hashlib.sha256(path.read_bytes()).hexdigest()

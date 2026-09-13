@@ -40,7 +40,7 @@ These verified C48 SDK images provide a visual preview of software written again
 | C48 architecture preview | C48 architecture preview | C48 architecture preview |
 |---|---|---|
 | [![ZX-UX C48 SDK Grand Finale showing Sinclair ZX Spectrum 48K architecture graphics on a 256x192 bitmap and attribute display](https://raw.githubusercontent.com/tuklusan/zx-ux-c48-sdk-sinclair-zx-spectrum-48k-unix-c-compiler-software-development-kit/main/doc/images/demos/showcase.png)](https://github.com/tuklusan/zx-ux-c48-sdk-sinclair-zx-spectrum-48k-unix-c-compiler-software-development-kit) | [![ZX-UX C48 SDK Torus Reactor preview of the 48K ZX Spectrum graphics architecture and C48 development environment](https://raw.githubusercontent.com/tuklusan/zx-ux-c48-sdk-sinclair-zx-spectrum-48k-unix-c-compiler-software-development-kit/main/doc/images/demos/torus.png)](https://github.com/tuklusan/zx-ux-c48-sdk-sinclair-zx-spectrum-48k-unix-c-compiler-software-development-kit) | [![ZX-UX C48 SDK Raycast Labyrinth preview of C programming for the Sinclair ZX Spectrum 48K architecture](https://raw.githubusercontent.com/tuklusan/zx-ux-c48-sdk-sinclair-zx-spectrum-48k-unix-c-compiler-software-development-kit/main/doc/images/demos/raymaze.png)](https://github.com/tuklusan/zx-ux-c48-sdk-sinclair-zx-spectrum-48k-unix-c-compiler-software-development-kit) |
-| **Grand Finale — architecture preview:** C48 graphics rendered through the Spectrum-compatible 256x192 bitmap plus 768-byte attribute model required by the [ZX-UX architecture](docs/01-ZX-UX-ARCHITECTURE-REV11.md). Host SDK image; not native Z80 execution. | **Torus Reactor — architecture preview:** C48 code running inside the host SDK's deliberately small 16-bit machine model while targeting the display and graphics constraints defined for [ZX-UX on the 48K Spectrum](docs/01-ZX-UX-ARCHITECTURE-REV11.md). Host SDK image; not native Z80 execution. | **Raycast Labyrinth — architecture preview:** an example of the C48 programming environment described by the [ZX-UX architecture](docs/01-ZX-UX-ARCHITECTURE-REV11.md), intended to make software development practical before the [Phase-11 native C compiler](docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV02.md) exists on the target. Host SDK image; not a finished ZX-UX OS screenshot. |
+| **Grand Finale — architecture preview:** C48 graphics rendered through the Spectrum-compatible 256x192 bitmap plus 768-byte attribute model required by the [ZX-UX architecture](docs/01-ZX-UX-ARCHITECTURE-REV12.md). Host SDK image; not native Z80 execution. | **Torus Reactor — architecture preview:** C48 code running inside the host SDK's deliberately small 16-bit machine model while targeting the display and graphics constraints defined for [ZX-UX on the 48K Spectrum](docs/01-ZX-UX-ARCHITECTURE-REV12.md). Host SDK image; not native Z80 execution. | **Raycast Labyrinth — architecture preview:** an example of the C48 programming environment described by the [ZX-UX architecture](docs/01-ZX-UX-ARCHITECTURE-REV12.md), intended to make software development practical before the [Phase-11 native C compiler](docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV03.md) exists on the target. Host SDK image; not a finished ZX-UX OS screenshot. |
 
 More compiler, graphics, game, conformance, and runtime examples are available in the **[ZX-UX C48 SDK repository](https://github.com/tuklusan/zx-ux-c48-sdk-sinclair-zx-spectrum-48k-unix-c-compiler-software-development-kit)**.
 
@@ -63,7 +63,7 @@ ZX-UX is designed around the capabilities and restrictions of a stock 48K Spectr
 - compact RAM-object compression for inactive stored objects without pretending compressed memory is virtual memory;
 - deterministic host and emulator tests with retained certification evidence.
 
-The complete contract is in **[ZX-UX Architecture REV11](docs/01-ZX-UX-ARCHITECTURE-REV11.md)**. Ordered implementation work is defined by **[ZX-UX Implementation Steps REV02](docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV02.md)**.
+The complete contract is in **[ZX-UX Architecture REV12](docs/01-ZX-UX-ARCHITECTURE-REV12.md)**. Ordered implementation work is defined by **[ZX-UX Implementation Steps REV03](docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV03.md)**.
 
 ## Hardware architecture: original 48K Spectrum first
 
@@ -114,8 +114,8 @@ The goal is therefore not "Unix emulation at any cost." It is a coherent **Unix-
 
 | Path | Purpose |
 |---|---|
-| [`docs/01-ZX-UX-ARCHITECTURE-REV11.md`](docs/01-ZX-UX-ARCHITECTURE-REV11.md) | Normative ZX-UX operating-system, terminal, ABI, storage, graphics, C48, and toolchain architecture |
-| [`docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV02.md`](docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV02.md) | Ordered phase-by-phase implementation and test plan |
+| [`docs/01-ZX-UX-ARCHITECTURE-REV12.md`](docs/01-ZX-UX-ARCHITECTURE-REV12.md) | Normative ZX-UX operating-system, terminal, ABI, storage, graphics, C48, and toolchain architecture |
+| [`docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV03.md`](docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV03.md) | Ordered phase-by-phase implementation and test plan |
 | [`docs/03-ZX-UX-DEVELOPMENT-WORKFLOW.md`](docs/03-ZX-UX-DEVELOPMENT-WORKFLOW.md) | Mandatory development, zero-defect scan, review, CI, and evidence workflow |
 | [`docs/04-ZX-UX-CHANGE-REQUEST-DEFERRED-WRAP-REV01.md`](docs/04-ZX-UX-CHANGE-REQUEST-DEFERRED-WRAP-REV01.md) | Proposed DEC-style deferred terminal wrap and bottom-right cursor behavior |
 | [`v1/`](v1/) | Current Version-1 implementation source, includes, tests, tools, assets, documentation, and certification artifacts |
@@ -150,8 +150,8 @@ For retrocomputing developers, the project brings together several areas that ar
 ## Project links
 
 - **C48 SDK / try the C compiler environment now:** [zx-ux-c48-sdk-sinclair-zx-spectrum-48k-unix-c-compiler-software-development-kit](https://github.com/tuklusan/zx-ux-c48-sdk-sinclair-zx-spectrum-48k-unix-c-compiler-software-development-kit)
-- **Project architecture:** [ZX-UX Architecture REV11](docs/01-ZX-UX-ARCHITECTURE-REV11.md)
-- **Implementation plan:** [ZX-UX Implementation Steps REV02](docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV02.md)
+- **Project architecture:** [ZX-UX Architecture REV12](docs/01-ZX-UX-ARCHITECTURE-REV12.md)
+- **Implementation plan:** [ZX-UX Implementation Steps REV03](docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV03.md)
 - **Development process:** [ZX-UX Development Workflow](docs/03-ZX-UX-DEVELOPMENT-WORKFLOW.md)
 - **SANYALnet Labs / Supratim Sanyal:** https://supratim-sanyal.blogspot.com/
 

@@ -93,6 +93,15 @@ jobs:
           done
           printf 'finalize\n' > "$progress"
           "$py" tools/finalize_phase0_evidence.py --root "$GITHUB_WORKSPACE" --evidence-dir "$ZXUX_EVIDENCE_DIR"
+
+          # REV12 activation is not complete until the previously admitted core
+          # is revalidated in exact order against the new architecture identity.
+          for n in $(seq -w 1 12); do
+            printf 'P1.%s revalidation build\n' "$n" > "$progress"
+            run_one "P1.${n}.build" "$py" "$driver" build --step "P1.$n"
+            printf 'P1.%s revalidation test\n' "$n" > "$progress"
+            run_one "P1.${n}.test" "$py" "$driver" test --step "P1.$n"
+          done
       - name: Assert source still clean and current
         run: |
           test -z "$(git status --porcelain=v1 --untracked-files=all)"

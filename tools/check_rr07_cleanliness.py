@@ -22,7 +22,10 @@ from check_reference_tree import PRESERVED_REFERENCE_DIR, ReferenceTreeError, ve
 
 ROOT = Path(__file__).resolve().parents[1]
 RECONCILIATION_PLAN = "docs/05-ZX-UX-BASELINE-REPAIR-RECONCILIATION-REV01.md"
-IMPLEMENTATION_PLAN = "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV02.md"
+IMPLEMENTATION_PLANS = {
+    "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV02.md",
+    "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV03.md",
+}
 SKIP_PREFIXES = (
     "v1/dist/certification/",
     "v1/build/",
@@ -97,7 +100,7 @@ def context_for(text: str, line: int) -> str:
 def intentional_legacy_reference(path: str, text: str, offset: int) -> bool:
     if path == RECONCILIATION_PLAN:
         return True
-    if path != IMPLEMENTATION_PLAN:
+    if path not in IMPLEMENTATION_PLANS:
         return False
     context = " " + context_for(text, line_number(text, offset)) + " "
     return any(marker in context for marker in PROHIBITION_MARKERS)

@@ -17,9 +17,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CERT = ROOT / "v1/dist/certification"
-ARCH_SHA = "1d736641e685c1d6136b66fc57d0c16fc662ce6ca4dfd640991743bb01bb706f"
+ARCH_SHA = "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0"
 LOCK_PATH = "tools/manifest/toolchain.lock.json"
-ARCH_PATH = "docs/01-ZX-UX-ARCHITECTURE-REV11.md"
+ARCH_PATH = "docs/01-ZX-UX-ARCHITECTURE-REV12.md"
 
 class CertificationError(RuntimeError): pass
 
@@ -68,6 +68,26 @@ def validate_activation(act: str, source: str)->None:
     changed=[p for p in git("diff-tree","--no-commit-id","--name-only","-r",parent,act).splitlines() if p]
     if not changed or any(not (p.startswith("v1/dist/certification/") and p.endswith(".json")) for p in changed):
         raise CertificationError("latest Phase-0 activation is not evidence-only")
+
+def validate_historical_activation_unchanged(act: str, aggregate: dict)->None:
+    source=aggregate.get("source_commit")
+    if not isinstance(source,str):
+        raise CertificationError("historical Phase-0 aggregate has invalid source identity")
+    if sha(ROOT/ARCH_PATH) != ARCH_SHA:
+        raise CertificationError("current architecture bytes do not match the frozen rebaseline digest")
+    if subprocess.run(["git","merge-base","--is-ancestor",act,"HEAD"],cwd=ROOT,capture_output=True).returncode:
+        raise CertificationError("historical Phase-0 activation is not an ancestor of HEAD")
+    validate_activation(act,source)
+    required=aggregate.get("required_records")
+    if not isinstance(required,list) or any(not isinstance(name,str) for name in required):
+        raise CertificationError("historical Phase-0 aggregate has invalid required_records")
+    paths=["phase-0.json",*required]
+    for name in paths:
+        path=CERT/name
+        if not path.is_file():
+            raise CertificationError(f"historical durable evidence missing during rebaseline: {name}")
+        if path.read_bytes()!=git_bytes("show",f"{act}:v1/dist/certification/{name}"):
+            raise CertificationError(f"historical durable evidence changed during rebaseline: {name}")
 
 def validate_source_identity(source: str, lock: str)->None:
     if len(source)!=40 or any(ch not in "0123456789abcdef" for ch in source):
@@ -119,6 +139,23 @@ def main()->int:
         if act is None:
             if args.require_active: raise CertificationError("Phase-0 evidence has not been activated")
             print("ZX-UX PHASE 0 EVIDENCE PRE-ACTIVATION PASS"); return 0
+
+        # During an architecture rebaseline the previous durable evidence remains
+        # immutable historical evidence until the certification workflow publishes
+        # a new evidence-only child commit.  A normal CI read must recognize that
+        # controlled transition instead of misclassifying the old architecture's
+        # still-valid records as corrupt current evidence.  --require-active stays
+        # fail-closed so no consumer can claim the new architecture is certified
+        # before its matching activation exists.
+        aggregate_path=CERT/"phase-0.json"
+        if aggregate_path.is_file():
+            aggregate=load(aggregate_path)
+            if aggregate.get("architecture_sha256") != ARCH_SHA:
+                validate_historical_activation_unchanged(act,aggregate)
+                if args.require_active:
+                    raise CertificationError("Phase-0 evidence has not been activated for the current architecture")
+                print("ZX-UX PHASE 0 EVIDENCE PRE-ACTIVATION PASS"); return 0
+
         agg=validate_complete()
         source=agg.get("source_commit")
         if not isinstance(source,str): raise CertificationError("invalid certified source")

@@ -28,6 +28,16 @@ def mutate_json(path:Path,key:str,value):
 def main()->int:
     if not (ROOT/"v1/dist/certification/phase-0.json").is_file():
         print("ZX-UX PHASE 0 EVIDENCE NEGATIVE PRE-ACTIVATION SKIP"); return 0
+
+    current=run(sys.executable,"tools/check_phase0_evidence.py",cwd=ROOT,check=False)
+    if current.returncode:
+        print("ZX-UX PHASE 0 EVIDENCE NEGATIVE FAIL: current evidence probe failed",file=sys.stderr); return 1
+    if "PRE-ACTIVATION PASS" in current.stdout:
+        required=run(sys.executable,"tools/check_phase0_evidence.py","--require-active",cwd=ROOT,check=False)
+        if required.returncode==0:
+            print("ZX-UX PHASE 0 EVIDENCE NEGATIVE FAIL: pre-activation state passed --require-active",file=sys.stderr); return 1
+        print("ZX-UX PHASE 0 EVIDENCE NEGATIVE PRE-ACTIVATION PASS"); return 0
+
     work=Path(tempfile.mkdtemp(prefix="zxux-evidence-negative-"))
     try:
         shutil.rmtree(work)

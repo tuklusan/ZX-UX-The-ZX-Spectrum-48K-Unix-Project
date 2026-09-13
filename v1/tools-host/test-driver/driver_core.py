@@ -26,7 +26,7 @@ from typing import Sequence
 ROOT_MARKER = b"ZX-UX project root"
 DEFAULT_TIMEOUT_SECONDS = 30.0
 TOOLCHAIN_LOCK = Path("tools/manifest/toolchain.lock.json")
-ARCHITECTURE = Path("docs/01-ZX-UX-ARCHITECTURE-REV11.md")
+ARCHITECTURE = Path("docs/01-ZX-UX-ARCHITECTURE-REV12.md")
 
 
 class DriverError(RuntimeError):

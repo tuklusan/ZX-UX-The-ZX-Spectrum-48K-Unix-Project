@@ -20,8 +20,8 @@ from typing import Any
 
 from driver_core import DriverError
 
-ARCHITECTURE = "docs/01-ZX-UX-ARCHITECTURE-REV11.md"
-ARCH_SHA256 = "1d736641e685c1d6136b66fc57d0c16fc662ce6ca4dfd640991743bb01bb706f"
+ARCHITECTURE = "docs/01-ZX-UX-ARCHITECTURE-REV12.md"
+ARCH_SHA256 = "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0"
 
 
 def _e001(root: Path, action: str, *, sha256_file: Any, run_command: Any, require_project_tool: Any):
