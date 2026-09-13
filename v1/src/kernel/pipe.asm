@@ -240,16 +240,15 @@ zx48_pipe_rollback_clear:
     scf
     ret
 
-; A=pipe slot, HL=destination, BC=request. Returns HL=bytes read.
+; A=pipe slot, HL=destination, BC=request. Positive short reads are allowed.
 zx48_pipe_read:
     ld (pipe_active_slot),a
     ld (pipe_io_ptr),hl
     ld (pipe_io_request),bc
     ld hl,0
-    ld (pipe_io_done),hl
     ld a,b
     or c
-    jr z,zx48_pipe_io_success
+    ret z
 zx48_pipe_read_retry:
     ld a,(pipe_active_slot)
     call zx48_pipe_ptr
@@ -259,19 +258,14 @@ zx48_pipe_read_retry:
     jr nz,zx48_pipe_read_copy
     ld a,(ix+PIPE_WRITERS_O)
     or a
-    jr z,zx48_pipe_io_success
+    ret z
     ld a,(pipe_active_slot)
     ld c,a
     call zx48_pipe_block_read
     ret c
     jr zx48_pipe_read_retry
 zx48_pipe_read_copy:
-zx48_pipe_read_copy_loop:
-    ld a,(ix+PIPE_COUNT_O)
-    or (ix+PIPE_COUNT_O+1)
-    jr z,zx48_pipe_read_done
-
-    ; Copy one contiguous ring segment through the canonical primitive.
+    ; Copy at most one contiguous ring chunk; a wrap returns a positive short count.
     ld c,(ix+PIPE_COUNT_O)
     ld b,(ix+PIPE_COUNT_O+1)
     ld hl,(pipe_io_request)
@@ -291,15 +285,11 @@ zx48_pipe_read_candidate:
     ld de,(pipe_io_ptr)
     push bc
     call zx48_memcpy
-    ld (pipe_io_ptr),de
     pop bc
 
     ld a,(ix+PIPE_RPOS_O)
     add a,c
-    ld e,a
-    ld a,(ix+PIPE_CAPACITY_O+1)
-    or a
-    ld a,e
+    bit 0,(ix+PIPE_CAPACITY_O+1)
     jr nz,zx48_pipe_read_rpos_ok
     and $7f
 zx48_pipe_read_rpos_ok:
@@ -312,38 +302,23 @@ zx48_pipe_read_rpos_ok:
     ld (ix+PIPE_COUNT_O),l
     ld (ix+PIPE_COUNT_O+1),h
 
-    ld hl,(pipe_io_request)
-    or a
-    sbc hl,bc
-    ld (pipe_io_request),hl
-    push hl
-    ld hl,(pipe_io_done)
-    add hl,bc
-    ld (pipe_io_done),hl
-    pop hl
-    ld a,h
-    or l
-    jr z,zx48_pipe_read_done
-    jr zx48_pipe_read_copy_loop
-zx48_pipe_read_done:
+    push bc
     ld a,(pipe_active_slot)
     ld c,a
     call zx48_pipe_wake_writers
-zx48_pipe_io_success:
-    ld hl,(pipe_io_done)
+    pop hl
     xor a
     ret
 
-; A=pipe slot, HL=source, BC=request. Returns HL=bytes written.
+; A=pipe slot, HL=source, BC=request. Positive short writes are allowed.
 zx48_pipe_write:
     ld (pipe_active_slot),a
     ld (pipe_io_ptr),hl
     ld (pipe_io_request),bc
     ld hl,0
-    ld (pipe_io_done),hl
     ld a,b
     or c
-    jr z,zx48_pipe_io_success
+    ret z
 zx48_pipe_write_retry:
     ld a,(pipe_active_slot)
     call zx48_pipe_ptr
@@ -351,32 +326,20 @@ zx48_pipe_write_retry:
     ld a,(ix+PIPE_READERS_O)
     or a
     jp z,zx48_pipe_broken
-    ld l,(ix+PIPE_COUNT_O)
-    ld h,(ix+PIPE_COUNT_O+1)
-    ld e,(ix+PIPE_CAPACITY_O)
-    ld d,(ix+PIPE_CAPACITY_O+1)
-    or a
-    sbc hl,de
-    jr nz,zx48_pipe_write_copy
-    ld hl,(pipe_io_done)
-    ld a,h
-    or l
-    jr nz,zx48_pipe_io_success
-    ld a,(pipe_active_slot)
-    ld c,a
-    call zx48_pipe_block_write
-    ret c
-    jr zx48_pipe_write_retry
-zx48_pipe_write_copy:
-zx48_pipe_write_copy_loop:
-    ; free = capacity-count, then limit by request and contiguous ring tail.
     ld l,(ix+PIPE_CAPACITY_O)
     ld h,(ix+PIPE_CAPACITY_O+1)
     ld e,(ix+PIPE_COUNT_O)
     ld d,(ix+PIPE_COUNT_O+1)
     or a
     sbc hl,de
-    jr z,zx48_pipe_write_done
+    jr nz,zx48_pipe_write_copy
+    ld a,(pipe_active_slot)
+    ld c,a
+    call zx48_pipe_block_write
+    ret c
+    jr zx48_pipe_write_retry
+zx48_pipe_write_copy:
+    ; HL=free bytes. Limit by request, then by contiguous ring tail.
     ld bc,(pipe_io_request)
     or a
     sbc hl,bc
@@ -399,15 +362,11 @@ zx48_pipe_write_candidate:
     pop hl
     push bc
     call zx48_memcpy
-    ld (pipe_io_ptr),hl
     pop bc
 
     ld a,(ix+PIPE_WPOS_O)
     add a,c
-    ld e,a
-    ld a,(ix+PIPE_CAPACITY_O+1)
-    or a
-    ld a,e
+    bit 0,(ix+PIPE_CAPACITY_O+1)
     jr nz,zx48_pipe_write_wpos_ok
     and $7f
 zx48_pipe_write_wpos_ok:
@@ -419,24 +378,13 @@ zx48_pipe_write_wpos_ok:
     ld (ix+PIPE_COUNT_O),l
     ld (ix+PIPE_COUNT_O+1),h
 
-    ld hl,(pipe_io_request)
-    or a
-    sbc hl,bc
-    ld (pipe_io_request),hl
-    push hl
-    ld hl,(pipe_io_done)
-    add hl,bc
-    ld (pipe_io_done),hl
-    pop hl
-    ld a,h
-    or l
-    jr z,zx48_pipe_write_done
-    jr zx48_pipe_write_copy_loop
-zx48_pipe_write_done:
+    push bc
     ld a,(pipe_active_slot)
     ld c,a
     call zx48_pipe_wake_readers
-    jp zx48_pipe_io_success
+    pop hl
+    xor a
+    ret
 
 ; A=ring position, BC=candidate. Return BC limited to bytes before ring wrap.
 zx48_pipe_chunk_limit:
