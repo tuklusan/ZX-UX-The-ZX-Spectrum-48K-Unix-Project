@@ -35,20 +35,16 @@ CONSOLE_STATE_END        EQU CONSOLE_STATE_BASE+9
 
     MACRO EMIT_CONSOLE_ROUTINES
 zx48_console_init:
+    ld hl,1
+    ld (cursor_phase),hl
+    ld (tty_cursor_shape),hl
+    dec l
+    ld (tty_row),hl
+    ld (cursor_service_parity),hl
+    ld a,l
+    ld (cursor_blink_divider),a
     ld a,TTY_MODE_64
     ld (tty_mode),a
-    ld a,TTY_CURSOR_UNDERLINE
-    ld (tty_cursor_shape),a
-    ld a,1
-    ld (cursor_phase),a
-    xor a
-    ld (tty_row),a
-    ld (tty_col),a
-    ld (tty_cursor_visible),a
-    ld (cursor_service_parity),a
-    ld (tty_wrap_pending),a
-    ld (screen_mutation_depth),a
-    ld (cursor_blink_divider),a
     ret
 
 zx48_console_clear:
@@ -82,9 +78,7 @@ zx48_console_setpos:
     cp l
     jr c,zx48_console_bad
 zx48_console_set_commit:
-    push hl
     call zx48_cursor_hide
-    pop hl
     ld a,h
     ld h,l
     ld l,a
