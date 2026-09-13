@@ -1,0 +1,173 @@
+{
+  "action": "test",
+  "architecture_sha256": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+  "assertions": [
+    {
+      "name": "architecture-authoritative-shadow",
+      "passed": true
+    },
+    {
+      "name": "architecture-rom-altreg-gate",
+      "passed": true
+    },
+    {
+      "count": 1,
+      "name": "sole-production-ula-out-owner",
+      "owners": [
+        "ula_io.asm"
+      ],
+      "passed": true
+    },
+    {
+      "name": "bordcr-address-exact",
+      "passed": true
+    },
+    {
+      "name": "shadow-commit-owns-hardware-write",
+      "passed": true
+    },
+    {
+      "name": "border-rmw-preserves-sound",
+      "passed": true
+    },
+    {
+      "name": "sound-rmw-preserves-border",
+      "passed": true
+    },
+    {
+      "name": "rom-prepare-preserves-af",
+      "passed": true
+    },
+    {
+      "name": "rom-prepare-publishes-altreg-busy",
+      "passed": true
+    },
+    {
+      "name": "rom-prepare-mirrors-only-border",
+      "passed": true
+    },
+    {
+      "name": "beeper-and-tape-prepare-before-rom",
+      "passed": true
+    },
+    {
+      "name": "rom-return-reemits-authoritative-shadow",
+      "passed": true
+    },
+    {
+      "name": "rom-return-clears-altreg-busy",
+      "passed": true
+    },
+    {
+      "name": "rom-result-contract-still-checked",
+      "passed": true
+    },
+    {
+      "name": "graphics-border-routes-through-owner",
+      "passed": true
+    },
+    {
+      "name": "sound-stub-has-no-direct-out",
+      "passed": true
+    },
+    {
+      "name": "tape-stub-routes-through-rom-wrappers",
+      "passed": true
+    },
+    {
+      "free_bytes": 0,
+      "name": "ordinary-code-pool-within-faff",
+      "passed": true,
+      "used_end": "0xFB00"
+    },
+    {
+      "name": "runtime-border-sound-interleave-preserved",
+      "passed": true
+    },
+    {
+      "name": "runtime-bordcr-nonborder-bits-preserved",
+      "passed": true
+    },
+    {
+      "name": "runtime-beeper-wrapper-shadow-reconciled",
+      "passed": true
+    },
+    {
+      "name": "runtime-save-wrapper-shadow-reconciled",
+      "passed": true
+    },
+    {
+      "name": "runtime-load-wrapper-shadow-reconciled",
+      "passed": true
+    },
+    {
+      "name": "runtime-rom-af-and-primary-results-preserved",
+      "passed": true
+    },
+    {
+      "name": "runtime-rom-altreg-gate-balanced",
+      "passed": true
+    },
+    {
+      "name": "negative-missing-beeper-prepare-rejected",
+      "passed": true
+    },
+    {
+      "name": "negative-missing-altreg-gate-set-rejected",
+      "passed": true
+    },
+    {
+      "name": "negative-bordcr-wide-clobber-rejected",
+      "passed": true
+    },
+    {
+      "name": "negative-bordcr-authority-rejected",
+      "passed": true
+    },
+    {
+      "name": "negative-missing-altreg-gate-clear-rejected",
+      "passed": true
+    },
+    {
+      "name": "negative-foreign-direct-out-rejected",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 30,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nkernel.asm(87): warning[shortblock]: init data for block truncated to length: 0\nPass 3 complete\nErrors: 0, warnings: 1, compiled: 8603 lines, work time: 0.028 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "docs/01-ZX-UX-ARCHITECTURE-REV12.md": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+    "v1/build/kernel.bin": "03884d097aed98af8cedd09122d3841a48be22fcae7d5f20211f94fbfad81b3c",
+    "v1/src/kernel/console.asm": "b064fff503bd1c498b46a4890537423a1857b842406480ffa9233db54ee461e3",
+    "v1/src/kernel/graphics.asm": "8a69c88ca29673f7ee0f5afc89a3b64ac7dc49291a0cc61e499808d7a2f6791d",
+    "v1/src/kernel/rom_services.asm": "451474302209514de56648eee2d7d98528167496ee8d714d68fa34975371cdee",
+    "v1/src/kernel/sound.asm": "2248746a545b3bc27365a09a7ca993451fa3d4bb2349704432a633e3fdbbf188",
+    "v1/src/kernel/tape.asm": "289cdaabdf768055cdfc30d552cf8c62e6fa7fb546c470ad7934ddf49594c37a",
+    "v1/src/kernel/ula_io.asm": "58b8ca7498acc6f4f9b9aea168f5493ab64ece916ea10d9a4b23e2f14b5f0fef",
+    "v1/tools-host/test-driver/phase1_ula.py": "be7e4587a92b67872daf687ac0475f4e428a9838abf8aea37da8d4dcd1f18467"
+  },
+  "prerequisites": {
+    "P1.24": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "846ddc1c8eb9469e2df7b92fa7ed88fc26bad47f",
+  "status": "PASS",
+  "step": "P1.25",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
