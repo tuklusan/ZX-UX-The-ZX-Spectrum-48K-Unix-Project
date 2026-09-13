@@ -110,20 +110,17 @@ zx48_console_putchar:
     jr z,zx48_console_lf
     dec a
     dec a
-    jr z,zx48_console_ff
+    jp z,zx48_console_clear
     dec a
     jr z,zx48_console_cr
     xor a
     ret
-zx48_console_ff:
-    jp zx48_console_clear
 
 ; Moving controls share pending cancellation and cursor removal.
 zx48_console_control_begin:
-    call zx48_cursor_hide
     xor a
     ld (tty_wrap_pending),a
-    ret
+    jp zx48_cursor_hide
 zx48_console_lf:
     call zx48_console_control_begin
 zx48_console_wrap_show:
