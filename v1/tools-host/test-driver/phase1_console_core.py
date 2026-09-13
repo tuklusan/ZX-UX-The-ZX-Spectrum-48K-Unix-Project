@@ -65,6 +65,7 @@ def _putchar(address: int, value: int) -> bytes:
 def _source_contract(root: Path) -> list[dict[str, object]]:
     console = (root / "v1/src/kernel/console.asm").read_text(encoding="utf-8").lower()
     control_block = console[console.index("zx48_console_control_begin:"):console.index("; hl=buffer")]
+    setpos = console[console.index("zx48_console_setpos:"):console.index("zx48_console_bad:")]
     return [
         {"name": "private-wrap-pending-state-exists", "passed": "tty_wrap_pending" in console},
         {"name": "cold-init-clears-pending", "passed": "ld (tty_wrap_pending),a" in console[console.index("zx48_console_init:"):console.index("zx48_console_clear:")]},
@@ -72,8 +73,8 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
         {"name": "pending-wrap-is-resolved-before-draw", "passed": "call nz,zx48_console_wrap_now" in console and console.index("call nz,zx48_console_wrap_now") < console.index("call zx48_tty32_draw_char")},
         {"name": "last-real-cell-sets-pending", "passed": "zx48_console_set_pending:" in console and "ld (tty_wrap_pending),a" in console[console.index("zx48_console_set_pending:"):console.index("zx48_console_wrap_now:")]},
         {"name": "mode-value-derives-last-real-column", "passed": "ld a,(tty_mode)\n    dec a\n    ld b,a\n    ld a,(tty_col)\n    cp b" in console},
-        {"name": "moving-controls-clear-pending", "passed": "ld (tty_wrap_pending),a" in control_block and all(f"call zx48_console_control_begin" in console[console.index(label):console.index(label) + 100] for label in ("zx48_console_lf:", "zx48_console_cr:", "zx48_console_bs:", "zx48_console_tab:"))},
-        {"name": "setpos-validates-before-mutation", "passed": console.index("zx48_console_set_commit:") > console.index("cp 64") and "ld (tty_wrap_pending),a" in console[console.index("zx48_console_set_commit:"):console.index("zx48_console_bad:")]},
+        {"name": "moving-controls-clear-pending", "passed": "ld (tty_wrap_pending),a" in control_block and all("call zx48_console_control_begin" in console[console.index(label):console.index(label) + 100] for label in ("zx48_console_lf:", "zx48_console_cr:", "zx48_console_bs:", "zx48_console_tab:"))},
+        {"name": "setpos-validates-before-mutation", "passed": all(token in setpos for token in ("cp 24", "ld a,(tty_mode)", "dec a", "cp l", "jr c,zx48_console_bad", "zx48_console_set_commit:", "ld (tty_wrap_pending),a")) and setpos.index("jr c,zx48_console_bad") < setpos.index("zx48_console_set_commit:")},
         {"name": "no-persistent-phantom-coordinate", "passed": "cp 32\n    jr c,zx48_console_store_col" not in console and "cp 64\n    jr c,zx48_console_store_col" not in console},
     ]
 

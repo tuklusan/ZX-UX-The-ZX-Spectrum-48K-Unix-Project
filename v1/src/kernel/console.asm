@@ -73,16 +73,9 @@ zx48_console_setpos:
     cp 24
     jr nc,zx48_console_bad
     ld a,(tty_mode)
-    cp TTY_MODE_64
-    jr z,zx48_console_set64
-    ld a,l
-    cp 32
-    jr nc,zx48_console_bad
-    jr zx48_console_set_commit
-zx48_console_set64:
-    ld a,l
-    cp 64
-    jr nc,zx48_console_bad
+    dec a
+    cp l
+    jr c,zx48_console_bad
 zx48_console_set_commit:
     call zx48_cursor_hide
     ld a,h
@@ -91,9 +84,7 @@ zx48_console_set_commit:
     ld (tty_col),a
     xor a
     ld (tty_wrap_pending),a
-    call zx48_cursor_show
-    xor a
-    ret
+    jp zx48_cursor_show
 zx48_console_bad:
     ld a,E_INVAL
     scf
@@ -111,18 +102,62 @@ zx48_console_getpos:
 zx48_console_putchar:
     cp $20
     jr nc,zx48_console_printable
-    cp $0a
-    jp z,zx48_console_lf
-    cp $0d
-    jp z,zx48_console_cr
-    cp $08
-    jp z,zx48_console_bs
-    cp $09
-    jp z,zx48_console_tab
-    cp $0c
-    jp z,zx48_console_clear
+    sub $08
+    jr z,zx48_console_bs
+    dec a
+    jr z,zx48_console_tab
+    dec a
+    jr z,zx48_console_lf
+    dec a
+    dec a
+    jr z,zx48_console_ff
+    dec a
+    jr z,zx48_console_cr
     xor a
     ret
+zx48_console_ff:
+    jp zx48_console_clear
+
+; Moving controls share pending cancellation and cursor removal.
+zx48_console_control_begin:
+    call zx48_cursor_hide
+    xor a
+    ld (tty_wrap_pending),a
+    ret
+zx48_console_lf:
+    call zx48_console_control_begin
+zx48_console_wrap_show:
+    call zx48_console_wrap_now
+    jp zx48_cursor_show
+zx48_console_cr:
+    call zx48_console_control_begin
+    ld (tty_col),a
+    jp zx48_cursor_show
+zx48_console_bs:
+    call zx48_console_control_begin
+    ld a,(tty_col)
+    or a
+    jr z,zx48_console_control_done
+    dec a
+    ld (tty_col),a
+zx48_console_control_done:
+    jp zx48_cursor_show
+zx48_console_tab:
+    call zx48_console_control_begin
+    ld a,(tty_col)
+    and $f8
+    add a,8
+    ld b,a
+    ld a,(tty_mode)
+    dec a
+    cp b
+    jr c,zx48_console_tab_wrap
+    ld a,b
+    ld (tty_col),a
+    jp zx48_cursor_show
+zx48_console_tab_wrap:
+    jp zx48_console_wrap_show
+
 zx48_console_printable:
     cp $80
     jr nc,zx48_console_bad
@@ -172,47 +207,6 @@ zx48_console_wrap_now:
 zx48_console_wrap_store:
     ld (tty_row),a
     ret
-
-; Moving controls share pending cancellation and cursor removal.
-zx48_console_control_begin:
-    call zx48_cursor_hide
-    xor a
-    ld (tty_wrap_pending),a
-    ret
-zx48_console_lf:
-    call zx48_console_control_begin
-    call zx48_console_wrap_now
-    jp zx48_cursor_show
-zx48_console_cr:
-    call zx48_console_control_begin
-    xor a
-    ld (tty_col),a
-    jp zx48_cursor_show
-zx48_console_bs:
-    call zx48_console_control_begin
-    ld a,(tty_col)
-    or a
-    jr z,zx48_console_control_done
-    dec a
-    ld (tty_col),a
-zx48_console_control_done:
-    jp zx48_cursor_show
-zx48_console_tab:
-    call zx48_console_control_begin
-    ld a,(tty_col)
-    and $f8
-    add a,8
-    ld b,a
-    ld a,(tty_mode)
-    cp b
-    jr z,zx48_console_tab_wrap
-    jr c,zx48_console_tab_wrap
-    ld a,b
-    ld (tty_col),a
-    jp zx48_cursor_show
-zx48_console_tab_wrap:
-    call zx48_console_wrap_now
-    jp zx48_cursor_show
 
 ; HL=buffer,BC=count; returns HL=bytes written.
 zx48_console_write:
@@ -287,9 +281,6 @@ zx48_tty_set_mode:
     cp TTY_MODE_64
     jr nz,zx48_tty_bad
 zx48_tty_mode_ok:
-    ld b,a
-    call zx48_cursor_hide
-    ld a,b
     ld (tty_mode),a
     call zx48_console_clear
     jr zx48_tty_ok
