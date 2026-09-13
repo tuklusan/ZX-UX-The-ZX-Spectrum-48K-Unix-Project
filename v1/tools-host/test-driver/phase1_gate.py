@@ -24,6 +24,9 @@ import phase1_probe
 # step on every relevant push, so later changes cannot silently regress an
 # earlier Phase-1 correction gate.
 CERTIFIED_STEPS = (
+    # REV12 rebaseline requires the already-admitted core to be replayed before
+    # any later Phase-1 certification can provide regression credit.
+    *(f"P1.{number:02d}" for number in range(1, 13)),
     "P1.28",
     "P1.29",
     "P1.30",
