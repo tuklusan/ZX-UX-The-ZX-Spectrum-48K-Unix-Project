@@ -302,10 +302,16 @@ def _pipe_fixture(root: Path, labels: dict[str, int], kernel: bytes) -> None:
     code += _sys_rw(SYS_READ, PIPE_RESULT, PIPE_OUT1, 180) + _jp_c(FAIL_PC)
     code += phase1._ld_de(180) + b"\xB7\xED\x52" + _jp_nz(FAIL_PC)
     _compare_regions(code, PIPE_SRC1, PIPE_OUT1, 180)
+    # WPOS=200: only 56 bytes fit before the 256-byte ring wraps.
     code += _sys_rw(SYS_WRITE, PIPE_RESULT + 1, PIPE_SRC2, 100) + _jp_c(FAIL_PC)
-    code += phase1._ld_de(100) + b"\xB7\xED\x52" + _jp_nz(FAIL_PC)
+    code += phase1._ld_de(56) + b"\xB7\xED\x52" + _jp_nz(FAIL_PC)
+    code += _sys_rw(SYS_WRITE, PIPE_RESULT + 1, PIPE_SRC2 + 56, 44) + _jp_c(FAIL_PC)
+    code += phase1._ld_de(44) + b"\xB7\xED\x52" + _jp_nz(FAIL_PC)
+    # RPOS=180: read returns the 76-byte tail, then the 44-byte head.
     code += _sys_rw(SYS_READ, PIPE_RESULT, PIPE_OUT2, 120) + _jp_c(FAIL_PC)
-    code += phase1._ld_de(120) + b"\xB7\xED\x52" + _jp_nz(FAIL_PC)
+    code += phase1._ld_de(76) + b"\xB7\xED\x52" + _jp_nz(FAIL_PC)
+    code += _sys_rw(SYS_READ, PIPE_RESULT, PIPE_OUT2 + 76, 44) + _jp_c(FAIL_PC)
+    code += phase1._ld_de(44) + b"\xB7\xED\x52" + _jp_nz(FAIL_PC)
     _compare_regions(code, PIPE_REF2, PIPE_OUT2, 120)
     table = labels["pipe_table"]
     code += _expect_byte(table + 2, 44) + _expect_byte(table + 3, 44)
@@ -387,7 +393,7 @@ def dispatch(root: Path, action: str, step: str, *, sha256_file: Callable[[Path]
             {"name": "search-and-all-single-step-block-families-runtime", "passed": True},
             {"name": "strlen-strcmp-runtime", "passed": True},
             {"name": "live-udg-canonical-copy-runtime", "passed": True},
-            {"name": "live-pipe-ring-wrap-canonical-chunk-copy-runtime", "passed": True},
+            {"name": "live-pipe-ring-wrap-short-count-canonical-chunk-copy-runtime", "passed": True},
             {"name": "accepted-im2-interrupt-between-ldir-iterations-completes-exactly", "passed": True, "bytes": LONG_COUNT},
             {"name": "wrong-overlap-direction-negative-oracle", "passed": True},
             {"name": "ownership-family-and-measurement-negative-oracles", "passed": True},
