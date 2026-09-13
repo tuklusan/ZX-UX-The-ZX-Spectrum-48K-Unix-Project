@@ -39,16 +39,21 @@ zx48_console_init:
     ld (tty_mode),a
     ld a,TTY_CURSOR_UNDERLINE
     ld (tty_cursor_shape),a
+    ld a,1
+    ld (cursor_phase),a
     xor a
     ld (tty_row),a
     ld (tty_col),a
     ld (tty_cursor_visible),a
     ld (cursor_service_parity),a
     ld (tty_wrap_pending),a
+    ld (screen_mutation_depth),a
+    ld (cursor_blink_divider),a
     ret
 
 zx48_console_clear:
     call zx48_cursor_hide
+zx48_console_clear_body:
     xor a
     ld hl,BITMAP_START
     ld de,BITMAP_START+1
@@ -77,11 +82,13 @@ zx48_console_setpos:
     cp l
     jr c,zx48_console_bad
 zx48_console_set_commit:
+    push hl
     call zx48_cursor_hide
+    pop hl
     ld a,h
-    ld (tty_row),a
-    ld a,l
-    ld (tty_col),a
+    ld h,l
+    ld l,a
+    ld (tty_row),hl
     xor a
     ld (tty_wrap_pending),a
     jp zx48_cursor_show
@@ -91,9 +98,9 @@ zx48_console_bad:
     ret
 
 zx48_console_getpos:
-    ld a,(tty_row)
-    ld h,a
-    ld a,(tty_col)
+    ld hl,(tty_row)
+    ld a,h
+    ld h,l
     ld l,a
     xor a
     ret
@@ -278,9 +285,11 @@ zx48_tty_set_mode:
     cp TTY_MODE_64
     jr nz,zx48_tty_bad
 zx48_tty_mode_ok:
+    push af
+    call zx48_cursor_hide
+    pop af
     ld (tty_mode),a
-    call zx48_console_clear
-    jr zx48_tty_ok
+    jp zx48_console_clear_body
 zx48_tty_get_size:
     ld a,(tty_mode)
     ld (de),a
@@ -292,9 +301,9 @@ zx48_tty_set_cursor:
     ld a,(de)
     cp 3
     jr nc,zx48_tty_bad
-    ld b,a
+    push af
     call zx48_cursor_hide
-    ld a,b
+    pop af
     ld (tty_cursor_shape),a
     call zx48_cursor_show
     jr zx48_tty_ok

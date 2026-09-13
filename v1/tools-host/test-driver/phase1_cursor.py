@@ -152,14 +152,16 @@ def _positive_test(root: Path, labels: dict[str, int], kernel_bytes: bytes) -> N
 def _stale_restore_negative(root: Path, labels: dict[str, int], kernel_bytes: bytes) -> None:
     hide = labels["zx48_cursor_hide"]
     visible = labels["tty_cursor_visible"]
+    depth = labels["screen_mutation_depth"]
     patched = bytearray(kernel_bytes)
     offset = hide - phase1.KERNEL_BASE
     require(0 <= offset <= len(patched) - 3, "cursor hide label outside kernel image")
     patched[offset:offset + 3] = _jp(STALE_HANDLER)
-    # Deliberately wrong saved-pixel-style hide: when visible, restore a stale byte
-    # instead of XORing the current bitmap and then mark the cursor hidden.
+    # Deliberately wrong saved-pixel-style hide. Preserve the outer mutation
+    # depth so the matching strict screen end can still expose the stale restore.
     handler = (
-        _load_byte(visible)
+        _store_byte(depth, 1)
+        + _load_byte(visible)
         + b"\xB7\xC8"                      # OR A; RET Z
         + _store_byte(_bitmap_row_address(0), 0xA5)
         + b"\xAF\x32" + _word(visible) + b"\xC9"
@@ -200,6 +202,7 @@ def dispatch(
         "tty_cursor_visible",
         "tty_row",
         "tty_col",
+        "screen_mutation_depth",
     )
     labels = phase1._labels(listing, names)
     kernel_bytes = kernel.read_bytes()

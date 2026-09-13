@@ -173,9 +173,9 @@ def _compare(code: bytearray, *, mismatch: int, equal: int) -> None:
 
 def _fixture(root: Path, labels: dict[str, int], kernel: bytes, source: bytes, expected: bytes, *, bracketed: bool) -> None:
     code = bytearray(b"\xF3" + phase1._ld_sp(phase1.USER_STACK))
-    for name, value in (("tty_mode", 64), ("tty_row", 1), ("tty_col", 0), ("tty_cursor_shape", 2), ("tty_cursor_visible", 0)):
+    for name, value in (("tty_mode", 64), ("tty_row", 1), ("tty_col", 0), ("tty_cursor_shape", 2), ("tty_cursor_visible", 0), ("cursor_phase", 1), ("cursor_service_parity", 0), ("screen_mutation_depth", 0)):
         code += _store(labels[name], value)
-    code += _call(labels["zx48_cursor_show"]) + _expect(labels["tty_cursor_visible"], 1)
+    code += _call(labels["zx48_cursor_service"]) + _expect(labels["tty_cursor_visible"], 1)
     if bracketed:
         code += _call(labels["zx48_cursor_hide"]) + _expect(labels["tty_cursor_visible"], 0)
     code += _call(labels["zx48_console_scroll"])
@@ -194,7 +194,7 @@ def dispatch(root: Path, action: str, step: str, *, sha256_file: Callable[[Path]
     failed = [x["name"] for x in assertions if x["passed"] is not True]
     require(not failed, f"static P1.23 failures: {failed}")
     command, kernel_path, listing = phase1._assemble_kernel(root, run_command, require_project_tool)
-    labels = phase1._labels(listing, ("zx48_console_scroll", "zx48_cursor_show", "zx48_cursor_hide", "tty_mode", "tty_row", "tty_col", "tty_cursor_shape", "tty_cursor_visible"))
+    labels = phase1._labels(listing, ("zx48_console_scroll", "zx48_cursor_service", "zx48_cursor_hide", "tty_mode", "tty_row", "tty_col", "tty_cursor_shape", "tty_cursor_visible", "cursor_phase", "cursor_service_parity", "screen_mutation_depth"))
     kernel = kernel_path.read_bytes()
     source = _screen()
     expected = _scroll(source)
