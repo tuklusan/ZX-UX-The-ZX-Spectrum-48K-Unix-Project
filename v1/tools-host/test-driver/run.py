@@ -58,6 +58,7 @@ import phase1_getpos
 import phase1_setpos
 import phase1_primitives_strict
 import phase1_acceptance
+import phase2_mex1
 from driver_core import (
     DriverError,
     find_root,
@@ -165,6 +166,10 @@ def dispatch(root: Path, action: str, step: str):
         return phase1_acceptance.dispatch(root, action, step, **kwargs)
     if step.startswith("P1."):
         return phase1.dispatch(root, action, step, **kwargs)
+    if step == "P2.01":
+        return phase2_mex1.dispatch(root, action, step, **kwargs)
+    if step.startswith("P2."):
+        raise DriverError(f"numbered Phase-2 step is not registered: {step}")
     raise DriverError(f"step is not registered with the deterministic test driver: {step}")
 
 
@@ -179,6 +184,10 @@ def prerequisite_statuses(step: str) -> dict[str, str]:
         number = int(step.split(".", 1)[1])
         if 1 <= number <= 41:
             return {"P0.34": "PASS"} if number == 1 else {f"P1.{number - 1:02d}": "PASS"}
+    if step.startswith("P2."):
+        number = int(step.split(".", 1)[1])
+        if 1 <= number <= 24:
+            return {"P1.41": "PASS"} if number == 1 else {f"P2.{number - 1:02d}": "PASS"}
     return {}
 
 

@@ -35,6 +35,12 @@ is exactly a 24-byte header, `image_size` image bytes, and
 `image_size + bss_size` is at most 32768 bytes. The exact stored length is
 `relocation_table_offset + relocation_count * 2` and is also at most 32768.
 All arithmetic is validated widened before a value is narrowed to 16 bits.
+In particular, implementations widen each of `24 + image_size`,
+`relocation_count * 2`, `relocation_table_offset + relocation_count * 2`, and
+`image_size + bss_size` before comparing or storing a narrower result. A low
+16-bit wrap is never accepted as valid arithmetic.
+
+If `relocation_count` is nonzero, `image_size` is at least 2.
 
 Each relocation is a little-endian image offset naming a two-byte ABS16 word.
 Relocation offsets are strictly increasing and non-overlapping, so each offset after
