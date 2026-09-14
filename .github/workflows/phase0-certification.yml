@@ -141,8 +141,7 @@ jobs:
           git add -A v1/dist/certification
           changed="$(git diff --cached --name-only)"
           test -n "$changed"
-          bad="$(printf '%s
-' "$changed" | grep -Ev '^v1/dist/certification/(E0\.(0[1-6])\.(build|test)\.json|E0\.04\.result\.json|P0\.(0[1-9]|[12][0-9]|3[0-4])\.(build|test)\.json|P0\.34\.result\.json|phase-0\.json)$' || true)"
+          bad="$(printf '%s\n' "$changed" | grep -Ev '^v1/dist/certification/(E0\.(0[1-6])\.(build|test)\.json|E0\.04\.result\.json|P0\.(0[1-9]|[12][0-9]|3[0-4])\.(build|test)\.json|P0\.34\.result\.json|phase-0\.json)$' || true)"
           test -z "$bad"
           git config user.name "github-actions[bot]"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "R&R-06 activate Phase-0 certification evidence for $GITHUB_SHA"
