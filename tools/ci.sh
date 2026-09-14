@@ -90,8 +90,8 @@ if ! grep -Eq 'branches:[[:space:]]*\[main\]|^[[:space:]]*-[[:space:]]+main[[:sp
   fail=1
 fi
 
-if ! grep -Fq "workflows: ['ZX-UX Phase 0 Certification']" "$workflow"; then
-  echo "ERROR: post-certification validation trigger missing" >&2
+if ! grep -Fq "workflows: ['ZX-UX Phase 0 Certification', 'ZX-UX Phase 1 Certification']" "$workflow"; then
+  echo "ERROR: Phase-0/Phase-1 post-certification validation triggers missing" >&2
   fail=1
 fi
 
