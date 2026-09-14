@@ -133,6 +133,32 @@ matrix. RAW codec is 0 and ZXP1 PACKED codec is 1.
 `O_EXCL=20`. Unknown bits are invalid. At least one of read/write is required.
 TRUNC and APPEND require write; EXCL requires create.
 
+## Process bootstrap argument block (ARG1)
+
+ARG1 is the immutable process-lifetime argument block supplied to `SYS_SPAWN`
+and `SYS_EXEC`. The caller supplies `arg1_ptr` plus the exact `arg1_len`; the
+kernel validates the complete block before any process becomes READY and copies
+validated bytes into process-owned bootstrap storage outside the downward-growing
+runtime stack.
+
+ARG1 is at most 256 bytes and has this exact packed layout:
+
+| Offset | Size | Field |
+| --- | --- | --- |
+| `+0` | 4 | magic bytes `ARG1` |
+| `+4` | 1 | `argc`, exactly 1..16 |
+| `+5` | 1 | reserved, exactly 0 |
+| `+6` | 2 | exact total block length, little-endian |
+| `+8` | variable | exactly `argc` NUL-terminated argument strings |
+
+The total-length field must equal the supplied `arg1_len`; all strings must
+terminate within that exact length and no trailing bytes are permitted after the
+`argc`th terminator. `argv[0]` is byte-for-byte the exact non-empty command token
+used to invoke the program. The complete block is rejected with `E_FORMAT` before
+allocation or process publication if magic, count, reserved byte, length, string
+termination, or `argv[0]` identity is invalid. `crt0` later builds the separate
+`argc+1` pointer vector on the FAST process stack and appends the terminating NULL.
+
 ## Allocation classes
 
 One address-ordered allocator covers `6000-DFFF`. FAST_REQUIRED allocations are

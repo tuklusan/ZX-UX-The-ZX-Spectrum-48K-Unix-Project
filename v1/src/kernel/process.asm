@@ -33,6 +33,9 @@ PROC_ENV_PTR              EQU 44
 PROC_PRIVATE_FLAGS        EQU 46
 PROC_RESERVED             EQU 47
 PROCESS_STACK_BOOTSTRAP_BYTES EQU 64
+ARG1_HEADER_SIZE              EQU 8
+ARG1_MAX_SIZE                 EQU 256
+ARG1_MAX_COUNT                EQU 16
 
     MACRO EMIT_PROCESS_ROUTINES
 zx48_process_init:
@@ -759,4 +762,188 @@ zx48_mex1_alloc_stack_format:
     ret
 
 process_mex_stack_allocation_size: dw 0
+    ENDM
+
+; P2.06 ARG1 validator/private-copy builder. IX points to the caller-supplied
+; ARG1 block, BC is its exact supplied byte length, and HL points to the exact
+; NUL-terminated invocation token expected in argv[0]. Validation is complete
+; and side-effect free before any allocator call. On successful validation,
+; zx48_arg1_build reserves an uncommitted ALLOC_ANY extent and copies the exact
+; immutable ARG1 bytes there. Success: HL=private copy base, BC=exact ARG1
+; length, DE=rounded allocation length, A=0/C clear. Failure: A=errno/C set and
+; no builder-owned allocation is created or process state published.
+    MACRO EMIT_ARG1_ROUTINES
+zx48_arg1_validate:
+    ; Keep the expected argv[0] token in DE. Validation uses registers and the
+    ; caller's stack only; malformed input cannot mutate allocator/process state
+    ; or validator-owned persistent scratch.
+    ld d,h
+    ld e,l
+
+    ; The shortest structurally possible block is header + one NUL byte.
+    ld a,b
+    or a
+    jr nz,zx48_arg1_min_ok
+    ld a,c
+    cp ARG1_HEADER_SIZE+1
+    jp c,zx48_arg1_format
+zx48_arg1_min_ok:
+
+    ; ARG1 is capped at 256 bytes exactly. BC=0100 is the only B=1 value valid.
+    ld a,b
+    cp 2
+    jp nc,zx48_arg1_format
+    or a
+    jr z,zx48_arg1_size_ok
+    ld a,c
+    or a
+    jp nz,zx48_arg1_format
+zx48_arg1_size_ok:
+
+    ; Reject source+length address-space wrap before any indexed header read.
+    push ix
+    pop hl
+    add hl,bc
+    jp c,zx48_arg1_format
+
+    ld a,(ix+0)
+    cp $41
+    jp nz,zx48_arg1_format
+    ld a,(ix+1)
+    cp $52
+    jp nz,zx48_arg1_format
+    ld a,(ix+2)
+    cp $47
+    jp nz,zx48_arg1_format
+    ld a,(ix+3)
+    cp $31
+    jp nz,zx48_arg1_format
+
+    ld a,(ix+4)
+    or a
+    jp z,zx48_arg1_format
+    cp ARG1_MAX_COUNT+1
+    jp nc,zx48_arg1_format
+
+    ld a,(ix+5)
+    or a
+    jp nz,zx48_arg1_format
+
+    ld a,(ix+6)
+    cp c
+    jp nz,zx48_arg1_format
+    ld a,(ix+7)
+    cp b
+    jp nz,zx48_arg1_format
+
+    ; argv[0] must be the exact non-empty invocation token, byte for byte.
+    ld a,(de)
+    or a
+    jp z,zx48_arg1_format
+    push ix
+    pop hl
+    inc hl
+    inc hl
+    inc hl
+    inc hl
+    inc hl
+    inc hl
+    inc hl
+    inc hl
+    dec bc
+    dec bc
+    dec bc
+    dec bc
+    dec bc
+    dec bc
+    dec bc
+    dec bc
+zx48_arg1_argv0_loop:
+    ld a,b
+    or c
+    jp z,zx48_arg1_format
+    ld a,(de)
+    cp (hl)
+    jp nz,zx48_arg1_format
+    inc hl
+    dec bc
+    or a
+    jr z,zx48_arg1_argv0_done
+    inc de
+    ld a,d
+    or e
+    jp z,zx48_arg1_format
+    jr zx48_arg1_argv0_loop
+
+zx48_arg1_argv0_done:
+    ld a,(ix+4)
+    dec a
+    jr z,zx48_arg1_validate_done
+    ld d,a
+
+zx48_arg1_next_arg:
+zx48_arg1_scan_arg:
+    ld a,b
+    or c
+    jp z,zx48_arg1_format
+    ld a,(hl)
+    inc hl
+    dec bc
+    or a
+    jr nz,zx48_arg1_scan_arg
+    dec d
+    jr nz,zx48_arg1_next_arg
+
+zx48_arg1_validate_done:
+    ld a,b
+    or c
+    jp nz,zx48_arg1_format
+    xor a
+    ret
+
+zx48_arg1_build:
+    ; Preserve the caller source/length across validation. POP does not alter
+    ; flags, so carry/A from the validator remain authoritative on failure.
+    push ix
+    push bc
+    call zx48_arg1_validate
+    pop bc
+    pop ix
+    ret c
+
+    ; Preserve source, exact length, and rounded allocation length across the
+    ; allocator, which is free to clobber IX/BC/DE internally.
+    push ix
+    push bc
+    bit 0,c
+    jr z,zx48_arg1_build_rounded
+    inc bc
+zx48_arg1_build_rounded:
+    push bc
+    ld a,ALLOC_ANY
+    call zx48_alloc
+    pop de
+    pop bc
+    pop ix
+    ret c
+
+    ; DE currently holds the rounded allocation length and HL the new base.
+    ; Save both while LDIR consumes the exact source/length pair.
+    push de
+    push hl
+    push bc
+    ex de,hl
+    push ix
+    pop hl
+    ldir
+    pop bc
+    pop hl
+    pop de
+    xor a
+    ret
+
+zx48_arg1_format:
+    ld a,E_FORMAT
+    scf
+    ret
     ENDM
