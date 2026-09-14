@@ -67,7 +67,7 @@ CERTIFIED_STEPS = (
     "P1.40",
 )
 
-CANDIDATE_STEPS: tuple[str, ...] = ()
+CANDIDATE_STEPS: tuple[str, ...] = ("P1.41",)
 
 
 def main() -> int:
