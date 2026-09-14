@@ -10,12 +10,15 @@
 <!-- SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination, -->
 <!-- patent, trademark, and governing-law provisions. -->
 
-# ZX-UX `/etc/issue` Architecture Rebaseline and Re-certification Runbook
+# ZX-UX Combined Rebaseline and Re-certification Runbook
 
 **Status:** AUTHORIZED WORKING PLAN — not architecture, implementation, or certification authority.
 
-**Purpose:** Durable cross-session coordination for the controlled `/etc/issue`
-architecture change that must be completed before Phase 2 begins.
+**Purpose:** Durable cross-session coordination for the combined controlled source
+rebaseline that must be completed before Phase 2 begins: the exact `/etc/issue` byte
+change, canonical Phase-0 consumption of `v1/assets/font4x8-zxux.bin`, Phase-11 C48
+DOCX/pinned-SDK conformance rules, and the first tty64 rendered-font screenshot proof
+with mandatory automated visual inspection.
 
 This file is intentionally stored under `scratch/`. It must survive loss of any
 ephemeral workspace and must let a fresh project session discover the correct restart
@@ -25,7 +28,7 @@ always override this file if they disagree.
 ## 1. Hard boundaries
 
 1. Modify only `tuklusan/ZX-UX-The-ZX-Spectrum-48K-Unix-Project`.
-2. All other GitHub repositories are read-only.
+2. The C48 SDK and every other GitHub repository are read-only; no branch, commit, push, PR, or other mutation is permitted outside the canonical ZX-UX repository.
 3. Do not start Phase 2.
 4. Do not weaken evidence, negative tests, source binding, activation rules, or
    Quality gates.
@@ -120,6 +123,32 @@ At the beginning of every chat or after any loss of local state:
 Do not use a remembered commit, remembered workflow result, or a surviving local file
 as the authority for restart classification.
 
+### 4.1 Combined-goal restart additions
+
+A fresh session must additionally prove all of the following before it resumes source
+work:
+
+- `v1/assets/font4x8-zxux.bin` is a regular 392-byte file with Git blob
+  `6efc46eb1d7e940e027097ad76e27ac719aeb59f` and SHA-256
+  `90f6818cf81cf3f13509cff32c091075691195d9638dbe801d12daceec1c9339`;
+- Phase-0 generation does not synthesize or write a font payload, and P0.10 consumes
+  the canonical source asset directly;
+- P1.21 and P1.22 also consume that same canonical source asset rather than the legacy
+  `v1/assets/font4x8.bin` fixture;
+- P1.22 is the earliest real tty64 4x8-render step and requires a captured PNG
+  screenshot plus its exact 6912-byte SCR companion from the same Fuse FMF frame;
+- the captured P1.22 frame is subjected to mandatory automated visual inspection by
+  exact comparison with an independently rendered 96-glyph atlas derived from the
+  canonical font bytes; screenshot existence alone is never sufficient;
+- `docs/04-C48 Language Specification Rev 0.11.docx` has the currently reviewed Git
+  blob and `tools/check_license_headers.sh` binds its exact path to that exact blob;
+- REV03 still pins the P11.39 compiler/reference SDK baseline and the distinct P11.45
+  H06 source-corpus baseline; moving SDK `main` is not certification identity;
+- REV03 contains the mandatory architecture/DOCX/pinned-SDK/native three-way
+  reconciliation and fail-closed discrepancy disposition; and
+- current Phase-0/Phase-1 activation state and the relevant workflow run/job/log state
+  are re-read from GitHub rather than memory.
+
 ## 5. Checkpoint state machine
 
 Use content and evidence, not commit-message intuition, to select the restart point.
@@ -133,8 +162,18 @@ example:
 - REV12 still freezes the old issue bytes or old boot heading;
 - REV03 still freezes/checks the old bytes;
 - a live generator/test still embeds the old bytes;
-- architecture digest binders still name the old REV12 digest; or
-- certification-transition workflow hardening is absent.
+- architecture digest binders still name the old REV12 digest;
+- certification-transition workflow hardening is absent;
+- Phase 0 still synthesizes or consumes `v1/assets/font4x8.bin` rather than the canonical
+  `v1/assets/font4x8-zxux.bin`;
+- P1.21/P1.22 still consume the legacy font fixture or describe Phase 1 as using a
+  knowingly non-final font;
+- P1.22 lacks mandatory captured screenshot evidence and automated visual inspection;
+- REV12/REV03 still permit a non-final Phase-0 font fixture;
+- the C48 DOCX exact-path/blob license exemption is absent or stale;
+- Phase 11 lacks mandatory DOCX review/correction and three-way pinned-SDK comparison;
+  or
+- this runbook is stale relative to the active combined goal.
 
 Resume at Section 7.
 
@@ -214,6 +253,21 @@ exhaustive. The initial audit found these intended source/control paths:
 13. `.github/workflows/phase1-certification.yml`
 14. `.github/phase1-certification.trigger` (new durable trigger, if still needed by
     current workflow behavior)
+
+Additional intended source/control paths for the combined rebaseline are:
+
+15. `tools/check_license_headers.sh`
+16. `scratch/ZX-UX-ETC-ISSUE-REBASELINE-RECERTIFICATION-RUNBOOK-REV01.md`
+17. `v1/docs/font4x8.md`
+18. `v1/tools-host/test-driver/phase1_font4x8.py`
+19. `v1/tools-host/test-driver/phase1_tty64.py`
+20. `v1/tools-host/test-driver/phase1_tty64_visual.py` (new deterministic screenshot/visual oracle)
+21. `tools/scripts/bootstrap-environment.py` (require installed `fmfconv` from pinned Fuse-utils)
+
+The list remains an audit aid, not authority. Re-scan the whole tree. The canonical
+font asset itself remains byte-identical and is not in the modified-file set merely
+because it is consumed. The maintained DOCX likewise need not change unless review
+finds an actual specification defect.
 
 The source audit must also search tracked current text for all of these concepts:
 
@@ -383,6 +437,74 @@ because the old durable evidence must fail closed against the new architecture u
 new activation exists. Do not suppress or weaken that failure. The next required state
 is C1, not DONE.
 
+### 7.8 Canonical Phase-0/Phase-1 font-source correction
+
+The source freeze must make the complete live font path consistent:
+
+- `v1/assets/font4x8-zxux.bin` is the canonical ZX-UX font source from Phase 0 onward;
+- `tools/generate_phase0_resources.py` validates but never synthesizes or writes font bytes;
+- P0.10 consumes the canonical asset, proves exact size/header/SHA-256, and retains its
+  existing structural/transport negatives;
+- REV12/REV03 and `v1/docs/font4x8.md` contain no knowingly non-final Phase-0/Phase-1
+  fixture semantics;
+- P1.21 validates/pins the same canonical asset and host certification verifies its
+  exact byte identity while target code remains SHA-256-free; and
+- P1.22 renders from that same canonical asset. P12.05 only re-verifies this identity;
+  it does not promote, rewrite, synthesize, or substitute a font.
+
+### 7.9 First rendered-font screenshot and automated visual inspection
+
+P1.22 is the earliest real tty64 step that renders the canonical 4x8 font on the
+terminal. Its **test** action must therefore produce certification proof from the
+actual Fuse display path:
+
+1. Render all 96 target codes `0x20..0x7F` in a deterministic tty64 atlas using the
+   canonical `font4x8-zxux.bin` bytes.
+2. Capture displayed frames through Fuse FMF recording.
+3. Extract SCR and PNG frame sequences with the project-local pinned Fuse-utils
+   `fmfconv`.
+4. Independently construct the expected 6912-byte Spectrum screen from the canonical
+   F4X8 bytes and the tty64 nibble/address rules; do not derive expected bytes from the
+   captured image.
+5. Require at least one captured SCR frame to match that independently constructed
+   screen byte-for-byte. For the PNG with that exact frame identity, decode the PNG
+   raster independently and require the full 320x240 pixel layout (32/24 border around
+   the 256x192 Spectrum display plus every atlas foreground pixel) to match the same
+   expected SCR-derived bitmap. Both comparisons are mandatory automated visual
+   inspection. Merely producing a PNG, checking file existence, pairing filenames, or
+   using a human-only glance is insufficient.
+6. Retain the PNG corresponding to that exact inspected frame as
+   `P1.22-font-atlas.png` and its SCR companion as `P1.22-font-atlas.scr` in the
+   external certification evidence directory.
+7. Record both artifact SHA-256 values, the exact common captured-frame identity, and
+   PNG raster-inspection dimensions/foreground count in `P1.22.test.json`; the Phase-1
+   finalizer must independently require the SCR comparison, PNG raster-inspection, PNG
+   retention, and frame-correspondence assertions, verify the files and their hashes,
+   require one exact common SCR/PNG frame identity, require the 320x240 PNG inspection
+   proof plus PNG framing and exact 6912-byte SCR length, and fail closed if any proof
+   is absent or changed.
+8. The Phase-1 workflow artifact must upload the retained PNG and SCR alongside JSON
+   evidence. Debugger/RAM assertions remain the primary correctness oracle; this
+   screenshot proof is mandatory supplemental certification evidence, not a replacement
+   for deterministic target-state assertions.
+
+### 7.10 Phase-11 maintained-DOCX / pinned-SDK conformance
+
+Phase 11 must treat REV12 as controlling architecture, the maintained C48 DOCX as the
+project's detailed language specification, and the pinned read-only Python SDK
+implementation (`compiler/c48.py` plus relevant `compiler/c48/` modules) as a mandatory
+reference to reconcile rather than silently copy. DOCX conflicts with REV12 require a
+normal-SoP DOCX correction; native compiler/tests must conform to REV12 and the corrected
+DOCX; SDK conflicts are recorded as read-only divergences; and a DOCX/SDK disagreement
+that REV12 does not decide must be resolved in the maintained DOCX before implementation
+closure. No unresolved discrepancy is admissible at P11.39/P11.48. The 205-test SDK
+compiler corpus and separate 54-source H06 matrix remain mandatory and may not be
+weakened.
+
+The binary DOCX license exemption must remain exact-path and exact-blob bound. A future
+DOCX edit must deliberately rebind that identity through the normal SoP; blanket `.docx`
+exemptions are forbidden.
+
 ## 8. C1 work — re-certify and activate Phase 0
 
 From exact clean `S0`:
@@ -476,8 +598,16 @@ The controlled change is complete only when all of these are proved against curr
     separately reviewed intervening commits whose effects have been revalidated).
 18. The repository is clean at the final checked source/evidence state.
 
-Only after all 18 checks pass may Phase 0 and Phase 1 again be called frozen and
-complete under the new `/etc/issue` architecture.
+19. Phase 0 uses the canonical ZX-UX font from the beginning and no active Phase-0 generator regenerates an alternate font.
+20. P0.10 validates canonical font identity and P12.05 no longer depends on later promotion from a knowingly different fixture.
+21. P1.21/P1.22 consume the canonical font asset, and P1.22 certification includes the retained PNG/SCR pair plus mandatory automated visual inspection of the captured frame.
+22. The P1.22 test record and Phase-1 finalizer both fail closed if the screenshot/visual-proof artifacts, hashes, or visual assertions are absent or changed.
+23. DOCX license handling remains exact/fail-closed and Phase 11 retains the maintained-DOCX review/correction plus pinned Python implementation comparison.
+24. The 205-test SDK compiler corpus and 54-source H06 matrix remain intact, and no unresolved architecture/DOCX/SDK/native discrepancy is admissible.
+25. This runbook accurately describes the final combined rebaseline.
+
+Only after all closure checks pass may Phase 0 and Phase 1 again be called frozen and
+complete under the combined rebaseline.
 
 ## 11. Blocker instrumentation rules
 

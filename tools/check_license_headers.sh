@@ -22,6 +22,8 @@ readonly GENERATED_CERTIFICATION_DIR="v1/dist/certification"
 # The source quarantine subtree is intentionally excluded from the approved H03 scope.
 readonly PRESERVED_REFERENCE_DIR="reference"
 readonly PRESERVED_REFERENCE_TREE_SHA1="a4e06de3b8b193b43597cdb4d259b5b206e7e3ad"
+readonly C48_SPEC_DOCX_PATH="docs/04-C48 Language Specification Rev 0.11.docx"
+readonly C48_SPEC_DOCX_BLOB_SHA1="f1c4877b26c632bd0b9abd0468716019da68bf7e"
 # H04 preserves these SDK compiler assets byte-for-byte from the read-only source.
 # Source: tuklusan/zx-ux-c48-sdk-sinclair-zx-spectrum-48k-unix-c-compiler-software-development-kit
 # at 1bebc6288a1cdfa1bdfb5a6694e1986b6c3d7ee0; compiler/assets tree
@@ -56,6 +58,7 @@ declare -A explicit_header_exemptions=(
   ["v1/assets/issue.txt"]="P0.10 freezes exact logical issue bytes, leaving no room for a source header."
   ["v1/assets/crontab.txt"]="P0.10 freezes this resource as zero-length RAW."
   ["v1/assets/bincat.bin"]="P0.10 freezes the raw 488-byte BCAT resource shape."
+  ["docs/04-C48 Language Specification Rev 0.11.docx"]="Binary DOCX specification cannot carry the plaintext project header; exact Git blob identity is verified before this exemption is honored."
 )
 
 declare -A preserved_h04_sdk_assets=(
@@ -152,6 +155,23 @@ for exempt_path in "${!explicit_header_exemptions[@]}"; do
     exit 1
   fi
 done
+
+if [[ -L "$C48_SPEC_DOCX_PATH" || ! -f "$C48_SPEC_DOCX_PATH" ]]; then
+  echo "ERROR: approved C48 DOCX specification must exist as a real regular file: $C48_SPEC_DOCX_PATH" >&2
+  exit 1
+fi
+actual_c48_spec_blob="$(git hash-object -- "$C48_SPEC_DOCX_PATH")"
+if [[ "$actual_c48_spec_blob" != "$C48_SPEC_DOCX_BLOB_SHA1" ]]; then
+  echo "ERROR: approved C48 DOCX specification bytes changed: $C48_SPEC_DOCX_PATH" >&2
+  echo "ERROR: expected blob $C48_SPEC_DOCX_BLOB_SHA1, got $actual_c48_spec_blob" >&2
+  exit 1
+fi
+c48_spec_index_record="$(git ls-files --stage -- "$C48_SPEC_DOCX_PATH")"
+c48_spec_expected_record_prefix="100644 $C48_SPEC_DOCX_BLOB_SHA1 0"
+if [[ "$c48_spec_index_record" != "$c48_spec_expected_record_prefix"$'\t'"$C48_SPEC_DOCX_PATH" ]]; then
+  echo "ERROR: approved C48 DOCX specification Git mode/index identity changed: $C48_SPEC_DOCX_PATH" >&2
+  exit 1
+fi
 
 for asset_path in "${!preserved_h04_sdk_assets[@]}"; do
   expected_blob="${preserved_h04_sdk_assets[$asset_path]}"

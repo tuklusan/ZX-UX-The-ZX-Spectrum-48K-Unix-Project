@@ -19,6 +19,7 @@ from typing import Any, Callable
 from driver_core import DriverError
 from fuse_harness import FAIL_PC, PASS_PC, run_sna
 import phase1
+import phase1_tty64_visual
 
 F4X8_SIZE = 392
 F4X8_HEADER = b"F4X8\x01\x20\x60\x00"
@@ -286,7 +287,7 @@ def dispatch(
     if step != "P1.22":
         raise Tty64Error(f"tty64 renderer step is not registered: {step}")
 
-    asset_path = root / "v1/assets/font4x8.bin"
+    asset_path = root / "v1/assets/font4x8-zxux.bin"
     asset = asset_path.read_bytes()
     assertions = _source_contract(root)
     failed = [item["name"] for item in assertions if item["passed"] is not True]
@@ -346,9 +347,20 @@ def dispatch(
                 {"name": "udg-full-byte-occupies-two-tty64-columns", "passed": True},
             ]
         )
+        visual_commands, visual_assertions = phase1_tty64_visual.capture_and_inspect(
+            root,
+            labels,
+            kernel,
+            asset,
+            run_command=run_command,
+            require_project_tool=require_project_tool,
+        )
+        assertions.extend(visual_assertions)
+    else:
+        visual_commands = []
 
     hashes = {
-        "v1/assets/font4x8.bin": sha256_file(asset_path),
+        "v1/assets/font4x8-zxux.bin": sha256_file(asset_path),
         "v1/build/kernel.bin": sha256_file(kernel_path),
         "v1/src/kernel/tty64.asm": sha256_file(root / "v1/src/kernel/tty64.asm"),
         "v1/src/kernel/tty32.asm": sha256_file(root / "v1/src/kernel/tty32.asm"),
@@ -358,5 +370,6 @@ def dispatch(
         "v1/src/kernel/z80_primitives.asm": sha256_file(root / "v1/src/kernel/z80_primitives.asm"),
         "docs/01-ZX-UX-ARCHITECTURE-REV12.md": sha256_file(root / "docs/01-ZX-UX-ARCHITECTURE-REV12.md"),
         "v1/tools-host/test-driver/phase1_tty64.py": sha256_file(root / "v1/tools-host/test-driver/phase1_tty64.py"),
+        "v1/tools-host/test-driver/phase1_tty64_visual.py": sha256_file(root / "v1/tools-host/test-driver/phase1_tty64_visual.py"),
     }
-    return [command], hashes, assertions
+    return [command, *visual_commands], hashes, assertions

@@ -29,8 +29,9 @@ Kernel model: cooperative multiprocessing, shared address space, no MMU
 
 Revision-12 controlled rebaseline changes:
 
-- freezes the canonical final `font4x8` logical bytes at 392 bytes with host-side
-  SHA-256 `90f6818cf81cf3f13509cff32c091075691195d9638dbe801d12daceec1c9339`;
+- freezes `v1/assets/font4x8-zxux.bin` as the canonical `font4x8` source from Phase 0 onward:
+  exactly 392 bytes with host-side SHA-256
+  `90f6818cf81cf3f13509cff32c091075691195d9638dbe801d12daceec1c9339`;
 - changes tty32/tty64 printable output to deferred right-margin wrap while keeping
   all public cursor coordinates on real cells;
 - freezes one balanced nested screen-mutation discipline and a 25-frame IM2
@@ -54,9 +55,10 @@ Revision-9 consolidated architectural changes:
 - prompts once per cold boot for a lower-case session username of at most eight
   characters, sets `HOME=/home/<user>`, `USER=<user>`, `SHELL=/bin/sh`, and
   `PATH=/bin:.`, and starts the shell in that home directory;
-- freezes `/etc/issue` and the post-boot heading to begin with the exact lines
-  `© Supratim Sanyal, SANYALnet Labs` and
-  `https://supratim-sanyal.blogspot.com/`;
+- freezes `/etc/issue` and the post-boot heading to the exact three LF-terminated lines
+  `ZX-UX - Inspired by Unix for the Sinclair ZX Spectrum 48K`,
+  `64-column shell, native tools, C compiler, cassette storage`, and
+  `48K. One Z80. No excuses.`;
 - adds `date`, `cron`, `crontab`, and `man` with a software wall-clock model that
   honestly reflects the absence of a persistent RTC on the base 48K Spectrum;
 - adds fun-first small commands including `fortune`, `banner`, `cal`, `rev`,
@@ -593,11 +595,13 @@ release/certification SHA-256 is exactly:
 The canonical provenance/reference is the read-only C48 SDK source commit
 `1bebc6288a1cdfa1bdfb5a6694e1986b6c3d7ee0`, path
 `compiler/assets/font4x8-tasword.bin`; the canonical repository preserves those same
-bytes as `v1/assets/font4x8-tasword.bin` and `v1/assets/font4x8-zxux.bin`. SHA-256 is a
-host-side release identity only: target Z80 code validates the exact F4X8
-structure/length and transport CRC but does not implement SHA-256 or expose a new digest
-ABI. Development and Phase-0 may use an explicitly non-final 392-byte F4X8 fixture;
-such a fixture cannot satisfy the final P12 release identity gate.
+bytes as `v1/assets/font4x8-tasword.bin` and `v1/assets/font4x8-zxux.bin`. The
+`v1/assets/font4x8-zxux.bin` copy is the canonical ZX-UX source asset and MUST be
+consumed directly from Phase 0 onward. Host tooling MUST NOT synthesize, regenerate,
+promote, or substitute another logical font payload. `v1/assets/font4x8-tasword.bin`
+is preserved provenance/reference only. SHA-256 is a host-side release identity only:
+target Z80 code validates the exact F4X8 structure/length and transport CRC but does
+not implement SHA-256 or expose a new digest ABI.
 
 The pinned font allocation counts against the 32 KiB arena and is visible in
 `mem` as kernel/system arena use. Failure to load or validate `font4x8` from an
@@ -716,17 +720,18 @@ The five resource contracts are exact:
     crontab   type CFG  target ETC       installed as /etc/crontab
     bincat    type SYS  target SYSTEM    pinned BCAT metadata
 
-For the final release, `font4x8` logical bytes are exactly 392 bytes and have host-side
-SHA-256 `90f6818cf81cf3f13509cff32c091075691195d9638dbe801d12daceec1c9339`.
+From Phase 0 onward, `font4x8` logical bytes are sourced directly from
+`v1/assets/font4x8-zxux.bin`, are exactly 392 bytes, and have host-side SHA-256
+`90f6818cf81cf3f13509cff32c091075691195d9638dbe801d12daceec1c9339`.
 RAW and PACKED M48O transport forms are acceptable only when they decode to those same
-logical bytes. Earlier explicit Phase-0 font fixtures are non-final and are not release
-identity evidence.
+logical bytes. No alternate Phase-0 fixture or generated logical font payload is
+permitted.
 
 The official version-1 logical payloads are byte-frozen. `issue` is exactly these
-target bytes, including the final LF; the leading copyright glyph is target byte 0x7F:
+target bytes, with LF after every line including the final line:
 
-    <0x7F> Supratim Sanyal, SANYALnet Labs<LF>
-    https://supratim-sanyal.blogspot.com/<LF>
+    ZX-UX - Inspired by Unix for the Sinclair ZX Spectrum 48K<LF>
+    64-column shell, native tools, C compiler, cassette storage<LF>
     48K. One Z80. No excuses.<LF>
 
 The official `crontab` logical payload is zero bytes and is therefore always RAW
@@ -900,7 +905,7 @@ After `RANDOMIZE USR 57347`, the boot path is:
     into its final pinned 392-byte `FAST_REQUIRED` F4X8 allocation and the packed
     transport bytes are discarded; final release identity must match the Section-4.3A
     host SHA-256 while target validation remains structural/CRC based;
-24. load `issue` into `/etc/issue` and validate its required first two lines;
+24. load `issue` into `/etc/issue` and validate its exact three LF-terminated lines;
     its mutable ETC object may remain RAW or validated PACKED storage;
 25. load `crontab` into `/etc/crontab` and validate its syntax or empty state;
     its mutable ETC object may remain RAW or validated PACKED storage;
@@ -3777,15 +3782,14 @@ folding.
 
 ## 20.1 Boot heading, issue, username, and prompt
 
-After `sh` and `font4x8` have loaded and `tty64` is active, the first two visible
-text lines are exactly:
+After `sh` and `font4x8` have loaded and `tty64` is active, the first three visible
+text lines are exactly the `/etc/issue` payload:
 
-    © Supratim Sanyal, SANYALnet Labs
-    https://supratim-sanyal.blogspot.com/
-
-The default `/etc/issue` contains those same two lines followed by:
-
+    ZX-UX - Inspired by Unix for the Sinclair ZX Spectrum 48K
+    64-column shell, native tools, C compiler, cassette storage
     48K. One Z80. No excuses.
+
+The default `/etc/issue` is exactly those three LF-terminated lines, including the final LF.
 
 The shell displays `/etc/issue` exactly once; that single display is the boot
 heading required above. It does not separately print a duplicate heading. It then asks:
@@ -5952,8 +5956,8 @@ Version-1 project layout follows the same lower-case Unix-style naming rule:
 
       assets/
         loading.scr
-        font4x8.bin
-        issue.txt              UTF-8 source; build maps © -> target 0x7F
+        font4x8-zxux.bin        canonical byte-frozen 392-byte F4X8 source
+        issue.txt              exact three-line LF-terminated version-1 TXT asset
         crontab.txt           exact zero-length version-1 default CFG asset
         bincat.bin
 
@@ -6336,8 +6340,8 @@ TAP-only testing is insufficient to claim physical cassette robustness.
 - cassette lookup preserves and compares case exactly;
 - case-only rename behaves deterministically;
 - `calc "sin(pi/4)"` is accepted while an undocumented case alias is rejected.
-- exact boot heading line 1 and line 2 under tty64;
-- `/etc/issue` exact first two lines and fun third line;
+- exact three-line `/etc/issue` boot heading under tty64;
+- `/etc/issue` exact three LF-terminated lines, including the fun third line;
 - reject empty, >8-char, upper-case-leading, or illegal username;
 - create/select `/home/<user>` and start there;
 - exact `USER`, `HOME`, `SHELL`, and `PATH`;
@@ -7235,8 +7239,9 @@ From a powered/reset 48K configuration and the official production tape:
    handoff;
 3. verify exact bootstrap M48O resources `sh`, `font4x8`, `issue`, `crontab`,
    `bincat` load and validate before PID 1;
-4. verify tty64 displays exactly `© Supratim Sanyal, SANYALnet Labs` on line 1
-   and `https://supratim-sanyal.blogspot.com/` on line 2;
+4. verify tty64 displays exactly `ZX-UX - Inspired by Unix for the Sinclair ZX Spectrum 48K` on line 1,
+   `64-column shell, native tools, C compiler, cassette storage` on line 2, and
+   `48K. One Z80. No excuses.` on line 3;
 5. enter a valid <=8-character username and verify `$USER`, `$HOME`, `$SHELL`,
    `$PATH`, `pwd`, `/home/<user>`, and `/etc/issue`;
 6. show `stty` reports 64x24 and cursor control works;
@@ -7425,7 +7430,7 @@ The following rules are non-negotiable unless this document is formally revised.
 58. The normal interactive terminal is 64x24 using the validated F4X8 4x8 font;
     tty32 remains a fallback/debug mode.
 59. `font4x8` is a required FAST_REQUIRED post-kernel system resource loaded before PID 1; final logical bytes are exactly 392 bytes with host SHA-256 `90f6818cf81cf3f13509cff32c091075691195d9638dbe801d12daceec1c9339`.
-60. The boot heading begins with the exact requested copyright and website lines.
+60. The boot heading is exactly the frozen three-line `/etc/issue` payload.
 61. Cold boot requests a 1..8-character lower-case session username and starts
     `sh` in `/home/<user>`.
 62. The fixed namespace includes `/bin`, `/dev`, `/etc`, `/home`, current user
@@ -7437,7 +7442,7 @@ The following rules are non-negotiable unless this document is formally revised.
     explicit invalid state is diagnostic/early-boot only and uptime/ticks are separate.
 65. Calendar cron may evaluate immediately from valid revision-0 boot time and still
     fires at most once per `(wall-minute,revision)` key with no catch-up.
-66. `/etc/issue` begins with the exact two boot-heading lines.
+66. `/etc/issue` is exactly the frozen three LF-terminated lines, including the final LF.
 67. `man` always prints the requested website and exact phrase `Search for ZXUS`.
 68. M48O payloads are chunked into <=512-byte ROM data blocks after one fixed
     32-byte M48O header block.
@@ -7722,8 +7727,8 @@ The user presses PLAY. The BASIC loader auto-runs, the ZX-UX loading screen
 appears, the kernel loads and permanently takes control, then the five bootstrap
 M48O resources load. `tty64` displays:
 
-    © Supratim Sanyal, SANYALnet Labs
-    https://supratim-sanyal.blogspot.com/
+    ZX-UX - Inspired by Unix for the Sinclair ZX Spectrum 48K
+    64-column shell, native tools, C compiler, cassette storage
     48K. One Z80. No excuses.
     login: fred
     $ pwd

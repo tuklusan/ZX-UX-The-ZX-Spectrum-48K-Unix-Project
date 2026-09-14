@@ -20,8 +20,8 @@ import sys
 ROOT_MARKER = b"ZX-UX project root"
 
 ISSUE = (
-    b"\x7f Supratim Sanyal, SANYALnet Labs\n"
-    b"https://supratim-sanyal.blogspot.com/\n"
+    b"ZX-UX - Inspired by Unix for the Sinclair ZX Spectrum 48K\n"
+    b"64-column shell, native tools, C compiler, cassette storage\n"
     b"48K. One Z80. No excuses.\n"
 )
 
@@ -50,27 +50,20 @@ def loading_screen() -> bytes:
     return result
 
 
-def font4x8() -> bytes:
-    # F4X8 header plus 96 glyphs x 4 packed bytes, codes 0x20..0x7f.
-    header = b"F4X8" + bytes((1, 0x20, 96, 0))
-    glyphs = bytearray()
-    for code in range(0x20, 0x80):
-        if code == 0x20:
-            rows = (0, 0, 0, 0, 0, 0, 0, 0)
-        elif code == 0x7F:
-            rows = (0x6, 0x9, 0xA, 0xA, 0xA, 0x9, 0x6, 0x0)
-        else:
-            # Deterministic compact seed glyph. The format, code coverage, and byte
-            # identity are frozen; no host font or locale can influence the result.
-            low = code & 0x0F
-            high = (code >> 4) & 0x0F
-            rows = (low, high, low ^ 0x0F, high ^ 0x0F, high, low, high ^ low, 0)
-        for row in range(0, 8, 2):
-            glyphs.append(((rows[row] & 0x0F) << 4) | (rows[row + 1] & 0x0F))
-    result = header + bytes(glyphs)
-    if len(glyphs) != 384 or len(result) != 392:
-        raise AssertionError("font4x8 size")
-    return result
+FONT4X8_SOURCE = Path("v1/assets/font4x8-zxux.bin")
+FONT4X8_SHA256 = "90f6818cf81cf3f13509cff32c091075691195d9638dbe801d12daceec1c9339"
+
+
+def validate_font4x8_source(root: Path) -> bytes:
+    path = root / FONT4X8_SOURCE
+    if path.is_symlink() or not path.is_file():
+        raise AssertionError("canonical font4x8-zxux source missing or not a regular file")
+    data = path.read_bytes()
+    if len(data) != 392 or data[:8] != b"F4X8" + bytes((1, 0x20, 96, 0)):
+        raise AssertionError("canonical font4x8-zxux structure mismatch")
+    if hashlib.sha256(data).hexdigest() != FONT4X8_SHA256:
+        raise AssertionError("canonical font4x8-zxux SHA-256 mismatch")
+    return data
 
 
 def bincat() -> bytes:
@@ -100,9 +93,10 @@ def write_if_changed(path: Path, data: bytes) -> bool:
 def main() -> int:
     try:
         root = find_root(Path(__file__).resolve())
+        font = validate_font4x8_source(root)
+        print(f"resource={FONT4X8_SOURCE.as_posix()} size={len(font)} sha256={hashlib.sha256(font).hexdigest()} source=canonical")
         resources = {
             Path("v1/assets/loading.scr"): loading_screen(),
-            Path("v1/assets/font4x8.bin"): font4x8(),
             Path("v1/assets/issue.txt"): ISSUE,
             Path("v1/assets/crontab.txt"): b"",
             Path("v1/assets/bincat.bin"): bincat(),

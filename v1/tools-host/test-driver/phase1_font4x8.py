@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import hashlib
 from typing import Any, Callable
 
 from driver_core import DriverError
@@ -22,6 +23,7 @@ import phase1
 
 F4X8_SIZE = 392
 F4X8_HEADER = b"F4X8\x01\x20\x60\x00"
+F4X8_SHA256 = "90f6818cf81cf3f13509cff32c091075691195d9638dbe801d12daceec1c9339"
 SOURCE = 0xB200
 ROWS = 0xA000
 CHAR_STATE = 0xB100
@@ -116,7 +118,8 @@ def _source_contract(root: Path, asset: bytes) -> list[dict[str, object]]:
     installer = tty64[tty64.index("zx48_tty64_install_font:"):tty64.index("zx48_tty64_draw_char:")]
     renderer = tty64[tty64.index("zx48_tty64_draw_char:"):tty64.index("zx48_tty64_bad:")]
     return [
-        {"name": "fixture-is-exact-392-byte-f4x8", "passed": len(asset) == F4X8_SIZE and asset[:8] == F4X8_HEADER},
+        {"name": "canonical-source-is-exact-392-byte-f4x8", "passed": len(asset) == F4X8_SIZE and asset[:8] == F4X8_HEADER},
+        {"name": "canonical-source-sha256", "passed": hashlib.sha256(asset).hexdigest() == F4X8_SHA256},
         {"name": "host-decoder-produces-96x8-rows", "passed": len(rows) == 768},
         {"name": "host-decoder-distinguishes-altered-nibble-order", "passed": bytes(swapped) != rows},
         {"name": "target-validates-exact-length", "passed": "cp f4x8_size/256" in installer and "cp f4x8_size&$ff" in installer},
@@ -126,7 +129,7 @@ def _source_contract(root: Path, asset: bytes) -> list[dict[str, object]]:
         {"name": "target-font-pointer-skips-header", "passed": "ld de,8" in installer and "ld (tty64_font_ptr),hl" in installer},
         {"name": "target-decoder-high-nibble-before-low", "passed": renderer.index("rrca") < renderer.index("zx48_tty64_nibble:") and "and 1" in renderer},
         {"name": "physical-pointers-not-public-abi", "passed": "tty64_resource_ptr" not in include and "tty64_font_ptr" not in include},
-        {"name": "docs-freeze-structural-contract-not-final-identity", "passed": all(token in docs for token in ("392-byte", "high nibble", "low nibble", "alloc_fast_required", "no cold fallback", "p12.05 alone"))},
+        {"name": "docs-freeze-canonical-phase0-identity", "passed": all(token in docs for token in ("392-byte", "high nibble", "low nibble", "alloc_fast_required", "no cold fallback", "font4x8-zxux.bin", F4X8_SHA256, "re-verifies"))},
     ]
 
 
@@ -240,7 +243,7 @@ def dispatch(
     if step != "P1.21":
         raise Font4x8Error(f"F4X8 step is not registered: {step}")
 
-    asset_path = root / "v1/assets/font4x8.bin"
+    asset_path = root / "v1/assets/font4x8-zxux.bin"
     asset = asset_path.read_bytes()
     rows = _decode(asset)
     assertions = _source_contract(root, asset)

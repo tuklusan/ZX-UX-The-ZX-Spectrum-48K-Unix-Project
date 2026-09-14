@@ -232,6 +232,7 @@ def build_fuse_utils(root: Path, archive: Path, build_root: Path, jobs: str, lib
     run(["make", f"-j{jobs}"], cwd=source, env=env)
     run(["make", "install"], cwd=source, env=env)
     require((prefix / "bin/tzxlist").is_file(), "Fuse-utils install did not create tzxlist")
+    require((prefix / "bin/fmfconv").is_file(), "Fuse-utils install did not create fmfconv required for P1.22 visual evidence")
 
 
 def install_rom(root: Path, archive: Path) -> None:

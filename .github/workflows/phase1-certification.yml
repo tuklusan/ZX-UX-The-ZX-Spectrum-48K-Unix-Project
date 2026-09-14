@@ -18,6 +18,7 @@ on:
       - main
     paths:
       - .github/workflows/phase1-certification.yml
+      - .github/phase1-certification.trigger
       - tools/manifest/toolchain.lock.json
       - tools/scripts/bootstrap-environment.py
       - tools/scripts/verify-environment.py
@@ -84,6 +85,9 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+
+      - name: Require active durable Phase 0 evidence
+        run: python3 tools/check_phase0_evidence.py --require-active
 
       - name: Select pinned Python
         uses: actions/setup-python@v6
@@ -173,6 +177,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: zxux-phase1-${{ github.run_id }}-${{ github.run_attempt }}
-          path: /tmp/zxux-phase1-evidence-${{ github.run_id }}-${{ github.run_attempt }}/**/*.json
+          path: |
+            /tmp/zxux-phase1-evidence-${{ github.run_id }}-${{ github.run_attempt }}/**/*.json
+            /tmp/zxux-phase1-evidence-${{ github.run_id }}-${{ github.run_attempt }}/P1.22-font-atlas.png
+            /tmp/zxux-phase1-evidence-${{ github.run_id }}-${{ github.run_attempt }}/P1.22-font-atlas.scr
           retention-days: 90
           if-no-files-found: warn

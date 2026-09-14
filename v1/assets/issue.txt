@@ -1,3 +1,3 @@
- Supratim Sanyal, SANYALnet Labs
-https://supratim-sanyal.blogspot.com/
+ZX-UX - Inspired by Unix for the Sinclair ZX Spectrum 48K
+64-column shell, native tools, C compiler, cassette storage
 48K. One Z80. No excuses.

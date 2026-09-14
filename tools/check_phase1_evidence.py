@@ -23,7 +23,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 CERT = ROOT / "v1/dist/certification"
-ARCH_SHA = "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0"
+ARCH_SHA = "a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b"
 LOCK_PATH = "tools/manifest/toolchain.lock.json"
 ARCH_PATH = "docs/01-ZX-UX-ARCHITECTURE-REV12.md"
 ACTIVATION_PREFIX = "phase1: activate Phase-1 certification evidence for "

@@ -22,10 +22,16 @@ import subprocess
 import sys
 import traceback
 
-ARCH_SHA = "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0"
+ARCH_SHA = "a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b"
 STRICT_P140_ASSERTION = "accepted-im2-interrupt-observed-with-mid-ldir-bc"
 P141_AGGREGATE_ASSERTION = "all-p1-01-through-p1-40-build-test-evidence-pass-same-source"
 P141_SMOKE_ASSERTION = "minimal-phase1-aggregate-sna-smoke-pass"
+P122_VISUAL_ASSERTION = "automated-visual-inspection-canonical-font-atlas-pass"
+P122_PNG_ASSERTION = "font-atlas-png-screenshot-retained"
+P122_PNG_VISUAL_ASSERTION = "automated-png-raster-inspection-canonical-font-atlas-pass"
+P122_CORRESPONDENCE_ASSERTION = "captured-png-corresponds-to-automatically-inspected-scr-frame"
+P122_PNG = "P1.22-font-atlas.png"
+P122_SCR = "P1.22-font-atlas.scr"
 TRACE_PREFIX = "ZX-UX P1 FINALIZER TRACE"
 
 
@@ -222,6 +228,47 @@ def main() -> int:
                 f"evidence={source!r} head={head!r}"
             )
 
+        p122 = records["P1.22.test.json"]
+        p122_names = assertion_names(p122)
+        for required in (P122_VISUAL_ASSERTION, P122_PNG_VISUAL_ASSERTION, P122_PNG_ASSERTION, P122_CORRESPONDENCE_ASSERTION):
+            if required not in p122_names:
+                raise FinalizeError(f"P1.22 visual-proof assertion missing: {required}")
+        p122_by_name = {
+            str(item.get("name")): item
+            for item in p122.get("assertions", [])
+            if isinstance(item, dict) and item.get("passed") is True
+        }
+        for required_name, artifact_name in (
+            (P122_VISUAL_ASSERTION, P122_SCR),
+            (P122_PNG_ASSERTION, P122_PNG),
+        ):
+            item = p122_by_name[required_name]
+            if item.get("artifact") != artifact_name:
+                raise FinalizeError(f"P1.22 visual artifact identity mismatch: {required_name}")
+            expected_sha = item.get("sha256")
+            path = evidence / artifact_name
+            if not path.is_file():
+                raise FinalizeError(f"P1.22 visual artifact missing: {artifact_name}")
+            if not isinstance(expected_sha, str) or sha(path) != expected_sha:
+                raise FinalizeError(f"P1.22 visual artifact SHA-256 mismatch: {artifact_name}")
+        visual_frame = p122_by_name[P122_VISUAL_ASSERTION].get("frame_id")
+        png_visual = p122_by_name[P122_PNG_VISUAL_ASSERTION]
+        png_visual_frame = png_visual.get("frame_id")
+        png_frame = p122_by_name[P122_PNG_ASSERTION].get("frame_id")
+        correspondence_frame = p122_by_name[P122_CORRESPONDENCE_ASSERTION].get("frame_id")
+        if not isinstance(visual_frame, str) or visual_frame != png_visual_frame or visual_frame != png_frame or visual_frame != correspondence_frame:
+            raise FinalizeError("P1.22 SCR/PNG captured-frame identity mismatch")
+        if png_visual.get("width") != 320 or png_visual.get("height") != 240:
+            raise FinalizeError("P1.22 automated PNG inspection dimensions mismatch")
+        if not isinstance(png_visual.get("foreground_pixels"), int) or png_visual["foreground_pixels"] <= 0:
+            raise FinalizeError("P1.22 automated PNG inspection foreground proof missing")
+        scr_bytes = (evidence / P122_SCR).read_bytes()
+        png_bytes = (evidence / P122_PNG).read_bytes()
+        if len(scr_bytes) != 6912:
+            raise FinalizeError("P1.22 retained SCR screenshot is not exactly 6912 bytes")
+        if not png_bytes.startswith(b"\x89PNG\r\n\x1a\n"):
+            raise FinalizeError("P1.22 retained PNG screenshot has invalid signature")
+
         p140_names = assertion_names(records["P1.40.test.json"])
         if STRICT_P140_ASSERTION not in p140_names:
             raise FinalizeError("P1.40 strict mid-LDIR interrupt proof missing")
@@ -252,6 +299,9 @@ def main() -> int:
                 {"name": "all-p1-build-test-pass", "passed": True},
                 {"name": "p1-41-result-pass", "passed": True},
                 {"name": "durable-phase0-prerequisite-pass", "passed": True},
+                {"name": "p1-22-captured-font-screenshot-pass", "passed": True},
+                {"name": "p1-22-automated-visual-inspection-pass", "passed": True},
+                {"name": "p1-22-automated-png-raster-inspection-pass", "passed": True},
                 {"name": "strict-p1-40-mid-ldir-proof-pass", "passed": True},
                 {"name": "p1-41-aggregate-sna-smoke-pass", "passed": True},
                 {"name": "single-clean-source", "passed": True},

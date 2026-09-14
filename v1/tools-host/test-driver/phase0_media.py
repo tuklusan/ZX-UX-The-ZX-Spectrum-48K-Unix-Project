@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import importlib.util
 from pathlib import Path
+import hashlib
 import struct
 import sys
 
@@ -52,7 +53,7 @@ def _assemble_kernel(root: Path):
 def _assets(root: Path) -> dict[str, Path]:
     paths = {
         "screen": root_path(root, "v1/assets/loading.scr"),
-        "font": root_path(root, "v1/assets/font4x8.bin"),
+        "font": root_path(root, "v1/assets/font4x8-zxux.bin"),
         "issue": root_path(root, "v1/assets/issue.txt"),
         "crontab": root_path(root, "v1/assets/crontab.txt"),
         "bincat": root_path(root, "v1/assets/bincat.bin"),
@@ -122,9 +123,14 @@ def p009(root: Path, action: str):
     }, assertions
 
 
+FONT4X8_SHA256 = "90f6818cf81cf3f13509cff32c091075691195d9638dbe801d12daceec1c9339"
+
+
 def _validate_font(data: bytes) -> None:
     if len(data) != 392 or data[:4] != b"F4X8" or data[4:8] != bytes((1, 0x20, 96, 0)):
         raise DriverError("P0.10 F4X8 contract mismatch")
+    if hashlib.sha256(data).hexdigest() != FONT4X8_SHA256:
+        raise DriverError("P0.10 canonical font4x8-zxux SHA-256 mismatch")
 
 
 def _validate_bincat(data: bytes) -> None:
@@ -172,6 +178,23 @@ def _parse_m48o_stream(maketap, prefix_length: int, image: bytes):
     return objects
 
 
+EXPECTED_ISSUE = (
+    b"ZX-UX - Inspired by Unix for the Sinclair ZX Spectrum 48K\n"
+    b"64-column shell, native tools, C compiler, cassette storage\n"
+    b"48K. One Z80. No excuses.\n"
+)
+LEGACY_ISSUE = (
+    b"\x7f Supratim Sanyal, SANYALnet Labs\n"
+    b"https://supratim-sanyal.blogspot.com/\n"
+    b"48K. One Z80. No excuses.\n"
+)
+
+
+def _validate_issue(data: bytes) -> None:
+    if data != EXPECTED_ISSUE:
+        raise DriverError("P0.10 issue frozen bytes mismatch")
+
+
 def p010(root: Path, action: str):
     maketap, _ = _modules(root)
     assemble, kernel_path = _assemble_kernel(root)
@@ -182,13 +205,9 @@ def p010(root: Path, action: str):
     bincat = assets["bincat"].read_bytes()
     _validate_font(font)
     _validate_bincat(bincat)
-    expected_issue = (
-        b"\x7f Supratim Sanyal, SANYALnet Labs\n"
-        b"https://supratim-sanyal.blogspot.com/\n"
-        b"48K. One Z80. No excuses.\n"
-    )
-    if issue != expected_issue or crontab != b"":
-        raise DriverError("P0.10 issue/crontab frozen bytes mismatch")
+    _validate_issue(issue)
+    if crontab != b"":
+        raise DriverError("P0.10 crontab frozen bytes mismatch")
 
     loader = root_path(root, "v1/src/boot/loader.bas").read_text(encoding="utf-8")
     screen = assets["screen"].read_bytes()
@@ -206,7 +225,7 @@ def p010(root: Path, action: str):
     if [(n, t, d) for n, t, d, _ in objects] != expected:
         raise DriverError("P0.10 five-resource name/order/type/target mismatch")
     assertions = [
-        {"name": "font4x8-format", "passed": True},
+        {"name": "font4x8-zxux-exact-identity", "passed": True},
         {"name": "issue-exact-bytes", "passed": True},
         {"name": "crontab-zero-raw", "passed": True},
         {"name": "bincat-40-sorted-commands", "passed": True},
@@ -221,8 +240,36 @@ def p010(root: Path, action: str):
             assertions.append({"name": "reject-uppercase-resource", "passed": True})
         else:
             raise DriverError("P0.10 uppercase resource unexpectedly passed")
+
+        negative_fonts = [
+            ("reject-mutated-font-byte", bytes((font[0] ^ 0x01,)) + font[1:]),
+            ("reject-short-font", font[:-1]),
+            ("reject-wrong-font-header", b"BAD!" + font[4:]),
+        ]
+        for assertion_name, candidate in negative_fonts:
+            try:
+                _validate_font(candidate)
+            except DriverError:
+                assertions.append({"name": assertion_name, "passed": True})
+            else:
+                raise DriverError(f"P0.10 negative font fixture unexpectedly passed: {assertion_name}")
+
+        negative_issues = [
+            ("reject-legacy-issue-bytes", LEGACY_ISSUE),
+            ("reject-mutated-issue-byte", b"X" + EXPECTED_ISSUE[1:]),
+            ("reject-missing-final-lf", EXPECTED_ISSUE[:-1]),
+            ("reject-crlf-issue", EXPECTED_ISSUE.replace(b"\n", b"\r\n")),
+            ("reject-extra-issue-data", EXPECTED_ISSUE + b"extra\n"),
+        ]
+        for assertion_name, candidate in negative_issues:
+            try:
+                _validate_issue(candidate)
+            except DriverError:
+                assertions.append({"name": assertion_name, "passed": True})
+            else:
+                raise DriverError(f"P0.10 negative issue fixture unexpectedly passed: {assertion_name}")
     return [assemble], {
-        "v1/assets/font4x8.bin": sha256_file(assets["font"]),
+        "v1/assets/font4x8-zxux.bin": sha256_file(assets["font"]),
         "v1/assets/issue.txt": sha256_file(assets["issue"]),
         "v1/assets/crontab.txt": sha256_file(assets["crontab"]),
         "v1/assets/bincat.bin": sha256_file(assets["bincat"]),
