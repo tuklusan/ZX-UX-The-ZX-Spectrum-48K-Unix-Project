@@ -491,7 +491,7 @@ zx48_mex1_relocate_stored_ok:
     ld bc,(process_mex_reloc_count)
     ld a,b
     or c
-    jr z,zx48_mex1_relocate_success
+    jp z,zx48_mex1_relocate_success
 
     ld hl,(process_mex_header)
     ld de,(process_mex_reloc_offset)
