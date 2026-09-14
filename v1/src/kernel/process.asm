@@ -395,3 +395,217 @@ process_wait_has_child: db 0
 current_pid: db 0
 process_table: defs MAX_PROCESSES*PROC_DESC_SIZE,0
     ENDM
+
+
+; P2.03 ABS16 relocation validator/applicator. The routine is deliberately a
+; separate emitter until P2.04 integrates it into the resident loader path.
+; IX -> validated MEX1 header/source object, DE = actual copied image base.
+; The complete table is validated without target writes; only then are ABS16
+; words patched in a second pass. Returns A=0/C clear or A=E_FORMAT/C set.
+    MACRO EMIT_MEX1_RELOCATION_ROUTINES
+zx48_mex1_relocate:
+    push ix
+    pop hl
+    ld (process_mex_header),hl
+    ld (process_mex_base),de
+
+    ld l,(ix+MEX_HDR_IMAGE_SIZE)
+    ld h,(ix+MEX_HDR_IMAGE_SIZE+1)
+    ld a,h
+    or l
+    jp z,zx48_mex1_relocate_format
+    ld (process_mex_image_size),hl
+
+    ld e,(ix+MEX_HDR_BSS_SIZE)
+    ld d,(ix+MEX_HDR_BSS_SIZE+1)
+    add hl,de
+    jp c,zx48_mex1_relocate_format
+    ld a,h
+    cp $80
+    jr c,zx48_mex1_relocate_alloc_ok
+    jp nz,zx48_mex1_relocate_format
+    ld a,l
+    or a
+    jp nz,zx48_mex1_relocate_format
+zx48_mex1_relocate_alloc_ok:
+    ld (process_mex_alloc_size),hl
+
+    ; The destination allocation must be wholly inside the user arena.
+    ld hl,(process_mex_base)
+    ld de,ARENA_START
+    or a
+    sbc hl,de
+    jp c,zx48_mex1_relocate_format
+    ld hl,(process_mex_base)
+    ld de,(process_mex_alloc_size)
+    add hl,de
+    jp c,zx48_mex1_relocate_format
+    ld de,ARENA_END+1
+    or a
+    sbc hl,de
+    jr c,zx48_mex1_relocate_base_range_ok
+    jp nz,zx48_mex1_relocate_format
+zx48_mex1_relocate_base_range_ok:
+
+    ld c,(ix+MEX_HDR_RELOC_COUNT)
+    ld b,(ix+MEX_HDR_RELOC_COUNT+1)
+    ld (process_mex_reloc_count),bc
+    ld a,b
+    or c
+    jr z,zx48_mex1_relocate_image_size_checked
+    ld hl,(process_mex_image_size)
+    ld a,h
+    or a
+    jr nz,zx48_mex1_relocate_image_size_checked
+    ld a,l
+    cp 2
+    jp c,zx48_mex1_relocate_format
+zx48_mex1_relocate_image_size_checked:
+
+    ; Widen before narrowing: 24+image, count*2, and table end must not wrap.
+    ld hl,(process_mex_image_size)
+    ld de,MEX_HEADER_SIZE
+    add hl,de
+    jp c,zx48_mex1_relocate_format
+    ld e,(ix+MEX_HDR_RELOC_OFFSET)
+    ld d,(ix+MEX_HDR_RELOC_OFFSET+1)
+    or a
+    sbc hl,de
+    jp nz,zx48_mex1_relocate_format
+    ld (process_mex_reloc_offset),de
+
+    ld hl,(process_mex_reloc_count)
+    add hl,hl
+    jp c,zx48_mex1_relocate_format
+    ld de,(process_mex_reloc_offset)
+    add hl,de
+    jp c,zx48_mex1_relocate_format
+    ld a,h
+    cp $80
+    jr c,zx48_mex1_relocate_stored_ok
+    jp nz,zx48_mex1_relocate_format
+    ld a,l
+    or a
+    jp nz,zx48_mex1_relocate_format
+zx48_mex1_relocate_stored_ok:
+    ld bc,(process_mex_reloc_count)
+    ld a,b
+    or c
+    jr z,zx48_mex1_relocate_success
+
+    ld hl,(process_mex_header)
+    ld de,(process_mex_reloc_offset)
+    add hl,de
+    jp c,zx48_mex1_relocate_format
+    push hl
+    pop ix
+    xor a
+    ld (process_mex_have_previous),a
+
+zx48_mex1_relocate_validate_loop:
+    ld l,(ix+0)
+    ld h,(ix+1)
+    inc ix
+    inc ix
+    ld (process_mex_offset),hl
+
+    ; offset <= image_size-2.
+    ld de,(process_mex_image_size)
+    dec de
+    dec de
+    or a
+    sbc hl,de
+    jp c,zx48_mex1_relocate_offset_in_image
+    jp nz,zx48_mex1_relocate_format
+zx48_mex1_relocate_offset_in_image:
+    ; Each entry after the first must be at least previous+2.
+    ld a,(process_mex_have_previous)
+    or a
+    jr z,zx48_mex1_relocate_order_ok
+    ld hl,(process_mex_previous)
+    inc hl
+    inc hl
+    ld de,(process_mex_offset)
+    ex de,hl
+    or a
+    sbc hl,de
+    jp c,zx48_mex1_relocate_format
+zx48_mex1_relocate_order_ok:
+
+    ; Read only from the already-copied private image. The stored ABS16 value
+    ; is an image-relative address and may equal the one-past allocation size.
+    ld hl,(process_mex_base)
+    ld de,(process_mex_offset)
+    add hl,de
+    jp c,zx48_mex1_relocate_format
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    push de
+    ld hl,(process_mex_alloc_size)
+    or a
+    sbc hl,de
+    jp c,zx48_mex1_relocate_format_pop
+    pop hl
+    ld de,(process_mex_base)
+    add hl,de
+    jp c,zx48_mex1_relocate_format
+
+    ld hl,(process_mex_offset)
+    ld (process_mex_previous),hl
+    ld a,1
+    ld (process_mex_have_previous),a
+    dec bc
+    ld a,b
+    or c
+    jr nz,zx48_mex1_relocate_validate_loop
+
+    ; Second pass: all failure conditions are closed before the first write.
+    ld hl,(process_mex_header)
+    ld de,(process_mex_reloc_offset)
+    add hl,de
+    push hl
+    pop ix
+    ld bc,(process_mex_reloc_count)
+zx48_mex1_relocate_apply_loop:
+    ld l,(ix+0)
+    ld h,(ix+1)
+    inc ix
+    inc ix
+    ld de,(process_mex_base)
+    add hl,de
+    push hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld hl,(process_mex_base)
+    add hl,de
+    ex de,hl
+    pop hl
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    dec bc
+    ld a,b
+    or c
+    jr nz,zx48_mex1_relocate_apply_loop
+zx48_mex1_relocate_success:
+    xor a
+    ret
+zx48_mex1_relocate_format_pop:
+    pop de
+zx48_mex1_relocate_format:
+    ld a,E_FORMAT
+    scf
+    ret
+
+process_mex_header: dw 0
+process_mex_base: dw 0
+process_mex_image_size: dw 0
+process_mex_alloc_size: dw 0
+process_mex_reloc_count: dw 0
+process_mex_reloc_offset: dw 0
+process_mex_offset: dw 0
+process_mex_previous: dw 0
+process_mex_have_previous: db 0
+    ENDM
