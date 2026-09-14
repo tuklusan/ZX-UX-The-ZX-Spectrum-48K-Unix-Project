@@ -16,7 +16,6 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-import struct
 import sys
 
 HEADER_SIZE = 24
@@ -109,44 +108,53 @@ def inspect_bytes(data: bytes, *, base: int | None = None) -> dict[str, object]:
     }
 
 
-def _make_fixture() -> bytes:
-    image = bytearray(b"\x01\x00\xc9")
-    relocs = struct.pack("<H", 0)
-    h = bytearray(HEADER_SIZE)
-    h[:4] = b"MEX1"
-    h[4] = 1
-    struct.pack_into("<H", h, 6, HEADER_SIZE)
-    struct.pack_into("<H", h, 8, len(image))
-    struct.pack_into("<H", h, 10, 0)
-    struct.pack_into("<H", h, 12, 2)
-    struct.pack_into("<H", h, 14, 64)
-    struct.pack_into("<H", h, 16, 1)
-    struct.pack_into("<H", h, 18, HEADER_SIZE + len(image))
-    body = bytes(image) + relocs
-    struct.pack_into("<H", h, 20, crc16_ccitt_false(body))
-    struct.pack_into("<H", h, 22, 0)
-    struct.pack_into("<H", h, 22, crc16_ccitt_false(bytes(h)))
-    return bytes(h) + body
+SELF_TEST_GOLDEN = bytes.fromhex(
+    "4d45583101001800030000000200400001001b003b03fda20100c90000"
+)
+SELF_TEST_EXPECTED = {
+    "magic": "MEX1",
+    "version": 1,
+    "image_size": 3,
+    "bss_size": 0,
+    "entry_offset": 2,
+    "minimum_stack_size": 64,
+    "relocation_count": 1,
+    "relocation_table_offset": 27,
+    "stored_length": 29,
+    "body_crc": 827,
+    "header_crc": 41725,
+    "relocations": [0],
+}
+
+
+def _one_bit_mutation(data: bytes, offset: int) -> bytes:
+    candidate = bytearray(data)
+    candidate[offset] ^= 1
+    return bytes(candidate)
+
+
+def _expect_error(candidate: bytes, expected: str) -> None:
+    try:
+        inspect_bytes(candidate, base=0x6000)
+    except MexError as exc:
+        require(str(exc) == expected, f"unexpected malformed-corpus diagnostic: {exc}")
+        return
+    raise MexError(f"malformed corpus member unexpectedly accepted: {expected}")
 
 
 def self_test() -> None:
-    good = _make_fixture()
-    inspect_bytes(good, base=0x6000)
-    for offset in (0, 4, 20, 22, len(good) - 1):
-        bad = bytearray(good)
-        bad[offset] ^= 1
-        try:
-            inspect_bytes(bytes(bad), base=0x6000)
-        except MexError:
-            pass
-        else:
-            raise MexError(f"one-bit mutation at {offset} unexpectedly accepted")
-    try:
-        inspect_bytes(good + b"\x00")
-    except MexError:
-        pass
-    else:
-        raise MexError("trailing byte unexpectedly accepted")
+    observed = inspect_bytes(SELF_TEST_GOLDEN, base=0x6000)
+    require(observed == SELF_TEST_EXPECTED, "golden MEX1 decode changed")
+
+    malformed = (
+        (_one_bit_mutation(SELF_TEST_GOLDEN, 0), "bad MEX1 magic"),
+        (_one_bit_mutation(SELF_TEST_GOLDEN, 4), "unsupported MEX1 version/flags"),
+        (_one_bit_mutation(SELF_TEST_GOLDEN, 22), "MEX1 header CRC mismatch"),
+        (_one_bit_mutation(SELF_TEST_GOLDEN, 24), "MEX1 body CRC mismatch"),
+        (SELF_TEST_GOLDEN + b"\x00", "MEX1 stored length/trailing-byte mismatch"),
+    )
+    for candidate, expected in malformed:
+        _expect_error(candidate, expected)
 
 
 def main(argv: list[str]) -> int:
