@@ -397,8 +397,9 @@ process_table: defs MAX_PROCESSES*PROC_DESC_SIZE,0
     ENDM
 
 
-; P2.03 ABS16 relocation validator/applicator. The routine is deliberately a
-; separate emitter until P2.04 integrates it into the resident loader path.
+; P2.03 ABS16 relocation validator/applicator. The routine remains a separate
+; emitter so Phase-2 loader transactions can compose it without consuming the
+; frozen resident-kernel headroom before spawn/exec integration is complete.
 ; IX -> validated MEX1 header/source object, DE = actual copied image base.
 ; The complete table is validated without target writes; only then are ABS16
 ; words patched in a second pass. Returns A=0/C clear or A=E_FORMAT/C set.
@@ -608,4 +609,106 @@ process_mex_reloc_offset: dw 0
 process_mex_offset: dw 0
 process_mex_previous: dw 0
 process_mex_have_previous: db 0
+    ENDM
+
+; P2.04 RAW MEX1 private image loader. IX points to an already header-validated
+; source object. The routine reserves image+BSS with ALLOC_ANY, copies image
+; bytes, zeroes BSS, and applies the certified ABS16 relocator before exposing
+; the allocation to any process descriptor. On success HL=private image base,
+; BC=rounded allocation length, A=0/C clear. On failure A=errno/C set and no
+; loader-owned allocation remains live.
+    MACRO EMIT_MEX1_IMAGE_LOAD_ROUTINES
+zx48_mex1_load_image:
+    push ix
+    pop hl
+    ld (process_mex_load_header),hl
+
+    ld l,(ix+MEX_HDR_IMAGE_SIZE)
+    ld h,(ix+MEX_HDR_IMAGE_SIZE+1)
+    ld a,h
+    or l
+    jp z,zx48_mex1_load_format
+    ld (process_mex_load_image_size),hl
+
+    ld e,(ix+MEX_HDR_BSS_SIZE)
+    ld d,(ix+MEX_HDR_BSS_SIZE+1)
+    ld (process_mex_load_bss_size),de
+    add hl,de
+    jp c,zx48_mex1_load_format
+    ld a,h
+    cp $80
+    jr c,zx48_mex1_load_size_ok
+    jp nz,zx48_mex1_load_format
+    ld a,l
+    or a
+    jp nz,zx48_mex1_load_format
+zx48_mex1_load_size_ok:
+    ld b,h
+    ld c,l
+    bit 0,c
+    jr z,zx48_mex1_load_rounded
+    inc bc
+zx48_mex1_load_rounded:
+    ld (process_mex_load_rounded),bc
+
+    ld a,ALLOC_ANY
+    call zx48_alloc
+    ret c
+    ld (process_mex_load_base),hl
+
+    ex de,hl
+    ld hl,(process_mex_load_header)
+    ld bc,MEX_HEADER_SIZE
+    add hl,bc
+    ld bc,(process_mex_load_image_size)
+    ldir
+
+zx48_mex1_load_zero_bss:
+    ld bc,(process_mex_load_bss_size)
+    ld a,b
+    or c
+    jr z,zx48_mex1_load_relocate
+    xor a
+    ld (de),a
+    dec bc
+    ld a,b
+    or c
+    jr z,zx48_mex1_load_relocate
+    ld h,d
+    ld l,e
+    inc de
+    ldir
+
+zx48_mex1_load_relocate:
+    ld hl,(process_mex_load_header)
+    push hl
+    pop ix
+    ld de,(process_mex_load_base)
+    call zx48_mex1_relocate
+    jr c,zx48_mex1_load_rollback
+    ld hl,(process_mex_load_base)
+    ld bc,(process_mex_load_rounded)
+    xor a
+    ret
+
+zx48_mex1_load_rollback:
+    ld (process_mex_load_error),a
+    ld hl,(process_mex_load_base)
+    ld bc,(process_mex_load_rounded)
+    call zx48_free
+    ld a,(process_mex_load_error)
+    scf
+    ret
+
+zx48_mex1_load_format:
+    ld a,E_FORMAT
+    scf
+    ret
+
+process_mex_load_header: dw 0
+process_mex_load_base: dw 0
+process_mex_load_image_size: dw 0
+process_mex_load_bss_size: dw 0
+process_mex_load_rounded: dw 0
+process_mex_load_error: db 0
     ENDM

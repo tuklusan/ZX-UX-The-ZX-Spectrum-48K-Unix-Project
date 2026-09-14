@@ -61,6 +61,7 @@ import phase1_acceptance
 import phase2_mex1
 import phase2_inspector
 import phase2_relocation
+import phase2_loader
 from driver_core import (
     DriverError,
     find_root,
@@ -174,6 +175,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase2_inspector.dispatch(root, action, step, **kwargs)
     if step == "P2.03":
         return phase2_relocation.dispatch(root, action, step, **kwargs)
+    if step == "P2.04":
+        return phase2_loader.dispatch(root, action, step, **kwargs)
     if step.startswith("P2."):
         raise DriverError(f"numbered Phase-2 step is not registered: {step}")
     raise DriverError(f"step is not registered with the deterministic test driver: {step}")
