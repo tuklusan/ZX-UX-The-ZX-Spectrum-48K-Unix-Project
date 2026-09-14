@@ -93,26 +93,26 @@
         "kernel.asm"
       ],
       "cwd": "v1/src/kernel",
-      "duration_ms": 29,
+      "duration_ms": 21,
       "exit_code": 0,
-      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nkernel.asm(87): warning[shortblock]: init data for block truncated to length: 0\nPass 3 complete\nErrors: 0, warnings: 1, compiled: 8487 lines, work time: 0.028 seconds\n",
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8607 lines, work time: 0.020 seconds\n",
       "stdout": "",
       "timed_out": false
     }
   ],
   "hashes": {
     "docs/01-ZX-UX-ARCHITECTURE-REV12.md": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
-    "v1/build/kernel.bin": "9f989946cf9f6c89d92840815b3b7d1434875c731186f212a551b48683d369ca",
-    "v1/src/kernel/console.asm": "998f7cc706d1669460320a9fbb61d1823bf5f4c8f746e68307f82396aa0e2369",
-    "v1/src/kernel/cursor.asm": "77e70f9003f7cf7eef518931d4563757ac4ac1b67643c00f8b3acd9ec28f4732",
+    "v1/build/kernel.bin": "61a23a0a4551a7b07c148f6d1a3009778219fb5864647136cec63900de2a3d03",
+    "v1/src/kernel/console.asm": "b064fff503bd1c498b46a4890537423a1857b842406480ffa9233db54ee461e3",
+    "v1/src/kernel/cursor.asm": "239df2a634236b56ba1a4edb3d51736526545ba963fc882c3f62bdfd1a4f3a9e",
     "v1/src/kernel/tty32.asm": "1c1b7fac888afbee7ed7413ae3962682be300d0cbade2fedeb98ab6c010c64e5",
-    "v1/tools-host/test-driver/phase1_scroll.py": "1e85bf2e49ef57fbbb16cc5601cbfa107ab724e75cec68e10451eabe72b855a2"
+    "v1/tools-host/test-driver/phase1_scroll.py": "6e671d119d6b422bb017d50ee509a2b64f80663ed2c47a3f850162eecf80939a"
   },
   "prerequisites": {
     "P1.22": "PASS"
   },
   "schema": 2,
-  "source_commit": "e9e0d175549d6ae1552003101534e3d88b87f103",
+  "source_commit": "b1d6fac7b9279d12e8e84efb37064f890b1be712",
   "status": "PASS",
   "step": "P1.23",
   "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",

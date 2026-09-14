@@ -1,0 +1,81 @@
+{
+  "action": "test",
+  "architecture_sha256": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+  "assertions": [
+    {
+      "name": "guard-size-16",
+      "passed": true
+    },
+    {
+      "name": "sample-accounts-own-push",
+      "passed": true
+    },
+    {
+      "name": "syscall-switches-before-dispatch",
+      "passed": true
+    },
+    {
+      "name": "syscall-return-checks-guard",
+      "passed": true
+    },
+    {
+      "name": "rom-return-checks-guard",
+      "passed": true
+    },
+    {
+      "name": "boot-initializes-stack-guard",
+      "passed": true
+    },
+    {
+      "name": "scheduler-checks-before-user-restore",
+      "passed": true
+    },
+    {
+      "name": "safe-isr-frame-bounded",
+      "passed": true
+    },
+    {
+      "floor": "0xFB60",
+      "name": "stress-high-water-with-isr-margin",
+      "passed": true
+    },
+    {
+      "name": "guard-corruption-panics-kstack",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 18,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8607 lines, work time: 0.017 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "61a23a0a4551a7b07c148f6d1a3009778219fb5864647136cec63900de2a3d03",
+    "v1/src/kernel/errors.asm": "cb8ceea7043472803f6e7ee20bdbb8af6c2f92c0704d5c2375dffab4d8fad858",
+    "v1/src/kernel/rom_services.asm": "451474302209514de56648eee2d7d98528167496ee8d714d68fa34975371cdee",
+    "v1/src/kernel/scheduler.asm": "54b13bc17079454112a4b2d16792a8b21571da5a8cb76d2cbefa4c3942685b8b",
+    "v1/src/kernel/syscall.asm": "9c8ec2dd517755bf6df1ef58a7e88c0521a0005549e12056c1497afa6efe6ae4",
+    "v1/tools-host/test-driver/phase1.py": "5706d48ffcb7bc8d573296498866fea4c68a9ba1a8cafe3aadd1173c9cd8dcce"
+  },
+  "prerequisites": {
+    "P1.27": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "b1d6fac7b9279d12e8e84efb37064f890b1be712",
+  "status": "PASS",
+  "step": "P1.28",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

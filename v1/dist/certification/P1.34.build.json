@@ -1,0 +1,86 @@
+{
+  "action": "build",
+  "architecture_sha256": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+  "assertions": [
+    {
+      "name": "canonical-getkey-syscall-number",
+      "passed": true
+    },
+    {
+      "name": "getkey-has-no-argument-dependency",
+      "passed": true
+    },
+    {
+      "name": "getkey-success-is-exact-h0-lbyte",
+      "passed": true
+    },
+    {
+      "name": "tty-owner-zero-is-unowned-at-init",
+      "passed": true
+    },
+    {
+      "name": "nonzero-current-owner-is-required",
+      "passed": true
+    },
+    {
+      "name": "getkey-never-auto-claims-owner",
+      "passed": true
+    },
+    {
+      "name": "owner-zero-is-single-unowned-representation",
+      "passed": true
+    },
+    {
+      "name": "safe-cursor-service-precedes-decode",
+      "passed": true
+    },
+    {
+      "name": "no-key-reblocks-cooperatively-after-service",
+      "passed": true
+    },
+    {
+      "name": "safe-cursor-service-does-not-write-logical-position",
+      "passed": true
+    },
+    {
+      "name": "reject-stale-high-byte-shape",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 21,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8607 lines, work time: 0.020 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "61a23a0a4551a7b07c148f6d1a3009778219fb5864647136cec63900de2a3d03",
+    "v1/src/kernel/console.asm": "b064fff503bd1c498b46a4890537423a1857b842406480ffa9233db54ee461e3",
+    "v1/src/kernel/cursor.asm": "239df2a634236b56ba1a4edb3d51736526545ba963fc882c3f62bdfd1a4f3a9e",
+    "v1/src/kernel/keyboard.asm": "c6630bc91f3fbbf2d5c4861e65a12ceb08aafcd0f3a62e99170472bcb17d831c",
+    "v1/src/kernel/process.asm": "1788d6485bc126acf4278d016db2fbc3d4005efaf53440e3016ead2933df2948",
+    "v1/src/kernel/scheduler.asm": "54b13bc17079454112a4b2d16792a8b21571da5a8cb76d2cbefa4c3942685b8b",
+    "v1/src/kernel/syscall.asm": "9c8ec2dd517755bf6df1ef58a7e88c0521a0005549e12056c1497afa6efe6ae4",
+    "v1/tools-host/test-driver/phase1_getkey.py": "659cb0c8234478224e831fb504c1c8ea80f2a1a532acb4a13ba6eba6e3c63a31"
+  },
+  "prerequisites": {
+    "P1.33": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "b1d6fac7b9279d12e8e84efb37064f890b1be712",
+  "status": "PASS",
+  "step": "P1.34",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

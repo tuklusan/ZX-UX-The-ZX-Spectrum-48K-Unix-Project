@@ -97,35 +97,35 @@
         "kernel.asm"
       ],
       "cwd": "v1/src/kernel",
-      "duration_ms": 22,
+      "duration_ms": 18,
       "exit_code": 0,
-      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8468 lines, work time: 0.021 seconds\n",
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8607 lines, work time: 0.017 seconds\n",
       "stdout": "",
       "timed_out": false
     }
   ],
   "hashes": {
-    "v1/build/kernel.bin": "a76d767c61ea55446ad173b558acb4ccde8f43fdf95d7bc2826fbdd59054a76d",
+    "v1/build/kernel.bin": "61a23a0a4551a7b07c148f6d1a3009778219fb5864647136cec63900de2a3d03",
     "v1/docs/rom-services.md": "3ef3d54ca3e6c38a7aa0564639ddca1c586fa62762a2bea055eae543f34e142f",
     "v1/include/zx48ux.inc": "4c32a778091d3d7ba6fdeb28c77fe2cbe864d1f71f20a41c845019e9d5c056c1",
-    "v1/src/boot/entry.asm": "ed714e8354df6ec9d7de75f1e26141796a0d5f2036005cab3b0117c10e76dd75",
-    "v1/src/kernel/console.asm": "7e1bfdbe5dc4840b43465687398577a3089c3da705bf1183666647b5cf780de6",
+    "v1/src/boot/entry.asm": "2ab1b3ff1c35a93bf1ed9c85f8a988b7feb8e74cf2822df9d7b46c33eb77b192",
+    "v1/src/kernel/console.asm": "b064fff503bd1c498b46a4890537423a1857b842406480ffa9233db54ee461e3",
     "v1/src/kernel/errors.asm": "cb8ceea7043472803f6e7ee20bdbb8af6c2f92c0704d5c2375dffab4d8fad858",
     "v1/src/kernel/handles.asm": "806416074556b2d87061bd21f272a77a62191090defd176c9adc58873b51a1dc",
-    "v1/src/kernel/interrupt.asm": "1287064ad6602130944b3a41af021400515bc77fe7a4ecfa15b1a149b8024129",
-    "v1/src/kernel/keyboard.asm": "9e05bf93ac08568a70df96eb0bff90d7e76eb0f86616d0adbb7fbbada80f9031",
+    "v1/src/kernel/interrupt.asm": "cf70af177c18f323ac368f45468dbe907aef3d76488f92d844570b6875d5c9de",
+    "v1/src/kernel/keyboard.asm": "c6630bc91f3fbbf2d5c4861e65a12ceb08aafcd0f3a62e99170472bcb17d831c",
     "v1/src/kernel/memory.asm": "9188c5ada0cbc40e36b18313a57231df621d0e567b62ba8f7f0e1ca4e8ea26e0",
-    "v1/src/kernel/pipe.asm": "965cf89f58ff7d66870564f150b0ebdcd6a678a315daaa40b14e506926a2be04",
+    "v1/src/kernel/pipe.asm": "04ef0030d9329d85b105ef0b52a0300ff2046b6db1ef3e069e9f2d986ce7212b",
     "v1/src/kernel/process.asm": "1788d6485bc126acf4278d016db2fbc3d4005efaf53440e3016ead2933df2948",
-    "v1/src/kernel/udg.asm": "b4887c85d057feede0092a649d3912c92ac0eb4393df5aef2ea5e419358fea34",
-    "v1/src/kernel/ula_io.asm": "5b7197efd57f498c9eed16b9ef841d36c88361d51c72e858de609edda1a006cb",
-    "v1/tools-host/test-driver/phase1_romvars.py": "36c4aa12b4080fabf00a817a1506fb62b25ba590d0c62cbc64539d5a6351321b"
+    "v1/src/kernel/udg.asm": "c6d90ab779c7e86dd40848d4fb49236f37502525ef401e50173aae8e3dc3f954",
+    "v1/src/kernel/ula_io.asm": "58b8ca7498acc6f4f9b9aea168f5493ab64ece916ea10d9a4b23e2f14b5f0fef",
+    "v1/tools-host/test-driver/phase1_romvars.py": "c08d4136659f2b0c3f347bc59423dfc370b431171e8fe77241fa7827a5addcd7"
   },
   "prerequisites": {
     "P1.13": "PASS"
   },
   "schema": 2,
-  "source_commit": "5f2cc59b8d52c62da5fe0ce59ac7754ef8877023",
+  "source_commit": "b1d6fac7b9279d12e8e84efb37064f890b1be712",
   "status": "PASS",
   "step": "P1.14",
   "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",

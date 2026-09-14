@@ -1,0 +1,115 @@
+{
+  "action": "test",
+  "architecture_sha256": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+  "assertions": [
+    {
+      "name": "canonical-putchar-syscall-number",
+      "passed": true
+    },
+    {
+      "name": "putchar-rejects-nonzero-h-before-output",
+      "passed": true
+    },
+    {
+      "name": "printable-byte-range-is-20-through-7f",
+      "passed": true
+    },
+    {
+      "name": "printable-resolves-deferred-wrap-before-draw",
+      "passed": true
+    },
+    {
+      "name": "printable-dispatches-current-tty-mode",
+      "passed": true
+    },
+    {
+      "name": "moving-controls-cancel-pending-before-motion",
+      "passed": true
+    },
+    {
+      "name": "form-feed-clears-and-homes-with-pending-clear",
+      "passed": true
+    },
+    {
+      "name": "deferred-wrap-has-single-scroll-edge",
+      "passed": true
+    },
+    {
+      "name": "screen-begin-is-depth-counted",
+      "passed": true
+    },
+    {
+      "name": "screen-end-is-strictly-balanced",
+      "passed": true
+    },
+    {
+      "name": "interrupt-never-edits-console-or-cursor-bitmap-directly",
+      "passed": true
+    },
+    {
+      "name": "nonzero-h-and-invalid-byte-are-atomic-runtime",
+      "passed": true
+    },
+    {
+      "name": "tty32-printable-bitmap-neighbors-and-attribute-exact",
+      "passed": true
+    },
+    {
+      "name": "tty64-even-odd-nibbles-and-attributes-exact",
+      "passed": true
+    },
+    {
+      "name": "tty32-and-tty64-deferred-wrap-controls-exact",
+      "passed": true
+    },
+    {
+      "name": "bottom-row-lf-scrolls-exactly-once-in-both-modes",
+      "passed": true
+    },
+    {
+      "name": "visible-cursor-putchar-mutation-is-reversible-and-balanced",
+      "passed": true
+    },
+    {
+      "name": "putchar-return-canonicalizes-iy",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 18,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8607 lines, work time: 0.017 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "docs/01-ZX-UX-ARCHITECTURE-REV12.md": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+    "v1/assets/font4x8.bin": "1f29bb201828bbb6f0c0945c9677eb495b7b99592bd9c05ed10c0597caa69114",
+    "v1/build/kernel.bin": "61a23a0a4551a7b07c148f6d1a3009778219fb5864647136cec63900de2a3d03",
+    "v1/src/kernel/console.asm": "b064fff503bd1c498b46a4890537423a1857b842406480ffa9233db54ee461e3",
+    "v1/src/kernel/cursor.asm": "239df2a634236b56ba1a4edb3d51736526545ba963fc882c3f62bdfd1a4f3a9e",
+    "v1/src/kernel/syscall.asm": "9c8ec2dd517755bf6df1ef58a7e88c0521a0005549e12056c1497afa6efe6ae4",
+    "v1/src/kernel/tty32.asm": "1c1b7fac888afbee7ed7413ae3962682be300d0cbade2fedeb98ab6c010c64e5",
+    "v1/src/kernel/tty64.asm": "7890a23ed2625ce7dda4d0629bf85240e748bf5a27a30dac53279c0f0b108344",
+    "v1/tools-host/test-driver/phase1_putchar.py": "4ce6c55518472e62b3c13db69b034e93cdd33b5f6eec2c9db6a9bcece50226e7"
+  },
+  "prerequisites": {
+    "P1.34": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "b1d6fac7b9279d12e8e84efb37064f890b1be712",
+  "status": "PASS",
+  "step": "P1.35",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

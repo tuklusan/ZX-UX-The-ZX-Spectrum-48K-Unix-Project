@@ -59,10 +59,10 @@
       "passed": true
     },
     {
-      "free_bytes": 10,
+      "free_bytes": 33,
       "name": "ordinary-code-pool-within-faff",
       "passed": true,
-      "used_end": "0xFAF6"
+      "used_end": "0xFADF"
     },
     {
       "name": "runtime-cold-epoch-and-independent-ticks",
@@ -91,16 +91,16 @@
         "kernel.asm"
       ],
       "cwd": "v1/src/kernel",
-      "duration_ms": 30,
+      "duration_ms": 20,
       "exit_code": 0,
-      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8611 lines, work time: 0.029 seconds\n",
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8607 lines, work time: 0.019 seconds\n",
       "stdout": "",
       "timed_out": false
     }
   ],
   "hashes": {
     "docs/01-ZX-UX-ARCHITECTURE-REV12.md": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
-    "v1/build/kernel.bin": "86f5cd8c1f2f1427c34baed760bfcee1939f51e744491c8e01acb60f4fa8e7c1",
+    "v1/build/kernel.bin": "61a23a0a4551a7b07c148f6d1a3009778219fb5864647136cec63900de2a3d03",
     "v1/src/boot/entry.asm": "2ab1b3ff1c35a93bf1ed9c85f8a988b7feb8e74cf2822df9d7b46c33eb77b192",
     "v1/src/kernel/interrupt.asm": "cf70af177c18f323ac368f45468dbe907aef3d76488f92d844570b6875d5c9de",
     "v1/src/kernel/syscall.asm": "9c8ec2dd517755bf6df1ef58a7e88c0521a0005549e12056c1497afa6efe6ae4",
@@ -110,7 +110,7 @@
     "P1.25": "PASS"
   },
   "schema": 2,
-  "source_commit": "cb8e4ea0b68df693e5d4133fc906ed46234427b6",
+  "source_commit": "b1d6fac7b9279d12e8e84efb37064f890b1be712",
   "status": "PASS",
   "step": "P1.26",
   "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",

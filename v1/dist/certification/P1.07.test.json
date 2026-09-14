@@ -45,22 +45,22 @@
         "kernel.asm"
       ],
       "cwd": "v1/src/kernel",
-      "duration_ms": 30,
+      "duration_ms": 20,
       "exit_code": 0,
-      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8462 lines, work time: 0.029 seconds\n",
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8607 lines, work time: 0.019 seconds\n",
       "stdout": "",
       "timed_out": false
     }
   ],
   "hashes": {
-    "v1/build/kernel.bin": "b9d0b4a2ecf6e57946edb58ad898b61a6b344a9f51eba22d0b7bcb21e2c67d17",
+    "v1/build/kernel.bin": "61a23a0a4551a7b07c148f6d1a3009778219fb5864647136cec63900de2a3d03",
     "v1/include/zx48ux.inc": "4c32a778091d3d7ba6fdeb28c77fe2cbe864d1f71f20a41c845019e9d5c056c1"
   },
   "prerequisites": {
     "P1.06": "PASS"
   },
   "schema": 2,
-  "source_commit": "104723b9111314630e9057ad9a9002b982fc2598",
+  "source_commit": "b1d6fac7b9279d12e8e84efb37064f890b1be712",
   "status": "PASS",
   "step": "P1.07",
   "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",

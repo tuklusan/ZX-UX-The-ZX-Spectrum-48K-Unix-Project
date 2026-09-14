@@ -1,0 +1,112 @@
+{
+  "action": "test",
+  "architecture_sha256": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+  "assertions": [
+    {
+      "name": "phase1-acceptance-plan-contract-present",
+      "passed": true
+    },
+    {
+      "name": "phase1-acceptance-architecture-identity-exact",
+      "passed": true
+    },
+    {
+      "name": "p1-40-certified-before-p1-41",
+      "passed": true
+    },
+    {
+      "name": "p1-41-explicitly-routed-to-aggregate-owner",
+      "passed": true
+    },
+    {
+      "name": "aggregate-requires-exactly-80-prerequisite-records",
+      "passed": true
+    },
+    {
+      "name": "aggregate-requires-source-toolchain-architecture-identity",
+      "passed": true
+    },
+    {
+      "name": "aggregate-requires-exact-prerequisite-chain",
+      "passed": true
+    },
+    {
+      "name": "aggregate-requires-critical-phase1-acceptance-assertions",
+      "passed": true
+    },
+    {
+      "name": "aggregate-requires-strict-p1-40-mid-ldir-proof",
+      "passed": true
+    },
+    {
+      "name": "phase1-finalizer-wired-after-gate",
+      "passed": true
+    },
+    {
+      "name": "phase1-durable-evidence-validator-wired-into-quality",
+      "passed": true
+    },
+    {
+      "name": "negative-missing-prerequisite-evidence-rejected",
+      "passed": true
+    },
+    {
+      "name": "negative-failed-prerequisite-rejected",
+      "passed": true
+    },
+    {
+      "name": "negative-broken-prerequisite-chain-rejected",
+      "passed": true
+    },
+    {
+      "name": "negative-missing-split-write-proof-rejected",
+      "passed": true
+    },
+    {
+      "name": "negative-missing-strict-p140-proof-rejected",
+      "passed": true
+    },
+    {
+      "name": "no-later-phase-semantic-dependency",
+      "passed": true
+    },
+    {
+      "name": "all-p1-01-through-p1-40-build-test-evidence-pass-same-source",
+      "passed": true,
+      "record_count": 80
+    },
+    {
+      "name": "complete-p1-40-canonical-primitive-suite-present",
+      "passed": true
+    },
+    {
+      "name": "minimal-phase1-aggregate-sna-smoke-pass",
+      "passed": true
+    }
+  ],
+  "commands": [],
+  "hashes": {
+    ".github/workflows/phase1-certification.yml": "2c96415711f3b7211b6fa3cd111cf0fb6d1f7742e8584b9ec61b99b5f298d065",
+    ".github/workflows/quality-and-ci.yml": "f5afdce9c247f88853802a2666589336d7cb42deebffb12215324fe2ec9e8166",
+    "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV03.md": "5985dd0d806cdfb1d75cd840e218bc630750bc8b83e07c7ae14f43becd58f6d7",
+    "tools/check_phase1_evidence.py": "80e2ef0bc9afc1cf3f9d2feafbb9ef5d0cd2905507999c412ab4b4e8abf2afaa",
+    "tools/finalize_phase1_evidence.py": "c044baf498ba56a85fbf58736c8884de169ad98c4a75e83c8e4f1f73f45c6003",
+    "tools/test_phase1_evidence_negative.py": "c6567841a14787a2110bacdc2f25af0a55f4e49cc0538b23cdc52b5c7c5cb657",
+    "v1/docs/test-plan.md": "28a48ae95d82ca5c7c77c85d600a154e713912e65fff323959ad6e4c14c75d0b",
+    "v1/tools-host/test-driver/evidence.py": "2baa1ca5d5727bc9187ab7336c71580f91d2ad376507fe0484c7549f4453dbc1",
+    "v1/tools-host/test-driver/phase1_acceptance.py": "110101d5be9e8199cf0578d829b9fe2429aedc9be8d286676cae5a2897431b55",
+    "v1/tools-host/test-driver/phase1_gate.py": "4626961385d70fa19496d3053a8f489341d50601cf6a5a5830fa7505b322fa08",
+    "v1/tools-host/test-driver/phase1_primitives_strict.py": "6fcd50b0ccbd16b41e96d67430db8423a407127f55d26a10edce85bfb1b7ede4",
+    "v1/tools-host/test-driver/phase1_probe.py": "07c306b693a2e728a002e964e93d40eae24b16c923c4915988d369a5925133ea",
+    "v1/tools-host/test-driver/run.py": "e755ef5e5b7d9852f3324d4ce21ce01dc1c19cc1d724afac22daefd0f9ebf7ca"
+  },
+  "prerequisites": {
+    "P1.40": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "b1d6fac7b9279d12e8e84efb37064f890b1be712",
+  "status": "PASS",
+  "step": "P1.41",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

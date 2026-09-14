@@ -65,16 +65,16 @@
         "kernel.asm"
       ],
       "cwd": "v1/src/kernel",
-      "duration_ms": 29,
+      "duration_ms": 46,
       "exit_code": 0,
-      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nkernel.asm(87): warning[shortblock]: init data for block truncated to length: 0\nPass 3 complete\nErrors: 0, warnings: 1, compiled: 8487 lines, work time: 0.028 seconds\n",
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8607 lines, work time: 0.046 seconds\n",
       "stdout": "",
       "timed_out": false
     }
   ],
   "hashes": {
-    "v1/build/kernel.bin": "9f989946cf9f6c89d92840815b3b7d1434875c731186f212a551b48683d369ca",
-    "v1/src/kernel/console.asm": "998f7cc706d1669460320a9fbb61d1823bf5f4c8f746e68307f82396aa0e2369",
+    "v1/build/kernel.bin": "61a23a0a4551a7b07c148f6d1a3009778219fb5864647136cec63900de2a3d03",
+    "v1/src/kernel/console.asm": "b064fff503bd1c498b46a4890537423a1857b842406480ffa9233db54ee461e3",
     "v1/src/kernel/tty32.asm": "1c1b7fac888afbee7ed7413ae3962682be300d0cbade2fedeb98ab6c010c64e5",
     "v1/tools-host/test-driver/phase1_console_core.py": "4cd256449965af0b309fc73e3503daa0b1edb3e370ebd23baaadd6f1c66bdd3d"
   },
@@ -82,7 +82,7 @@
     "P1.19": "PASS"
   },
   "schema": 2,
-  "source_commit": "c5ec951bb3e1cdb3ac12a9cf0eb6ab9db4dbf7e6",
+  "source_commit": "b1d6fac7b9279d12e8e84efb37064f890b1be712",
   "status": "PASS",
   "step": "P1.20",
   "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",

@@ -1,0 +1,155 @@
+{
+  "action": "test",
+  "architecture_sha256": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+  "assertions": [
+    {
+      "name": "private-logical-phase-state",
+      "passed": true
+    },
+    {
+      "name": "private-physical-drawn-state",
+      "passed": true
+    },
+    {
+      "name": "private-mutation-depth-state",
+      "passed": true
+    },
+    {
+      "name": "cold-defaults-phase-divider-parity-depth",
+      "passed": true
+    },
+    {
+      "name": "outer-begin-hides-only-drawn-cursor",
+      "passed": true
+    },
+    {
+      "name": "depth-wrap-panics",
+      "passed": true
+    },
+    {
+      "name": "strict-end-underflow-panics",
+      "passed": true
+    },
+    {
+      "name": "atomic-parity-fetch-clear",
+      "passed": true
+    },
+    {
+      "name": "safe-service-detects-unbalanced-depth",
+      "passed": true
+    },
+    {
+      "name": "outer-begin-preserves-live-coordinate-pointer",
+      "passed": true
+    },
+    {
+      "name": "shape-phase-reconcile-is-xor",
+      "passed": true
+    },
+    {
+      "name": "bitmap-xor-has-32-and-64-masks",
+      "passed": true
+    },
+    {
+      "name": "mode-change-hides-before-commit",
+      "passed": true
+    },
+    {
+      "name": "shape-change-hides-before-commit",
+      "passed": true
+    },
+    {
+      "name": "im2-only-produces-service-parity",
+      "passed": true
+    },
+    {
+      "name": "architecture-nested-mutation-contract-present",
+      "passed": true
+    },
+    {
+      "name": "architecture-shape-off-clock-contract-present",
+      "passed": true
+    },
+    {
+      "free_bytes": 33,
+      "name": "ordinary-code-pool-within-faff",
+      "passed": true,
+      "used_end": "0xFADF"
+    },
+    {
+      "name": "runtime-default-state-exact",
+      "passed": true
+    },
+    {
+      "name": "runtime-xor-hide-show-byte-exact",
+      "passed": true
+    },
+    {
+      "name": "runtime-neighbor-nibble-and-attribute-preserved",
+      "passed": true
+    },
+    {
+      "name": "runtime-tty32-full-byte-xor",
+      "passed": true
+    },
+    {
+      "name": "runtime-nested-hide-reconcile-once",
+      "passed": true
+    },
+    {
+      "name": "runtime-odd-even-parity-coalesces",
+      "passed": true
+    },
+    {
+      "name": "runtime-shape-off-preserves-phase-clock",
+      "passed": true
+    },
+    {
+      "name": "runtime-depth-underflow-panics",
+      "passed": true
+    },
+    {
+      "name": "runtime-depth-wrap-panics",
+      "passed": true
+    },
+    {
+      "name": "unbalanced-end-negative-sensitive",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 20,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8607 lines, work time: 0.020 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "docs/01-ZX-UX-ARCHITECTURE-REV12.md": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+    "v1/build/kernel.bin": "61a23a0a4551a7b07c148f6d1a3009778219fb5864647136cec63900de2a3d03",
+    "v1/src/kernel/console.asm": "b064fff503bd1c498b46a4890537423a1857b842406480ffa9233db54ee461e3",
+    "v1/src/kernel/cursor.asm": "239df2a634236b56ba1a4edb3d51736526545ba963fc882c3f62bdfd1a4f3a9e",
+    "v1/src/kernel/interrupt.asm": "cf70af177c18f323ac368f45468dbe907aef3d76488f92d844570b6875d5c9de",
+    "v1/src/kernel/tty32.asm": "1c1b7fac888afbee7ed7413ae3962682be300d0cbade2fedeb98ab6c010c64e5",
+    "v1/tools-host/test-driver/phase1_cursor_core.py": "163e8203480ca10f434470849a3f42fe748d55794e663542b9019156d6dad131"
+  },
+  "prerequisites": {
+    "P1.23": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "b1d6fac7b9279d12e8e84efb37064f890b1be712",
+  "status": "PASS",
+  "step": "P1.24",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

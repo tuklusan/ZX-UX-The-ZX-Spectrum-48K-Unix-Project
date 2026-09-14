@@ -1,0 +1,90 @@
+{
+  "action": "test",
+  "architecture_sha256": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+  "assertions": [
+    {
+      "name": "caps-row-16bit-bc",
+      "passed": true
+    },
+    {
+      "name": "space-row-16bit-bc",
+      "passed": true
+    },
+    {
+      "name": "break-active-low-bit0",
+      "passed": true
+    },
+    {
+      "name": "im2-does-not-call-rom-keyboard",
+      "passed": true
+    },
+    {
+      "name": "im2-only-publishes-break-flag",
+      "passed": true
+    },
+    {
+      "name": "foreground-rom-decode",
+      "passed": true
+    },
+    {
+      "name": "delete-maps-backspace",
+      "passed": true
+    },
+    {
+      "name": "input-wait-is-cooperative",
+      "passed": true
+    },
+    {
+      "name": "wake-decode-outside-im2",
+      "passed": true
+    },
+    {
+      "name": "break-raw-matrix-positive",
+      "passed": true
+    },
+    {
+      "name": "non-break-raw-matrix-negative",
+      "passed": true
+    },
+    {
+      "name": "foreground-key-decode-matrix",
+      "passed": true
+    },
+    {
+      "name": "unsupported-control-negative",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 18,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8607 lines, work time: 0.017 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "61a23a0a4551a7b07c148f6d1a3009778219fb5864647136cec63900de2a3d03",
+    "v1/src/kernel/interrupt.asm": "cf70af177c18f323ac368f45468dbe907aef3d76488f92d844570b6875d5c9de",
+    "v1/src/kernel/keyboard.asm": "c6630bc91f3fbbf2d5c4861e65a12ceb08aafcd0f3a62e99170472bcb17d831c",
+    "v1/tools-host/test-driver/phase1_keyboard.py": "3ff08b4549e6491c9d57597268625e0a5ef4217fffff47bbbbd273f8094e4f93"
+  },
+  "prerequisites": {
+    "P1.30": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "b1d6fac7b9279d12e8e84efb37064f890b1be712",
+  "status": "PASS",
+  "step": "P1.31",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

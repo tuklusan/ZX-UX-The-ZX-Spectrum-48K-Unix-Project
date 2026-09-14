@@ -1,0 +1,70 @@
+{
+  "action": "test",
+  "architecture_sha256": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+  "assertions": [
+    {
+      "name": "sys-sleep-is-prevalidated-relative-u32-with-wrap-safe-wake",
+      "passed": true
+    },
+    {
+      "name": "reject-top-bit-relative-count",
+      "passed": true
+    },
+    {
+      "name": "reject-absolute-target-interpretation",
+      "passed": true
+    },
+    {
+      "name": "reject-one-tick-early-wake-logic",
+      "passed": true
+    },
+    {
+      "name": "reject-unvalidated-sleep-pointer",
+      "passed": true
+    },
+    {
+      "name": "relative-zero-one-max-and-wrap-vectors-pass",
+      "passed": true
+    },
+    {
+      "name": "invalid-top-bit-vectors-are-atomic",
+      "passed": true
+    },
+    {
+      "name": "wake-occurs-at-deadline-not-one-tick-early",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 19,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8607 lines, work time: 0.019 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "61a23a0a4551a7b07c148f6d1a3009778219fb5864647136cec63900de2a3d03",
+    "v1/src/kernel/scheduler.asm": "54b13bc17079454112a4b2d16792a8b21571da5a8cb76d2cbefa4c3942685b8b",
+    "v1/src/kernel/syscall.asm": "9c8ec2dd517755bf6df1ef58a7e88c0521a0005549e12056c1497afa6efe6ae4",
+    "v1/tools-host/test-driver/phase1_sleep.py": "acad5552b23e4f5c22817a8948dddfa5ed7ce4a7fdc6b98c1de9737e40afe9eb"
+  },
+  "prerequisites": {
+    "P1.17": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "b1d6fac7b9279d12e8e84efb37064f890b1be712",
+  "status": "PASS",
+  "step": "P1.18",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

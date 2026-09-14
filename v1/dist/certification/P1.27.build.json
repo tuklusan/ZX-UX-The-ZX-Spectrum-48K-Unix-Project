@@ -1,0 +1,98 @@
+{
+  "action": "build",
+  "architecture_sha256": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+  "assertions": [
+    {
+      "name": "canonical-time-syscall-numbers",
+      "passed": true
+    },
+    {
+      "name": "canonical-time-error-numbers",
+      "passed": true
+    },
+    {
+      "name": "time-get-exact-six-byte-atomic-copy",
+      "passed": true
+    },
+    {
+      "name": "time-set-pid1-permission-range-and-atomic-commit",
+      "passed": true
+    },
+    {
+      "name": "time-info-dispatch-order",
+      "passed": true
+    },
+    {
+      "name": "time-state-layout-is-time1-prefix",
+      "passed": true
+    },
+    {
+      "name": "abi-doc-time1-layout",
+      "passed": true
+    },
+    {
+      "name": "abi-doc-get-invalid-policy",
+      "passed": true
+    },
+    {
+      "name": "abi-doc-set-permission-and-range",
+      "passed": true
+    },
+    {
+      "name": "abi-doc-revision-and-subsecond",
+      "passed": true
+    },
+    {
+      "name": "reject-missing-revision-increment",
+      "passed": true
+    },
+    {
+      "name": "reject-nonatomic-prevalidation-write",
+      "passed": true
+    },
+    {
+      "name": "reject-wrong-2100-boundary",
+      "passed": true
+    },
+    {
+      "free_bytes": 33,
+      "name": "ordinary-code-pool-within-faff",
+      "passed": true,
+      "used_end": "0xFADF"
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 18,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8607 lines, work time: 0.017 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "61a23a0a4551a7b07c148f6d1a3009778219fb5864647136cec63900de2a3d03",
+    "v1/docs/abi.md": "813e94ea681883379d8eef6c0d755bbbb0e5a49c9aad37352ef9975a17ce4d47",
+    "v1/include/zx48ux.inc": "4c32a778091d3d7ba6fdeb28c77fe2cbe864d1f71f20a41c845019e9d5c056c1",
+    "v1/src/kernel/interrupt.asm": "cf70af177c18f323ac368f45468dbe907aef3d76488f92d844570b6875d5c9de",
+    "v1/src/kernel/syscall.asm": "9c8ec2dd517755bf6df1ef58a7e88c0521a0005549e12056c1497afa6efe6ae4",
+    "v1/tools-host/test-driver/phase1_time.py": "fac8627bae4aed166f052bbbd8a1bf654e691c2293e5f7597fca13cc6ddbd030"
+  },
+  "prerequisites": {
+    "P1.26": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "b1d6fac7b9279d12e8e84efb37064f890b1be712",
+  "status": "PASS",
+  "step": "P1.27",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

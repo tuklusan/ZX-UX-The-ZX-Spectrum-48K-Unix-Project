@@ -1,0 +1,88 @@
+{
+  "action": "build",
+  "architecture_sha256": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+  "assertions": [
+    {
+      "name": "all-z80-block-transfer-search-families-owned",
+      "passed": true
+    },
+    {
+      "name": "memmove-explicitly-selects-backward-and-forward-repeat",
+      "passed": true
+    },
+    {
+      "name": "repeated-block-instructions-declared-interruptible",
+      "passed": true
+    },
+    {
+      "name": "canonical-owner-emitted-exactly-once",
+      "passed": true
+    },
+    {
+      "name": "phase1-live-pipe-chunks-use-canonical-memcpy",
+      "passed": true
+    },
+    {
+      "name": "phase1-live-udg-set-copies-use-canonical-memcpy",
+      "passed": true
+    },
+    {
+      "name": "phase1-boot-has-no-independent-loader-copy-consumer",
+      "passed": true
+    },
+    {
+      "count": 0,
+      "name": "live-small-copy-exception-manifest-is-measured",
+      "passed": true
+    },
+    {
+      "name": "canonical-ownership-has-no-live-violations",
+      "passed": true,
+      "violations": []
+    },
+    {
+      "bytes": 6879,
+      "limit": 6912,
+      "name": "ordinary-kernel-pool-budget",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 18,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8607 lines, work time: 0.017 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "docs/01-ZX-UX-ARCHITECTURE-REV12.md": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+    "v1/build/kernel.bin": "61a23a0a4551a7b07c148f6d1a3009778219fb5864647136cec63900de2a3d03",
+    "v1/docs/test-plan.md": "28a48ae95d82ca5c7c77c85d600a154e713912e65fff323959ad6e4c14c75d0b",
+    "v1/src/kernel/interrupt.asm": "cf70af177c18f323ac368f45468dbe907aef3d76488f92d844570b6875d5c9de",
+    "v1/src/kernel/kernel.asm": "c7f520614d10b3510682c36183812fe8c2134a0baa167969b84301fa4207305a",
+    "v1/src/kernel/pipe.asm": "04ef0030d9329d85b105ef0b52a0300ff2046b6db1ef3e069e9f2d986ce7212b",
+    "v1/src/kernel/udg.asm": "c6d90ab779c7e86dd40848d4fb49236f37502525ef401e50173aae8e3dc3f954",
+    "v1/src/kernel/z80_primitives.asm": "d750e98775f34f34456c38cd1e088f4d4d16461880484aea0aacf4eaa8c29a1e",
+    "v1/tools-host/test-driver/phase1_primitives.py": "cd523057144b1f915c5861fba909ab21e42283208c9312b8b0f57f0be59469da",
+    "v1/tools-host/test-driver/phase1_primitives_strict.py": "6fcd50b0ccbd16b41e96d67430db8423a407127f55d26a10edce85bfb1b7ede4"
+  },
+  "prerequisites": {
+    "P1.39": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "b1d6fac7b9279d12e8e84efb37064f890b1be712",
+  "status": "PASS",
+  "step": "P1.40",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

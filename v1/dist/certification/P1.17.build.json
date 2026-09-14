@@ -1,0 +1,83 @@
+{
+  "action": "build",
+  "architecture_sha256": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+  "assertions": [
+    {
+      "name": "altreg-busy-gate",
+      "passed": true
+    },
+    {
+      "name": "fast-path-balanced-banks",
+      "passed": true
+    },
+    {
+      "name": "safe-path-stack-preservation",
+      "passed": true
+    },
+    {
+      "name": "isr-never-calls-rom",
+      "passed": true
+    },
+    {
+      "bytes": 6,
+      "name": "fast-isr-frame-cost",
+      "passed": true
+    },
+    {
+      "bytes": 14,
+      "name": "safe-isr-frame-cost",
+      "passed": true
+    },
+    {
+      "name": "fast-isr-max-cycle-cost",
+      "passed": true,
+      "tstates": 831
+    },
+    {
+      "name": "safe-isr-max-cycle-cost",
+      "passed": true,
+      "tstates": 883
+    },
+    {
+      "name": "pal-frame-bounded",
+      "passed": true,
+      "tstates": 883
+    },
+    {
+      "name": "p1.17-rom-safe-fallback-covered-by-boundary-matrix",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 21,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8607 lines, work time: 0.020 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "61a23a0a4551a7b07c148f6d1a3009778219fb5864647136cec63900de2a3d03",
+    "v1/src/kernel/interrupt.asm": "cf70af177c18f323ac368f45468dbe907aef3d76488f92d844570b6875d5c9de",
+    "v1/tools-host/test-driver/phase1_alt.py": "26a1be09aa81f32e81d94af81a347b394687ce5b6e0a8be5f4dcae909ebe4928",
+    "v1/tools-host/test-driver/phase1_isrpaths.py": "bc280738d13c4459559567fcc485f2edf66678d4e4a865155bf246fe51f356a4"
+  },
+  "prerequisites": {
+    "P1.16": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "b1d6fac7b9279d12e8e84efb37064f890b1be712",
+  "status": "PASS",
+  "step": "P1.17",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

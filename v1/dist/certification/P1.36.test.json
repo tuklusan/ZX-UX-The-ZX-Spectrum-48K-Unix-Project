@@ -1,0 +1,88 @@
+{
+  "action": "test",
+  "architecture_sha256": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+  "assertions": [
+    {
+      "name": "canonical-con-write-syscall-number",
+      "passed": true
+    },
+    {
+      "name": "count-zero-short-circuits-before-pointer-validation",
+      "passed": true
+    },
+    {
+      "name": "validated-arguments-reloaded-before-console-write",
+      "passed": true
+    },
+    {
+      "name": "range-end-arithmetic-is-widened-and-wrap-rejected",
+      "passed": true
+    },
+    {
+      "name": "user-arena-is-one-contiguous-6000-dfff-range",
+      "passed": true
+    },
+    {
+      "name": "console-write-preserves-stream-state-and-returns-original-count",
+      "passed": true
+    },
+    {
+      "name": "count-zero-poison-pointer-does-not-mutate-runtime",
+      "passed": true
+    },
+    {
+      "name": "protected-and-wrapped-ranges-fail-before-mutation-runtime",
+      "passed": true
+    },
+    {
+      "name": "legal-7ff0-plus-0020-range-is-accepted-runtime",
+      "passed": true
+    },
+    {
+      "name": "contiguous-split-and-putchar-streams-are-byte-identical-tty32",
+      "passed": true
+    },
+    {
+      "name": "contiguous-split-and-putchar-streams-are-byte-identical-tty64",
+      "passed": true
+    },
+    {
+      "name": "console-write-return-count-and-iy-are-exact-runtime",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 18,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8607 lines, work time: 0.017 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "docs/01-ZX-UX-ARCHITECTURE-REV12.md": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+    "v1/assets/font4x8.bin": "1f29bb201828bbb6f0c0945c9677eb495b7b99592bd9c05ed10c0597caa69114",
+    "v1/build/kernel.bin": "61a23a0a4551a7b07c148f6d1a3009778219fb5864647136cec63900de2a3d03",
+    "v1/src/kernel/console.asm": "b064fff503bd1c498b46a4890537423a1857b842406480ffa9233db54ee461e3",
+    "v1/src/kernel/syscall.asm": "9c8ec2dd517755bf6df1ef58a7e88c0521a0005549e12056c1497afa6efe6ae4",
+    "v1/tools-host/test-driver/phase1_conwrite.py": "ebfdb99fe1d8075f7e44d1c5d8a745d98c09554ef194da3a59d04fdb2f565b1b"
+  },
+  "prerequisites": {
+    "P1.35": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "b1d6fac7b9279d12e8e84efb37064f890b1be712",
+  "status": "PASS",
+  "step": "P1.36",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
