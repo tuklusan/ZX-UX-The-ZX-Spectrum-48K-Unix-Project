@@ -32,6 +32,7 @@ PROC_ARG_PTR              EQU 42
 PROC_ENV_PTR              EQU 44
 PROC_PRIVATE_FLAGS        EQU 46
 PROC_RESERVED             EQU 47
+PROCESS_STACK_BOOTSTRAP_BYTES EQU 64
 
     MACRO EMIT_PROCESS_ROUTINES
 zx48_process_init:
@@ -711,4 +712,51 @@ process_mex_load_image_size: dw 0
 process_mex_load_bss_size: dw 0
 process_mex_load_rounded: dw 0
 process_mex_load_error: db 0
+    ENDM
+
+; P2.05 private process-stack allocator. MEX_HDR_STACK already contains the
+; linker-requested size or the frozen linker default. The advertised application
+; stack is validated as even and 64..4096 bytes; the fixed 64-byte bootstrap
+; reserve is added outside that advertised budget. IX -> validated MEX1 header.
+; On success HL=private FAST stack base, BC=exact allocation length, A=0/C clear.
+; On failure A=errno/C set and no stack allocation is created.
+    MACRO EMIT_MEX1_STACK_ROUTINES
+zx48_mex1_alloc_stack:
+    ld c,(ix+MEX_HDR_STACK)
+    ld b,(ix+MEX_HDR_STACK+1)
+    bit 0,c
+    jp nz,zx48_mex1_alloc_stack_format
+
+    ld h,b
+    ld l,c
+    ld de,MEX_MIN_STACK
+    or a
+    sbc hl,de
+    jp c,zx48_mex1_alloc_stack_format
+
+    ld hl,MEX_MAX_STACK
+    or a
+    sbc hl,bc
+    jp c,zx48_mex1_alloc_stack_format
+
+    ld hl,PROCESS_STACK_BOOTSTRAP_BYTES
+    add hl,bc
+    jp c,zx48_mex1_alloc_stack_format
+    ld b,h
+    ld c,l
+    ld (process_mex_stack_allocation_size),bc
+
+    ld a,ALLOC_FAST_REQUIRED
+    call zx48_alloc
+    ret c
+    ld bc,(process_mex_stack_allocation_size)
+    xor a
+    ret
+
+zx48_mex1_alloc_stack_format:
+    ld a,E_FORMAT
+    scf
+    ret
+
+process_mex_stack_allocation_size: dw 0
     ENDM
