@@ -120,15 +120,15 @@ def _assemble_fixture(
     listing = build / "p203-reloc.lst"
     symbols = build / "p203-reloc.sym"
     source.write_text(
-        "DEVICE ZXSPECTRUM48\n"
-        "INCLUDE \"../include/zx48ux.inc\"\n"
-        "INCLUDE \"../include/mex1.inc\"\n"
-        "INCLUDE \"../src/kernel/process.asm\"\n"
-        f"ORG ${RELOC_CODE:04X}\n"
+        "    DEVICE ZXSPECTRUM48\n"
+        "    INCLUDE \"../include/zx48ux.inc\"\n"
+        "    INCLUDE \"../include/mex1.inc\"\n"
+        "    INCLUDE \"../src/kernel/process.asm\"\n"
+        f"    ORG ${RELOC_CODE:04X}\n"
         "p203_reloc_start:\n"
         "    EMIT_MEX1_RELOCATION_ROUTINES\n"
         "p203_reloc_end:\n"
-        "SAVEBIN \"p203-reloc.bin\",p203_reloc_start,p203_reloc_end-p203_reloc_start\n",
+        "    SAVEBIN \"p203-reloc.bin\",p203_reloc_start,p203_reloc_end-p203_reloc_start\n",
         encoding="utf-8",
         newline="\n",
     )
@@ -249,7 +249,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
     )
     return [
         {"name": "relocator-uses-frozen-mex1-constants", "passed": all(token in routine for token in ("MEX_HDR_IMAGE_SIZE", "MEX_HDR_BSS_SIZE", "MEX_HDR_RELOC_COUNT", "MEX_HDR_RELOC_OFFSET", "MEX_HEADER_SIZE"))},
-        {"name": "relocator-not-yet-emitted-by-resident-process-macro", "passed": resident_end < start},
+        {"name": "relocator-tot-yet-emitted-by-resident-process-macro", "passed": resident_end < start},
         {"name": "relocator-two-pass-atomic-order", "passed": apply < first_target_write},
         {"name": "relocator-contract-tokens-present", "passed": all(token in routine for token in required[1:])},
         {"name": "relocator-has-explicit-widened-carry-guards", "passed": routine.count("jp c,zx48_mex1_relocate_format") >= 6},
