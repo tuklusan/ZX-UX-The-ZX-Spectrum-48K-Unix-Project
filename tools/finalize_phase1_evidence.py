@@ -1,0 +1,217 @@
+#!/usr/bin/env python3
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import importlib.util
+import json
+from pathlib import Path
+import subprocess
+import sys
+
+ARCH_SHA = "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0"
+STRICT_P140_ASSERTION = "accepted-im2-interrupt-observed-with-mid-ldir-bc"
+P141_AGGREGATE_ASSERTION = "all-p1-01-through-p1-40-build-test-evidence-pass-same-source"
+P141_SMOKE_ASSERTION = "minimal-phase1-aggregate-sna-smoke-pass"
+
+
+class FinalizeError(RuntimeError):
+    pass
+
+
+def sha(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def load(path: Path):
+    value = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(value, dict):
+        raise FinalizeError(f"{path.name}: object required")
+    return value
+
+
+def write(path: Path, value: dict) -> None:
+    path.write_text(
+        json.dumps(value, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+
+
+def driver_names() -> list[str]:
+    return [
+        f"P1.{number:02d}.{action}.json"
+        for number in range(1, 42)
+        for action in ("build", "test")
+    ]
+
+
+def validator(root: Path):
+    path = root / "v1/tools-host/test-driver/evidence.py"
+    spec = importlib.util.spec_from_file_location("zxux_evidence_validator", path)
+    if spec is None or spec.loader is None:
+        raise FinalizeError("cannot load evidence validator")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def assertion_names(record: dict) -> set[str]:
+    return {
+        str(item.get("name"))
+        for item in record.get("assertions", [])
+        if isinstance(item, dict) and item.get("passed") is True
+    }
+
+
+def expected_prerequisite(step: str) -> dict[str, str]:
+    number = int(step.split(".", 1)[1])
+    return {"P0.34": "PASS"} if number == 1 else {f"P1.{number - 1:02d}": "PASS"}
+
+
+def require_phase0(root: Path) -> None:
+    result = subprocess.run(
+        [sys.executable, "tools/check_phase0_evidence.py", "--require-active"],
+        cwd=root,
+        text=True,
+        capture_output=True,
+        check=False,
+        timeout=30,
+    )
+    if result.returncode != 0:
+        raise FinalizeError(
+            "durable Phase-0 prerequisite is not active: "
+            + (result.stderr.strip() or result.stdout.strip())
+        )
+
+
+def result_record(source: dict) -> dict:
+    return {
+        "schema": 2,
+        "step": "P1.41",
+        "action": "result",
+        "status": "PASS",
+        "pass_marker": "ZX-UX P1.41 CERTIFICATION PASS",
+        "source_commit": source["source_commit"],
+        "toolchain_lock_sha256": source["toolchain_lock_sha256"],
+        "architecture_sha256": source["architecture_sha256"],
+        "worktree_clean": True,
+        "prerequisites": {"P1.40": "PASS"},
+        "commands": [],
+        "hashes": dict(source.get("hashes", {})),
+        "assertions": [
+            {"name": "build-record-pass", "passed": True},
+            {"name": "test-record-pass", "passed": True},
+            {"name": "same-clean-source", "passed": True},
+            {"name": "phase1-aggregate-contract-pass", "passed": True},
+        ],
+    }
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--root", required=True)
+    parser.add_argument("--evidence-dir", required=True)
+    args = parser.parse_args()
+    try:
+        root = Path(args.root).resolve()
+        evidence = Path(args.evidence_dir).resolve()
+        try:
+            evidence.relative_to(root)
+        except ValueError:
+            pass
+        else:
+            raise FinalizeError("evidence staging must be outside source worktree")
+
+        require_phase0(root)
+        evidence_validator = validator(root)
+        records: dict[str, dict] = {}
+        sources: set[object] = set()
+        locks: set[object] = set()
+        archs: set[object] = set()
+        for name in driver_names():
+            path = evidence / name
+            if not path.is_file():
+                raise FinalizeError(f"missing driver evidence: {name}")
+            record = load(path)
+            evidence_validator.validate_driver_record(record)
+            parts = name.split(".")
+            expected_step = ".".join(parts[:2])
+            expected_action = parts[2]
+            if record.get("step") != expected_step or record.get("action") != expected_action:
+                raise FinalizeError(f"{name}: evidence identity mismatch")
+            if record.get("status") != "PASS" or record.get("worktree_clean") is not True:
+                raise FinalizeError(f"{name}: not clean PASS")
+            step = str(record.get("step"))
+            if record.get("prerequisites") != expected_prerequisite(step):
+                raise FinalizeError(f"{name}: exact prerequisite chain mismatch")
+            records[name] = record
+            sources.add(record.get("source_commit"))
+            locks.add(record.get("toolchain_lock_sha256"))
+            archs.add(record.get("architecture_sha256"))
+
+        if len(sources) != 1 or len(locks) != 1 or archs != {ARCH_SHA}:
+            raise FinalizeError(
+                "evidence does not name one exact source/toolchain/architecture state"
+            )
+
+        p140_names = assertion_names(records["P1.40.test.json"])
+        if STRICT_P140_ASSERTION not in p140_names:
+            raise FinalizeError("P1.40 strict mid-LDIR interrupt proof missing")
+        p141_names = assertion_names(records["P1.41.test.json"])
+        for required in (P141_AGGREGATE_ASSERTION, P141_SMOKE_ASSERTION):
+            if required not in p141_names:
+                raise FinalizeError(f"P1.41 acceptance assertion missing: {required}")
+
+        boundary_name = "P1.41.result.json"
+        boundary = result_record(records["P1.41.test.json"])
+        evidence_validator.validate_final_record(boundary)
+        write(evidence / boundary_name, boundary)
+
+        required = driver_names() + [boundary_name]
+        aggregate = {
+            "schema": 2,
+            "phase": 1,
+            "action": "phase-result",
+            "status": "PASS",
+            "pass_marker": "ZX-UX PHASE 1 CERTIFICATION PASS",
+            "source_commit": next(iter(sources)),
+            "toolchain_lock_sha256": next(iter(locks)),
+            "architecture_sha256": ARCH_SHA,
+            "worktree_clean": True,
+            "required_records": required,
+            "record_sha256": {name: sha(evidence / name) for name in required},
+            "assertions": [
+                {"name": "all-p1-build-test-pass", "passed": True},
+                {"name": "p1-41-result-pass", "passed": True},
+                {"name": "durable-phase0-prerequisite-pass", "passed": True},
+                {"name": "strict-p1-40-mid-ldir-proof-pass", "passed": True},
+                {"name": "p1-41-aggregate-sna-smoke-pass", "passed": True},
+                {"name": "single-clean-source", "passed": True},
+                {"name": "exact-toolchain-lock", "passed": True},
+                {"name": "exact-architecture-digest", "passed": True},
+            ],
+        }
+        write(evidence / "phase-1.json", aggregate)
+        print("ZX-UX PHASE 1 EVIDENCE FINALIZATION PASS")
+        return 0
+    except Exception as exc:
+        print(f"ZX-UX PHASE 1 EVIDENCE FINALIZATION FAIL: {exc}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

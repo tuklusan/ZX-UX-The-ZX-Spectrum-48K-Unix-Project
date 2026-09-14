@@ -257,6 +257,8 @@ def _static_acceptance(root: Path, state: SourceState) -> list[dict[str, object]
     run_text = (root / "v1/tools-host/test-driver/run.py").read_text(encoding="utf-8")
     plan_text = (root / "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV03.md").read_text(encoding="utf-8")
     this_text = (root / "v1/tools-host/test-driver/phase1_acceptance.py").read_text(encoding="utf-8")
+    phase1_workflow_text = (root / ".github/workflows/phase1-certification.yml").read_text(encoding="utf-8")
+    quality_workflow_text = (root / ".github/workflows/quality-and-ci.yml").read_text(encoding="utf-8")
 
     if state.architecture_sha256 != ARCH_SHA256:
         raise Phase1AcceptanceError("Phase-1 acceptance architecture digest mismatch")
@@ -281,6 +283,20 @@ def _static_acceptance(root: Path, state: SourceState) -> list[dict[str, object]
         raise Phase1AcceptanceError("P1.41 acceptance owner must not import later-phase semantics")
     if len(_required_keys()) != 80:
         raise Phase1AcceptanceError("P1.41 aggregate must require exactly 80 P1.01-P1.40 records")
+    finalize_marker = "tools/finalize_phase1_evidence.py --root"
+    gate_marker = "v1/tools-host/test-driver/phase1_gate.py"
+    if finalize_marker not in phase1_workflow_text:
+        raise Phase1AcceptanceError("Phase-1 workflow does not finalize aggregate evidence")
+    if phase1_workflow_text.index(finalize_marker) <= phase1_workflow_text.index(gate_marker):
+        raise Phase1AcceptanceError("Phase-1 aggregate finalization must run after the registered gate")
+    quality_markers = (
+        "phase1-evidence:",
+        "tools/check_phase1_evidence.py",
+        "tools/test_phase1_evidence_negative.py",
+        "phase1-evidence]",
+    )
+    if any(marker not in quality_workflow_text for marker in quality_markers):
+        raise Phase1AcceptanceError("Quality workflow does not enforce durable Phase-1 evidence")
     _negative_oracles(state)
     return [
         {"name": "phase1-acceptance-plan-contract-present", "passed": True},
@@ -292,6 +308,8 @@ def _static_acceptance(root: Path, state: SourceState) -> list[dict[str, object]
         {"name": "aggregate-requires-exact-prerequisite-chain", "passed": True},
         {"name": "aggregate-requires-critical-phase1-acceptance-assertions", "passed": True},
         {"name": "aggregate-requires-strict-p1-40-mid-ldir-proof", "passed": True},
+        {"name": "phase1-finalizer-wired-after-gate", "passed": True},
+        {"name": "phase1-durable-evidence-validator-wired-into-quality", "passed": True},
         {"name": "negative-missing-prerequisite-evidence-rejected", "passed": True},
         {"name": "negative-failed-prerequisite-rejected", "passed": True},
         {"name": "negative-broken-prerequisite-chain-rejected", "passed": True},
@@ -327,6 +345,11 @@ def dispatch(
         "v1/tools-host/test-driver/phase1_probe.py",
         "v1/tools-host/test-driver/phase1_primitives_strict.py",
         "v1/tools-host/test-driver/phase1_acceptance.py",
+        "tools/finalize_phase1_evidence.py",
+        "tools/check_phase1_evidence.py",
+        "tools/test_phase1_evidence_negative.py",
+        ".github/workflows/phase1-certification.yml",
+        ".github/workflows/quality-and-ci.yml",
     )
     hashes = {name: sha256_file(root / name) for name in files}
     commands: list[Any] = []

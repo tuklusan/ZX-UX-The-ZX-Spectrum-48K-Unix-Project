@@ -21,6 +21,7 @@ on:
       - tools/manifest/toolchain.lock.json
       - tools/scripts/bootstrap-environment.py
       - tools/scripts/verify-environment.py
+      - tools/finalize_phase1_evidence.py
       - v1/include/**
       - v1/src/boot/**
       - v1/src/kernel/**
@@ -114,6 +115,9 @@ jobs:
 
       - name: Execute registered Phase 1 gates
         run: tools/runtime/python/bin/python v1/tools-host/test-driver/phase1_gate.py
+
+      - name: Finalize Phase 1 aggregate evidence
+        run: tools/runtime/python/bin/python tools/finalize_phase1_evidence.py --root "$GITHUB_WORKSPACE" --evidence-dir "$ZXUX_EVIDENCE_DIR"
 
       - name: Upload Phase 1 evidence and diagnostics
         if: always()
