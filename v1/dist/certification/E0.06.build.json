@@ -1,6 +1,6 @@
 {
   "action": "build",
-  "architecture_sha256": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+  "architecture_sha256": "a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b",
   "assertions": [
     {
       "name": "four-level-evidence-hierarchy",
@@ -21,7 +21,7 @@
   ],
   "commands": [],
   "hashes": {
-    "v1/docs/test-plan.md": "8d9640cfab130f330ac7cc478ab22cedc6a81735cbebd06f2abc4ebb72ad959f",
+    "v1/docs/test-plan.md": "28a48ae95d82ca5c7c77c85d600a154e713912e65fff323959ad6e4c14c75d0b",
     "v1/tests/emulator/safety-contract.toml": "61ffc2a123aea5e13cc679e11d6627e322f6ff67992dd2be7deacfae8e6040f9",
     "v1/tools-host/test-driver/emulator_safety.py": "92117b395b7b52810a829438e32ac4a56bba8712c9f3e29dadc4e1286f3dd01e"
   },
@@ -29,7 +29,7 @@
     "E0.05": "PASS"
   },
   "schema": 2,
-  "source_commit": "104723b9111314630e9057ad9a9002b982fc2598",
+  "source_commit": "2f6c5648764db1a291c4cb99975f00d4459c5a5f",
   "status": "PASS",
   "step": "E0.06",
   "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",

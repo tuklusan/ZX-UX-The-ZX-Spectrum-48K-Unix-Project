@@ -1,6 +1,6 @@
 {
   "action": "build",
-  "architecture_sha256": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+  "architecture_sha256": "a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b",
   "assertions": [
     {
       "name": "positive-policy-fixture",
@@ -17,7 +17,7 @@
   ],
   "commands": [],
   "hashes": {
-    "v1/docs/abi.md": "0cb395868834752ba5faf869552e054a0bbf0af670527483919316ee355d4662",
+    "v1/docs/abi.md": "813e94ea681883379d8eef6c0d755bbbb0e5a49c9aad37352ef9975a17ce4d47",
     "v1/include/zx48ux.inc": "4c32a778091d3d7ba6fdeb28c77fe2cbe864d1f71f20a41c845019e9d5c056c1",
     "v1/tools-host/test-driver/asm_policy.py": "b7b9efe64ace221817d83f68fb9463e32af7dbb4df4a1fdd33847da99a3018ff"
   },
@@ -25,7 +25,7 @@
     "E0.04": "PASS"
   },
   "schema": 2,
-  "source_commit": "104723b9111314630e9057ad9a9002b982fc2598",
+  "source_commit": "2f6c5648764db1a291c4cb99975f00d4459c5a5f",
   "status": "PASS",
   "step": "E0.05",
   "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",

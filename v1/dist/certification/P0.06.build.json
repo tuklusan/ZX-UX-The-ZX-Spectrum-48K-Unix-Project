@@ -1,6 +1,6 @@
 {
   "action": "build",
-  "architecture_sha256": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+  "architecture_sha256": "a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b",
   "assertions": [
     {
       "name": "alternate-bank-os-private",
@@ -35,24 +35,24 @@
         "kernel.asm"
       ],
       "cwd": "v1/src/kernel",
-      "duration_ms": 26,
+      "duration_ms": 27,
       "exit_code": 0,
-      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8462 lines, work time: 0.025 seconds\n",
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8607 lines, work time: 0.025 seconds\n",
       "stdout": "",
       "timed_out": false
     }
   ],
   "hashes": {
-    "v1/build/kernel.bin": "b9d0b4a2ecf6e57946edb58ad898b61a6b344a9f51eba22d0b7bcb21e2c67d17",
-    "v1/docs/rom-services.md": "38e8a3da72fcce5a07c9026b32c042e3e7483d8f64b35322300a1d5649618ee4",
-    "v1/src/kernel/interrupt.asm": "6428e286490860f8016084e16836be44b4735071df1b32e2883b467d1d8b18d0",
+    "v1/build/kernel.bin": "61a23a0a4551a7b07c148f6d1a3009778219fb5864647136cec63900de2a3d03",
+    "v1/docs/rom-services.md": "3ef3d54ca3e6c38a7aa0564639ddca1c586fa62762a2bea055eae543f34e142f",
+    "v1/src/kernel/interrupt.asm": "cf70af177c18f323ac368f45468dbe907aef3d76488f92d844570b6875d5c9de",
     "v1/tools-host/test-driver/phase0_alt.py": "f10f605f90930f068927bcc7d6c342c05eb2ee6ac90f24917fbeda6b4d5a4176"
   },
   "prerequisites": {
     "P0.05": "PASS"
   },
   "schema": 2,
-  "source_commit": "104723b9111314630e9057ad9a9002b982fc2598",
+  "source_commit": "2f6c5648764db1a291c4cb99975f00d4459c5a5f",
   "status": "PASS",
   "step": "P0.06",
   "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",

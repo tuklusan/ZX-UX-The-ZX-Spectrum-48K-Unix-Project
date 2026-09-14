@@ -1,9 +1,9 @@
 {
   "action": "test",
-  "architecture_sha256": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+  "architecture_sha256": "a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b",
   "assertions": [
     {
-      "name": "font4x8-format",
+      "name": "font4x8-zxux-exact-identity",
       "passed": true
     },
     {
@@ -25,6 +25,38 @@
     {
       "name": "reject-uppercase-resource",
       "passed": true
+    },
+    {
+      "name": "reject-mutated-font-byte",
+      "passed": true
+    },
+    {
+      "name": "reject-short-font",
+      "passed": true
+    },
+    {
+      "name": "reject-wrong-font-header",
+      "passed": true
+    },
+    {
+      "name": "reject-legacy-issue-bytes",
+      "passed": true
+    },
+    {
+      "name": "reject-mutated-issue-byte",
+      "passed": true
+    },
+    {
+      "name": "reject-missing-final-lf",
+      "passed": true
+    },
+    {
+      "name": "reject-crlf-issue",
+      "passed": true
+    },
+    {
+      "name": "reject-extra-issue-data",
+      "passed": true
     }
   ],
   "commands": [
@@ -36,7 +68,7 @@
       "cwd": "v1/src/kernel",
       "duration_ms": 27,
       "exit_code": 0,
-      "stderr": "SjASMPlus Z80 Cross-Assembler v1.24.0 (https://github.com/z00m128/sjasmplus)\nPass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8462 lines, work time: 0.026 seconds\n",
+      "stderr": "SjASMPlus Z80 Cross-Assembler v1.24.0 (https://github.com/z00m128/sjasmplus)\nPass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8607 lines, work time: 0.025 seconds\n",
       "stdout": "",
       "timed_out": false
     }
@@ -44,14 +76,14 @@
   "hashes": {
     "v1/assets/bincat.bin": "130762f290dad7169ed9e55cc31da09449548ee9156b658a644487d3d611c939",
     "v1/assets/crontab.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "v1/assets/font4x8.bin": "1f29bb201828bbb6f0c0945c9677eb495b7b99592bd9c05ed10c0597caa69114",
-    "v1/assets/issue.txt": "e501e97f58ca506e6318101c8bcdf41db0b76d137eba845b989abee915d72700"
+    "v1/assets/font4x8-zxux.bin": "90f6818cf81cf3f13509cff32c091075691195d9638dbe801d12daceec1c9339",
+    "v1/assets/issue.txt": "8d57d17f25ef895909a56a3195e29b8f9b83ff2cc31b2537a23d1d02429e3d31"
   },
   "prerequisites": {
     "P0.09": "PASS"
   },
   "schema": 2,
-  "source_commit": "104723b9111314630e9057ad9a9002b982fc2598",
+  "source_commit": "2f6c5648764db1a291c4cb99975f00d4459c5a5f",
   "status": "PASS",
   "step": "P0.10",
   "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",

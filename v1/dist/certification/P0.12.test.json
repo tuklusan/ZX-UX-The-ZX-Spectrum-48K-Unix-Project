@@ -1,6 +1,6 @@
 {
   "action": "test",
-  "architecture_sha256": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+  "architecture_sha256": "a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b",
   "assertions": [
     {
       "name": "p0.12-positive-contract",
@@ -18,13 +18,13 @@
   ],
   "commands": [],
   "hashes": {
-    "v1/src/boot/entry.asm": "ed714e8354df6ec9d7de75f1e26141796a0d5f2036005cab3b0117c10e76dd75"
+    "v1/src/boot/entry.asm": "2ab1b3ff1c35a93bf1ed9c85f8a988b7feb8e74cf2822df9d7b46c33eb77b192"
   },
   "prerequisites": {
     "P0.11": "PASS"
   },
   "schema": 2,
-  "source_commit": "104723b9111314630e9057ad9a9002b982fc2598",
+  "source_commit": "2f6c5648764db1a291c4cb99975f00d4459c5a5f",
   "status": "PASS",
   "step": "P0.12",
   "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",

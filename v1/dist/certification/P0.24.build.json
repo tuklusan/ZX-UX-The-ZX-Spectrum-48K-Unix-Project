@@ -1,6 +1,6 @@
 {
   "action": "build",
-  "architecture_sha256": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+  "architecture_sha256": "a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b",
   "assertions": [
     {
       "name": "p0.24-positive-contract",
@@ -14,13 +14,13 @@
   ],
   "commands": [],
   "hashes": {
-    "v1/src/kernel/rom_services.asm": "7e4456036007aff0c47cbfbfbfa913f3f7fac0174fea04807f0dce1a972b7446"
+    "v1/src/kernel/rom_services.asm": "451474302209514de56648eee2d7d98528167496ee8d714d68fa34975371cdee"
   },
   "prerequisites": {
     "P0.23": "PASS"
   },
   "schema": 2,
-  "source_commit": "104723b9111314630e9057ad9a9002b982fc2598",
+  "source_commit": "2f6c5648764db1a291c4cb99975f00d4459c5a5f",
   "status": "PASS",
   "step": "P0.24",
   "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
