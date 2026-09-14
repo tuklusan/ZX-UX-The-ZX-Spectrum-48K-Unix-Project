@@ -159,6 +159,34 @@ allocation or process publication if magic, count, reserved byte, length, string
 termination, or `argv[0]` identity is invalid. `crt0` later builds the separate
 `argc+1` pointer vector on the FAST process stack and appends the terminating NULL.
 
+## Process bootstrap environment block (ENV1)
+
+ENV1 is the immutable process-lifetime environment snapshot supplied to
+`SYS_SPAWN` and `SYS_EXEC`. The caller supplies `env1_ptr` plus the exact
+`env1_len`; the kernel validates the complete ENV1 block before any process becomes READY. ENV1 is at most 256 bytes and has this exact packed layout:
+
+| Offset | Size | Field |
+| --- | --- | --- |
+| `+0` | 4 | magic bytes `ENV1` |
+| `+4` | 1 | entry count, exactly 0..8 |
+| `+5` | 1 | reserved, exactly 0 |
+| `+6` | 2 | exact total block length, little-endian |
+| `+8` | variable | exactly entry-count NUL-terminated `NAME=VALUE` strings |
+
+Each name is 1..15 bytes and matches `[A-Za-z_][A-Za-z0-9_]{0,14}`. Names are
+case-sensitive and unique within the block. The first `=` terminates the name;
+`=` is ordinary value data after that delimiter. Each value is 0..63 target-printable bytes `0x20..0x7E`; an empty value is valid. NUL terminates the
+complete `NAME=VALUE` string and is not field data. The total-length field must
+equal the supplied `env1_len`; all strings must terminate inside that exact length,
+and no trailing bytes are permitted after the last required terminator.
+
+Malformed ENV1 is rejected with `E_FORMAT` before allocation or process publication. Valid ARG1 and ENV1 bytes are copied together into one process-owned immutable bootstrap allocation, in ARG1-then-ENV1 order, at most 512 payload bytes plus alignment. This allocation is separate from the downward-growing FAST runtime
+stack. The logical ARG1 and ENV1 lengths remain exact even when the allocator rounds
+the combined extent for alignment. Both blocks survive unchanged until process exit
+or successful exec replacement. The initial user context later receives the ARG1
+pointer and exact length plus the ENV1 pointer; `getenv retains the ENV1 pointer`
+rather than copying strings onto the runtime stack. The process `cwd remains kernel-descriptor state` and is never encoded into ENV1 data.
+
 ## Allocation classes
 
 One address-ordered allocator covers `6000-DFFF`. FAST_REQUIRED allocations are

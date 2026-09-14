@@ -36,6 +36,12 @@ PROCESS_STACK_BOOTSTRAP_BYTES EQU 64
 ARG1_HEADER_SIZE              EQU 8
 ARG1_MAX_SIZE                 EQU 256
 ARG1_MAX_COUNT                EQU 16
+ENV1_HEADER_SIZE              EQU 8
+ENV1_MAX_SIZE                 EQU 256
+ENV1_MAX_COUNT                EQU 8
+ENV1_MAX_NAME                 EQU 15
+ENV1_MAX_VALUE                EQU 63
+BOOTSTRAP_MAX_PAYLOAD         EQU 512
 
     MACRO EMIT_PROCESS_ROUTINES
 zx48_process_init:
@@ -946,4 +952,362 @@ zx48_arg1_format:
     ld a,E_FORMAT
     scf
     ret
+    ENDM
+
+
+; P2.07 ENV1 validator/shared-bootstrap builder. IX points to the already
+; validated caller ARG1 block and BC is its exact byte length. HL points to the
+; caller ENV1 block and DE is its exact supplied byte length. ENV1 validation is
+; complete and side-effect free before builder scratch or allocator state can
+; change. On success zx48_env1_build creates exactly one ALLOC_ANY extent with
+; exact ARG1 bytes followed immediately by exact ENV1 bytes. Success returns
+; HL=private ARG1 base, BC=exact ARG1 length, DE=private ENV1 pointer,
+; A=0/C clear. Failure returns A=errno/C set, creates no builder-owned
+; allocation on validation failure, and never publishes process state or cwd.
+    MACRO EMIT_ENV1_ROUTINES
+zx48_env1_validate:
+    ; The empty environment is still the complete eight-byte ENV1 header.
+    ld a,b
+    or a
+    jr nz,zx48_env1_min_ok
+    ld a,c
+    cp ENV1_HEADER_SIZE
+    jp c,zx48_env1_format
+zx48_env1_min_ok:
+
+    ; ENV1 is capped at 256 bytes exactly. BC=0100 is the only B=1 value valid.
+    ld a,b
+    cp 2
+    jp nc,zx48_env1_format
+    or a
+    jr z,zx48_env1_size_ok
+    ld a,c
+    or a
+    jp nz,zx48_env1_format
+zx48_env1_size_ok:
+
+    ; Reject source+length address-space wrap before any indexed header read.
+    push ix
+    pop hl
+    add hl,bc
+    jp c,zx48_env1_format
+
+    ld a,(ix+0)
+    cp $45
+    jp nz,zx48_env1_format
+    ld a,(ix+1)
+    cp $4e
+    jp nz,zx48_env1_format
+    ld a,(ix+2)
+    cp $56
+    jp nz,zx48_env1_format
+    ld a,(ix+3)
+    cp $31
+    jp nz,zx48_env1_format
+
+    ld a,(ix+4)
+    cp ENV1_MAX_COUNT+1
+    jp nc,zx48_env1_format
+
+    ld a,(ix+5)
+    or a
+    jp nz,zx48_env1_format
+
+    ld a,(ix+6)
+    cp c
+    jp nz,zx48_env1_format
+    ld a,(ix+7)
+    cp b
+    jp nz,zx48_env1_format
+
+    ; Consume the header. BC is the exact number of payload bytes remaining.
+    push ix
+    pop hl
+    inc hl
+    inc hl
+    inc hl
+    inc hl
+    inc hl
+    inc hl
+    inc hl
+    inc hl
+    dec bc
+    dec bc
+    dec bc
+    dec bc
+    dec bc
+    dec bc
+    dec bc
+    dec bc
+
+    ld a,(ix+4)
+    ld d,a
+    or a
+    jr nz,zx48_env1_entry
+    ld a,b
+    or c
+    jp nz,zx48_env1_format
+    jp zx48_env1_unique_begin
+
+zx48_env1_entry:
+    ; NAME first byte is [A-Za-z_].
+    ld a,b
+    or c
+    jp z,zx48_env1_format
+    ld a,(hl)
+    cp $5f
+    jr z,zx48_env1_first_ok
+    cp $41
+    jr c,zx48_env1_first_lower
+    cp $5b
+    jr c,zx48_env1_first_ok
+zx48_env1_first_lower:
+    cp $61
+    jp c,zx48_env1_format
+    cp $7b
+    jp nc,zx48_env1_format
+zx48_env1_first_ok:
+    inc hl
+    dec bc
+    ld e,1
+
+zx48_env1_name_loop:
+    ld a,b
+    or c
+    jp z,zx48_env1_format
+    ld a,(hl)
+    cp $3d
+    jr z,zx48_env1_name_done
+    or a
+    jp z,zx48_env1_format
+    cp $5f
+    jr z,zx48_env1_name_char_ok
+    cp $30
+    jr c,zx48_env1_name_upper
+    cp $3a
+    jr c,zx48_env1_name_char_ok
+zx48_env1_name_upper:
+    cp $41
+    jr c,zx48_env1_name_lower
+    cp $5b
+    jr c,zx48_env1_name_char_ok
+zx48_env1_name_lower:
+    cp $61
+    jp c,zx48_env1_format
+    cp $7b
+    jp nc,zx48_env1_format
+zx48_env1_name_char_ok:
+    inc e
+    ld a,e
+    cp ENV1_MAX_NAME+1
+    jp nc,zx48_env1_format
+    inc hl
+    dec bc
+    jr zx48_env1_name_loop
+
+zx48_env1_name_done:
+    inc hl
+    dec bc
+    ld e,0
+
+zx48_env1_value_loop:
+    ld a,b
+    or c
+    jp z,zx48_env1_format
+    ld a,(hl)
+    inc hl
+    dec bc
+    or a
+    jr z,zx48_env1_entry_done
+    cp $20
+    jp c,zx48_env1_format
+    cp $7f
+    jp nc,zx48_env1_format
+    inc e
+    ld a,e
+    cp ENV1_MAX_VALUE+1
+    jp nc,zx48_env1_format
+    jr zx48_env1_value_loop
+
+zx48_env1_entry_done:
+    dec d
+    jp nz,zx48_env1_entry
+    ld a,b
+    or c
+    jp nz,zx48_env1_format
+
+    ; A second read-only pass compares each name against all later names. The
+    ; first '=' terminates a name; value bytes, including later '=', are skipped
+    ; only while advancing from one validated entry to the next.
+zx48_env1_unique_begin:
+    ld a,(ix+4)
+    cp 2
+    jr c,zx48_env1_validate_done
+    ld b,a
+    dec b
+    push ix
+    pop hl
+    ld de,ENV1_HEADER_SIZE
+    add hl,de
+
+zx48_env1_unique_outer:
+    ld d,h
+    ld e,l
+zx48_env1_unique_find_next:
+    ld a,(de)
+    inc de
+    or a
+    jr nz,zx48_env1_unique_find_next
+    ld c,b
+
+zx48_env1_unique_inner:
+    push bc
+    push hl
+    push de
+zx48_env1_unique_compare:
+    ld a,(de)
+    cp (hl)
+    jr nz,zx48_env1_unique_different
+    cp $3d
+    jr z,zx48_env1_unique_duplicate
+    inc de
+    inc hl
+    jr zx48_env1_unique_compare
+
+zx48_env1_unique_different:
+    pop de
+    pop hl
+    pop bc
+zx48_env1_unique_advance_inner:
+    ld a,(de)
+    inc de
+    or a
+    jr nz,zx48_env1_unique_advance_inner
+    dec c
+    jr nz,zx48_env1_unique_inner
+
+zx48_env1_unique_advance_outer:
+    ld a,(hl)
+    inc hl
+    or a
+    jr nz,zx48_env1_unique_advance_outer
+    djnz zx48_env1_unique_outer
+
+zx48_env1_validate_done:
+    xor a
+    ret
+
+zx48_env1_unique_duplicate:
+    pop de
+    pop hl
+    pop bc
+    jp zx48_env1_format
+
+zx48_env1_build:
+    ; Validate ENV1 with its own pointer/length while preserving all four
+    ; caller inputs. POP does not alter the validator's carry/A result.
+    push ix
+    push bc
+    push hl
+    push de
+    push hl
+    pop ix
+    ld b,d
+    ld c,e
+    call zx48_env1_validate
+    pop de
+    pop hl
+    pop bc
+    pop ix
+    ret c
+
+    ; The ARG1 payload was already validated by P2.06. Re-check only the length
+    ; and address arithmetic needed to make the shared-copy operation safe.
+    ld a,b
+    or a
+    jr nz,zx48_env1_build_arg_min_ok
+    ld a,c
+    cp ARG1_HEADER_SIZE+1
+    jp c,zx48_env1_format
+zx48_env1_build_arg_min_ok:
+    ld a,b
+    cp 2
+    jp nc,zx48_env1_format
+    or a
+    jr z,zx48_env1_build_arg_size_ok
+    ld a,c
+    or a
+    jp nz,zx48_env1_format
+zx48_env1_build_arg_size_ok:
+    push hl
+    push ix
+    pop hl
+    add hl,bc
+    pop hl
+    jp c,zx48_env1_format
+
+    ; Combined logical payload is bounded to exactly 512 bytes before any
+    ; builder-owned persistent scratch or allocation is changed.
+    push hl
+    ld h,b
+    ld l,c
+    add hl,de
+    jp c,zx48_env1_build_format_pop
+    ld a,h
+    cp BOOTSTRAP_MAX_PAYLOAD/256
+    jr c,zx48_env1_build_total_ok
+    jp nz,zx48_env1_build_format_pop
+    ld a,l
+    or a
+    jp nz,zx48_env1_build_format_pop
+zx48_env1_build_total_ok:
+    bit 0,l
+    jr z,zx48_env1_build_rounded
+    inc hl
+zx48_env1_build_rounded:
+    ld (process_bootstrap_rounded),hl
+    pop hl
+    ld (process_bootstrap_env_src),hl
+    ld (process_bootstrap_env_len),de
+    push ix
+    pop hl
+    ld (process_bootstrap_arg_src),hl
+    ld (process_bootstrap_arg_len),bc
+
+    ld bc,(process_bootstrap_rounded)
+    ld a,ALLOC_ANY
+    call zx48_alloc
+    ret c
+    ld (process_bootstrap_base),hl
+
+    ; Copy exact logical ARG1 then exact logical ENV1. The allocator may round
+    ; the single combined extent, but neither ABI block's exact length changes.
+    ex de,hl
+    ld hl,(process_bootstrap_arg_src)
+    ld bc,(process_bootstrap_arg_len)
+    ldir
+    push de
+    ld hl,(process_bootstrap_env_src)
+    ld bc,(process_bootstrap_env_len)
+    ldir
+    pop de
+
+    ld hl,(process_bootstrap_base)
+    ld bc,(process_bootstrap_arg_len)
+    xor a
+    ret
+
+zx48_env1_build_format_pop:
+    pop hl
+zx48_env1_format:
+    ld a,E_FORMAT
+    scf
+    ret
+
+process_bootstrap_arg_src: dw 0
+process_bootstrap_arg_len: dw 0
+process_bootstrap_env_src: dw 0
+process_bootstrap_env_len: dw 0
+process_bootstrap_rounded: dw 0
+process_bootstrap_base: dw 0
     ENDM
