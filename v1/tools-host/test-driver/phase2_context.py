@@ -345,6 +345,7 @@ def _first_dispatch_case(
     crossing: bool,
     canonicalize_iy: bool = True,
     expect_failure: bool = False,
+    diagnostic_probes: bool = False,
 ) -> None:
     memory_init = symbols["zx48_memory_init"]
     alloc = symbols["zx48_alloc"]
@@ -357,8 +358,17 @@ def _first_dispatch_case(
     stack_total = MEX_MIN_STACK + BOOTSTRAP_BYTES
     expected_stack_base = FAST_END_EXCLUSIVE - stack_total
     expected_live = 4 if crossing else 3
+    patch = _patch(fixture, ((MEX_ADDRESS, mex), (ARG_ADDRESS, arg), (ENV_ADDRESS, env)))
 
     code = bytearray(b"\xF3" + phase1._ld_sp(TEST_STACK))
+
+    def probe(stage: str) -> None:
+        if not diagnostic_probes:
+            return
+        try:
+            run_sna(root, bytes(code) + phase1._jp(PASS_PC), patch=patch)
+        except DriverError as exc:
+            raise Phase2ContextError(f"P2.08 first-dispatch probe failed at {stage}: {exc}") from exc
     code += phase1._call(memory_init)
     if crossing:
         code += _ld_a(symbols["ALLOC_ANY"]) + _ld_bc(CROSSING_BLOCKER_SIZE) + phase1._call(alloc) + phase1._jp_c(FAIL_PC)
@@ -368,6 +378,7 @@ def _first_dispatch_case(
     code += _ld_mem_hl(RESULT_IMAGE_BASE) + _ld_mem_bc(RESULT_IMAGE_ALLOC)
     code += _expect_word(RESULT_IMAGE_BASE, expected_image_base)
     code += _check_bss_zero(user_image_size, BSS_SIZE, PROGRAM_ADDRESS + len(code))
+    probe("image-load-and-bss-zero")
 
     code += _ld_ix(MEX_ADDRESS) + phase1._call(alloc_stack) + phase1._jp_c(FAIL_PC)
     code += _ld_mem_hl(RESULT_STACK_BASE) + _ld_mem_bc(RESULT_STACK_SIZE)
@@ -375,10 +386,12 @@ def _first_dispatch_case(
     code += _expect_word(RESULT_STACK_SIZE, stack_total)
     code += _ld_hl_mem(RESULT_STACK_BASE) + b"\x09" + _ld_mem_hl(RESULT_STACK_END)
     code += _expect_word(RESULT_STACK_END, FAST_END_EXCLUSIVE)
+    probe("fast-stack-allocation")
 
     code += _ld_ix(ARG_ADDRESS) + _ld_bc(len(arg)) + phase1._ld_hl(ENV_ADDRESS) + phase1._ld_de(len(env)) + phase1._call(build_bootstrap) + phase1._jp_c(FAIL_PC)
     code += _ld_mem_hl(RESULT_ARG_PTR) + _ld_mem_bc(RESULT_ARG_LEN) + _ld_mem_de(RESULT_ENV_PTR)
     code += _expect_word(RESULT_ARG_LEN, len(arg))
+    probe("arg1-env1-bootstrap")
 
     code += _copy_result_word_to_seed(RESULT_IMAGE_BASE, SEED_ADDRESS + 0)
     code += _copy_result_word_to_seed(RESULT_STACK_BASE, SEED_ADDRESS + 2)
@@ -392,6 +405,7 @@ def _first_dispatch_case(
     code += _ld_hl_mem(RESULT_STACK_END) + phase1._ld_de(CONTEXT_FRAME_BYTES) + b"\xB7\xED\x52" + _ld_de_mem(RESULT_SAVED_SP) + b"\xB7\xED\x52" + phase1._jp_nz(FAIL_PC)
     code += _expect_word(live_count, expected_live)
     code += _frame_checks()
+    probe("initial-context-frame")
 
     # The frozen scheduler restore path is emulated byte-for-byte here. Dirty IY
     # is intentional: the canonicalization immediately before RET is observable
@@ -411,7 +425,7 @@ def _first_dispatch_case(
             run_sna(
                 root,
                 bytes(code),
-                patch=_patch(fixture, ((MEX_ADDRESS, mex), (ARG_ADDRESS, arg), (ENV_ADDRESS, env))),
+                patch=patch,
             )
         except DriverError as exc:
             require("exit=1 timed_out=False" in str(exc), f"P2.08 dirty-IY negative failed for an unexpected reason: {exc}")
@@ -422,7 +436,7 @@ def _first_dispatch_case(
     run_sna(
         root,
         bytes(code),
-        patch=_patch(fixture, ((MEX_ADDRESS, mex), (ARG_ADDRESS, arg), (ENV_ADDRESS, env))),
+        patch=patch,
     )
 
 
@@ -472,7 +486,7 @@ def _target_tests(root: Path, symbols: dict[str, int], fixture: bytes, mex: byte
     arg = _arg1()
     env = _env1()
     user_image_size = len(user_image)
-    _first_dispatch_case(root, symbols, fixture, mex, user_image_size, arg, env, crossing=False)
+    _first_dispatch_case(root, symbols, fixture, mex, user_image_size, arg, env, crossing=False, diagnostic_probes=True)
     _first_dispatch_case(root, symbols, fixture, mex, user_image_size, arg, env, crossing=True)
     _first_dispatch_case(
         root, symbols, fixture, mex, user_image_size, arg, env,
