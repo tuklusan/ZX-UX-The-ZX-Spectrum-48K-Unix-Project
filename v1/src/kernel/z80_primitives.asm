@@ -33,7 +33,6 @@ zx48_memmove:
     pop de
     pop hl
     jr nc,zx48_memmove_fwd
-    push hl
     add hl,bc
     dec hl
     ex de,hl
