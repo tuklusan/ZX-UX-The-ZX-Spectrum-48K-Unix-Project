@@ -25,7 +25,7 @@ import evidence
 import phase1_gate
 import phase1_probe
 
-ARCH_SHA256 = "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0"
+ARCH_SHA256 = "a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b"
 STRICT_P140_ASSERTION = "accepted-im2-interrupt-observed-with-mid-ldir-bc"
 
 REQUIRED_TEST_ASSERTIONS: dict[str, tuple[str, ...]] = {
