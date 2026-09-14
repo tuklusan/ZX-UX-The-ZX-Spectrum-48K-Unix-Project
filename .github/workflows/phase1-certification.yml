@@ -66,7 +66,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: zxux-phase1-${{ github.ref }}
@@ -120,6 +120,53 @@ jobs:
 
       - name: Finalize Phase 1 aggregate evidence
         run: tools/runtime/python/bin/python tools/finalize_phase1_evidence.py --root "$GITHUB_WORKSPACE" --evidence-dir "$ZXUX_EVIDENCE_DIR"
+
+      - name: Assert activation source still clean and current
+        if: ${{ github.run_attempt > 1 }}
+        run: |
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          git fetch origin main
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
+
+      - name: Install durable Phase 1 evidence unchanged
+        if: ${{ github.run_attempt > 1 }}
+        run: |
+          rm -f v1/dist/certification/P1.*.json v1/dist/certification/phase-1.json
+          cp "$ZXUX_EVIDENCE_DIR"/P1.*.json v1/dist/certification/
+          cp "$ZXUX_EVIDENCE_DIR"/phase-1.json v1/dist/certification/
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, os
+          src = Path(os.environ['ZXUX_EVIDENCE_DIR'])
+          dst = Path('v1/dist/certification')
+          expected = {
+              *(f'P1.{n:02d}.{action}.json' for n in range(1, 42) for action in ('build', 'test')),
+              'P1.41.result.json',
+              'phase-1.json',
+          }
+          source_names = {p.name for p in src.glob('P1.*.json')} | {'phase-1.json'}
+          assert source_names == expected, (sorted(source_names - expected), sorted(expected - source_names))
+          for name in sorted(expected):
+              source = src / name
+              target = dst / name
+              assert source.is_file() and target.is_file(), name
+              assert hashlib.sha256(source.read_bytes()).digest() == hashlib.sha256(target.read_bytes()).digest(), name
+          assert not (dst / 'phase1-gate-diagnostic.json').exists()
+          print('ZX-UX PHASE 1 EVIDENCE COPY IDENTITY PASS')
+          PY
+
+      - name: Commit Phase 1 evidence only
+        if: ${{ github.run_attempt > 1 }}
+        run: |
+          git add -A v1/dist/certification
+          changed="$(git diff --cached --name-only)"
+          test -n "$changed"
+          bad="$(printf '%s\n' "$changed" | grep -Ev '^v1/dist/certification/(P1\.[0-9][0-9]\.(build|test)\.json|P1\.41\.result\.json|phase-1\.json)$' || true)"
+          test -z "$bad"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "phase1: activate Phase-1 certification evidence for $GITHUB_SHA"
+          git push origin HEAD:main
 
       - name: Upload Phase 1 evidence and diagnostics
         if: always()
