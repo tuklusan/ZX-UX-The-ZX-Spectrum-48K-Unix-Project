@@ -1,6 +1,6 @@
 {
   "action": "test",
-  "architecture_sha256": "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0",
+  "architecture_sha256": "a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b",
   "assertions": [
     {
       "name": "cursor-is-xor-not-saved-pixels",
@@ -45,9 +45,9 @@
         "kernel.asm"
       ],
       "cwd": "v1/src/kernel",
-      "duration_ms": 18,
+      "duration_ms": 30,
       "exit_code": 0,
-      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8607 lines, work time: 0.017 seconds\n",
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8607 lines, work time: 0.028 seconds\n",
       "stdout": "",
       "timed_out": false
     }
@@ -63,7 +63,7 @@
     "P1.31": "PASS"
   },
   "schema": 2,
-  "source_commit": "b1d6fac7b9279d12e8e84efb37064f890b1be712",
+  "source_commit": "e84dfc93da08963404b569010464b2d78f1b3fba",
   "status": "PASS",
   "step": "P1.32",
   "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
