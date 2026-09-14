@@ -20,11 +20,13 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import traceback
 
 ARCH_SHA = "ea23eb1c4815490830325b235e885d11b475a27ce6dcb9c70f4716d5c604fea0"
 STRICT_P140_ASSERTION = "accepted-im2-interrupt-observed-with-mid-ldir-bc"
 P141_AGGREGATE_ASSERTION = "all-p1-01-through-p1-40-build-test-evidence-pass-same-source"
 P141_SMOKE_ASSERTION = "minimal-phase1-aggregate-sna-smoke-pass"
+TRACE_PREFIX = "ZX-UX P1 FINALIZER TRACE"
 
 
 class FinalizeError(RuntimeError):
@@ -58,14 +60,33 @@ def driver_names() -> list[str]:
     ]
 
 
+def git_head(root: Path) -> str:
+    result = subprocess.run(
+        ["git", "rev-parse", "--verify", "HEAD"],
+        cwd=root,
+        text=True,
+        capture_output=True,
+        check=False,
+        timeout=15,
+    )
+    if result.returncode != 0:
+        raise FinalizeError(f"cannot resolve source HEAD: {result.stderr.strip()}")
+    return result.stdout.strip()
+
+
 def validator(root: Path):
     path = root / "v1/tools-host/test-driver/evidence.py"
+    print(f"{TRACE_PREFIX} stage=validator-load path={path}")
     spec = importlib.util.spec_from_file_location("zxux_evidence_validator", path)
     if spec is None or spec.loader is None:
         raise FinalizeError("cannot load evidence validator")
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
+    print(
+        f"{TRACE_PREFIX} stage=validator-loaded "
+        f"module_file={getattr(module, '__file__', None)!r}"
+    )
     return module
 
 
@@ -83,6 +104,7 @@ def expected_prerequisite(step: str) -> dict[str, str]:
 
 
 def require_phase0(root: Path) -> None:
+    print(f"{TRACE_PREFIX} stage=phase0-prerequisite start")
     result = subprocess.run(
         [sys.executable, "tools/check_phase0_evidence.py", "--require-active"],
         cwd=root,
@@ -90,6 +112,10 @@ def require_phase0(root: Path) -> None:
         capture_output=True,
         check=False,
         timeout=30,
+    )
+    print(
+        f"{TRACE_PREFIX} stage=phase0-prerequisite rc={result.returncode} "
+        f"stdout={result.stdout.strip()!r} stderr={result.stderr.strip()!r}"
     )
     if result.returncode != 0:
         raise FinalizeError(
@@ -129,6 +155,11 @@ def main() -> int:
     try:
         root = Path(args.root).resolve()
         evidence = Path(args.evidence_dir).resolve()
+        head = git_head(root)
+        print(
+            f"{TRACE_PREFIX} stage=start head={head} root={root} "
+            f"evidence={evidence} executable={sys.executable}"
+        )
         try:
             evidence.relative_to(root)
         except ValueError:
@@ -142,12 +173,24 @@ def main() -> int:
         sources: set[object] = set()
         locks: set[object] = set()
         archs: set[object] = set()
-        for name in driver_names():
+        for index, name in enumerate(driver_names()):
             path = evidence / name
             if not path.is_file():
                 raise FinalizeError(f"missing driver evidence: {name}")
             record = load(path)
-            evidence_validator.validate_driver_record(record)
+            if index == 0:
+                print(
+                    f"{TRACE_PREFIX} stage=first-record file={name} "
+                    f"record_source={record.get('source_commit')!r} head={head!r} "
+                    f"record_step={record.get('step')!r} record_action={record.get('action')!r}"
+                )
+            try:
+                evidence_validator.validate_driver_record(record)
+            except Exception as exc:
+                raise FinalizeError(
+                    f"{name}: validator failure "
+                    f"class={type(exc).__module__}.{type(exc).__name__}: {exc}"
+                ) from exc
             parts = name.split(".")
             expected_step = ".".join(parts[:2])
             expected_action = parts[2]
@@ -163,9 +206,20 @@ def main() -> int:
             locks.add(record.get("toolchain_lock_sha256"))
             archs.add(record.get("architecture_sha256"))
 
+        print(
+            f"{TRACE_PREFIX} stage=identity-sets head={head!r} "
+            f"sources={sorted(map(repr, sources))!r} "
+            f"locks={sorted(map(repr, locks))!r} archs={sorted(map(repr, archs))!r}"
+        )
         if len(sources) != 1 or len(locks) != 1 or archs != {ARCH_SHA}:
             raise FinalizeError(
                 "evidence does not name one exact source/toolchain/architecture state"
+            )
+        source = next(iter(sources))
+        if source != head:
+            raise FinalizeError(
+                f"staged evidence source does not match checked-out HEAD: "
+                f"evidence={source!r} head={head!r}"
             )
 
         p140_names = assertion_names(records["P1.40.test.json"])
@@ -209,6 +263,7 @@ def main() -> int:
         print("ZX-UX PHASE 1 EVIDENCE FINALIZATION PASS")
         return 0
     except Exception as exc:
+        traceback.print_exc(file=sys.stderr)
         print(f"ZX-UX PHASE 1 EVIDENCE FINALIZATION FAIL: {exc}", file=sys.stderr)
         return 1
 
