@@ -42,6 +42,14 @@ ENV1_MAX_COUNT                EQU 8
 ENV1_MAX_NAME                 EQU 15
 ENV1_MAX_VALUE                EQU 63
 BOOTSTRAP_MAX_PAYLOAD         EQU 512
+PROCESS_CONTEXT_FRAME_BYTES   EQU 12
+INITIAL_CONTEXT_IMAGE_BASE    EQU 0
+INITIAL_CONTEXT_STACK_BASE    EQU 2
+INITIAL_CONTEXT_STACK_SIZE    EQU 4
+INITIAL_CONTEXT_ARG_PTR       EQU 6
+INITIAL_CONTEXT_ARG_LEN       EQU 8
+INITIAL_CONTEXT_ENV_PTR       EQU 10
+INITIAL_CONTEXT_SEED_SIZE     EQU 12
 
     MACRO EMIT_PROCESS_ROUTINES
 zx48_process_init:
@@ -1310,4 +1318,217 @@ process_bootstrap_env_src: dw 0
 process_bootstrap_env_len: dw 0
 process_bootstrap_rounded: dw 0
 process_bootstrap_base: dw 0
+    ENDM
+
+
+; P2.08 initial user-context constructor. IX points to the already validated
+; MEX1 header and HL points to an internal twelve-byte seed containing image
+; base, FAST stack base/size, ARG1 pointer/length, and ENV1 pointer. The helper
+; validates every address/size relationship before the first target-stack write.
+; It then materializes the exact scheduler resume frame IX/HL/DE/BC/AF/PC at
+; the top of the uncommitted FAST stack. On success HL=saved_sp, A=0/C clear.
+; Failure returns A=E_FORMAT/C set and does not write the target stack or
+; publish descriptor/READY state. IY is deliberately absent from the frame;
+; the frozen scheduler restore path canonicalizes IY=ROM_IY_ANCHOR before RET.
+    MACRO EMIT_INITIAL_CONTEXT_ROUTINES
+zx48_process_build_initial_context:
+    ; Prove the private seed can be read completely before copying it to scratch.
+    ld (process_context_seed),hl
+    ld de,INITIAL_CONTEXT_SEED_SIZE
+    add hl,de
+    jp c,zx48_initial_context_format
+    ld hl,(process_context_seed)
+    ld de,process_context_image_base
+    ld bc,INITIAL_CONTEXT_SEED_SIZE
+    ldir
+
+    ; Re-prove the validated image extent and entry point against the actual base.
+    ld l,(ix+MEX_HDR_IMAGE_SIZE)
+    ld h,(ix+MEX_HDR_IMAGE_SIZE+1)
+    ld a,h
+    or l
+    jp z,zx48_initial_context_format
+    ld (process_context_image_size),hl
+    ld e,(ix+MEX_HDR_BSS_SIZE)
+    ld d,(ix+MEX_HDR_BSS_SIZE+1)
+    add hl,de
+    jp c,zx48_initial_context_format
+    ld (process_context_image_alloc_size),hl
+
+    ld hl,(process_context_image_base)
+    ld de,ARENA_START
+    or a
+    sbc hl,de
+    jp c,zx48_initial_context_format
+    ld hl,(process_context_image_base)
+    ld de,(process_context_image_alloc_size)
+    add hl,de
+    jp c,zx48_initial_context_format
+    ld de,KERNEL_START
+    or a
+    sbc hl,de
+    jr c,zx48_initial_context_image_end_ok
+    jp nz,zx48_initial_context_format
+zx48_initial_context_image_end_ok:
+
+    ld e,(ix+MEX_HDR_ENTRY)
+    ld d,(ix+MEX_HDR_ENTRY+1)
+    ld hl,(process_context_image_size)
+    or a
+    sbc hl,de
+    jp c,zx48_initial_context_format
+    jp z,zx48_initial_context_format
+    ld hl,(process_context_image_base)
+    add hl,de
+    jp c,zx48_initial_context_format
+    ld (process_context_entry),hl
+
+    ; Stack allocation must be the exact validated MEX1 request plus the fixed
+    ; 64-byte bootstrap reserve and must remain wholly in FAST RAM.
+    ld c,(ix+MEX_HDR_STACK)
+    ld b,(ix+MEX_HDR_STACK+1)
+    bit 0,c
+    jp nz,zx48_initial_context_format
+    ld h,b
+    ld l,c
+    ld de,MEX_MIN_STACK
+    or a
+    sbc hl,de
+    jp c,zx48_initial_context_format
+    ld hl,MEX_MAX_STACK
+    or a
+    sbc hl,bc
+    jp c,zx48_initial_context_format
+    ld hl,PROCESS_STACK_BOOTSTRAP_BYTES
+    add hl,bc
+    jp c,zx48_initial_context_format
+    ld de,(process_context_stack_size)
+    or a
+    sbc hl,de
+    jp nz,zx48_initial_context_format
+
+    ld hl,(process_context_stack_base)
+    bit 0,l
+    jp nz,zx48_initial_context_format
+    ld de,FAST_START
+    or a
+    sbc hl,de
+    jp c,zx48_initial_context_format
+    ld hl,(process_context_stack_base)
+    ld de,(process_context_stack_size)
+    add hl,de
+    jp c,zx48_initial_context_format
+    ld (process_context_stack_end),hl
+    ld de,KERNEL_START
+    or a
+    sbc hl,de
+    jr c,zx48_initial_context_stack_end_ok
+    jp nz,zx48_initial_context_format
+zx48_initial_context_stack_end_ok:
+
+    ld hl,(process_context_stack_end)
+    ld de,PROCESS_CONTEXT_FRAME_BYTES
+    or a
+    sbc hl,de
+    ld (process_context_saved_sp),hl
+    ld de,(process_context_stack_base)
+    or a
+    sbc hl,de
+    jp c,zx48_initial_context_format
+
+    ; P2.07 supplied one immutable ARG1-then-ENV1 extent. Preserve the exact
+    ; ARG1 length and require ENV1 to begin immediately after those ARG1 bytes.
+    ld bc,(process_context_arg_len)
+    ld a,b
+    cp 2
+    jp nc,zx48_initial_context_format
+    or a
+    jr nz,zx48_initial_context_arg_256
+    ld a,c
+    cp ARG1_HEADER_SIZE+1
+    jp c,zx48_initial_context_format
+    jr zx48_initial_context_arg_size_ok
+zx48_initial_context_arg_256:
+    ld a,c
+    or a
+    jp nz,zx48_initial_context_format
+zx48_initial_context_arg_size_ok:
+    ld hl,(process_context_arg_ptr)
+    ld de,ARENA_START
+    or a
+    sbc hl,de
+    jp c,zx48_initial_context_format
+    ld hl,(process_context_arg_ptr)
+    add hl,bc
+    jp c,zx48_initial_context_format
+    ld de,(process_context_env_ptr)
+    or a
+    sbc hl,de
+    jp nz,zx48_initial_context_format
+    ld hl,(process_context_env_ptr)
+    ld de,ARENA_START
+    or a
+    sbc hl,de
+    jp c,zx48_initial_context_format
+    ld hl,(process_context_env_ptr)
+    ld de,KERNEL_START
+    or a
+    sbc hl,de
+    jp nc,zx48_initial_context_format
+
+zx48_initial_context_write:
+    ; saved_sp+0: IX is intentionally deterministic zero; IX has no specified
+    ; initial application value. saved_sp+2/+4/+6 are the frozen entry registers.
+    ld hl,(process_context_saved_sp)
+    xor a
+    ld (hl),a
+    inc hl
+    ld (hl),a
+    inc hl
+    ld de,(process_context_arg_ptr)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    inc hl
+    ld de,(process_context_env_ptr)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    inc hl
+    ld de,(process_context_arg_len)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    inc hl
+    xor a
+    ld (hl),a
+    inc hl
+    ld (hl),a
+    inc hl
+    ld de,(process_context_entry)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+
+    ld hl,(process_context_saved_sp)
+    xor a
+    ret
+
+zx48_initial_context_format:
+    ld a,E_FORMAT
+    scf
+    ret
+
+process_context_seed: dw 0
+process_context_image_base: dw 0
+process_context_stack_base: dw 0
+process_context_stack_size: dw 0
+process_context_arg_ptr: dw 0
+process_context_arg_len: dw 0
+process_context_env_ptr: dw 0
+process_context_image_size: dw 0
+process_context_image_alloc_size: dw 0
+process_context_entry: dw 0
+process_context_stack_end: dw 0
+process_context_saved_sp: dw 0
     ENDM
