@@ -137,7 +137,7 @@ def _time_get_ok(syscall: str) -> bool:
 
 
 def _time_set_ok(syscall: str) -> bool:
-    block = _block(syscall, "zx48_sys_time_set:", "zx48_user_range_validate:")
+    block = _block(syscall, "zx48_sys_time_set:", "emit_user_range_validation_routine")
     precommit = _block(block, "zx48_sys_time_set:", "zx48_sys_time_valid:")
     commit = block[block.find("zx48_sys_time_valid:"):] if "zx48_sys_time_valid:" in block else ""
     return (
