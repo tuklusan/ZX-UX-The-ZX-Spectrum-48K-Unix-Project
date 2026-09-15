@@ -72,6 +72,7 @@ def _assemble(root: Path, run_command: Callable[..., Any], require_project_tool:
         "    EMIT_INITIAL_CONTEXT_ROUTINES\n"
         "    EMIT_SPAWN_TRANSACTION_ROUTINES\n"
         "    EMIT_EXEC_TRANSACTION_ROUTINES\n"
+        "zx48_process_count: xor a : ret\n"
         "zx48_process_lookup: xor a : ret\n"
         "zx48_handle_lookup: ld c,a : xor a : ret\n"
         "zx48_od_retain: xor a : ret\n"
