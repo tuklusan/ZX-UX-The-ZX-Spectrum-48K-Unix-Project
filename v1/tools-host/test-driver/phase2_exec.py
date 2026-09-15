@@ -15,6 +15,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Callable
 from driver_core import DriverError
+import phase2_exec_runtime
 
 
 class Phase2ExecError(DriverError):
@@ -92,10 +93,21 @@ def dispatch(root: Path, action: str, step: str, **kwargs):
     require_project_tool = kwargs["require_project_tool"]
     result = _assemble(root, run_command, require_project_tool)
     assertions = _static(root)
-    if action == "test":
-        # Deliberately fail closed until the deterministic SNA success/failure
-        # boundary is wired.  P2.12 must never be certified by static checks alone.
-        assertions.append({"name": "deterministic SNA proves success swap and byte-identical failure rollback", "passed": False})
-    commands = [{"argv": list(result.argv), "cwd": result.cwd, "exit_code": result.exit_code, "timed_out": result.timed_out}]
-    hashes = {"phase2_exec.inc": kwargs["sha256_file"](root / "v1/src/kernel/phase2_exec.inc")}
+    runtime_result, runtime_binary, runtime_assertions = phase2_exec_runtime.run(
+        root,
+        execute=action == "test",
+        run_command=run_command,
+        require_project_tool=require_project_tool,
+    )
+    assertions.extend(runtime_assertions)
+    commands = [
+        {"argv": list(result.argv), "cwd": result.cwd, "exit_code": result.exit_code, "timed_out": result.timed_out},
+        {"argv": list(runtime_result.argv), "cwd": runtime_result.cwd, "exit_code": runtime_result.exit_code, "timed_out": runtime_result.timed_out},
+    ]
+    hashes = {
+        "v1/src/kernel/phase2_exec.inc": kwargs["sha256_file"](root / "v1/src/kernel/phase2_exec.inc"),
+        "v1/tools-host/test-driver/phase2_exec.py": kwargs["sha256_file"](root / "v1/tools-host/test-driver/phase2_exec.py"),
+        "v1/tools-host/test-driver/phase2_exec_runtime.py": kwargs["sha256_file"](root / "v1/tools-host/test-driver/phase2_exec_runtime.py"),
+        "v1/build/p212-exec.bin": kwargs["sha256_file"](runtime_binary),
+    }
     return commands, hashes, assertions
