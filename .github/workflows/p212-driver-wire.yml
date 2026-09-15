@@ -1,0 +1,132 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: P2.12 One-Shot Driver Wiring
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/p212-driver-wire.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: zxux-p212-driver-wire
+  cancel-in-progress: false
+
+jobs:
+  wire:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Wire P2.12 runtime and registered gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object v1/tools-host/test-driver/phase2_exec.py)" = "4381e26fd9e7fc5a34ccc85f082c76ee23302762"
+          test "$(git hash-object v1/tools-host/test-driver/run.py)" = "3d4bcf27cbbf7e985298dfc2fdbc3deec2ca9f86"
+          test "$(git hash-object v1/tools-host/test-driver/phase2_gate.py)" = "a270efdcfbb8c97c6548f16219d88209245227dc"
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: replacement count {count}, expected 1')
+              p.write_text(text.replace(old, new, 1), encoding='utf-8', newline='\n')
+
+          replace_once(
+              'v1/tools-host/test-driver/phase2_exec.py',
+              'from driver_core import DriverError\n',
+              'from driver_core import DriverError\nimport phase2_exec_runtime\n',
+          )
+
+          old_dispatch = '''    result = _assemble(root, run_command, require_project_tool)
+              assertions = _static(root)
+              if action == "test":
+                  # Deliberately fail closed until the deterministic SNA success/failure
+                  # boundary is wired.  P2.12 must never be certified by static checks alone.
+                  assertions.append({"name": "deterministic SNA proves success swap and byte-identical failure rollback", "passed": False})
+              commands = [{"argv": list(result.argv), "cwd": result.cwd, "exit_code": result.exit_code, "timed_out": result.timed_out}]
+              hashes = {"phase2_exec.inc": kwargs["sha256_file"](root / "v1/src/kernel/phase2_exec.inc")}
+              return commands, hashes, assertions
+          '''.replace('          ', '')
+          new_dispatch = '''    result = _assemble(root, run_command, require_project_tool)
+              assertions = _static(root)
+              runtime_result, runtime_binary, runtime_assertions = phase2_exec_runtime.run(
+                  root,
+                  execute=action == "test",
+                  run_command=run_command,
+                  require_project_tool=require_project_tool,
+              )
+              assertions.extend(runtime_assertions)
+              commands = [
+                  {"argv": list(result.argv), "cwd": result.cwd, "exit_code": result.exit_code, "timed_out": result.timed_out},
+                  {"argv": list(runtime_result.argv), "cwd": runtime_result.cwd, "exit_code": runtime_result.exit_code, "timed_out": runtime_result.timed_out},
+              ]
+              hashes = {
+                  "v1/src/kernel/phase2_exec.inc": kwargs["sha256_file"](root / "v1/src/kernel/phase2_exec.inc"),
+                  "v1/tools-host/test-driver/phase2_exec.py": kwargs["sha256_file"](root / "v1/tools-host/test-driver/phase2_exec.py"),
+                  "v1/tools-host/test-driver/phase2_exec_runtime.py": kwargs["sha256_file"](root / "v1/tools-host/test-driver/phase2_exec_runtime.py"),
+                  "v1/build/p212-exec.bin": kwargs["sha256_file"](runtime_binary),
+              }
+              return commands, hashes, assertions
+          '''.replace('          ', '')
+          replace_once('v1/tools-host/test-driver/phase2_exec.py', old_dispatch, new_dispatch)
+
+          replace_once(
+              'v1/tools-host/test-driver/run.py',
+              'import phase2_handle_inheritance\nfrom driver_core import (\n',
+              'import phase2_handle_inheritance\nimport phase2_exec\nfrom driver_core import (\n',
+          )
+          replace_once(
+              'v1/tools-host/test-driver/run.py',
+              '    if step == "P2.11":\n        return phase2_handle_inheritance.dispatch(root, action, step, **kwargs)\n    if step.startswith("P2."):\n',
+              '    if step == "P2.11":\n        return phase2_handle_inheritance.dispatch(root, action, step, **kwargs)\n    if step == "P2.12":\n        return phase2_exec.dispatch(root, action, step, **kwargs)\n    if step.startswith("P2."):\n',
+          )
+          replace_once(
+              'v1/tools-host/test-driver/phase2_gate.py',
+              'CANDIDATE_STEPS: tuple[str, ...] = ("P2.08", "P2.09", "P2.10")\n',
+              'CANDIDATE_STEPS: tuple[str, ...] = ("P2.08", "P2.09", "P2.10", "P2.11", "P2.12")\n',
+          )
+          PY
+          python3 -m py_compile \
+            v1/tools-host/test-driver/phase2_exec.py \
+            v1/tools-host/test-driver/phase2_exec_runtime.py \
+            v1/tools-host/test-driver/run.py \
+            v1/tools-host/test-driver/phase2_gate.py
+          grep -q 'if step == "P2.12"' v1/tools-host/test-driver/run.py
+          grep -q '"P2.11", "P2.12"' v1/tools-host/test-driver/phase2_gate.py
+          git diff --check
+
+      - name: Commit driver wiring
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'Supratim Sanyal'
+          git config user.email 'tuklusan@users.noreply.github.com'
+          git add \
+            v1/tools-host/test-driver/phase2_exec.py \
+            v1/tools-host/test-driver/run.py \
+            v1/tools-host/test-driver/phase2_gate.py
+          git commit -m 'P2.12: register deterministic exec certification'
+          git push origin HEAD:main
