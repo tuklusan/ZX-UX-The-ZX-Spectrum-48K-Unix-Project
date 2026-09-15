@@ -505,7 +505,7 @@ def _success_case(root: Path, symbols: dict[str, int], fixture: bytes, bad_mex: 
 def _target_tests(root: Path, symbols: dict[str, int], fixture: bytes) -> list[dict[str, object]]:
     require(symbols["PROC_DESC_SIZE"] == PROC_DESC_SIZE, "P2.12 process descriptor ABI changed")
     require(symbols["PROC_RUNNING"] == 2, "P2.12 RUNNING state ABI changed")
-    require(symbols["E_INVAL"] == 6 and symbols["E_FORMAT"] == 11, "P2.12 errno ABI changed")
+    require(symbols["E_INVAL"] == 1 and symbols["E_FORMAT"] == 11, "P2.12 errno ABI changed")
 
     # A relocation overlap is intentionally detected only after all three private
     # replacement allocations exist, forcing the full rollback path.
