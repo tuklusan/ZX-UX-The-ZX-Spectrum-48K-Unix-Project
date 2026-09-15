@@ -84,6 +84,7 @@ jobs:
           git rm v1/src/kernel/phase2_exec.inc
           git rm .github/workflows/p212-final-integration.yml
           python3 -m py_compile v1/tools-host/test-driver/phase2_exec.py v1/tools-host/test-driver/phase2_exec_runtime.py
+          rm -rf v1/tools-host/test-driver/__pycache__
           test "$(grep -c 'MACRO EMIT_EXEC_TRANSACTION_ROUTINES' v1/src/kernel/process.asm)" = 1
           if git grep -n 'phase2_exec\.inc' -- ':!v1/dist/certification'; then
             echo 'staging include reference remains' >&2
