@@ -78,6 +78,76 @@ def _run_named(stage: str, action) -> None:
         raise ContextDiagnosticError(f"P2.08 target-case probe failed at {stage}: {exc}") from exc
 
 
+def _isolated_entry_probe(
+    root: Path,
+    symbols: dict[str, int],
+    fixture: bytes,
+    user_image: bytes,
+    entry_offset: int,
+    stage: str,
+) -> None:
+    mex = phase2_mex1._fixture(
+        image=user_image,
+        bss_size=context.BSS_SIZE,
+        entry=entry_offset,
+        stack=context.MEX_MIN_STACK,
+        relocations=(),
+    )
+    builder = symbols["zx48_process_build_initial_context"]
+    stack_size = context.MEX_MIN_STACK + context.BOOTSTRAP_BYTES
+    stack_base = context.FAST_START
+    expected_saved_sp = stack_base + stack_size - context.CONTEXT_FRAME_BYTES
+    seed = context._seed(context.ARENA_START, stack_base, stack_size, 0x6100, 10, 0x610A)
+
+    code = bytearray(b"\xF3" + phase1._ld_sp(context.TEST_STACK))
+    code += context._ld_ix(context.MEX_ADDRESS) + phase1._ld_hl(context.SEED_ADDRESS) + phase1._call(builder)
+    if stage == "status":
+        code += phase1._jp_c(FAIL_PC) + phase1._jp(PASS_PC)
+    elif stage == "saved-sp":
+        code += phase1._jp_c(FAIL_PC) + context._expect_hl(expected_saved_sp) + phase1._jp(PASS_PC)
+    elif stage == "frame-pc":
+        code += phase1._jp_c(FAIL_PC) + b"\xE5"
+        code += context._expect_hl(expected_saved_sp) + b"\xDD\xE1"
+        code += context._expect_ix_word(10, expected_value=context.ARENA_START + entry_offset)
+        code += phase1._jp(PASS_PC)
+    else:
+        raise ContextDiagnosticError(f"unknown isolated-entry diagnostic stage: {stage}")
+
+    context.run_sna(
+        root,
+        bytes(code),
+        patch=context._patch(
+            fixture,
+            ((context.MEX_ADDRESS, mex), (context.SEED_ADDRESS, seed)),
+        ),
+    )
+
+
+def _expect_canonical_nonzero_helper_failure(
+    root: Path,
+    symbols: dict[str, int],
+    fixture: bytes,
+    user_image: bytes,
+    entry_offset: int,
+) -> None:
+    mex = phase2_mex1._fixture(
+        image=user_image,
+        bss_size=context.BSS_SIZE,
+        entry=entry_offset,
+        stack=context.MEX_MIN_STACK,
+        relocations=(),
+    )
+    try:
+        context._nonzero_entry_case(root, symbols, fixture, mex, entry_offset)
+    except DriverError as exc:
+        require(
+            "exit=1 timed_out=False" in str(exc),
+            f"canonical nonzero-entry helper failed for an unexpected reason: {exc}",
+        )
+        return
+    raise ContextDiagnosticError("canonical nonzero-entry helper unexpectedly passed; stale diagnostic assumption")
+
+
 def main() -> int:
     root = find_root(Path(__file__))
     _, fixture_binary, fixture_symbols = context._assemble_fixture(root, run_command, require_project_tool)
@@ -149,18 +219,28 @@ def main() -> int:
             crossing=False, canonicalize_iy=False, expect_failure=True,
         ),
     )
+    _run_named(
+        "isolated-entry-zero-control",
+        lambda: _isolated_entry_probe(root, symbols, fixture, user_image, 0, "frame-pc"),
+    )
     nonzero_entry = 3
-    nonzero_mex = phase2_mex1._fixture(
-        image=user_image,
-        bss_size=context.BSS_SIZE,
-        entry=nonzero_entry,
-        stack=context.MEX_MIN_STACK,
-        relocations=(),
+    _run_named(
+        "nonzero-entry-builder-status",
+        lambda: _isolated_entry_probe(root, symbols, fixture, user_image, nonzero_entry, "status"),
     )
     _run_named(
-        "nonzero-mex-entry",
-        lambda: context._nonzero_entry_case(root, symbols, fixture, nonzero_mex, nonzero_entry),
+        "nonzero-entry-returned-saved-sp",
+        lambda: _isolated_entry_probe(root, symbols, fixture, user_image, nonzero_entry, "saved-sp"),
     )
+    _run_named(
+        "nonzero-entry-frame-pc",
+        lambda: _isolated_entry_probe(root, symbols, fixture, user_image, nonzero_entry, "frame-pc"),
+    )
+    _run_named(
+        "canonical-nonzero-helper-known-false-failure",
+        lambda: _expect_canonical_nonzero_helper_failure(root, symbols, fixture, user_image, nonzero_entry),
+    )
+    print("P2.08 DIAGNOSTIC CONFIRMED: corrected nonzero frame probe passes while canonical helper false-fails")
     _run_named(
         "invalid-context-seed",
         lambda: context._invalid_seed_case(root, symbols, fixture, mex),
