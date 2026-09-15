@@ -51,6 +51,31 @@ INITIAL_CONTEXT_ARG_LEN       EQU 8
 INITIAL_CONTEXT_ENV_PTR       EQU 10
 INITIAL_CONTEXT_SEED_SIZE     EQU 12
 
+; P2.09 pure PID-capacity scan. The helper performs no writes and deliberately
+; examines exactly PID2..PID7. Success leaves IX at the first FREE descriptor,
+; C/A equal to its PID, and carry clear. A full table returns E_AGAIN/carry set.
+    MACRO EMIT_PROCESS_CAPACITY_ROUTINE
+zx48_process_find_free_slot:
+    ld ix,process_table+2*PROC_DESC_SIZE
+    ld c,2
+    ld b,MAX_PROCESSES-2
+zx48_process_find_free_scan:
+    ld a,(ix+PROC_STATE)
+    or a
+    jr z,zx48_process_find_free_found
+    ld de,PROC_DESC_SIZE
+    add ix,de
+    inc c
+    djnz zx48_process_find_free_scan
+    ld a,E_AGAIN
+    scf
+    ret
+zx48_process_find_free_found:
+    ld a,c
+    or a
+    ret
+    ENDM
+
     MACRO EMIT_PROCESS_ROUTINES
 zx48_process_init:
     xor a
@@ -122,23 +147,11 @@ zx48_process_noent:
     scf
     ret
 
+    EMIT_PROCESS_CAPACITY_ROUTINE
+
 zx48_process_reserve_slot:
-    ld ix,process_table+2*PROC_DESC_SIZE
-    ld c,2
-    ld b,MAX_PROCESSES-2
-zx48_process_reserve_scan:
-    ld a,(ix+PROC_STATE)
-    or a
-    jr z,zx48_process_reserve_found
-    ld de,PROC_DESC_SIZE
-    add ix,de
-    inc c
-    djnz zx48_process_reserve_scan
-    ld a,E_AGAIN
-    scf
-    ret
-zx48_process_reserve_found:
-    ld a,c
+    call zx48_process_find_free_slot
+    ret c
     ld (process_temp_pid),a
     push ix
     pop hl

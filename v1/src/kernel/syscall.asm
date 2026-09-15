@@ -15,6 +15,21 @@
 SYSCALL_FRAME_PC_O       EQU 10
 syscall_frame_sp          EQU FAST_RESERVE_END-1
 
+; P2.09 exact pointer-based spawn preflight record.
+PROC1_PATH_PTR             EQU 0
+PROC1_ARG1_PTR             EQU 2
+PROC1_ARG1_LEN             EQU 4
+PROC1_ENV1_PTR             EQU 6
+PROC1_ENV1_LEN             EQU 8
+PROC1_STDIN_HANDLE         EQU 10
+PROC1_STDOUT_HANDLE        EQU 11
+PROC1_STDERR_HANDLE        EQU 12
+PROC1_FLAGS                EQU 13
+PROC1_RESERVED             EQU 14
+PROC1_SIZE                 EQU 16
+PROC1_ALLOW_TAPE           EQU $01
+PROC1_PATH_MAX             EQU 31
+
     MACRO EMIT_SYSCALL_GATEWAY
 syscall_gateway:
     jp zx48_syscall
@@ -76,6 +91,53 @@ zx48_syscall_resume_intr:
     scf
     jr zx48_syscall_return
     ENDM
+
+; Shared exact user-range validator. P2.09 emits this same source into its staged
+; fixture rather than maintaining a second range implementation.
+    MACRO EMIT_USER_RANGE_VALIDATION_ROUTINE
+; Validate one complete nonzero range inside either shared display 4000..5AFF
+; or the single contiguous user arena 6000..DFFF. Count zero never dereferences.
+zx48_user_range_validate:
+    ld a,b
+    or c
+    jr z,zx48_user_range_ok
+    push hl
+    add hl,bc
+    jr c,zx48_user_range_wrap
+    dec hl
+    ex de,hl
+    pop hl
+    ld a,h
+    cp $40
+    jr c,zx48_user_range_bad
+    cp $5B
+    jr c,zx48_user_range_display
+    cp $60
+    jr c,zx48_user_range_bad
+    cp $E0
+    jr nc,zx48_user_range_bad
+    ld a,d
+    cp $60
+    jr c,zx48_user_range_bad
+    cp $E0
+    jr nc,zx48_user_range_bad
+zx48_user_range_ok:
+    xor a
+    ret
+zx48_user_range_display:
+    ld a,d
+    cp $5B
+    jr nc,zx48_user_range_bad
+    xor a
+    ret
+zx48_user_range_wrap:
+    pop hl
+zx48_user_range_bad:
+    ld a,E_INVAL
+    scf
+    ret
+    ENDM
+
 
     MACRO EMIT_SYSCALL_IMPL
 zx48_syscall_impl:
@@ -575,47 +637,7 @@ zx48_sys_time_valid:
     ei
     jp zx48_sys_zero_result
 
-; Validate one complete nonzero range inside either shared display 4000..5AFF
-; or the single contiguous user arena 6000..DFFF. Count zero never dereferences.
-zx48_user_range_validate:
-    ld a,b
-    or c
-    jr z,zx48_user_range_ok
-    push hl
-    add hl,bc
-    jr c,zx48_user_range_wrap
-    dec hl
-    ex de,hl
-    pop hl
-    ld a,h
-    cp $40
-    jr c,zx48_user_range_bad
-    cp $5B
-    jr c,zx48_user_range_display
-    cp $60
-    jr c,zx48_user_range_bad
-    cp $E0
-    jr nc,zx48_user_range_bad
-    ld a,d
-    cp $60
-    jr c,zx48_user_range_bad
-    cp $E0
-    jr nc,zx48_user_range_bad
-zx48_user_range_ok:
-    xor a
-    ret
-zx48_user_range_display:
-    ld a,d
-    cp $5B
-    jr nc,zx48_user_range_bad
-    xor a
-    ret
-zx48_user_range_wrap:
-    pop hl
-zx48_user_range_bad:
-    ld a,E_INVAL
-    scf
-    ret
+    EMIT_USER_RANGE_VALIDATION_ROUTINE
 
 zx48_sys_put16:
     ld (hl),e
@@ -666,4 +688,94 @@ syscall_arg_bc: dw 0
 syscall_temp: db 0
 syscall_tick_lo: dw 0
 syscall_tick_hi: dw 0
+    ENDM
+
+; P2.09 staged production spawn preflight. The resident kernel keeps SYS_SPAWN
+; on its not-supported entry until the P2.10 atomic transaction can be integrated
+; without exceeding the frozen ordinary-code ceiling. This exact production source
+; is emitted by the P2.09 deterministic fixture.
+    MACRO EMIT_SPAWN_PREFLIGHT_ROUTINES
+zx48_sys_spawn:
+    ld hl,(syscall_arg_hl)
+    call zx48_sys_spawn_preflight
+    ret c
+    ld a,E_NOTSUP
+    scf
+    ret
+
+zx48_sys_spawn_preflight:
+    ; Capacity is authoritative and must precede even validation of PROC1 itself.
+    call zx48_process_find_free_slot
+    ret c
+
+    ; Only after capacity exists may the sixteen-byte request record be touched.
+    ld bc,PROC1_SIZE
+    call zx48_user_range_validate
+    ret c
+    push hl
+    pop ix
+
+    ; Structural fields are closed before any pointed range is dereferenced.
+    ld a,(ix+PROC1_STDIN_HANDLE)
+    cp MAX_HANDLES_PER_PROCESS
+    jr nc,zx48_sys_spawn_preflight_invalid
+    ld a,(ix+PROC1_STDOUT_HANDLE)
+    cp MAX_HANDLES_PER_PROCESS
+    jr nc,zx48_sys_spawn_preflight_invalid
+    ld a,(ix+PROC1_STDERR_HANDLE)
+    cp MAX_HANDLES_PER_PROCESS
+    jr nc,zx48_sys_spawn_preflight_invalid
+    ld a,(ix+PROC1_FLAGS)
+    and $FE
+    jr nz,zx48_sys_spawn_preflight_invalid
+    ld a,(ix+PROC1_RESERVED)
+    or (ix+PROC1_RESERVED+1)
+    jr nz,zx48_sys_spawn_preflight_invalid
+
+    ; ARG1/ENV1 are range-only at P2.09. A zero length follows the frozen buffer
+    ; rule: the corresponding pointer is not dereferenced and need not be valid.
+    ld l,(ix+PROC1_ARG1_PTR)
+    ld h,(ix+PROC1_ARG1_PTR+1)
+    ld c,(ix+PROC1_ARG1_LEN)
+    ld b,(ix+PROC1_ARG1_LEN+1)
+    call zx48_user_range_validate
+    ret c
+    ld l,(ix+PROC1_ENV1_PTR)
+    ld h,(ix+PROC1_ENV1_PTR+1)
+    ld c,(ix+PROC1_ENV1_LEN)
+    ld b,(ix+PROC1_ENV1_LEN+1)
+    call zx48_user_range_validate
+    ret c
+
+    ; Path scanning is bounded to 31 bytes plus the required NUL and validates
+    ; each byte before reading it so a short string at a region edge remains legal.
+    ld l,(ix+PROC1_PATH_PTR)
+    ld h,(ix+PROC1_PATH_PTR+1)
+    ld d,PROC1_PATH_MAX+1
+zx48_sys_spawn_preflight_path:
+    push de
+    ld bc,1
+    call zx48_user_range_validate
+    pop de
+    ret c
+    ld a,(hl)
+    or a
+    jr z,zx48_sys_spawn_preflight_path_done
+    inc hl
+    dec d
+    jr nz,zx48_sys_spawn_preflight_path
+    ld a,E_TOOLONG
+    scf
+    ret
+zx48_sys_spawn_preflight_path_done:
+    ld a,d
+    cp PROC1_PATH_MAX+1
+    jr z,zx48_sys_spawn_preflight_invalid
+    xor a
+    ret
+
+zx48_sys_spawn_preflight_invalid:
+    ld a,E_INVAL
+    scf
+    ret
     ENDM
