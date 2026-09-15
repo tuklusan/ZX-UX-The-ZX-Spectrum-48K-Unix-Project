@@ -449,8 +449,9 @@ def _nonzero_entry_case(root: Path, symbols: dict[str, int], fixture: bytes, mex
 
     code = bytearray(b"\xF3" + phase1._ld_sp(TEST_STACK))
     code += _ld_ix(MEX_ADDRESS) + phase1._ld_hl(SEED_ADDRESS) + phase1._call(builder) + phase1._jp_c(FAIL_PC)
+    code += b"\xE5"
     code += _expect_hl(expected_saved_sp)
-    code += b"\xE5\xDD\xE1"
+    code += b"\xDD\xE1"
     code += _expect_ix_word(10, expected_value=ARENA_START + entry_offset)
     code += phase1._jp(PASS_PC)
     run_sna(root, bytes(code), patch=_patch(fixture, ((MEX_ADDRESS, mex), (SEED_ADDRESS, seed))))

@@ -123,31 +123,6 @@ def _isolated_entry_probe(
     )
 
 
-def _expect_canonical_nonzero_helper_failure(
-    root: Path,
-    symbols: dict[str, int],
-    fixture: bytes,
-    user_image: bytes,
-    entry_offset: int,
-) -> None:
-    mex = phase2_mex1._fixture(
-        image=user_image,
-        bss_size=context.BSS_SIZE,
-        entry=entry_offset,
-        stack=context.MEX_MIN_STACK,
-        relocations=(),
-    )
-    try:
-        context._nonzero_entry_case(root, symbols, fixture, mex, entry_offset)
-    except DriverError as exc:
-        require(
-            "exit=1 timed_out=False" in str(exc),
-            f"canonical nonzero-entry helper failed for an unexpected reason: {exc}",
-        )
-        return
-    raise ContextDiagnosticError("canonical nonzero-entry helper unexpectedly passed; stale diagnostic assumption")
-
-
 def main() -> int:
     root = find_root(Path(__file__))
     _, fixture_binary, fixture_symbols = context._assemble_fixture(root, run_command, require_project_tool)
@@ -236,11 +211,6 @@ def main() -> int:
         "nonzero-entry-frame-pc",
         lambda: _isolated_entry_probe(root, symbols, fixture, user_image, nonzero_entry, "frame-pc"),
     )
-    _run_named(
-        "canonical-nonzero-helper-known-false-failure",
-        lambda: _expect_canonical_nonzero_helper_failure(root, symbols, fixture, user_image, nonzero_entry),
-    )
-    print("P2.08 DIAGNOSTIC CONFIRMED: corrected nonzero frame probe passes while canonical helper false-fails")
     _run_named(
         "invalid-context-seed",
         lambda: context._invalid_seed_case(root, symbols, fixture, mex),
