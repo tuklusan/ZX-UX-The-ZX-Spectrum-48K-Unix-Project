@@ -71,6 +71,13 @@ def _run_case(root: Path, symbols: dict[str, int], fixture: bytes, mex: bytes, u
         raise ContextDiagnosticError(f"P2.08 post-frame dispatch probe failed at {stage}: {exc}") from exc
 
 
+def _run_named(stage: str, action) -> None:
+    try:
+        action()
+    except DriverError as exc:
+        raise ContextDiagnosticError(f"P2.08 target-case probe failed at {stage}: {exc}") from exc
+
+
 def main() -> int:
     root = find_root(Path(__file__))
     _, fixture_binary, fixture_symbols = context._assemble_fixture(root, run_command, require_project_tool)
@@ -126,6 +133,38 @@ def main() -> int:
     after_main = bytearray(user_image)
     after_main[reloc_offset + 2:reloc_offset + 5] = phase1._jp(PASS_PC)
     _run_case(root, symbols, fixture, _diagnostic_mex(mex, bytes(after_main), user_image_size), user_image_size, arg, env, "relocated-main-call-return")
+
+    _run_named(
+        "full-first-dispatch-noncrossing",
+        lambda: context._first_dispatch_case(root, symbols, fixture, mex, user_image_size, arg, env, crossing=False, diagnostic_probes=True),
+    )
+    _run_named(
+        "full-first-dispatch-crossing",
+        lambda: context._first_dispatch_case(root, symbols, fixture, mex, user_image_size, arg, env, crossing=True, diagnostic_probes=True),
+    )
+    _run_named(
+        "dirty-iy-negative",
+        lambda: context._first_dispatch_case(
+            root, symbols, fixture, mex, user_image_size, arg, env,
+            crossing=False, canonicalize_iy=False, expect_failure=True,
+        ),
+    )
+    nonzero_entry = 3
+    nonzero_mex = phase2_mex1._fixture(
+        image=user_image,
+        bss_size=context.BSS_SIZE,
+        entry=nonzero_entry,
+        stack=context.MEX_MIN_STACK,
+        relocations=(),
+    )
+    _run_named(
+        "nonzero-mex-entry",
+        lambda: context._nonzero_entry_case(root, symbols, fixture, nonzero_mex, nonzero_entry),
+    )
+    _run_named(
+        "invalid-context-seed",
+        lambda: context._invalid_seed_case(root, symbols, fixture, mex),
+    )
 
     print("P2.08 POST-FRAME DIAGNOSTIC PASS")
     return 0
