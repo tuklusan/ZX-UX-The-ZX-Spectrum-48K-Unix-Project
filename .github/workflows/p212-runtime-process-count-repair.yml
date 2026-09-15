@@ -39,12 +39,13 @@ jobs:
           new = '        "    jp zx48_sys_exec\\n"\n        "zx48_process_count:\\n"\n        "    xor a\\n"\n        "    ret\\n"\n        "zx48_process_lookup:\\n"\n'
           assert text.count(old) == 1, text.count(old)
           text = text.replace(old, new)
+          assert text.count('        "zx48_process_count:\\n"\n') == 1
+          assert text.count('        "    xor a\\n"\n        "    ret\\n"\n        "zx48_process_lookup:\\n"\n') >= 1
           path.write_text(text, encoding='utf-8', newline='\n')
           PY
           git rm .github/workflows/p212-runtime-process-count-repair.yml
           python3 -m py_compile v1/tools-host/test-driver/phase2_exec_runtime.py
           rm -rf v1/tools-host/test-driver/__pycache__
-          grep -A3 -F '"zx48_process_count:\\n"' v1/tools-host/test-driver/phase2_exec_runtime.py
           git diff --check
           ./tools/check_license_headers.sh
           ./tools/check_project_policy.py
