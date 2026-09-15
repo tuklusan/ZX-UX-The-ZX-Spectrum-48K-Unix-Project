@@ -75,7 +75,7 @@ def main() -> int:
     root = find_root(Path(__file__))
     _, fixture_binary, fixture_symbols = context._assemble_fixture(root, run_command, require_project_tool)
     _, user_binary, user_symbols = context._assemble_user(root, run_command, require_project_tool)
-    user_values = context._symbols(user_symbols, ("p208_user_start", "p208_main_call_word"))
+    user_values = context._symbols(user_symbols, ("p208_user_start", "p208_main_call_word", "p208_main"))
     user_image = user_binary.read_bytes()
     user_image_size = len(user_image)
     reloc_offset = user_values["p208_main_call_word"] - user_values["p208_user_start"]
@@ -117,7 +117,9 @@ def main() -> int:
 
     before_main = bytearray(user_image)
     before_main[reloc_offset - 1] = 0xC3
-    before_main[reloc_offset:reloc_offset + 2] = context._word((PASS_PC - context.ARENA_START) & 0xFFFF)
+    main_offset = user_values["p208_main"] - user_values["p208_user_start"]
+    require(0 <= main_offset <= user_image_size - 3, "diagnostic main offset implausible")
+    before_main[main_offset:main_offset + 3] = phase1._jp(PASS_PC)
     _run_case(root, symbols, fixture, _diagnostic_mex(mex, bytes(before_main), user_image_size), user_image_size, arg, env, "original-entry-before-main-call")
 
     after_main = bytearray(user_image)
