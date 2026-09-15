@@ -28,7 +28,10 @@ def require(condition: bool, message: str) -> None:
 
 
 def _static(root: Path) -> list[dict[str, Any]]:
-    source = (root / "v1/src/kernel/phase2_exec.inc").read_text(encoding="utf-8")
+    process = (root / "v1/src/kernel/process.asm").read_text(encoding="utf-8")
+    start = process.index("    MACRO EMIT_EXEC_TRANSACTION_ROUTINES")
+    end = process.index("    ENDM\n", start)
+    source = process[start:end]
     checks = {
         "exec consumes PROC1 through staged syscall entry": "zx48_sys_exec:" in source and "PROC1_SIZE" in source,
         "exec requires all std selector bytes to be 0xFF": all(token in source for token in ("PROC1_STDIN_HANDLE", "PROC1_STDOUT_HANDLE", "PROC1_STDERR_HANDLE", "cp HANDLE_FREE")),
@@ -58,7 +61,6 @@ def _assemble(root: Path, run_command: Callable[..., Any], require_project_tool:
         "    INCLUDE \"../src/kernel/process.asm\"\n"
         "    INCLUDE \"../src/kernel/handles.asm\"\n"
         "    INCLUDE \"../src/kernel/objects.asm\"\n"
-        "    INCLUDE \"../src/kernel/phase2_exec.inc\"\n"
         "PANIC_SCHEDULER EQU $03\n"
         "    ORG $6000\n"
         "    EMIT_MEMORY_ROUTINES\n"
@@ -105,7 +107,7 @@ def dispatch(root: Path, action: str, step: str, **kwargs):
         {"argv": list(runtime_result.argv), "cwd": runtime_result.cwd, "exit_code": runtime_result.exit_code, "timed_out": runtime_result.timed_out},
     ]
     hashes = {
-        "v1/src/kernel/phase2_exec.inc": kwargs["sha256_file"](root / "v1/src/kernel/phase2_exec.inc"),
+        "v1/src/kernel/process.asm": kwargs["sha256_file"](root / "v1/src/kernel/process.asm"),
         "v1/tools-host/test-driver/phase2_exec.py": kwargs["sha256_file"](root / "v1/tools-host/test-driver/phase2_exec.py"),
         "v1/tools-host/test-driver/phase2_exec_runtime.py": kwargs["sha256_file"](root / "v1/tools-host/test-driver/phase2_exec_runtime.py"),
         "v1/build/p212-exec.bin": kwargs["sha256_file"](runtime_binary),

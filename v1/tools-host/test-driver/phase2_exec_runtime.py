@@ -271,7 +271,6 @@ def _assemble_fixture(root: Path, run_command: Callable[..., Any], require_proje
         "    INCLUDE \"../src/kernel/memory.asm\"\n"
         "    INCLUDE \"../src/kernel/process.asm\"\n"
         "    INCLUDE \"../src/kernel/objects.asm\"\n"
-        "    INCLUDE \"../src/kernel/phase2_exec.inc\"\n"
         "PANIC_SCHEDULER EQU $03\n"
         f"    ORG ${FIXTURE_CODE:04X}\n"
         "p212_start:\n"
