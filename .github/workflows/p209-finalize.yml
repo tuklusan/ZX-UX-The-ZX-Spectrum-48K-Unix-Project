@@ -1,0 +1,80 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: P2.09 Finalize Staging
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/p209-finalize.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: zxux-p209-finalize
+  cancel-in-progress: true
+
+jobs:
+  stage:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout current main
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Reconstruct certified P2.09 patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64
+          p = Path('.github/workflows/p209-candidate-probe.yml')
+          text = p.read_text(encoding='utf-8')
+          marker = "<<'P209_PATCH_GZ_BASE64'\n"
+          block = text.split(marker, 1)[1].split("\n          P209_PATCH_GZ_BASE64", 1)[0]
+          data = base64.b64decode(''.join(line.strip() for line in block.splitlines()))
+          Path('/tmp/p209.patch.gz').write_bytes(data)
+          PY
+          echo 'e74b4efb2b0ca6a8d211cef94af729c625f05b329ee1a6613be4aab5c6a2ca74  /tmp/p209.patch.gz' | sha256sum -c -
+          gzip -dc /tmp/p209.patch.gz >/tmp/p209.patch
+          echo '02d70efb431343bf39b881a92425d247d8f526a9094897d0582066a8100ee1c2  /tmp/p209.patch' | sha256sum -c -
+
+      - name: Apply exact certified candidate and remove temporary instrumentation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git apply --index /tmp/p209.patch
+          rm .github/workflows/p209-candidate-probe.yml .github/workflows/p209-finalize.yml
+          git add -u
+          echo 'fdab615319e9113165a891726dcb5a640b2b8725f980b5525d7df3f92f209722  v1/src/kernel/process.asm' | sha256sum -c -
+          echo '31135c1d1e3e5a2b081a0257d305d9b9abc89083b548b40de9827acf2a540e65  v1/src/kernel/syscall.asm' | sha256sum -c -
+          echo 'b9c3d836deca49abc91fc372387cb2a41c63c8715d89b6891eca601e611936dc  v1/tools-host/test-driver/phase2_gate.py' | sha256sum -c -
+          echo '7c63bff9fb16a8559448a982fdf3763b9cf3f690c214158b0ef5e9bac3130e7e  v1/tools-host/test-driver/phase2_spawn.py' | sha256sum -c -
+          echo '49dd42ee4a22833dd9e178039b727f99e3186facf61037e5ad9d5814a397adea  v1/tools-host/test-driver/run.py' | sha256sum -c -
+          test "$(git diff --cached --name-only | sort | tr '\n' ' ')" = ".github/workflows/p209-candidate-probe.yml .github/workflows/p209-finalize.yml v1/src/kernel/process.asm v1/src/kernel/syscall.asm v1/tools-host/test-driver/phase2_gate.py v1/tools-host/test-driver/phase2_spawn.py v1/tools-host/test-driver/run.py "
+          git diff --cached --check
+          ./tools/check_license_headers.sh
+          python tools/check_project_policy.py
+
+      - name: Commit and push staging branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'Supratim Sanyal'
+          git config user.email 'tuklusan@users.noreply.github.com'
+          git commit -m 'Implement P2.09 spawn preflight validation'
+          git push origin HEAD:refs/heads/p209-finalize-run
