@@ -114,5 +114,3 @@ def dispatch(root: Path, action: str, step: str, **kwargs):
         "v1/build/p212-exec.bin": kwargs["sha256_file"](runtime_binary),
     }
     return commands, hashes, assertions
-
-# temporary watched-path CI trigger
