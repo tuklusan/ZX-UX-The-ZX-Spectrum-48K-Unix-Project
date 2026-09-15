@@ -81,10 +81,30 @@ def main() -> int:
             }
             records.append(record)
             if result.timed_out or result.exit_code != 0:
+                diagnostic_suffix = ""
+                if step == "P2.08" and action == "test":
+                    diagnostic_runner = root / "v1/tools-host/test-driver/phase2_context_diag.py"
+                    diagnostic = run_command(
+                        [python, diagnostic_runner],
+                        cwd=root,
+                        timeout_seconds=90.0,
+                    )
+                    records.append({
+                        "kind": "diagnostic",
+                        "step": step,
+                        "action": "post-frame-diagnostic",
+                        "result": asdict(diagnostic),
+                    })
+                    diagnostic_suffix = (
+                        f" diagnostic_exit={diagnostic.exit_code} "
+                        f"diagnostic_timed_out={diagnostic.timed_out} "
+                        f"diagnostic_stdout={diagnostic.stdout!r} "
+                        f"diagnostic_stderr={diagnostic.stderr!r}"
+                    )
                 failure = (
                     f"{step} {action} failed: exit={result.exit_code} "
                     f"timed_out={result.timed_out} stdout={result.stdout!r} "
-                    f"stderr={result.stderr!r}"
+                    f"stderr={result.stderr!r}{diagnostic_suffix}"
                 )
                 _write_diagnostic(records, status="FAIL", failure=failure)
                 raise DriverError(failure)
