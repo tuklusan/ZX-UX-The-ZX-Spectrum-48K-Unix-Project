@@ -690,18 +690,17 @@ syscall_tick_lo: dw 0
 syscall_tick_hi: dw 0
     ENDM
 
-; P2.09 staged production spawn preflight. The resident kernel keeps SYS_SPAWN
-; on its not-supported entry until the P2.10 atomic transaction can be integrated
-; without exceeding the frozen ordinary-code ceiling. This exact production source
-; is emitted by the P2.09 deterministic fixture.
+; P2.09/P2.10 staged production spawn entry and preflight. The resident kernel
+; keeps SYS_SPAWN on its compact not-supported dispatch entry because the frozen
+; ordinary-code pool has no room for the Phase-2 transaction yet. Deterministic
+; Phase-2 fixtures emit this exact source and the P2.10 transaction together.
     MACRO EMIT_SPAWN_PREFLIGHT_ROUTINES
 zx48_sys_spawn:
     ld hl,(syscall_arg_hl)
     call zx48_sys_spawn_preflight
     ret c
-    ld a,E_NOTSUP
-    scf
-    ret
+    ld hl,(syscall_arg_hl)
+    jp zx48_process_spawn_transaction
 
 zx48_sys_spawn_preflight:
     ; Capacity is authoritative and must precede even validation of PROC1 itself.

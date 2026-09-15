@@ -1545,3 +1545,673 @@ process_context_entry: dw 0
 process_context_stack_end: dw 0
 process_context_saved_sp: dw 0
     ENDM
+
+; P2.10 staged SYS_SPAWN atomic transaction. This macro is deliberately not
+; emitted by the resident kernel while the ordinary E000-FAFF pool remains at
+; the frozen Phase-1/P2.09 ceiling. The deterministic Phase-2 fixture emits this
+; exact source together with the already-certified allocator, relocation,
+; ARG1/ENV1, initial-context, handle, and P2.09 preflight helpers.
+;
+; zx48_spawn_resolve_ram_object is supplied by the namespace layer used by the
+; caller. Input HL is the validated PROC1 path. Success returns IX pointing to a
+; 20-byte object record with the OBJ_* layout; failure returns the ABI errno.
+; P2.10 admits only resident RAW BIN objects. PACKED resident execution is owned
+; by P4 and catalog/tape-backed execution by P5.
+    MACRO EMIT_SPAWN_TRANSACTION_ROUTINES
+zx48_process_spawn_transaction:
+    ld (process_spawn_proc1),hl
+    xor a
+    ld (process_spawn_image_base),a
+    ld (process_spawn_image_base+1),a
+    ld (process_spawn_stack_base),a
+    ld (process_spawn_stack_base+1),a
+    ld (process_spawn_bootstrap_base),a
+    ld (process_spawn_bootstrap_base+1),a
+    ld (process_spawn_retained),a
+
+    ; P2.09 already proved capacity and the complete pointer/range/flag shape.
+    ; Re-find the still-FREE descriptor without reserving or publishing it.
+    call zx48_process_find_free_slot
+    ret c
+    ld (process_spawn_child_pid),a
+    push ix
+    pop hl
+    ld (process_spawn_child_desc),hl
+
+    ; Resolve the resident object before any process-owned allocation. Missing
+    ; paths propagate E_NOENT. A resolved non-BIN is always E_FORMAT for spawn.
+    ld hl,(process_spawn_proc1)
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ex de,hl
+    call zx48_spawn_resolve_ram_object
+    ret c
+    ld (process_spawn_object),ix
+    ld a,(ix+OBJ_TYPE_ID)
+    cp OBJ_BIN
+    jp nz,zx48_process_spawn_format
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    or a
+    jp nz,zx48_process_spawn_format
+    ld a,(ix+OBJ_RESERVED_BYTE)
+    or a
+    jp nz,zx48_process_spawn_format
+    ld l,(ix+OBJ_LOGICAL_LENGTH)
+    ld h,(ix+OBJ_LOGICAL_LENGTH+1)
+    ld (process_spawn_source_length),hl
+    ld e,(ix+OBJ_STORAGE_LENGTH)
+    ld d,(ix+OBJ_STORAGE_LENGTH+1)
+    or a
+    sbc hl,de
+    jp nz,zx48_process_spawn_format
+    ld l,(ix+OBJ_ALLOCATION_PTR)
+    ld h,(ix+OBJ_ALLOCATION_PTR+1)
+    ld a,h
+    or l
+    jp z,zx48_process_spawn_format
+    ld (process_spawn_mex_source),hl
+
+    ; Validate the complete RAW MEX1 bytes, including both CRCs and every widened
+    ; header/allocation arithmetic result, before allocating process-owned RAM.
+    push hl
+    pop ix
+    ld bc,(process_spawn_source_length)
+    call zx48_process_spawn_validate_mex1
+    ret c
+
+    ; Validate ARG1 against the exact invocation token, then ENV1. These are
+    ; still caller-owned buffers; no process state or arena state has changed.
+    ld hl,(process_spawn_proc1)
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (process_spawn_path),de
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (process_spawn_arg_src),de
+    inc hl
+    ld c,(hl)
+    inc hl
+    ld b,(hl)
+    ld (process_spawn_arg_len),bc
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (process_spawn_env_src),de
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (process_spawn_env_len),de
+
+    ld ix,(process_spawn_arg_src)
+    ld bc,(process_spawn_arg_len)
+    ld hl,(process_spawn_path)
+    call zx48_arg1_validate
+    ret c
+
+    ld ix,(process_spawn_env_src)
+    ld bc,(process_spawn_env_len)
+    call zx48_env1_validate
+    ret c
+
+    ; The two exact validated ABI blocks share one immutable process allocation.
+    ld hl,(process_spawn_arg_len)
+    ld de,(process_spawn_env_len)
+    add hl,de
+    jp c,zx48_process_spawn_format
+    ld a,h
+    cp BOOTSTRAP_MAX_PAYLOAD/256
+    jr c,zx48_process_spawn_bootstrap_total_ok
+    jp nz,zx48_process_spawn_format
+    ld a,l
+    or a
+    jp nz,zx48_process_spawn_format
+zx48_process_spawn_bootstrap_total_ok:
+    ld (process_spawn_bootstrap_exact),hl
+    bit 0,l
+    jr z,zx48_process_spawn_bootstrap_rounded
+    inc hl
+zx48_process_spawn_bootstrap_rounded:
+    ld (process_spawn_bootstrap_size),hl
+
+    ; Resolve all three parent handles while the attempt is still side-effect
+    ; free. The corresponding OD identities are retained only after image/context
+    ; construction succeeds, so failure cannot perturb parent handle slots.
+    ld hl,(process_spawn_proc1)
+    ld de,PROC1_STDIN_HANDLE
+    add hl,de
+    ld a,(hl)
+    call zx48_handle_lookup
+    ret c
+    ld a,c
+    ld (process_spawn_od0),a
+
+    ld hl,(process_spawn_proc1)
+    ld de,PROC1_STDOUT_HANDLE
+    add hl,de
+    ld a,(hl)
+    call zx48_handle_lookup
+    ret c
+    ld a,c
+    ld (process_spawn_od1),a
+
+    ld hl,(process_spawn_proc1)
+    ld de,PROC1_STDERR_HANDLE
+    add hl,de
+    ld a,(hl)
+    call zx48_handle_lookup
+    ret c
+    ld a,c
+    ld (process_spawn_od2),a
+
+    ; CWD is inherited exactly from the current parent descriptor.
+    ld a,(current_pid)
+    call zx48_process_lookup
+    ret c
+    ld a,(ix+PROC_CWD)
+    ld (process_spawn_parent_cwd),a
+
+    ; Reserve every process-owned extent before loading/copying executable bytes.
+    ld bc,(process_spawn_image_size_rounded)
+    ld a,ALLOC_ANY
+    call zx48_alloc
+    jp c,zx48_process_spawn_return_error
+    ld (process_spawn_image_base),hl
+
+    ld bc,(process_spawn_stack_size)
+    ld a,ALLOC_FAST_REQUIRED
+    call zx48_alloc
+    jp c,zx48_process_spawn_rollback
+    ld (process_spawn_stack_base),hl
+
+    ld bc,(process_spawn_bootstrap_size)
+    ld a,ALLOC_ANY
+    call zx48_alloc
+    jp c,zx48_process_spawn_rollback
+    ld (process_spawn_bootstrap_base),hl
+
+    ; Copy immutable ARG1 followed immediately by ENV1 into the third allocation.
+    ex de,hl
+    ld hl,(process_spawn_arg_src)
+    ld bc,(process_spawn_arg_len)
+    ldir
+    ld (process_spawn_env_ptr),de
+    ld hl,(process_spawn_env_src)
+    ld bc,(process_spawn_env_len)
+    ldir
+    ld hl,(process_spawn_bootstrap_exact)
+    bit 0,l
+    jr z,zx48_process_spawn_bootstrap_copied
+    xor a
+    ld (de),a
+zx48_process_spawn_bootstrap_copied:
+
+    ; Copy image bytes into the private image allocation, zero BSS, then apply
+    ; the already-certified ABS16 validator/applicator. No descriptor is visible.
+    ld hl,(process_spawn_mex_source)
+    ld de,MEX_HEADER_SIZE
+    add hl,de
+    ld de,(process_spawn_image_base)
+    ld bc,(process_spawn_image_size)
+    ldir
+
+    ld bc,(process_spawn_bss_size)
+    ld a,b
+    or c
+    jr z,zx48_process_spawn_relocate
+    xor a
+    ld (de),a
+    dec bc
+    ld a,b
+    or c
+    jr z,zx48_process_spawn_relocate
+    ld h,d
+    ld l,e
+    inc de
+    ldir
+
+zx48_process_spawn_relocate:
+    ld ix,(process_spawn_mex_source)
+    ld de,(process_spawn_image_base)
+    call zx48_mex1_relocate
+    jp c,zx48_process_spawn_rollback
+
+    ; Construct the exact initial scheduler frame only after every allocation and
+    ; executable validation step has succeeded.
+    ld hl,(process_spawn_image_base)
+    ld (process_spawn_context_seed+INITIAL_CONTEXT_IMAGE_BASE),hl
+    ld hl,(process_spawn_stack_base)
+    ld (process_spawn_context_seed+INITIAL_CONTEXT_STACK_BASE),hl
+    ld hl,(process_spawn_stack_size)
+    ld (process_spawn_context_seed+INITIAL_CONTEXT_STACK_SIZE),hl
+    ld hl,(process_spawn_bootstrap_base)
+    ld (process_spawn_context_seed+INITIAL_CONTEXT_ARG_PTR),hl
+    ld hl,(process_spawn_arg_len)
+    ld (process_spawn_context_seed+INITIAL_CONTEXT_ARG_LEN),hl
+    ld hl,(process_spawn_env_ptr)
+    ld (process_spawn_context_seed+INITIAL_CONTEXT_ENV_PTR),hl
+    ld ix,(process_spawn_mex_source)
+    ld hl,process_spawn_context_seed
+    call zx48_process_build_initial_context
+    jp c,zx48_process_spawn_rollback
+    ld (process_spawn_saved_sp),hl
+
+    ; Acquire one shared OD reference for each child std-handle slot. Duplicate
+    ; selected parent handles therefore acquire duplicate references, as required.
+    ld a,(process_spawn_od0)
+    call zx48_od_retain
+    jp c,zx48_process_spawn_rollback
+    ld a,1
+    ld (process_spawn_retained),a
+    ld a,(process_spawn_od1)
+    call zx48_od_retain
+    jp c,zx48_process_spawn_rollback
+    ld a,2
+    ld (process_spawn_retained),a
+    ld a,(process_spawn_od2)
+    call zx48_od_retain
+    jp c,zx48_process_spawn_rollback
+    ld a,3
+    ld (process_spawn_retained),a
+
+    ; Commit is intentionally non-fallible. The descriptor remains PROC_FREE
+    ; while every field is written; READY is the single publication store.
+    ld hl,(process_spawn_child_desc)
+    xor a
+    ld (hl),a
+    ld d,h
+    ld e,l
+    inc de
+    ld bc,PROC_DESC_SIZE-1
+    ldir
+    ld ix,(process_spawn_child_desc)
+    ld a,(process_spawn_child_pid)
+    ld (ix+PROC_PID),a
+    ld a,(current_pid)
+    ld (ix+PROC_PARENT),a
+    xor a
+    ld (ix+PROC_FLAGS),a
+    ld hl,(process_spawn_image_base)
+    ld (ix+PROC_IMAGE_BASE),l
+    ld (ix+PROC_IMAGE_BASE+1),h
+    ld hl,(process_spawn_image_size_rounded)
+    ld (ix+PROC_IMAGE_SIZE),l
+    ld (ix+PROC_IMAGE_SIZE+1),h
+    ld hl,(process_spawn_stack_base)
+    ld (ix+PROC_STACK_LOW),l
+    ld (ix+PROC_STACK_LOW+1),h
+    ld de,(process_spawn_stack_size)
+    add hl,de
+    ld (ix+PROC_STACK_HIGH),l
+    ld (ix+PROC_STACK_HIGH+1),h
+    ld hl,(process_spawn_saved_sp)
+    ld (ix+PROC_SAVED_SP),l
+    ld (ix+PROC_SAVED_SP+1),h
+    xor a
+    ld (ix+PROC_EXIT_STATUS),a
+    ld (ix+PROC_WAIT_OBJECT),a
+    ld a,(process_spawn_od0)
+    ld (ix+PROC_HANDLES+0),a
+    ld a,(process_spawn_od1)
+    ld (ix+PROC_HANDLES+1),a
+    ld a,(process_spawn_od2)
+    ld (ix+PROC_HANDLES+2),a
+    ld a,HANDLE_FREE
+    ld (ix+PROC_HANDLES+3),a
+    ld (ix+PROC_HANDLES+4),a
+    ld (ix+PROC_HANDLES+5),a
+    ld (ix+PROC_HANDLES+6),a
+    ld (ix+PROC_HANDLES+7),a
+    xor a
+    ld (ix+PROC_WAKE_TICK+0),a
+    ld (ix+PROC_WAKE_TICK+1),a
+    ld (ix+PROC_WAKE_TICK+2),a
+    ld (ix+PROC_WAKE_TICK+3),a
+    ld a,(process_spawn_parent_cwd)
+    ld (ix+PROC_CWD),a
+
+    push ix
+    pop de
+    ld hl,PROC_NAME
+    add hl,de
+    ex de,hl
+    ld hl,(process_spawn_object)
+    ld bc,10
+    ldir
+
+    ld hl,(process_spawn_image_size_rounded)
+    ld de,(process_spawn_stack_size)
+    add hl,de
+    ld de,(process_spawn_bootstrap_size)
+    add hl,de
+    ld (ix+PROC_OWNED_BYTES),l
+    ld (ix+PROC_OWNED_BYTES+1),h
+    ld hl,(process_spawn_bootstrap_base)
+    ld (ix+PROC_ARG_PTR),l
+    ld (ix+PROC_ARG_PTR+1),h
+    ld hl,(process_spawn_env_ptr)
+    ld (ix+PROC_ENV_PTR),l
+    ld (ix+PROC_ENV_PTR+1),h
+    xor a
+    ld (ix+PROC_PRIVATE_FLAGS),a
+    ld (ix+PROC_RESERVED),a
+
+    ; Publication point: exactly one state store and no scheduler call/yield.
+    ld (ix+PROC_STATE),PROC_READY
+    ld a,(process_spawn_child_pid)
+    ld l,a
+    ld h,0
+    xor a
+    ret
+
+zx48_process_spawn_rollback:
+    ld (process_spawn_error),a
+    ld a,(process_spawn_retained)
+    cp 3
+    jr c,zx48_process_spawn_release_two
+    ld a,(process_spawn_od2)
+    call zx48_od_release
+zx48_process_spawn_release_two:
+    ld a,(process_spawn_retained)
+    cp 2
+    jr c,zx48_process_spawn_release_one
+    ld a,(process_spawn_od1)
+    call zx48_od_release
+zx48_process_spawn_release_one:
+    ld a,(process_spawn_retained)
+    or a
+    jr z,zx48_process_spawn_free_bootstrap
+    ld a,(process_spawn_od0)
+    call zx48_od_release
+zx48_process_spawn_free_bootstrap:
+    ld hl,(process_spawn_bootstrap_base)
+    ld a,h
+    or l
+    jr z,zx48_process_spawn_free_stack
+    ld bc,(process_spawn_bootstrap_size)
+    call zx48_free
+zx48_process_spawn_free_stack:
+    ld hl,(process_spawn_stack_base)
+    ld a,h
+    or l
+    jr z,zx48_process_spawn_free_image
+    ld bc,(process_spawn_stack_size)
+    call zx48_free
+zx48_process_spawn_free_image:
+    ld hl,(process_spawn_image_base)
+    ld a,h
+    or l
+    jr z,zx48_process_spawn_rollback_done
+    ld bc,(process_spawn_image_size_rounded)
+    call zx48_free
+zx48_process_spawn_rollback_done:
+    ld a,(process_spawn_error)
+    scf
+    ret
+
+zx48_process_spawn_return_error:
+    scf
+    ret
+
+zx48_process_spawn_format:
+    ld a,E_FORMAT
+    scf
+    ret
+
+; IX -> RAW MEX1 bytes, BC = exact resident object length. This is the target
+; validator required by P2.10; it deliberately validates CRCs before allocations.
+zx48_process_spawn_validate_mex1:
+    ld (process_spawn_mex_source),ix
+    ld (process_spawn_source_length),bc
+
+    ; Complete source range must be internal arena RAM and at least one header.
+    push ix
+    pop hl
+    ld de,ARENA_START
+    or a
+    sbc hl,de
+    jp c,zx48_process_spawn_format
+    push ix
+    pop hl
+    add hl,bc
+    jp c,zx48_process_spawn_format
+    ld de,KERNEL_START
+    or a
+    sbc hl,de
+    jr c,zx48_process_spawn_source_range_ok
+    jr z,zx48_process_spawn_source_range_ok
+    jp zx48_process_spawn_format
+zx48_process_spawn_source_range_ok:
+    ld h,b
+    ld l,c
+    ld de,MEX_HEADER_SIZE
+    or a
+    sbc hl,de
+    jp c,zx48_process_spawn_format
+
+    ld a,(ix+MEX_HDR_MAGIC+0)
+    cp MEX_MAGIC0
+    jp nz,zx48_process_spawn_format
+    ld a,(ix+MEX_HDR_MAGIC+1)
+    cp MEX_MAGIC1
+    jp nz,zx48_process_spawn_format
+    ld a,(ix+MEX_HDR_MAGIC+2)
+    cp MEX_MAGIC2
+    jp nz,zx48_process_spawn_format
+    ld a,(ix+MEX_HDR_MAGIC+3)
+    cp MEX_MAGIC3
+    jp nz,zx48_process_spawn_format
+    ld a,(ix+MEX_HDR_VERSION)
+    cp MEX_VERSION
+    jp nz,zx48_process_spawn_format
+    ld a,(ix+MEX_HDR_FLAGS)
+    or a
+    jp nz,zx48_process_spawn_format
+    ld a,(ix+MEX_HDR_SIZE)
+    cp MEX_HEADER_SIZE
+    jp nz,zx48_process_spawn_format
+    ld a,(ix+MEX_HDR_SIZE+1)
+    or a
+    jp nz,zx48_process_spawn_format
+
+    ld l,(ix+MEX_HDR_IMAGE_SIZE)
+    ld h,(ix+MEX_HDR_IMAGE_SIZE+1)
+    ld a,h
+    or l
+    jp z,zx48_process_spawn_format
+    ld (process_spawn_image_size),hl
+    ld e,(ix+MEX_HDR_BSS_SIZE)
+    ld d,(ix+MEX_HDR_BSS_SIZE+1)
+    ld (process_spawn_bss_size),de
+    add hl,de
+    jp c,zx48_process_spawn_format
+    ld (process_spawn_image_size_exact),hl
+    ld de,MEX_MAX_STORED
+    or a
+    sbc hl,de
+    jr c,zx48_process_spawn_image_total_ok
+    jp nz,zx48_process_spawn_format
+zx48_process_spawn_image_total_ok:
+    ld hl,(process_spawn_image_size_exact)
+    ld b,h
+    ld c,l
+    bit 0,c
+    jr z,zx48_process_spawn_image_rounded
+    inc bc
+zx48_process_spawn_image_rounded:
+    ld (process_spawn_image_size_rounded),bc
+
+    ld e,(ix+MEX_HDR_ENTRY)
+    ld d,(ix+MEX_HDR_ENTRY+1)
+    ld hl,(process_spawn_image_size)
+    or a
+    sbc hl,de
+    jp c,zx48_process_spawn_format
+    jp z,zx48_process_spawn_format
+
+    ld c,(ix+MEX_HDR_STACK)
+    ld b,(ix+MEX_HDR_STACK+1)
+    bit 0,c
+    jp nz,zx48_process_spawn_format
+    ld h,b
+    ld l,c
+    ld de,MEX_MIN_STACK
+    or a
+    sbc hl,de
+    jp c,zx48_process_spawn_format
+    ld hl,MEX_MAX_STACK
+    or a
+    sbc hl,bc
+    jp c,zx48_process_spawn_format
+    ld hl,PROCESS_STACK_BOOTSTRAP_BYTES
+    add hl,bc
+    jp c,zx48_process_spawn_format
+    ld (process_spawn_stack_size),hl
+
+    ld hl,(process_spawn_image_size)
+    ld de,MEX_HEADER_SIZE
+    add hl,de
+    jp c,zx48_process_spawn_format
+    ld e,(ix+MEX_HDR_RELOC_OFFSET)
+    ld d,(ix+MEX_HDR_RELOC_OFFSET+1)
+    or a
+    sbc hl,de
+    jp nz,zx48_process_spawn_format
+    ld (process_spawn_reloc_offset),de
+
+    ld l,(ix+MEX_HDR_RELOC_COUNT)
+    ld h,(ix+MEX_HDR_RELOC_COUNT+1)
+    add hl,hl
+    jp c,zx48_process_spawn_format
+    ld de,(process_spawn_reloc_offset)
+    add hl,de
+    jp c,zx48_process_spawn_format
+    ld (process_spawn_total_stored),hl
+    ld de,MEX_MAX_STORED
+    or a
+    sbc hl,de
+    jr c,zx48_process_spawn_stored_bound_ok
+    jp nz,zx48_process_spawn_format
+zx48_process_spawn_stored_bound_ok:
+    ld hl,(process_spawn_total_stored)
+    ld de,(process_spawn_source_length)
+    or a
+    sbc hl,de
+    jp nz,zx48_process_spawn_format
+
+    ; Header CRC is over all 24 bytes with bytes 22..23 treated as zero.
+    ld hl,(process_spawn_mex_source)
+    ld bc,MEX_HDR_HEADER_CRC
+    call zx48_process_spawn_crc16
+    xor a
+    call zx48_process_spawn_crc16_update
+    xor a
+    call zx48_process_spawn_crc16_update
+    ld ix,(process_spawn_mex_source)
+    ld a,(ix+MEX_HDR_HEADER_CRC)
+    cp e
+    jp nz,zx48_process_spawn_format
+    ld a,(ix+MEX_HDR_HEADER_CRC+1)
+    cp d
+    jp nz,zx48_process_spawn_format
+
+    ; Body CRC covers image plus relocation table before any relocation patch.
+    ld hl,(process_spawn_mex_source)
+    ld de,MEX_HEADER_SIZE
+    add hl,de
+    push hl
+    ld hl,(process_spawn_source_length)
+    ld de,MEX_HEADER_SIZE
+    or a
+    sbc hl,de
+    ld b,h
+    ld c,l
+    pop hl
+    call zx48_process_spawn_crc16
+    ld ix,(process_spawn_mex_source)
+    ld a,(ix+MEX_HDR_BODY_CRC)
+    cp e
+    jp nz,zx48_process_spawn_format
+    ld a,(ix+MEX_HDR_BODY_CRC+1)
+    cp d
+    jp nz,zx48_process_spawn_format
+    xor a
+    ret
+
+; HL -> bytes, BC=count. Returns DE=CRC-16/CCITT-FALSE.
+zx48_process_spawn_crc16:
+    ld de,MEX_CRC16_INIT
+zx48_process_spawn_crc16_loop:
+    ld a,b
+    or c
+    ret z
+    ld a,(hl)
+    inc hl
+    push bc
+    call zx48_process_spawn_crc16_update
+    pop bc
+    dec bc
+    jr zx48_process_spawn_crc16_loop
+
+; A=next byte, DE=current CRC -> DE=updated CRC.
+zx48_process_spawn_crc16_update:
+    xor d
+    ld d,a
+    ld b,8
+zx48_process_spawn_crc16_bit:
+    bit 7,d
+    jr z,zx48_process_spawn_crc16_shift
+    sla e
+    rl d
+    ld a,e
+    xor MEX_CRC16_POLY&$ff
+    ld e,a
+    ld a,d
+    xor MEX_CRC16_POLY/256
+    ld d,a
+    djnz zx48_process_spawn_crc16_bit
+    ret
+zx48_process_spawn_crc16_shift:
+    sla e
+    rl d
+    djnz zx48_process_spawn_crc16_bit
+    ret
+
+process_spawn_proc1: dw 0
+process_spawn_child_desc: dw 0
+process_spawn_child_pid: db 0
+process_spawn_object: dw 0
+process_spawn_path: dw 0
+process_spawn_mex_source: dw 0
+process_spawn_source_length: dw 0
+process_spawn_image_size: dw 0
+process_spawn_bss_size: dw 0
+process_spawn_image_size_exact: dw 0
+process_spawn_image_size_rounded: dw 0
+process_spawn_reloc_offset: dw 0
+process_spawn_total_stored: dw 0
+process_spawn_stack_size: dw 0
+process_spawn_arg_src: dw 0
+process_spawn_arg_len: dw 0
+process_spawn_env_src: dw 0
+process_spawn_env_len: dw 0
+process_spawn_bootstrap_exact: dw 0
+process_spawn_bootstrap_size: dw 0
+process_spawn_image_base: dw 0
+process_spawn_stack_base: dw 0
+process_spawn_bootstrap_base: dw 0
+process_spawn_env_ptr: dw 0
+process_spawn_saved_sp: dw 0
+process_spawn_parent_cwd: db 0
+process_spawn_od0: db 0
+process_spawn_od1: db 0
+process_spawn_od2: db 0
+process_spawn_retained: db 0
+process_spawn_error: db 0
+process_spawn_context_seed: defs INITIAL_CONTEXT_SEED_SIZE,0
+    ENDM
