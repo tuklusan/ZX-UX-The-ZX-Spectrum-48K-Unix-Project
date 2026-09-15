@@ -1,0 +1,113 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: P2.12 One-Shot Accounting Repair
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/p212-accounting-repair.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: zxux-p212-accounting-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch exact known-good P2.12 accounting block
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object v1/src/kernel/phase2_exec.inc)" = "019f0673f65161f8d9ef427683d683cb9fa5038d"
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('v1/src/kernel/phase2_exec.inc')
+          text = path.read_text(encoding='utf-8')
+          old = '''    ld l,(ix+PROC_ARG_PTR)
+              ld h,(ix+PROC_ARG_PTR+1)
+              ld (process_exec_old_bootstrap),hl
+              ld e,(ix+PROC_ENV_PTR)
+              ld d,(ix+PROC_ENV_PTR+1)
+              ex de,hl
+              or a
+              sbc hl,de
+              ex de,hl
+              ld hl,(process_exec_old_bootstrap)
+              add hl,de
+              ld e,(hl)
+              inc hl
+              ld d,(hl)
+              ex de,hl
+              add hl,de
+              bit 0,l
+              jr z,zx48_process_exec_old_bootstrap_rounded
+              inc hl
+          zx48_process_exec_old_bootstrap_rounded:
+              ld (process_exec_old_bootstrap_size),hl
+          '''.replace('          ', '')
+          new = '''    ld l,(ix+PROC_ARG_PTR)
+              ld h,(ix+PROC_ARG_PTR+1)
+              ld (process_exec_old_bootstrap),hl
+              ld a,h
+              or l
+              jp z,zx48_process_exec_invalid_state
+
+              ; The descriptor's owned-byte total is authoritative.  Derive the
+              ; old bootstrap allocation as owned-image-stack and never inspect
+              ; ARG1/ENV1 payload bytes while deciding what extent to release.
+              ld l,(ix+PROC_OWNED_BYTES)
+              ld h,(ix+PROC_OWNED_BYTES+1)
+              ld de,(process_exec_old_image_size)
+              or a
+              sbc hl,de
+              jp c,zx48_process_exec_invalid_state
+              ld de,(process_exec_old_stack_size)
+              or a
+              sbc hl,de
+              jp c,zx48_process_exec_invalid_state
+              ld a,h
+              or l
+              jp z,zx48_process_exec_invalid_state
+              ld (process_exec_old_bootstrap_size),hl
+          '''.replace('          ', '')
+          if text.count(old) != 1:
+              raise SystemExit(f'exact old accounting block count is {text.count(old)}, expected 1')
+          text = text.replace(old, new, 1)
+          path.write_text(text, encoding='utf-8', newline='\n')
+          PY
+          ! grep -q 'zx48_process_exec_old_bootstrap_rounded' v1/src/kernel/phase2_exec.inc
+          grep -q 'ld l,(ix+PROC_OWNED_BYTES)' v1/src/kernel/phase2_exec.inc
+          git diff --check
+
+      - name: Commit repaired transaction
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'Supratim Sanyal'
+          git config user.email 'tuklusan@users.noreply.github.com'
+          git add v1/src/kernel/phase2_exec.inc
+          git commit -m 'P2.12: derive old bootstrap extent from descriptor accounting'
+          git push origin HEAD:main
