@@ -29,6 +29,8 @@ concurrency:
 jobs:
   fix:
     runs-on: ubuntu-24.04
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
     steps:
       - name: Checkout current main
         uses: actions/checkout@v7
