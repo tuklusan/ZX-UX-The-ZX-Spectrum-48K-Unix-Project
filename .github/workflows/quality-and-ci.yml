@@ -53,9 +53,6 @@ on:
       - 'docs/**'
       - 'scratch/**'
   workflow_dispatch:
-  workflow_run:
-    workflows: ['ZX-UX Phase 0 Certification', 'ZX-UX Phase 1 Certification']
-    types: [completed]
 permissions:
   contents: read
 concurrency:
