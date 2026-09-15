@@ -1,0 +1,92 @@
+{
+  "action": "build",
+  "architecture_sha256": "a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b",
+  "assertions": [
+    {
+      "name": "relocator-uses-frozen-mex1-constants",
+      "passed": true
+    },
+    {
+      "name": "relocator-tot-yet-emitted-by-resident-process-macro",
+      "passed": true
+    },
+    {
+      "name": "relocator-two-pass-atomic-order",
+      "passed": true
+    },
+    {
+      "name": "relocator-contract-tokens-present",
+      "passed": true
+    },
+    {
+      "name": "relocator-has-explicit-widened-carry-guards",
+      "passed": true
+    },
+    {
+      "name": "stored-word-plus-base-carry-guard-present",
+      "passed": true
+    },
+    {
+      "name": "widened-24-plus-image-size-exceeds-u16",
+      "passed": true,
+      "value": 65544
+    },
+    {
+      "name": "widened-relocation-count-times-two-exceeds-u16",
+      "passed": true,
+      "value": 65536
+    },
+    {
+      "name": "widened-relocation-table-offset-plus-bytes-exceeds-u16",
+      "passed": true,
+      "value": 65546
+    },
+    {
+      "name": "widened-image-size-plus-bss-size-exceeds-u16",
+      "passed": true,
+      "value": 65536
+    },
+    {
+      "name": "widened-actual-base-plus-allocation-size-exceeds-u16",
+      "passed": true,
+      "value": 86016
+    },
+    {
+      "name": "widened-stored-word-plus-actual-base-exceeds-u16",
+      "passed": true,
+      "value": 69616
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p203-reloc.lst",
+        "--sym=p203-reloc.sym",
+        "p203-reloc.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 6,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2058 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p203-reloc.bin": "291b4617f8475b9d90b332c9013888e39cad66ed4c1ddf5a11a7fa5ac47ca130",
+    "v1/include/mex1.inc": "158767d4c78316d15e917d25a6487a5d3df8ed8c656c4216c065f39c8c0f15bb",
+    "v1/src/kernel/process.asm": "fdab615319e9113165a891726dcb5a640b2b8725f980b5525d7df3f92f209722",
+    "v1/tools-host/test-driver/phase2_relocation.py": "578a1f006a66488a209bcc3ba81e6ce7e2c0b15d53819c051829b5b377d9015f"
+  },
+  "prerequisites": {
+    "P2.02": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "b9c1ad40c03d13e61c7384387d253ec38fdce441",
+  "status": "PASS",
+  "step": "P2.03",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

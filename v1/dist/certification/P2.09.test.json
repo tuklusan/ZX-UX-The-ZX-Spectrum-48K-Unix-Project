@@ -1,0 +1,163 @@
+{
+  "action": "test",
+  "architecture_sha256": "a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b",
+  "assertions": [
+    {
+      "name": "proc1-layout-is-exact-pointer-based-sixteen-byte-contract",
+      "passed": true
+    },
+    {
+      "name": "proc1-allows-only-allow-tape-bit-zero",
+      "passed": true
+    },
+    {
+      "name": "capacity-helper-scans-exactly-pid2-through-pid7",
+      "passed": true
+    },
+    {
+      "name": "capacity-helper-is-write-free-and-full-table-returns-e-again",
+      "passed": true
+    },
+    {
+      "name": "reserve-slot-now-consumes-pure-capacity-helper-before-existing-mutation",
+      "passed": true
+    },
+    {
+      "name": "spawn-preflight-capacity-return-precedes-proc1-range-validation",
+      "passed": true
+    },
+    {
+      "name": "spawn-preflight-validates-complete-proc1-before-indexed-read",
+      "passed": true
+    },
+    {
+      "name": "spawn-preflight-validates-all-three-handle-bytes-structurally-only",
+      "passed": true
+    },
+    {
+      "name": "spawn-preflight-validates-flags-reserved-arg1-env1-and-bounded-path",
+      "passed": true
+    },
+    {
+      "name": "spawn-preflight-has-no-allocation-reservation-publication-object-bcat-tape-or-live-handle-work",
+      "passed": true
+    },
+    {
+      "name": "shared-range-validator-widens-before-end-byte-narrowing",
+      "passed": true
+    },
+    {
+      "name": "shared-range-validator-preserves-zero-length-no-dereference-rule",
+      "passed": true
+    },
+    {
+      "name": "resident-sys-spawn-remains-stub-until-p210-while-exact-preflight-source-is-staged",
+      "passed": true
+    },
+    {
+      "name": "resident-syscall-implementation-emits-the-same-shared-range-validator-source",
+      "passed": true
+    },
+    {
+      "code_end": "0xFAFF",
+      "free_bytes": 27,
+      "name": "resident-kernel-ordinary-code-remains-within-faff-ceiling",
+      "passed": true,
+      "used_end": "0xFAE5"
+    },
+    {
+      "name": "full-pid2-through-pid7-table-returns-e-again-through-real-sys-spawn-before-poison-proc1-dereference",
+      "passed": true
+    },
+    {
+      "name": "full-table-preflight-leaves-process-allocator-and-open-description-persistent-state-byte-identical",
+      "passed": true
+    },
+    {
+      "name": "capacity-available-valid-proc1-reaches-no-side-effect-production-preflight-pass-boundary",
+      "passed": true
+    },
+    {
+      "name": "allow-tape-zero-and-one-are-structurally-accepted-without-cassette-path",
+      "passed": true
+    },
+    {
+      "name": "unknown-spawn-flag-bits-reserved-bytes-and-handle-values-eight-or-higher-return-e-inval",
+      "passed": true
+    },
+    {
+      "name": "arg1-env1-ranges-use-widened-validation-and-zero-length-pointers-are-not-dereferenced",
+      "passed": true
+    },
+    {
+      "name": "path-is-nonempty-nul-terminated-within-31-bytes-and-short-region-edge-string-is-accepted",
+      "passed": true
+    },
+    {
+      "name": "overlength-path-returns-e-toolong-and-invalid-path-range-returns-e-inval",
+      "passed": true
+    },
+    {
+      "name": "complete-sixteen-byte-proc1-range-is-validated-before-indexed-record-read",
+      "passed": true
+    },
+    {
+      "name": "capacity-available-real-sys-spawn-remains-e-notsup-until-p210-after-successful-preflight",
+      "passed": true
+    },
+    {
+      "name": "negative-oracle-detects-deliberate-persistent-mutation-before-capacity-decision",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p209.lst",
+        "--sym=../../build/kernel-p209.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 24,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 9879 lines, work time: 0.023 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p209-spawn.lst",
+        "--sym=p209-spawn.sym",
+        "p209-spawn.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 6,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2752 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "c061b7d4355a4a98f6f8f864993dcc4840959d0b8dab8ad328de94e40df05709",
+    "v1/build/p209-spawn.bin": "045cb125adcec5891d88d47c1be31f97b849a9e1ff798a5112c341c35fe0efa7",
+    "v1/src/kernel/process.asm": "fdab615319e9113165a891726dcb5a640b2b8725f980b5525d7df3f92f209722",
+    "v1/src/kernel/syscall.asm": "31135c1d1e3e5a2b081a0257d305d9b9abc89083b548b40de9827acf2a540e65",
+    "v1/tools-host/test-driver/phase2_gate.py": "b9c3d836deca49abc91fc372387cb2a41c63c8715d89b6891eca601e611936dc",
+    "v1/tools-host/test-driver/phase2_spawn.py": "7c63bff9fb16a8559448a982fdf3763b9cf3f690c214158b0ef5e9bac3130e7e",
+    "v1/tools-host/test-driver/run.py": "49dd42ee4a22833dd9e178039b727f99e3186facf61037e5ad9d5814a397adea"
+  },
+  "prerequisites": {
+    "P2.08": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "b9c1ad40c03d13e61c7384387d253ec38fdce441",
+  "status": "PASS",
+  "step": "P2.09",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

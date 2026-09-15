@@ -1,0 +1,145 @@
+{
+  "action": "test",
+  "architecture_sha256": "a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b",
+  "assertions": [
+    {
+      "name": "initial-context-routines-remain-staged-outside-resident-process-macro",
+      "passed": true
+    },
+    {
+      "name": "production-kernel-does-not-prematurely-emit-p208-helper",
+      "passed": true
+    },
+    {
+      "name": "initial-context-frame-size-is-exactly-twelve-bytes",
+      "passed": true
+    },
+    {
+      "name": "fixed-64-bootstrap-reserve-covers-frame-plus-seventeen-pointer-vector",
+      "passed": true
+    },
+    {
+      "name": "context-constructor-revalidates-image-entry-and-fast-stack-bounds",
+      "passed": true
+    },
+    {
+      "name": "context-constructor-requires-contiguous-arg1-then-env1-pointer-shape",
+      "passed": true
+    },
+    {
+      "name": "context-constructor-completes-validation-before-first-target-stack-write",
+      "passed": true
+    },
+    {
+      "name": "context-constructor-materializes-exact-entry-register-frame",
+      "passed": true
+    },
+    {
+      "name": "context-constructor-does-not-allocate-or-publish-process-state",
+      "passed": true
+    },
+    {
+      "name": "context-constructor-does-not-use-iy-or-alternate-register-bank",
+      "passed": true
+    },
+    {
+      "name": "scheduler-restore-order-matches-frame-and-canonicalizes-iy-before-ret",
+      "passed": true
+    },
+    {
+      "name": "context-constructor-returns-only-unpublished-saved-sp",
+      "passed": true
+    },
+    {
+      "name": "first-dispatch-enters-mex1-with-exact-hl-bc-de-a-register-contract",
+      "passed": true
+    },
+    {
+      "name": "dirty-pre-dispatch-iy-is-canonicalized-to-5c3a-before-first-instruction",
+      "passed": true
+    },
+    {
+      "name": "omitting-iy-canonicalization-fails-the-first-instruction-oracle",
+      "passed": true
+    },
+    {
+      "name": "nonzero-mex-entry-offset-is-added-to-the-actual-image-base-in-frame-pc",
+      "passed": true
+    },
+    {
+      "name": "initial-saved-sp-frame-is-exact-ix-hl-de-bc-af-pc-and-consumes-twelve-bytes",
+      "passed": true
+    },
+    {
+      "advertised": 64,
+      "allocated": 128,
+      "name": "minimum-fast-stack-retains-separate-fixed-64-byte-bootstrap-reserve",
+      "passed": true
+    },
+    {
+      "name": "image-load-bss-zero-stack-bootstrap-and-context-construction-occur-in-prerequisite-order",
+      "passed": true
+    },
+    {
+      "name": "any-image-can-cross-7fff-8000-while-process-stack-remains-fast-required",
+      "passed": true
+    },
+    {
+      "name": "plain-return-from-synthetic-c48-entry-path-reaches-sys-exit-gateway",
+      "passed": true
+    },
+    {
+      "name": "invalid-context-seed-is-rejected-before-target-stack-frame-write",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p208-context.lst",
+        "--sym=p208-context.sym",
+        "p208-context.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 10,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 3751 lines, work time: 0.009 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p208-user.lst",
+        "--sym=p208-user.sym",
+        "p208-user.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 309 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p208-context.bin": "b8be293a7081235b9bd026eb1cf8bce9e40b310a83c065f0a51f595d9e018f88",
+    "v1/build/p208-user.bin": "9eb38ad2fcd94106cc1df718ab0120167ba432b4e557455bb669cf6b8aeda12b",
+    "v1/build/p208-user.mex": "6814a44a9f0fbf3369352c54d27d53ead99ae71d007933bd0b2a19d50e5b7b48",
+    "v1/src/kernel/process.asm": "fdab615319e9113165a891726dcb5a640b2b8725f980b5525d7df3f92f209722",
+    "v1/src/kernel/scheduler.asm": "54b13bc17079454112a4b2d16792a8b21571da5a8cb76d2cbefa4c3942685b8b",
+    "v1/tools-host/test-driver/phase2_context.py": "be9e7e3a213d20078b4047a76f6b00832795fa13b5e958dd84273f474848e957"
+  },
+  "prerequisites": {
+    "P2.07": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "b9c1ad40c03d13e61c7384387d253ec38fdce441",
+  "status": "PASS",
+  "step": "P2.08",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

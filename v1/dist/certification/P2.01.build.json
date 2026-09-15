@@ -1,0 +1,67 @@
+{
+  "action": "build",
+  "architecture_sha256": "a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b",
+  "assertions": [
+    {
+      "name": "mex1-header-constants-exact",
+      "passed": true
+    },
+    {
+      "name": "mex1-doc-freezes-no-trailing-data",
+      "passed": true
+    },
+    {
+      "name": "mex1-doc-freezes-widened-arithmetic",
+      "passed": true
+    },
+    {
+      "name": "mex1-doc-freezes-reloc-image-minimum",
+      "passed": true
+    },
+    {
+      "name": "mex1-doc-freezes-crc16-ccitt-false",
+      "passed": true
+    },
+    {
+      "name": "golden-mex1-accepted",
+      "passed": true
+    },
+    {
+      "name": "golden-layout-exact",
+      "passed": true
+    },
+    {
+      "name": "golden-crcs-exact",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "--self-test"
+      ],
+      "cwd": ".",
+      "duration_ms": 26,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "MEX1 inspector self-test PASS\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/docs/mex1.md": "2c841ed16bffcce6879673ba3189e12486746e3f266a869deaa1aee68de632c5",
+    "v1/include/mex1.inc": "158767d4c78316d15e917d25a6487a5d3df8ed8c656c4216c065f39c8c0f15bb",
+    "v1/tools-host/inspect-mex/inspect.py": "9ae7d5564675d4dd2017c4605c55c87ae4ca9d6482b451cfbaeb362ab3853b5d"
+  },
+  "prerequisites": {
+    "P1.41": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "b9c1ad40c03d13e61c7384387d253ec38fdce441",
+  "status": "PASS",
+  "step": "P2.01",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

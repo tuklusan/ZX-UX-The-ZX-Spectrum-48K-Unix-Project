@@ -1,0 +1,108 @@
+{
+  "action": "test",
+  "architecture_sha256": "a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b",
+  "assertions": [
+    {
+      "name": "arg1-routines-remain-staged-outside-resident-process-macro",
+      "passed": true
+    },
+    {
+      "name": "production-kernel-does-not-prematurely-emit-p206-helper",
+      "passed": true
+    },
+    {
+      "name": "arg1-exact-frozen-header-and-bounds",
+      "passed": true
+    },
+    {
+      "name": "arg1-validator-checks-magic-count-reserved-and-total",
+      "passed": true
+    },
+    {
+      "name": "arg1-validator-proves-source-plus-length-before-indexed-header-read",
+      "passed": true
+    },
+    {
+      "name": "arg1-validator-is-side-effect-free",
+      "passed": true
+    },
+    {
+      "name": "arg1-builder-validates-before-any-allocation",
+      "passed": true
+    },
+    {
+      "name": "arg1-builder-uses-any-and-copies-exact-bytes",
+      "passed": true
+    },
+    {
+      "name": "arg1-builder-has-no-persistent-scratch-or-process-publication",
+      "passed": true
+    },
+    {
+      "name": "arg1-abi-documentation-freezes-format-and-pre-ready-validation",
+      "passed": true
+    },
+    {
+      "length": 10,
+      "name": "minimum-nonempty-argv0-block-accepted-and-private-copied",
+      "passed": true
+    },
+    {
+      "length": 11,
+      "name": "odd-length-block-rounds-allocation-without-changing-exact-arg1-length",
+      "passed": true,
+      "rounded": 12
+    },
+    {
+      "argc": 16,
+      "length": 256,
+      "name": "exact-256-byte-16-argument-boundary-accepted",
+      "passed": true
+    },
+    {
+      "name": "argc-magic-reserved-total-termination-trailing-and-argv0-negatives-rejected-pre-side-effect",
+      "passed": true
+    },
+    {
+      "name": "supplied-length-and-source-wrap-negatives-rejected-pre-side-effect",
+      "passed": true
+    },
+    {
+      "name": "allocation-failure-preserves-pre-attempt-live-allocation-count",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p206-arg1.lst",
+        "--sym=p206-arg1.sym",
+        "p206-arg1.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 7,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 3025 lines, work time: 0.006 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p206-arg1.bin": "b1fcc17646175b2d0ea47d61b04c1927a2db75127d6f7000f924d713920a1fae",
+    "v1/docs/abi.md": "e151c37a641819ca18e33915a358db7b0b11f5c3a98bcd57bb7d0f187a9bfe63",
+    "v1/src/kernel/memory.asm": "9188c5ada0cbc40e36b18313a57231df621d0e567b62ba8f7f0e1ca4e8ea26e0",
+    "v1/src/kernel/process.asm": "fdab615319e9113165a891726dcb5a640b2b8725f980b5525d7df3f92f209722",
+    "v1/tools-host/test-driver/phase2_arg1.py": "18d529ef29ccb06cabdcc9b38254e94748a1aecbd27f019b219906568932ab94"
+  },
+  "prerequisites": {
+    "P2.05": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "b9c1ad40c03d13e61c7384387d253ec38fdce441",
+  "status": "PASS",
+  "step": "P2.06",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

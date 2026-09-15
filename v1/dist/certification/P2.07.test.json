@@ -1,0 +1,129 @@
+{
+  "action": "test",
+  "architecture_sha256": "a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b",
+  "assertions": [
+    {
+      "name": "env1-routines-remain-staged-outside-resident-process-macro",
+      "passed": true
+    },
+    {
+      "name": "production-kernel-does-not-prematurely-emit-p207-helper",
+      "passed": true
+    },
+    {
+      "name": "env1-exact-frozen-header-and-bounds",
+      "passed": true
+    },
+    {
+      "name": "env1-validator-checks-magic-count-reserved-and-total",
+      "passed": true
+    },
+    {
+      "name": "env1-validator-proves-source-plus-length-before-indexed-header-read",
+      "passed": true
+    },
+    {
+      "name": "env1-validator-enforces-name-value-and-uniqueness-paths",
+      "passed": true
+    },
+    {
+      "name": "env1-validator-is-side-effect-free",
+      "passed": true
+    },
+    {
+      "name": "env1-builder-validates-before-scratch-or-allocation",
+      "passed": true
+    },
+    {
+      "name": "env1-builder-uses-one-any-allocation-for-both-exact-blocks",
+      "passed": true
+    },
+    {
+      "name": "env1-builder-returns-p208-ready-arglen-and-env-pointer-registers",
+      "passed": true
+    },
+    {
+      "name": "env1-builder-does-not-publish-ready-or-cwd",
+      "passed": true
+    },
+    {
+      "name": "env1-abi-documentation-freezes-shared-bootstrap-contract",
+      "passed": true
+    },
+    {
+      "name": "zero-entry-env1-max-name-value-and-lexical-printable-boundaries-accepted",
+      "passed": true
+    },
+    {
+      "name": "odd-combined-length-rounds-allocation-without-changing-exact-arg1-env1-abi",
+      "passed": true,
+      "payload": 19,
+      "rounded": 20
+    },
+    {
+      "name": "case-sensitive-distinct-names-accepted-and-adjacent-or-nonadjacent-exact-duplicates-rejected",
+      "passed": true
+    },
+    {
+      "entries": 8,
+      "length": 256,
+      "name": "exact-256-byte-eight-entry-env1-boundary-accepted",
+      "passed": true
+    },
+    {
+      "name": "exact-512-byte-arg1-env1-shared-bootstrap-allocation-accepted",
+      "passed": true,
+      "payload": 512
+    },
+    {
+      "name": "magic-reserved-total-trailing-count-name-value-termination-negatives-rejected-pre-allocation",
+      "passed": true
+    },
+    {
+      "name": "supplied-length-env-or-arg-source-wrap-and-invalid-arg-length-rejected-pre-allocation",
+      "passed": true
+    },
+    {
+      "name": "allocation-failure-preserves-pre-attempt-live-allocation-count",
+      "passed": true
+    },
+    {
+      "name": "deep-fast-stack-activity-cannot-overwrite-shared-bootstrap-allocation",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p207-env1.lst",
+        "--sym=p207-env1.sym",
+        "p207-env1.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 8,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 3412 lines, work time: 0.008 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p207-env1.bin": "20174377022050f2fc10728f0c291de91cf4cb36649779def0081bb9a27849a4",
+    "v1/docs/abi.md": "e151c37a641819ca18e33915a358db7b0b11f5c3a98bcd57bb7d0f187a9bfe63",
+    "v1/src/kernel/memory.asm": "9188c5ada0cbc40e36b18313a57231df621d0e567b62ba8f7f0e1ca4e8ea26e0",
+    "v1/src/kernel/process.asm": "fdab615319e9113165a891726dcb5a640b2b8725f980b5525d7df3f92f209722",
+    "v1/tools-host/test-driver/phase2_arg1.py": "18d529ef29ccb06cabdcc9b38254e94748a1aecbd27f019b219906568932ab94",
+    "v1/tools-host/test-driver/phase2_env1.py": "04252c38e3a2dfb0e212346caae6b2a05f044146c6a0f6a694c2c52fd3e19dd3"
+  },
+  "prerequisites": {
+    "P2.06": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "b9c1ad40c03d13e61c7384387d253ec38fdce441",
+  "status": "PASS",
+  "step": "P2.07",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

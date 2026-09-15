@@ -1,0 +1,79 @@
+{
+  "action": "build",
+  "architecture_sha256": "a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b",
+  "assertions": [
+    {
+      "name": "stack-allocator-remains-staged-outside-resident-process-macro",
+      "passed": true
+    },
+    {
+      "name": "production-kernel-does-not-prematurely-emit-p205-stack-helper",
+      "passed": true
+    },
+    {
+      "name": "stack-size-comes-from-validated-mex1-header",
+      "passed": true
+    },
+    {
+      "name": "stack-advertised-range-uses-frozen-mex1-bounds",
+      "passed": true
+    },
+    {
+      "name": "stack-requires-even-advertised-size",
+      "passed": true
+    },
+    {
+      "name": "bootstrap-reserve-is-separate-fixed-64-bytes",
+      "passed": true
+    },
+    {
+      "name": "stack-uses-real-fast-required-allocator",
+      "passed": true
+    },
+    {
+      "name": "stack-helper-has-no-any-or-cold-fallback",
+      "passed": true
+    },
+    {
+      "name": "stack-helper-does-not-publish-process-state",
+      "passed": true
+    },
+    {
+      "name": "stack-helper-returns-exact-total-allocation-size",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p205-stack.lst",
+        "--sym=p205-stack.sym",
+        "p205-stack.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 7,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2890 lines, work time: 0.006 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p205-stack.bin": "fa0161c6aad87afa8989ccb639d0f3a916cc7143ef79f2347f4a0c20f12d0185",
+    "v1/include/mex1.inc": "158767d4c78316d15e917d25a6487a5d3df8ed8c656c4216c065f39c8c0f15bb",
+    "v1/src/kernel/memory.asm": "9188c5ada0cbc40e36b18313a57231df621d0e567b62ba8f7f0e1ca4e8ea26e0",
+    "v1/src/kernel/process.asm": "fdab615319e9113165a891726dcb5a640b2b8725f980b5525d7df3f92f209722",
+    "v1/tools-host/test-driver/phase2_stack.py": "c62149c0fcd23490d7f9a473ebbb71376783ab1c0a273b3c05878179e511e412"
+  },
+  "prerequisites": {
+    "P2.04": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "b9c1ad40c03d13e61c7384387d253ec38fdce441",
+  "status": "PASS",
+  "step": "P2.05",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

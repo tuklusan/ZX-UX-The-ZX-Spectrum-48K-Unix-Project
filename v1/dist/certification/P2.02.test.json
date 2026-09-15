@@ -1,0 +1,61 @@
+{
+  "action": "test",
+  "architecture_sha256": "a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b",
+  "assertions": [
+    {
+      "name": "inspector-golden-bytes-exact",
+      "passed": true
+    },
+    {
+      "name": "inspector-golden-decode-exact",
+      "passed": true
+    },
+    {
+      "name": "inspector-is-project-independent",
+      "passed": true
+    },
+    {
+      "name": "inspector-self-test-command-exact",
+      "passed": true
+    },
+    {
+      "name": "reject-one-bit-header-crc-mutation",
+      "passed": true
+    },
+    {
+      "name": "reject-one-bit-body-mutation",
+      "passed": true
+    },
+    {
+      "name": "reject-trailing-byte",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "--self-test"
+      ],
+      "cwd": ".",
+      "duration_ms": 26,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "MEX1 inspector self-test PASS\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/tools-host/inspect-mex/inspect.py": "9ae7d5564675d4dd2017c4605c55c87ae4ca9d6482b451cfbaeb362ab3853b5d"
+  },
+  "prerequisites": {
+    "P2.01": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "b9c1ad40c03d13e61c7384387d253ec38fdce441",
+  "status": "PASS",
+  "step": "P2.02",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
