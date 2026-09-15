@@ -135,23 +135,26 @@ zx48_process_exec_transaction:
     ld l,(ix+PROC_ARG_PTR)
     ld h,(ix+PROC_ARG_PTR+1)
     ld (process_exec_old_bootstrap),hl
-    ld e,(ix+PROC_ENV_PTR)
-    ld d,(ix+PROC_ENV_PTR+1)
-    ex de,hl
+    ld a,h
+    or l
+    jp z,zx48_process_exec_invalid_state
+
+    ; The descriptor's owned-byte total is authoritative.  Derive the
+    ; old bootstrap allocation as owned-image-stack and never inspect
+    ; ARG1/ENV1 payload bytes while deciding what extent to release.
+    ld l,(ix+PROC_OWNED_BYTES)
+    ld h,(ix+PROC_OWNED_BYTES+1)
+    ld de,(process_exec_old_image_size)
     or a
     sbc hl,de
-    ex de,hl
-    ld hl,(process_exec_old_bootstrap)
-    add hl,de
-    ld e,(hl)
-    inc hl
-    ld d,(hl)
-    ex de,hl
-    add hl,de
-    bit 0,l
-    jr z,zx48_process_exec_old_bootstrap_rounded
-    inc hl
-zx48_process_exec_old_bootstrap_rounded:
+    jp c,zx48_process_exec_invalid_state
+    ld de,(process_exec_old_stack_size)
+    or a
+    sbc hl,de
+    jp c,zx48_process_exec_invalid_state
+    ld a,h
+    or l
+    jp z,zx48_process_exec_invalid_state
     ld (process_exec_old_bootstrap_size),hl
 
     ; Resolve and validate replacement before allocating or mutating anything.
