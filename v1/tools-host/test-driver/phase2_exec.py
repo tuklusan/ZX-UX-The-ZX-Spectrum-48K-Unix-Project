@@ -103,10 +103,7 @@ def dispatch(root: Path, action: str, step: str, **kwargs):
         require_project_tool=require_project_tool,
     )
     assertions.extend(runtime_assertions)
-    commands = [
-        {"argv": list(result.argv), "cwd": result.cwd, "exit_code": result.exit_code, "timed_out": result.timed_out},
-        {"argv": list(runtime_result.argv), "cwd": runtime_result.cwd, "exit_code": runtime_result.exit_code, "timed_out": runtime_result.timed_out},
-    ]
+    commands = [result, runtime_result]
     hashes = {
         "v1/src/kernel/process.asm": kwargs["sha256_file"](root / "v1/src/kernel/process.asm"),
         "v1/tools-host/test-driver/phase2_exec.py": kwargs["sha256_file"](root / "v1/tools-host/test-driver/phase2_exec.py"),
