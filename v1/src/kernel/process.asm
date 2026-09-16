@@ -1819,6 +1819,17 @@ zx48_process_spawn_relocate:
     ld a,3
     ld (process_spawn_retained),a
 
+    IFDEF ZX48_P2_13_LINKS_EMITTED
+    ; P2.13 delegates generation bump, successful-reuse descriptor reset, and
+    ; generation-qualified parent publication to the dynamically exercised
+    ; link helper. Generation exhaustion therefore leaves the FREE descriptor
+    ; byte-identical; success returns IX on the reset, linked child descriptor.
+    ld a,(process_spawn_child_pid)
+    call zx48_process_link_child
+    jp c,zx48_process_spawn_rollback
+    ELSE
+    ; Preserve the certified P2.10/P2.12 expansion byte-for-byte when the
+    ; P2.13 linkage emitter is absent from the assembly unit.
     ; Commit is intentionally non-fallible. The descriptor remains PROC_FREE
     ; while every field is written; READY is the single publication store.
     ld hl,(process_spawn_child_desc)
@@ -1834,6 +1845,7 @@ zx48_process_spawn_relocate:
     ld (ix+PROC_PID),a
     ld a,(current_pid)
     ld (ix+PROC_PARENT),a
+    ENDIF
     xor a
     ld (ix+PROC_FLAGS),a
     ld hl,(process_spawn_image_base)
@@ -2679,4 +2691,573 @@ process_exec_old_bootstrap: dw 0
 process_exec_old_bootstrap_size: dw 0
 process_exec_error: db 0
 process_exec_context_seed: defs INITIAL_CONTEXT_SEED_SIZE,0
+    ENDM
+
+; P2.13 generation-qualified parent/child linkage.  Numeric PIDs are bounded
+; table indexes, not durable identities: every PID has a 16-bit generation that
+; advances before a reused child identity is linked and is never allowed to wrap.
+; Parent generation, child membership, and specific-wait generation live in
+; bounded side tables so the
+; public 48-byte process descriptor ABI remains unchanged.
+    MACRO EMIT_PARENT_CHILD_ROUTINES
+ZX48_P2_13_LINKS_EMITTED EQU 1
+zx48_process_links_init:
+    xor a
+    ld hl,process_generation
+    ld de,process_generation+1
+    ld bc,MAX_PROCESSES*8-1
+    ld (hl),a
+    ldir
+    ld hl,process_wait_pid
+    ld b,MAX_PROCESSES
+    ld a,HANDLE_FREE
+zx48_process_links_init_wait:
+    ld (hl),a
+    inc hl
+    djnz zx48_process_links_init_wait
+    xor a
+    call zx48_process_generation_bump
+    ret c
+    ld a,1
+    call zx48_process_generation_bump
+    ret c
+
+    ; PID1 is the fixed shell child of PID0. Seed that root edge so every
+    ; descriptor parent byte has a generation-qualified side-table identity.
+    xor a
+    call zx48_process_generation_get
+    ret c
+    push de
+    ld a,1
+    call zx48_process_parent_generation_ptr
+    pop de
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    xor a
+    call zx48_process_child_mask_ptr
+    ld (hl),$02
+    xor a
+    ret
+
+; A=PID -> IX=descriptor.  This private pointer helper accepts FREE children so
+; linkage can be committed immediately before the P2.10 READY publication.
+zx48_process_links_desc_ptr:
+    cp MAX_PROCESSES
+    jr nc,zx48_process_links_noent
+    ld ix,process_table
+    or a
+    jr z,zx48_process_links_desc_done
+    ld b,a
+    ld de,PROC_DESC_SIZE
+zx48_process_links_desc_loop:
+    add ix,de
+    djnz zx48_process_links_desc_loop
+zx48_process_links_desc_done:
+    xor a
+    ret
+
+zx48_process_generation_ptr:
+    cp MAX_PROCESSES
+    jr nc,zx48_process_links_noent
+    ld l,a
+    ld h,0
+    add hl,hl
+    ld de,process_generation
+    add hl,de
+    xor a
+    ret
+
+zx48_process_parent_generation_ptr:
+    cp MAX_PROCESSES
+    jr nc,zx48_process_links_noent
+    ld l,a
+    ld h,0
+    add hl,hl
+    ld de,process_parent_generation
+    add hl,de
+    xor a
+    ret
+
+zx48_process_child_mask_ptr:
+    cp MAX_PROCESSES
+    jr nc,zx48_process_links_noent
+    ld e,a
+    ld d,0
+    ld hl,process_child_mask
+    add hl,de
+    xor a
+    ret
+
+zx48_process_wait_pid_ptr:
+    cp MAX_PROCESSES
+    jr nc,zx48_process_links_noent
+    ld e,a
+    ld d,0
+    ld hl,process_wait_pid
+    add hl,de
+    xor a
+    ret
+
+zx48_process_wait_generation_ptr:
+    cp MAX_PROCESSES
+    jr nc,zx48_process_links_noent
+    ld l,a
+    ld h,0
+    add hl,hl
+    ld de,process_wait_generation
+    add hl,de
+    xor a
+    ret
+
+zx48_process_pid_bit:
+    cp MAX_PROCESSES
+    jr nc,zx48_process_links_noent
+    ld e,a
+    ld d,0
+    ld hl,process_pid_bits
+    add hl,de
+    ld a,(hl)
+    or a
+    ret
+
+zx48_process_links_noent:
+    ld a,E_NOENT
+    scf
+    ret
+
+; A=PID -> DE=current generation.  Generation zero is reserved for "no identity".
+zx48_process_generation_get:
+    call zx48_process_generation_ptr
+    ret c
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    xor a
+    ret
+
+; A=PID -> increment persistent generation.  Generation zero means no identity,
+; so the first publication becomes generation 1.  0xFFFF is permanently exhausted:
+; refusing reuse is safer than allowing an ancient generation-qualified wait/parent
+; reference to alias after wrap.  FREE/reap never resets this counter.
+zx48_process_generation_bump:
+    call zx48_process_generation_ptr
+    ret c
+    ld a,(hl)
+    cp $ff
+    jr nz,zx48_process_generation_increment
+    inc hl
+    ld a,(hl)
+    dec hl
+    cp $ff
+    jp z,zx48_process_generation_exhausted
+zx48_process_generation_increment:
+    inc (hl)
+    jr nz,zx48_process_generation_value
+    inc hl
+    inc (hl)
+    dec hl
+zx48_process_generation_value:
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    xor a
+    ret
+
+; A=FREE child PID2..PID7.  The current live process becomes its parent.  This
+; is deliberately non-fallible after the generation bump so spawn can call it
+; inside its publication commit without creating a rollback edge.
+zx48_process_link_child:
+    cp 2
+    jp c,zx48_process_links_inval
+    cp MAX_PROCESSES
+    jp nc,zx48_process_links_inval
+    ld (process_link_child_pid),a
+    call zx48_process_links_desc_ptr
+    ret c
+    ld a,(ix+PROC_STATE)
+    or a
+    jr nz,zx48_process_links_busy
+
+    ld a,(current_pid)
+    ld (process_link_parent_pid),a
+    cp MAX_PROCESSES
+    jp nc,zx48_process_links_inval
+    call zx48_process_links_desc_ptr
+    ret c
+    ld a,(ix+PROC_STATE)
+    or a
+    jr z,zx48_process_links_inval
+    ld a,(process_link_parent_pid)
+    call zx48_process_generation_get
+    ret c
+    ld a,d
+    or e
+    jr z,zx48_process_links_inval
+    ld (process_link_parent_generation),de
+
+    ld a,(process_link_child_pid)
+    call zx48_process_generation_bump
+    ret c
+
+    ; Generation bump is the final fallible action. Once it succeeds, reset the
+    ; still-FREE descriptor here, inside the dynamically exercised helper. This
+    ; keeps generation exhaustion byte-identical while making successful reuse
+    ; discard every stale descriptor byte before parent linkage is published.
+    ld a,(process_link_child_pid)
+    call zx48_process_links_desc_ptr
+    push ix
+    pop hl
+    xor a
+    ld (hl),a
+    ld d,h
+    ld e,l
+    inc de
+    ld bc,PROC_DESC_SIZE-1
+    ldir
+    ld a,(process_link_child_pid)
+    ld (ix+PROC_PID),a
+
+    ; A reused child starts with no children and no inherited wait token.  Its
+    ; generation counter itself is intentionally outside this reset set.
+    ld a,(process_link_child_pid)
+    call zx48_process_child_mask_ptr
+    ld (hl),0
+    ld a,(process_link_child_pid)
+    call zx48_process_wait_pid_ptr
+    ld (hl),HANDLE_FREE
+    ld a,(process_link_child_pid)
+    call zx48_process_wait_generation_ptr
+    ld (hl),0
+    inc hl
+    ld (hl),0
+
+    ld a,(process_link_child_pid)
+    call zx48_process_links_desc_ptr
+    ld a,(process_link_parent_pid)
+    ld (ix+PROC_PARENT),a
+    ld a,(process_link_child_pid)
+    call zx48_process_parent_generation_ptr
+    ld de,(process_link_parent_generation)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+
+    ld a,(process_link_child_pid)
+    call zx48_process_pid_bit
+    ld (process_link_child_bit),a
+    ld a,(process_link_parent_pid)
+    call zx48_process_child_mask_ptr
+    ld a,(process_link_child_bit)
+    or (hl)
+    ld (hl),a
+    xor a
+    ret
+
+zx48_process_generation_exhausted:
+    ld a,E_AGAIN
+    scf
+    ret
+
+zx48_process_links_inval:
+    ld a,E_INVAL
+    scf
+    ret
+zx48_process_links_busy:
+    ld a,E_BUSY
+    scf
+    ret
+
+; A=child PID.  Remove only the exact parent-generation edge.  If the numeric
+; parent PID has already been reused, its new child mask is never touched.
+zx48_process_unlink_child:
+    cp 2
+    jr c,zx48_process_links_inval
+    cp MAX_PROCESSES
+    jr nc,zx48_process_links_inval
+    ld (process_link_child_pid),a
+    call zx48_process_links_desc_ptr
+    ret c
+    ld a,(ix+PROC_PARENT)
+    ld (process_link_parent_pid),a
+    cp HANDLE_FREE
+    jr z,zx48_process_unlink_parent_stale
+
+    ld a,(process_link_child_pid)
+    call zx48_process_parent_generation_ptr
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (process_link_parent_generation),de
+    ld a,(process_link_parent_pid)
+    call zx48_process_generation_get
+    jr c,zx48_process_unlink_parent_stale
+    ld hl,(process_link_parent_generation)
+    or a
+    sbc hl,de
+    jr nz,zx48_process_unlink_parent_stale
+
+zx48_process_unlink_clear_parent:
+    ld a,(process_link_child_pid)
+    call zx48_process_pid_bit
+    cpl
+    ld (process_link_child_bit),a
+    ld a,(process_link_parent_pid)
+    call zx48_process_child_mask_ptr
+    ld a,(process_link_child_bit)
+    and (hl)
+    ld (hl),a
+
+zx48_process_unlink_parent_stale:
+    ld a,(process_link_child_pid)
+    call zx48_process_parent_generation_ptr
+    ld (hl),0
+    inc hl
+    ld (hl),0
+    ld a,(process_link_child_pid)
+    call zx48_process_links_desc_ptr
+    ld (ix+PROC_PARENT),HANDLE_FREE
+    xor a
+    ret
+
+; A=old parent PID2..PID7.  Called before that identity is reclaimed.  Every
+; exact-generation direct child becomes a PID1 child and the two bounded masks
+; are repaired atomically from the cooperative kernel's point of view.
+zx48_process_reparent_children_to_pid1:
+    cp 2
+    jr c,zx48_process_links_inval
+    cp MAX_PROCESSES
+    jr nc,zx48_process_links_inval
+    ld (process_reparent_parent_pid),a
+    call zx48_process_links_desc_ptr
+    ret c
+    ld a,(ix+PROC_STATE)
+    or a
+    jp z,zx48_process_links_inval
+    ld a,(process_reparent_parent_pid)
+    call zx48_process_generation_get
+    ret c
+    ld a,d
+    or e
+    jp z,zx48_process_links_inval
+    ld (process_reparent_parent_generation),de
+
+    ld a,1
+    call zx48_process_links_desc_ptr
+    ret c
+    ld a,(ix+PROC_STATE)
+    or a
+    jp z,zx48_process_links_inval
+    ld a,1
+    call zx48_process_generation_get
+    ret c
+    ld a,d
+    or e
+    jp z,zx48_process_links_inval
+    ld (process_reparent_pid1_generation),de
+
+    ld a,2
+    ld (process_reparent_child_pid),a
+zx48_process_reparent_scan:
+    ld a,(process_reparent_child_pid)
+    call zx48_process_links_desc_ptr
+    ret c
+    ld a,(ix+PROC_STATE)
+    or a
+    jr z,zx48_process_reparent_next
+    ld a,(ix+PROC_PARENT)
+    ld hl,process_reparent_parent_pid
+    cp (hl)
+    jr nz,zx48_process_reparent_next
+    ld a,(process_reparent_child_pid)
+    call zx48_process_parent_generation_ptr
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld hl,(process_reparent_parent_generation)
+    or a
+    sbc hl,de
+    jr nz,zx48_process_reparent_next
+
+    ld a,(process_reparent_child_pid)
+    call zx48_process_links_desc_ptr
+    ld (ix+PROC_PARENT),1
+    ld a,(process_reparent_child_pid)
+    call zx48_process_parent_generation_ptr
+    ld de,(process_reparent_pid1_generation)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    ld a,(process_reparent_child_pid)
+    call zx48_process_pid_bit
+    ld (process_link_child_bit),a
+    ld a,1
+    call zx48_process_child_mask_ptr
+    ld a,(process_link_child_bit)
+    or (hl)
+    ld (hl),a
+
+zx48_process_reparent_next:
+    ld a,(process_reparent_child_pid)
+    inc a
+    ld (process_reparent_child_pid),a
+    cp MAX_PROCESSES
+    jr c,zx48_process_reparent_scan
+    ld a,(process_reparent_parent_pid)
+    call zx48_process_child_mask_ptr
+    ld (hl),0
+    xor a
+    ret
+
+; A=specific target child PID.  Capture both numeric PID and current child
+; generation for the current parent.  Future P2.15 blocking uses this token.
+zx48_process_wait_record_specific:
+    cp 2
+    jp c,zx48_process_wait_child
+    cp MAX_PROCESSES
+    jp nc,zx48_process_wait_child
+    ld (process_wait_candidate_pid),a
+    call zx48_process_links_desc_ptr
+    ret c
+    ld a,(ix+PROC_STATE)
+    or a
+    jp z,zx48_process_wait_child
+    ld a,(current_pid)
+    ld b,a
+    ld a,(ix+PROC_PARENT)
+    cp b
+    jp nz,zx48_process_wait_child
+
+    ld a,(current_pid)
+    call zx48_process_generation_get
+    ret c
+    ld a,d
+    or e
+    jp z,zx48_process_wait_child
+    ld (process_wait_parent_generation),de
+    ld a,(process_wait_candidate_pid)
+    call zx48_process_parent_generation_ptr
+    ld c,(hl)
+    inc hl
+    ld b,(hl)
+    ld hl,(process_wait_parent_generation)
+    or a
+    sbc hl,bc
+    jp nz,zx48_process_wait_child
+
+    ld a,(process_wait_candidate_pid)
+    call zx48_process_pid_bit
+    ld (process_link_child_bit),a
+    ld a,(current_pid)
+    call zx48_process_child_mask_ptr
+    ld a,(process_link_child_bit)
+    and (hl)
+    jp z,zx48_process_wait_child
+
+    ld a,(process_wait_candidate_pid)
+    call zx48_process_generation_get
+    ret c
+    ld a,d
+    or e
+    jp z,zx48_process_wait_child
+    ld (process_wait_candidate_generation),de
+    ld a,(current_pid)
+    call zx48_process_wait_pid_ptr
+    ld a,(process_wait_candidate_pid)
+    ld (hl),a
+    ld a,(current_pid)
+    call zx48_process_wait_generation_ptr
+    ld de,(process_wait_candidate_generation)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    xor a
+    ret
+
+; A=candidate PID.  Match a previously captured specific-wait token against the
+; complete current child identity.  Numeric PID equality alone is insufficient.
+zx48_process_wait_matches:
+    cp 2
+    jr c,zx48_process_wait_child
+    cp MAX_PROCESSES
+    jr nc,zx48_process_wait_child
+    ld (process_wait_candidate_pid),a
+    ld a,(current_pid)
+    call zx48_process_wait_pid_ptr
+    jp c,zx48_process_wait_child
+    ld a,(process_wait_candidate_pid)
+    cp (hl)
+    jr nz,zx48_process_wait_child
+
+    ld a,(process_wait_candidate_pid)
+    call zx48_process_links_desc_ptr
+    ret c
+    ld a,(ix+PROC_STATE)
+    or a
+    jr z,zx48_process_wait_child
+    ld a,(current_pid)
+    ld b,a
+    ld a,(ix+PROC_PARENT)
+    cp b
+    jr nz,zx48_process_wait_child
+
+    ld a,(current_pid)
+    call zx48_process_generation_get
+    ret c
+    ld a,d
+    or e
+    jp z,zx48_process_wait_child
+    ld (process_wait_parent_generation),de
+    ld a,(process_wait_candidate_pid)
+    call zx48_process_parent_generation_ptr
+    ld c,(hl)
+    inc hl
+    ld b,(hl)
+    ld hl,(process_wait_parent_generation)
+    or a
+    sbc hl,bc
+    jr nz,zx48_process_wait_child
+
+    ld a,(process_wait_candidate_pid)
+    call zx48_process_generation_get
+    ret c
+    ld a,d
+    or e
+    jp z,zx48_process_wait_child
+    ld (process_wait_candidate_generation),de
+    ld a,(current_pid)
+    call zx48_process_wait_generation_ptr
+    ld c,(hl)
+    inc hl
+    ld b,(hl)
+process_wait_compare_generation:
+    ld hl,(process_wait_candidate_generation)
+    or a
+    sbc hl,bc
+    jr nz,zx48_process_wait_child
+    xor a
+    ret
+
+zx48_process_wait_child:
+    ld a,E_CHILD
+    scf
+    ret
+
+process_pid_bits: db $01,$02,$04,$08,$10,$20,$40,$80
+process_generation: defs MAX_PROCESSES*2,0
+process_parent_generation: defs MAX_PROCESSES*2,0
+process_child_mask: defs MAX_PROCESSES,0
+process_wait_pid: defs MAX_PROCESSES,HANDLE_FREE
+process_wait_generation: defs MAX_PROCESSES*2,0
+process_link_child_pid: db 0
+process_link_parent_pid: db 0
+process_link_child_bit: db 0
+process_link_parent_generation: dw 0
+process_reparent_parent_pid: db 0
+process_reparent_child_pid: db 0
+process_reparent_parent_generation: dw 0
+process_reparent_pid1_generation: dw 0
+process_wait_candidate_pid: db 0
+process_wait_candidate_generation: dw 0
+process_wait_parent_generation: dw 0
     ENDM

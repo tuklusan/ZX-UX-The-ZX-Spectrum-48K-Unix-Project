@@ -70,6 +70,7 @@ import phase2_spawn
 import phase2_spawn_atomic
 import phase2_handle_inheritance
 import phase2_exec
+import phase2_parent_child
 from driver_core import (
     DriverError,
     find_root,
@@ -201,6 +202,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase2_handle_inheritance.dispatch(root, action, step, **kwargs)
     if step == "P2.12":
         return phase2_exec.dispatch(root, action, step, **kwargs)
+    if step == "P2.13":
+        return phase2_parent_child.dispatch(root, action, step, **kwargs)
     if step.startswith("P2."):
         raise DriverError(f"numbered Phase-2 step is not registered: {step}")
     raise DriverError(f"step is not registered with the deterministic test driver: {step}")
