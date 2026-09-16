@@ -204,4 +204,23 @@ new_spawn = (
 one(old_spawn, new_spawn, "spawn-process-only-integration")
 
 path.write_text(text, encoding="utf-8", newline="\n")
+
+# The reviewed historical P2.13 driver anchored its raw-parent negative at the
+# P2.10 commit comment.  The process-only integration above deliberately removes
+# that comment from the active P2.13 branch, so make the source contract inspect
+# the actual IFDEF arm instead.  The ELSE arm must retain the certified legacy
+# raw-parent publication for P2.10/P2.12 fixtures.
+driver_path = Path("v1/tools-host/test-driver/phase2_parent_child.py")
+driver = driver_path.read_text(encoding="utf-8")
+old_contract = (
+    '        {"name": "p210-spawn-no-longer-publishes-raw-parent-pid-itself", "passed": "ld a,(current_pid)\\n    ld (ix+PROC_PARENT),a" not in process[process.index("; Commit is intentionally non-fallible.", process.index("    MACRO EMIT_SPAWN_TRANSACTION_ROUTINES")):process.index("    ENDM\\n", process.index("    MACRO EMIT_SPAWN_TRANSACTION_ROUTINES"))]},\n'
+)
+new_contract = (
+    '        {"name": "p210-spawn-no-longer-publishes-raw-parent-pid-itself", "passed": "ld a,(current_pid)\\n    ld (ix+PROC_PARENT),a" not in process[process.index("IFDEF ZX48_P2_13_LINKS_EMITTED", process.index("    MACRO EMIT_SPAWN_TRANSACTION_ROUTINES")):process.index("ELSE", process.index("IFDEF ZX48_P2_13_LINKS_EMITTED", process.index("    MACRO EMIT_SPAWN_TRANSACTION_ROUTINES")))]},\n'
+)
+count = driver.count(old_contract)
+if count != 1:
+    raise SystemExit(f"P2.13 process-only corrector source-contract-anchor: expected 1 anchor, found {count}")
+driver_path.write_text(driver.replace(old_contract, new_contract, 1), encoding="utf-8", newline="\n")
+
 print("P2.13 process-only corrector: PASS")
