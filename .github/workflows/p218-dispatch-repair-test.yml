@@ -28,8 +28,9 @@ jobs:
     timeout-minutes: 45
     env:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p218-dispatch-repair
-      P218_EXACT_PARENT: 6181ffe975d48855dc7502ad87e17621e560afc3
+      P218_EXACT_PARENT: e11c660290550f6ebc2b9764533ff02b75323d5e
       P218_OLD_PROCESS_BLOB: b0cd24ebbdc329543f5138c2d26d8a67453b77fd
+      P218_OLD_TEST_BLOB: 0390c74a046003cfca71ec1bbb2102624607793f
       ZXUX_REV12_SHA256: a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b
     steps:
       - name: Checkout exact diagnostic parent
@@ -44,58 +45,80 @@ jobs:
           test "$(git rev-parse HEAD^)" = "${P218_EXACT_PARENT}"
           test "$(git rev-parse HEAD^:v1/src/kernel/process.asm)" = "${P218_OLD_PROCESS_BLOB}"
           test "$(git rev-parse HEAD:v1/src/kernel/process.asm)" = "${P218_OLD_PROCESS_BLOB}"
-          changed="$(git diff --name-only HEAD^ HEAD)"
-          test "${changed}" = ".github/workflows/p218-dispatch-repair-test.yml"
-          test "$(grep -c '^ZX48_P2_18_KILL_ENABLED EQU 1$' v1/src/kernel/process.asm)" = 1
-          test "$(grep -c '^DEFINE ZX48_P2_18_KILL_ENABLED 1$' v1/src/kernel/process.asm || true)" = 0
+          test "$(git rev-parse HEAD^:v1/tools-host/test-driver/phase2_kill_never_started.py)" = "${P218_OLD_TEST_BLOB}"
+          test "$(git rev-parse HEAD:v1/tools-host/test-driver/phase2_kill_never_started.py)" = "${P218_OLD_TEST_BLOB}"
+          test "$(git diff --name-only HEAD^ HEAD)" = ".github/workflows/p218-dispatch-repair-test.yml"
           git status --short
 
-      - name: Apply exact P2.18 dispatch repair
+      - name: Apply exact P2.18 dispatch and oracle repair
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
 
-          path = Path("v1/src/kernel/process.asm")
-          old = "ZX48_P2_18_KILL_ENABLED EQU 1"
-          new = "DEFINE ZX48_P2_18_KILL_ENABLED 1"
-          text = path.read_text(encoding="utf-8")
-          if text.count(old) != 1 or text.count(new) != 0:
-              raise SystemExit("P2.18 dispatch activation source shape is not exact")
-          path.write_text(text.replace(old, new), encoding="utf-8", newline="\n")
+          edits = [
+              (
+                  Path("v1/src/kernel/process.asm"),
+                  "ZX48_P2_18_KILL_ENABLED EQU 1",
+                  "DEFINE ZX48_P2_18_KILL_ENABLED 1",
+              ),
+              (
+                  Path("v1/tools-host/test-driver/phase2_kill_never_started.py"),
+                  '"ZX48_P2_18_KILL_ENABLED EQU 1" in helper',
+                  '"DEFINE ZX48_P2_18_KILL_ENABLED 1" in helper',
+              ),
+          ]
+          for path, old, new in edits:
+              text = path.read_text(encoding="utf-8")
+              if text.count(old) != 1 or text.count(new) != 0:
+                  raise SystemExit(f"P2.18 exact edit shape failed: {path}")
+              path.write_text(text.replace(old, new), encoding="utf-8", newline="\n")
           PY
 
-          test "$(grep -c '^DEFINE ZX48_P2_18_KILL_ENABLED 1$' v1/src/kernel/process.asm)" = 1
-          test "$(grep -c '^ZX48_P2_18_KILL_ENABLED EQU 1$' v1/src/kernel/process.asm || true)" = 0
-          test "$(git diff --name-only)" = "v1/src/kernel/process.asm"
+          test "$(printf '%s\n' $(git diff --name-only | sort))" = "$(printf '%s\n' v1/src/kernel/process.asm v1/tools-host/test-driver/phase2_kill_never_started.py)"
+          grep -q '^DEFINE ZX48_P2_18_KILL_ENABLED 1$' v1/src/kernel/process.asm
+          grep -q '"DEFINE ZX48_P2_18_KILL_ENABLED 1" in helper' v1/tools-host/test-driver/phase2_kill_never_started.py
 
           cp v1/src/kernel/process.asm /tmp/process-reverse.asm
+          cp v1/tools-host/test-driver/phase2_kill_never_started.py /tmp/test-reverse.py
           python3 - <<'PY'
           from pathlib import Path
 
-          path = Path("/tmp/process-reverse.asm")
-          old = "DEFINE ZX48_P2_18_KILL_ENABLED 1"
-          new = "ZX48_P2_18_KILL_ENABLED EQU 1"
-          text = path.read_text(encoding="utf-8")
-          if text.count(old) != 1 or text.count(new) != 0:
-              raise SystemExit("P2.18 reverse-shape proof failed")
-          path.write_text(text.replace(old, new), encoding="utf-8", newline="\n")
+          edits = [
+              (
+                  Path("/tmp/process-reverse.asm"),
+                  "DEFINE ZX48_P2_18_KILL_ENABLED 1",
+                  "ZX48_P2_18_KILL_ENABLED EQU 1",
+              ),
+              (
+                  Path("/tmp/test-reverse.py"),
+                  '"DEFINE ZX48_P2_18_KILL_ENABLED 1" in helper',
+                  '"ZX48_P2_18_KILL_ENABLED EQU 1" in helper',
+              ),
+          ]
+          for path, old, new in edits:
+              text = path.read_text(encoding="utf-8")
+              if text.count(old) != 1 or text.count(new) != 0:
+                  raise SystemExit(f"P2.18 reverse proof shape failed: {path}")
+              path.write_text(text.replace(old, new), encoding="utf-8", newline="\n")
           PY
           test "$(git hash-object /tmp/process-reverse.asm)" = "${P218_OLD_PROCESS_BLOB}"
+          test "$(git hash-object /tmp/test-reverse.py)" = "${P218_OLD_TEST_BLOB}"
           git diff --check
-          git diff -- v1/src/kernel/process.asm
+          git diff -- v1/src/kernel/process.asm v1/tools-host/test-driver/phase2_kill_never_started.py
 
       - name: Three unchanged pre-checkin scans
         shell: bash
         run: |
           set -euo pipefail
           baseline=""
+          expected="$(printf '%s\n' v1/src/kernel/process.asm v1/tools-host/test-driver/phase2_kill_never_started.py)"
           for scan in 1 2 3; do
             echo "P2.18 dispatch repair SCAN-${scan}"
-            test "$(git diff --name-only)" = "v1/src/kernel/process.asm"
-            test "$(grep -c '^DEFINE ZX48_P2_18_KILL_ENABLED 1$' v1/src/kernel/process.asm)" = 1
-            test "$(grep -c '^ZX48_P2_18_KILL_ENABLED EQU 1$' v1/src/kernel/process.asm || true)" = 0
+            test "$(git diff --name-only | sort)" = "${expected}"
+            grep -q '^DEFINE ZX48_P2_18_KILL_ENABLED 1$' v1/src/kernel/process.asm
+            grep -q '"DEFINE ZX48_P2_18_KILL_ENABLED 1" in helper' v1/tools-host/test-driver/phase2_kill_never_started.py
             git diff --check
             python3 -m py_compile v1/tools-host/test-driver/phase2_kill_never_started.py
             python3 -m py_compile v1/tools-host/test-driver/p218_failure_probe.py
@@ -103,12 +126,8 @@ jobs:
             find v1/tools-host/test-driver -type d -name __pycache__ -prune -exec rm -rf {} +
             ./tools/check_license_headers.sh
             ./tools/check_project_policy.py
-            digest="$(sha256sum v1/src/kernel/process.asm | awk '{print $1}')"
-            if test -z "${baseline}"; then
-              baseline="${digest}"
-            else
-              test "${digest}" = "${baseline}"
-            fi
+            digest="$(sha256sum v1/src/kernel/process.asm v1/tools-host/test-driver/phase2_kill_never_started.py | sha256sum | awk '{print $1}')"
+            if test -z "${baseline}"; then baseline="${digest}"; else test "${digest}" = "${baseline}"; fi
             echo "scan_${scan}_sha256=${digest}"
           done
 
@@ -118,8 +137,9 @@ jobs:
           set -euo pipefail
           git config user.name "ZX-UX P2.18 runner"
           git config user.email "tuklusan@users.noreply.github.com"
-          git add v1/src/kernel/process.asm
-          test "$(git diff --cached --name-only)" = "v1/src/kernel/process.asm"
+          git add v1/src/kernel/process.asm v1/tools-host/test-driver/phase2_kill_never_started.py
+          expected="$(printf '%s\n' v1/src/kernel/process.asm v1/tools-host/test-driver/phase2_kill_never_started.py)"
+          test "$(git diff --cached --name-only | sort)" = "${expected}"
           git commit -m "P2.18 fix: activate never-started kill dispatch"
           echo "candidate_commit=$(git rev-parse HEAD)"
           test -z "$(git status --porcelain)"
@@ -129,7 +149,6 @@ jobs:
         run: |
           set -euo pipefail
           architecture_sha256="$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV12.md | awk '{print $1}')"
-          echo "architecture_sha256=${architecture_sha256}"
           test "${architecture_sha256}" = "${ZXUX_REV12_SHA256}"
           python3 tools/check_phase0_evidence.py --require-active
           python3 tools/check_phase1_evidence.py --require-active
@@ -159,19 +178,14 @@ jobs:
         run: |
           set +e
           set -o pipefail
-          mkdir -p "${ZXUX_EVIDENCE_DIR}"
           tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P2.18 --evidence-dir "${ZXUX_EVIDENCE_DIR}" \
             2>&1 | tee "${ZXUX_EVIDENCE_DIR}/P2.18.test.log"
           test_rc="${PIPESTATUS[0]}"
           printf '%s\n' "${test_rc}" > "${ZXUX_EVIDENCE_DIR}/P2.18.test.rc"
-          echo "p218_test_rc=${test_rc}"
-
           if test "${test_rc}" -ne 0; then
             tools/runtime/python/bin/python v1/tools-host/test-driver/p218_failure_probe.py \
               2>&1 | tee "${ZXUX_EVIDENCE_DIR}/P2.18.failure-probe.log"
-            probe_rc="${PIPESTATUS[0]}"
-            printf '%s\n' "${probe_rc}" > "${ZXUX_EVIDENCE_DIR}/P2.18.failure-probe.rc"
-            echo "p218_failure_probe_rc=${probe_rc}"
+            printf '%s\n' "${PIPESTATUS[0]}" > "${ZXUX_EVIDENCE_DIR}/P2.18.failure-probe.rc"
           fi
           exit "${test_rc}"
 
@@ -198,14 +212,8 @@ jobs:
         run: |
           set -u
           mkdir -p "${ZXUX_EVIDENCE_DIR}/build"
-          for path in \
-            v1/build/kernel-p218.sym \
-            v1/build/kernel-p218.lst \
-            v1/build/p218-kill-never-started.asm \
-            v1/build/p218-kill-never-started.sym; do
-            if test -f "${path}"; then
-              cp "${path}" "${ZXUX_EVIDENCE_DIR}/build/"
-            fi
+          for path in v1/build/kernel-p218.sym v1/build/kernel-p218.lst v1/build/p218-kill-never-started.asm v1/build/p218-kill-never-started.sym; do
+            if test -f "${path}"; then cp "${path}" "${ZXUX_EVIDENCE_DIR}/build/"; fi
           done
           git rev-parse HEAD > "${ZXUX_EVIDENCE_DIR}/candidate-commit.txt"
           git status --porcelain > "${ZXUX_EVIDENCE_DIR}/final-status.txt"
