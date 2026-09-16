@@ -18,7 +18,7 @@ on:
       - p213-diag13
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: p213-diag13
@@ -100,6 +100,28 @@ jobs:
           ./tools/check_license_headers.sh
           ./tools/check_project_policy.py
 
+      - name: Commit isolated clean candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "Supratim Sanyal"
+          git config user.email "tuklusan@users.noreply.github.com"
+          git add -- \
+            v1/src/kernel/process.asm \
+            v1/tools-host/test-driver/phase2_gate.py \
+            v1/tools-host/test-driver/phase2_parent_child.py \
+            v1/tools-host/test-driver/run.py
+          git commit -m "P2.13 clean candidate for certification"
+          candidate_sha="$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
+          expected=$'v1/src/kernel/process.asm\nv1/tools-host/test-driver/phase2_gate.py\nv1/tools-host/test-driver/phase2_parent_child.py\nv1/tools-host/test-driver/run.py'
+          actual="$(git diff --name-only "$BASE_SHA" HEAD | sort)"
+          test "$actual" = "$expected"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          printf '%s\n' "$candidate_sha" | tee /tmp/p213-candidate-commit.txt
+          echo "CANDIDATE_SHA=$candidate_sha" >> "$GITHUB_ENV"
+          git push --force origin HEAD:refs/heads/p213-clean-candidate
+
       - name: Select pinned Python
         uses: actions/setup-python@v6
         with:
@@ -143,6 +165,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
           {
             tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P2.13
             tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P2.13
@@ -163,6 +187,9 @@ jobs:
       - name: Dependent Phase 2 gate
         shell: bash
         run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
           set -o pipefail
           tools/runtime/python/bin/python v1/tools-host/test-driver/phase2_gate.py 2>&1 | tee /tmp/p213-phase2-gate.log
 
@@ -180,6 +207,7 @@ jobs:
         with:
           name: p213-process-only-e0-${{ github.run_id }}
           path: |
+            /tmp/p213-candidate-commit.txt
             /tmp/p213-candidate.patch
             /tmp/p213-candidate-sha256.txt
             /tmp/p213-bootstrap-attempt-*.log
