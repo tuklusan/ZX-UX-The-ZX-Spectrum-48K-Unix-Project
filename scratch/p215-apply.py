@@ -16,7 +16,7 @@
 from pathlib import Path
 
 
-RUNTIME_PATH = Path("v1/tools-host/test-driver/phase2_wait_specific_runtime.py")
+PROCESS_PATH = Path("v1/src/kernel/process.asm")
 
 
 def replace_once(text: str, old: str, new: str, name: str) -> str:
@@ -27,20 +27,31 @@ def replace_once(text: str, old: str, new: str, name: str) -> str:
 
 
 def main() -> None:
-    runtime = RUNTIME_PATH.read_text(encoding="utf-8")
+    process = PROCESS_PATH.read_text(encoding="utf-8")
 
-    # SjASMPlus IFDEF tests preprocessor DEFINE identifiers, not EQU labels.
-    # The previous EQU therefore appeared in the symbol file but did not enable
-    # the conditional P2.15 syscall continuation.  Define the compile switch in
-    # the preprocessor namespace before the kernel source includes instead.
-    runtime = replace_once(
-        runtime,
-        '        "ZX48_P2_15_WAIT_ENABLED EQU 1\\n"',
-        '        "    DEFINE ZX48_P2_15_WAIT_ENABLED\\n"',
-        "runtime P2.15 preprocessor switch",
-    )
-
-    RUNTIME_PATH.write_text(runtime, encoding="utf-8", newline="\n")
+    # The exact-child qualifier deliberately inspects the child descriptor and
+    # therefore returns with IX on the child. Reacquire the already validated
+    # parent descriptor before publishing READY; otherwise the wake mutates the
+    # ZOMBIE child instead of the blocked parent.
+    old = """    ld a,(process_zombie_pid)
+    ld b,(process_zombie_parent_pid)
+    call zx48_process_zombie_wait_specific_match
+    ret c
+    ENDIF
+    ld (ix+PROC_STATE),PROC_READY
+"""
+    new = """    ld a,(process_zombie_pid)
+    ld b,(process_zombie_parent_pid)
+    call zx48_process_zombie_wait_specific_match
+    ret c
+    ld a,(process_zombie_parent_pid)
+    call zx48_process_links_desc_ptr
+    ret c
+    ENDIF
+    ld (ix+PROC_STATE),PROC_READY
+"""
+    process = replace_once(process, old, new, "P2.15 parent descriptor reacquire")
+    PROCESS_PATH.write_text(process, encoding="utf-8", newline="\n")
 
 
 if __name__ == "__main__":
