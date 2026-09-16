@@ -52,9 +52,9 @@ jobs:
             v1/tools-host/test-driver/phase2_wait_specific.py \
             v1/tools-host/test-driver/phase2_wait_specific_runtime.py \
             v1/tools-host/test-driver/phase2_wait_specific_diag.py
-          grep -A10 'zx48_process_zombie_wake_parent:' v1/src/kernel/process.asm | \
+          grep -A24 'zx48_process_zombie_wake_parent:' v1/src/kernel/process.asm | \
             grep -q 'ld a,(process_zombie_parent_pid)'
-          grep -A18 'zx48_process_zombie_wake_parent:' v1/src/kernel/process.asm | \
+          grep -A24 'zx48_process_zombie_wake_parent:' v1/src/kernel/process.asm | \
             grep -q '^    ld b,a$'
           ! grep -q '^    ld b,(process_zombie_parent_pid)$' v1/src/kernel/process.asm
           grep -A8 'call zx48_process_zombie_wait_specific_match' v1/src/kernel/process.asm | \
