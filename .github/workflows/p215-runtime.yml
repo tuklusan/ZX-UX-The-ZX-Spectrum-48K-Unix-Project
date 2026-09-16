@@ -11,7 +11,6 @@
 # patent, trademark, and governing-law provisions.
 
 name: P2.15 WAIT runtime diagnostic
-# Diagnostic trigger: verify SjASMPlus DEFINE-based P2.15 composition switch.
 
 on:
   push:
@@ -24,6 +23,7 @@ on:
       - v1/src/kernel/scheduler.asm
       - v1/tools-host/test-driver/phase2_wait_specific.py
       - v1/tools-host/test-driver/phase2_wait_specific_runtime.py
+      - v1/tools-host/test-driver/phase2_wait_specific_diag.py
 
 permissions:
   contents: read
@@ -76,6 +76,11 @@ jobs:
           echo "source=$(git rev-parse HEAD)" > /tmp/p215-runtime.log
           tools/runtime/python/bin/python v1/tools-host/test-driver/phase2_wait_specific_runtime.py >> /tmp/p215-runtime.log 2>&1
           rc=$?
+          if [ "$rc" -ne 0 ]; then
+            echo '--- staged diagnostic ---' >> /tmp/p215-runtime.log
+            tools/runtime/python/bin/python v1/tools-host/test-driver/phase2_wait_specific_diag.py >> /tmp/p215-runtime.log 2>&1
+            printf '%s\n' "$?" > /tmp/p215-runtime.diag-exit
+          fi
           cat /tmp/p215-runtime.log
           printf '%s\n' "$rc" > /tmp/p215-runtime.exit
           exit "$rc"
@@ -88,6 +93,7 @@ jobs:
           path: |
             /tmp/p215-runtime.log
             /tmp/p215-runtime.exit
+            /tmp/p215-runtime.diag-exit
             v1/build/p215-wait-specific.asm
             v1/build/p215-wait-specific.sym
           retention-days: 30
