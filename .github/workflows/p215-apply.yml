@@ -32,36 +32,42 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Require unchanged recovery source
+      - name: Require unchanged candidate bytes
         run: |
-          git merge-base --is-ancestor a0e81216b3d98f5cb22d91d21c8c0cfbbd798fbc HEAD
-          git diff --exit-code a0e81216b3d98f5cb22d91d21c8c0cfbbd798fbc -- \
+          git merge-base --is-ancestor dfb75ac09f012455eecfcb2fe4ffbee427a02c5e HEAD
+          git diff --exit-code dfb75ac09f012455eecfcb2fe4ffbee427a02c5e -- \
             v1/src/kernel/process.asm \
             v1/src/kernel/syscall.asm \
-            v1/tools-host/test-driver/run.py
+            v1/tools-host/test-driver/run.py \
+            v1/tools-host/test-driver/phase2_wait_specific.py
+          git diff --exit-code 22ef3f8ffa099402aa9afd4318f6ec1da770f58e -- \
+            v1/tools-host/test-driver/phase2_wait_specific_runtime.py
           test -f scratch/p215-apply.py
 
-      - name: Apply exact guarded P2.15 patch
+      - name: Apply exact guarded P2.15 repair
         run: python3 scratch/p215-apply.py
 
-      - name: Guard patch shape
+      - name: Guard repair shape
         run: |
           python3 -m py_compile \
             v1/tools-host/test-driver/run.py \
-            v1/tools-host/test-driver/phase2_wait_specific.py
-          grep -q 'MACRO EMIT_WAIT_SPECIFIC_ROUTINES' v1/src/kernel/process.asm
-          grep -q 'zx48_syscall_resume_wait_specific' v1/src/kernel/syscall.asm
-          grep -q 'return phase2_wait_specific.dispatch' v1/tools-host/test-driver/run.py
+            v1/tools-host/test-driver/phase2_wait_specific.py \
+            v1/tools-host/test-driver/phase2_wait_specific_runtime.py
+          grep -q '^    IFDEF ZX48_P2_15_WAIT_EMITTED$' v1/src/kernel/process.asm
+          test "$(grep -c '^    IFDEF ZX48_P2_15_WAIT_EMITTED$' v1/src/kernel/syscall.asm)" -eq 2
+          grep -q 'jp nc,zx48_process_wait_specific_child' v1/src/kernel/process.asm
+          grep -q 'STATUS_PTR + 1, 0x7E' v1/tools-host/test-driver/phase2_wait_specific_runtime.py
           git diff --check
           git status --short
 
-      - name: Commit guarded candidate
+      - name: Commit guarded repair
         run: |
           git config user.name 'ZX-UX P2.15 diagnostic runner'
           git config user.email 'tuklusan@users.noreply.github.com'
           git add \
             v1/src/kernel/process.asm \
             v1/src/kernel/syscall.asm \
-            v1/tools-host/test-driver/run.py
-          git commit -m 'P2.15 candidate: generation-safe specific WAIT continuation'
+            v1/tools-host/test-driver/phase2_wait_specific.py \
+            v1/tools-host/test-driver/phase2_wait_specific_runtime.py
+          git commit -m 'P2.15 candidate: repair exact WAIT macro assembly'
           git push origin HEAD:main
