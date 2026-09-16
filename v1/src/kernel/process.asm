@@ -3261,3 +3261,211 @@ process_wait_candidate_pid: db 0
 process_wait_candidate_generation: dw 0
 process_wait_parent_generation: dw 0
     ENDM
+
+; P2.14 resource-safe ZOMBIE transition. This emitter composes after the P2.13
+; generation-qualified linkage emitter. The exiting child remains RUNNING while
+; fallible resource teardown occurs, so handle lookup remains valid. Only after
+; all private resources are released are stale ownership pointers cleared and
+; the durable descriptor published as ZOMBIE with its exit status retained.
+    MACRO EMIT_ZOMBIE_TRANSITION_ROUTINES
+ZX48_P2_14_ZOMBIE_EMITTED EQU 1
+
+; A=exit status. Current PID must be a live spawned child (PID2..PID7).
+zx48_process_exit_to_zombie:
+    ld (process_zombie_status),a
+    ld a,(current_pid)
+    cp 2
+    jp c,zx48_process_zombie_panic
+    cp MAX_PROCESSES
+    jp nc,zx48_process_zombie_panic
+    ld (process_zombie_pid),a
+    call zx48_process_links_desc_ptr
+    jp c,zx48_process_zombie_panic
+    ld a,(ix+PROC_STATE)
+    cp PROC_RUNNING
+    jp nz,zx48_process_zombie_panic
+
+    ld a,(ix+PROC_PARENT)
+    ld (process_zombie_parent_pid),a
+    ld a,(process_zombie_pid)
+    call zx48_process_parent_generation_ptr
+    jp c,zx48_process_zombie_panic
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld a,d
+    or e
+    jp z,zx48_process_zombie_panic
+    ld (process_zombie_parent_generation),de
+
+    ld l,(ix+PROC_IMAGE_BASE)
+    ld h,(ix+PROC_IMAGE_BASE+1)
+    ld (process_zombie_image_base),hl
+    ld l,(ix+PROC_IMAGE_SIZE)
+    ld h,(ix+PROC_IMAGE_SIZE+1)
+    ld (process_zombie_image_size),hl
+    ld l,(ix+PROC_STACK_LOW)
+    ld h,(ix+PROC_STACK_LOW+1)
+    ld (process_zombie_stack_base),hl
+    ld e,(ix+PROC_STACK_HIGH)
+    ld d,(ix+PROC_STACK_HIGH+1)
+    or a
+    ex de,hl
+    sbc hl,de
+    jp c,zx48_process_zombie_panic
+    ld a,h
+    or l
+    jp z,zx48_process_zombie_panic
+    bit 0,l
+    jp nz,zx48_process_zombie_panic
+    ld (process_zombie_stack_size),hl
+    ld l,(ix+PROC_ARG_PTR)
+    ld h,(ix+PROC_ARG_PTR+1)
+    ld (process_zombie_bootstrap_base),hl
+    ld l,(ix+PROC_OWNED_BYTES)
+    ld h,(ix+PROC_OWNED_BYTES+1)
+    ld (process_zombie_owned_bytes),hl
+
+    ; Validate the complete private-extent shape before the first destructive
+    ; operation. Spawn/exec publish rounded even sizes and OWNED_BYTES is their
+    ; exact image+stack+bootstrap sum.
+    ld hl,(process_zombie_image_base)
+    ld a,h
+    or l
+    jp z,zx48_process_zombie_panic
+    bit 0,l
+    jp nz,zx48_process_zombie_panic
+    ld hl,(process_zombie_image_size)
+    ld a,h
+    or l
+    jp z,zx48_process_zombie_panic
+    bit 0,l
+    jp nz,zx48_process_zombie_panic
+    ld hl,(process_zombie_stack_base)
+    ld a,h
+    or l
+    jp z,zx48_process_zombie_panic
+    bit 0,l
+    jp nz,zx48_process_zombie_panic
+    ld hl,(process_zombie_bootstrap_base)
+    ld a,h
+    or l
+    jp z,zx48_process_zombie_panic
+    bit 0,l
+    jp nz,zx48_process_zombie_panic
+    ld hl,(process_zombie_owned_bytes)
+    ld a,h
+    or l
+    jp z,zx48_process_zombie_panic
+    bit 0,l
+    jp nz,zx48_process_zombie_panic
+    ld de,(process_zombie_image_size)
+    or a
+    sbc hl,de
+    jp c,zx48_process_zombie_panic
+    ld de,(process_zombie_stack_size)
+    or a
+    sbc hl,de
+    jp c,zx48_process_zombie_panic
+    ld a,h
+    or l
+    jp z,zx48_process_zombie_panic
+    bit 0,l
+    jp nz,zx48_process_zombie_panic
+    ld (process_zombie_bootstrap_size),hl
+
+    ; Architecture §7.5 ordering: close handles, release private allocations,
+    ; then publish status/ZOMBIE. Any allocator inconsistency is kernel-fatal;
+    ; silently retaining or double-freeing memory is not an exit result.
+    call zx48_handles_close_all_current
+    jp c,zx48_process_zombie_panic
+zx48_process_zombie_free_bootstrap:
+    ld hl,(process_zombie_bootstrap_base)
+    ld bc,(process_zombie_bootstrap_size)
+    call zx48_free
+    jp c,zx48_process_zombie_panic
+zx48_process_zombie_free_stack:
+    ld hl,(process_zombie_stack_base)
+    ld bc,(process_zombie_stack_size)
+    call zx48_free
+    jp c,zx48_process_zombie_panic
+zx48_process_zombie_free_image:
+    ld hl,(process_zombie_image_base)
+    ld bc,(process_zombie_image_size)
+    call zx48_free
+    jp c,zx48_process_zombie_panic
+
+zx48_process_zombie_publish:
+    ld a,(process_zombie_pid)
+    call zx48_process_links_desc_ptr
+    jp c,zx48_process_zombie_panic
+    xor a
+    ld (ix+PROC_IMAGE_BASE),a
+    ld (ix+PROC_IMAGE_BASE+1),a
+    ld (ix+PROC_IMAGE_SIZE),a
+    ld (ix+PROC_IMAGE_SIZE+1),a
+    ld (ix+PROC_STACK_LOW),a
+    ld (ix+PROC_STACK_LOW+1),a
+    ld (ix+PROC_STACK_HIGH),a
+    ld (ix+PROC_STACK_HIGH+1),a
+    ld (ix+PROC_SAVED_SP),a
+    ld (ix+PROC_SAVED_SP+1),a
+    ld (ix+PROC_WAIT_OBJECT),a
+    ld (ix+PROC_WAKE_TICK+0),a
+    ld (ix+PROC_WAKE_TICK+1),a
+    ld (ix+PROC_WAKE_TICK+2),a
+    ld (ix+PROC_WAKE_TICK+3),a
+    ld (ix+PROC_OWNED_BYTES),a
+    ld (ix+PROC_OWNED_BYTES+1),a
+    ld (ix+PROC_ARG_PTR),a
+    ld (ix+PROC_ARG_PTR+1),a
+    ld (ix+PROC_ENV_PTR),a
+    ld (ix+PROC_ENV_PTR+1),a
+    ld a,(process_zombie_status)
+    ld (ix+PROC_EXIT_STATUS),a
+    ld (ix+PROC_STATE),PROC_ZOMBIE
+    call zx48_process_zombie_wake_parent
+    call zx48_process_restore_tty_owner
+    jp zx48_schedule
+
+; Wake only the same generation-qualified parent identity recorded by P2.13.
+; A recycled numeric parent PID must not receive a wake belonging to an older
+; parent generation.
+zx48_process_zombie_wake_parent:
+    ld a,(process_zombie_parent_pid)
+    cp HANDLE_FREE
+    ret z
+    cp MAX_PROCESSES
+    ret nc
+    call zx48_process_generation_get
+    ret c
+    ld hl,(process_zombie_parent_generation)
+    or a
+    sbc hl,de
+    ret nz
+    ld a,(process_zombie_parent_pid)
+    call zx48_process_links_desc_ptr
+    ret c
+    ld a,(ix+PROC_STATE)
+    cp PROC_WAIT_CHILD
+    ret nz
+    ld (ix+PROC_STATE),PROC_READY
+    xor a
+    ret
+
+zx48_process_zombie_panic:
+    ld a,PANIC_SCHEDULER
+    jp zx48_panic
+
+process_zombie_pid: db 0
+process_zombie_status: db 0
+process_zombie_parent_pid: db HANDLE_FREE
+process_zombie_parent_generation: dw 0
+process_zombie_image_base: dw 0
+process_zombie_image_size: dw 0
+process_zombie_stack_base: dw 0
+process_zombie_stack_size: dw 0
+process_zombie_bootstrap_base: dw 0
+process_zombie_bootstrap_size: dw 0
+process_zombie_owned_bytes: dw 0
+    ENDM
