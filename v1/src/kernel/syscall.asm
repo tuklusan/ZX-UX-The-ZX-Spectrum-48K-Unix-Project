@@ -90,6 +90,16 @@ zx48_syscall_resume_intr:
     ld a,E_INTR
     scf
     jr zx48_syscall_return
+
+IFDEF ZX48_P2_15_WAIT_EMITTED
+; Scheduler continuation for a blocked P2.15 specific-child WAIT.
+zx48_syscall_resume_wait_specific:
+    ld (syscall_user_sp),sp
+    ld (syscall_saved_ix),ix
+    ld sp,BOOT_STACK_TOP
+    call zx48_process_wait_specific_resume
+    jr zx48_syscall_return
+ENDIF
     ENDM
 
 ; Shared exact user-range validator. P2.09 emits this same source into its staged
@@ -270,6 +280,13 @@ zx48_sys_wait_target_ok:
     ld d,(hl)
     ld hl,(syscall_arg_hl)
     ld a,(hl)
+IFDEF ZX48_P2_15_WAIT_EMITTED
+    cp $ff
+    jr z,zx48_sys_wait_legacy_any
+    call zx48_process_wait_specific
+    ret
+zx48_sys_wait_legacy_any:
+ENDIF
     call zx48_process_wait
     ret c
     xor a
