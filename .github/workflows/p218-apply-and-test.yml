@@ -209,13 +209,54 @@ jobs:
         run: tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P2.18
 
       - name: Execute P2.18 test
-        run: tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P2.18
+        shell: bash
+        run: |
+          set +e
+          set -o pipefail
+          mkdir -p "${ZXUX_EVIDENCE_DIR}"
+          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P2.18 \
+            2>&1 | tee "${ZXUX_EVIDENCE_DIR}/P2.18.test.log"
+          test_rc="${PIPESTATUS[0]}"
+          printf '%s\n' "${test_rc}" > "${ZXUX_EVIDENCE_DIR}/P2.18.test.rc"
+          echo "p218_test_rc=${test_rc}"
+          exit "${test_rc}"
+
+      - name: Collect P2.18 diagnostic evidence
+        if: always()
+        shell: bash
+        run: |
+          set -u
+          mkdir -p "${ZXUX_EVIDENCE_DIR}/build"
+          for path in \
+            v1/build/kernel-p218.sym \
+            v1/build/kernel-p218.lst \
+            v1/build/p218-kill-never-started.asm \
+            v1/build/p218-kill-never-started.sym; do
+            if test -f "${path}"; then
+              cp "${path}" "${ZXUX_EVIDENCE_DIR}/build/"
+            fi
+          done
+
+          echo "P2.18 evidence files:"
+          find "${ZXUX_EVIDENCE_DIR}" -maxdepth 3 -type f -printf '%P\t%s bytes\n' | sort
+
+          if test -f "${ZXUX_EVIDENCE_DIR}/P2.18.test.log"; then
+            echo "----- P2.18 test log -----"
+            cat "${ZXUX_EVIDENCE_DIR}/P2.18.test.log"
+            echo "----- end P2.18 test log -----"
+          fi
+
+          if test -f "${ZXUX_EVIDENCE_DIR}/build/kernel-p218.sym"; then
+            echo "----- P2.18 key kernel symbols -----"
+            grep -E '^(kernel_ordinary_used_end|KERNEL_CODE_END):' \
+              "${ZXUX_EVIDENCE_DIR}/build/kernel-p218.sym" || true
+          fi
 
       - name: Upload P2.18 evidence
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: zxux-p218-${{ github.run_id }}-${{ github.run_attempt }}
-          path: /tmp/zxux-p218-evidence/**/*.json
+          path: /tmp/zxux-p218-evidence/
           retention-days: 90
           if-no-files-found: warn
