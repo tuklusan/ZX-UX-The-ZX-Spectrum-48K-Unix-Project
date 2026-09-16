@@ -108,7 +108,7 @@ def _wake_child(symbols: dict[str, int], *, after_wake: bytes, schedule: bool) -
 
 
 def _resume_case(root: Path, symbols: dict[str, int], fixture: bytes, label: str, after_syscall: bytes) -> None:
-    child = _wake_child(symbols, after_wake=p._jp_c(FAIL_PC), schedule=True)
+    child = _wake_child(symbols, after_wake=b"", schedule=True)
     parent = _parent_code(symbols, after_syscall=after_syscall + p._jp(PASS_PC))
     _run_case(
         root,
@@ -148,7 +148,7 @@ def main() -> int:
         patch=p._fixture_patch(fixture, child_frame=_child_frame(), child_code=bytes(matcher_child)),
     )
 
-    wake_check = p._jp_c(FAIL_PC) + p._expect_byte(p1 + p.PROC_STATE, symbols["PROC_READY"])
+    wake_check = p._expect_byte(p1 + p.PROC_STATE, symbols["PROC_READY"])
     wake_child = _wake_child(symbols, after_wake=wake_check, schedule=False)
     wake_parent = _parent_code(symbols, after_syscall=p._jp(FAIL_PC))
     _run_case(
