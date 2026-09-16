@@ -23,7 +23,7 @@ from driver_core import DriverError, find_root, run_command
 
 
 CERTIFIED_STEPS = ("P2.01", "P2.02", "P2.03", "P2.04", "P2.05", "P2.06", "P2.07")
-CANDIDATE_STEPS: tuple[str, ...] = ("P2.08", "P2.09", "P2.10", "P2.11", "P2.12", "P2.13", "P2.14")
+CANDIDATE_STEPS: tuple[str, ...] = ("P2.08", "P2.09", "P2.10", "P2.11", "P2.12", "P2.13", "P2.14", "P2.15")
 
 
 def _diagnostic_path() -> Path | None:
