@@ -168,6 +168,8 @@ def _assemble_fixture(
         "    DEVICE ZXSPECTRUM48\n"
         "    INCLUDE \"../include/zx48ux.inc\"\n"
         "    INCLUDE \"../src/kernel/process.asm\"\n"
+        "PANIC_SCHEDULER EQU $03\n"
+        "SYSCALL_FRAME_PC_O EQU 10\n"
         f"    ORG ${FIXTURE_CODE:04X}\n"
         "p217_start:\n"
         "    EMIT_PROCESS_ROUTINES\n"
