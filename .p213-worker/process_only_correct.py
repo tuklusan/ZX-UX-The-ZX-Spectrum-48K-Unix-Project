@@ -164,7 +164,7 @@ old_spawn = (
     "    ld (ix+PROC_FLAGS),a\n"
 )
 new_spawn = (
-    "IFDEF ZX48_P2_13_LINKS_EMITTED\n"
+    "    IFDEF ZX48_P2_13_LINKS_EMITTED\n"
     "    ; P2.13 clears the still-private descriptor before generation-qualified\n"
     "    ; linkage. Linkage is the final fallible action before READY publication.\n"
     "    ld hl,(process_spawn_child_desc)\n"
@@ -181,7 +181,7 @@ new_spawn = (
     "    ld ix,(process_spawn_child_desc)\n"
     "    ld a,(process_spawn_child_pid)\n"
     "    ld (ix+PROC_PID),a\n"
-    "ELSE\n"
+    "    ELSE\n"
     "    ; Preserve the certified P2.10/P2.12 expansion byte-for-byte when the\n"
     "    ; P2.13 linkage emitter is absent from the assembly unit.\n"
     "    ; Commit is intentionally non-fallible. The descriptor remains PROC_FREE\n"
@@ -199,7 +199,7 @@ new_spawn = (
     "    ld (ix+PROC_PID),a\n"
     "    ld a,(current_pid)\n"
     "    ld (ix+PROC_PARENT),a\n"
-    "ENDIF\n"
+    "    ENDIF\n"
     "    xor a\n"
     "    ld (ix+PROC_FLAGS),a\n"
 )
