@@ -1,0 +1,61 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: P2.13 exact candidate source pack
+
+on:
+  push:
+    branches:
+      - p213-cert-stage
+
+permissions:
+  contents: read
+
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    env:
+      CANDIDATE_SHA: 0065149e25bd3d2afd1f315380722406ba9196ff
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Package exact candidate files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git checkout --detach "$CANDIDATE_SHA"
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          mkdir -p /tmp/p213-cert-source/v1/src/kernel
+          mkdir -p /tmp/p213-cert-source/v1/tools-host/test-driver
+          cp v1/src/kernel/process.asm /tmp/p213-cert-source/v1/src/kernel/process.asm
+          cp v1/tools-host/test-driver/phase2_gate.py /tmp/p213-cert-source/v1/tools-host/test-driver/phase2_gate.py
+          cp v1/tools-host/test-driver/phase2_parent_child.py /tmp/p213-cert-source/v1/tools-host/test-driver/phase2_parent_child.py
+          cp v1/tools-host/test-driver/run.py /tmp/p213-cert-source/v1/tools-host/test-driver/run.py
+          sha256sum \
+            v1/src/kernel/process.asm \
+            v1/tools-host/test-driver/phase2_gate.py \
+            v1/tools-host/test-driver/phase2_parent_child.py \
+            v1/tools-host/test-driver/run.py | tee /tmp/p213-cert-source/SHA256SUMS
+          printf '%s\n' "$CANDIDATE_SHA" > /tmp/p213-cert-source/CANDIDATE_SHA
+          tar -C /tmp -czf /tmp/p213-cert-source.tgz p213-cert-source
+
+      - name: Upload exact candidate source pack
+        uses: actions/upload-artifact@v7
+        with:
+          name: p213-cert-source-${{ github.run_id }}
+          path: /tmp/p213-cert-source.tgz
+          retention-days: 30
+          if-no-files-found: error
