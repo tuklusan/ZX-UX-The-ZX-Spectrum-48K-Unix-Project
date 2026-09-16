@@ -3451,8 +3451,9 @@ zx48_process_zombie_wake_parent:
     ret nz
     IFDEF ZX48_P2_15_WAIT_ENABLED
     ; P2.15 specific WAIT wakes only for the exact recorded child generation.
+    ld a,(process_zombie_parent_pid)
+    ld b,a
     ld a,(process_zombie_pid)
-    ld b,(process_zombie_parent_pid)
     call zx48_process_zombie_wait_specific_match
     ret c
     ld a,(process_zombie_parent_pid)
