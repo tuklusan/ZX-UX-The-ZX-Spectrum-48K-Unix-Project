@@ -3455,6 +3455,9 @@ zx48_process_zombie_wake_parent:
     ld b,(process_zombie_parent_pid)
     call zx48_process_zombie_wait_specific_match
     ret c
+    ld a,(process_zombie_parent_pid)
+    call zx48_process_links_desc_ptr
+    ret c
     ENDIF
     ld (ix+PROC_STATE),PROC_READY
     xor a
