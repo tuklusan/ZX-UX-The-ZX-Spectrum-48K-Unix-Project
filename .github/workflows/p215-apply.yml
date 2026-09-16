@@ -34,8 +34,8 @@ jobs:
 
       - name: Require unchanged candidate bytes
         run: |
-          git merge-base --is-ancestor 70e94264b8f2daa9e667716ce21a66a965c7f182 HEAD
-          git diff --exit-code 70e94264b8f2daa9e667716ce21a66a965c7f182 -- \
+          git merge-base --is-ancestor ae16af41daaf01751ea03dc85178e41a2bbd61cb HEAD
+          git diff --exit-code ae16af41daaf01751ea03dc85178e41a2bbd61cb -- \
             v1/src/kernel/process.asm \
             v1/src/kernel/syscall.asm \
             v1/tools-host/test-driver/phase2_wait_specific.py \
@@ -52,6 +52,11 @@ jobs:
             v1/tools-host/test-driver/phase2_wait_specific.py \
             v1/tools-host/test-driver/phase2_wait_specific_runtime.py \
             v1/tools-host/test-driver/phase2_wait_specific_diag.py
+          grep -A10 'zx48_process_zombie_wake_parent:' v1/src/kernel/process.asm | \
+            grep -q 'ld a,(process_zombie_parent_pid)'
+          grep -A18 'zx48_process_zombie_wake_parent:' v1/src/kernel/process.asm | \
+            grep -q '^    ld b,a$'
+          ! grep -q '^    ld b,(process_zombie_parent_pid)$' v1/src/kernel/process.asm
           grep -A8 'call zx48_process_zombie_wait_specific_match' v1/src/kernel/process.asm | \
             grep -q 'call zx48_process_links_desc_ptr'
           grep -q '^    IFDEF ZX48_P2_15_WAIT_ENABLED$' v1/src/kernel/process.asm
@@ -65,5 +70,5 @@ jobs:
           git config user.name 'ZX-UX P2.15 diagnostic runner'
           git config user.email 'tuklusan@users.noreply.github.com'
           git add v1/src/kernel/process.asm
-          git commit -m 'P2.15 candidate: reacquire parent after exact wake match'
+          git commit -m 'P2.15 candidate: load wake parent PID through A'
           git push origin HEAD:main
