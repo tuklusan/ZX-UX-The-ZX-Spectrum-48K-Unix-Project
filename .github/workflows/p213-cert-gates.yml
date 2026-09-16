@@ -1,0 +1,71 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: P2.13 exact candidate certification gates
+
+on:
+  push:
+    branches:
+      - p213-cert-stage
+
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    env:
+      CANDIDATE_SHA: 0065149e25bd3d2afd1f315380722406ba9196ff
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Pin exact candidate bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git checkout --detach "$CANDIDATE_SHA"
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          printf '%s  %s\n' \
+            96c28222a4272145532a4da5a191633a46158f7a69f1f511466a977ebe0318e1 v1/src/kernel/process.asm \
+            2ca4be887b61dbb75aefac2cd3526a335c520b9432b2a612e1fa32c5bd5a7862 v1/tools-host/test-driver/phase2_gate.py \
+            7acdc1c37d305a2dafc9bbf4d00ae73c0e9862d212fa02d10f09238f631ad4e9 v1/tools-host/test-driver/phase2_parent_child.py \
+            c2fdc92b63a2b808e8d3e3734af036ff13d4421d0a25e0bf28bd5f9c42acb83a v1/tools-host/test-driver/run.py \
+            | sha256sum -c -
+
+      - name: License headers
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./tools/check_license_headers.sh
+
+      - name: Project policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./tools/check_project_policy.py
+
+      - name: Reconfirm candidate immutability
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          printf '%s  %s\n' \
+            96c28222a4272145532a4da5a191633a46158f7a69f1f511466a977ebe0318e1 v1/src/kernel/process.asm \
+            2ca4be887b61dbb75aefac2cd3526a335c520b9432b2a612e1fa32c5bd5a7862 v1/tools-host/test-driver/phase2_gate.py \
+            7acdc1c37d305a2dafc9bbf4d00ae73c0e9862d212fa02d10f09238f631ad4e9 v1/tools-host/test-driver/phase2_parent_child.py \
+            c2fdc92b63a2b808e8d3e3734af036ff13d4421d0a25e0bf28bd5f9c42acb83a v1/tools-host/test-driver/run.py \
+            | sha256sum -c -
