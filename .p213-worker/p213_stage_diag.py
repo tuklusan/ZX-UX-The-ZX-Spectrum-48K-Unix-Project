@@ -95,13 +95,15 @@ def base_code(stage: int) -> bytearray:
 
 
 def run_case(label: str, code: bytearray) -> bool:
-    code += phase1._jp(p213.PASS_PC)
+    payload = bytearray(code)
+    payload += phase1._jp(p213.PASS_PC)
+    print(f"P2.13 STAGE {label} START code_bytes={len(payload)}", flush=True)
     try:
-        p213.run_sna(root, bytes(code), patch=p213._patch(fixture, table), timeout=5.0)
+        p213.run_sna(root, bytes(payload), patch=p213._patch(fixture, table), timeout=5.0)
     except Exception as exc:
-        print(f"P2.13 STAGE {label} FAIL {type(exc).__name__}: {exc}", flush=True)
+        print(f"P2.13 STAGE {label} FAIL code_bytes={len(payload)} {type(exc).__name__}: {exc}", flush=True)
         return False
-    print(f"P2.13 STAGE {label} PASS", flush=True)
+    print(f"P2.13 STAGE {label} PASS code_bytes={len(payload)}", flush=True)
     return True
 
 
@@ -131,21 +133,42 @@ for label, assertion in checks:
     if not run_case(label, code):
         raise SystemExit(3)
 
+stale_wait = bytearray()
+stale_wait += bytes((0x3E, 2)) + p213._call(symbols["zx48_process_wait_matches"]) + p213._jp_nc(p213.FAIL_PC)
+stale_wait += bytes((0xFE, symbols["E_CHILD"] & 0xFF)) + phase1._jp_nz(p213.FAIL_PC)
 code = base_code(6)
-code += bytes((0x3E, 2)) + p213._call(symbols["zx48_process_wait_matches"]) + p213._jp_nc(p213.FAIL_PC)
-code += bytes((0xFE, symbols["E_CHILD"] & 0xFF)) + phase1._jp_nz(p213.FAIL_PC)
+code += stale_wait
 if not run_case("stale-wait-negative", code):
     raise SystemExit(4)
 
+generation_exhaustion = bytearray()
+generation_exhaustion += p213._set_byte(generations + 4 * 2, 0xFF)
+generation_exhaustion += p213._set_byte(generations + 4 * 2 + 1, 0xFF)
+generation_exhaustion += bytes((0x3E, 4)) + p213._call(symbols["zx48_process_link_child"]) + p213._jp_nc(p213.FAIL_PC)
+generation_exhaustion += bytes((0xFE, symbols["E_AGAIN"] & 0xFF)) + phase1._jp_nz(p213.FAIL_PC)
+generation_exhaustion += p213._expect_byte(table + 4 * p213.PROC_DESC_SIZE + p213.PROC_STATE, 0)
+generation_exhaustion += p213._expect_byte(table + 4 * p213.PROC_DESC_SIZE + p213.PROC_PARENT, 0xFF)
+generation_exhaustion += p213._expect_byte(child_masks + 1, 0x0C)
 code = base_code(6)
-code += p213._set_byte(generations + 4 * 2, 0xFF)
-code += p213._set_byte(generations + 4 * 2 + 1, 0xFF)
-code += bytes((0x3E, 4)) + p213._call(symbols["zx48_process_link_child"]) + p213._jp_nc(p213.FAIL_PC)
-code += bytes((0xFE, symbols["E_AGAIN"] & 0xFF)) + phase1._jp_nz(p213.FAIL_PC)
-code += p213._expect_byte(table + 4 * p213.PROC_DESC_SIZE + p213.PROC_STATE, 0)
-code += p213._expect_byte(table + 4 * p213.PROC_DESC_SIZE + p213.PROC_PARENT, 0xFF)
-code += p213._expect_byte(child_masks + 1, 0x0C)
+code += generation_exhaustion
 if not run_case("generation-exhaustion-negative", code):
     raise SystemExit(5)
+
+# Reproduce the exact target's single-emulator control flow cumulatively.  The
+# isolated cases above prove each primitive from a fresh snapshot; these prefix
+# cases reveal the first point where combined state or code layout diverges.
+cumulative = base_code(6)
+for index, (label, assertion) in enumerate(checks, start=1):
+    cumulative += assertion
+    if not run_case(f"cumulative-{index:02d}-{label}", cumulative):
+        raise SystemExit(6)
+
+cumulative += stale_wait
+if not run_case("cumulative-stale-wait-negative", cumulative):
+    raise SystemExit(7)
+
+cumulative += generation_exhaustion
+if not run_case("cumulative-generation-exhaustion-negative", cumulative):
+    raise SystemExit(8)
 
 print("P2.13 STAGE DIAGNOSTIC PASS", flush=True)
