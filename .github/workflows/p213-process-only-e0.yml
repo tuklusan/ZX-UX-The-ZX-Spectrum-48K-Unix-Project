@@ -93,7 +93,7 @@ jobs:
             v1/tools-host/test-driver/run.py | tee /tmp/p213-candidate-sha256.txt
           git diff "$BASE_SHA" -- > /tmp/p213-candidate.patch
 
-      - name: Audit P2.13 spawn generation rollback ordering
+      - name: Audit P2.13 spawn linkage ownership
         shell: bash
         run: |
           set -o pipefail
@@ -107,20 +107,28 @@ jobs:
           marker = spawn.index("    IFDEF ZX48_P2_13_LINKS_EMITTED")
           branch_end = spawn.index("    ELSE", marker)
           active = spawn[marker:branch_end]
-          clear_index = active.index("ld hl,(process_spawn_child_desc)")
-          link_index = active.index("call zx48_process_link_child")
+          helper_call = "call zx48_process_link_child" in active
+          external_clear = "ld hl,(process_spawn_child_desc)" in active
+
+          link_start = process.index("zx48_process_link_child:\n")
+          link_end = process.index("zx48_process_generation_exhausted:\n", link_start)
+          link = process[link_start:link_end]
+          bump_index = link.index("call zx48_process_generation_bump")
+          reset_index = link.index("ld bc,PROC_DESC_SIZE-1")
+          parent_index = link.index("ld (ix+PROC_PARENT),a")
+          helper_order_ok = bump_index < reset_index < parent_index
+
           print(
-              "P2.13 spawn rollback audit: "
-              f"link_index={link_index} clear_index={clear_index} "
-              f"link_before_clear={link_index < clear_index}"
+              "P2.13 spawn linkage audit: "
+              f"helper_call={helper_call} external_clear={external_clear} "
+              f"helper_order_ok={helper_order_ok}"
           )
-          if not link_index < clear_index:
+          if not helper_call or external_clear or not helper_order_ok:
               raise SystemExit(
-                  "P2.13 spawn rollback audit FAIL: fallible generation link follows "
-                  "private descriptor clearing; generation exhaustion can mutate a FREE "
-                  "descriptor before rollback"
+                  "P2.13 spawn linkage audit FAIL: descriptor reset must live inside the "
+                  "dynamically exercised link helper after generation bump and before parent publication"
               )
-          print("P2.13 spawn rollback audit PASS")
+          print("P2.13 spawn linkage audit PASS")
           PY
 
       - name: License and policy preflight
