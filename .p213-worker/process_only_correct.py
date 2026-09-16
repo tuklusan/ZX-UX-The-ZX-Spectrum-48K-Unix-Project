@@ -184,6 +184,8 @@ new_spawn = (
     "ELSE\n"
     "    ; Preserve the certified P2.10/P2.12 expansion byte-for-byte when the\n"
     "    ; P2.13 linkage emitter is absent from the assembly unit.\n"
+    "    ; Commit is intentionally non-fallible. The descriptor remains PROC_FREE\n"
+    "    ; while every field is written; READY is the single publication store.\n"
     "    ld hl,(process_spawn_child_desc)\n"
     "    xor a\n"
     "    ld (hl),a\n"
