@@ -38,12 +38,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Preserve corrector and recover reviewed inputs
+      - name: Preserve instrumentation and recover reviewed inputs
         shell: bash
         run: |
           set -euo pipefail
           cp .p213-worker/process_only_correct.py /tmp/process_only_correct.py
+          cp .p213-worker/p213_stage_diag.py /tmp/p213_stage_diag.py
           test "$(git hash-object .p213-worker/process_only_correct.py)" = "$(git rev-parse HEAD:.p213-worker/process_only_correct.py)"
+          test "$(git hash-object .p213-worker/p213_stage_diag.py)" = "$(git rev-parse HEAD:.p213-worker/p213_stage_diag.py)"
           raw="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${HIST_SHA}/.p213-worker"
           curl -fsSL "$raw/p213_macro.asm" -o /tmp/p213_macro.asm
           curl -fsSL "$raw/p213_patch.py" -o /tmp/p213_patch.py
@@ -53,7 +55,7 @@ jobs:
           test "$(git hash-object /tmp/p213_patch.py)" = f7a74cadecbd17eb1fb769f2bf8e4e2fa5e79e2f
           test "$(git hash-object /tmp/p213_root_fix.py)" = c6adb3a935e496fdb36215c10c985b3b8be2c2fa
           test "$(git hash-object /tmp/phase2_parent_child.py)" = c40a0795af41135220fbb5a43f3a23af4a51818e
-          python3 -m py_compile /tmp/process_only_correct.py /tmp/p213_patch.py /tmp/p213_root_fix.py /tmp/phase2_parent_child.py
+          python3 -m py_compile /tmp/process_only_correct.py /tmp/p213_stage_diag.py /tmp/p213_patch.py /tmp/p213_root_fix.py /tmp/phase2_parent_child.py
 
       - name: Detach exact canonical base
         shell: bash
@@ -120,17 +122,39 @@ jobs:
           tools/runtime/python/bin/python tools/scripts/verify-environment.py
 
       - name: Exact P2.13 target build and test
+        id: target
+        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
           tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P2.13
           tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P2.13
 
+      - name: Diagnose P2.13 runtime stages
+        if: steps.target.outcome == 'failure'
+        shell: bash
+        run: |
+          set +e
+          tools/runtime/python/bin/python /tmp/p213_stage_diag.py 2>&1 | tee /tmp/p213-stage-diagnostic.log
+          exit 0
+
+      - name: Enforce target result
+        if: steps.target.outcome == 'failure'
+        run: exit 1
+
       - name: Dependent Phase 2 gate
         shell: bash
         run: |
           set -o pipefail
           tools/runtime/python/bin/python v1/tools-host/test-driver/phase2_gate.py 2>&1 | tee /tmp/p213-phase2-gate.log
+
+      - name: Pack diagnostics
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          tar -C /tmp -czf /tmp/p213-evidence.tgz p213-evidence 2>/dev/null
+          exit 0
 
       - name: Preserve diagnostics
         if: always()
@@ -141,6 +165,7 @@ jobs:
             /tmp/p213-candidate.patch
             /tmp/p213-candidate-sha256.txt
             /tmp/p213-phase2-gate.log
-            /tmp/p213-evidence/**
+            /tmp/p213-stage-diagnostic.log
+            /tmp/p213-evidence.tgz
           retention-days: 30
           if-no-files-found: warn
