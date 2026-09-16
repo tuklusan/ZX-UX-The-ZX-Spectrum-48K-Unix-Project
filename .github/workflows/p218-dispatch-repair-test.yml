@@ -28,7 +28,7 @@ jobs:
     timeout-minutes: 45
     env:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p218-dispatch-repair
-      P218_EXACT_PARENT: bc8bd0b84e5a29766bdf5d4a57e8ea2001aac0a5
+      P218_EXACT_PARENT: 6181ffe975d48855dc7502ad87e17621e560afc3
       P218_OLD_PROCESS_BLOB: b0cd24ebbdc329543f5138c2d26d8a67453b77fd
       ZXUX_REV12_SHA256: a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b
     steps:
@@ -100,6 +100,7 @@ jobs:
             python3 -m py_compile v1/tools-host/test-driver/phase2_kill_never_started.py
             python3 -m py_compile v1/tools-host/test-driver/p218_failure_probe.py
             python3 -m py_compile v1/tools-host/test-driver/run.py
+            find v1/tools-host/test-driver -type d -name __pycache__ -prune -exec rm -rf {} +
             ./tools/check_license_headers.sh
             ./tools/check_project_policy.py
             digest="$(sha256sum v1/src/kernel/process.asm | awk '{print $1}')"
