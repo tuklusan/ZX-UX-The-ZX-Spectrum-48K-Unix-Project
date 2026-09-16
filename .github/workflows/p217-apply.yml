@@ -1,0 +1,139 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: P2.17 guarded candidate apply
+
+on:
+  push:
+    paths:
+      - '.github/workflows/p217-apply.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  guarded-apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout patch trigger
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+
+      - name: Require frozen P2.16 base
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "5997f65bcdc860c15a3f734b20aa7f68b3e372e8"
+          grep -q 'import phase2_wait_any' v1/tools-host/test-driver/run.py
+          ! grep -q 'import phase2_reparent' v1/tools-host/test-driver/run.py
+          ! grep -q 'call zx48_process_reparent_children_to_pid1' <(sed -n '/MACRO EMIT_ZOMBIE_TRANSITION_ROUTINES/,/ENDM/p' v1/src/kernel/process.asm)
+          grep -q '"P2.16")' v1/tools-host/test-driver/phase2_gate.py
+
+      - name: Apply exact P2.17 candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          process_path = Path('v1/src/kernel/process.asm')
+          process = process_path.read_text(encoding='utf-8')
+          old = '''    ld (process_zombie_bootstrap_size),hl
+
+    ; Architecture §7.5 ordering: close handles, release private allocations,
+    ; then publish status/ZOMBIE. Any allocator inconsistency is kernel-fatal;
+    ; silently retaining or double-freeing memory is not an exit result.
+    call zx48_handles_close_all_current
+'''
+          new = '''    ld (process_zombie_bootstrap_size),hl
+
+    ; Architecture §7.5 ordering: reparent every generation-qualified child to
+    ; PID1 before releasing this process's private resources. A missing/stale
+    ; PID1 identity or inconsistent tree is scheduler-fatal, not a partial exit.
+    ld a,(process_zombie_pid)
+    call zx48_process_reparent_children_to_pid1
+    jp c,zx48_process_zombie_panic
+
+    ; Close handles, release private allocations, then publish status/ZOMBIE.
+    ; Any allocator inconsistency is kernel-fatal; silently retaining or
+    ; double-freeing memory is not an exit result.
+    call zx48_handles_close_all_current
+'''
+          if process.count(old) != 1:
+              raise SystemExit('unexpected P2.17 process insertion anchor')
+          process_path.write_text(process.replace(old, new), encoding='utf-8', newline='\n')
+
+          run_path = Path('v1/tools-host/test-driver/run.py')
+          run = run_path.read_text(encoding='utf-8')
+          old_import = 'import phase2_wait_any\n'
+          new_import = 'import phase2_wait_any\nimport phase2_reparent\n'
+          if run.count(old_import) != 1 or 'import phase2_reparent' in run:
+              raise SystemExit('unexpected P2.17 run.py import anchor')
+          run = run.replace(old_import, new_import)
+          old_dispatch = '''    if step == "P2.16":
+        return phase2_wait_any.dispatch(root, action, step, **kwargs)
+    if step.startswith("P2."):
+'''
+          new_dispatch = '''    if step == "P2.16":
+        return phase2_wait_any.dispatch(root, action, step, **kwargs)
+    if step == "P2.17":
+        return phase2_reparent.dispatch(root, action, step, **kwargs)
+    if step.startswith("P2."):
+'''
+          if run.count(old_dispatch) != 1:
+              raise SystemExit('unexpected P2.17 run.py dispatch anchor')
+          run_path.write_text(run.replace(old_dispatch, new_dispatch), encoding='utf-8', newline='\n')
+
+          gate_path = Path('v1/tools-host/test-driver/phase2_gate.py')
+          gate = gate_path.read_text(encoding='utf-8')
+          old_gate = 'CANDIDATE_STEPS: tuple[str, ...] = ("P2.08", "P2.09", "P2.10", "P2.11", "P2.12", "P2.13", "P2.14", "P2.15", "P2.16")'
+          new_gate = 'CANDIDATE_STEPS: tuple[str, ...] = ("P2.08", "P2.09", "P2.10", "P2.11", "P2.12", "P2.13", "P2.14", "P2.15", "P2.16", "P2.17")'
+          if gate.count(old_gate) != 1:
+              raise SystemExit('unexpected P2.17 phase2_gate anchor')
+          gate_path.write_text(gate.replace(old_gate, new_gate), encoding='utf-8', newline='\n')
+          PY
+          rm .github/workflows/p217-apply.yml
+
+      - name: Guard candidate shape
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile v1/tools-host/test-driver/run.py v1/tools-host/test-driver/phase2_gate.py v1/tools-host/test-driver/phase2_reparent.py
+          python3 - <<'PY'
+          from pathlib import Path
+          process = Path('v1/src/kernel/process.asm').read_text(encoding='utf-8')
+          start = process.index('    MACRO EMIT_ZOMBIE_TRANSITION_ROUTINES')
+          end = process.index('    ENDM\n', start)
+          zombie = process[start:end]
+          call = zombie.index('call zx48_process_reparent_children_to_pid1')
+          assert call < zombie.index('call zx48_handles_close_all_current')
+          assert call < zombie.index('call zx48_free')
+          assert call < zombie.index('ld (ix+PROC_STATE),PROC_ZOMBIE')
+          run = Path('v1/tools-host/test-driver/run.py').read_text(encoding='utf-8')
+          gate = Path('v1/tools-host/test-driver/phase2_gate.py').read_text(encoding='utf-8')
+          assert run.count('import phase2_reparent') == 1
+          assert run.count('phase2_reparent.dispatch') == 1
+          assert gate.count('"P2.17"') == 1
+          PY
+          test "$(git status --short | wc -l)" -eq 4
+          git status --short
+
+      - name: Commit candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'ZX-UX P2.17 runner'
+          git config user.email 'tuklusan@users.noreply.github.com'
+          git add -A
+          git commit -m 'P2.17 candidate: reparent children before exit teardown'
+          git push origin HEAD:main
