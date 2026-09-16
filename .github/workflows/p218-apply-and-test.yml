@@ -19,6 +19,7 @@ on:
       - main
     paths:
       - .github/workflows/p218-apply-and-test.yml
+      - v1/tools-host/test-driver/p218_failure_probe.py
 
 permissions:
   contents: write
@@ -219,6 +220,16 @@ jobs:
           test_rc="${PIPESTATUS[0]}"
           printf '%s\n' "${test_rc}" > "${ZXUX_EVIDENCE_DIR}/P2.18.test.rc"
           echo "p218_test_rc=${test_rc}"
+
+          if test "${test_rc}" -ne 0; then
+            echo "P2.18 canonical test failed; running failure probe"
+            tools/runtime/python/bin/python v1/tools-host/test-driver/p218_failure_probe.py \
+              2>&1 | tee "${ZXUX_EVIDENCE_DIR}/P2.18.failure-probe.log"
+            probe_rc="${PIPESTATUS[0]}"
+            printf '%s\n' "${probe_rc}" > "${ZXUX_EVIDENCE_DIR}/P2.18.failure-probe.rc"
+            echo "p218_failure_probe_rc=${probe_rc}"
+          fi
+
           exit "${test_rc}"
 
       - name: Collect P2.18 diagnostic evidence
