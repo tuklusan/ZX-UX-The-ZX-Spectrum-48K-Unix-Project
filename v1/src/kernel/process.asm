@@ -3450,6 +3450,16 @@ zx48_process_zombie_wake_parent:
     cp PROC_WAIT_CHILD
     ret nz
     IFDEF ZX48_P2_15_WAIT_ENABLED
+    IFDEF ZX48_P2_16_WAIT_ANY_ENABLED
+    ; P2.16 any-child WAIT accepts this already parent-generation-qualified
+    ; exiting child without applying the P2.15 exact-child token filter.
+    ld a,(process_zombie_parent_pid)
+    call zx48_process_wait_any_flag_ptr
+    ret c
+    ld a,(hl)
+    or a
+    jr nz,zx48_process_zombie_wake_ready
+    ENDIF
     ; P2.15 specific WAIT wakes only for the exact recorded child generation.
     ld a,(process_zombie_parent_pid)
     ld b,a
@@ -3460,6 +3470,7 @@ zx48_process_zombie_wake_parent:
     call zx48_process_links_desc_ptr
     ret c
     ENDIF
+zx48_process_zombie_wake_ready:
     ld (ix+PROC_STATE),PROC_READY
     xor a
     ret
@@ -3674,4 +3685,206 @@ process_wait_specific_status: db 0
 process_wait_specific_status_tmp: dw 0
 process_wait_specific_candidate_generation: dw 0
 process_wait_status_ptr: defs MAX_PROCESSES*2,0
+    ENDM
+
+; P2.16 generation-qualified SYS_WAIT for any current child. The scan order is
+; deliberately PID2..PID7 ascending, so simultaneous zombies are reaped in
+; lowest-PID-first order. This staged emitter composes after P2.15 and reuses
+; its validated status-pointer storage and exact unlink/reclaim primitive.
+    MACRO EMIT_WAIT_ANY_ROUTINES
+ZX48_P2_16_WAIT_ANY_EMITTED EQU 1
+
+; A=parent PID -> HL=one-byte wait-any flag.
+zx48_process_wait_any_flag_ptr:
+    cp MAX_PROCESSES
+    jp nc,zx48_process_wait_any_child
+    ld e,a
+    ld d,0
+    ld hl,process_wait_any
+    add hl,de
+    xor a
+    ret
+
+; A=candidate PID. Carry clear leaves IX on a current generation-qualified child.
+zx48_process_wait_any_match:
+    cp 2
+    jr c,zx48_process_wait_any_child
+    cp MAX_PROCESSES
+    jr nc,zx48_process_wait_any_child
+    ld (process_wait_any_candidate_pid),a
+    call zx48_process_links_desc_ptr
+    ret c
+    ld a,(ix+PROC_STATE)
+    or a
+    jr z,zx48_process_wait_any_child
+    ld a,(current_pid)
+    ld b,a
+    ld a,(ix+PROC_PARENT)
+    cp b
+    jr nz,zx48_process_wait_any_child
+
+    ld a,(process_wait_any_candidate_pid)
+    call zx48_process_parent_generation_ptr
+    ld c,(hl)
+    inc hl
+    ld b,(hl)
+    ld hl,(process_wait_any_parent_generation)
+    or a
+    sbc hl,bc
+    jr nz,zx48_process_wait_any_child
+
+    ld a,(process_wait_any_candidate_pid)
+    call zx48_process_pid_bit
+    ld (process_wait_any_child_bit),a
+    ld a,(current_pid)
+    call zx48_process_child_mask_ptr
+    ld a,(process_wait_any_child_bit)
+    and (hl)
+    jr z,zx48_process_wait_any_child
+    xor a
+    ret
+
+; A must be FF (-1), DE is the already prevalidated one-byte status destination.
+zx48_process_wait:
+    cp $ff
+    jr nz,zx48_process_wait_any_child
+    ld (process_wait_any_status_tmp),de
+
+    ; Clear any stale specific-wait token before publishing the any-child state.
+    call zx48_process_wait_specific_clear
+    ld a,(current_pid)
+    call zx48_process_wait_any_flag_ptr
+    jr c,zx48_process_wait_any_child
+    ld (hl),1
+    ld a,(current_pid)
+    call zx48_process_wait_status_ptr_slot
+    jr c,zx48_process_wait_any_child
+    ld de,(process_wait_any_status_tmp)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+
+zx48_process_wait_any_scan:
+    ; Snapshot the current parent identity once for this deterministic scan.
+    ld a,(current_pid)
+    call zx48_process_generation_get
+    jr c,zx48_process_wait_any_none
+    ld a,d
+    or e
+    jr z,zx48_process_wait_any_none
+    ld (process_wait_any_parent_generation),de
+    xor a
+    ld (process_wait_any_has_child),a
+    ld a,2
+    ld (process_wait_any_candidate_pid),a
+
+zx48_process_wait_any_scan_loop:
+    ld a,(process_wait_any_candidate_pid)
+    call zx48_process_wait_any_match
+    jr c,zx48_process_wait_any_next
+    ld a,1
+    ld (process_wait_any_has_child),a
+    ld a,(ix+PROC_STATE)
+    cp PROC_ZOMBIE
+    jp z,zx48_process_wait_any_reap
+
+zx48_process_wait_any_next:
+    ld a,(process_wait_any_candidate_pid)
+    inc a
+    ld (process_wait_any_candidate_pid),a
+    cp MAX_PROCESSES
+    jr c,zx48_process_wait_any_scan_loop
+    ld a,(process_wait_any_has_child)
+    or a
+    jr z,zx48_process_wait_any_none
+
+zx48_process_wait_any_block:
+    ld a,(current_pid)
+    call zx48_process_links_desc_ptr
+    jr c,zx48_process_wait_any_panic
+    ld hl,(syscall_frame_sp)
+    ld de,SYSCALL_FRAME_PC_O
+    add hl,de
+    ld de,zx48_syscall_resume_wait_any
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    ld (ix+PROC_STATE),PROC_WAIT_CHILD
+    jp zx48_schedule
+
+; Scheduler continuation used only by P2.16. It mirrors the syscall-owned
+; continuation prologue so the blocked call resumes through the normal return path.
+zx48_syscall_resume_wait_any:
+    ld (syscall_user_sp),sp
+    ld (syscall_saved_ix),ix
+    ld sp,BOOT_STACK_TOP
+    call zx48_process_wait_any_resume
+    jp zx48_syscall_return
+
+zx48_process_wait_any_resume:
+    ld a,(current_pid)
+    call zx48_process_wait_any_flag_ptr
+    jr c,zx48_process_wait_any_child
+    ld a,(hl)
+    or a
+    jr z,zx48_process_wait_any_child
+    jp zx48_process_wait_any_scan
+
+; IX is the first matching zombie in the documented ascending scan. Status is
+; copied before unlink/reclaim, and exactly one descriptor is reclaimed per call.
+zx48_process_wait_any_reap:
+    ld a,(ix+PROC_EXIT_STATUS)
+    ld (process_wait_any_status),a
+    ld a,(ix+PROC_PID)
+    ld (process_wait_any_reaped_pid),a
+    ld (process_wait_specific_target_pid),a
+
+    ld a,(current_pid)
+    call zx48_process_wait_status_ptr_slot
+    jr c,zx48_process_wait_any_panic
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld a,d
+    or e
+    jr z,zx48_process_wait_any_panic
+    ld a,(process_wait_any_status)
+    ld (de),a
+
+    call zx48_process_wait_specific_release
+    call zx48_process_wait_any_clear
+    ld a,(process_wait_any_reaped_pid)
+    ld l,a
+    ld h,0
+    xor a
+    ret
+
+zx48_process_wait_any_none:
+    call zx48_process_wait_any_clear
+zx48_process_wait_any_child:
+    ld a,E_CHILD
+    scf
+    ret
+
+zx48_process_wait_any_clear:
+    ld a,(current_pid)
+    call zx48_process_wait_any_flag_ptr
+    jr c,zx48_process_wait_any_panic
+    ld (hl),0
+    call zx48_process_wait_specific_clear
+    xor a
+    ret
+
+zx48_process_wait_any_panic:
+    ld a,PANIC_SCHEDULER
+    jp zx48_panic
+
+process_wait_any: defs MAX_PROCESSES,0
+process_wait_any_candidate_pid: db 0
+process_wait_any_child_bit: db 0
+process_wait_any_has_child: db 0
+process_wait_any_status: db 0
+process_wait_any_status_tmp: dw 0
+process_wait_any_parent_generation: dw 0
+process_wait_any_reaped_pid: db 0
     ENDM
