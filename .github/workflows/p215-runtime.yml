@@ -68,4 +68,25 @@ jobs:
         run: tools/runtime/python/bin/python tools/scripts/verify-environment.py
 
       - name: Run P2.15 exact WAIT runtime fixture
-        run: tools/runtime/python/bin/python v1/tools-host/test-driver/phase2_wait_specific_runtime.py
+        id: runtime
+        shell: bash
+        run: |
+          set +e
+          tools/runtime/python/bin/python v1/tools-host/test-driver/phase2_wait_specific_runtime.py > /tmp/p215-runtime.log 2>&1
+          rc=$?
+          cat /tmp/p215-runtime.log
+          printf '%s\n' "$rc" > /tmp/p215-runtime.exit
+          exit "$rc"
+
+      - name: Upload P2.15 runtime diagnostic
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: p215-runtime-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            /tmp/p215-runtime.log
+            /tmp/p215-runtime.exit
+            v1/build/p215-wait-specific.asm
+            v1/build/p215-wait-specific.sym
+          retention-days: 30
+          if-no-files-found: warn
