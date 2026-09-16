@@ -11,6 +11,7 @@
 # patent, trademark, and governing-law provisions.
 
 name: P2.15 WAIT runtime diagnostic
+# Diagnostic trigger: verify parent descriptor reacquire after exact-child match.
 
 on:
   push:
