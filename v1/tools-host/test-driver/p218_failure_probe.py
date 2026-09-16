@@ -156,17 +156,56 @@ def _diagnostic_run_sna(
     if not fuse.is_file():
         raise driver_core.DriverError("project-local FUSE executable missing")
 
+    symbol_path = root / "v1/build/p218-kill-never-started.sym"
+    trace = target._symbols(symbol_path, ("zx48_process_kill_publish", "process_table"))
+    publish = trace["zx48_process_kill_publish"]
+    child = trace["process_table"] + 2 * target.PROC_DESC_SIZE
+    image_low = child + target.PROC_IMAGE_BASE
+    image_high = image_low + 1
+
     with tempfile.TemporaryDirectory(prefix="zxux-p218-probe-") as temporary:
         sna = Path(temporary) / "fixture.sna"
         sna.write_bytes(fuse_harness.make_sna(code, patch=patch))
         prints = "\n".join(f"print [0x{address:04x}]" for address in range(FAIL_KIND, FAIL_RECORD_END))
         command = (
-            f"breakpoint 0x{fuse_harness.PASS_PC:04x}\n"
+            f"breakpoint 0x{publish:04x}\n"
             "commands 1\n"
+            "print 0x501\n"
+            "print z80:pc\n"
+            "print z80:ix\n"
+            "print z80:af\n"
+            f"print [0x{image_low:04x}]\n"
+            f"print [0x{image_high:04x}]\n"
+            f"print [0x{publish + 0x10:04x}]\n"
+            f"print [0x{publish + 0x11:04x}]\n"
+            f"print [0x{publish + 0x12:04x}]\n"
+            "continue\n"
+            "end\n"
+            f"breakpoint write 0x{image_low:04x}\n"
+            "commands 2\n"
+            "print 0x502\n"
+            "print z80:pc\n"
+            "print z80:ix\n"
+            "print z80:af\n"
+            f"print [0x{image_low:04x}]\n"
+            "continue\n"
+            "end\n"
+            f"breakpoint write 0x{image_high:04x}\n"
+            "commands 3\n"
+            "print 0x503\n"
+            "print z80:pc\n"
+            "print z80:ix\n"
+            "print z80:af\n"
+            f"print [0x{image_high:04x}]\n"
+            "continue\n"
+            "end\n"
+            f"breakpoint 0x{fuse_harness.PASS_PC:04x}\n"
+            "commands 4\n"
             "exit 0\n"
             "end\n"
             f"breakpoint 0x{fuse_harness.FAIL_PC:04x}\n"
-            "commands 2\n"
+            "commands 5\n"
+            "print 0x5ff\n"
             + prints
             + "\nprint z80:af\n"
             "print z80:bc\n"
@@ -198,8 +237,10 @@ def _diagnostic_run_sna(
         )
         if result.timed_out or result.exit_code != 0:
             raise driver_core.DriverError(
-                "P2.18 failure probe trapped; field order is "
-                "kind/check/address-low/address-high/expected/actual followed by AF/BC/DE/HL/IX/IY/SP: "
+                "P2.18 failure probe trapped; trace markers are 0x501 publish, "
+                "0x502 image-low write, 0x503 image-high write, and 0x5ff failure; "
+                "failure field order is kind/check/address-low/address-high/expected/actual "
+                "followed by AF/BC/DE/HL/IX/IY/SP: "
                 f"exit={result.exit_code} timed_out={result.timed_out} "
                 f"stdout={result.stdout!r} stderr={result.stderr!r}"
             )
