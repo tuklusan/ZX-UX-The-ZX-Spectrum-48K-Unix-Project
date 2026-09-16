@@ -1,0 +1,268 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: P2.13 process-only E0 diagnostic
+
+on:
+  push:
+    branches:
+      - p213-diag13
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p213-diag13
+  cancel-in-progress: false
+
+jobs:
+  e0:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      BASE_SHA: a8a8a6deb7cb877640d8d7c84aea1140d5569c52
+      HIST_SHA: e92457e179ac14fb404cefb7043d597f1c4c69af
+      ZXUX_EVIDENCE_DIR: /tmp/p213-evidence
+    steps:
+      - name: Checkout instrumentation
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Recover reviewed historical worker inputs and detach base
+        shell: bash
+        run: |
+          set -euo pipefail
+          raw="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${HIST_SHA}/.p213-worker"
+          curl -fsSL "$raw/p213_macro.asm" -o /tmp/p213_macro.asm
+          curl -fsSL "$raw/p213_patch.py" -o /tmp/p213_patch.py
+          curl -fsSL "$raw/p213_root_fix.py" -o /tmp/p213_root_fix.py
+          curl -fsSL "$raw/phase2_parent_child.py" -o /tmp/phase2_parent_child.py
+          python3 - <<'PY'
+          from hashlib import sha1
+          from pathlib import Path
+          expected = {
+              '/tmp/p213_macro.asm': '5fcd7b6ae8a9dc57adad88928a126e9d5a8f1a1f',
+              '/tmp/p213_patch.py': 'f7a74cadecbd17eb1fb769f2bf8e4e2fa5e79e2f',
+              '/tmp/p213_root_fix.py': 'c6adb3a935e496fdb36215c10c985b3b8be2c2fa',
+              '/tmp/phase2_parent_child.py': 'c40a0795af41135220fbb5a43f3a23af4a51818e',
+          }
+          for name, want in expected.items():
+              data = Path(name).read_bytes()
+              got = sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
+              if got != want:
+                  raise SystemExit(f'historical input mismatch {name}: {got} != {want}')
+          PY
+          git checkout --detach "$BASE_SHA"
+          test "$(git rev-parse HEAD)" = "$BASE_SHA"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+      - name: Materialize fresh process-only candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 /tmp/p213_root_fix.py
+          python3 /tmp/p213_patch.py
+          git checkout "$BASE_SHA" -- \
+            v1/tools-host/test-driver/phase2_exec.py \
+            v1/tools-host/test-driver/phase2_exec_runtime.py \
+            v1/tools-host/test-driver/phase2_spawn_atomic.py
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('v1/src/kernel/process.asm')
+          text = path.read_text(encoding='utf-8')
+
+          def one(old: str, new: str, label: str) -> None:
+              global text
+              n = text.count(old)
+              if n != 1:
+                  raise SystemExit(f'{label}: expected one anchor, found {n}')
+              text = text.replace(old, new, 1)
+
+          one(
+              '    MACRO EMIT_PARENT_CHILD_ROUTINES\n',
+              '    MACRO EMIT_PARENT_CHILD_ROUTINES\nZX48_P2_13_LINKS_EMITTED EQU 1\n',
+              'emission-marker',
+          )
+
+          one(
+              '    ld a,(current_pid)\n    cp MAX_PROCESSES\n    jp nc,zx48_process_links_inval\n    ld (process_link_parent_pid),a\n    call zx48_process_links_desc_ptr\n',
+              '    ld a,(current_pid)\n    ld (process_link_parent_pid),a\n    cp MAX_PROCESSES\n    jp nc,zx48_process_links_inval\n    call zx48_process_links_desc_ptr\n',
+              'link-parent-bound-order',
+          )
+
+          one(
+              '    ld a,(current_pid)\n    call zx48_process_generation_get\n    ret c\n    ld (process_wait_parent_generation),de\n',
+              '    ld a,(current_pid)\n    call zx48_process_generation_get\n    ret c\n    ld a,d\n    or e\n    jp z,zx48_process_wait_child\n    ld (process_wait_parent_generation),de\n',
+              'wait-record-parent-generation-zero',
+          )
+          one(
+              '    ld a,(process_wait_candidate_pid)\n    call zx48_process_generation_get\n    ret c\n    ld (process_wait_candidate_generation),de\n    ld a,(current_pid)\n    call zx48_process_wait_pid_ptr\n',
+              '    ld a,(process_wait_candidate_pid)\n    call zx48_process_generation_get\n    ret c\n    ld a,d\n    or e\n    jp z,zx48_process_wait_child\n    ld (process_wait_candidate_generation),de\n    ld a,(current_pid)\n    call zx48_process_wait_pid_ptr\n',
+              'wait-record-child-generation-zero',
+          )
+
+          start = text.index('zx48_process_wait_matches:\n')
+          head, tail = text[:start], text[start:]
+          def tail_one(old: str, new: str, label: str) -> None:
+              global tail
+              n = tail.count(old)
+              if n != 1:
+                  raise SystemExit(f'{label}: expected one anchor, found {n}')
+              tail = tail.replace(old, new, 1)
+
+          tail_one(
+              '    ld a,(current_pid)\n    call zx48_process_wait_pid_ptr\n    ld a,(process_wait_candidate_pid)\n',
+              '    ld a,(current_pid)\n    call zx48_process_wait_pid_ptr\n    jp c,zx48_process_wait_child\n    ld a,(process_wait_candidate_pid)\n',
+              'wait-match-current-pid-bound',
+          )
+          tail_one(
+              '    ld a,(current_pid)\n    call zx48_process_generation_get\n    ret c\n    ld (process_wait_parent_generation),de\n',
+              '    ld a,(current_pid)\n    call zx48_process_generation_get\n    ret c\n    ld a,d\n    or e\n    jp z,zx48_process_wait_child\n    ld (process_wait_parent_generation),de\n',
+              'wait-match-parent-generation-zero',
+          )
+          tail_one(
+              '    ld a,(process_wait_candidate_pid)\n    call zx48_process_generation_get\n    ret c\n    ld (process_wait_candidate_generation),de\n',
+              '    ld a,(process_wait_candidate_pid)\n    call zx48_process_generation_get\n    ret c\n    ld a,d\n    or e\n    jp z,zx48_process_wait_child\n    ld (process_wait_candidate_generation),de\n',
+              'wait-match-child-generation-zero',
+          )
+          text = head + tail
+
+          old = '''    ; P2.13 generation-qualified linkage is the final fallible action.  It is
+    ; side-effect free on failure; after success the cooperative commit has no
+    ; remaining failure edge before READY publishes the complete child.
+    ld a,(process_spawn_child_pid)
+    call zx48_process_link_child
+    jp c,zx48_process_spawn_rollback
+
+    ; Commit is intentionally non-fallible. The descriptor remains PROC_FREE
+    ; while every field is written; READY is the single publication store.
+    ld hl,(process_spawn_child_desc)
+    xor a
+    ld (hl),a
+    ld d,h
+    ld e,l
+    inc de
+    ld bc,PROC_DESC_SIZE-1
+    ldir
+    ld ix,(process_spawn_child_desc)
+    ld a,(process_spawn_child_pid)
+    ld (ix+PROC_PID),a
+    xor a
+    ld (ix+PROC_FLAGS),a
+'''
+          new = '''IFDEF ZX48_P2_13_LINKS_EMITTED
+    ; P2.13 clears the still-private descriptor before generation-qualified
+    ; linkage. Linkage is the final fallible action before READY publication.
+    ld hl,(process_spawn_child_desc)
+    xor a
+    ld (hl),a
+    ld d,h
+    ld e,l
+    inc de
+    ld bc,PROC_DESC_SIZE-1
+    ldir
+    ld a,(process_spawn_child_pid)
+    call zx48_process_link_child
+    jp c,zx48_process_spawn_rollback
+    ld ix,(process_spawn_child_desc)
+    ld a,(process_spawn_child_pid)
+    ld (ix+PROC_PID),a
+ELSE
+    ; Preserve the certified P2.10/P2.12 expansion byte-for-byte when the
+    ; P2.13 linkage emitter is absent from the assembly unit.
+    ld hl,(process_spawn_child_desc)
+    xor a
+    ld (hl),a
+    ld d,h
+    ld e,l
+    inc de
+    ld bc,PROC_DESC_SIZE-1
+    ldir
+    ld ix,(process_spawn_child_desc)
+    ld a,(process_spawn_child_pid)
+    ld (ix+PROC_PID),a
+    ld a,(current_pid)
+    ld (ix+PROC_PARENT),a
+ENDIF
+    xor a
+    ld (ix+PROC_FLAGS),a
+'''
+          one(old, new, 'spawn-process-only-integration')
+
+          path.write_text(text, encoding='utf-8', newline='\n')
+          PY
+          expected=$'v1/src/kernel/process.asm\nv1/tools-host/test-driver/phase2_gate.py\nv1/tools-host/test-driver/phase2_parent_child.py\nv1/tools-host/test-driver/run.py'
+          actual="$(git status --short | sed -E 's/^.. //' | sort)"
+          test "$actual" = "$expected"
+          git diff --check
+          sha256sum \
+            v1/src/kernel/process.asm \
+            v1/tools-host/test-driver/phase2_gate.py \
+            v1/tools-host/test-driver/phase2_parent_child.py \
+            v1/tools-host/test-driver/run.py | tee /tmp/p213-candidate-sha256.txt
+          git diff "$BASE_SHA" -- > /tmp/p213-candidate.patch
+
+      - name: License and policy preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+
+      - name: Select pinned Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13.15'
+          check-latest: false
+
+      - name: Install native prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake gettext libaudiofile-dev libfreetype6-dev \
+            libgcrypt20-dev libglib2.0-dev libpng-dev libsdl1.2-dev libtool \
+            libxml2-dev perl pkg-config
+
+      - name: Acquire and certify pinned runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/scripts/bootstrap-environment.py
+          tools/runtime/python/bin/python tools/scripts/verify-environment.py
+
+      - name: Exact P2.13 target build and test
+        shell: bash
+        run: |
+          set -euo pipefail
+          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P2.13
+          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P2.13
+
+      - name: Dependent Phase 2 gate
+        shell: bash
+        run: |
+          set -o pipefail
+          tools/runtime/python/bin/python v1/tools-host/test-driver/phase2_gate.py 2>&1 | tee /tmp/p213-phase2-gate.log
+
+      - name: Preserve diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: p213-process-only-e0-${{ github.run_id }}
+          path: |
+            /tmp/p213-candidate.patch
+            /tmp/p213-candidate-sha256.txt
+            /tmp/p213-phase2-gate.log
+            /tmp/p213-evidence/**
+          retention-days: 30
+          if-no-files-found: warn
