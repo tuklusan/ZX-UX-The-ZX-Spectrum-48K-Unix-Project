@@ -31,6 +31,7 @@ NAMES = (
     "zx48_process_link_child",
     "zx48_process_unlink_child",
     "zx48_process_wait_record_specific",
+    "zx48_process_zombie_wait_specific_match",
     "zx48_process_zombie_wake_parent",
     "process_table",
     "current_pid",
@@ -132,6 +133,20 @@ def main() -> int:
     _block_case(root, symbols, fixture, "block-recorded-specific-pid", p._expect_byte(symbols["process_wait_pid"] + 1, 2))
     _block_case(root, symbols, fixture, "block-recorded-specific-generation", p._expect_word(symbols["process_wait_generation"] + 2, 1))
     _block_case(root, symbols, fixture, "block-retained-status-pointer", p._expect_word(symbols["process_wait_status_ptr"] + 2, p.STATUS_PTR))
+    _block_case(root, symbols, fixture, "block-parent-generation-stable", p._expect_word(symbols["process_generation"] + 2, 1))
+    _block_case(root, symbols, fixture, "block-child-generation-stable", p._expect_word(symbols["process_generation"] + 4, 1))
+
+    matcher_child = bytearray((0x3E, 2, 0x06, 1))
+    matcher_child += p._call(symbols["zx48_process_zombie_wait_specific_match"])
+    matcher_child += p._jp_c(FAIL_PC)
+    matcher_child += p._jp(PASS_PC)
+    matcher_parent = _parent_code(symbols, after_syscall=p._jp(FAIL_PC))
+    _run_case(
+        root,
+        "exact-child-generation-matcher-accepts",
+        matcher_parent,
+        patch=p._fixture_patch(fixture, child_frame=_child_frame(), child_code=bytes(matcher_child)),
+    )
 
     wake_check = p._jp_c(FAIL_PC) + p._expect_byte(p1 + p.PROC_STATE, symbols["PROC_READY"])
     wake_child = _wake_child(symbols, after_wake=wake_check, schedule=False)
