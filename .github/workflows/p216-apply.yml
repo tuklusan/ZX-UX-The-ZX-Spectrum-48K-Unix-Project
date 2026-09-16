@@ -1,0 +1,141 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: P2.16 guarded candidate apply
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/p216-apply.yml
+
+permissions:
+  contents: write
+
+jobs:
+  guarded-apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout patch trigger
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Require frozen P2.15 base
+        run: |
+          git merge-base --is-ancestor f2d565b560ea6cd15e914bbdc43345642b64e813 HEAD
+          git diff --exit-code f2d565b560ea6cd15e914bbdc43345642b64e813 -- \
+            v1/src/kernel/process.asm \
+            v1/tools-host/test-driver/run.py \
+            v1/tools-host/test-driver/phase2_gate.py
+          test ! -e v1/tools-host/test-driver/phase2_wait_any.py
+          test ! -e v1/tools-host/test-driver/phase2_wait_any_runtime.py
+
+      - name: Apply exact P2.16 candidate
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          #!/usr/bin/env python3
+          # Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+          # Proprietary rights reserved except as expressly licensed herein.
+          #
+          # ZX-UX Sinclair ZX Spectrum Unix
+          # This file is governed by the SANYALnet Labs Non-Commercial License in the
+          # root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+          # for AI/ML model training are prohibited unless separately authorized.
+          #
+          # Attribution is required: "Based on original work by Supratim Sanyal of
+          # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+          # patent, trademark, and governing-law provisions.
+          
+          # Temporary guarded P2.16 cloud apply helper. Remove after P2.16 certification.
+          
+          from pathlib import Path
+          import base64
+          import zlib
+          
+          PROCESS_PATH = Path("v1/src/kernel/process.asm")
+          RUN_PATH = Path("v1/tools-host/test-driver/run.py")
+          GATE_PATH = Path("v1/tools-host/test-driver/phase2_gate.py")
+          STATIC_PATH = Path("v1/tools-host/test-driver/phase2_wait_any.py")
+          RUNTIME_PATH = Path("v1/tools-host/test-driver/phase2_wait_any_runtime.py")
+          
+          RUNTIME_Z = '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'
+          STATIC_Z = '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'
+          MACRO_Z = 'eNq9WEtzIjcQvvMrdMjBVAaydiWbFFubKhbP1lKxDTG44t3LlEYSoFhIE0ljw/76tDQvxszwSGqXAzWMpH583fq6m847NL3qX75FSyaZxpYr2fsnxYIvOKNo9nkW/TUcz9FCaYTlFpFUayYtIisuaB/NVwwZgiVSmjKNuOm8Q5QJHjtRTGzRdHx91e/D968IG8Ik5XIZIKOQ4etUWCyZSg36qtYxZwZhzZBmOAHNXIIooV6YsT043ltwbWymxqnlBhmLl7CRrbm1oJuodaKME7JwP51Tv4DJFASm8BqkcWvQM3hGwTTqjtvU9BLFpdtvrNIgz59gG0wsSqXg8uknzYjAfI0SzUETf2b9DoLP7XB0P0Hh7XjuAYqGd5+j+8nDfHwXzjpfHn/+LZpeRZdvq0W3dR5eo/DPB3TZAXOG7xPssQT3UO939OnmvZKsF28tQy+Y257DeyHwst/5ugF5iVaEGRO5tQjWIrcWJVYPvEEkAZseo+n9ZBTOZmCEe/l3giQJmo/7EPpdAlwOcPFIgzfF40oEr4/5JUz9GmX+18blhn/SzGaeQUpQj7Nzro9GWGvIHcGwRvD1DFEaPyIlES4TqjH9sixrcX+NLVmVvl9l/kIeHHW3GSl9IlIX+8uFs1HCaTcHkmAhUE2cyyYTUWaIC1qBFyKFYBxc8M2PzqpoNh/Ow65fKLEFA7+eYh+IyTH15hSv4yrAO4qmw/vwbt4tYIlLKA6r2pF0BI0WLLLMj6qgl5CAVBJcrER2kksCiVb5UC5kybmvfU/wKxRN7AQGMflunnIaxdweyB6nx23p1iK0F8N90dnJNTZPu+g1WlrqyK4vcFyJ5El5tX/F0ToFPo4Z+vgRXfQuuwG6DoH/kYWKgAWQON0CZbKKb0tuy4gXyoSxXPoYNdzw8l7/sFicGKpWhDOFkV0nXUdZfuM7NPJs5DgW1gWYlTACrEN67hyy6olJcA/qHkNJGgtuVlC6MvfktudVelfyerAfHq+/kBp58jsvvntEfzrFiSzAweV/0JjDBfoiI5Q9SyllwUH8a8axhivuF+DaNetyrcYgj99M4sSslPUhKapIXlE5hW9ut5B0hPnexbqOgTKo9GsuOWQe8X1L/zx8dvhqyY4iIyHlK/m0ICJ27NrtnjuF4fbrcOPBFc4po0Y0V2fUtQNRiYRSyeB/s2W9uB8FmG1spfLyXNebyi0wjn/1ZXL7YRwWPVRbpFyv2oaKM+5cQNxdwOc2Gi3dTBtoZbQO2VYBdnIT4rO2BYtYKPI0OO+uNbRLB7xKsORktzMwW+NkRguN1wxouLtDUTDVjIY3N9HH++FtGE1H0aShq822em2FLM1MCsJqrfAJZFb8qqdb4J/9eDD6NL65LnPNayQrRlPBXKmd5c9uxAFWk6m/9QiGGldUYcaKt9kI10dji9Zca6WzOpzb3VMvklGQVDsPEAq1TJkbxtxmHyPXc7tIZJ46KVqly5XfIJVeY7dkUw3HsV3ldbsFnjLeZSzAZO1CEZhkb83AVEAjvukGfFMsmiT4MJnMHWCjP6L5ZHqMNTIL6kiWxjmz2xI0Ozj4nvUZV83seT1+4VnjzXYJA6NV3ohlQ7PnUte8ZGM2JKlfpIqAz9L1ZuVonhVFNMtaND/OE5W4USxvhepDcVCNy8IVW+a6OqJ5AsO0syHfBscTl76AYL/TzqSDBmoOH8c+/vOHWfdYh9dM7jCAHjiZ/duwy6d728oWzmINVb8sht+8s6pxGmsbimhtKDqnz6jJx62NW4UeZaXjx9pdzaDfNezYzXndFR+KT7FNVIFa5X9VvBpP2gvU4DSDDlzBnSQNd4jbkMUx/V70t6aYWkx9/Xlz5nhyEpZezY4v0+HdGArb6FN4/XAT3td5ypvUeS1jAFyxMPXeBYw93PTAoRg1bSoG3LYNZUPTtiHL9cOrboSBHS9NO/ba8raNVUbnyhxW4d31bedfdSwpTg=='
+          
+          
+          def inflate(payload: str) -> str:
+              return zlib.decompress(base64.b64decode(payload)).decode("utf-8")
+          
+          
+          def replace_once(text: str, old: str, new: str, name: str) -> str:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{name}: expected exactly one old-text match, found {count}")
+              return text.replace(old, new, 1)
+          
+          
+          def main() -> None:
+              process = PROCESS_PATH.read_text(encoding="utf-8")
+              process = replace_once(process, '    IFDEF ZX48_P2_15_WAIT_ENABLED\n    ; P2.15 specific WAIT wakes only for the exact recorded child generation.\n    ld a,(process_zombie_parent_pid)\n    ld b,a\n    ld a,(process_zombie_pid)\n    call zx48_process_zombie_wait_specific_match\n    ret c\n    ld a,(process_zombie_parent_pid)\n    call zx48_process_links_desc_ptr\n    ret c\n    ENDIF\n    ld (ix+PROC_STATE),PROC_READY\n', '    IFDEF ZX48_P2_15_WAIT_ENABLED\n    IFDEF ZX48_P2_16_WAIT_ANY_ENABLED\n    ; P2.16 any-child WAIT accepts this already parent-generation-qualified\n    ; exiting child without applying the P2.15 exact-child token filter.\n    ld a,(process_zombie_parent_pid)\n    call zx48_process_wait_any_flag_ptr\n    ret c\n    ld a,(hl)\n    or a\n    jr nz,zx48_process_zombie_wake_ready\n    ENDIF\n    ; P2.15 specific WAIT wakes only for the exact recorded child generation.\n    ld a,(process_zombie_parent_pid)\n    ld b,a\n    ld a,(process_zombie_pid)\n    call zx48_process_zombie_wait_specific_match\n    ret c\n    ld a,(process_zombie_parent_pid)\n    call zx48_process_links_desc_ptr\n    ret c\n    ENDIF\nzx48_process_zombie_wake_ready:\n    ld (ix+PROC_STATE),PROC_READY\n', "P2.16 wait-any wake qualification")
+              tail = 'process_wait_status_ptr: defs MAX_PROCESSES*2,0\n    ENDM\n'
+              process = replace_once(process, tail, tail + inflate(MACRO_Z), "P2.16 staged wait-any emitter")
+              PROCESS_PATH.write_text(process, encoding="utf-8", newline="\n")
+          
+              run = RUN_PATH.read_text(encoding="utf-8")
+              run = replace_once(run, 'import phase2_wait_specific\nfrom driver_core import (\n', 'import phase2_wait_specific\nimport phase2_wait_any\nfrom driver_core import (\n', "P2.16 driver import")
+              run = replace_once(run, '    if step == "P2.15":\n        return phase2_wait_specific.dispatch(root, action, step, **kwargs)\n    if step.startswith("P2."):\n', '    if step == "P2.15":\n        return phase2_wait_specific.dispatch(root, action, step, **kwargs)\n    if step == "P2.16":\n        return phase2_wait_any.dispatch(root, action, step, **kwargs)\n    if step.startswith("P2."):\n', "P2.16 driver dispatch")
+              RUN_PATH.write_text(run, encoding="utf-8", newline="\n")
+          
+              gate = GATE_PATH.read_text(encoding="utf-8")
+              gate = replace_once(gate, 'CANDIDATE_STEPS: tuple[str, ...] = ("P2.08", "P2.09", "P2.10", "P2.11", "P2.12", "P2.13", "P2.14", "P2.15")', 'CANDIDATE_STEPS: tuple[str, ...] = ("P2.08", "P2.09", "P2.10", "P2.11", "P2.12", "P2.13", "P2.14", "P2.15", "P2.16")', "P2.16 gate registration")
+              GATE_PATH.write_text(gate, encoding="utf-8", newline="\n")
+          
+              STATIC_PATH.write_text(inflate(STATIC_Z), encoding="utf-8", newline="\n")
+              RUNTIME_PATH.write_text(inflate(RUNTIME_Z), encoding="utf-8", newline="\n")
+          
+          
+          if __name__ == "__main__":
+              main()
+          PY
+
+      - name: Guard candidate shape
+        run: |
+          python3 -m py_compile \
+            v1/tools-host/test-driver/phase2_wait_any.py \
+            v1/tools-host/test-driver/phase2_wait_any_runtime.py \
+            v1/tools-host/test-driver/run.py \
+            v1/tools-host/test-driver/phase2_gate.py
+          grep -q '^    MACRO EMIT_WAIT_ANY_ROUTINES$' v1/src/kernel/process.asm
+          grep -q '^ZX48_P2_16_WAIT_ANY_EMITTED EQU 1$' v1/src/kernel/process.asm
+          grep -q '^zx48_syscall_resume_wait_any:$' v1/src/kernel/process.asm
+          grep -q '^process_wait_any: defs MAX_PROCESSES,0$' v1/src/kernel/process.asm
+          grep -q 'import phase2_wait_any' v1/tools-host/test-driver/run.py
+          grep -q '"P2.16"' v1/tools-host/test-driver/phase2_gate.py
+          git diff --check
+          git status --short
+
+      - name: Commit candidate
+        run: |
+          git config user.name 'ZX-UX P2.16 runner'
+          git config user.email 'tuklusan@users.noreply.github.com'
+          git add \
+            v1/src/kernel/process.asm \
+            v1/tools-host/test-driver/phase2_wait_any.py \
+            v1/tools-host/test-driver/phase2_wait_any_runtime.py \
+            v1/tools-host/test-driver/run.py \
+            v1/tools-host/test-driver/phase2_gate.py
+          git commit -m 'P2.16 candidate: generation-qualified wait any child'
+          git push origin HEAD:main
