@@ -231,4 +231,22 @@ if count != 1:
     raise SystemExit(f"P2.13 process-only corrector source-contract-anchor: expected 1 anchor, found {count}")
 driver_path.write_text(driver.replace(old_contract, new_contract, 1), encoding="utf-8", newline="\n")
 
+# Fail closed if the active P2.13 spawn arm owns descriptor clearing outside the
+# dynamically exercised generation-link helper. That split choreography is how a
+# rollback defect escaped the target test: the P2.13 fixture exercises the helper,
+# while the P2.10 fixture assembles the legacy ELSE arm.
+spawn_start = text.index("    MACRO EMIT_SPAWN_TRANSACTION_ROUTINES")
+spawn_end = text.index("    ENDM\n", spawn_start)
+spawn = text[spawn_start:spawn_end]
+marker = spawn.index("    IFDEF ZX48_P2_13_LINKS_EMITTED")
+branch_end = spawn.index("    ELSE", marker)
+active = spawn[marker:branch_end]
+if "call zx48_process_link_child" not in active:
+    raise SystemExit("P2.13 integration audit FAIL: active spawn arm does not call generation-safe link helper")
+if "ld hl,(process_spawn_child_desc)" in active:
+    raise SystemExit(
+        "P2.13 integration audit FAIL: active spawn arm still clears the child descriptor outside "
+        "the dynamically exercised generation-link helper"
+    )
+
 print("P2.13 process-only corrector: PASS")
