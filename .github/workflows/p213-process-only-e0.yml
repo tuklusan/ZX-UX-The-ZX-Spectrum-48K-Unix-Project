@@ -118,8 +118,24 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 tools/scripts/bootstrap-environment.py
-          tools/runtime/python/bin/python tools/scripts/verify-environment.py
+          success=0
+          for attempt in 1 2 3; do
+            echo "P2.13 pinned-runtime bootstrap attempt ${attempt}/3"
+            set +e
+            python3 tools/scripts/bootstrap-environment.py 2>&1 | tee "/tmp/p213-bootstrap-attempt-${attempt}.log"
+            rc=${PIPESTATUS[0]}
+            set -e
+            if [ "$rc" -eq 0 ]; then
+              success=1
+              break
+            fi
+            echo "P2.13 pinned-runtime bootstrap attempt ${attempt} failed rc=${rc}"
+            if [ "$attempt" -lt 3 ]; then
+              sleep $((attempt * 3))
+            fi
+          done
+          test "$success" -eq 1
+          tools/runtime/python/bin/python tools/scripts/verify-environment.py 2>&1 | tee /tmp/p213-runtime-verify.log
 
       - name: Exact P2.13 target build and test
         id: target
@@ -127,8 +143,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P2.13
-          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P2.13
+          {
+            tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P2.13
+            tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P2.13
+          } 2>&1 | tee /tmp/p213-target.log
 
       - name: Diagnose P2.13 runtime stages
         if: steps.target.outcome == 'failure'
@@ -164,6 +182,9 @@ jobs:
           path: |
             /tmp/p213-candidate.patch
             /tmp/p213-candidate-sha256.txt
+            /tmp/p213-bootstrap-attempt-*.log
+            /tmp/p213-runtime-verify.log
+            /tmp/p213-target.log
             /tmp/p213-phase2-gate.log
             /tmp/p213-stage-diagnostic.log
             /tmp/p213-evidence.tgz
