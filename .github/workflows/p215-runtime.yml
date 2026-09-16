@@ -11,6 +11,7 @@
 # patent, trademark, and governing-law provisions.
 
 name: P2.15 WAIT runtime diagnostic
+# Diagnostic trigger: verify early P2.15 composition switch.
 
 on:
   push:
