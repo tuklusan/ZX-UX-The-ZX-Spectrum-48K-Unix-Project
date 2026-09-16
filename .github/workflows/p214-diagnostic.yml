@@ -60,16 +60,23 @@ jobs:
           path.write_text(path.read_text(encoding="utf-8").rstrip() + "\n", encoding="utf-8", newline="\n")
           PY
           git diff --check
-          python3 -m py_compile \
-            v1/tools-host/test-driver/phase2_zombie.py \
-            v1/tools-host/test-driver/run.py \
-            v1/tools-host/test-driver/phase2_gate.py
+          python3 - <<'PY'
+          from pathlib import Path
+          for name in (
+              "v1/tools-host/test-driver/phase2_zombie.py",
+              "v1/tools-host/test-driver/run.py",
+              "v1/tools-host/test-driver/phase2_gate.py",
+          ):
+              source = Path(name).read_text(encoding="utf-8")
+              compile(source, name, "exec")
+          PY
           expected=$'v1/src/kernel/process.asm\nv1/tools-host/test-driver/phase2_gate.py\nv1/tools-host/test-driver/phase2_zombie.py\nv1/tools-host/test-driver/run.py'
           actual="$(git status --short | sed -E 's/^.. //' | sort)"
           printf 'P2.14 candidate paths:\n%s\n' "$actual"
           test "$actual" = "$expected"
           git diff --stat | tee /tmp/p214-diff-stat.txt
           git diff --unified=5 | tee /tmp/p214-candidate.patch
+          git diff --no-index -- /dev/null v1/tools-host/test-driver/phase2_zombie.py > /tmp/p214-new-test-driver.patch || test "$?" -eq 1
           sha256sum \
             v1/src/kernel/process.asm \
             v1/tools-host/test-driver/phase2_gate.py \
@@ -184,6 +191,7 @@ jobs:
             /tmp/p214-candidate-commit.txt
             /tmp/p214-candidate-sha256.txt
             /tmp/p214-candidate.patch
+            /tmp/p214-new-test-driver.patch
             /tmp/p214-diff-stat.txt
             /tmp/p214-bootstrap-attempt-*.log
             /tmp/p214-runtime-verify.log
