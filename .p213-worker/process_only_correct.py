@@ -139,6 +139,38 @@ tail = replace_one(
 
 text = head + tail
 
+one(
+    "    ld a,(process_link_child_pid)\n"
+    "    call zx48_process_generation_bump\n"
+    "    ret c\n"
+    "\n"
+    "    ; A reused child starts with no children and no inherited wait token.  Its\n",
+    "    ld a,(process_link_child_pid)\n"
+    "    call zx48_process_generation_bump\n"
+    "    ret c\n"
+    "\n"
+    "    ; Generation bump is the final fallible action. Once it succeeds, reset the\n"
+    "    ; still-FREE descriptor here, inside the dynamically exercised helper. This\n"
+    "    ; keeps generation exhaustion byte-identical while making successful reuse\n"
+    "    ; discard every stale descriptor byte before parent linkage is published.\n"
+    "    ld a,(process_link_child_pid)\n"
+    "    call zx48_process_links_desc_ptr\n"
+    "    push ix\n"
+    "    pop hl\n"
+    "    xor a\n"
+    "    ld (hl),a\n"
+    "    ld d,h\n"
+    "    ld e,l\n"
+    "    inc de\n"
+    "    ld bc,PROC_DESC_SIZE-1\n"
+    "    ldir\n"
+    "    ld a,(process_link_child_pid)\n"
+    "    ld (ix+PROC_PID),a\n"
+    "\n"
+    "    ; A reused child starts with no children and no inherited wait token.  Its\n",
+    "link-helper-owns-descriptor-reset",
+)
+
 old_spawn = (
     "    ; P2.13 generation-qualified linkage is the final fallible action.  It is\n"
     "    ; side-effect free on failure; after success the cooperative commit has no\n"
@@ -165,28 +197,13 @@ old_spawn = (
 )
 new_spawn = (
     "    IFDEF ZX48_P2_13_LINKS_EMITTED\n"
-    "    ; P2.13 generation-qualified linkage is the final fallible action. Keep\n"
-    "    ; the FREE descriptor byte-identical until that operation succeeds.\n"
+    "    ; P2.13 delegates generation bump, successful-reuse descriptor reset, and\n"
+    "    ; generation-qualified parent publication to the dynamically exercised\n"
+    "    ; link helper. Generation exhaustion therefore leaves the FREE descriptor\n"
+    "    ; byte-identical; success returns IX on the reset, linked child descriptor.\n"
     "    ld a,(process_spawn_child_pid)\n"
     "    call zx48_process_link_child\n"
     "    jp c,zx48_process_spawn_rollback\n"
-    "\n"
-    "    ; Link success has no remaining failure edge. Clear the still-private\n"
-    "    ; descriptor, then restore PID and the generation-qualified parent that\n"
-    "    ; zx48_process_link_child captured before the common commit fields.\n"
-    "    ld hl,(process_spawn_child_desc)\n"
-    "    xor a\n"
-    "    ld (hl),a\n"
-    "    ld d,h\n"
-    "    ld e,l\n"
-    "    inc de\n"
-    "    ld bc,PROC_DESC_SIZE-1\n"
-    "    ldir\n"
-    "    ld ix,(process_spawn_child_desc)\n"
-    "    ld a,(process_spawn_child_pid)\n"
-    "    ld (ix+PROC_PID),a\n"
-    "    ld a,(process_link_parent_pid)\n"
-    "    ld (ix+PROC_PARENT),a\n"
     "    ELSE\n"
     "    ; Preserve the certified P2.10/P2.12 expansion byte-for-byte when the\n"
     "    ; P2.13 linkage emitter is absent from the assembly unit.\n"
@@ -213,28 +230,128 @@ one(old_spawn, new_spawn, "spawn-process-only-integration")
 
 path.write_text(text, encoding="utf-8", newline="\n")
 
-# The reviewed historical P2.13 driver anchored its raw-parent negative at the
-# P2.10 commit comment.  The process-only integration above deliberately removes
-# that comment from the active P2.13 branch, so make the source contract inspect
-# the actual IFDEF arm instead.  The ELSE arm must retain the certified legacy
-# raw-parent publication for P2.10/P2.12 fixtures.
+# Tighten the P2.13 driver so descriptor-reset ownership is dynamically visible:
+# successful links must clear a stale FREE-descriptor sentinel, while generation
+# exhaustion must leave that same sentinel untouched.
 driver_path = Path("v1/tools-host/test-driver/phase2_parent_child.py")
 driver = driver_path.read_text(encoding="utf-8")
+
+
+def driver_one(old: str, new: str, label: str) -> None:
+    global driver
+    count = driver.count(old)
+    if count != 1:
+        raise SystemExit(f"P2.13 process-only corrector {label}: expected 1 driver anchor, found {count}")
+    driver = driver.replace(old, new, 1)
+
+
+driver_one(
+    "PROC_PARENT = 1\nPROC_STATE = 2\n",
+    "PROC_PARENT = 1\nPROC_STATE = 2\nPROC_FLAGS = 3\n",
+    "driver-proc-flags-offset",
+)
+
+driver_one(
+    "    for pid in range(PROCESS_COUNT):\n"
+    "        table[pid * PROC_DESC_SIZE] = pid\n"
+    "        table[pid * PROC_DESC_SIZE + PROC_PARENT] = 0xFF\n",
+    "    for pid in range(PROCESS_COUNT):\n"
+    "        table[pid * PROC_DESC_SIZE] = pid\n"
+    "        table[pid * PROC_DESC_SIZE + PROC_PARENT] = 0xFF\n"
+    "        if pid >= 2:\n"
+    "            table[pid * PROC_DESC_SIZE + PROC_FLAGS] = 0xA5\n",
+    "driver-free-descriptor-sentinel",
+)
+
+driver_one(
+    "    code += bytes((0x3E, 2)) + _call(symbols[\"zx48_process_link_child\"]) + _jp_c(FAIL_PC)\n"
+    "    code += _set_byte(table + 2 * PROC_DESC_SIZE + PROC_STATE, symbols[\"PROC_READY\"])\n"
+    "\n"
+    "    # PID2 spawns PID3, making the exact tree 1 -> 2 -> 3.\n",
+    "    code += bytes((0x3E, 2)) + _call(symbols[\"zx48_process_link_child\"]) + _jp_c(FAIL_PC)\n"
+    "    code += _expect_byte(table + 2 * PROC_DESC_SIZE + PROC_FLAGS, 0)\n"
+    "    code += _set_byte(table + 2 * PROC_DESC_SIZE + PROC_STATE, symbols[\"PROC_READY\"])\n"
+    "\n"
+    "    # PID2 spawns PID3, making the exact tree 1 -> 2 -> 3.\n",
+    "driver-first-link-clears-sentinel",
+)
+
+driver_one(
+    "    code += bytes((0x3E, 2)) + _call(symbols[\"zx48_process_unlink_child\"]) + _jp_c(FAIL_PC)\n"
+    "    code += _set_byte(table + 2 * PROC_DESC_SIZE + PROC_STATE, 0)\n"
+    "\n"
+    "    # PID2 is reused under PID1. Generation must advance without disturbing PID3.\n",
+    "    code += bytes((0x3E, 2)) + _call(symbols[\"zx48_process_unlink_child\"]) + _jp_c(FAIL_PC)\n"
+    "    code += _set_byte(table + 2 * PROC_DESC_SIZE + PROC_STATE, 0)\n"
+    "    code += _set_byte(table + 2 * PROC_DESC_SIZE + PROC_FLAGS, 0xA6)\n"
+    "\n"
+    "    # PID2 is reused under PID1. Generation must advance without disturbing PID3.\n",
+    "driver-reuse-sentinel",
+)
+
+driver_one(
+    "    code += _expect_byte(table + 2 * PROC_DESC_SIZE + PROC_PARENT, 1)\n"
+    "    code += _expect_byte(table + 3 * PROC_DESC_SIZE + PROC_PARENT, 1)\n",
+    "    code += _expect_byte(table + 2 * PROC_DESC_SIZE + PROC_PARENT, 1)\n"
+    "    code += _expect_byte(table + 2 * PROC_DESC_SIZE + PROC_FLAGS, 0)\n"
+    "    code += _expect_byte(table + 3 * PROC_DESC_SIZE + PROC_PARENT, 1)\n",
+    "driver-reuse-clears-sentinel",
+)
+
+driver_one(
+    "    code += _expect_byte(table + 4 * PROC_DESC_SIZE + PROC_STATE, 0)\n"
+    "    code += _expect_byte(table + 4 * PROC_DESC_SIZE + PROC_PARENT, 0xFF)\n"
+    "    code += _expect_byte(child_masks + 1, 0x0C)\n",
+    "    code += _expect_byte(table + 4 * PROC_DESC_SIZE + PROC_STATE, 0)\n"
+    "    code += _expect_byte(table + 4 * PROC_DESC_SIZE + PROC_PARENT, 0xFF)\n"
+    "    code += _expect_byte(table + 4 * PROC_DESC_SIZE + PROC_FLAGS, 0xA5)\n"
+    "    code += _expect_byte(child_masks + 1, 0x0C)\n",
+    "driver-exhaustion-preserves-sentinel",
+)
+
+driver_one(
+    "        {\"name\": \"pid-generation-advances-across-reuse-without-reset\", \"passed\": True},\n"
+    "        {\"name\": \"stale-generation-qualified-wait-cannot-alias-reused-pid\", \"passed\": True},\n"
+    "        {\"name\": \"generation-exhaustion-refuses-reuse-instead-of-wrapping\", \"passed\": True},\n",
+    "        {\"name\": \"pid-generation-advances-across-reuse-without-reset\", \"passed\": True},\n"
+    "        {\"name\": \"successful-link-clears-stale-free-descriptor-before-publication\", \"passed\": True},\n"
+    "        {\"name\": \"stale-generation-qualified-wait-cannot-alias-reused-pid\", \"passed\": True},\n"
+    "        {\"name\": \"generation-exhaustion-refuses-reuse-with-free-descriptor-byte-intact\", \"passed\": True},\n",
+    "driver-assertion-names",
+)
+
+driver_one(
+    "    links = process[start:end]\n"
+    "    return [\n",
+    "    links = process[start:end]\n"
+    "    link_start = links.index(\"zx48_process_link_child:\\n\")\n"
+    "    link_end = links.index(\"zx48_process_generation_exhausted:\\n\", link_start)\n"
+    "    link = links[link_start:link_end]\n"
+    "    return [\n",
+    "driver-scope-link-contract",
+)
+
+driver_one(
+    '        {"name": "new-child-link-bumps-generation-before-parent-publication", "passed": links.index("call zx48_process_generation_bump") < links.index("ld (ix+PROC_PARENT),a")},\n',
+    '        {"name": "new-child-link-bumps-generation-before-parent-publication", "passed": link.index("call zx48_process_generation_bump") < link.index("ld (ix+PROC_PARENT),a")},\n'
+    '        {"name": "successful-link-resets-free-descriptor-after-generation-bump", "passed": link.index("call zx48_process_generation_bump") < link.index("ld bc,PROC_DESC_SIZE-1") < link.index("ld (ix+PROC_PARENT),a")},\n',
+    "driver-link-order-contract",
+)
+
 old_contract = (
     '        {"name": "p210-spawn-no-longer-publishes-raw-parent-pid-itself", "passed": "ld a,(current_pid)\\n    ld (ix+PROC_PARENT),a" not in process[process.index("; Commit is intentionally non-fallible.", process.index("    MACRO EMIT_SPAWN_TRANSACTION_ROUTINES")):process.index("    ENDM\\n", process.index("    MACRO EMIT_SPAWN_TRANSACTION_ROUTINES"))]},\n'
 )
 new_contract = (
     '        {"name": "p210-spawn-no-longer-publishes-raw-parent-pid-itself", "passed": "ld a,(current_pid)\\n    ld (ix+PROC_PARENT),a" not in process[process.index("IFDEF ZX48_P2_13_LINKS_EMITTED", process.index("    MACRO EMIT_SPAWN_TRANSACTION_ROUTINES")):process.index("ELSE", process.index("IFDEF ZX48_P2_13_LINKS_EMITTED", process.index("    MACRO EMIT_SPAWN_TRANSACTION_ROUTINES")))]},\n'
+    '        {"name": "p213-spawn-does-not-own-untested-descriptor-reset", "passed": "ld hl,(process_spawn_child_desc)" not in process[process.index("IFDEF ZX48_P2_13_LINKS_EMITTED", process.index("    MACRO EMIT_SPAWN_TRANSACTION_ROUTINES")):process.index("ELSE", process.index("IFDEF ZX48_P2_13_LINKS_EMITTED", process.index("    MACRO EMIT_SPAWN_TRANSACTION_ROUTINES")))]},\n'
 )
 count = driver.count(old_contract)
 if count != 1:
     raise SystemExit(f"P2.13 process-only corrector source-contract-anchor: expected 1 anchor, found {count}")
-driver_path.write_text(driver.replace(old_contract, new_contract, 1), encoding="utf-8", newline="\n")
+driver = driver.replace(old_contract, new_contract, 1)
+driver_path.write_text(driver, encoding="utf-8", newline="\n")
 
-# Fail closed if the active P2.13 spawn arm owns descriptor clearing outside the
-# dynamically exercised generation-link helper. That split choreography is how a
-# rollback defect escaped the target test: the P2.13 fixture exercises the helper,
-# while the P2.10 fixture assembles the legacy ELSE arm.
+# Fail closed if future edits split successful-reuse reset back out of the helper.
 spawn_start = text.index("    MACRO EMIT_SPAWN_TRANSACTION_ROUTINES")
 spawn_end = text.index("    ENDM\n", spawn_start)
 spawn = text[spawn_start:spawn_end]
@@ -248,5 +365,14 @@ if "ld hl,(process_spawn_child_desc)" in active:
         "P2.13 integration audit FAIL: active spawn arm still clears the child descriptor outside "
         "the dynamically exercised generation-link helper"
     )
+link_start = text.index("zx48_process_link_child:\n")
+link_end = text.index("zx48_process_generation_exhausted:\n", link_start)
+link = text[link_start:link_end]
+if not (
+    link.index("call zx48_process_generation_bump")
+    < link.index("ld bc,PROC_DESC_SIZE-1")
+    < link.index("ld (ix+PROC_PARENT),a")
+):
+    raise SystemExit("P2.13 integration audit FAIL: helper reset is not after generation bump and before parent publication")
 
 print("P2.13 process-only corrector: PASS")
