@@ -14,7 +14,8 @@ name: P2.18 guarded candidate apply and test
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
       - .github/workflows/p218-apply-and-test.yml
 
@@ -26,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      ZXUX_EVIDENCE_DIR: /tmp/zxux-p218-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+      ZXUX_EVIDENCE_DIR: /tmp/zxux-p218-evidence
     steps:
       - name: Checkout guarded trigger
         uses: actions/checkout@v7
@@ -34,243 +35,31 @@ jobs:
           fetch-depth: 0
 
       - name: Require exact recovery parent
-        run: |
-          test "$(git rev-parse HEAD^)" = "741171e09e54942a59eab34daa3ee4a10136c0cb"
-          test "$(git show HEAD^:v1/tools-host/test-driver/phase2_kill_never_started.py | sha256sum | awk '{print $1}')" = "$(sha256sum v1/tools-host/test-driver/phase2_kill_never_started.py | awk '{print $1}')"
+        run: test "$(git rev-parse HEAD^)" = "fbf3c2d3f01468c4f064c09748bf6c793f4ef4ad"
 
-      - name: Apply P2.18 staged source integration
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          process_path = Path('v1/src/kernel/process.asm')
-          process = process_path.read_text(encoding='utf-8')
-          old = '''zx48_process_kill_ok:\n    ld a,(ix+PROC_PRIVATE_FLAGS)\n    and PROC_PRIVATE_STARTED\n    jr nz,zx48_process_kill_started\n    ld (ix+PROC_EXIT_STATUS),130\n    ld (ix+PROC_STATE),PROC_ZOMBIE\n    xor a\n    ret\nzx48_process_kill_started:\n'''
-          new = '''zx48_process_kill_ok:\n    ld a,(ix+PROC_PRIVATE_FLAGS)\n    and PROC_PRIVATE_STARTED\n    IFDEF ZX48_P2_18_KILL_ENABLED\n    jp z,zx48_process_kill_never_started\n    ELSE\n    jr nz,zx48_process_kill_started\n    ld (ix+PROC_EXIT_STATUS),130\n    ld (ix+PROC_STATE),PROC_ZOMBIE\n    xor a\n    ret\n    ENDIF\nzx48_process_kill_started:\n'''
-          if process.count(old) != 1:
-              raise SystemExit('P2.18 kill integration anchor mismatch')
-          process = process.replace(old, new, 1)
-
-          marker = '\n\n; P2.03 ABS16 relocation validator/applicator.'
-          if process.count(marker) != 1:
-              raise SystemExit('P2.18 helper insertion anchor mismatch')
-          helper = r'''
-
-; P2.18 resource-safe cancellation for a spawned child that has never reached
-; user PC. The resident kernel keeps the frozen fallback unless this staged
-; emitter is selected. The target remains READY while complete ownership shape
-; is validated; only then are target handles and private extents released. The
-; descriptor identity remains waitable as ZOMBIE/status 130.
-    MACRO EMIT_KILL_NEVER_STARTED_ROUTINES
-ZX48_P2_18_KILL_ENABLED EQU 1
-
-; IX -> already permission-checked live target descriptor with STARTED clear.
-zx48_process_kill_never_started:
-    ld a,(ix+PROC_PID)
-    ld (process_kill_pid),a
-    ld a,(ix+PROC_STATE)
-    cp PROC_READY
-    jp nz,zx48_process_kill_never_started_panic
-
-    ld l,(ix+PROC_IMAGE_BASE)
-    ld h,(ix+PROC_IMAGE_BASE+1)
-    ld (process_kill_image_base),hl
-    ld l,(ix+PROC_IMAGE_SIZE)
-    ld h,(ix+PROC_IMAGE_SIZE+1)
-    ld (process_kill_image_size),hl
-    ld l,(ix+PROC_STACK_LOW)
-    ld h,(ix+PROC_STACK_LOW+1)
-    ld (process_kill_stack_base),hl
-    ld e,(ix+PROC_STACK_HIGH)
-    ld d,(ix+PROC_STACK_HIGH+1)
-    ex de,hl
-    or a
-    sbc hl,de
-    jp c,zx48_process_kill_never_started_panic
-    ld a,h
-    or l
-    jp z,zx48_process_kill_never_started_panic
-    bit 0,l
-    jp nz,zx48_process_kill_never_started_panic
-    ld (process_kill_stack_size),hl
-    ld l,(ix+PROC_ARG_PTR)
-    ld h,(ix+PROC_ARG_PTR+1)
-    ld (process_kill_bootstrap_base),hl
-    ld l,(ix+PROC_OWNED_BYTES)
-    ld h,(ix+PROC_OWNED_BYTES+1)
-    ld (process_kill_owned_bytes),hl
-
-    ; Validate every private extent before the first handle/refcount or allocator
-    ; mutation. Spawn publishes rounded even extents and their exact summed size.
-    ld hl,(process_kill_image_base)
-    ld a,h
-    or l
-    jp z,zx48_process_kill_never_started_panic
-    bit 0,l
-    jp nz,zx48_process_kill_never_started_panic
-    ld hl,(process_kill_image_size)
-    ld a,h
-    or l
-    jp z,zx48_process_kill_never_started_panic
-    bit 0,l
-    jp nz,zx48_process_kill_never_started_panic
-    ld hl,(process_kill_stack_base)
-    ld a,h
-    or l
-    jp z,zx48_process_kill_never_started_panic
-    bit 0,l
-    jp nz,zx48_process_kill_never_started_panic
-    ld hl,(process_kill_bootstrap_base)
-    ld a,h
-    or l
-    jp z,zx48_process_kill_never_started_panic
-    bit 0,l
-    jp nz,zx48_process_kill_never_started_panic
-    ld hl,(process_kill_owned_bytes)
-    ld a,h
-    or l
-    jp z,zx48_process_kill_never_started_panic
-    bit 0,l
-    jp nz,zx48_process_kill_never_started_panic
-    ld de,(process_kill_image_size)
-    or a
-    sbc hl,de
-    jp c,zx48_process_kill_never_started_panic
-    ld de,(process_kill_stack_size)
-    or a
-    sbc hl,de
-    jp c,zx48_process_kill_never_started_panic
-    ld a,h
-    or l
-    jp z,zx48_process_kill_never_started_panic
-    bit 0,l
-    jp nz,zx48_process_kill_never_started_panic
-    ld (process_kill_bootstrap_size),hl
-
-    ; Close the target descriptor's handle slots directly. Never substitute
-    ; current_pid: the caller remains the running parent throughout SYS_KILL.
-    ld a,(process_kill_pid)
-    call zx48_process_ptr
-    jp c,zx48_process_kill_never_started_panic
-    push ix
-    pop hl
-    ld de,PROC_HANDLES
-    add hl,de
-    ld b,MAX_HANDLES_PER_PROCESS
-zx48_process_kill_close_handles:
-    ld a,(hl)
-    cp HANDLE_FREE
-    jr z,zx48_process_kill_close_next
-    ld (hl),HANDLE_FREE
-    push bc
-    push hl
-    call zx48_od_release
-    pop hl
-    pop bc
-    jp c,zx48_process_kill_never_started_panic
-zx48_process_kill_close_next:
-    inc hl
-    djnz zx48_process_kill_close_handles
-
-zx48_process_kill_free_bootstrap:
-    ld hl,(process_kill_bootstrap_base)
-    ld bc,(process_kill_bootstrap_size)
-    call zx48_free
-    jp c,zx48_process_kill_never_started_panic
-zx48_process_kill_free_stack:
-    ld hl,(process_kill_stack_base)
-    ld bc,(process_kill_stack_size)
-    call zx48_free
-    jp c,zx48_process_kill_never_started_panic
-zx48_process_kill_free_image:
-    ld hl,(process_kill_image_base)
-    ld bc,(process_kill_image_size)
-    call zx48_free
-    jp c,zx48_process_kill_never_started_panic
-
-zx48_process_kill_publish:
-    ld a,(process_kill_pid)
-    call zx48_process_ptr
-    jp c,zx48_process_kill_never_started_panic
-    xor a
-    ld (ix+PROC_FLAGS),a
-    ld (ix+PROC_IMAGE_BASE),a
-    ld (ix+PROC_IMAGE_BASE+1),a
-    ld (ix+PROC_IMAGE_SIZE),a
-    ld (ix+PROC_IMAGE_SIZE+1),a
-    ld (ix+PROC_STACK_LOW),a
-    ld (ix+PROC_STACK_LOW+1),a
-    ld (ix+PROC_STACK_HIGH),a
-    ld (ix+PROC_STACK_HIGH+1),a
-    ld (ix+PROC_SAVED_SP),a
-    ld (ix+PROC_SAVED_SP+1),a
-    ld (ix+PROC_WAIT_OBJECT),a
-    ld (ix+PROC_WAKE_TICK),a
-    ld (ix+PROC_WAKE_TICK+1),a
-    ld (ix+PROC_WAKE_TICK+2),a
-    ld (ix+PROC_WAKE_TICK+3),a
-    ld (ix+PROC_OWNED_BYTES),a
-    ld (ix+PROC_OWNED_BYTES+1),a
-    ld (ix+PROC_ARG_PTR),a
-    ld (ix+PROC_ARG_PTR+1),a
-    ld (ix+PROC_ENV_PTR),a
-    ld (ix+PROC_ENV_PTR+1),a
-    ld (ix+PROC_PRIVATE_FLAGS),a
-    ld a,130
-    ld (ix+PROC_EXIT_STATUS),a
-    ld (ix+PROC_STATE),PROC_ZOMBIE
-    xor a
-    ret
-
-zx48_process_kill_never_started_panic:
-    ld a,PANIC_SCHEDULER
-    jp zx48_panic
-
-process_kill_pid: db 0
-process_kill_image_base: dw 0
-process_kill_image_size: dw 0
-process_kill_stack_base: dw 0
-process_kill_stack_size: dw 0
-process_kill_bootstrap_base: dw 0
-process_kill_bootstrap_size: dw 0
-process_kill_owned_bytes: dw 0
-    ENDM
-'''
-          process = process.replace(marker, helper + marker, 1)
-          process_path.write_text(process, encoding='utf-8', newline='\n')
-
-          run_path = Path('v1/tools-host/test-driver/run.py')
-          run = run_path.read_text(encoding='utf-8')
-          import_anchor = 'import phase2_reparent\n'
-          if run.count(import_anchor) != 1:
-              raise SystemExit('P2.18 run.py import anchor mismatch')
-          run = run.replace(import_anchor, import_anchor + 'import phase2_kill_never_started\n', 1)
-          dispatch_anchor = '''    if step == "P2.17":\n        return phase2_reparent.dispatch(root, action, step, **kwargs)\n    if step.startswith("P2."):\n'''
-          dispatch_replacement = '''    if step == "P2.17":\n        return phase2_reparent.dispatch(root, action, step, **kwargs)\n    if step == "P2.18":\n        return phase2_kill_never_started.dispatch(root, action, step, **kwargs)\n    if step.startswith("P2."):\n'''
-          if run.count(dispatch_anchor) != 1:
-              raise SystemExit('P2.18 run.py dispatch anchor mismatch')
-          run = run.replace(dispatch_anchor, dispatch_replacement, 1)
-          run_path.write_text(run, encoding='utf-8', newline='\n')
-          PY
+      - name: Apply staged candidate
+        run: python3 scratch/p218_apply.py
 
       - name: Guard candidate shape
         run: |
-          python3 -m py_compile v1/tools-host/test-driver/phase2_kill_never_started.py v1/tools-host/test-driver/run.py
+          python3 -m py_compile scratch/p218_apply.py
+          python3 -m py_compile v1/tools-host/test-driver/phase2_kill_never_started.py
+          python3 -m py_compile v1/tools-host/test-driver/run.py
           git diff --check
-          test "$(git diff --name-only | sort)" = $'v1/src/kernel/process.asm\nv1/tools-host/test-driver/run.py'
+          test "$(git diff --name-only | sort | tr '\n' ' ')" = "v1/src/kernel/process.asm v1/tools-host/test-driver/run.py "
           grep -q 'ZX48_P2_18_KILL_ENABLED EQU 1' v1/src/kernel/process.asm
           grep -q 'phase2_kill_never_started.dispatch' v1/tools-host/test-driver/run.py
 
-      - name: Commit and push recovery candidate
+      - name: Commit and push candidate
         run: |
-          git config user.name 'ZX-UX P2.18 runner'
-          git config user.email 'tuklusan@users.noreply.github.com'
+          git config user.name "ZX-UX P2.18 runner"
+          git config user.email "tuklusan@users.noreply.github.com"
           git add v1/src/kernel/process.asm v1/tools-host/test-driver/run.py
-          git commit -m 'P2.18 candidate: never-started kill resource teardown'
+          git commit -m "P2.18 candidate: never-started kill resource teardown"
           git push origin HEAD:main
           git rev-parse HEAD
 
-      - name: Require active durable Phase 0 and Phase 1 evidence
+      - name: Require prior durable evidence
         run: |
           python3 tools/check_phase0_evidence.py --require-active
           python3 tools/check_phase1_evidence.py --require-active
@@ -281,23 +70,10 @@ process_kill_owned_bytes: dw 0
           python-version: '3.13.15'
           check-latest: false
 
-      - name: Install native build prerequisites
+      - name: Install native prerequisites
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            build-essential \
-            cmake \
-            gettext \
-            libaudiofile-dev \
-            libfreetype6-dev \
-            libgcrypt20-dev \
-            libglib2.0-dev \
-            libpng-dev \
-            libsdl1.2-dev \
-            libtool \
-            libxml2-dev \
-            perl \
-            pkg-config
+          sudo apt-get install -y --no-install-recommends build-essential cmake gettext libaudiofile-dev libfreetype6-dev libgcrypt20-dev libglib2.0-dev libpng-dev libsdl1.2-dev libtool libxml2-dev perl pkg-config
 
       - name: Acquire pinned project runtime
         run: python tools/scripts/bootstrap-environment.py
@@ -305,16 +81,17 @@ process_kill_owned_bytes: dw 0
       - name: Certify pinned project runtime
         run: tools/runtime/python/bin/python tools/scripts/verify-environment.py
 
-      - name: Execute P2.18 build and test
-        run: |
-          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P2.18
-          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P2.18
+      - name: Execute P2.18 build
+        run: tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P2.18
+
+      - name: Execute P2.18 test
+        run: tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P2.18
 
       - name: Upload P2.18 evidence
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: zxux-p218-${{ github.run_id }}-${{ github.run_attempt }}
-          path: /tmp/zxux-p218-evidence-${{ github.run_id }}-${{ github.run_attempt }}/**/*.json
+          path: /tmp/zxux-p218-evidence/**/*.json
           retention-days: 90
           if-no-files-found: warn
