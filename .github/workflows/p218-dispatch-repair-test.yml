@@ -28,7 +28,7 @@ jobs:
     timeout-minutes: 45
     env:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p218-dispatch-repair
-      P218_EXACT_PARENT: b2d2b642a77a2a6fbfac1adb32e034c2c0b299fd
+      P218_EXACT_PARENT: ddfbacc726a22856aed7d730b0d351e4b1a9b406
       P218_OLD_PROCESS_BLOB: b0cd24ebbdc329543f5138c2d26d8a67453b77fd
       P218_OLD_TEST_BLOB: 0390c74a046003cfca71ec1bbb2102624607793f
       ZXUX_REV12_SHA256: a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b
@@ -59,7 +59,7 @@ jobs:
 
           process = Path("v1/src/kernel/process.asm")
           text = process.read_text(encoding="utf-8")
-          old = "    ZX48_P2_18_KILL_ENABLED EQU 1\n"
+          old = "ZX48_P2_18_KILL_ENABLED EQU 1\n"
           if text.count(old) != 1:
               raise SystemExit("P2.18 process activation shape changed")
           process.write_text(text.replace(old, ""), encoding="utf-8", newline="\n")
@@ -97,7 +97,7 @@ jobs:
 
           expected="$(printf '%s\n' v1/src/kernel/process.asm v1/tools-host/test-driver/phase2_kill_never_started.py)"
           test "$(git diff --name-only | sort)" = "${expected}"
-          ! grep -q '^    ZX48_P2_18_KILL_ENABLED EQU 1$' v1/src/kernel/process.asm
+          ! grep -q '^ZX48_P2_18_KILL_ENABLED EQU 1$' v1/src/kernel/process.asm
           grep -q '"    DEFINE ZX48_P2_18_KILL_ENABLED\\n"' v1/tools-host/test-driver/phase2_kill_never_started.py
           grep -q 'assembled-fixture-dispatches-to-never-started-helper' v1/tools-host/test-driver/phase2_kill_never_started.py
 
@@ -111,7 +111,7 @@ jobs:
           marker = "    MACRO EMIT_KILL_NEVER_STARTED_ROUTINES\n"
           if text.count(marker) != 1:
               raise SystemExit("P2.18 reverse process marker changed")
-          process.write_text(text.replace(marker, marker + "    ZX48_P2_18_KILL_ENABLED EQU 1\n"), encoding="utf-8", newline="\n")
+          process.write_text(text.replace(marker, marker + "ZX48_P2_18_KILL_ENABLED EQU 1\n"), encoding="utf-8", newline="\n")
 
           driver = Path("/tmp/test-reverse.py")
           text = driver.read_text(encoding="utf-8")
@@ -157,7 +157,7 @@ jobs:
           for scan in 1 2 3; do
             echo "P2.18 caller-gated dispatch repair SCAN-${scan}"
             test "$(git diff --name-only | sort)" = "${expected}"
-            ! grep -q '^    ZX48_P2_18_KILL_ENABLED EQU 1$' v1/src/kernel/process.asm
+            ! grep -q '^ZX48_P2_18_KILL_ENABLED EQU 1$' v1/src/kernel/process.asm
             grep -q '"    DEFINE ZX48_P2_18_KILL_ENABLED\\n"' v1/tools-host/test-driver/phase2_kill_never_started.py
             grep -q 'assembled-fixture-dispatches-to-never-started-helper' v1/tools-host/test-driver/phase2_kill_never_started.py
             git diff --check
