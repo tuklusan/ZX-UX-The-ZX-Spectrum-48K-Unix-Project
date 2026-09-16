@@ -13,6 +13,7 @@
 name: P2.18 guarded candidate apply and test
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -28,39 +29,162 @@ jobs:
     timeout-minutes: 45
     env:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p218-evidence
+      P218_RECOVERY_PARENT: 39ef664df0eb2aaa2c3a704461b3405c026f6b5e
+      P218_LANDED_CANDIDATE: b42798a7c75783efad17a1ff84bf940722791a2f
+      ZXUX_REV12_SHA256: a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b
     steps:
       - name: Checkout guarded trigger
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: Require exact recovery parent
-        run: test "$(git rev-parse HEAD^)" = "fbf3c2d3f01468c4f064c09748bf6c793f4ef4ad"
+      - name: Classify candidate state
+        id: candidate_state
+        shell: bash
+        run: |
+          set -euo pipefail
+          head_sha="$(git rev-parse HEAD)"
+          remote_sha="$(git ls-remote origin refs/heads/main | awk '{print $1}')"
+          echo "checkout_head=${head_sha}"
+          echo "remote_main=${remote_sha}"
+          echo "landed_candidate=${P218_LANDED_CANDIDATE}"
+          echo "recovery_parent=${P218_RECOVERY_PARENT}"
+          git status --short
+          git log --oneline --decorate --graph -8
+
+          if git merge-base --is-ancestor "${P218_LANDED_CANDIDATE}" HEAD \
+             && git diff --quiet "${P218_LANDED_CANDIDATE}" -- \
+                  v1/src/kernel/process.asm v1/tools-host/test-driver/run.py; then
+            echo "mode=already_landed" >> "${GITHUB_OUTPUT}"
+            echo "candidate_state=already_landed_exact_bytes"
+            exit 0
+          fi
+
+          if test "${head_sha}" = "${P218_RECOVERY_PARENT}"; then
+            echo "mode=apply" >> "${GITHUB_OUTPUT}"
+            echo "candidate_state=apply_from_exact_recovery_parent"
+            exit 0
+          fi
+
+          echo "candidate_state=unexpected" >&2
+          git diff --stat "${P218_LANDED_CANDIDATE}" -- \
+            v1/src/kernel/process.asm v1/tools-host/test-driver/run.py || true
+          exit 1
 
       - name: Apply staged candidate
+        if: steps.candidate_state.outputs.mode == 'apply'
         run: python3 scratch/p218_apply.py
 
-      - name: Guard candidate shape
+      - name: Guard exact candidate shape
+        shell: bash
         run: |
+          set -euo pipefail
           python3 -m py_compile scratch/p218_apply.py
           python3 -m py_compile v1/tools-host/test-driver/phase2_kill_never_started.py
           python3 -m py_compile v1/tools-host/test-driver/run.py
           git diff --check
-          test "$(git diff --name-only | sort | tr '\n' ' ')" = "v1/src/kernel/process.asm v1/tools-host/test-driver/run.py "
           grep -q 'ZX48_P2_18_KILL_ENABLED EQU 1' v1/src/kernel/process.asm
           grep -q 'phase2_kill_never_started.dispatch' v1/tools-host/test-driver/run.py
 
+          if test "${{ steps.candidate_state.outputs.mode }}" = "apply"; then
+            test "$(git diff --name-only | sort | tr '\n' ' ')" = \
+              "v1/src/kernel/process.asm v1/tools-host/test-driver/run.py "
+            git diff --quiet "${P218_LANDED_CANDIDATE}" -- \
+              v1/src/kernel/process.asm v1/tools-host/test-driver/run.py
+          else
+            git diff --quiet "${P218_LANDED_CANDIDATE}" -- \
+              v1/src/kernel/process.asm v1/tools-host/test-driver/run.py
+          fi
+
       - name: Commit and push candidate
+        shell: bash
         run: |
+          set -euo pipefail
+          mode="${{ steps.candidate_state.outputs.mode }}"
+          echo "candidate_mode=${mode}"
+          echo "local_head_before=$(git rev-parse HEAD)"
+          echo "origin_main_advertised=$(git ls-remote origin refs/heads/main | awk '{print $1}')"
+
+          git fetch --no-tags origin main
+          remote_before="$(git rev-parse FETCH_HEAD)"
+          echo "remote_main_fetched=${remote_before}"
+
+          if git merge-base --is-ancestor "${P218_LANDED_CANDIDATE}" "${remote_before}" \
+             && git diff --quiet "${P218_LANDED_CANDIDATE}" "${remote_before}" -- \
+                  v1/src/kernel/process.asm v1/tools-host/test-driver/run.py; then
+            echo "candidate_push_action=already_landed_exact_bytes"
+            if test "${mode}" = "apply"; then
+              git reset --hard "${remote_before}"
+            fi
+            echo "local_head_after=$(git rev-parse HEAD)"
+            exit 0
+          fi
+
+          if test "${mode}" != "apply"; then
+            echo "candidate_push_action=refuse_unexpected_remote_state" >&2
+            git log --oneline --decorate --graph --all -12 >&2
+            exit 1
+          fi
+          if test "${remote_before}" != "${P218_RECOVERY_PARENT}"; then
+            echo "candidate_push_action=refuse_remote_not_recovery_parent" >&2
+            git log --oneline --decorate --graph --all -12 >&2
+            exit 1
+          fi
+
           git config user.name "ZX-UX P2.18 runner"
           git config user.email "tuklusan@users.noreply.github.com"
           git add v1/src/kernel/process.asm v1/tools-host/test-driver/run.py
-          git commit -m "P2.18 candidate: never-started kill resource teardown"
-          git push origin HEAD:main
-          git rev-parse HEAD
 
-      - name: Require prior durable evidence
+          set +e
+          git commit -m "P2.18 candidate: never-started kill resource teardown" \
+            > /tmp/p218-git-commit.log 2>&1
+          commit_rc=$?
+          set -e
+          cat /tmp/p218-git-commit.log
+          echo "git_commit_rc=${commit_rc}"
+          if test "${commit_rc}" -ne 0; then
+            git status --short
+            exit "${commit_rc}"
+          fi
+
+          candidate_commit="$(git rev-parse HEAD)"
+          echo "candidate_commit=${candidate_commit}"
+          set +e
+          git push --porcelain origin HEAD:main > /tmp/p218-git-push.log 2>&1
+          push_rc=$?
+          set -e
+          cat /tmp/p218-git-push.log
+          echo "git_push_rc=${push_rc}"
+
+          if test "${push_rc}" -ne 0; then
+            git fetch --no-tags origin main
+            remote_after_failure="$(git rev-parse FETCH_HEAD)"
+            echo "remote_main_after_push_failure=${remote_after_failure}"
+            if git merge-base --is-ancestor "${P218_RECOVERY_PARENT}" "${remote_after_failure}" \
+               && git diff --quiet "${candidate_commit}" "${remote_after_failure}" -- \
+                    v1/src/kernel/process.asm v1/tools-host/test-driver/run.py; then
+              echo "candidate_push_action=benign_race_exact_bytes_already_remote"
+              git reset --hard "${remote_after_failure}"
+              exit 0
+            fi
+            echo "candidate_push_action=push_failed_not_recovered" >&2
+            git status --short >&2
+            git log --oneline --decorate --graph --all -12 >&2
+            exit "${push_rc}"
+          fi
+
+          git fetch --no-tags origin main
+          remote_after="$(git rev-parse FETCH_HEAD)"
+          echo "remote_main_after_push=${remote_after}"
+          test "${remote_after}" = "${candidate_commit}"
+
+      - name: Require architecture identity and prior durable evidence
+        shell: bash
         run: |
+          set -euo pipefail
+          architecture_sha256="$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV12.md | awk '{print $1}')"
+          echo "architecture_sha256=${architecture_sha256}"
+          test "${architecture_sha256}" = "${ZXUX_REV12_SHA256}"
           python3 tools/check_phase0_evidence.py --require-active
           python3 tools/check_phase1_evidence.py --require-active
 
