@@ -3708,20 +3708,20 @@ zx48_process_wait_any_flag_ptr:
 ; A=candidate PID. Carry clear leaves IX on a current generation-qualified child.
 zx48_process_wait_any_match:
     cp 2
-    jr c,zx48_process_wait_any_child
+    jp c,zx48_process_wait_any_child
     cp MAX_PROCESSES
-    jr nc,zx48_process_wait_any_child
+    jp nc,zx48_process_wait_any_child
     ld (process_wait_any_candidate_pid),a
     call zx48_process_links_desc_ptr
     ret c
     ld a,(ix+PROC_STATE)
     or a
-    jr z,zx48_process_wait_any_child
+    jp z,zx48_process_wait_any_child
     ld a,(current_pid)
     ld b,a
     ld a,(ix+PROC_PARENT)
     cp b
-    jr nz,zx48_process_wait_any_child
+    jp nz,zx48_process_wait_any_child
 
     ld a,(process_wait_any_candidate_pid)
     call zx48_process_parent_generation_ptr
@@ -3731,7 +3731,7 @@ zx48_process_wait_any_match:
     ld hl,(process_wait_any_parent_generation)
     or a
     sbc hl,bc
-    jr nz,zx48_process_wait_any_child
+    jp nz,zx48_process_wait_any_child
 
     ld a,(process_wait_any_candidate_pid)
     call zx48_process_pid_bit
@@ -3740,25 +3740,25 @@ zx48_process_wait_any_match:
     call zx48_process_child_mask_ptr
     ld a,(process_wait_any_child_bit)
     and (hl)
-    jr z,zx48_process_wait_any_child
+    jp z,zx48_process_wait_any_child
     xor a
     ret
 
 ; A must be FF (-1), DE is the already prevalidated one-byte status destination.
 zx48_process_wait:
     cp $ff
-    jr nz,zx48_process_wait_any_child
+    jp nz,zx48_process_wait_any_child
     ld (process_wait_any_status_tmp),de
 
     ; Clear any stale specific-wait token before publishing the any-child state.
     call zx48_process_wait_specific_clear
     ld a,(current_pid)
     call zx48_process_wait_any_flag_ptr
-    jr c,zx48_process_wait_any_child
+    jp c,zx48_process_wait_any_child
     ld (hl),1
     ld a,(current_pid)
     call zx48_process_wait_status_ptr_slot
-    jr c,zx48_process_wait_any_child
+    jp c,zx48_process_wait_any_child
     ld de,(process_wait_any_status_tmp)
     ld (hl),e
     inc hl
@@ -3768,10 +3768,10 @@ zx48_process_wait_any_scan:
     ; Snapshot the current parent identity once for this deterministic scan.
     ld a,(current_pid)
     call zx48_process_generation_get
-    jr c,zx48_process_wait_any_none
+    jp c,zx48_process_wait_any_none
     ld a,d
     or e
-    jr z,zx48_process_wait_any_none
+    jp z,zx48_process_wait_any_none
     ld (process_wait_any_parent_generation),de
     xor a
     ld (process_wait_any_has_child),a
@@ -3796,12 +3796,12 @@ zx48_process_wait_any_next:
     jr c,zx48_process_wait_any_scan_loop
     ld a,(process_wait_any_has_child)
     or a
-    jr z,zx48_process_wait_any_none
+    jp z,zx48_process_wait_any_none
 
 zx48_process_wait_any_block:
     ld a,(current_pid)
     call zx48_process_links_desc_ptr
-    jr c,zx48_process_wait_any_panic
+    jp c,zx48_process_wait_any_panic
     ld hl,(syscall_frame_sp)
     ld de,SYSCALL_FRAME_PC_O
     add hl,de
@@ -3824,10 +3824,10 @@ zx48_syscall_resume_wait_any:
 zx48_process_wait_any_resume:
     ld a,(current_pid)
     call zx48_process_wait_any_flag_ptr
-    jr c,zx48_process_wait_any_child
+    jp c,zx48_process_wait_any_child
     ld a,(hl)
     or a
-    jr z,zx48_process_wait_any_child
+    jp z,zx48_process_wait_any_child
     jp zx48_process_wait_any_scan
 
 ; IX is the first matching zombie in the documented ascending scan. Status is
@@ -3841,13 +3841,13 @@ zx48_process_wait_any_reap:
 
     ld a,(current_pid)
     call zx48_process_wait_status_ptr_slot
-    jr c,zx48_process_wait_any_panic
+    jp c,zx48_process_wait_any_panic
     ld e,(hl)
     inc hl
     ld d,(hl)
     ld a,d
     or e
-    jr z,zx48_process_wait_any_panic
+    jp z,zx48_process_wait_any_panic
     ld a,(process_wait_any_status)
     ld (de),a
 
@@ -3869,7 +3869,7 @@ zx48_process_wait_any_child:
 zx48_process_wait_any_clear:
     ld a,(current_pid)
     call zx48_process_wait_any_flag_ptr
-    jr c,zx48_process_wait_any_panic
+    jp c,zx48_process_wait_any_panic
     ld (hl),0
     call zx48_process_wait_specific_clear
     xor a
