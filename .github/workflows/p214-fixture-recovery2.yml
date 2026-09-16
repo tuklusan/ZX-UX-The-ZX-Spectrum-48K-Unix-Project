@@ -1,0 +1,177 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: P2.14 fixture recovery 2
+
+on:
+  push:
+    branches:
+      - p214-diag3
+
+permissions:
+  contents: write
+
+concurrency:
+  group: p214-diag3
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      BASE_SHA: 0065149e25bd3d2afd1f315380722406ba9196ff
+      SOURCE_CANDIDATE: e56c7673abc8eb7fab18007bf388858b51487b76
+      ZXUX_EVIDENCE_DIR: /tmp/p214-evidence
+    steps:
+      - name: Checkout diagnostic branch
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Rebuild direct-child candidate with canonical fixture dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e "$BASE_SHA^{commit}"
+          git cat-file -e "$SOURCE_CANDIDATE^{commit}"
+          test "$(git rev-parse "$SOURCE_CANDIDATE^")" = "$BASE_SHA"
+          git checkout --detach "$BASE_SHA"
+          git checkout "$SOURCE_CANDIDATE" -- \
+            v1/src/kernel/process.asm \
+            v1/tools-host/test-driver/phase2_gate.py \
+            v1/tools-host/test-driver/phase2_zombie.py \
+            v1/tools-host/test-driver/run.py
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("v1/tools-host/test-driver/phase2_zombie.py")
+          text = path.read_text(encoding="utf-8")
+          old = '        "    INCLUDE \\"../include/zx48ux.inc\\"\\n"\n        "    INCLUDE \\"../src/kernel/errors.asm\\"\\n"\n        "    INCLUDE \\"../src/kernel/syscall.asm\\"\\n"\n        "    INCLUDE \\"../src/kernel/memory.asm\\"\\n"'
+          new = '        "    INCLUDE \\"../include/zx48ux.inc\\"\\n"\n        "    INCLUDE \\"../src/kernel/syscall.asm\\"\\n"\n        "    INCLUDE \\"../src/kernel/interrupt.asm\\"\\n"\n        "    INCLUDE \\"../src/kernel/errors.asm\\"\\n"\n        "    INCLUDE \\"../src/kernel/memory.asm\\"\\n"'
+          if text.count(old) != 1:
+              raise SystemExit("P2.14 fixture include anchor mismatch")
+          text = text.replace(old, new, 1)
+          stale = '        "kernel_ticks: defs 4,0\\n"\n'
+          if text.count(stale) != 1:
+              raise SystemExit("P2.14 local kernel_ticks anchor mismatch")
+          text = text.replace(stale, "", 1)
+          path.write_text(text, encoding="utf-8", newline="\n")
+          compile(text, str(path), "exec")
+          PY
+          git diff --check
+          expected=$'v1/src/kernel/process.asm\nv1/tools-host/test-driver/phase2_gate.py\nv1/tools-host/test-driver/phase2_zombie.py\nv1/tools-host/test-driver/run.py'
+          actual="$(git status --short | sed -E 's/^.. //' | sort)"
+          test "$actual" = "$expected"
+          git diff --stat | tee /tmp/p214-diff-stat.txt
+          git diff --unified=5 | tee /tmp/p214-candidate.patch
+          git diff "$SOURCE_CANDIDATE" -- v1/tools-host/test-driver/phase2_zombie.py | tee /tmp/p214-fixture-fix.patch
+          sha256sum \
+            v1/src/kernel/process.asm \
+            v1/tools-host/test-driver/phase2_gate.py \
+            v1/tools-host/test-driver/phase2_zombie.py \
+            v1/tools-host/test-driver/run.py | tee /tmp/p214-candidate-sha256.txt
+
+      - name: License and policy preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+
+      - name: Commit clean direct-child candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "Supratim Sanyal"
+          git config user.email "tuklusan@users.noreply.github.com"
+          git add -- \
+            v1/src/kernel/process.asm \
+            v1/tools-host/test-driver/phase2_gate.py \
+            v1/tools-host/test-driver/phase2_zombie.py \
+            v1/tools-host/test-driver/run.py
+          git commit -m "P2.14 candidate: use canonical fixture dependency symbols"
+          candidate_sha="$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
+          printf '%s\n' "$candidate_sha" | tee /tmp/p214-candidate-commit.txt
+          echo "CANDIDATE_SHA=$candidate_sha" >> "$GITHUB_ENV"
+          git push --force origin HEAD:refs/heads/p214-candidate
+
+      - name: Select pinned Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13.15'
+          check-latest: false
+
+      - name: Install native prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake gettext libaudiofile-dev libfreetype6-dev \
+            libgcrypt20-dev libglib2.0-dev libpng-dev libsdl1.2-dev libtool \
+            libxml2-dev perl pkg-config
+
+      - name: Acquire and certify pinned runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          success=0
+          for attempt in 1 2 3; do
+            set +e
+            python3 tools/scripts/bootstrap-environment.py 2>&1 | tee "/tmp/p214-bootstrap-attempt-${attempt}.log"
+            rc=${PIPESTATUS[0]}
+            set -e
+            if [ "$rc" -eq 0 ]; then success=1; break; fi
+            if [ "$attempt" -lt 3 ]; then sleep $((attempt * 3)); fi
+          done
+          test "$success" -eq 1
+          tools/runtime/python/bin/python tools/scripts/verify-environment.py 2>&1 | tee /tmp/p214-runtime-verify.log
+
+      - name: Exact P2.14 target build and test
+        id: target
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          {
+            tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P2.14
+            tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P2.14
+          } 2>&1 | tee /tmp/p214-target.log
+
+      - name: Enforce exact target result
+        if: steps.target.outcome == 'failure'
+        run: exit 1
+
+      - name: Dependent Phase 2 gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          tools/runtime/python/bin/python v1/tools-host/test-driver/phase2_gate.py 2>&1 | tee /tmp/p214-phase2-gate.log
+
+      - name: Preserve diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: p214-fixture-recovery2-${{ github.run_id }}
+          path: |
+            /tmp/p214-candidate-commit.txt
+            /tmp/p214-candidate-sha256.txt
+            /tmp/p214-candidate.patch
+            /tmp/p214-fixture-fix.patch
+            /tmp/p214-diff-stat.txt
+            /tmp/p214-bootstrap-attempt-*.log
+            /tmp/p214-runtime-verify.log
+            /tmp/p214-target.log
+            /tmp/p214-phase2-gate.log
+          retention-days: 30
+          if-no-files-found: warn
