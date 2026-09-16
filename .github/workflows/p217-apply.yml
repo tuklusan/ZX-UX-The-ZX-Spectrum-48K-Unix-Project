@@ -29,14 +29,15 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Require frozen P2.16 base
+      - name: Require frozen P2.16 base and driver checkpoint
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = "5997f65bcdc860c15a3f734b20aa7f68b3e372e8"
+          test "$(git rev-parse HEAD^)" = "345498df4e679dc5d30f383f9c8689a08c7c161f"
+          test -f v1/tools-host/test-driver/phase2_reparent.py
           grep -q 'import phase2_wait_any' v1/tools-host/test-driver/run.py
           ! grep -q 'import phase2_reparent' v1/tools-host/test-driver/run.py
-          ! grep -q 'call zx48_process_reparent_children_to_pid1' <(sed -n '/MACRO EMIT_ZOMBIE_TRANSITION_ROUTINES/,/ENDM/p' v1/src/kernel/process.asm)
+          ! sed -n '/MACRO EMIT_ZOMBIE_TRANSITION_ROUTINES/,/ENDM/p' v1/src/kernel/process.asm | grep -q 'call zx48_process_reparent_children_to_pid1'
           grep -q '"P2.16")' v1/tools-host/test-driver/phase2_gate.py
 
       - name: Apply exact P2.17 candidate
@@ -48,27 +49,8 @@ jobs:
 
           process_path = Path('v1/src/kernel/process.asm')
           process = process_path.read_text(encoding='utf-8')
-          old = '''    ld (process_zombie_bootstrap_size),hl
-
-    ; Architecture §7.5 ordering: close handles, release private allocations,
-    ; then publish status/ZOMBIE. Any allocator inconsistency is kernel-fatal;
-    ; silently retaining or double-freeing memory is not an exit result.
-    call zx48_handles_close_all_current
-'''
-          new = '''    ld (process_zombie_bootstrap_size),hl
-
-    ; Architecture §7.5 ordering: reparent every generation-qualified child to
-    ; PID1 before releasing this process's private resources. A missing/stale
-    ; PID1 identity or inconsistent tree is scheduler-fatal, not a partial exit.
-    ld a,(process_zombie_pid)
-    call zx48_process_reparent_children_to_pid1
-    jp c,zx48_process_zombie_panic
-
-    ; Close handles, release private allocations, then publish status/ZOMBIE.
-    ; Any allocator inconsistency is kernel-fatal; silently retaining or
-    ; double-freeing memory is not an exit result.
-    call zx48_handles_close_all_current
-'''
+          old = "    ld (process_zombie_bootstrap_size),hl\n\n    ; Architecture §7.5 ordering: close handles, release private allocations,\n    ; then publish status/ZOMBIE. Any allocator inconsistency is kernel-fatal;\n    ; silently retaining or double-freeing memory is not an exit result.\n    call zx48_handles_close_all_current\n"
+          new = "    ld (process_zombie_bootstrap_size),hl\n\n    ; Architecture §7.5 ordering: reparent every generation-qualified child to\n    ; PID1 before releasing this process's private resources. A missing/stale\n    ; PID1 identity or inconsistent tree is scheduler-fatal, not a partial exit.\n    ld a,(process_zombie_pid)\n    call zx48_process_reparent_children_to_pid1\n    jp c,zx48_process_zombie_panic\n\n    ; Close handles, release private allocations, then publish status/ZOMBIE.\n    ; Any allocator inconsistency is kernel-fatal; silently retaining or\n    ; double-freeing memory is not an exit result.\n    call zx48_handles_close_all_current\n"
           if process.count(old) != 1:
               raise SystemExit('unexpected P2.17 process insertion anchor')
           process_path.write_text(process.replace(old, new), encoding='utf-8', newline='\n')
@@ -80,16 +62,8 @@ jobs:
           if run.count(old_import) != 1 or 'import phase2_reparent' in run:
               raise SystemExit('unexpected P2.17 run.py import anchor')
           run = run.replace(old_import, new_import)
-          old_dispatch = '''    if step == "P2.16":
-        return phase2_wait_any.dispatch(root, action, step, **kwargs)
-    if step.startswith("P2."):
-'''
-          new_dispatch = '''    if step == "P2.16":
-        return phase2_wait_any.dispatch(root, action, step, **kwargs)
-    if step == "P2.17":
-        return phase2_reparent.dispatch(root, action, step, **kwargs)
-    if step.startswith("P2."):
-'''
+          old_dispatch = '    if step == "P2.16":\n        return phase2_wait_any.dispatch(root, action, step, **kwargs)\n    if step.startswith("P2."):\n'
+          new_dispatch = '    if step == "P2.16":\n        return phase2_wait_any.dispatch(root, action, step, **kwargs)\n    if step == "P2.17":\n        return phase2_reparent.dispatch(root, action, step, **kwargs)\n    if step.startswith("P2."):\n'
           if run.count(old_dispatch) != 1:
               raise SystemExit('unexpected P2.17 run.py dispatch anchor')
           run_path.write_text(run.replace(old_dispatch, new_dispatch), encoding='utf-8', newline='\n')
