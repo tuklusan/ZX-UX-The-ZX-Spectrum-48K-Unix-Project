@@ -72,7 +72,8 @@ jobs:
         shell: bash
         run: |
           set +e
-          tools/runtime/python/bin/python v1/tools-host/test-driver/phase2_wait_specific_runtime.py > /tmp/p215-runtime.log 2>&1
+          echo "source=$(git rev-parse HEAD)" > /tmp/p215-runtime.log
+          tools/runtime/python/bin/python v1/tools-host/test-driver/phase2_wait_specific_runtime.py >> /tmp/p215-runtime.log 2>&1
           rc=$?
           cat /tmp/p215-runtime.log
           printf '%s\n' "$rc" > /tmp/p215-runtime.exit
