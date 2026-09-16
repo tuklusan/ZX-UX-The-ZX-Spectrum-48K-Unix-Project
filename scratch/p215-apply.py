@@ -16,8 +16,6 @@
 from pathlib import Path
 
 
-PROCESS_PATH = Path("v1/src/kernel/process.asm")
-SYSCALL_PATH = Path("v1/src/kernel/syscall.asm")
 RUNTIME_PATH = Path("v1/tools-host/test-driver/phase2_wait_specific_runtime.py")
 
 
@@ -28,45 +26,20 @@ def replace_once(text: str, old: str, new: str, name: str) -> str:
     return text.replace(old, new, 1)
 
 
-def replace_all_checked(text: str, old: str, new: str, expected: int, name: str) -> str:
-    count = text.count(old)
-    if count != expected:
-        raise SystemExit(f"{name}: expected {expected} old-text matches, found {count}")
-    return text.replace(old, new)
-
-
 def main() -> None:
-    process = PROCESS_PATH.read_text(encoding="utf-8")
-    syscall = SYSCALL_PATH.read_text(encoding="utf-8")
     runtime = RUNTIME_PATH.read_text(encoding="utf-8")
 
-    # SjASMPlus decides macro-body conditionals while the source is parsed.
-    # The previous marker was created only when EMIT_WAIT_SPECIFIC_ROUTINES ran,
-    # which is too late for syscall.asm's earlier macro definitions.  Use a
-    # separate composition switch that the staged fixture defines before any
-    # kernel source include.  Keep ZX48_P2_15_WAIT_EMITTED as the emitted marker.
-    process = replace_once(
-        process,
-        "    IFDEF ZX48_P2_15_WAIT_EMITTED\n",
-        "    IFDEF ZX48_P2_15_WAIT_ENABLED\n",
-        "P2.14 selective wake early composition guard",
-    )
-    syscall = replace_all_checked(
-        syscall,
-        "    IFDEF ZX48_P2_15_WAIT_EMITTED\n",
-        "    IFDEF ZX48_P2_15_WAIT_ENABLED\n",
-        2,
-        "P2.15 syscall early composition guards",
-    )
+    # SjASMPlus IFDEF tests preprocessor DEFINE identifiers, not EQU labels.
+    # The previous EQU therefore appeared in the symbol file but did not enable
+    # the conditional P2.15 syscall continuation.  Define the compile switch in
+    # the preprocessor namespace before the kernel source includes instead.
     runtime = replace_once(
         runtime,
-        '        "    DEVICE ZXSPECTRUM48\\n"\n        "    INCLUDE \\\"../include/zx48ux.inc\\\"\\n"',
-        '        "    DEVICE ZXSPECTRUM48\\n"\n        "ZX48_P2_15_WAIT_ENABLED EQU 1\\n"\n        "    INCLUDE \\\"../include/zx48ux.inc\\\"\\n"',
-        "runtime early P2.15 composition switch",
+        '        "ZX48_P2_15_WAIT_ENABLED EQU 1\\n"',
+        '        "    DEFINE ZX48_P2_15_WAIT_ENABLED\\n"',
+        "runtime P2.15 preprocessor switch",
     )
 
-    PROCESS_PATH.write_text(process, encoding="utf-8", newline="\n")
-    SYSCALL_PATH.write_text(syscall, encoding="utf-8", newline="\n")
     RUNTIME_PATH.write_text(runtime, encoding="utf-8", newline="\n")
 
 
