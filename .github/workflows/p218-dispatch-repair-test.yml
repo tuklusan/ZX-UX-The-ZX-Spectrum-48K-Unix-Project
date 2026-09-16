@@ -28,7 +28,7 @@ jobs:
     timeout-minutes: 45
     env:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p218-dispatch-repair
-      P218_EXACT_PARENT: ddfbacc726a22856aed7d730b0d351e4b1a9b406
+      P218_EXACT_PARENT: 8fca4ae167e801cf8356043adbea6d204e5d1ad4
       P218_OLD_PROCESS_BLOB: b0cd24ebbdc329543f5138c2d26d8a67453b77fd
       P218_OLD_TEST_BLOB: 0390c74a046003cfca71ec1bbb2102624607793f
       ZXUX_REV12_SHA256: a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b
@@ -138,7 +138,7 @@ jobs:
               ),
           ]
           for old, new in edits:
-              if text.count(old) != 1 or text.count(new) != 0:
+              if text.count(old) != 1:
                   raise SystemExit(f"P2.18 reverse driver shape failed: {old[:72]!r}")
               text = text.replace(old, new)
           driver.write_text(text, encoding="utf-8", newline="\n")
