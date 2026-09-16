@@ -3374,9 +3374,16 @@ zx48_process_exit_to_zombie:
     jp nz,zx48_process_zombie_panic
     ld (process_zombie_bootstrap_size),hl
 
-    ; Architecture §7.5 ordering: close handles, release private allocations,
-    ; then publish status/ZOMBIE. Any allocator inconsistency is kernel-fatal;
-    ; silently retaining or double-freeing memory is not an exit result.
+    ; Architecture §7.5 ordering: reparent every generation-qualified child to
+    ; PID1 before releasing this process's private resources. A missing/stale
+    ; PID1 identity or inconsistent tree is scheduler-fatal, not a partial exit.
+    ld a,(process_zombie_pid)
+    call zx48_process_reparent_children_to_pid1
+    jp c,zx48_process_zombie_panic
+
+    ; Close handles, release private allocations, then publish status/ZOMBIE.
+    ; Any allocator inconsistency is kernel-fatal; silently retaining or
+    ; double-freeing memory is not an exit result.
     call zx48_handles_close_all_current
     jp c,zx48_process_zombie_panic
 zx48_process_zombie_free_bootstrap:
