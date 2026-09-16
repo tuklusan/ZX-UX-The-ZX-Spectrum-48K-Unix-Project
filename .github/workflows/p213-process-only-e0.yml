@@ -93,6 +93,36 @@ jobs:
             v1/tools-host/test-driver/run.py | tee /tmp/p213-candidate-sha256.txt
           git diff "$BASE_SHA" -- > /tmp/p213-candidate.patch
 
+      - name: Audit P2.13 spawn generation rollback ordering
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 - <<'PY' 2>&1 | tee /tmp/p213-spawn-rollback-audit.log
+          from pathlib import Path
+
+          process = Path("v1/src/kernel/process.asm").read_text(encoding="utf-8")
+          start = process.index("    MACRO EMIT_SPAWN_TRANSACTION_ROUTINES")
+          end = process.index("    ENDM\n", start)
+          spawn = process[start:end]
+          marker = spawn.index("    IFDEF ZX48_P2_13_LINKS_EMITTED")
+          branch_end = spawn.index("    ELSE", marker)
+          active = spawn[marker:branch_end]
+          clear_index = active.index("ld hl,(process_spawn_child_desc)")
+          link_index = active.index("call zx48_process_link_child")
+          print(
+              "P2.13 spawn rollback audit: "
+              f"link_index={link_index} clear_index={clear_index} "
+              f"link_before_clear={link_index < clear_index}"
+          )
+          if not link_index < clear_index:
+              raise SystemExit(
+                  "P2.13 spawn rollback audit FAIL: fallible generation link follows "
+                  "private descriptor clearing; generation exhaustion can mutate a FREE "
+                  "descriptor before rollback"
+              )
+          print("P2.13 spawn rollback audit PASS")
+          PY
+
       - name: License and policy preflight
         shell: bash
         run: |
@@ -210,6 +240,7 @@ jobs:
             /tmp/p213-candidate-commit.txt
             /tmp/p213-candidate.patch
             /tmp/p213-candidate-sha256.txt
+            /tmp/p213-spawn-rollback-audit.log
             /tmp/p213-bootstrap-attempt-*.log
             /tmp/p213-runtime-verify.log
             /tmp/p213-target.log
