@@ -1,0 +1,67 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: P2.16 guarded long-branch repair
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/p216-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  guarded-repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Repair P2.16 long error branches only
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('v1/src/kernel/process.asm')
+          text = path.read_text(encoding='utf-8')
+          start = text.index('    MACRO EMIT_WAIT_ANY_ROUTINES')
+          end = text.index('    ENDM\n', start)
+          before = text[start:end]
+          block = before
+          targets = ('child', 'none', 'panic')
+          changed = 0
+          for cond in ('c', 'nc', 'z', 'nz'):
+              for target in targets:
+                  old = f'    jr {cond},zx48_process_wait_any_{target}\n'
+                  new = f'    jp {cond},zx48_process_wait_any_{target}\n'
+                  n = block.count(old)
+                  if n:
+                      block = block.replace(old, new)
+                      changed += n
+          if changed < 6:
+              raise SystemExit(f'expected several P2.16 long branches, changed={changed}')
+          text = text[:start] + block + text[end:]
+          path.write_text(text, encoding='utf-8', newline='\n')
+          print(f'changed={changed}')
+          PY
+          ! sed -n '/MACRO EMIT_WAIT_ANY_ROUTINES/,/ENDM/p' v1/src/kernel/process.asm | grep -E '^    jr (c|nc|z|nz),zx48_process_wait_any_(child|none|panic)$'
+          git diff --check
+      - name: Commit repair
+        run: |
+          git config user.name 'ZX-UX P2.16 runner'
+          git config user.email 'tuklusan@users.noreply.github.com'
+          git add v1/src/kernel/process.asm
+          git commit -m 'P2.16 candidate: widen wait-any error branches'
+          git push origin HEAD:main
