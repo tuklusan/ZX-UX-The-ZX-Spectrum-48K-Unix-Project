@@ -91,7 +91,7 @@ zx48_syscall_resume_intr:
     scf
     jr zx48_syscall_return
 
-    IFDEF ZX48_P2_15_WAIT_EMITTED
+    IFDEF ZX48_P2_15_WAIT_ENABLED
 ; Scheduler continuation for a blocked P2.15 specific-child WAIT.
 zx48_syscall_resume_wait_specific:
     ld (syscall_user_sp),sp
@@ -280,7 +280,7 @@ zx48_sys_wait_target_ok:
     ld d,(hl)
     ld hl,(syscall_arg_hl)
     ld a,(hl)
-    IFDEF ZX48_P2_15_WAIT_EMITTED
+    IFDEF ZX48_P2_15_WAIT_ENABLED
     cp $ff
     jr z,zx48_sys_wait_legacy_any
     call zx48_process_wait_specific

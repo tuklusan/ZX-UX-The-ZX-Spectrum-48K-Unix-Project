@@ -76,6 +76,7 @@ def _assemble_fixture(
     symbols = build / "p215-wait-specific.sym"
     source.write_text(
         "    DEVICE ZXSPECTRUM48\n"
+        "ZX48_P2_15_WAIT_ENABLED EQU 1\n"
         "    INCLUDE \"../include/zx48ux.inc\"\n"
         "    INCLUDE \"../src/kernel/syscall.asm\"\n"
         "    INCLUDE \"../src/kernel/process.asm\"\n"
