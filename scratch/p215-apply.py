@@ -29,28 +29,20 @@ def replace_once(text: str, old: str, new: str, name: str) -> str:
 def main() -> None:
     process = PROCESS_PATH.read_text(encoding="utf-8")
 
-    # The exact-child qualifier deliberately inspects the child descriptor and
-    # therefore returns with IX on the child. Reacquire the already validated
-    # parent descriptor before publishing READY; otherwise the wake mutates the
-    # ZOMBIE child instead of the blocked parent.
+    # Z80 has no direct absolute-memory load into B. With SjASMPlus relaxed
+    # syntax, `ld b,(label)` is not a safe memory dereference. Load the durable
+    # parent PID through A, copy it to B, then restore the exiting child PID in A
+    # for the exact generation-qualified matcher.
     old = """    ld a,(process_zombie_pid)
     ld b,(process_zombie_parent_pid)
     call zx48_process_zombie_wait_specific_match
-    ret c
-    ENDIF
-    ld (ix+PROC_STATE),PROC_READY
 """
-    new = """    ld a,(process_zombie_pid)
-    ld b,(process_zombie_parent_pid)
+    new = """    ld a,(process_zombie_parent_pid)
+    ld b,a
+    ld a,(process_zombie_pid)
     call zx48_process_zombie_wait_specific_match
-    ret c
-    ld a,(process_zombie_parent_pid)
-    call zx48_process_links_desc_ptr
-    ret c
-    ENDIF
-    ld (ix+PROC_STATE),PROC_READY
 """
-    process = replace_once(process, old, new, "P2.15 parent descriptor reacquire")
+    process = replace_once(process, old, new, "P2.15 legal wake parent PID load")
     PROCESS_PATH.write_text(process, encoding="utf-8", newline="\n")
 
 
