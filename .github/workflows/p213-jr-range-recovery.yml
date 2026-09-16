@@ -1,0 +1,223 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: P2.13 JR range recovery
+
+on:
+  push:
+    branches:
+      - p213-diag14
+
+permissions:
+  contents: write
+
+concurrency:
+  group: p213-diag14
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      BASE_SHA: a8a8a6deb7cb877640d8d7c84aea1140d5569c52
+      SOURCE_CANDIDATE: 9be681a19c024abbe5068d5ba194f51af9451b96
+      ZXUX_EVIDENCE_DIR: /tmp/p213-evidence
+    steps:
+      - name: Checkout recovery instrumentation
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Preserve stage diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp .p213-worker/p213_stage_diag.py /tmp/p213_stage_diag.py
+          test "$(git hash-object .p213-worker/p213_stage_diag.py)" = "$(git rev-parse HEAD:.p213-worker/p213_stage_diag.py)"
+          python3 -m py_compile /tmp/p213_stage_diag.py
+
+      - name: Materialize exact source candidate plus proven JR-range correction
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e "$BASE_SHA^{commit}"
+          git cat-file -e "$SOURCE_CANDIDATE^{commit}"
+          git checkout --detach "$BASE_SHA"
+          test "$(git rev-parse HEAD)" = "$BASE_SHA"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          git diff --binary "$BASE_SHA" "$SOURCE_CANDIDATE" -- \
+            v1/src/kernel/process.asm \
+            v1/tools-host/test-driver/phase2_gate.py \
+            v1/tools-host/test-driver/phase2_parent_child.py \
+            v1/tools-host/test-driver/run.py | git apply
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("v1/src/kernel/process.asm")
+          text = path.read_text(encoding="utf-8")
+          start = text.index("zx48_process_link_child:\n")
+          end = text.index("zx48_process_generation_exhausted:\n", start)
+          section = text[start:end]
+          old = "    jr nz,zx48_process_links_busy\n"
+          new = "    jp nz,zx48_process_links_busy\n"
+          count = section.count(old)
+          if count != 1:
+              raise SystemExit(f"P2.13 JR-range correction: expected 1 busy branch, found {count}")
+          section = section.replace(old, new, 1)
+          path.write_text(text[:start] + section + text[end:], encoding="utf-8", newline="\n")
+          PY
+
+          expected=$'v1/src/kernel/process.asm\nv1/tools-host/test-driver/phase2_gate.py\nv1/tools-host/test-driver/phase2_parent_child.py\nv1/tools-host/test-driver/run.py'
+          actual="$(git status --short | sed -E 's/^.. //' | sort)"
+          test "$actual" = "$expected"
+          git diff --check
+
+          relative_paths="$(git diff --name-only "$SOURCE_CANDIDATE" -- | sort)"
+          test "$relative_paths" = "v1/src/kernel/process.asm"
+          git diff --unified=4 "$SOURCE_CANDIDATE" -- v1/src/kernel/process.asm | tee /tmp/p213-jr-range-fix.patch
+          test "$(git diff --numstat "$SOURCE_CANDIDATE" -- v1/src/kernel/process.asm)" = $'1\t1\tv1/src/kernel/process.asm'
+
+          printf '%s\n' "$SOURCE_CANDIDATE" > /tmp/p213-source-candidate.txt
+          sha256sum \
+            v1/src/kernel/process.asm \
+            v1/tools-host/test-driver/phase2_gate.py \
+            v1/tools-host/test-driver/phase2_parent_child.py \
+            v1/tools-host/test-driver/run.py | tee /tmp/p213-candidate-sha256.txt
+
+      - name: License and policy preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+
+      - name: Commit corrected clean candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "Supratim Sanyal"
+          git config user.email "tuklusan@users.noreply.github.com"
+          git add -- \
+            v1/src/kernel/process.asm \
+            v1/tools-host/test-driver/phase2_gate.py \
+            v1/tools-host/test-driver/phase2_parent_child.py \
+            v1/tools-host/test-driver/run.py
+          git commit -m "P2.13 clean candidate: widen busy branch"
+          candidate_sha="$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
+          expected=$'v1/src/kernel/process.asm\nv1/tools-host/test-driver/phase2_gate.py\nv1/tools-host/test-driver/phase2_parent_child.py\nv1/tools-host/test-driver/run.py'
+          actual="$(git diff --name-only "$BASE_SHA" HEAD | sort)"
+          test "$actual" = "$expected"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          printf '%s\n' "$candidate_sha" | tee /tmp/p213-candidate-commit.txt
+          echo "CANDIDATE_SHA=$candidate_sha" >> "$GITHUB_ENV"
+          git push --force origin HEAD:refs/heads/p213-jr-range-candidate
+
+      - name: Select pinned Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13.15'
+          check-latest: false
+
+      - name: Install native prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake gettext libaudiofile-dev libfreetype6-dev \
+            libgcrypt20-dev libglib2.0-dev libpng-dev libsdl1.2-dev libtool \
+            libxml2-dev perl pkg-config
+
+      - name: Acquire and certify pinned runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          success=0
+          for attempt in 1 2 3; do
+            echo "P2.13 pinned-runtime bootstrap attempt ${attempt}/3"
+            set +e
+            python3 tools/scripts/bootstrap-environment.py 2>&1 | tee "/tmp/p213-bootstrap-attempt-${attempt}.log"
+            rc=${PIPESTATUS[0]}
+            set -e
+            if [ "$rc" -eq 0 ]; then
+              success=1
+              break
+            fi
+            echo "P2.13 pinned-runtime bootstrap attempt ${attempt} failed rc=${rc}"
+            if [ "$attempt" -lt 3 ]; then
+              sleep $((attempt * 3))
+            fi
+          done
+          test "$success" -eq 1
+          tools/runtime/python/bin/python tools/scripts/verify-environment.py 2>&1 | tee /tmp/p213-runtime-verify.log
+
+      - name: Exact P2.13 target build and test
+        id: target
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          {
+            tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P2.13
+            tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P2.13
+          } 2>&1 | tee /tmp/p213-target.log
+
+      - name: Diagnose P2.13 runtime stages
+        if: steps.target.outcome == 'failure'
+        shell: bash
+        run: |
+          set +e
+          tools/runtime/python/bin/python /tmp/p213_stage_diag.py 2>&1 | tee /tmp/p213-stage-diagnostic.log
+          exit 0
+
+      - name: Enforce exact target result
+        if: steps.target.outcome == 'failure'
+        run: exit 1
+
+      - name: Dependent Phase 2 gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          tools/runtime/python/bin/python v1/tools-host/test-driver/phase2_gate.py 2>&1 | tee /tmp/p213-phase2-gate.log
+
+      - name: Pack diagnostics
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          tar -C /tmp -czf /tmp/p213-evidence.tgz p213-evidence 2>/dev/null
+          exit 0
+
+      - name: Preserve diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: p213-jr-range-recovery-${{ github.run_id }}
+          path: |
+            /tmp/p213-source-candidate.txt
+            /tmp/p213-candidate-commit.txt
+            /tmp/p213-candidate-sha256.txt
+            /tmp/p213-jr-range-fix.patch
+            /tmp/p213-bootstrap-attempt-*.log
+            /tmp/p213-runtime-verify.log
+            /tmp/p213-target.log
+            /tmp/p213-phase2-gate.log
+            /tmp/p213-stage-diagnostic.log
+            /tmp/p213-evidence.tgz
+          retention-days: 30
+          if-no-files-found: warn
