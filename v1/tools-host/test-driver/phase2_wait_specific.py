@@ -18,6 +18,7 @@ import re
 from typing import Any, Callable
 
 from driver_core import DriverError
+import phase2_wait_specific_runtime
 
 
 class Phase2WaitSpecificError(DriverError):
@@ -252,12 +253,22 @@ def dispatch(
         }
     )
 
-    return [kernel_command], {
+    runtime_command, runtime_binary, runtime_assertions = phase2_wait_specific_runtime.run(
+        root,
+        execute=action == "test",
+        runner=run_command,
+        project_tool=require_project_tool,
+    )
+    assertions.extend(runtime_assertions)
+
+    return [kernel_command, runtime_command], {
         "v1/build/kernel.bin": sha256_file(kernel_binary),
+        "v1/build/p215-wait-specific.bin": sha256_file(runtime_binary),
         "v1/src/kernel/process.asm": sha256_file(root / "v1/src/kernel/process.asm"),
         "v1/src/kernel/syscall.asm": sha256_file(root / "v1/src/kernel/syscall.asm"),
         "v1/src/kernel/scheduler.asm": sha256_file(root / "v1/src/kernel/scheduler.asm"),
         "v1/tools-host/test-driver/phase2_wait_specific.py": sha256_file(root / "v1/tools-host/test-driver/phase2_wait_specific.py"),
+        "v1/tools-host/test-driver/phase2_wait_specific_runtime.py": sha256_file(root / "v1/tools-host/test-driver/phase2_wait_specific_runtime.py"),
         "v1/tools-host/test-driver/run.py": sha256_file(root / "v1/tools-host/test-driver/run.py"),
         "v1/tools-host/test-driver/phase2_gate.py": sha256_file(root / "v1/tools-host/test-driver/phase2_gate.py"),
     }, assertions
