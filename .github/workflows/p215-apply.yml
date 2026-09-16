@@ -34,8 +34,8 @@ jobs:
 
       - name: Require unchanged candidate bytes
         run: |
-          git merge-base --is-ancestor ab40bb9b0e84ed7cecad9ac143beb641bfbcc9f8 HEAD
-          git diff --exit-code ab40bb9b0e84ed7cecad9ac143beb641bfbcc9f8 -- \
+          git merge-base --is-ancestor b05c1ef7012f9a8760fd08df805f309a7294163d HEAD
+          git diff --exit-code b05c1ef7012f9a8760fd08df805f309a7294163d -- \
             v1/src/kernel/process.asm \
             v1/src/kernel/syscall.asm \
             v1/tools-host/test-driver/phase2_wait_specific.py \
@@ -52,7 +52,8 @@ jobs:
             v1/tools-host/test-driver/phase2_wait_specific_runtime.py
           grep -q '^    IFDEF ZX48_P2_15_WAIT_ENABLED$' v1/src/kernel/process.asm
           test "$(grep -c '^    IFDEF ZX48_P2_15_WAIT_ENABLED$' v1/src/kernel/syscall.asm)" -eq 2
-          grep -q 'ZX48_P2_15_WAIT_ENABLED EQU 1' v1/tools-host/test-driver/phase2_wait_specific_runtime.py
+          grep -q 'DEFINE ZX48_P2_15_WAIT_ENABLED' v1/tools-host/test-driver/phase2_wait_specific_runtime.py
+          ! grep -q 'ZX48_P2_15_WAIT_ENABLED EQU 1' v1/tools-host/test-driver/phase2_wait_specific_runtime.py
           grep -q 'ZX48_P2_15_WAIT_EMITTED EQU 1' v1/src/kernel/process.asm
           git diff --check
           git status --short
@@ -61,9 +62,6 @@ jobs:
         run: |
           git config user.name 'ZX-UX P2.15 diagnostic runner'
           git config user.email 'tuklusan@users.noreply.github.com'
-          git add \
-            v1/src/kernel/process.asm \
-            v1/src/kernel/syscall.asm \
-            v1/tools-host/test-driver/phase2_wait_specific_runtime.py
-          git commit -m 'P2.15 candidate: enable WAIT composition before includes'
+          git add v1/tools-host/test-driver/phase2_wait_specific_runtime.py
+          git commit -m 'P2.15 candidate: define WAIT compile switch for SjASMPlus'
           git push origin HEAD:main
