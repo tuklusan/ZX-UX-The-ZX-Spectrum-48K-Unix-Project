@@ -1,0 +1,71 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: P2.14 certification gates
+
+on:
+  push:
+    branches:
+      - p214-cert-stage
+
+permissions:
+  contents: read
+
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BASE_SHA: 0065149e25bd3d2afd1f315380722406ba9196ff
+      CANDIDATE_SHA: 15155116c8b83e5da0f5070d7162ad12cf441729
+    steps:
+      - name: Checkout certification instrumentation
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Checkout exact P2.14 candidate and verify identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e "$CANDIDATE_SHA^{commit}"
+          test "$(git rev-parse "$CANDIDATE_SHA^")" = "$BASE_SHA"
+          git checkout --detach "$CANDIDATE_SHA"
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          cat > /tmp/expected.sha256 <<'EOF'
+          f9cb73d5fe3ee0e7fdd9cd528f2e659628d72307fcd9c0d1bb4466dfe52d55c7  v1/src/kernel/process.asm
+          f4abce52633eb6198402e1fb4cc9758f79b67c14bbfc5db474bd9514224518f5  v1/tools-host/test-driver/phase2_gate.py
+          8fc498a8892fe651d9a96f93b73343ddd97586919b4d66b959b92535ae5fd9c3  v1/tools-host/test-driver/phase2_zombie.py
+          aadc347779926ecf0db4abf67f5ff7c775f6889d34797368f1f363399106bfe8  v1/tools-host/test-driver/run.py
+          EOF
+          sha256sum -c /tmp/expected.sha256
+
+      - name: License gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./tools/check_license_headers.sh
+
+      - name: Project policy gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./tools/check_project_policy.py
+
+      - name: Immutability recheck
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          sha256sum -c /tmp/expected.sha256
