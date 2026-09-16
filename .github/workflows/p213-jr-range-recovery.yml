@@ -52,15 +52,21 @@ jobs:
           set -euo pipefail
           git cat-file -e "$BASE_SHA^{commit}"
           git cat-file -e "$SOURCE_CANDIDATE^{commit}"
+          test "$(git rev-parse "$SOURCE_CANDIDATE^")" = "$BASE_SHA"
           git checkout --detach "$BASE_SHA"
           test "$(git rev-parse HEAD)" = "$BASE_SHA"
           test -z "$(git status --porcelain=v1 --untracked-files=all)"
 
-          git diff --binary "$BASE_SHA" "$SOURCE_CANDIDATE" -- \
+          echo "P2.13 rematerialize exact four source-candidate paths"
+          git checkout "$SOURCE_CANDIDATE" -- \
             v1/src/kernel/process.asm \
             v1/tools-host/test-driver/phase2_gate.py \
             v1/tools-host/test-driver/phase2_parent_child.py \
-            v1/tools-host/test-driver/run.py | git apply
+            v1/tools-host/test-driver/run.py
+          source_paths="$(git status --short | sed -E 's/^.. //' | sort)"
+          expected=$'v1/src/kernel/process.asm\nv1/tools-host/test-driver/phase2_gate.py\nv1/tools-host/test-driver/phase2_parent_child.py\nv1/tools-host/test-driver/run.py'
+          printf 'P2.13 source paths:\n%s\n' "$source_paths"
+          test "$source_paths" = "$expected"
 
           python3 - <<'PY'
           from pathlib import Path
@@ -73,21 +79,21 @@ jobs:
           old = "    jr nz,zx48_process_links_busy\n"
           new = "    jp nz,zx48_process_links_busy\n"
           count = section.count(old)
+          print(f"P2.13 JR-range anchor count={count}")
           if count != 1:
               raise SystemExit(f"P2.13 JR-range correction: expected 1 busy branch, found {count}")
           section = section.replace(old, new, 1)
           path.write_text(text[:start] + section + text[end:], encoding="utf-8", newline="\n")
           PY
 
-          expected=$'v1/src/kernel/process.asm\nv1/tools-host/test-driver/phase2_gate.py\nv1/tools-host/test-driver/phase2_parent_child.py\nv1/tools-host/test-driver/run.py'
-          actual="$(git status --short | sed -E 's/^.. //' | sort)"
-          test "$actual" = "$expected"
           git diff --check
-
           relative_paths="$(git diff --name-only "$SOURCE_CANDIDATE" -- | sort)"
+          printf 'P2.13 delta from source candidate:\n%s\n' "$relative_paths"
           test "$relative_paths" = "v1/src/kernel/process.asm"
           git diff --unified=4 "$SOURCE_CANDIDATE" -- v1/src/kernel/process.asm | tee /tmp/p213-jr-range-fix.patch
-          test "$(git diff --numstat "$SOURCE_CANDIDATE" -- v1/src/kernel/process.asm)" = $'1\t1\tv1/src/kernel/process.asm'
+          numstat="$(git diff --numstat "$SOURCE_CANDIDATE" -- v1/src/kernel/process.asm)"
+          printf 'P2.13 delta numstat: %s\n' "$numstat"
+          test "$numstat" = $'1\t1\tv1/src/kernel/process.asm'
 
           printf '%s\n' "$SOURCE_CANDIDATE" > /tmp/p213-source-candidate.txt
           sha256sum \
