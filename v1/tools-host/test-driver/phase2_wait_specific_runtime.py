@@ -81,6 +81,10 @@ def _assemble_fixture(
         "    INCLUDE \"../src/kernel/process.asm\"\n"
         "    INCLUDE \"../src/kernel/handles.asm\"\n"
         "    INCLUDE \"../src/kernel/scheduler.asm\"\n"
+        "PANIC_SCHEDULER EQU $03\n"
+        "TTY_REQ_GET_MODE EQU 1\n"
+        "TTY_REQ_GET_SIZE EQU 3\n"
+        "TTY_REQ_SET_OWNER EQU 7\n"
         f"    ORG ${FIXTURE_CODE:04X}\n"
         "p215_start:\n"
         "    EMIT_PARENT_CHILD_ROUTINES\n"
@@ -264,7 +268,7 @@ def _write_wait1(pid: int) -> bytes:
     code += _set_word(WAIT1 + 2, STATUS_PTR)
     code += _set_byte(STATUS_BASE, 0xA5)
     code += _set_byte(STATUS_PTR, 0xCC)
-    code += _set_byte(STATUS_PTR + 1, 0x5A)
+    code += _set_byte(STATUS_PTR + 1, 0x7E)
     return bytes(code)
 
 
@@ -305,7 +309,7 @@ def _block_wake_resume_reap(root: Path, symbols: dict[str, int], fixture: bytes)
     code += _expect_hl(2)
     code += _expect_byte(STATUS_BASE, 0xA5)
     code += _expect_byte(STATUS_PTR, 0x5A)
-    code += _expect_byte(STATUS_PTR + 1, 0x5A)
+    code += _expect_byte(STATUS_PTR + 1, 0x7E)
     code += _expect_byte(p2 + PROC_STATE, symbols["PROC_FREE"])
     code += _expect_word(generation + 4, 1)
     code += _expect_byte(child_mask + 1, 0)
@@ -333,7 +337,7 @@ def _immediate_zombie_reap(root: Path, symbols: dict[str, int], fixture: bytes) 
     code += _expect_hl(2)
     code += _expect_byte(STATUS_BASE, 0xA5)
     code += _expect_byte(STATUS_PTR, 0x33)
-    code += _expect_byte(STATUS_PTR + 1, 0x5A)
+    code += _expect_byte(STATUS_PTR + 1, 0x7E)
     code += _expect_byte(p2 + PROC_STATE, symbols["PROC_FREE"])
     code += _expect_byte(p1 + PROC_STATE, symbols["PROC_RUNNING"])
     code += _expect_byte(symbols["current_pid"], 1)
@@ -354,7 +358,7 @@ def _nonchild_fails_without_block(root: Path, symbols: dict[str, int], fixture: 
     code += bytes((0xFE, symbols["E_CHILD"] & 0xFF)) + b"\xC2" + _word(FAIL_PC)
     code += _expect_byte(STATUS_BASE, 0xA5)
     code += _expect_byte(STATUS_PTR, 0xCC)
-    code += _expect_byte(STATUS_PTR + 1, 0x5A)
+    code += _expect_byte(STATUS_PTR + 1, 0x7E)
     code += _expect_byte(p1 + PROC_STATE, symbols["PROC_RUNNING"])
     code += _expect_byte(symbols["current_pid"], 1)
     code += _jp(PASS_PC)

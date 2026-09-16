@@ -3449,13 +3449,13 @@ zx48_process_zombie_wake_parent:
     ld a,(ix+PROC_STATE)
     cp PROC_WAIT_CHILD
     ret nz
-IFDEF ZX48_P2_15_WAIT_EMITTED
+    IFDEF ZX48_P2_15_WAIT_EMITTED
     ; P2.15 specific WAIT wakes only for the exact recorded child generation.
     ld a,(process_zombie_pid)
     ld b,(process_zombie_parent_pid)
     call zx48_process_zombie_wait_specific_match
     ret c
-ENDIF
+    ENDIF
     ld (ix+PROC_STATE),PROC_READY
     xor a
     ret
@@ -3487,7 +3487,7 @@ ZX48_P2_15_WAIT_EMITTED EQU 1
 ; A=parent PID -> HL=durable status-pointer slot.
 zx48_process_wait_status_ptr_slot:
     cp MAX_PROCESSES
-    jr nc,zx48_process_wait_specific_child
+    jp nc,zx48_process_wait_specific_child
     ld l,a
     ld h,0
     add hl,hl
@@ -3508,7 +3508,7 @@ zx48_process_wait_specific:
 
     ld a,(current_pid)
     call zx48_process_wait_status_ptr_slot
-    jr c,zx48_process_wait_specific_record_failed
+    jp c,zx48_process_wait_specific_record_failed
     ld de,(process_wait_specific_status_tmp)
     ld (hl),e
     inc hl
@@ -3516,7 +3516,7 @@ zx48_process_wait_specific:
 
     ld a,(process_wait_specific_target_pid)
     call zx48_process_wait_matches
-    jr c,zx48_process_wait_specific_record_failed
+    jp c,zx48_process_wait_specific_record_failed
     ld a,(ix+PROC_STATE)
     cp PROC_ZOMBIE
     jr z,zx48_process_wait_specific_reap
@@ -3524,7 +3524,7 @@ zx48_process_wait_specific:
 zx48_process_wait_specific_block:
     ld a,(current_pid)
     call zx48_process_links_desc_ptr
-    jr c,zx48_process_wait_specific_record_failed
+    jp c,zx48_process_wait_specific_record_failed
     ld hl,(syscall_frame_sp)
     ld de,SYSCALL_FRAME_PC_O
     add hl,de
@@ -3541,16 +3541,16 @@ zx48_process_wait_specific_block:
 zx48_process_wait_specific_resume:
     ld a,(current_pid)
     call zx48_process_wait_pid_ptr
-    jr c,zx48_process_wait_specific_child
+    jp c,zx48_process_wait_specific_child
     ld a,(hl)
     cp HANDLE_FREE
-    jr z,zx48_process_wait_specific_child
+    jp z,zx48_process_wait_specific_child
     ld (process_wait_specific_target_pid),a
     call zx48_process_wait_matches
-    jr c,zx48_process_wait_specific_child
+    jp c,zx48_process_wait_specific_child
     ld a,(ix+PROC_STATE)
     cp PROC_ZOMBIE
-    jr nz,zx48_process_wait_specific_child
+    jp nz,zx48_process_wait_specific_child
 
 ; IX is the exact generation-qualified ZOMBIE descriptor. Capture the result,
 ; write exactly one status byte, then perform the now-infallible unlink/reclaim.
@@ -3562,13 +3562,13 @@ zx48_process_wait_specific_reap:
 
     ld a,(current_pid)
     call zx48_process_wait_status_ptr_slot
-    jr c,zx48_process_wait_specific_child
+    jp c,zx48_process_wait_specific_child
     ld e,(hl)
     inc hl
     ld d,(hl)
     ld a,d
     or e
-    jr z,zx48_process_wait_specific_child
+    jp z,zx48_process_wait_specific_child
     ld a,(process_wait_specific_status)
     ld (de),a
 
@@ -3630,26 +3630,26 @@ zx48_process_zombie_wait_specific_match:
     ld a,b
     ld (process_wait_specific_parent_pid),a
     call zx48_process_wait_pid_ptr
-    jr c,zx48_process_wait_specific_child
+    jp c,zx48_process_wait_specific_child
     ld a,(process_wait_specific_candidate_pid)
     cp (hl)
-    jr nz,zx48_process_wait_specific_child
+    jp nz,zx48_process_wait_specific_child
     call zx48_process_generation_get
-    jr c,zx48_process_wait_specific_child
+    jp c,zx48_process_wait_specific_child
     ld a,d
     or e
-    jr z,zx48_process_wait_specific_child
+    jp z,zx48_process_wait_specific_child
     ld (process_wait_specific_candidate_generation),de
     ld a,(process_wait_specific_parent_pid)
     call zx48_process_wait_generation_ptr
-    jr c,zx48_process_wait_specific_child
+    jp c,zx48_process_wait_specific_child
     ld c,(hl)
     inc hl
     ld b,(hl)
     ld hl,(process_wait_specific_candidate_generation)
     or a
     sbc hl,bc
-    jr nz,zx48_process_wait_specific_child
+    jp nz,zx48_process_wait_specific_child
     xor a
     ret
 

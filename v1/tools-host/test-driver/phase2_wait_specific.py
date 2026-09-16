@@ -174,9 +174,9 @@ def _source_contract(root: Path, *, target: bool) -> list[dict[str, object]]:
         },
         {
             "name": "zombie-wake-requires-exact-wait-pid-and-generation-match",
-            "passed": "zx48_process_zombie_wait_specific_match" in zombie
-            and "process_wait_pid" in wake
-            and "process_wait_generation" in wake,
+            "passed": "call zx48_process_zombie_wait_specific_match" in wake
+            and "process_wait_pid" in wait_specific
+            and "process_wait_generation" in wait_specific,
         },
         {
             "name": "specific-wait-resume-reloads-retained-status-pointer",
