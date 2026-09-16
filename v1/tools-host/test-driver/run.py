@@ -75,6 +75,7 @@ import phase2_zombie
 import phase2_wait_specific
 import phase2_wait_any
 import phase2_reparent
+import phase2_kill_never_started
 from driver_core import (
     DriverError,
     find_root,
@@ -216,6 +217,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase2_wait_any.dispatch(root, action, step, **kwargs)
     if step == "P2.17":
         return phase2_reparent.dispatch(root, action, step, **kwargs)
+    if step == "P2.18":
+        return phase2_kill_never_started.dispatch(root, action, step, **kwargs)
     if step.startswith("P2."):
         raise DriverError(f"numbered Phase-2 step is not registered: {step}")
     raise DriverError(f"step is not registered with the deterministic test driver: {step}")
