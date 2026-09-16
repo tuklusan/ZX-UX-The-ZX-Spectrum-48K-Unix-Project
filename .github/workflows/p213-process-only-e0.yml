@@ -38,35 +38,32 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Recover reviewed historical worker inputs and detach base
+      - name: Preserve corrector and recover reviewed inputs
         shell: bash
         run: |
           set -euo pipefail
+          cp .p213-worker/process_only_correct.py /tmp/process_only_correct.py
+          test "$(git hash-object .p213-worker/process_only_correct.py)" = "$(git rev-parse HEAD:.p213-worker/process_only_correct.py)"
           raw="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${HIST_SHA}/.p213-worker"
           curl -fsSL "$raw/p213_macro.asm" -o /tmp/p213_macro.asm
           curl -fsSL "$raw/p213_patch.py" -o /tmp/p213_patch.py
           curl -fsSL "$raw/p213_root_fix.py" -o /tmp/p213_root_fix.py
           curl -fsSL "$raw/phase2_parent_child.py" -o /tmp/phase2_parent_child.py
-          python3 - <<'PY'
-          from hashlib import sha1
-          from pathlib import Path
-          expected = {
-              '/tmp/p213_macro.asm': '5fcd7b6ae8a9dc57adad88928a126e9d5a8f1a1f',
-              '/tmp/p213_patch.py': 'f7a74cadecbd17eb1fb769f2bf8e4e2fa5e79e2f',
-              '/tmp/p213_root_fix.py': 'c6adb3a935e496fdb36215c10c985b3b8be2c2fa',
-              '/tmp/phase2_parent_child.py': 'c40a0795af41135220fbb5a43f3a23af4a51818e',
-          }
-          for name, want in expected.items():
-              data = Path(name).read_bytes()
-              got = sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
-              if got != want:
-                  raise SystemExit(f'historical input mismatch {name}: {got} != {want}')
-          PY
+          test "$(git hash-object /tmp/p213_macro.asm)" = 5fcd7b6ae8a9dc57adad88928a126e9d5a8f1a1f
+          test "$(git hash-object /tmp/p213_patch.py)" = f7a74cadecbd17eb1fb769f2bf8e4e2fa5e79e2f
+          test "$(git hash-object /tmp/p213_root_fix.py)" = c6adb3a935e496fdb36215c10c985b3b8be2c2fa
+          test "$(git hash-object /tmp/phase2_parent_child.py)" = c40a0795af41135220fbb5a43f3a23af4a51818e
+          python3 -m py_compile /tmp/process_only_correct.py /tmp/p213_patch.py /tmp/p213_root_fix.py /tmp/phase2_parent_child.py
+
+      - name: Detach exact canonical base
+        shell: bash
+        run: |
+          set -euo pipefail
           git checkout --detach "$BASE_SHA"
           test "$(git rev-parse HEAD)" = "$BASE_SHA"
           test -z "$(git status --porcelain=v1 --untracked-files=all)"
 
-      - name: Materialize fresh process-only candidate
+      - name: Materialize fresh four-path candidate
         shell: bash
         run: |
           set -euo pipefail
@@ -76,136 +73,17 @@ jobs:
             v1/tools-host/test-driver/phase2_exec.py \
             v1/tools-host/test-driver/phase2_exec_runtime.py \
             v1/tools-host/test-driver/phase2_spawn_atomic.py
-          python3 - <<'PY'
-          from pathlib import Path
-
-          path = Path('v1/src/kernel/process.asm')
-          text = path.read_text(encoding='utf-8')
-
-          def one(old: str, new: str, label: str) -> None:
-              global text
-              n = text.count(old)
-              if n != 1:
-                  raise SystemExit(f'{label}: expected one anchor, found {n}')
-              text = text.replace(old, new, 1)
-
-          one(
-              '    MACRO EMIT_PARENT_CHILD_ROUTINES\n',
-              '    MACRO EMIT_PARENT_CHILD_ROUTINES\nZX48_P2_13_LINKS_EMITTED EQU 1\n',
-              'emission-marker',
-          )
-
-          one(
-              '    ld a,(current_pid)\n    cp MAX_PROCESSES\n    jp nc,zx48_process_links_inval\n    ld (process_link_parent_pid),a\n    call zx48_process_links_desc_ptr\n',
-              '    ld a,(current_pid)\n    ld (process_link_parent_pid),a\n    cp MAX_PROCESSES\n    jp nc,zx48_process_links_inval\n    call zx48_process_links_desc_ptr\n',
-              'link-parent-bound-order',
-          )
-
-          one(
-              '    ld a,(current_pid)\n    call zx48_process_generation_get\n    ret c\n    ld (process_wait_parent_generation),de\n',
-              '    ld a,(current_pid)\n    call zx48_process_generation_get\n    ret c\n    ld a,d\n    or e\n    jp z,zx48_process_wait_child\n    ld (process_wait_parent_generation),de\n',
-              'wait-record-parent-generation-zero',
-          )
-          one(
-              '    ld a,(process_wait_candidate_pid)\n    call zx48_process_generation_get\n    ret c\n    ld (process_wait_candidate_generation),de\n    ld a,(current_pid)\n    call zx48_process_wait_pid_ptr\n',
-              '    ld a,(process_wait_candidate_pid)\n    call zx48_process_generation_get\n    ret c\n    ld a,d\n    or e\n    jp z,zx48_process_wait_child\n    ld (process_wait_candidate_generation),de\n    ld a,(current_pid)\n    call zx48_process_wait_pid_ptr\n',
-              'wait-record-child-generation-zero',
-          )
-
-          start = text.index('zx48_process_wait_matches:\n')
-          head, tail = text[:start], text[start:]
-          def tail_one(old: str, new: str, label: str) -> None:
-              global tail
-              n = tail.count(old)
-              if n != 1:
-                  raise SystemExit(f'{label}: expected one anchor, found {n}')
-              tail = tail.replace(old, new, 1)
-
-          tail_one(
-              '    ld a,(current_pid)\n    call zx48_process_wait_pid_ptr\n    ld a,(process_wait_candidate_pid)\n',
-              '    ld a,(current_pid)\n    call zx48_process_wait_pid_ptr\n    jp c,zx48_process_wait_child\n    ld a,(process_wait_candidate_pid)\n',
-              'wait-match-current-pid-bound',
-          )
-          tail_one(
-              '    ld a,(current_pid)\n    call zx48_process_generation_get\n    ret c\n    ld (process_wait_parent_generation),de\n',
-              '    ld a,(current_pid)\n    call zx48_process_generation_get\n    ret c\n    ld a,d\n    or e\n    jp z,zx48_process_wait_child\n    ld (process_wait_parent_generation),de\n',
-              'wait-match-parent-generation-zero',
-          )
-          tail_one(
-              '    ld a,(process_wait_candidate_pid)\n    call zx48_process_generation_get\n    ret c\n    ld (process_wait_candidate_generation),de\n',
-              '    ld a,(process_wait_candidate_pid)\n    call zx48_process_generation_get\n    ret c\n    ld a,d\n    or e\n    jp z,zx48_process_wait_child\n    ld (process_wait_candidate_generation),de\n',
-              'wait-match-child-generation-zero',
-          )
-          text = head + tail
-
-          old = '''    ; P2.13 generation-qualified linkage is the final fallible action.  It is
-    ; side-effect free on failure; after success the cooperative commit has no
-    ; remaining failure edge before READY publishes the complete child.
-    ld a,(process_spawn_child_pid)
-    call zx48_process_link_child
-    jp c,zx48_process_spawn_rollback
-
-    ; Commit is intentionally non-fallible. The descriptor remains PROC_FREE
-    ; while every field is written; READY is the single publication store.
-    ld hl,(process_spawn_child_desc)
-    xor a
-    ld (hl),a
-    ld d,h
-    ld e,l
-    inc de
-    ld bc,PROC_DESC_SIZE-1
-    ldir
-    ld ix,(process_spawn_child_desc)
-    ld a,(process_spawn_child_pid)
-    ld (ix+PROC_PID),a
-    xor a
-    ld (ix+PROC_FLAGS),a
-'''
-          new = '''IFDEF ZX48_P2_13_LINKS_EMITTED
-    ; P2.13 clears the still-private descriptor before generation-qualified
-    ; linkage. Linkage is the final fallible action before READY publication.
-    ld hl,(process_spawn_child_desc)
-    xor a
-    ld (hl),a
-    ld d,h
-    ld e,l
-    inc de
-    ld bc,PROC_DESC_SIZE-1
-    ldir
-    ld a,(process_spawn_child_pid)
-    call zx48_process_link_child
-    jp c,zx48_process_spawn_rollback
-    ld ix,(process_spawn_child_desc)
-    ld a,(process_spawn_child_pid)
-    ld (ix+PROC_PID),a
-ELSE
-    ; Preserve the certified P2.10/P2.12 expansion byte-for-byte when the
-    ; P2.13 linkage emitter is absent from the assembly unit.
-    ld hl,(process_spawn_child_desc)
-    xor a
-    ld (hl),a
-    ld d,h
-    ld e,l
-    inc de
-    ld bc,PROC_DESC_SIZE-1
-    ldir
-    ld ix,(process_spawn_child_desc)
-    ld a,(process_spawn_child_pid)
-    ld (ix+PROC_PID),a
-    ld a,(current_pid)
-    ld (ix+PROC_PARENT),a
-ENDIF
-    xor a
-    ld (ix+PROC_FLAGS),a
-'''
-          one(old, new, 'spawn-process-only-integration')
-
-          path.write_text(text, encoding='utf-8', newline='\n')
-          PY
+          python3 /tmp/process_only_correct.py
           expected=$'v1/src/kernel/process.asm\nv1/tools-host/test-driver/phase2_gate.py\nv1/tools-host/test-driver/phase2_parent_child.py\nv1/tools-host/test-driver/run.py'
           actual="$(git status --short | sed -E 's/^.. //' | sort)"
           test "$actual" = "$expected"
           git diff --check
+          test "$(git rev-parse "$BASE_SHA":v1/tools-host/test-driver/phase2_exec.py)" = 2c2c3c10d951f3af0a558a0ff8bb2e77c2c832e5
+          test "$(git rev-parse "$BASE_SHA":v1/tools-host/test-driver/phase2_exec_runtime.py)" = 2cfbd7d195bfce5e0c32ba1920d336edae8c4198
+          test "$(git rev-parse "$BASE_SHA":v1/tools-host/test-driver/phase2_spawn_atomic.py)" = 2725059c4b29845e525f638e4421967f46fc96c0
+          test "$(git hash-object v1/tools-host/test-driver/phase2_exec.py)" = 2c2c3c10d951f3af0a558a0ff8bb2e77c2c832e5
+          test "$(git hash-object v1/tools-host/test-driver/phase2_exec_runtime.py)" = 2cfbd7d195bfce5e0c32ba1920d336edae8c4198
+          test "$(git hash-object v1/tools-host/test-driver/phase2_spawn_atomic.py)" = 2725059c4b29845e525f638e4421967f46fc96c0
           sha256sum \
             v1/src/kernel/process.asm \
             v1/tools-host/test-driver/phase2_gate.py \
