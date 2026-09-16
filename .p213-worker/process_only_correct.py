@@ -45,7 +45,20 @@ one(
     "link-parent-bound-order",
 )
 
-one(
+wait_matches = text.index("zx48_process_wait_matches:\n")
+head = text[:wait_matches]
+tail = text[wait_matches:]
+
+
+def replace_one(section: str, old: str, new: str, label: str) -> str:
+    count = section.count(old)
+    if count != 1:
+        raise SystemExit(f"P2.13 process-only corrector {label}: expected 1 anchor, found {count}")
+    return section.replace(old, new, 1)
+
+
+head = replace_one(
+    head,
     "    ld a,(current_pid)\n"
     "    call zx48_process_generation_get\n"
     "    ret c\n"
@@ -60,7 +73,8 @@ one(
     "wait-record-parent-generation-zero",
 )
 
-one(
+head = replace_one(
+    head,
     "    ld a,(process_wait_candidate_pid)\n"
     "    call zx48_process_generation_get\n"
     "    ret c\n"
@@ -79,20 +93,8 @@ one(
     "wait-record-child-generation-zero",
 )
 
-wait_matches = text.index("zx48_process_wait_matches:\n")
-head = text[:wait_matches]
-tail = text[wait_matches:]
-
-
-def tail_one(old: str, new: str, label: str) -> None:
-    global tail
-    count = tail.count(old)
-    if count != 1:
-        raise SystemExit(f"P2.13 process-only corrector {label}: expected 1 anchor, found {count}")
-    tail = tail.replace(old, new, 1)
-
-
-tail_one(
+tail = replace_one(
+    tail,
     "    ld a,(current_pid)\n"
     "    call zx48_process_wait_pid_ptr\n"
     "    ld a,(process_wait_candidate_pid)\n",
@@ -103,7 +105,8 @@ tail_one(
     "wait-match-current-pid-bound",
 )
 
-tail_one(
+tail = replace_one(
+    tail,
     "    ld a,(current_pid)\n"
     "    call zx48_process_generation_get\n"
     "    ret c\n"
@@ -118,7 +121,8 @@ tail_one(
     "wait-match-parent-generation-zero",
 )
 
-tail_one(
+tail = replace_one(
+    tail,
     "    ld a,(process_wait_candidate_pid)\n"
     "    call zx48_process_generation_get\n"
     "    ret c\n"
