@@ -28,7 +28,7 @@ jobs:
     timeout-minutes: 45
     env:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p218-final-qualification
-      P218_EXACT_PARENT: b58f9630397829788972260b5948e882452993e2
+      P218_EXACT_PARENT: c6c5e4b800aefe5a12baeadb9d917f6ec1157446
       P218_LANDED_CANDIDATE: b42798a7c75783efad17a1ff84bf940722791a2f
       ZXUX_REV12_SHA256: a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b
 
