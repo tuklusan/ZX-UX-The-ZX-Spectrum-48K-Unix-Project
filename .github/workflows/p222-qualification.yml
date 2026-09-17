@@ -19,6 +19,7 @@ on:
     paths:
       - .github/workflows/p222-qualification.yml
       - v1/src/kernel/process.asm
+      - v1/src/kernel/memory.asm
       - v1/tests/multiprocessing/p222-spawn-exit-leak.asm
       - v1/tools-host/test-driver/phase2_spawn_exit_leak.py
       - v1/tools-host/test-driver/run.py
@@ -48,70 +49,132 @@ jobs:
           set -euo pipefail
           git merge-base --is-ancestor "${P222_EXACT_PARENT}" "${GITHUB_SHA}"
           git diff --name-only "${P222_EXACT_PARENT}" "${GITHUB_SHA}" | sort > /tmp/p222-changed
-          if grep -Fqx 'ZX48_P2_13_LINKS_EMITTED EQU 1' v1/src/kernel/process.asm; then
+          python3 - <<'PY'
+          from pathlib import Path
+
+          process = Path('v1/src/kernel/process.asm').read_bytes()
+          process_old = b'ZX48_P2_13_LINKS_EMITTED EQU 1'
+          process_new = b'    DEFINE ZX48_P2_13_LINKS_EMITTED 1'
+          memory = Path('v1/src/kernel/memory.asm').read_bytes()
+          memory_old = (
+              b'    xor a\n'
+              b'    ld (ix+6),a\n'
+              b'    ld (ix+7),a\n'
+              b'    call zx48_extent_sort\n'
+          )
+          memory_new = (
+              b'    xor a\n'
+              b'    ld (ix+4),a\n'
+              b'    ld (ix+5),a\n'
+              b'    ld (ix+6),a\n'
+              b'    ld (ix+7),a\n'
+              b'    call zx48_extent_sort\n'
+          )
+          state = (
+              process.count(process_old), process.count(process_new),
+              memory.count(memory_old), memory.count(memory_new),
+          )
+          if state == (1, 0, 1, 0):
+              mode = 'prequalification'
+          elif state == (0, 1, 0, 1):
+              mode = 'checked-in'
+          else:
+              raise SystemExit(f'P2.22 fail-closed mixed repair state: {state!r}')
+          Path('/tmp/p222-mode').write_text(mode + '\n', encoding='ascii')
+          PY
+          if test "$(cat /tmp/p222-mode)" = prequalification; then
             printf '%s\n' \
               .github/workflows/p222-qualification.yml \
               v1/tests/multiprocessing/p222-spawn-exit-leak.asm \
               v1/tools-host/test-driver/phase2_spawn_exit_leak.py \
               v1/tools-host/test-driver/run.py \
               | sort > /tmp/p222-expected
-            printf '%s\n' prequalification > /tmp/p222-mode
-          elif grep -Fqx '    DEFINE ZX48_P2_13_LINKS_EMITTED 1' v1/src/kernel/process.asm; then
+          else
             printf '%s\n' \
               .github/workflows/p222-qualification.yml \
               v1/src/kernel/process.asm \
+              v1/src/kernel/memory.asm \
               v1/tests/multiprocessing/p222-spawn-exit-leak.asm \
               v1/tools-host/test-driver/phase2_spawn_exit_leak.py \
               v1/tools-host/test-driver/run.py \
               | sort > /tmp/p222-expected
-            printf '%s\n' checked-in > /tmp/p222-mode
-          else
-            echo 'P2.22 fail-closed: staged P2.13 composition marker is neither exact old nor exact repaired form' >&2
-            exit 1
           fi
           diff -u /tmp/p222-expected /tmp/p222-changed
           test -z "$(git status --porcelain)"
           echo "qualification_remote_head=${GITHUB_SHA}"
           echo "qualification_mode=$(cat /tmp/p222-mode)"
 
-      - name: Prepare exact process-link candidate
+      - name: Prepare exact P2.22 repair candidate
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
 
-          path = Path('v1/src/kernel/process.asm')
-          data = path.read_bytes()
-          old = b'ZX48_P2_13_LINKS_EMITTED EQU 1'
-          new = b'    DEFINE ZX48_P2_13_LINKS_EMITTED 1'
-          old_count = data.count(old)
-          new_count = data.count(new)
-          if (old_count, new_count) == (1, 0):
-              path.write_bytes(data.replace(old, new, 1))
-              print('prepared one-line EQU-to-indented-DEFINE candidate')
-          elif (old_count, new_count) == (0, 1):
-              print('checked-in source already equals repaired candidate')
-          else:
-              raise SystemExit(
-                  f'P2.22 fail-closed marker multiplicity: old={old_count} new={new_count}'
-              )
+          process_path = Path('v1/src/kernel/process.asm')
+          process = process_path.read_bytes()
+          process_old = b'ZX48_P2_13_LINKS_EMITTED EQU 1'
+          process_new = b'    DEFINE ZX48_P2_13_LINKS_EMITTED 1'
+          process_state = (process.count(process_old), process.count(process_new))
+          if process_state == (1, 0):
+              process_path.write_bytes(process.replace(process_old, process_new, 1))
+              print('prepared P2.13 EQU-to-indented-DEFINE composition repair')
+          elif process_state != (0, 1):
+              raise SystemExit(f'P2.22 fail-closed process marker multiplicity: {process_state!r}')
+
+          memory_path = Path('v1/src/kernel/memory.asm')
+          memory = memory_path.read_bytes()
+          memory_old = (
+              b'    xor a\n'
+              b'    ld (ix+6),a\n'
+              b'    ld (ix+7),a\n'
+              b'    call zx48_extent_sort\n'
+          )
+          memory_new = (
+              b'    xor a\n'
+              b'    ld (ix+4),a\n'
+              b'    ld (ix+5),a\n'
+              b'    ld (ix+6),a\n'
+              b'    ld (ix+7),a\n'
+              b'    call zx48_extent_sort\n'
+          )
+          memory_state = (memory.count(memory_old), memory.count(memory_new))
+          if memory_state == (1, 0):
+              memory_path.write_bytes(memory.replace(memory_old, memory_new, 1))
+              print('prepared canonical zeroing of merged-away free-extent record')
+          elif memory_state != (0, 1):
+              raise SystemExit(f'P2.22 fail-closed allocator normalization multiplicity: {memory_state!r}')
           PY
           grep -Fqx '    DEFINE ZX48_P2_13_LINKS_EMITTED 1' v1/src/kernel/process.asm
-          test "$(grep -Fxc '    DEFINE ZX48_P2_13_LINKS_EMITTED 1' v1/src/kernel/process.asm)" = 1
-          test "$(grep -Fxc 'ZX48_P2_13_LINKS_EMITTED EQU 1' v1/src/kernel/process.asm)" = 0
+          python3 - <<'PY'
+          from pathlib import Path
+          data = Path('v1/src/kernel/memory.asm').read_bytes()
+          repaired = (
+              b'    xor a\n'
+              b'    ld (ix+4),a\n'
+              b'    ld (ix+5),a\n'
+              b'    ld (ix+6),a\n'
+              b'    ld (ix+7),a\n'
+              b'    call zx48_extent_sort\n'
+          )
+          if data.count(repaired) != 1:
+              raise SystemExit('P2.22 fail-closed allocator normalization repair missing or duplicated')
+          PY
           if ! git diff --quiet; then
-            test "$(git diff --name-only)" = 'v1/src/kernel/process.asm'
-            git add v1/src/kernel/process.asm
+            git diff --name-only | sort > /tmp/p222-local-changed
+            printf '%s\n' v1/src/kernel/memory.asm v1/src/kernel/process.asm | sort > /tmp/p222-local-expected
+            diff -u /tmp/p222-local-expected /tmp/p222-local-changed
+            git add v1/src/kernel/process.asm v1/src/kernel/memory.asm
             git -c user.name='ZX-UX Qualification' \
                 -c user.email='zxux-qualification@invalid.example' \
-                commit --no-verify -m 'P2.22 ephemeral process-link candidate'
+                commit --no-verify -m 'P2.22 ephemeral composition and allocator candidate'
           fi
           test -z "$(git status --porcelain)"
           git diff --name-only "${P222_EXACT_PARENT}" HEAD | sort > /tmp/p222-prepared-changed
           printf '%s\n' \
             .github/workflows/p222-qualification.yml \
             v1/src/kernel/process.asm \
+            v1/src/kernel/memory.asm \
             v1/tests/multiprocessing/p222-spawn-exit-leak.asm \
             v1/tools-host/test-driver/phase2_spawn_exit_leak.py \
             v1/tools-host/test-driver/run.py \
@@ -140,11 +203,13 @@ jobs:
             grep -q 'EMIT_ZOMBIE_TRANSITION_ROUTINES' v1/tests/multiprocessing/p222-spawn-exit-leak.asm
             grep -q 'EMIT_WAIT_SPECIFIC_ROUTINES' v1/tests/multiprocessing/p222-spawn-exit-leak.asm
             grep -Fqx '    DEFINE ZX48_P2_13_LINKS_EMITTED 1' v1/src/kernel/process.asm
+            python3 -c "from pathlib import Path; d=Path('v1/src/kernel/memory.asm').read_bytes(); assert d.count(b'    xor a\\n    ld (ix+4),a\\n    ld (ix+5),a\\n    ld (ix+6),a\\n    ld (ix+7),a\\n    call zx48_extent_sort\\n') == 1"
             test -z "$(git status --porcelain)"
             test "$(git rev-parse 'HEAD^{tree}')" = "${tree_baseline}"
             digest="$(
               sha256sum \
                 v1/src/kernel/process.asm \
+                v1/src/kernel/memory.asm \
                 v1/tests/multiprocessing/p222-spawn-exit-leak.asm \
                 v1/tools-host/test-driver/phase2_spawn_exit_leak.py \
                 v1/tools-host/test-driver/run.py \
@@ -296,11 +361,15 @@ jobs:
               raise SystemExit(f'P2.22 repaired marker classification mismatch: {target!r}')
           PY
 
-      - name: Regression-test P2.10 P2.13 P2.14
+      - name: Regression-test allocator and process prerequisites
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p "${ZXUX_EVIDENCE_DIR}"
+          for step in P1.02 P1.03 P1.04 P1.05 P1.41; do
+            tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step "${step}" \
+              2>&1 | tee "${ZXUX_EVIDENCE_DIR}/${step}.regression.log"
+          done
           tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P2.10 \
             2>&1 | tee "${ZXUX_EVIDENCE_DIR}/P2.10.regression.log"
           test -f v1/build/p210-spawn.sym
@@ -421,6 +490,7 @@ jobs:
             .github/workflows/p222-qualification.yml \
             > "${ZXUX_EVIDENCE_DIR}/qualification-hashes.sha256"
           cp v1/src/kernel/process.asm "${ZXUX_EVIDENCE_DIR}/candidate-process.asm"
+          cp v1/src/kernel/memory.asm "${ZXUX_EVIDENCE_DIR}/candidate-memory.asm"
           for path in \
             v1/build/kernel.bin \
             v1/build/kernel-p1.sym \
