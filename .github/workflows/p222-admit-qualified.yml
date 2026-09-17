@@ -29,7 +29,7 @@ jobs:
     timeout-minutes: 60
     env:
       BASE_MAIN: a1138391c913581dfaf20751520a188ad4d89b1a
-      STAGING_PARENT: 4e3274a5c12cc61d7469e2e8af6b991446bb0dc5
+      STAGING_PARENT: b913d91721cb7e366bd6561e35cb34dc1f2db899
       QUALIFIED_SOURCE_COMMIT: df312c9d944aab0333599c290cfde68f2638c9b3
       QUALIFIED_TREE: 696950498ec95000ca3af7f6ca9d1049dea9da15
       PROCESS_BLOB: 15ebbdb485d789b4a450c8b0c8b79970baa940e8
@@ -308,6 +308,11 @@ jobs:
           if memory.count(repaired) != 1:
               raise SystemExit('P2.22 ADMISSION allocator normalization invariant failed')
           PY
+          rm -rf tools/runtime v1/build
+          find . -type d -name __pycache__ -prune -exec rm -rf {} +
+          test "$(git rev-parse HEAD)" = "$(cat /tmp/p222-admission-commit)"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$(cat /tmp/p222-admission-tree)"
+          test -z "$(git status --porcelain)"
           ./tools/check_license_headers.sh
           ./tools/check_project_policy.py
           echo "P2.22 ADMISSION CANDIDATE PASS commit=$(git rev-parse HEAD) tree=$(git rev-parse 'HEAD^{tree}')"
