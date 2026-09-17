@@ -28,13 +28,14 @@ jobs:
     timeout-minutes: 20
     env:
       PYTHONDONTWRITEBYTECODE: '1'
-      P218_EXACT_PARENT: 2775ba43f4acf42ba142f96f32e87d278ad47683
+      P218_EXACT_PARENT: a3aeb2bababb35610e3ebc6d5f3f6dd744380384
       P218_BAD_DOCX_BLOB: 89309d86a6fe9ce7c4a05f024388c40f6792d120
       P218_APPROVED_DOCX_BLOB: f1c4877b26c632bd0b9abd0468716019da68bf7e
       P218_APPROVED_DOCX_SOURCE: 741652ab4a78f170d2e9b598a7ec9ccd8e70a1d7
       P218_DOCX_PATH: docs/04-C48 Language Specification Rev 0.11.docx
       P218_USER_MANUAL_BLOB: 32dabeb9b2e43d95b7b4709b78ebcb31297691b2
       P218_LICENSE_CHECKER_BLOB: 67b0c29e8a88a2018276b6981e921e68fdd3d207
+      P218_WARNING_BLOB: e5a8cd37ece8c19a56fcaaff001f29b987cd9d8d
       ZXUX_REV12_SHA256: a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p218-prerequisite-repair
 
@@ -54,6 +55,7 @@ jobs:
           test "$(git rev-parse "${P218_APPROVED_DOCX_SOURCE}:${P218_DOCX_PATH}")" = "${P218_APPROVED_DOCX_BLOB}"
           test "$(git rev-parse HEAD:docs/00-ZX-UX_User_Manual_Revision_12.docx)" = "${P218_USER_MANUAL_BLOB}"
           test "$(git rev-parse HEAD:tools/check_license_headers.sh)" = "${P218_LICENSE_CHECKER_BLOB}"
+          test "$(git rev-parse HEAD:docs/--W-A-R-N-I-N-G--.md)" = "${P218_WARNING_BLOB}"
           grep -Fq "readonly C48_SPEC_DOCX_BLOB_SHA1=\"${P218_APPROVED_DOCX_BLOB}\"" tools/check_license_headers.sh
           grep -Fq 'REV12 / REV03 remain the active authority through completion of Phase 2.' docs/--W-A-R-N-I-N-G--.md
           grep -Fq 'REV13 / REV04 may exist in the repository as dormant prospective authorities.' docs/--W-A-R-N-I-N-G--.md
@@ -70,21 +72,35 @@ jobs:
           git restore --source="${P218_APPROVED_DOCX_SOURCE}" --staged --worktree -- "${P218_DOCX_PATH}"
           python3 - <<'PY'
           from pathlib import Path
+          import re
 
-          path = Path("tools/check_license_headers.sh")
-          text = path.read_text(encoding="utf-8")
+          checker = Path("tools/check_license_headers.sh")
+          text = checker.read_text(encoding="utf-8")
           anchor = '  ["docs/04-C48 Language Specification Rev 0.11.docx"]="Binary DOCX specification cannot carry the plaintext project header; exact Git blob identity is verified before this exemption is honored."\n'
           addition = '  ["docs/00-ZX-UX_User_Manual_Revision_12.docx"]="Binary DOCX user manual cannot carry the plaintext project header."\n'
           if text.count(anchor) != 1 or addition in text:
               raise SystemExit("license checker exemption insertion shape changed")
-          path.write_text(text.replace(anchor, addition + anchor), encoding="utf-8", newline="\n")
+          checker.write_text(text.replace(anchor, addition + anchor), encoding="utf-8", newline="\n")
+
+          warning = Path("docs/--W-A-R-N-I-N-G--.md")
+          text = warning.read_text(encoding="utf-8")
+          text, count = re.subn(
+              r"^# RULE FOR .+ / AUTOMATION / FUTURE YOU$",
+              "# RULE FOR AUTOMATION / FUTURE YOU",
+              text,
+              flags=re.MULTILINE,
+          )
+          if count != 1:
+              raise SystemExit("warning policy-heading repair shape changed")
+          warning.write_text(text, encoding="utf-8", newline="\n")
           PY
-          git add tools/check_license_headers.sh
+          git add tools/check_license_headers.sh docs/--W-A-R-N-I-N-G--.md
           git rm .github/workflows/p218-activation-admit.yml
           test "$(git hash-object -- "${P218_DOCX_PATH}")" = "${P218_APPROVED_DOCX_BLOB}"
           test "$(git hash-object -- docs/00-ZX-UX_User_Manual_Revision_12.docx)" = "${P218_USER_MANUAL_BLOB}"
           grep -Fq '["docs/00-ZX-UX_User_Manual_Revision_12.docx"]="Binary DOCX user manual cannot carry the plaintext project header."' tools/check_license_headers.sh
-          expected="$(printf '%s\n' .github/workflows/p218-activation-admit.yml "${P218_DOCX_PATH}" tools/check_license_headers.sh | sort)"
+          grep -Fxq '# RULE FOR AUTOMATION / FUTURE YOU' docs/--W-A-R-N-I-N-G--.md
+          expected="$(printf '%s\n' .github/workflows/p218-activation-admit.yml "${P218_DOCX_PATH}" docs/--W-A-R-N-I-N-G--.md tools/check_license_headers.sh | sort)"
           test "$(git diff --cached --name-only | sort)" = "${expected}"
           git diff --quiet
 
@@ -92,7 +108,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          expected="$(printf '%s\n' .github/workflows/p218-activation-admit.yml "${P218_DOCX_PATH}" tools/check_license_headers.sh | sort)"
+          expected="$(printf '%s\n' .github/workflows/p218-activation-admit.yml "${P218_DOCX_PATH}" docs/--W-A-R-N-I-N-G--.md tools/check_license_headers.sh | sort)"
           baseline=""
           for scan in 1 2 3; do
             echo "P2.18 prerequisite repair SCAN-${scan}: CLEAN candidate check"
@@ -118,11 +134,11 @@ jobs:
           set -euo pipefail
           git config user.name "ZX-UX P2.18 repair runner"
           git config user.email "tuklusan@users.noreply.github.com"
-          git commit -m "docs: restore approved binary documentation gate"
+          git commit -m "docs: restore binary documentation policy gates"
           test -z "$(git status --porcelain)"
           test "$(git rev-parse HEAD:"${P218_DOCX_PATH}")" = "${P218_APPROVED_DOCX_BLOB}"
           test "$(git rev-parse HEAD:docs/00-ZX-UX_User_Manual_Revision_12.docx)" = "${P218_USER_MANUAL_BLOB}"
-          test "$(git diff --name-only HEAD^ HEAD | sort)" = "$(printf '%s\n' .github/workflows/p218-activation-admit.yml "${P218_DOCX_PATH}" tools/check_license_headers.sh | sort)"
+          test "$(git diff --name-only HEAD^ HEAD | sort)" = "$(printf '%s\n' .github/workflows/p218-activation-admit.yml "${P218_DOCX_PATH}" docs/--W-A-R-N-I-N-G--.md tools/check_license_headers.sh | sort)"
 
       - name: Recheck mandatory gates on exact repair commit
         shell: bash
