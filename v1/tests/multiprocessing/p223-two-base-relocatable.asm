@@ -22,6 +22,7 @@
     INCLUDE "../../src/kernel/objects.asm"
 
 P223_GOOD_RECORD EQU $B000
+PANIC_SCHEDULER  EQU $03
 
     ORG $E000
 p223_start:
