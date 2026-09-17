@@ -18,12 +18,12 @@ import re
 from typing import Any, Callable
 
 from driver_core import DriverError
-from fuse_harness import FAIL_PC, PASS_PC, run_sna
+from fuse_harness import ENTRY_PC, FAIL_PC, PASS_PC, run_sna
 
 FIXTURE_CODE = 0xE000
 TEST_STACK = 0x8F00
 FRAME_ADDRESS = 0x8A00
-SENTINEL_PC = 0x9200
+SENTINEL_PC = 0x8D00
 SENTINEL_MARKER = 0x6900
 PROC_DESC_SIZE = 48
 PROC_PID = 0
@@ -186,6 +186,7 @@ def _assemble_fixture(
     symbols = build / "p218-kill-never-started.sym"
     source.write_text(
         "    DEVICE ZXSPECTRUM48\n"
+        "    DEFINE ZX48_P2_18_KILL_ENABLED\n"
         "    INCLUDE \"../include/zx48ux.inc\"\n"
         "    INCLUDE \"../src/kernel/memory.asm\"\n"
         "    INCLUDE \"../src/kernel/process.asm\"\n"
@@ -209,7 +210,7 @@ def _assemble_fixture(
         newline="\n",
     )
     result = run_command(
-        [assembler, "--nologo", "--sym=p218-kill-never-started.sym", "p218-kill-never-started.asm"],
+        [assembler, "--nologo", "--lst=p218-kill-never-started.lst", "--sym=p218-kill-never-started.sym", "p218-kill-never-started.asm"],
         cwd=build,
         timeout_seconds=30.0,
     )
@@ -391,7 +392,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
         },
         {
             "name": "p218-helper-is-separate-composable-emitter",
-            "passed": "ZX48_P2_18_KILL_ENABLED EQU 1" in helper and helper_start > core_end,
+            "passed": helper_start > core_end and "ZX48_P2_18_KILL_ENABLED" not in helper,
         },
         {
             "name": "owned-shape-is-validated-before-first-destructive-release",
@@ -433,6 +434,14 @@ def dispatch(
         raise DriverError(f"Phase-2 never-started kill step is not registered: {step}")
 
     assertions = _source_contract(root)
+    require(SENTINEL_PC + 8 <= ENTRY_PC, "P2.18 child-PC sentinel overlaps test program entry")
+    assertions.append({
+        "name": "child-pc-sentinel-is-disjoint-from-test-program",
+        "passed": True,
+        "sentinel_pc": f"0x{SENTINEL_PC:04X}",
+        "sentinel_end": f"0x{SENTINEL_PC + 7:04X}",
+        "test_entry": f"0x{ENTRY_PC:04X}",
+    })
     failed = [item["name"] for item in assertions if item["passed"] is not True]
     require(not failed, f"static P2.18 contract failures: {failed}")
 
@@ -452,6 +461,7 @@ def dispatch(
     names = (
         "zx48_memory_init", "zx48_alloc", "zx48_process_init", "zx48_process_prepare_pid1",
         "zx48_process_reserve_slot", "zx48_handles_init", "zx48_od_create", "zx48_process_kill",
+        "zx48_process_kill_never_started",
         "process_table", "current_pid", "memory_live_allocations", "memory_free_extents",
         "open_description_table", "p218_panic_code", "MAX_PROCESSES", "PROC_DESC_SIZE",
         "PROC_READY", "PROC_RUNNING", "PROC_ZOMBIE", "ALLOC_ANY", "ALLOC_FAST_REQUIRED",
@@ -460,6 +470,10 @@ def dispatch(
     symbols = _symbols(fixture_symbols, names)
     require(symbols["MAX_PROCESSES"] == 8 and symbols["PROC_DESC_SIZE"] == PROC_DESC_SIZE, "P2.18 process ABI changed")
     fixture = fixture_binary.read_bytes()
+    dispatch_bytes = b"\xCA" + _word(symbols["zx48_process_kill_never_started"])
+    dispatch_count = fixture.count(dispatch_bytes)
+    require(dispatch_count == 1, f"P2.18 assembled dispatch must contain exactly one JP Z to never-started helper, got {dispatch_count}")
+    assertions.append({"name": "assembled-fixture-dispatches-to-never-started-helper", "passed": True, "dispatch_bytes": dispatch_bytes.hex()})
     if action == "test":
         _positive(root, symbols, fixture)
         _negative_targets_and_permissions(root, symbols, fixture)

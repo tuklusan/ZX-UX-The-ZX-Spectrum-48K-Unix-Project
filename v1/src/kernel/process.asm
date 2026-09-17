@@ -438,7 +438,6 @@ process_table: defs MAX_PROCESSES*PROC_DESC_SIZE,0
 ; is validated; only then are target handles and private extents released. The
 ; descriptor identity remains waitable as ZOMBIE/status 130.
     MACRO EMIT_KILL_NEVER_STARTED_ROUTINES
-ZX48_P2_18_KILL_ENABLED EQU 1
 
 ; IX -> already permission-checked live target descriptor with STARTED clear.
 zx48_process_kill_never_started:
