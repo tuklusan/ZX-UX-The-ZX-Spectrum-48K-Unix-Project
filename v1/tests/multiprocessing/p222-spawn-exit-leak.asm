@@ -259,7 +259,12 @@ p222_exit_reap:
     ld (ix+PROC_STATE),PROC_RUNNING
     xor a
     call zx48_process_exit_to_zombie
-    ret c
+    ; Diagnostic-only split: an exit-path carry loops until the FUSE timeout,
+    ; while a later wait/reap carry returns normally to the harness FAIL_PC.
+    jp nc,p222_exit_completed
+p222_exit_failed:
+    jp p222_exit_failed
+p222_exit_completed:
     ld a,1
     ld (current_pid),a
     ld de,p222_status
