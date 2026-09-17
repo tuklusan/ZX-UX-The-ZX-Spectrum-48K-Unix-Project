@@ -136,6 +136,7 @@ jobs:
       - name: Recheck source-candidate policy gates
         if: hashFiles('v1/dist/certification/phase-2.json') == ''
         run: |
+          git clean -fdX v1/build tools/runtime
           ./tools/check_license_headers.sh
           ./tools/check_project_policy.py
 
