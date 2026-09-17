@@ -23,9 +23,10 @@ from driver_core import DriverError, find_root, run_command
 
 
 CERTIFIED_STEPS = ("P2.01", "P2.02", "P2.03", "P2.04", "P2.05", "P2.06", "P2.07")
-CANDIDATE_STEPS: tuple[str, ...] = ("P2.08", "P2.09", "P2.10", "P2.11", "P2.12", "P2.13", "P2.14", "P2.15", "P2.16", "P2.17", "P2.18", "P2.19", "P2.20")
-# P2.16 through P2.20 are intentionally included in the exact-head aggregate certification gate.
+CANDIDATE_STEPS: tuple[str, ...] = ("P2.08", "P2.09", "P2.10", "P2.11", "P2.12", "P2.13", "P2.14", "P2.15", "P2.16", "P2.17", "P2.18", "P2.19", "P2.20", "P2.21")
+# P2.16 through P2.21 are intentionally included in the exact-head aggregate certification gate.
 # P2.17 fixture constants are now explicit staged-fixture dependencies, matching their kernel definitions.
+# P2.21 keeps production kernel bytes unchanged while qualifying the exact SYS_PROC_INFO/PINFOQ1 and PROC1 packed ABI.
 
 
 def _diagnostic_path() -> Path | None:
