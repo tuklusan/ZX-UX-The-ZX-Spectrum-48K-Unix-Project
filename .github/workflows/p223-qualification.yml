@@ -32,7 +32,7 @@ jobs:
     timeout-minutes: 45
     env:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p223-qualification
-      P223_EXACT_PARENT: 265a34ca0be741ceb0b94ade7223bec00f7d34ce
+      P223_EXACT_PARENT: 68dcb1d0cfc5a1b18ee7a617719e853d57ce8008
       ZXUX_REV12_SHA256: a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b
 
     steps:
@@ -49,7 +49,6 @@ jobs:
           git diff --name-only HEAD^ HEAD | sort > /tmp/p223-changed
           printf '%s\n' \
             .github/workflows/p223-qualification.yml \
-            v1/tests/multiprocessing/p223-two-base-relocatable.asm \
             | sort > /tmp/p223-expected
           diff -u /tmp/p223-expected /tmp/p223-changed
           test -z "$(git status --porcelain)"
@@ -147,7 +146,7 @@ jobs:
           tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P2.23 \
             2>&1 | tee "${ZXUX_EVIDENCE_DIR}/P2.23.test.log"
 
-       - name: Collect exact candidate evidence
+      - name: Collect exact candidate evidence
         if: always()
         shell: bash
         run: |
