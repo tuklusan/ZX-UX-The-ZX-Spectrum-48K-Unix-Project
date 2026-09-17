@@ -77,6 +77,7 @@ import phase2_wait_any
 import phase2_reparent
 import phase2_kill_never_started
 import phase2_kill_started
+import phase2_process_name
 from driver_core import (
     DriverError,
     find_root,
@@ -222,6 +223,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase2_kill_never_started.dispatch(root, action, step, **kwargs)
     if step == "P2.19":
         return phase2_kill_started.dispatch(root, action, step, **kwargs)
+    if step == "P2.20":
+        return phase2_process_name.dispatch(root, action, step, **kwargs)
     if step.startswith("P2."):
         raise DriverError(f"numbered Phase-2 step is not registered: {step}")
     raise DriverError(f"step is not registered with the deterministic test driver: {step}")
