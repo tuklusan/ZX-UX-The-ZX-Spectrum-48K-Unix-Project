@@ -12,15 +12,11 @@
 
 name: P2.23 two-base relocatable execution qualification
 
+# Historical exact-candidate qualification recipe. P2.23 qualified at
+# f8f666ac0d7f05d7fc0c6ed58c4cf5990226d479 and is thereafter regression-checked
+# by the Phase-2 aggregate gate. Keep this recipe manually dispatchable without
+# re-running its one-shot parent/diff guard on later Phase-2 commits.
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - .github/workflows/p223-qualification.yml
-      - v1/tests/multiprocessing/p223-two-base-relocatable.asm
-      - v1/tools-host/test-driver/phase2_two_base_relocatable.py
-      - v1/tools-host/test-driver/run.py
   workflow_dispatch:
 
 permissions:
