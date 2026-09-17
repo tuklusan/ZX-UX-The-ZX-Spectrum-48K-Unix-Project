@@ -291,7 +291,7 @@ while IFS= read -r -d '' file; do
       fail=1
     fi
   done
-done < <(find . -path './.git' -prune -o ! -type d -print0)
+done < <(find . -path './.git' -prune -o -type d -name '__pycache__' -prune -o ! -type d -print0)
 
 if (( ${#generated_certification_jsons[@]} > 0 )); then
   if ! python3 - "${generated_certification_jsons[@]}" <<'PYJSON'
