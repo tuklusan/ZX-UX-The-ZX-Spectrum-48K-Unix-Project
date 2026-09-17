@@ -10,6 +10,7 @@
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
 
+# P2.24 exact-candidate retrigger.
 name: ZX-UX Phase 2 Validation
 
 on:
