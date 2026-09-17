@@ -139,7 +139,12 @@ jobs:
         run: tools/runtime/python/bin/python tools/scripts/verify-environment.py
 
       - name: Execute P2.22 build
-        run: tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P2.22
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p "${ZXUX_EVIDENCE_DIR}"
+          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P2.22 \
+            2>&1 | tee "${ZXUX_EVIDENCE_DIR}/P2.22.build.log"
 
       - name: Execute P2.22 test
         shell: bash
