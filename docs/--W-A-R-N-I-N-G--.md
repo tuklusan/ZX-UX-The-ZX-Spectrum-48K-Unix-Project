@@ -114,7 +114,7 @@ If the accidental change has already been committed or pushed, treat it as a pro
 
 ---
 
-# RULE FOR CHATGPT / AUTOMATION / FUTURE YOU
+# RULE FOR AUTOMATION / FUTURE YOU
 
 When working on this repository:
 
