@@ -56,7 +56,7 @@ jobs:
               v1/tools-host/test-driver/run.py \
               | sort > /tmp/p222-expected
             printf '%s\n' prequalification > /tmp/p222-mode
-          elif grep -Fqx 'DEFINE ZX48_P2_13_LINKS_EMITTED 1' v1/src/kernel/process.asm; then
+          elif grep -Fqx '    DEFINE ZX48_P2_13_LINKS_EMITTED 1' v1/src/kernel/process.asm; then
             printf '%s\n' \
               .github/workflows/p222-qualification.yml \
               v1/src/kernel/process.asm \
@@ -84,12 +84,12 @@ jobs:
           path = Path('v1/src/kernel/process.asm')
           data = path.read_bytes()
           old = b'ZX48_P2_13_LINKS_EMITTED EQU 1'
-          new = b'DEFINE ZX48_P2_13_LINKS_EMITTED 1'
+          new = b'    DEFINE ZX48_P2_13_LINKS_EMITTED 1'
           old_count = data.count(old)
           new_count = data.count(new)
           if (old_count, new_count) == (1, 0):
               path.write_bytes(data.replace(old, new, 1))
-              print('prepared one-line EQU-to-DEFINE candidate')
+              print('prepared one-line EQU-to-indented-DEFINE candidate')
           elif (old_count, new_count) == (0, 1):
               print('checked-in source already equals repaired candidate')
           else:
@@ -97,8 +97,8 @@ jobs:
                   f'P2.22 fail-closed marker multiplicity: old={old_count} new={new_count}'
               )
           PY
-          grep -Fqx 'DEFINE ZX48_P2_13_LINKS_EMITTED 1' v1/src/kernel/process.asm
-          test "$(grep -Fxc 'DEFINE ZX48_P2_13_LINKS_EMITTED 1' v1/src/kernel/process.asm)" = 1
+          grep -Fqx '    DEFINE ZX48_P2_13_LINKS_EMITTED 1' v1/src/kernel/process.asm
+          test "$(grep -Fxc '    DEFINE ZX48_P2_13_LINKS_EMITTED 1' v1/src/kernel/process.asm)" = 1
           test "$(grep -Fxc 'ZX48_P2_13_LINKS_EMITTED EQU 1' v1/src/kernel/process.asm)" = 0
           if ! git diff --quiet; then
             test "$(git diff --name-only)" = 'v1/src/kernel/process.asm'
@@ -139,7 +139,7 @@ jobs:
             grep -q 'EMIT_SPAWN_TRANSACTION_ROUTINES' v1/tests/multiprocessing/p222-spawn-exit-leak.asm
             grep -q 'EMIT_ZOMBIE_TRANSITION_ROUTINES' v1/tests/multiprocessing/p222-spawn-exit-leak.asm
             grep -q 'EMIT_WAIT_SPECIFIC_ROUTINES' v1/tests/multiprocessing/p222-spawn-exit-leak.asm
-            grep -Fqx 'DEFINE ZX48_P2_13_LINKS_EMITTED 1' v1/src/kernel/process.asm
+            grep -Fqx '    DEFINE ZX48_P2_13_LINKS_EMITTED 1' v1/src/kernel/process.asm
             test -z "$(git status --porcelain)"
             test "$(git rev-parse 'HEAD^{tree}')" = "${tree_baseline}"
             digest="$(
@@ -208,12 +208,109 @@ jobs:
       - name: Certify pinned project runtime
         run: tools/runtime/python/bin/python tools/scripts/verify-environment.py
 
+      - name: Prove pinned assembler composition-marker semantics
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${ZXUX_EVIDENCE_DIR}"
+          cat > /tmp/p222-marker-probe.asm <<'ASM'
+                  ORG $8000
+          P222_EQU_MARKER EQU 1
+                  IFDEF P222_EQU_MARKER
+                  DB $E1
+                  ELSE
+                  DB $E0
+                  ENDIF
+                  MACRO P222_EMIT_DEFINE_MARKER
+                      DEFINE P222_DEFINE_MARKER 1
+                  ENDM
+                  P222_EMIT_DEFINE_MARKER
+                  IFDEF P222_DEFINE_MARKER
+                  DB $D1
+                  ELSE
+                  DB $D0
+                  ENDIF
+          ASM
+          tools/runtime/sjasmplus/bin/sjasmplus --nologo \
+            --raw=/tmp/p222-marker-probe.bin /tmp/p222-marker-probe.asm \
+            2>&1 | tee "${ZXUX_EVIDENCE_DIR}/P2.22.marker-semantics.log"
+          tools/runtime/python/bin/python - <<'PY'
+          from pathlib import Path
+          payload = Path('/tmp/p222-marker-probe.bin').read_bytes()
+          if payload != bytes((0xE0, 0xD1)):
+              raise SystemExit(f'P2.22 marker semantics mismatch: {payload.hex()}')
+          print('P2.22 MARKER PASS EQU-is-not-IFDEF DEFINE-in-emitter-is-IFDEF')
+          PY
+
+      - name: Audit staged composition markers read-only
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${ZXUX_EVIDENCE_DIR}"
+          tools/runtime/python/bin/python - <<'PY' \
+            | tee "${ZXUX_EVIDENCE_DIR}/P2.22.marker-audit.log"
+          from pathlib import Path
+          import re
+
+          decl_equ = re.compile(r'^\s*(ZX48_P2_[A-Za-z0-9_]+)\s+EQU(?:\s|$)')
+          decl_define = re.compile(r'^\s+DEFINE\+?\s+(ZX48_P2_[A-Za-z0-9_]+)(?:\s|$)', re.I)
+          consumer = re.compile(r'^\s+(IFDEF|IFNDEF)\s+(ZX48_P2_[A-Za-z0-9_]+)(?:\s|$)', re.I)
+          declarations = []
+          consumers = []
+          roots = (Path('v1/src'), Path('v1/tests'))
+          for root in roots:
+              for path in sorted(root.rglob('*.asm')):
+                  macro_depth = 0
+                  for number, line in enumerate(path.read_text(encoding='utf-8').splitlines(), 1):
+                      stripped = line.strip()
+                      if re.match(r'^MACRO(?:\s|$)', stripped, re.I):
+                          macro_depth += 1
+                      match = decl_equ.match(line)
+                      if match:
+                          declarations.append((match.group(1), 'EQU', 'macro-local' if macro_depth else 'top-level', path, number))
+                      match = decl_define.match(line)
+                      if match:
+                          declarations.append((match.group(1), 'DEFINE', 'macro-local' if macro_depth else 'top-level', path, number))
+                      match = consumer.match(line)
+                      if match:
+                          consumers.append((match.group(2), match.group(1).upper(), path, number))
+                      if re.match(r'^ENDM(?:\s|$)', stripped, re.I) and macro_depth:
+                          macro_depth -= 1
+
+          print('P2.22 staged composition marker declarations:')
+          for symbol, form, scope, path, number in declarations:
+              print(f'  {symbol}: {form} {scope} at {path}:{number}')
+          print('P2.22 staged composition marker consumers:')
+          for symbol, form, path, number in consumers:
+              print(f'  {symbol}: {form} at {path}:{number}')
+          used = {symbol for symbol, _, _, _ in consumers}
+          suspects = [item for item in declarations if item[0] in used and item[1] == 'EQU']
+          print('P2.22 read-only same-symbol EQU+IFDEF/IFNDEF suspects:')
+          if suspects:
+              for symbol, form, scope, path, number in suspects:
+                  print(f'  {symbol}: {form} {scope} at {path}:{number}')
+          else:
+              print('  none')
+          target = [item for item in declarations if item[0] == 'ZX48_P2_13_LINKS_EMITTED']
+          if len(target) != 1 or target[0][1:3] != ('DEFINE', 'macro-local'):
+              raise SystemExit(f'P2.22 repaired marker classification mismatch: {target!r}')
+          PY
+
       - name: Regression-test P2.10 P2.13 P2.14
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p "${ZXUX_EVIDENCE_DIR}"
-          for step in P2.10 P2.13 P2.14; do
+          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P2.10 \
+            2>&1 | tee "${ZXUX_EVIDENCE_DIR}/P2.10.regression.log"
+          test -f v1/build/p210-spawn.sym
+          if grep -qi '^zx48_process_link_child:' v1/build/p210-spawn.sym; then
+            echo 'P2.22 fail-closed: P2.10 standalone spawn unexpectedly emitted P2.13 linkage helper' >&2
+            exit 1
+          fi
+          echo 'P2.22 COMPAT PASS P2.10 standalone spawn retains legacy fallback composition' \
+            | tee "${ZXUX_EVIDENCE_DIR}/P2.10.composition.log"
+          for step in P2.13 P2.14; do
             tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step "${step}" \
               2>&1 | tee "${ZXUX_EVIDENCE_DIR}/${step}.regression.log"
           done
