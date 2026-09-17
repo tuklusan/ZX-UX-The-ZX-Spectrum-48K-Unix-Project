@@ -146,7 +146,7 @@ jobs:
           tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P2.22 \
             2>&1 | tee "${ZXUX_EVIDENCE_DIR}/P2.22.build.log"
 
-      - name: Diagnose first PID2 exit teardown boundary
+      - name: Diagnose exact PID2 exit panic branch
         shell: bash
         run: |
           set -euo pipefail
@@ -157,7 +157,7 @@ jobs:
           root = Path.cwd()
           sys.path.insert(0, str(root / "v1/tools-host/test-driver"))
 
-          from fuse_harness import FAIL_PC
+          from fuse_harness import FAIL_PC, PASS_PC
           import phase1
           import phase2_spawn_exit_leak as p222
 
@@ -165,13 +165,10 @@ jobs:
           fixture = (root / "v1/build/p222-spawn-exit-leak.bin").read_bytes()
           names = (
               "p222_gateway",
-              "p222_panic_code",
               "zx48_process_links_init",
               "zx48_process_exit_to_zombie",
               "zx48_process_zombie_free_bootstrap",
-              "zx48_process_zombie_free_stack",
-              "zx48_process_zombie_free_image",
-              "zx48_process_zombie_publish",
+              "zx48_process_zombie_panic",
               "process_table",
               "current_pid",
               "open_description_table",
@@ -200,34 +197,83 @@ jobs:
           p222._run_positive_probe(root, symbols, fixture, "post-spawn-accounting", pre_exit)
           print("P2.22 DIAG PASS post-spawn-accounting")
 
-          def exit_prefix() -> bytearray:
+          labels = (
+              "current-pid-below-2",
+              "current-pid-out-of-range",
+              "descriptor-pointer-error",
+              "child-not-running",
+              "parent-generation-pointer-error",
+              "parent-generation-zero",
+              "stack-high-below-low",
+              "stack-size-zero",
+              "stack-size-odd",
+              "image-base-zero",
+              "image-base-odd",
+              "image-size-zero",
+              "image-size-odd",
+              "stack-base-zero",
+              "stack-base-odd",
+              "bootstrap-base-zero",
+              "bootstrap-base-odd",
+              "owned-bytes-zero",
+              "owned-bytes-odd",
+              "owned-smaller-than-image",
+              "owned-remainder-smaller-than-stack",
+              "bootstrap-size-zero",
+              "bootstrap-size-odd",
+              "reparent-failed",
+              "close-handles-failed",
+          )
+          conditional_jp = {0xC2, 0xCA, 0xD2, 0xDA, 0xE2, 0xEA, 0xF2, 0xFA}
+          start = symbols["zx48_process_exit_to_zombie"]
+          stop = symbols["zx48_process_zombie_free_bootstrap"]
+          panic = symbols["zx48_process_zombie_panic"]
+          candidates = []
+          for address in range(start, stop - 2):
+              offset = address - p222.FIXTURE_CODE
+              opcode = fixture[offset]
+              target = fixture[offset + 1] | (fixture[offset + 2] << 8)
+              if opcode in conditional_jp and target == panic:
+                  candidates.append(address)
+          p222.require(
+              len(candidates) == len(labels),
+              f"P2.22 diagnostic panic-branch count changed: expected={len(labels)} actual={len(candidates)}",
+          )
+
+          def exit_attempt() -> bytearray:
               code = spawned_pid2()
               child_state = symbols["process_table"] + 2 * p222.PROC_DESC_SIZE + p222.PROC_STATE
               code += store_byte(child_state, p222.PROC_RUNNING)
               code += store_byte(symbols["current_pid"], 2)
               code += b"\xAF" + phase1._call(symbols["zx48_process_exit_to_zombie"])
-              code += p222._expect_byte(symbols["p222_panic_code"], 0)
+              code += phase1._jp(FAIL_PC)
               return code
 
-          stages = (
-              ("before-bootstrap-free", "zx48_process_zombie_free_bootstrap"),
-              ("after-bootstrap-free", "zx48_process_zombie_free_stack"),
-              ("after-stack-free", "zx48_process_zombie_free_image"),
-              ("after-image-free", "zx48_process_zombie_publish"),
-          )
-          for label, target in stages:
-              p222._run_positive_probe(
-                  root,
-                  symbols,
-                  fixture,
-                  label,
-                  exit_prefix(),
-                  ((symbols[target], b"\xC9"),),
-              )
-              print(f"P2.22 DIAG PASS {label}")
+          hits = []
+          for ordinal, (address, label) in enumerate(zip(candidates, labels), start=1):
+              try:
+                  p222._run_positive_probe(
+                      root,
+                      symbols,
+                      fixture,
+                      f"panic-branch-{ordinal:02d}-{label}",
+                      exit_attempt(),
+                      (
+                          (symbols["zx48_process_zombie_free_bootstrap"], b"\xC9"),
+                          (address + 1, p222._word(PASS_PC)),
+                      ),
+                  )
+              except p222.Phase222Error:
+                  print(f"P2.22 DIAG MISS branch={ordinal:02d} address=0x{address:04X} condition={label}")
+              else:
+                  print(f"P2.22 DIAG HIT branch={ordinal:02d} address=0x{address:04X} condition={label}")
+                  hits.append((ordinal, address, label))
 
-          p222._run_positive_probe(root, symbols, fixture, "full-exit-return", exit_prefix())
-          print("P2.22 DIAG PASS full-exit-return")
+          p222.require(len(hits) == 1, f"P2.22 diagnostic expected one panic branch hit, got {hits!r}")
+          ordinal, address, label = hits[0]
+          raise p222.Phase222Error(
+              f"P2.22 exact exit panic branch: ordinal={ordinal:02d} address=0x{address:04X} condition={label}"
+          )
           PY
 
       - name: Execute P2.22 test
