@@ -133,7 +133,12 @@ zx48_pipe_endpoint_closed:
     xor a
     ret
 
+; The production scheduler does not return to zx48_process_exit_to_zombie.
+; This fixture-only continuation returns so the harness can immediately reap;
+; clear carry on that synthetic normal return while zx48_panic retains carry-set.
 zx48_schedule:
+    or a
+    ret
 zx48_schedule_finish_syscall:
 zx48_syscall_resume_wait_specific:
     ret
