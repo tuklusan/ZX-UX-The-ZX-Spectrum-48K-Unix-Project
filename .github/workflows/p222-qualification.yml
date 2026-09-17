@@ -12,17 +12,12 @@
 
 name: P2.22 repeated spawn-exit leak qualification
 
+# This is the preserved P2.22 exact-candidate qualification recipe. Qualification
+# run 35269089025 produced candidate tree 696950498ec95000ca3af7f6ca9d1049dea9da15;
+# that exact tree was promoted as df312c9d944aab0333599c290cfde68f2638c9b3.
+# P2.22 is thereafter regression-checked by the Phase-2 aggregate. Keep this
+# recipe manually dispatchable without re-running its historical parent/diff guard.
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - .github/workflows/p222-qualification.yml
-      - v1/src/kernel/process.asm
-      - v1/src/kernel/memory.asm
-      - v1/tests/multiprocessing/p222-spawn-exit-leak.asm
-      - v1/tools-host/test-driver/phase2_spawn_exit_leak.py
-      - v1/tools-host/test-driver/run.py
   workflow_dispatch:
 
 permissions:
