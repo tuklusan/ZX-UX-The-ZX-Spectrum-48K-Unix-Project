@@ -26,6 +26,7 @@ on:
       - v1/src/kernel/**
       - v1/tools-host/inspect-mex/**
       - v1/tools-host/test-driver/**
+      - v1/dist/certification/**
       - '!**/*.md'
       - '!**/*.markdown'
       - '!**/*.mdown'
@@ -66,7 +67,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+  actions: read
 
 concurrency:
   group: zxux-phase2-${{ github.ref }}
@@ -120,8 +122,68 @@ jobs:
       - name: Certify pinned project runtime
         run: tools/runtime/python/bin/python tools/scripts/verify-environment.py
 
-      - name: Execute registered Phase 2 validation gates
-        run: tools/runtime/python/bin/python v1/tools-host/test-driver/phase2_gate.py
+      - name: Execute Phase 2 acceptance gate
+        run: |
+          py=tools/runtime/python/bin/python
+          "$py" v1/tools-host/test-driver/run.py build --step P2.24
+          "$py" v1/tools-host/test-driver/run.py test --step P2.24
+
+      - name: Finalize Phase 2 aggregate evidence
+        if: hashFiles('v1/dist/certification/phase-2.json') == ''
+        run: tools/runtime/python/bin/python tools/finalize_phase2_evidence.py --root "$GITHUB_WORKSPACE" --evidence-dir "$ZXUX_EVIDENCE_DIR"
+
+      - name: Recheck source-candidate policy gates
+        if: hashFiles('v1/dist/certification/phase-2.json') == ''
+        run: |
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+
+      - name: Wait for companion source-candidate validations
+        if: hashFiles('v1/dist/certification/phase-2.json') == ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json, os, time, urllib.request
+          repo=os.environ["GITHUB_REPOSITORY"]; sha=os.environ["GITHUB_SHA"]
+          required={"ZX-UX Quality and CI","ZX-UX Phase 1 Certification"}
+          url=f"https://api.github.com/repos/{repo}/actions/runs?head_sha={sha}&per_page=100"
+          headers={"Authorization":f"Bearer {os.environ['GH_TOKEN']}","Accept":"application/vnd.github+json"}
+          deadline=time.time()+2400
+          while True:
+              with urllib.request.urlopen(urllib.request.Request(url,headers=headers),timeout=30) as r:
+                  runs=json.load(r).get("workflow_runs",[])
+              found={x.get("name"):x for x in runs if x.get("name") in required}
+              failed=[n for n,x in found.items() if x.get("status")=="completed" and x.get("conclusion")!="success"]
+              if failed: raise SystemExit("companion validation failed: "+", ".join(sorted(failed)))
+              if required.issubset(found) and all(found[n].get("status")=="completed" and found[n].get("conclusion")=="success" for n in required):
+                  break
+              if time.time()>deadline: raise SystemExit("companion validation timeout")
+              time.sleep(20)
+          PY
+
+      - name: Admit exact Phase 2 evidence
+        if: hashFiles('v1/dist/certification/phase-2.json') == ''
+        run: |
+          set -euo pipefail
+          source_sha="$GITHUB_SHA"
+          for n in $(seq -w 10 24); do
+            cp "$ZXUX_EVIDENCE_DIR/P2.$n.build.json" "v1/dist/certification/P2.$n.build.json"
+            cp "$ZXUX_EVIDENCE_DIR/P2.$n.test.json" "v1/dist/certification/P2.$n.test.json"
+          done
+          cp "$ZXUX_EVIDENCE_DIR/phase-2.json" v1/dist/certification/phase-2.json
+          git config user.name "ZX-UX Certification"
+          git config user.email "zxux-certification@users.noreply.github.com"
+          git add v1/dist/certification
+          git diff --cached --quiet && { echo "no Phase-2 evidence to admit"; exit 1; }
+          git commit -m "phase2: activate Phase-2 certification evidence for $source_sha"
+          git push origin HEAD:main
+
+      - name: Validate active Phase 2 evidence
+        if: hashFiles('v1/dist/certification/phase-2.json') != ''
+        run: |
+          python3 tools/check_phase2_evidence.py --require-active
+          python3 tools/test_phase2_evidence_negative.py
 
       - name: Upload Phase 2 scratch evidence and diagnostics
         if: always()

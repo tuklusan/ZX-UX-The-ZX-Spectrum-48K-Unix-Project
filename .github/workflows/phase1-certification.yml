@@ -27,6 +27,7 @@ on:
       - v1/src/boot/**
       - v1/src/kernel/**
       - v1/tools-host/test-driver/**
+      - v1/dist/certification/**
       - '!**/*.md'
       - '!**/*.markdown'
       - '!**/*.mdown'
