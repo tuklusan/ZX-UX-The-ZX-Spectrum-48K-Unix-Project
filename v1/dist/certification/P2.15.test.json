@@ -1,0 +1,162 @@
+{
+  "action": "test",
+  "architecture_sha256": "a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b",
+  "assertions": [
+    {
+      "legacy_call_present": true,
+      "name": "diagnostic-locates-exact-sys-wait-handler",
+      "passed": true
+    },
+    {
+      "name": "diagnostic-confirms-status-byte-prevalidation-precedes-current-wait-helper",
+      "passed": true
+    },
+    {
+      "name": "diagnostic-locates-p213-generation-qualified-specific-wait-token",
+      "passed": true
+    },
+    {
+      "name": "diagnostic-locates-p214-zombie-wake-boundary",
+      "passed": true
+    },
+    {
+      "name": "diagnostic-locates-scheduler-frame-continuation-boundary",
+      "passed": true
+    },
+    {
+      "name": "diagnostic-locates-current-descriptor-reclaim-boundary",
+      "passed": true
+    },
+    {
+      "name": "specific-wait-dispatches-to-p215-generation-qualified-path",
+      "passed": true
+    },
+    {
+      "name": "specific-wait-retains-status-pointer-outside-48-byte-descriptor",
+      "passed": true
+    },
+    {
+      "name": "specific-wait-block-records-pid-generation-before-wait-state-publication",
+      "passed": true
+    },
+    {
+      "name": "blocked-specific-wait-installs-dedicated-syscall-resume-continuation",
+      "passed": true
+    },
+    {
+      "name": "zombie-wake-requires-exact-wait-pid-and-generation-match",
+      "passed": true
+    },
+    {
+      "name": "specific-wait-resume-reloads-retained-status-pointer",
+      "passed": true
+    },
+    {
+      "name": "specific-wait-rechecks-generation-qualified-zombie-before-reap",
+      "passed": true
+    },
+    {
+      "name": "specific-wait-captures-status-before-descriptor-release",
+      "passed": true
+    },
+    {
+      "name": "specific-wait-release-clears-descriptor-exactly-once",
+      "passed": true
+    },
+    {
+      "name": "specific-wait-success-clears-pid-generation-status-continuation-metadata",
+      "passed": true
+    },
+    {
+      "name": "specific-wait-invalid-or-nonchild-fails-echild-without-blocking",
+      "passed": true
+    },
+    {
+      "name": "p215-does-not-implement-wait-any",
+      "passed": true
+    },
+    {
+      "code_end": "0xFAFF",
+      "free_bytes": 17,
+      "name": "resident-kernel-ordinary-code-remains-within-faff-ceiling",
+      "passed": true,
+      "used_end": "0xFAEF"
+    },
+    {
+      "name": "p215-runtime-fixture-assembles-exact-wait-scheduler-wake-composition",
+      "passed": true
+    },
+    {
+      "bytes": 3803,
+      "name": "p215-runtime-fixture-fits-below-kernel-stack",
+      "passed": true
+    },
+    {
+      "name": "specific-wait-blocks-selectively-wakes-resumes-writes-one-byte-and-reaps",
+      "passed": true
+    },
+    {
+      "name": "specific-wait-reaps-existing-zombie-without-scheduling",
+      "passed": true
+    },
+    {
+      "name": "specific-nonchild-returns-echild-without-blocking-or-status-write",
+      "passed": true
+    },
+    {
+      "name": "unrelated-or-reused-child-cannot-wake-generation-qualified-specific-wait",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p215-diag.lst",
+        "--sym=../../build/kernel-p215-diag.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 26,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12445 lines, work time: 0.025 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p215-wait-specific.sym",
+        "p215-wait-specific.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 14,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 7585 lines, work time: 0.013 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "c918a9c507f1de624ecda082672740956d3c102237855bbed63945a0e9bf6e5b",
+    "v1/build/p215-wait-specific.bin": "8ef8622e6d16cf639f836fd3310a674f5200675f7746eaa2d8a29a5447c4a008",
+    "v1/src/kernel/process.asm": "ed4b11954900235ce44cd67577a24f917fbf89a700bae2092947bfd7b0a3dcd1",
+    "v1/src/kernel/scheduler.asm": "42947c46e444e02a1175256835720f097b7f22e1771cdd95c820c7ba308e0211",
+    "v1/src/kernel/syscall.asm": "50a7df7371e29a48439f4d064ef33a37ed9cc079736590e97ded36702a8c2277",
+    "v1/tools-host/test-driver/phase2_gate.py": "d1f46d4bc2416f9af139f03e9ffcd23277dc0eed2c7d7b6da70ef4078e9a65a4",
+    "v1/tools-host/test-driver/phase2_wait_specific.py": "055dd4ff025b9e0bc20dbea0b04f0535c4b01be29678fc7fb4065c7d1a755743",
+    "v1/tools-host/test-driver/phase2_wait_specific_runtime.py": "e32c929ed7b2e7a9f7a39fdd957a990cd8bbb0b76ca2400dd30c056f5548f29d",
+    "v1/tools-host/test-driver/run.py": "cee28ede5a99cff7237723f777c94c48f87001268c327fe66b38f2b657f4616b"
+  },
+  "prerequisites": {
+    "P2.14": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "4ee9b226698abb326671e8da5965c30030aaf427",
+  "status": "PASS",
+  "step": "P2.15",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

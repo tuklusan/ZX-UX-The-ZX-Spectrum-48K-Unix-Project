@@ -1,0 +1,153 @@
+{
+  "action": "phase-result",
+  "architecture_sha256": "a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b",
+  "assertions": [
+    {
+      "name": "p2-24-build-test-pass",
+      "passed": true
+    },
+    {
+      "name": "all-p2-01-through-p2-23-current-source-replay-pass",
+      "passed": true
+    },
+    {
+      "name": "mex1-inspector-pass",
+      "passed": true
+    },
+    {
+      "name": "relocation-atomicity-pass",
+      "passed": true
+    },
+    {
+      "name": "spawn-exec-wait-zombie-pass",
+      "passed": true
+    },
+    {
+      "name": "context-iy-altreg-pass",
+      "passed": true
+    },
+    {
+      "name": "leak-pass",
+      "passed": true
+    },
+    {
+      "name": "two-base-relocatable-pass",
+      "passed": true
+    },
+    {
+      "name": "negative-rollback-blocks-pass",
+      "passed": true
+    },
+    {
+      "name": "rev12-rev03-authority-pass",
+      "passed": true
+    }
+  ],
+  "pass_marker": "ZX-UX PHASE 2 CERTIFICATION PASS",
+  "phase": 2,
+  "record_sha256": {
+    "P2.01.build.json": "3d09028012806ab5ae77e0eeeab1901b53ceb38e4d2b7d41b6f215f6acc081f7",
+    "P2.01.test.json": "36f608d566cd8ddbb552b6891f1f2887ff7dbdd4fa1fc7266b5df259e43cd0fa",
+    "P2.02.build.json": "484606014e1bb9d15ddef785c99904c6ad6ca7b0d56bc8bc654ae7d1828a2e07",
+    "P2.02.test.json": "03f233f80e5944a841e71ca55640f4591a80a4e81b71b456b7fdef13917591af",
+    "P2.03.build.json": "8cc30e1c91c2298b551f468ca58854c99bfd3563def2692f4156c6f754b471ef",
+    "P2.03.test.json": "0e5e42be94b6032dbf9d3efce3bd3df989f96cf5100e655a3892f26d05ac331e",
+    "P2.04.build.json": "81c7fe1fd9b8b581148bdd4c2e1781543d76452aa05700e68ff9fc539181041e",
+    "P2.04.test.json": "b78e99e1c2ae7d0322023369372ad5be725620c0876f582c99106ec3ed8a8874",
+    "P2.05.build.json": "918e42a47a4b3baed8ffe5beac35420a1f0fedefd2880b44a0fff45fb5007cff",
+    "P2.05.test.json": "f20405aeda2bae4ee4ff002fa87b563bc370f4193a5ecdb2169217b4b6b9a435",
+    "P2.06.build.json": "cb0580f5cd93d22bf1ee8918875d60a64cd45a2e239862e0592a325e2e146c5b",
+    "P2.06.test.json": "5c11f66ce802229d4117eaceb1cf641ddc3d8ebd5348617e6107ae570e88386d",
+    "P2.07.build.json": "5fac7febec0c7288089edd8002bfc2668a2252c519f829c90bc86f7553fa1a88",
+    "P2.07.test.json": "29901bbdc397b0f0835dbc480cb66928e82909c38233a96556c8c98048324c95",
+    "P2.08.build.json": "0f630210c591d3194821c95f8dabc926bf2335db35d1a8af0e114113d71d078e",
+    "P2.08.test.json": "3838533893a762888ee1fcd779fb6ef3dea012347862d59c4f81876431f928e7",
+    "P2.09.build.json": "f1c846489a2d672362d0b477978b34084017bc8ebc0f84ccc326aa63185df943",
+    "P2.09.test.json": "523e269ca99d6a7bb215829cbe0e4b6537488a90e691c6a4d52ffa5bd8b4b311",
+    "P2.10.build.json": "90dc503ea5d191a1d0ab90495b5626c8fdd09f25d541daadf3fd8a4bc1609b41",
+    "P2.10.test.json": "f96b4bcebb4a347d22be7792f75d510b2c2c0540c7de069abd5d0abfb1fe6ab0",
+    "P2.11.build.json": "b0f43967f9cae667dcabad11303d1ac3fa59fe8f8f611e81623c29ed9e1eaa76",
+    "P2.11.test.json": "f5fda0f875fac602d372a9630bf78decd6f73b75f2a8cc6e2ac26a6fbf2bda3f",
+    "P2.12.build.json": "3d29de9a2de1bd9ca6224db278bdc94dd5346157fc11d9fc0079938623c45a0e",
+    "P2.12.test.json": "e0bbf622693e167cbae3ba4fc2d68ef3bebcb74a3c96e8844f3c31c0151660af",
+    "P2.13.build.json": "bf4105784090e684da3221118808fa307509a23f70a72cb33e1d879eedb7664e",
+    "P2.13.test.json": "739e6ee5020ca7a2f2f46f2705a8e2e2d566b2faa8fc51a122882875005d5bda",
+    "P2.14.build.json": "6e1da622227c3cdd223194809cbd595fd0d17f1498613ea36fbcf48080096463",
+    "P2.14.test.json": "3a0e10a0620efeb28f76c1f81ab2677d6a2358ee88deb68ff6c01c88d0c7cff0",
+    "P2.15.build.json": "a0145053a99b21c7e96266a0902f932ede44d42cac43ccfd5e63a7d0b1d941a0",
+    "P2.15.test.json": "873c0962b82cc95746e189d0b9dd3eaea8a5f879a75ccc7db2d348e0719043fc",
+    "P2.16.build.json": "75133ec8a761c374adc0146106269778ed4defa6cccad5ba1c174fc470c3b14a",
+    "P2.16.test.json": "d43fda9799cde7da45320bc326601d5842b812a761fe93be9f9df5f180aa98ca",
+    "P2.17.build.json": "461c11a369cfcc93f01b502d71b99ccf49440171d799bc1ae7da5585ce5a060a",
+    "P2.17.test.json": "d09443bb32559c4617849809cfe8178044cff9867d0d1855d9e2686b8eaec6be",
+    "P2.18.build.json": "8ac74e465fc9de624a9f10ce7594a3dd39d6eaebf30a5c6d689b2b18a405073a",
+    "P2.18.test.json": "1167ffbd8979cb6c945576305fda11539b917588d3348da1b71ff372f56ac971",
+    "P2.19.build.json": "6b003c9d7f107e18b02ca7bf9b91cb4294666a0d698dd574d1b1574802f39167",
+    "P2.19.test.json": "2c84c0c3b591bbfaeee5cd2ef6715ba9c6724539ed0c5b34e5b7a1af9c98ee75",
+    "P2.20.build.json": "85dfd5473a459c80a81117217a1984cf727f55ade3b942817d254ff624393bb0",
+    "P2.20.test.json": "146df74bf047b17895c9115cc236b6094f37901b63f6ee15469ccf98497268da",
+    "P2.21.build.json": "32f485d2605b67720e53a13339b8a5770a234e19c417090acda9042794d14f18",
+    "P2.21.test.json": "07418f53e08ae579067f0b5da517859ed32207259aaec1da58b8f9d1dcf8f1ee",
+    "P2.22.build.json": "2f13b7c3c8d151f690011787aa22ec5804ab9b148f79182f264d404507920439",
+    "P2.22.test.json": "2c235880331a81082c684e9d200d174a55f0348e11679635d3c49058606dbb5b",
+    "P2.23.build.json": "54a0ac62ac396c125be7a7cb3092ac20b4de2e54f5a1790ac201be3c603024ec",
+    "P2.23.test.json": "82df748948ae38a7f5799ae49e7b26377ab59768e9c8a8f104923a83da09ef43",
+    "P2.24.build.json": "c5020fcf84562aca7b1865f47621727729d4a8f8de4baa9022230818df5f2da0",
+    "P2.24.test.json": "ee362e86018d4fadf573d9e4106a5364b4c83d24b189a5c752fe18ed7f8725de"
+  },
+  "required_records": [
+    "P2.01.build.json",
+    "P2.01.test.json",
+    "P2.02.build.json",
+    "P2.02.test.json",
+    "P2.03.build.json",
+    "P2.03.test.json",
+    "P2.04.build.json",
+    "P2.04.test.json",
+    "P2.05.build.json",
+    "P2.05.test.json",
+    "P2.06.build.json",
+    "P2.06.test.json",
+    "P2.07.build.json",
+    "P2.07.test.json",
+    "P2.08.build.json",
+    "P2.08.test.json",
+    "P2.09.build.json",
+    "P2.09.test.json",
+    "P2.10.build.json",
+    "P2.10.test.json",
+    "P2.11.build.json",
+    "P2.11.test.json",
+    "P2.12.build.json",
+    "P2.12.test.json",
+    "P2.13.build.json",
+    "P2.13.test.json",
+    "P2.14.build.json",
+    "P2.14.test.json",
+    "P2.15.build.json",
+    "P2.15.test.json",
+    "P2.16.build.json",
+    "P2.16.test.json",
+    "P2.17.build.json",
+    "P2.17.test.json",
+    "P2.18.build.json",
+    "P2.18.test.json",
+    "P2.19.build.json",
+    "P2.19.test.json",
+    "P2.20.build.json",
+    "P2.20.test.json",
+    "P2.21.build.json",
+    "P2.21.test.json",
+    "P2.22.build.json",
+    "P2.22.test.json",
+    "P2.23.build.json",
+    "P2.23.test.json",
+    "P2.24.build.json",
+    "P2.24.test.json"
+  ],
+  "schema": 2,
+  "source_commit": "4ee9b226698abb326671e8da5965c30030aaf427",
+  "status": "PASS",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

@@ -1,0 +1,90 @@
+{
+  "action": "build",
+  "architecture_sha256": "a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b",
+  "assertions": [
+    {
+      "name": "exit-reparents-before-handle-close-and-private-free",
+      "passed": true
+    },
+    {
+      "name": "exit-reparents-before-zombie-publication",
+      "passed": true
+    },
+    {
+      "name": "reparent-requires-live-old-parent-and-live-pid1",
+      "passed": true
+    },
+    {
+      "name": "reparent-is-parent-generation-qualified",
+      "passed": true
+    },
+    {
+      "name": "reparent-publishes-pid1-generation-and-child-mask",
+      "passed": true
+    },
+    {
+      "name": "reparent-clears-old-parent-child-mask-after-bounded-scan",
+      "passed": true
+    },
+    {
+      "code_end": "0xFAFF",
+      "free_bytes": 17,
+      "name": "resident-kernel-ordinary-code-remains-within-faff-ceiling",
+      "passed": true,
+      "used_end": "0xFAEF"
+    },
+    {
+      "bytes": 2773,
+      "name": "p217-runtime-fixture-assembles-real-link-reparent-zombie-and-wait-composition",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p217.lst",
+        "--sym=../../build/kernel-p217.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 26,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12445 lines, work time: 0.025 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p217-reparent.sym",
+        "p217-reparent.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 11,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 5690 lines, work time: 0.009 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "c918a9c507f1de624ecda082672740956d3c102237855bbed63945a0e9bf6e5b",
+    "v1/build/p217-reparent.bin": "21bc57b20c24e0fb877fe73bfe5a5da640acf2bb6e116a9d37f5725e3b52dc66",
+    "v1/src/kernel/process.asm": "ed4b11954900235ce44cd67577a24f917fbf89a700bae2092947bfd7b0a3dcd1",
+    "v1/tools-host/test-driver/phase2_gate.py": "d1f46d4bc2416f9af139f03e9ffcd23277dc0eed2c7d7b6da70ef4078e9a65a4",
+    "v1/tools-host/test-driver/phase2_reparent.py": "417546efb0054ec563407aaa6d6625687c95ecc82774c20829a13b98bb24478d",
+    "v1/tools-host/test-driver/run.py": "cee28ede5a99cff7237723f777c94c48f87001268c327fe66b38f2b657f4616b"
+  },
+  "prerequisites": {
+    "P2.16": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "4ee9b226698abb326671e8da5965c30030aaf427",
+  "status": "PASS",
+  "step": "P2.17",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

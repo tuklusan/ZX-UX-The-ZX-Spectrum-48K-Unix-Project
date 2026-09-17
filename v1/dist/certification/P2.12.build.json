@@ -1,0 +1,100 @@
+{
+  "action": "build",
+  "architecture_sha256": "a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b",
+  "assertions": [
+    {
+      "name": "exec consumes PROC1 through staged syscall entry",
+      "passed": true
+    },
+    {
+      "name": "exec requires all std selector bytes to be 0xFF",
+      "passed": true
+    },
+    {
+      "name": "exec preserves descriptor identity fields by excluding them from commit",
+      "passed": true
+    },
+    {
+      "name": "ARG1 validates before replacement allocation",
+      "passed": true
+    },
+    {
+      "name": "ENV1 validates before replacement allocation",
+      "passed": true
+    },
+    {
+      "name": "old image release follows descriptor commit",
+      "passed": true
+    },
+    {
+      "name": "wrong object type is E_FORMAT",
+      "passed": true
+    },
+    {
+      "name": "ALLOW_TAPE is the sole admitted PROC1 flag",
+      "passed": true
+    },
+    {
+      "name": "successful exec restores new frame instead of old syscall return",
+      "passed": true
+    },
+    {
+      "name": "failure rollback frees only private replacement allocations",
+      "passed": true
+    },
+    {
+      "name": "p212-runtime-fixture-assembles-with-production-exec-source",
+      "passed": true
+    },
+    {
+      "name": "p212-runtime-fixture-preserves-frozen-48-byte-process-descriptor",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p212-exec-syntax.lst",
+        "p212-exec-syntax.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 20,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 9988 lines, work time: 0.018 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p212-exec.lst",
+        "--sym=p212-exec.sym",
+        "p212-exec.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 19,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 9746 lines, work time: 0.019 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p212-exec.bin": "f4a667583dc4ae369811fc629627f1a62912e257f41ab735640e4ea7a1a1ee7d",
+    "v1/src/kernel/process.asm": "ed4b11954900235ce44cd67577a24f917fbf89a700bae2092947bfd7b0a3dcd1",
+    "v1/tools-host/test-driver/phase2_exec.py": "464b07d600fa3c8992e9f5501464c92b9e82c7773ee848eca7b0a573be0b7311",
+    "v1/tools-host/test-driver/phase2_exec_runtime.py": "df8942aa6a1dd591a8dd7c208a4dc7b714bb65bd48c7a561affd8ecfe1b07f4a"
+  },
+  "prerequisites": {
+    "P2.11": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "4ee9b226698abb326671e8da5965c30030aaf427",
+  "status": "PASS",
+  "step": "P2.12",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

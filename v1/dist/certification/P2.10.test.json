@@ -1,0 +1,155 @@
+{
+  "action": "test",
+  "architecture_sha256": "a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b",
+  "assertions": [
+    {
+      "name": "staged-sys-spawn-enters-p209-preflight-before-p210-transaction",
+      "passed": true
+    },
+    {
+      "name": "transaction-never-reserves-or-publishes-process-before-commit",
+      "passed": true
+    },
+    {
+      "name": "transaction-has-exactly-one-ready-publication-store",
+      "passed": true
+    },
+    {
+      "name": "transaction-resolves-before-first-process-owned-allocation",
+      "passed": true
+    },
+    {
+      "name": "transaction-rejects-non-bin-and-non-raw-resident-object",
+      "passed": true
+    },
+    {
+      "name": "target-mex-validator-checks-both-crcs-before-allocation",
+      "passed": true
+    },
+    {
+      "name": "all-three-allocations-precede-private-image-copy-and-context",
+      "passed": true
+    },
+    {
+      "name": "live-parent-handles-are-validated-before-allocation",
+      "passed": true
+    },
+    {
+      "name": "shared-open-description-retains-occur-only-after-context",
+      "passed": true
+    },
+    {
+      "name": "rollback-releases-retains-before-freeing-bootstrap-stack-image",
+      "passed": true
+    },
+    {
+      "name": "commit-installs-only-child-std-handles-and-frees-three-through-seven",
+      "passed": true
+    },
+    {
+      "name": "commit-copies-parent-cwd-and-object-name",
+      "passed": true
+    },
+    {
+      "name": "spawn-success-does-not-schedule-or-yield",
+      "passed": true
+    },
+    {
+      "name": "resident-kernel-dispatch-remains-compact-p209-stub",
+      "passed": true
+    },
+    {
+      "code_end": "0xFAFF",
+      "free_bytes": 17,
+      "name": "resident-kernel-ordinary-code-remains-within-faff-ceiling",
+      "passed": true,
+      "used_end": "0xFAEF"
+    },
+    {
+      "name": "spawn-success-returns-child-pid-without-yield-and-publishes-ready-once",
+      "passed": true
+    },
+    {
+      "name": "child-inherits-parent-cwd-and-selected-standard-open-descriptions-parent-slots-unchanged",
+      "passed": true
+    },
+    {
+      "name": "image-stack-bootstrap-context-and-owned-byte-accounting-are-exact",
+      "passed": true
+    },
+    {
+      "name": "absent-target-returns-e-noent-before-allocation",
+      "passed": true
+    },
+    {
+      "name": "direct-spawn-resolved-non-bin-returns-e-format",
+      "passed": true
+    },
+    {
+      "name": "structurally-valid-but-unbound-parent-handle-is-rejected-before-allocation",
+      "passed": true
+    },
+    {
+      "name": "image-stack-and-bootstrap-allocation-failures-restore-allocator-process-and-open-description-state",
+      "passed": true
+    },
+    {
+      "name": "post-allocation-relocation-format-failure-rolls-back-all-owned-extents",
+      "passed": true
+    },
+    {
+      "name": "late-open-description-retain-failure-rolls-back-prior-retains-and-all-owned-extents",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p210.lst",
+        "--sym=../../build/kernel-p210.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 26,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12445 lines, work time: 0.025 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p210-spawn.lst",
+        "--sym=p210-spawn.sym",
+        "p210-spawn.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 19,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 9958 lines, work time: 0.018 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "c918a9c507f1de624ecda082672740956d3c102237855bbed63945a0e9bf6e5b",
+    "v1/build/p210-spawn.bin": "8101f2b19e907e226fc72283fbaf143d447e226d58fb59df47f8560e7fef4353",
+    "v1/src/kernel/process.asm": "ed4b11954900235ce44cd67577a24f917fbf89a700bae2092947bfd7b0a3dcd1",
+    "v1/src/kernel/syscall.asm": "50a7df7371e29a48439f4d064ef33a37ed9cc079736590e97ded36702a8c2277",
+    "v1/tools-host/test-driver/phase2_gate.py": "d1f46d4bc2416f9af139f03e9ffcd23277dc0eed2c7d7b6da70ef4078e9a65a4",
+    "v1/tools-host/test-driver/phase2_spawn_atomic.py": "a7234b0e2d22ac2e3a2708b6f7db7196551bab71007be874a880cb08049b0c7c",
+    "v1/tools-host/test-driver/run.py": "cee28ede5a99cff7237723f777c94c48f87001268c327fe66b38f2b657f4616b"
+  },
+  "prerequisites": {
+    "P2.09": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "4ee9b226698abb326671e8da5965c30030aaf427",
+  "status": "PASS",
+  "step": "P2.10",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

@@ -1,0 +1,66 @@
+{
+  "action": "build",
+  "architecture_sha256": "a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b",
+  "assertions": [
+    {
+      "name": "cancel-mask-is-bit-zero",
+      "passed": true
+    },
+    {
+      "name": "started-kill-publishes-cancel-and-ready",
+      "passed": true
+    },
+    {
+      "name": "started-kill-remains-cooperative",
+      "passed": true
+    },
+    {
+      "name": "scheduler-delivers-eintr-at-saved-syscall-boundary",
+      "passed": true
+    },
+    {
+      "name": "scheduler-consumes-cancel-on-delivery",
+      "passed": true
+    },
+    {
+      "name": "eintr-continuation-preserves-syscall-return-contract",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 26,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12445 lines, work time: 0.025 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "c918a9c507f1de624ecda082672740956d3c102237855bbed63945a0e9bf6e5b",
+    "v1/include/zx48ux.inc": "4c32a778091d3d7ba6fdeb28c77fe2cbe864d1f71f20a41c845019e9d5c056c1",
+    "v1/src/kernel/process.asm": "ed4b11954900235ce44cd67577a24f917fbf89a700bae2092947bfd7b0a3dcd1",
+    "v1/src/kernel/scheduler.asm": "42947c46e444e02a1175256835720f097b7f22e1771cdd95c820c7ba308e0211",
+    "v1/src/kernel/syscall.asm": "50a7df7371e29a48439f4d064ef33a37ed9cc079736590e97ded36702a8c2277",
+    "v1/tools-host/test-driver/phase2_gate.py": "d1f46d4bc2416f9af139f03e9ffcd23277dc0eed2c7d7b6da70ef4078e9a65a4",
+    "v1/tools-host/test-driver/phase2_kill_started.py": "5f429a58804733de443692394f5533dcf79f88dc8a2056b2c38a718583a496f1",
+    "v1/tools-host/test-driver/run.py": "cee28ede5a99cff7237723f777c94c48f87001268c327fe66b38f2b657f4616b"
+  },
+  "prerequisites": {
+    "P2.18": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "4ee9b226698abb326671e8da5965c30030aaf427",
+  "status": "PASS",
+  "step": "P2.19",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
