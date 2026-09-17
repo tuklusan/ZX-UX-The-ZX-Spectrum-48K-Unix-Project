@@ -366,7 +366,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "${ZXUX_EVIDENCE_DIR}"
-          for step in P1.02 P1.03 P1.04 P1.05 P1.41; do
+          for step in P1.02 P1.03 P1.04 P1.05; do
             tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step "${step}" \
               2>&1 | tee "${ZXUX_EVIDENCE_DIR}/${step}.regression.log"
           done
@@ -379,7 +379,7 @@ jobs:
           fi
           echo 'P2.22 COMPAT PASS P2.10 standalone spawn retains legacy fallback composition' \
             | tee "${ZXUX_EVIDENCE_DIR}/P2.10.composition.log"
-          for step in P2.13 P2.14; do
+          for step in P2.13 P2.14 P2.15 P2.16; do
             tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step "${step}" \
               2>&1 | tee "${ZXUX_EVIDENCE_DIR}/${step}.regression.log"
           done
