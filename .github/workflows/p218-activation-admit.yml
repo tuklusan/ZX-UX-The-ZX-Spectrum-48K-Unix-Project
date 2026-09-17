@@ -29,7 +29,7 @@ jobs:
     env:
       ZXUX_RUNNER_SESSION_ID: phase2-20260916-01
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p218-activation-admit
-      P218_EXACT_PARENT: 6613809d351e4d8dfbe1e6d7bbb6465bad72b699
+      P218_EXACT_PARENT: 6c352b40519469eb6fb5dba9ea946c3b3deedd6c
       P218_OLD_PROCESS_BLOB: b0cd24ebbdc329543f5138c2d26d8a67453b77fd
       P218_OLD_TEST_BLOB: 0390c74a046003cfca71ec1bbb2102624607793f
       ZXUX_REV12_SHA256: a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b
@@ -48,8 +48,8 @@ jobs:
           test "$(git rev-parse HEAD:v1/src/kernel/process.asm)" = "${P218_OLD_PROCESS_BLOB}"
           test "$(git rev-parse HEAD:v1/tools-host/test-driver/phase2_kill_never_started.py)" = "${P218_OLD_TEST_BLOB}"
           test "$(git diff --name-only HEAD^ HEAD)" = ".github/workflows/p218-activation-admit.yml"
-          grep -Fq 'Phase 2 remains under the active REV12 / REV03 authority epoch' docs/--W-A-R-N-I-N-G--.md
-          grep -Fq 'REV13 / REV04' docs/--W-A-R-N-I-N-G--.md
+          grep -Fq 'REV12 / REV03 remain the active authority through completion of Phase 2.' docs/--W-A-R-N-I-N-G--.md
+          grep -Fq 'REV13 / REV04 may exist in the repository as dormant prospective authorities.' docs/--W-A-R-N-I-N-G--.md
           test "$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV12.md | awk '{print $1}')" = "${ZXUX_REV12_SHA256}"
           grep -Fq 'Stable Phase-2 runner cache session ID: `phase2-20260916-01`.' scratch/ZX-UX-RUNNER-CACHE-SESSION.md
           python3 tools/check_phase0_evidence.py --require-active
