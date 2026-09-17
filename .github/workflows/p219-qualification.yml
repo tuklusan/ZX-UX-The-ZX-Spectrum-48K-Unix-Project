@@ -12,15 +12,11 @@
 
 name: P2.19 blocked-started cancellation qualification
 
+# This is an exact-candidate historical qualification workflow. P2.19 closed at
+# 518baa052e82c1da3f64547a3f6456d863d123e2 and is regression-checked by the
+# Phase-2 aggregate. Keep the recipe available without re-running its one-shot
+# parent/diff guard on later Phase-2 commits that touch shared driver files.
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - .github/workflows/p219-qualification.yml
-      - v1/src/kernel/scheduler.asm
-      - v1/tools-host/test-driver/phase2_kill_started.py
-      - v1/tools-host/test-driver/run.py
   workflow_dispatch:
 
 permissions:
