@@ -12,14 +12,11 @@
 
 name: P2.20 exact-case process-name qualification
 
+# This is an exact-candidate historical qualification workflow. P2.20 closed at
+# 17405a3a714e34420f4ae5849151d21e401b4086 and is regression-checked by the
+# Phase-2 aggregate. Keep the recipe available without re-running its one-shot
+# parent/diff guard on later Phase-2 commits that touch shared driver files.
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - .github/workflows/p220-qualification.yml
-      - v1/tools-host/test-driver/phase2_process_name.py
-      - v1/tools-host/test-driver/run.py
   workflow_dispatch:
 
 permissions:
