@@ -18,6 +18,7 @@ on:
       - main
     paths:
       - .github/workflows/p222-qualification.yml
+      - v1/src/kernel/process.asm
       - v1/tests/multiprocessing/p222-spawn-exit-leak.asm
       - v1/tools-host/test-driver/phase2_spawn_exit_leak.py
       - v1/tools-host/test-driver/run.py
@@ -41,28 +42,92 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Guard exact P2.22 candidate diff
+      - name: Guard checked-in P2.22 candidate diff
         shell: bash
         run: |
           set -euo pipefail
-          git merge-base --is-ancestor "${P222_EXACT_PARENT}" HEAD
-          git diff --name-only "${P222_EXACT_PARENT}" HEAD | sort > /tmp/p222-changed
+          git merge-base --is-ancestor "${P222_EXACT_PARENT}" "${GITHUB_SHA}"
+          git diff --name-only "${P222_EXACT_PARENT}" "${GITHUB_SHA}" | sort > /tmp/p222-changed
+          if grep -Fqx 'ZX48_P2_13_LINKS_EMITTED EQU 1' v1/src/kernel/process.asm; then
+            printf '%s\n' \
+              .github/workflows/p222-qualification.yml \
+              v1/tests/multiprocessing/p222-spawn-exit-leak.asm \
+              v1/tools-host/test-driver/phase2_spawn_exit_leak.py \
+              v1/tools-host/test-driver/run.py \
+              | sort > /tmp/p222-expected
+            printf '%s\n' prequalification > /tmp/p222-mode
+          elif grep -Fqx 'DEFINE ZX48_P2_13_LINKS_EMITTED 1' v1/src/kernel/process.asm; then
+            printf '%s\n' \
+              .github/workflows/p222-qualification.yml \
+              v1/src/kernel/process.asm \
+              v1/tests/multiprocessing/p222-spawn-exit-leak.asm \
+              v1/tools-host/test-driver/phase2_spawn_exit_leak.py \
+              v1/tools-host/test-driver/run.py \
+              | sort > /tmp/p222-expected
+            printf '%s\n' checked-in > /tmp/p222-mode
+          else
+            echo 'P2.22 fail-closed: staged P2.13 composition marker is neither exact old nor exact repaired form' >&2
+            exit 1
+          fi
+          diff -u /tmp/p222-expected /tmp/p222-changed
+          test -z "$(git status --porcelain)"
+          echo "qualification_remote_head=${GITHUB_SHA}"
+          echo "qualification_mode=$(cat /tmp/p222-mode)"
+
+      - name: Prepare exact process-link candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('v1/src/kernel/process.asm')
+          data = path.read_bytes()
+          old = b'ZX48_P2_13_LINKS_EMITTED EQU 1'
+          new = b'DEFINE ZX48_P2_13_LINKS_EMITTED 1'
+          old_count = data.count(old)
+          new_count = data.count(new)
+          if (old_count, new_count) == (1, 0):
+              path.write_bytes(data.replace(old, new, 1))
+              print('prepared one-line EQU-to-DEFINE candidate')
+          elif (old_count, new_count) == (0, 1):
+              print('checked-in source already equals repaired candidate')
+          else:
+              raise SystemExit(
+                  f'P2.22 fail-closed marker multiplicity: old={old_count} new={new_count}'
+              )
+          PY
+          grep -Fqx 'DEFINE ZX48_P2_13_LINKS_EMITTED 1' v1/src/kernel/process.asm
+          test "$(grep -Fxc 'DEFINE ZX48_P2_13_LINKS_EMITTED 1' v1/src/kernel/process.asm)" = 1
+          test "$(grep -Fxc 'ZX48_P2_13_LINKS_EMITTED EQU 1' v1/src/kernel/process.asm)" = 0
+          if ! git diff --quiet; then
+            test "$(git diff --name-only)" = 'v1/src/kernel/process.asm'
+            git add v1/src/kernel/process.asm
+            git -c user.name='ZX-UX Qualification' \
+                -c user.email='zxux-qualification@invalid.example' \
+                commit --no-verify -m 'P2.22 ephemeral process-link candidate'
+          fi
+          test -z "$(git status --porcelain)"
+          git diff --name-only "${P222_EXACT_PARENT}" HEAD | sort > /tmp/p222-prepared-changed
           printf '%s\n' \
             .github/workflows/p222-qualification.yml \
+            v1/src/kernel/process.asm \
             v1/tests/multiprocessing/p222-spawn-exit-leak.asm \
             v1/tools-host/test-driver/phase2_spawn_exit_leak.py \
             v1/tools-host/test-driver/run.py \
-            | sort > /tmp/p222-expected
-          diff -u /tmp/p222-expected /tmp/p222-changed
-          test -z "$(git status --porcelain)"
-          echo "qualification_head=$(git rev-parse HEAD)"
-          echo "qualification_base=${P222_EXACT_PARENT}"
+            | sort > /tmp/p222-prepared-expected
+          diff -u /tmp/p222-prepared-expected /tmp/p222-prepared-changed
+          git rev-parse HEAD > /tmp/p222-candidate-commit
+          git rev-parse 'HEAD^{tree}' > /tmp/p222-candidate-tree
+          echo "candidate_commit=$(cat /tmp/p222-candidate-commit)"
+          echo "candidate_tree=$(cat /tmp/p222-candidate-tree)"
 
       - name: Three unchanged candidate scans
         shell: bash
         run: |
           set -euo pipefail
           baseline=""
+          tree_baseline="$(git rev-parse 'HEAD^{tree}')"
           for scan in 1 2 3; do
             git diff --check "${P222_EXACT_PARENT}" HEAD
             python3 -m py_compile v1/tools-host/test-driver/phase2_spawn_exit_leak.py
@@ -70,12 +135,16 @@ jobs:
             find v1/tools-host/test-driver -type d -name __pycache__ -prune -exec rm -rf {} +
             grep -q 'ld a,64' v1/tests/multiprocessing/p222-spawn-exit-leak.asm
             grep -q 'EMIT_PROCESS_CAPACITY_ROUTINE' v1/tests/multiprocessing/p222-spawn-exit-leak.asm
+            grep -q 'EMIT_PARENT_CHILD_ROUTINES' v1/tests/multiprocessing/p222-spawn-exit-leak.asm
             grep -q 'EMIT_SPAWN_TRANSACTION_ROUTINES' v1/tests/multiprocessing/p222-spawn-exit-leak.asm
             grep -q 'EMIT_ZOMBIE_TRANSITION_ROUTINES' v1/tests/multiprocessing/p222-spawn-exit-leak.asm
             grep -q 'EMIT_WAIT_SPECIFIC_ROUTINES' v1/tests/multiprocessing/p222-spawn-exit-leak.asm
+            grep -Fqx 'DEFINE ZX48_P2_13_LINKS_EMITTED 1' v1/src/kernel/process.asm
             test -z "$(git status --porcelain)"
+            test "$(git rev-parse 'HEAD^{tree}')" = "${tree_baseline}"
             digest="$(
               sha256sum \
+                v1/src/kernel/process.asm \
                 v1/tests/multiprocessing/p222-spawn-exit-leak.asm \
                 v1/tools-host/test-driver/phase2_spawn_exit_leak.py \
                 v1/tools-host/test-driver/run.py \
@@ -89,6 +158,7 @@ jobs:
             fi
             echo "SCAN-${scan}: CLEAN"
             echo "scan_${scan}_candidate_sha256=${digest}"
+            echo "scan_${scan}_tree=${tree_baseline}"
           done
 
       - name: Mandatory license and project-policy gates
@@ -138,6 +208,16 @@ jobs:
       - name: Certify pinned project runtime
         run: tools/runtime/python/bin/python tools/scripts/verify-environment.py
 
+      - name: Regression-test P2.10 P2.13 P2.14
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${ZXUX_EVIDENCE_DIR}"
+          for step in P2.10 P2.13 P2.14; do
+            tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step "${step}" \
+              2>&1 | tee "${ZXUX_EVIDENCE_DIR}/${step}.regression.log"
+          done
+
       - name: Execute P2.22 build
         shell: bash
         run: |
@@ -146,134 +226,71 @@ jobs:
           tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P2.22 \
             2>&1 | tee "${ZXUX_EVIDENCE_DIR}/P2.22.build.log"
 
-      - name: Diagnose exact PID2 exit panic branch
+      - name: Prove assembled spawn publishes generation-qualified link
         shell: bash
         run: |
           set -euo pipefail
-          tools/runtime/python/bin/python - <<'PY' 2>&1 | tee "${ZXUX_EVIDENCE_DIR}/P2.22.diag.log"
+          tools/runtime/python/bin/python - <<'PY' 2>&1 | tee "${ZXUX_EVIDENCE_DIR}/P2.22.link-proof.log"
           from pathlib import Path
           import sys
 
           root = Path.cwd()
-          sys.path.insert(0, str(root / "v1/tools-host/test-driver"))
+          sys.path.insert(0, str(root / 'v1/tools-host/test-driver'))
 
-          from fuse_harness import FAIL_PC, PASS_PC
+          from fuse_harness import FAIL_PC
           import phase1
           import phase2_spawn_exit_leak as p222
 
-          symbol_path = root / "v1/build/p222-spawn-exit-leak.sym"
-          fixture = (root / "v1/build/p222-spawn-exit-leak.bin").read_bytes()
+          symbol_path = root / 'v1/build/p222-spawn-exit-leak.sym'
+          fixture = (root / 'v1/build/p222-spawn-exit-leak.bin').read_bytes()
           names = (
-              "p222_gateway",
-              "zx48_process_links_init",
-              "zx48_process_exit_to_zombie",
-              "zx48_process_zombie_free_bootstrap",
-              "zx48_process_zombie_panic",
-              "process_table",
-              "current_pid",
-              "open_description_table",
-              "memory_free_extents",
-              "memory_live_allocations",
-              "tty_input_owner",
+              'p222_gateway',
+              'zx48_process_links_init',
+              'zx48_process_link_child',
+              'zx48_process_spawn_transaction',
+              'zx48_process_spawn_rollback',
+              'process_generation',
+              'process_parent_generation',
+              'process_child_mask',
+              'process_table',
+              'current_pid',
+              'open_description_table',
+              'memory_free_extents',
+              'memory_live_allocations',
+              'tty_input_owner',
           )
           symbols = p222._symbols(symbol_path, names)
 
-          def store_byte(address: int, value: int) -> bytes:
-              return b"\x3E" + bytes((value & 0xFF,)) + b"\x32" + p222._word(address)
-
-          def spawned_pid2() -> bytearray:
-              code = bytearray(b"\xF3" + phase1._ld_sp(p222.TEST_STACK))
-              code += phase1._call(symbols["zx48_process_links_init"]) + p222._jp_c(FAIL_PC)
-              code += phase1._ld_hl(p222.PROC_ADDRESS)
-              code += phase1._call(symbols["p222_gateway"]) + p222._jp_c(FAIL_PC)
-              code += b"\x7C\xB7" + p222._jp_nz(FAIL_PC)
-              code += b"\x7D\xFE\x02" + p222._jp_nz(FAIL_PC)
-              return code
-
-          pre_exit = spawned_pid2()
-          pre_exit += p222._expect_word(symbols["memory_live_allocations"], 3)
-          pre_exit += p222._expect_byte(symbols["open_description_table"] + 2, 2)
-          pre_exit += p222._expect_byte(symbols["open_description_table"] + p222.OD_SIZE + 2, 4)
-          p222._run_positive_probe(root, symbols, fixture, "post-spawn-accounting", pre_exit)
-          print("P2.22 DIAG PASS post-spawn-accounting")
-
-          labels = (
-              "current-pid-below-2",
-              "current-pid-out-of-range",
-              "descriptor-pointer-error",
-              "child-not-running",
-              "parent-generation-pointer-error",
-              "parent-generation-zero",
-              "stack-high-below-low",
-              "stack-size-zero",
-              "stack-size-odd",
-              "image-base-zero",
-              "image-base-odd",
-              "image-size-zero",
-              "image-size-odd",
-              "stack-base-zero",
-              "stack-base-odd",
-              "bootstrap-base-zero",
-              "bootstrap-base-odd",
-              "owned-bytes-zero",
-              "owned-bytes-odd",
-              "owned-smaller-than-image",
-              "owned-remainder-smaller-than-stack",
-              "bootstrap-size-zero",
-              "bootstrap-size-odd",
-              "reparent-failed",
-              "close-handles-failed",
-          )
-          conditional_jp = {0xC2, 0xCA, 0xD2, 0xDA, 0xE2, 0xEA, 0xF2, 0xFA}
-          start = symbols["zx48_process_exit_to_zombie"]
-          stop = symbols["zx48_process_zombie_free_bootstrap"]
-          panic = symbols["zx48_process_zombie_panic"]
-          candidates = []
-          for address in range(start, stop - 2):
-              offset = address - p222.FIXTURE_CODE
-              opcode = fixture[offset]
-              target = fixture[offset + 1] | (fixture[offset + 2] << 8)
-              if opcode in conditional_jp and target == panic:
-                  candidates.append(address)
-          p222.require(
-              len(candidates) == len(labels),
-              f"P2.22 diagnostic panic-branch count changed: expected={len(labels)} actual={len(candidates)}",
-          )
-
-          def exit_attempt() -> bytearray:
-              code = spawned_pid2()
-              child_state = symbols["process_table"] + 2 * p222.PROC_DESC_SIZE + p222.PROC_STATE
-              code += store_byte(child_state, p222.PROC_RUNNING)
-              code += store_byte(symbols["current_pid"], 2)
-              code += b"\xAF" + phase1._call(symbols["zx48_process_exit_to_zombie"])
-              code += phase1._jp(FAIL_PC)
-              return code
-
+          start = symbols['zx48_process_spawn_transaction'] - p222.FIXTURE_CODE
+          stop = symbols['zx48_process_spawn_rollback'] - p222.FIXTURE_CODE
+          p222.require(0 <= start < stop <= len(fixture), 'P2.22 spawn transaction range outside fixture')
+          needle = b'\xCD' + p222._word(symbols['zx48_process_link_child'])
           hits = []
-          for ordinal, (address, label) in enumerate(zip(candidates, labels), start=1):
-              try:
-                  p222._run_positive_probe(
-                      root,
-                      symbols,
-                      fixture,
-                      f"panic-branch-{ordinal:02d}-{label}",
-                      exit_attempt(),
-                      (
-                          (symbols["zx48_process_zombie_free_bootstrap"], b"\xC9"),
-                          (address + 1, p222._word(PASS_PC)),
-                      ),
-                  )
-              except p222.Phase222Error:
-                  print(f"P2.22 DIAG MISS branch={ordinal:02d} address=0x{address:04X} condition={label}")
-              else:
-                  print(f"P2.22 DIAG HIT branch={ordinal:02d} address=0x{address:04X} condition={label}")
-                  hits.append((ordinal, address, label))
-
-          p222.require(len(hits) == 1, f"P2.22 diagnostic expected one panic branch hit, got {hits!r}")
-          ordinal, address, label = hits[0]
-          raise p222.Phase222Error(
-              f"P2.22 exact exit panic branch: ordinal={ordinal:02d} address=0x{address:04X} condition={label}"
+          position = fixture.find(needle, start, stop)
+          while position != -1:
+              hits.append(p222.FIXTURE_CODE + position)
+              position = fixture.find(needle, position + 1, stop)
+          p222.require(
+              len(hits) == 1,
+              f'P2.22 assembled spawn must contain exactly one link-child CALL, hits={hits!r}',
           )
+          print(f'P2.22 LINK PASS assembled-call=0x{hits[0]:04X}')
+
+          code = bytearray(b'\xF3' + phase1._ld_sp(p222.TEST_STACK))
+          code += phase1._call(symbols['zx48_process_links_init']) + p222._jp_c(FAIL_PC)
+          code += phase1._ld_hl(p222.PROC_ADDRESS)
+          code += phase1._call(symbols['p222_gateway']) + p222._jp_c(FAIL_PC)
+          code += b'\x7C\xB7' + p222._jp_nz(FAIL_PC)
+          code += b'\x7D\xFE\x02' + p222._jp_nz(FAIL_PC)
+          code += p222._expect_word(symbols['process_generation'] + 2 * 2, 1)
+          code += p222._expect_word(symbols['process_parent_generation'] + 2 * 2, 1)
+          code += p222._expect_byte(symbols['process_child_mask'] + 1, 0x04)
+          code += p222._expect_byte(
+              symbols['process_table'] + 2 * p222.PROC_DESC_SIZE + p222.PROC_PARENT,
+              1,
+          )
+          p222._run_positive_probe(root, symbols, fixture, 'generation-qualified-spawn-link', code)
+          print('P2.22 LINK PASS generation-qualified-spawn-link')
           PY
 
       - name: Execute P2.22 test
@@ -290,7 +307,10 @@ jobs:
         run: |
           set -u
           mkdir -p "${ZXUX_EVIDENCE_DIR}/build"
-          git rev-parse HEAD > "${ZXUX_EVIDENCE_DIR}/source-commit.txt"
+          cp /tmp/p222-mode "${ZXUX_EVIDENCE_DIR}/qualification-mode.txt" 2>/dev/null || true
+          cp /tmp/p222-candidate-commit "${ZXUX_EVIDENCE_DIR}/candidate-commit.txt" 2>/dev/null || true
+          cp /tmp/p222-candidate-tree "${ZXUX_EVIDENCE_DIR}/candidate-tree.txt" 2>/dev/null || true
+          printf '%s\n' "${GITHUB_SHA}" > "${ZXUX_EVIDENCE_DIR}/remote-head.txt"
           printf '%s\n' "${P222_EXACT_PARENT}" > "${ZXUX_EVIDENCE_DIR}/source-parent.txt"
           git status --porcelain > "${ZXUX_EVIDENCE_DIR}/worktree-status.txt"
           sha256sum \
@@ -303,6 +323,7 @@ jobs:
             v1/tools-host/test-driver/phase2_gate.py \
             .github/workflows/p222-qualification.yml \
             > "${ZXUX_EVIDENCE_DIR}/qualification-hashes.sha256"
+          cp v1/src/kernel/process.asm "${ZXUX_EVIDENCE_DIR}/candidate-process.asm"
           for path in \
             v1/build/kernel.bin \
             v1/build/kernel-p1.sym \
