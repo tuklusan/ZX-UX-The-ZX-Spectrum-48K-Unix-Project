@@ -10,7 +10,7 @@
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
 
-name: P2.18 sentinel geometry repair
+name: P2.18 caller-gated dispatch and sentinel repair
 
 on:
   push:
@@ -28,53 +28,49 @@ jobs:
     timeout-minutes: 45
     env:
       PYTHONDONTWRITEBYTECODE: '1'
-      ZXUX_EVIDENCE_DIR: /tmp/zxux-p218-sentinel-geometry
-      P218_EXACT_PARENT: 8b15600b533d9f3b62d1f01f470cf774ef0aa17b
+      ZXUX_RUNNER_SESSION_ID: phase2-20260916-01
+      ZXUX_EVIDENCE_DIR: /tmp/zxux-p218-dispatch-sentinel
+      P218_EXACT_PARENT: 76efb3f1f3f0fe824bdfa77fc425e90ad4971440
+      P218_OLD_PROCESS_BLOB: b0cd24ebbdc329543f5138c2d26d8a67453b77fd
       P218_OLD_TEST_BLOB: 0390c74a046003cfca71ec1bbb2102624607793f
-      P218_LANDED_CANDIDATE: b42798a7c75783efad17a1ff84bf940722791a2f
       ZXUX_REV12_SHA256: a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b
 
     steps:
-      - name: Checkout exact diagnostic parent
+      - name: Checkout exact diagnosed parent
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: Guard exact trigger and diagnosed geometry
+      - name: Guard exact trigger and diagnosed fallback assembly
         shell: bash
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD^)" = "${P218_EXACT_PARENT}"
           test "$(git diff --name-only HEAD^ HEAD)" = ".github/workflows/p218-sentinel-geometry-fix.yml"
+          test "$(git rev-parse HEAD:v1/src/kernel/process.asm)" = "${P218_OLD_PROCESS_BLOB}"
           test "$(git rev-parse HEAD:v1/tools-host/test-driver/phase2_kill_never_started.py)" = "${P218_OLD_TEST_BLOB}"
-          git merge-base --is-ancestor "${P218_LANDED_CANDIDATE}" HEAD
-          git diff --quiet "${P218_LANDED_CANDIDATE}" -- v1/src/kernel/process.asm v1/tools-host/test-driver/run.py
+          grep -Fxq 'ZX48_P2_18_KILL_ENABLED EQU 1' v1/src/kernel/process.asm
           grep -Fxq 'SENTINEL_PC = 0x9200' v1/tools-host/test-driver/phase2_kill_never_started.py
-          grep -Fxq 'ENTRY_PC = 0x9000' v1/tools-host/test-driver/fuse_harness.py
-          python3 - <<'PY'
-          # Canonical positive-test byte geometry from the exact current generator.
-          # The emitted program is 554 bytes at ENTRY_PC=0x9000, ending at 0x922A
-          # exclusive; the old eight-byte sentinel at 0x9200 therefore overwrites it.
-          entry = 0x9000
-          canonical_positive_length = 554
-          sentinel = 0x9200
-          sentinel_size = 8
-          assert entry < sentinel < entry + canonical_positive_length
-          assert sentinel + sentinel_size <= 0x10000
-          print(f"diagnosed_overlap=0x{sentinel:04X}-0x{sentinel + sentinel_size - 1:04X} ")
-          print(f"canonical_test=0x{entry:04X}-0x{entry + canonical_positive_length - 1:04X}")
-          PY
+          grep -Fq 'IFDEF ZX48_P2_18_KILL_ENABLED' v1/src/kernel/process.asm
+          grep -Fq 'jp z,zx48_process_kill_never_started' v1/src/kernel/process.asm
           test -z "$(git status --porcelain)"
 
-      - name: Assemble exact sentinel-geometry repair
+      - name: Assemble exact caller-gated dispatch and sentinel repair
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
 
-          path = Path("v1/tools-host/test-driver/phase2_kill_never_started.py")
-          text = path.read_text(encoding="utf-8")
+          process = Path("v1/src/kernel/process.asm")
+          text = process.read_text(encoding="utf-8")
+          old = "ZX48_P2_18_KILL_ENABLED EQU 1\n"
+          if text.count(old) != 1:
+              raise SystemExit("P2.18 helper activation shape changed")
+          process.write_text(text.replace(old, ""), encoding="utf-8", newline="\n")
+
+          driver = Path("v1/tools-host/test-driver/phase2_kill_never_started.py")
+          text = driver.read_text(encoding="utf-8")
           edits = (
               (
                   "from fuse_harness import FAIL_PC, PASS_PC, run_sna\n",
@@ -85,32 +81,60 @@ jobs:
                   "SENTINEL_PC = 0x8D00\n",
               ),
               (
-                  "    assertions = _source_contract(root)\n    failed = [item[\"name\"] for item in assertions if item[\"passed\"] is not True]\n",
-                  "    assertions = _source_contract(root)\n"
-                  "    require(SENTINEL_PC + 8 <= ENTRY_PC, \"P2.18 child-PC sentinel overlaps test program entry\")\n"
-                  "    assertions.append({\n"
-                  "        \"name\": \"child-pc-sentinel-is-disjoint-from-test-program\",\n"
-                  "        \"passed\": True,\n"
-                  "        \"sentinel_pc\": f\"0x{SENTINEL_PC:04X}\",\n"
-                  "        \"sentinel_end\": f\"0x{SENTINEL_PC + 7:04X}\",\n"
-                  "        \"test_entry\": f\"0x{ENTRY_PC:04X}\",\n"
-                  "    })\n"
-                  "    failed = [item[\"name\"] for item in assertions if item[\"passed\"] is not True]\n",
+                  '        "    DEVICE ZXSPECTRUM48\\n"\n        "    INCLUDE \\"../include/zx48ux.inc\\"\\n"',
+                  '        "    DEVICE ZXSPECTRUM48\\n"\n        "    DEFINE ZX48_P2_18_KILL_ENABLED\\n"\n        "    INCLUDE \\"../include/zx48ux.inc\\"\\n"',
+              ),
+              (
+                  '[assembler, "--nologo", "--sym=p218-kill-never-started.sym", "p218-kill-never-started.asm"],',
+                  '[assembler, "--nologo", "--lst=p218-kill-never-started.lst", "--sym=p218-kill-never-started.sym", "p218-kill-never-started.asm"],',
+              ),
+              (
+                  '"passed": "ZX48_P2_18_KILL_ENABLED EQU 1" in helper and helper_start > core_end,',
+                  '"passed": helper_start > core_end and "ZX48_P2_18_KILL_ENABLED" not in helper,',
+              ),
+              (
+                  '"zx48_process_reserve_slot", "zx48_handles_init", "zx48_od_create", "zx48_process_kill",\n',
+                  '"zx48_process_reserve_slot", "zx48_handles_init", "zx48_od_create", "zx48_process_kill",\n        "zx48_process_kill_never_started",\n',
+              ),
+              (
+                  '    fixture = fixture_binary.read_bytes()\n    if action == "test":\n',
+                  '    fixture = fixture_binary.read_bytes()\n'
+                  '    dispatch_bytes = b"\\xCA" + _word(symbols["zx48_process_kill_never_started"])\n'
+                  '    dispatch_count = fixture.count(dispatch_bytes)\n'
+                  '    require(dispatch_count == 1, f"P2.18 assembled dispatch must contain exactly one JP Z to never-started helper, got {dispatch_count}")\n'
+                  '    assertions.append({"name": "assembled-fixture-dispatches-to-never-started-helper", "passed": True, "dispatch_bytes": dispatch_bytes.hex()})\n'
+                  '    if action == "test":\n',
+              ),
+              (
+                  '    assertions = _source_contract(root)\n    failed = [item["name"] for item in assertions if item["passed"] is not True]\n',
+                  '    assertions = _source_contract(root)\n'
+                  '    require(SENTINEL_PC + 8 <= ENTRY_PC, "P2.18 child-PC sentinel overlaps test program entry")\n'
+                  '    assertions.append({\n'
+                  '        "name": "child-pc-sentinel-is-disjoint-from-test-program",\n'
+                  '        "passed": True,\n'
+                  '        "sentinel_pc": f"0x{SENTINEL_PC:04X}",\n'
+                  '        "sentinel_end": f"0x{SENTINEL_PC + 7:04X}",\n'
+                  '        "test_entry": f"0x{ENTRY_PC:04X}",\n'
+                  '    })\n'
+                  '    failed = [item["name"] for item in assertions if item["passed"] is not True]\n',
               ),
           )
           for old, new in edits:
               if text.count(old) != 1 or new in text:
-                  raise SystemExit(f"P2.18 sentinel repair shape changed: {old[:72]!r}")
+                  raise SystemExit(f"P2.18 driver exact edit shape failed: {old[:72]!r}")
               text = text.replace(old, new)
-          path.write_text(text, encoding="utf-8", newline="\n")
+          driver.write_text(text, encoding="utf-8", newline="\n")
           PY
 
-          git add v1/tools-host/test-driver/phase2_kill_never_started.py
+          git add v1/src/kernel/process.asm v1/tools-host/test-driver/phase2_kill_never_started.py
           git rm .github/workflows/p218-sentinel-geometry-fix.yml
-          expected="$(printf '%s\n' .github/workflows/p218-sentinel-geometry-fix.yml v1/tools-host/test-driver/phase2_kill_never_started.py | sort)"
+          expected="$(printf '%s\n' .github/workflows/p218-sentinel-geometry-fix.yml v1/src/kernel/process.asm v1/tools-host/test-driver/phase2_kill_never_started.py | sort)"
           test "$(git diff --cached --name-only | sort)" = "${expected}"
           git diff --quiet
+          ! grep -q '^ZX48_P2_18_KILL_ENABLED EQU 1$' v1/src/kernel/process.asm
+          grep -Fq '"    DEFINE ZX48_P2_18_KILL_ENABLED\\n"' v1/tools-host/test-driver/phase2_kill_never_started.py
           grep -Fxq 'SENTINEL_PC = 0x8D00' v1/tools-host/test-driver/phase2_kill_never_started.py
+          grep -Fq 'assembled-fixture-dispatches-to-never-started-helper' v1/tools-host/test-driver/phase2_kill_never_started.py
           grep -Fq 'child-pc-sentinel-is-disjoint-from-test-program' v1/tools-host/test-driver/phase2_kill_never_started.py
           git diff --cached --check
 
@@ -118,7 +142,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          expected="$(printf '%s\n' .github/workflows/p218-sentinel-geometry-fix.yml v1/tools-host/test-driver/phase2_kill_never_started.py | sort)"
+          expected="$(printf '%s\n' .github/workflows/p218-sentinel-geometry-fix.yml v1/src/kernel/process.asm v1/tools-host/test-driver/phase2_kill_never_started.py | sort)"
           baseline=""
           for scan in 1 2 3; do
             find . -type d -name __pycache__ -prune -exec rm -rf {} +
@@ -129,8 +153,9 @@ jobs:
             python3 -m py_compile v1/tools-host/test-driver/p218_failure_probe.py
             python3 -m py_compile v1/tools-host/test-driver/run.py
             find . -type d -name __pycache__ -prune -exec rm -rf {} +
+            ! grep -q '^ZX48_P2_18_KILL_ENABLED EQU 1$' v1/src/kernel/process.asm
+            grep -Fq '"    DEFINE ZX48_P2_18_KILL_ENABLED\\n"' v1/tools-host/test-driver/phase2_kill_never_started.py
             grep -Fxq 'SENTINEL_PC = 0x8D00' v1/tools-host/test-driver/phase2_kill_never_started.py
-            grep -Fq 'require(SENTINEL_PC + 8 <= ENTRY_PC' v1/tools-host/test-driver/phase2_kill_never_started.py
             test "$(git rev-parse HEAD:docs/01-ZX-UX-ARCHITECTURE-REV12.md)" = "$(git rev-parse HEAD^:docs/01-ZX-UX-ARCHITECTURE-REV12.md)"
             test "$(git rev-parse HEAD:docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV03.md)" = "$(git rev-parse HEAD^:docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV03.md)"
             test "$(git rev-parse HEAD:docs/01-ZX-UX-ARCHITECTURE-REV13.md)" = "$(git rev-parse HEAD^:docs/01-ZX-UX-ARCHITECTURE-REV13.md)"
@@ -147,9 +172,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git config user.name "ZX-UX P2.18 diagnostic runner"
+          git config user.name "ZX-UX P2.18 repair runner"
           git config user.email "tuklusan@users.noreply.github.com"
-          git commit -m "P2.18 test: separate child-PC sentinel from fixture code"
+          git commit -m "P2.18 test: activate teardown at fixture assembly boundary"
           test -z "$(git status --porcelain)"
           echo "candidate_commit=$(git rev-parse HEAD)"
           echo "candidate_parent=$(git rev-parse HEAD^)"
@@ -173,13 +198,28 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends build-essential cmake gettext libaudiofile-dev libfreetype6-dev libgcrypt20-dev libglib2.0-dev libpng-dev libsdl1.2-dev libtool libxml2-dev perl pkg-config
 
-      - name: Acquire pinned project runtime
-        run: python tools/scripts/bootstrap-environment.py
+      - name: Restore Phase-2 runner cache session
+        uses: actions/cache@v4
+        with:
+          path: |
+            /tmp/zxux-tool-cache
+            tools/runtime
+          key: zxux-${{ runner.os }}-${{ env.ZXUX_RUNNER_SESSION_ID }}-${{ hashFiles('tools/manifest/toolchain.lock.json') }}
 
-      - name: Certify pinned project runtime
-        run: tools/runtime/python/bin/python tools/scripts/verify-environment.py
+      - name: Acquire or verify pinned project runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test -x tools/runtime/python/bin/python && tools/runtime/python/bin/python tools/scripts/verify-environment.py; then
+            echo "runner_cache_session=${ZXUX_RUNNER_SESSION_ID} verified_reuse=1"
+          else
+            rm -rf tools/runtime
+            python tools/scripts/bootstrap-environment.py
+            tools/runtime/python/bin/python tools/scripts/verify-environment.py
+            echo "runner_cache_session=${ZXUX_RUNNER_SESSION_ID} verified_reuse=0"
+          fi
 
-      - name: Execute repaired P2.18 build
+      - name: Execute repaired P2.18 build with assembled dispatch proof
         run: tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P2.18 --evidence-dir "${ZXUX_EVIDENCE_DIR}"
 
       - name: Execute repaired P2.18 test
@@ -226,7 +266,7 @@ jobs:
           git fetch --no-tags origin main
           test "$(git rev-parse FETCH_HEAD)" = "${candidate}"
 
-      - name: Collect sentinel-geometry evidence
+      - name: Collect dispatch/sentinel evidence
         if: always()
         shell: bash
         run: |
@@ -235,16 +275,16 @@ jobs:
           git rev-parse HEAD > "${ZXUX_EVIDENCE_DIR}/candidate-commit.txt" 2>/dev/null || true
           git rev-parse HEAD^ > "${ZXUX_EVIDENCE_DIR}/candidate-parent.txt" 2>/dev/null || true
           git status --porcelain > "${ZXUX_EVIDENCE_DIR}/worktree-status.txt"
-          for path in v1/build/kernel-p218.sym v1/build/kernel-p218.lst v1/build/p218-kill-never-started.asm v1/build/p218-kill-never-started.sym; do
+          for path in v1/build/kernel-p218.sym v1/build/kernel-p218.lst v1/build/p218-kill-never-started.asm v1/build/p218-kill-never-started.sym v1/build/p218-kill-never-started.lst; do
             if test -f "${path}"; then cp "${path}" "${ZXUX_EVIDENCE_DIR}/build/"; fi
           done
           find "${ZXUX_EVIDENCE_DIR}" -maxdepth 3 -type f -printf '%P\t%s bytes\n' | sort
 
-      - name: Upload sentinel-geometry evidence
+      - name: Upload dispatch/sentinel evidence
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: zxux-p218-sentinel-geometry-${{ github.run_id }}-${{ github.run_attempt }}
-          path: /tmp/zxux-p218-sentinel-geometry/
+          name: zxux-p218-dispatch-sentinel-${{ github.run_id }}-${{ github.run_attempt }}
+          path: /tmp/zxux-p218-dispatch-sentinel/
           retention-days: 90
           if-no-files-found: error
