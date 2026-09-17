@@ -23,7 +23,8 @@ readonly GENERATED_CERTIFICATION_DIR="v1/dist/certification"
 readonly PRESERVED_REFERENCE_DIR="reference"
 readonly PRESERVED_REFERENCE_TREE_SHA1="a4e06de3b8b193b43597cdb4d259b5b206e7e3ad"
 readonly C48_SPEC_DOCX_PATH="docs/04-C48 Language Specification Rev 0.11.docx"
-readonly C48_SPEC_DOCX_BLOB_SHA1="f1c4877b26c632bd0b9abd0468716019da68bf7e"
+# Project-owner C48 documentation update admitted from b58f9630397829788972260b5948e882452993e2.
+readonly C48_SPEC_DOCX_BLOB_SHA1="5744e9f2c440b4ef11f7ffcd7dad7d218f3ba44d"
 # H04 preserves these SDK compiler assets byte-for-byte from the read-only source.
 # Source: tuklusan/zx-ux-c48-sdk-sinclair-zx-spectrum-48k-unix-c-compiler-software-development-kit
 # at 1bebc6288a1cdfa1bdfb5a6694e1986b6c3d7ee0; compiler/assets tree
