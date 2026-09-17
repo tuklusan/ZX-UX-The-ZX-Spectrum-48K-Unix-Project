@@ -146,6 +146,90 @@ jobs:
           tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P2.22 \
             2>&1 | tee "${ZXUX_EVIDENCE_DIR}/P2.22.build.log"
 
+      - name: Diagnose first PID2 exit teardown boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          tools/runtime/python/bin/python - <<'PY' 2>&1 | tee "${ZXUX_EVIDENCE_DIR}/P2.22.diag.log"
+          from pathlib import Path
+          import sys
+
+          root = Path.cwd()
+          sys.path.insert(0, str(root / "v1/tools-host/test-driver"))
+
+          from fuse_harness import FAIL_PC
+          import phase1
+          import phase2_spawn_exit_leak as p222
+
+          symbol_path = root / "v1/build/p222-spawn-exit-leak.sym"
+          fixture = (root / "v1/build/p222-spawn-exit-leak.bin").read_bytes()
+          names = (
+              "p222_gateway",
+              "p222_panic_code",
+              "zx48_process_links_init",
+              "zx48_process_exit_to_zombie",
+              "zx48_process_zombie_free_bootstrap",
+              "zx48_process_zombie_free_stack",
+              "zx48_process_zombie_free_image",
+              "zx48_process_zombie_publish",
+              "process_table",
+              "current_pid",
+              "open_description_table",
+              "memory_free_extents",
+              "memory_live_allocations",
+              "tty_input_owner",
+          )
+          symbols = p222._symbols(symbol_path, names)
+
+          def store_byte(address: int, value: int) -> bytes:
+              return b"\x3E" + bytes((value & 0xFF,)) + b"\x32" + p222._word(address)
+
+          def spawned_pid2() -> bytearray:
+              code = bytearray(b"\xF3" + phase1._ld_sp(p222.TEST_STACK))
+              code += phase1._call(symbols["zx48_process_links_init"]) + p222._jp_c(FAIL_PC)
+              code += phase1._ld_hl(p222.PROC_ADDRESS)
+              code += phase1._call(symbols["p222_gateway"]) + p222._jp_c(FAIL_PC)
+              code += b"\x7C\xB7" + p222._jp_nz(FAIL_PC)
+              code += b"\x7D\xFE\x02" + p222._jp_nz(FAIL_PC)
+              return code
+
+          pre_exit = spawned_pid2()
+          pre_exit += p222._expect_word(symbols["memory_live_allocations"], 3)
+          pre_exit += p222._expect_byte(symbols["open_description_table"] + 2, 2)
+          pre_exit += p222._expect_byte(symbols["open_description_table"] + p222.OD_SIZE + 2, 4)
+          p222._run_positive_probe(root, symbols, fixture, "post-spawn-accounting", pre_exit)
+          print("P2.22 DIAG PASS post-spawn-accounting")
+
+          def exit_prefix() -> bytearray:
+              code = spawned_pid2()
+              child_state = symbols["process_table"] + 2 * p222.PROC_DESC_SIZE + p222.PROC_STATE
+              code += store_byte(child_state, p222.PROC_RUNNING)
+              code += store_byte(symbols["current_pid"], 2)
+              code += b"\xAF" + phase1._call(symbols["zx48_process_exit_to_zombie"])
+              code += p222._expect_byte(symbols["p222_panic_code"], 0)
+              return code
+
+          stages = (
+              ("before-bootstrap-free", "zx48_process_zombie_free_bootstrap"),
+              ("after-bootstrap-free", "zx48_process_zombie_free_stack"),
+              ("after-stack-free", "zx48_process_zombie_free_image"),
+              ("after-image-free", "zx48_process_zombie_publish"),
+          )
+          for label, target in stages:
+              p222._run_positive_probe(
+                  root,
+                  symbols,
+                  fixture,
+                  label,
+                  exit_prefix(),
+                  ((symbols[target], b"\xC9"),),
+              )
+              print(f"P2.22 DIAG PASS {label}")
+
+          p222._run_positive_probe(root, symbols, fixture, "full-exit-return", exit_prefix())
+          print("P2.22 DIAG PASS full-exit-return")
+          PY
+
       - name: Execute P2.22 test
         shell: bash
         run: |
