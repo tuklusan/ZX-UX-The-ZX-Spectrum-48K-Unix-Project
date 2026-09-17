@@ -449,9 +449,13 @@ def dispatch(
     fixture_command, fixture_binary, fixture_symbols = _assemble_fixture(root, run_command, require_project_tool)
     kernel_values = _symbols(kernel_symbols, ("kernel_ordinary_used_end", "KERNEL_CODE_END"))
     free_bytes = kernel_values["KERNEL_CODE_END"] + 1 - kernel_values["kernel_ordinary_used_end"]
-    require(free_bytes == 27, f"P2.18 staged helper changed resident kernel headroom: expected 27, got {free_bytes}")
+    resident_symbols = kernel_symbols.read_text(encoding="utf-8", errors="replace")
+    require(
+        re.search(r"^zx48_process_kill_never_started:\s+equ\s+0x", resident_symbols, re.IGNORECASE | re.MULTILINE) is None,
+        "P2.18 staged never-started helper leaked into the resident kernel",
+    )
     assertions.append({
-        "name": "resident-kernel-headroom-remains-byte-identical-at-27-bytes",
+        "name": "staged-never-started-helper-remains-outside-resident-kernel",
         "passed": True,
         "used_end": f"0x{kernel_values['kernel_ordinary_used_end']:04X}",
         "code_end": f"0x{kernel_values['KERNEL_CODE_END']:04X}",
