@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      P218_EXACT_PARENT: 1e532ba82eb98ef7b0b2a7be0423b8fb0b037714
+      P218_EXACT_PARENT: 8f17074478b6724f2e2dc79fe0248f757f1c0321
       P218_BAD_DOCX_BLOB: 89309d86a6fe9ce7c4a05f024388c40f6792d120
       P218_APPROVED_DOCX_BLOB: f1c4877b26c632bd0b9abd0468716019da68bf7e
       P218_APPROVED_DOCX_SOURCE: 741652ab4a78f170d2e9b598a7ec9ccd8e70a1d7
@@ -56,42 +56,45 @@ jobs:
           python3 tools/check_phase0_evidence.py --require-active
           python3 tools/check_phase1_evidence.py --require-active
 
-      - name: Restore exact approved C48 specification bytes
+      - name: Assemble exact provenance repair candidate
         shell: bash
         run: |
           set -euo pipefail
-          git checkout "${P218_APPROVED_DOCX_SOURCE}" -- "${P218_DOCX_PATH}"
+          git restore --source="${P218_APPROVED_DOCX_SOURCE}" --staged --worktree -- "${P218_DOCX_PATH}"
+          git rm .github/workflows/p218-activation-admit.yml
           test "$(git hash-object -- "${P218_DOCX_PATH}")" = "${P218_APPROVED_DOCX_BLOB}"
-          test "$(git diff --name-only)" = "${P218_DOCX_PATH}"
+          expected="$(printf '%s\n' .github/workflows/p218-activation-admit.yml "${P218_DOCX_PATH}" | sort)"
+          test "$(git diff --cached --name-only | sort)" = "${expected}"
+          git diff --quiet
 
       - name: Run three clean repair scans and mandatory gates
         shell: bash
         run: |
           set -euo pipefail
+          expected="$(printf '%s\n' .github/workflows/p218-activation-admit.yml "${P218_DOCX_PATH}" | sort)"
           baseline=""
           for scan in 1 2 3; do
             echo "P2.18 prerequisite repair SCAN-${scan}: CLEAN candidate check"
-            test "$(git diff --name-only)" = "${P218_DOCX_PATH}"
+            test "$(git diff --cached --name-only | sort)" = "${expected}"
+            git diff --quiet
             test "$(git hash-object -- "${P218_DOCX_PATH}")" = "${P218_APPROVED_DOCX_BLOB}"
             test "$(git rev-parse HEAD:docs/01-ZX-UX-ARCHITECTURE-REV12.md)" = "$(git rev-parse HEAD^:docs/01-ZX-UX-ARCHITECTURE-REV12.md)"
             test "$(git rev-parse HEAD:docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV03.md)" = "$(git rev-parse HEAD^:docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV03.md)"
             test "$(git rev-parse HEAD:docs/01-ZX-UX-ARCHITECTURE-REV13.md)" = "$(git rev-parse HEAD^:docs/01-ZX-UX-ARCHITECTURE-REV13.md)"
             test "$(git rev-parse HEAD:docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV04.md)" = "$(git rev-parse HEAD^:docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV04.md)"
-            git diff --check
+            git diff --cached --check
             ./tools/check_license_headers.sh
             ./tools/check_project_policy.py
-            digest="$(git hash-object -- "${P218_DOCX_PATH}")"
+            digest="$(git diff --cached --binary | sha256sum | awk '{print $1}')"
             if test -z "${baseline}"; then baseline="${digest}"; else test "${digest}" = "${baseline}"; fi
           done
 
-      - name: Commit exact tested repair and remove one-shot workflow
+      - name: Commit exact tested repair
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "ZX-UX P2.18 repair runner"
           git config user.email "tuklusan@users.noreply.github.com"
-          git rm .github/workflows/p218-activation-admit.yml
-          git add "${P218_DOCX_PATH}"
           git commit -m "docs: restore approved C48 specification bytes"
           test -z "$(git status --porcelain)"
           test "$(git rev-parse HEAD:"${P218_DOCX_PATH}")" = "${P218_APPROVED_DOCX_BLOB}"
