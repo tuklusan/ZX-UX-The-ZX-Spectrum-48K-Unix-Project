@@ -2884,7 +2884,7 @@ process_exec_context_seed: defs INITIAL_CONTEXT_SEED_SIZE,0
 ; bounded side tables so the
 ; public 48-byte process descriptor ABI remains unchanged.
     MACRO EMIT_PARENT_CHILD_ROUTINES
-ZX48_P2_13_LINKS_EMITTED EQU 1
+    DEFINE ZX48_P2_13_LINKS_EMITTED 1
 zx48_process_links_init:
     xor a
     ld hl,process_generation

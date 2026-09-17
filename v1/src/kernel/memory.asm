@@ -283,6 +283,8 @@ zx48_extent_merge_loop:
     ld (ix+2),l
     ld (ix+3),h
     xor a
+    ld (ix+4),a
+    ld (ix+5),a
     ld (ix+6),a
     ld (ix+7),a
     call zx48_extent_sort
