@@ -1,0 +1,223 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: P2.13-P2.22 patch recertification
+on:
+  push:
+    branches: [scratch-p213-p222-patch-recertification]
+    paths: [.github/workflows/p213-p222-patch-recertify.yml]
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13.15'
+          check-latest: false
+      - name: Install prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential cmake gettext libaudiofile-dev libfreetype6-dev libgcrypt20-dev libglib2.0-dev libpng-dev libsdl1.2-dev libtool libxml2-dev perl pkg-config
+      - name: Acquire pinned runtime
+        run: |
+          python tools/scripts/bootstrap-environment.py
+          tools/runtime/python/bin/python tools/scripts/verify-environment.py
+      - name: Patch and sequentially recertify P2.13-P2.22
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/p213-p222-patch
+          git config user.name 'ZX-UX Patch Recertification'
+          git config user.email 'zxux-patch-recertification@invalid.example'
+
+          cat > /tmp/linkproof.py <<'PY'
+          from pathlib import Path
+          import re, subprocess
+
+          build=Path("v1/build")
+          source=build/"p210-spawn.asm"
+          if not source.is_file():
+              raise SystemExit("LINK-PROOF FAIL: historical P2.10 spawn fixture source was not generated")
+          text=source.read_text(encoding="utf-8")
+          marker="    EMIT_SPAWN_TRANSACTION_ROUTINES\n"
+          if text.count(marker)!=1:
+              raise SystemExit(f"LINK-PROOF FAIL: spawn emitter multiplicity {text.count(marker)}")
+          text=text.replace(marker,"    EMIT_PARENT_CHILD_ROUTINES\n"+marker,1)
+          text=text.replace("    ORG $E000\n","    ORG $9000\n",1)
+          text=text.replace('    SAVEBIN "p210-spawn.bin",p210_start,p210_end-p210_start\n',
+                            '    SAVEBIN "cf-spawn.bin",p210_start,p210_end-p210_start\n',1)
+          cf=build/"cf-spawn.asm"
+          cf.write_text(text,encoding="utf-8",newline="\n")
+          cmd=["../../tools/runtime/sjasmplus/bin/sjasmplus","--nologo","--lst=cf-spawn.lst","--sym=cf-spawn.sym","cf-spawn.asm"]
+          p=subprocess.run(cmd,cwd=build,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
+          print(p.stdout)
+          if p.returncode:
+              raise SystemExit("LINK-PROOF FAIL: combined production-spawn fixture did not assemble")
+
+          sym=(build/"cf-spawn.sym").read_text(encoding="utf-8",errors="replace")
+          def val(name):
+              m=re.search(rf"^{re.escape(name)}:\s+equ\s+0x([0-9A-Fa-f]+)\s*$",sym,re.I|re.M)
+              if not m: raise SystemExit(f"LINK-PROOF FAIL: missing symbol {name}")
+              return int(m.group(1),16)
+          origin=val("p210_start")
+          child=val("process_spawn_child_pid")
+          link=val("zx48_process_link_child")
+          rollback=val("zx48_process_spawn_rollback")
+          spawn=val("zx48_process_spawn_relocate")
+          data=(build/"cf-spawn.bin").read_bytes()
+          selected=bytes((0x3A,child&255,child>>8,0xCD,link&255,link>>8,0xDA,rollback&255,rollback>>8))
+          hits=[i for i in range(len(data)-len(selected)+1) if data[i:i+len(selected)]==selected]
+          if len(hits)!=1:
+              raise SystemExit(f"LINK-PROOF FAIL: selected P2.13 spawn sequence hits={hits}")
+          addr=origin+hits[0]
+          if addr < spawn or addr >= rollback:
+              raise SystemExit(f"LINK-PROOF FAIL: selected sequence 0x{addr:04X} outside production spawn/rollback region")
+          print(f"LINK-PROOF PASS origin=0x{origin:04X} selected_at=0x{addr:04X} child=0x{child:04X} link=0x{link:04X} rollback=0x{rollback:04X}")
+          print("EMITTED-BYTES",selected.hex())
+          print("LEGACY-ELSE-NOT-EMITTED PASS: IFDEF/ELSE is mutually exclusive and the selected-arm byte sequence is present at the production spawn decision")
+          PY
+          cat >/tmp/marker-probe.asm <<'ASM'
+                  ORG $8000
+          PATCH_EQU_MARKER EQU 1
+                  IFDEF PATCH_EQU_MARKER
+                  DB $E1
+                  ELSE
+                  DB $E0
+                  ENDIF
+                  MACRO PATCH_EMIT_DEFINE_MARKER
+                      DEFINE PATCH_DEFINE_MARKER 1
+                  ENDM
+                  PATCH_EMIT_DEFINE_MARKER
+                  IFDEF PATCH_DEFINE_MARKER
+                  DB $D1
+                  ELSE
+                  DB $D0
+                  ENDIF
+          ASM
+          tools/runtime/sjasmplus/bin/sjasmplus --nologo --raw=/tmp/marker-probe.bin /tmp/marker-probe.asm
+          python3 - <<'PY'
+          from pathlib import Path
+          payload=Path("/tmp/marker-probe.bin").read_bytes()
+          if payload != bytes((0xE0,0xD1)):
+              raise SystemExit(f"MARKER-SEMANTICS FAIL {payload.hex()}")
+          print("MARKER-SEMANTICS PASS EQU-is-not-IFDEF DEFINE-is-IFDEF")
+          PY
+
+          apply_marker () {
+            python3 - <<'PY'
+          from pathlib import Path
+          p=Path("v1/src/kernel/process.asm"); d=p.read_bytes()
+          old=b"ZX48_P2_13_LINKS_EMITTED EQU 1"
+          new=b"    DEFINE ZX48_P2_13_LINKS_EMITTED 1"
+          state=(d.count(old),d.count(new))
+          if state==(1,0):
+              p.write_bytes(d.replace(old,new,1))
+              print("P2.13-PATCH APPLIED EQU->DEFINE")
+          elif state==(0,1):
+              print("P2.13-PATCH ALREADY PRESENT")
+          else:
+              raise SystemExit(f"marker multiplicity {state!r}")
+          PY
+          }
+
+          replay () {
+            step="$1"; sha="$2"; prev="$3"
+            echo "=== ${step} ${sha} ==="
+            git checkout --detach -f "${sha}"
+            rm -rf v1/build
+            apply_marker
+            git add v1/src/kernel/process.asm
+            git commit --no-verify -m "ephemeral ${step} inherited P2.13 DEFINE"
+            printf '%s %s %s %s %s %s\n' "${step}" "${sha}" "$(git rev-parse HEAD)" "$(git rev-parse 'HEAD^{tree}')" "$(git rev-parse 'HEAD:v1/src/kernel/process.asm')" "$(git rev-parse 'HEAD:v1/src/kernel/memory.asm')" | tee -a /tmp/p213-p222-patch/identities.txt
+            tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step "${step}" 2>&1 | tee "/tmp/p213-p222-patch/${step}.build.log"
+            tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step "${step}" 2>&1 | tee "/tmp/p213-p222-patch/${step}.test.log"
+            if test "${step}" != P2.13; then
+              tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P2.13 2>&1 | tee "/tmp/p213-p222-patch/${step}.p213-regression.log"
+            fi
+            if test -n "${prev}" && grep -q "if step == \"${prev}\"" v1/tools-host/test-driver/run.py; then
+              tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step "${prev}" 2>&1 | tee "/tmp/p213-p222-patch/${step}.prev-regression.log"
+            fi
+            tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P2.10 2>&1 | tee "/tmp/p213-p222-patch/${step}.p210-build-for-composition.log"
+            tools/runtime/python/bin/python /tmp/linkproof.py 2>&1 | tee "/tmp/p213-p222-patch/${step}.link-proof.log"
+            echo "${step} PASS" | tee -a /tmp/p213-p222-patch/results.txt
+          }
+
+          replay P2.13 0065149e25bd3d2afd1f315380722406ba9196ff ""
+          replay P2.14 15155116c8b83e5da0f5070d7162ad12cf441729 P2.13
+          replay P2.15 f2d565b560ea6cd15e914bbdc43345642b64e813 P2.14
+          replay P2.16 24f2eb1139eec4ea38ec39716efad2ab6ef40fdb P2.15
+          replay P2.17 3bf38c7c271a4500eac36ecbe08f8a8b16dfe22b P2.16
+          replay P2.18 d1756aa04da89cd716ccc80bde0c36cefcb2729b P2.17
+          replay P2.19 8e3f1d60c8ba26323713d1a0603511aa8c2f1fb2 P2.18
+          replay P2.20 6b2b9dcb7599b6eaf0417fea7efb538b01006546 P2.19
+          replay P2.21 70ce1eb897e1c4f152422dd26a043b4de3ad71e4 P2.20
+
+          step=P2.22
+          sha=fb637b84444d49f39317f0ec4b6e806c4b93453d
+          git checkout --detach -f "${sha}"
+          rm -rf v1/build
+          apply_marker
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("v1/src/kernel/memory.asm")
+          d=p.read_bytes()
+          old=b"    xor a\n    ld (ix+6),a\n    ld (ix+7),a\n    call zx48_extent_sort\n"
+          new=b"    xor a\n    ld (ix+4),a\n    ld (ix+5),a\n    ld (ix+6),a\n    ld (ix+7),a\n    call zx48_extent_sort\n"
+          state=(d.count(old),d.count(new))
+          if state==(1,0):
+              p.write_bytes(d.replace(old,new,1))
+              print("P2.22-ALLOCATOR-PATCH APPLIED merged-away start bytes zeroed")
+          elif state==(0,1):
+              print("P2.22-ALLOCATOR-PATCH ALREADY PRESENT")
+          else:
+              raise SystemExit(f"allocator normalization multiplicity {state!r}")
+          PY
+          git add v1/src/kernel/process.asm v1/src/kernel/memory.asm
+          git commit --no-verify -m 'ephemeral P2.22 composition and allocator repairs'
+          printf '%s %s %s %s %s %s\n' P2.22 "${sha}" "$(git rev-parse HEAD)" "$(git rev-parse 'HEAD^{tree}')" "$(git rev-parse 'HEAD:v1/src/kernel/process.asm')" "$(git rev-parse 'HEAD:v1/src/kernel/memory.asm')" | tee -a /tmp/p213-p222-patch/identities.txt
+          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P2.22 2>&1 | tee /tmp/p213-p222-patch/P2.22.build.log
+          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P2.10 2>&1 | tee /tmp/p213-p222-patch/P2.22.p210-build-for-composition.log
+          tools/runtime/python/bin/python /tmp/linkproof.py 2>&1 | tee /tmp/p213-p222-patch/P2.22.link-proof.log
+          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P2.22 2>&1 | tee /tmp/p213-p222-patch/P2.22.test.log
+          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P2.21 2>&1 | tee /tmp/p213-p222-patch/P2.22.p221-regression.log
+          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P2.13 2>&1 | tee /tmp/p213-p222-patch/P2.22.p213-regression.log
+          echo "P2.22 PASS BOTH-INDEPENDENT-REPAIRS-PRESENT" | tee -a /tmp/p213-p222-patch/results.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("v1/src/kernel/process.asm").read_bytes()
+          m=Path("v1/src/kernel/memory.asm").read_bytes()
+          assert p.count(b"    DEFINE ZX48_P2_13_LINKS_EMITTED 1")==1
+          assert p.count(b"ZX48_P2_13_LINKS_EMITTED EQU 1")==0
+          repaired=b"    xor a\n    ld (ix+4),a\n    ld (ix+5),a\n    ld (ix+6),a\n    ld (ix+7),a\n    call zx48_extent_sort\n"
+          assert m.count(repaired)==1
+          print("PATCH-INVARIANTS PASS marker-and-allocator")
+          PY
+          echo '=== RESULTS ==='
+          cat /tmp/p213-p222-patch/results.txt
+          echo '=== IDENTITIES ==='
+          cat /tmp/p213-p222-patch/identities.txt
+
+      - name: Upload scratch recertification evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: p213-p222-patch-recertification-${{ github.run_id }}
+          path: /tmp/p213-p222-patch
+          if-no-files-found: error
+          retention-days: 7
