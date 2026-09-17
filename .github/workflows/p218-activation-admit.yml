@@ -10,7 +10,7 @@
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
 
-name: P2.18 guarded activation admission
+name: P2.18 prerequisite provenance repair
 
 on:
   push:
@@ -23,170 +23,91 @@ permissions:
   contents: write
 
 jobs:
-  admit:
+  repair:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 20
     env:
-      ZXUX_RUNNER_SESSION_ID: phase2-20260916-01
-      ZXUX_EVIDENCE_DIR: /tmp/zxux-p218-activation-admit
-      P218_EXACT_PARENT: 6c352b40519469eb6fb5dba9ea946c3b3deedd6c
-      P218_OLD_PROCESS_BLOB: b0cd24ebbdc329543f5138c2d26d8a67453b77fd
-      P218_OLD_TEST_BLOB: 0390c74a046003cfca71ec1bbb2102624607793f
+      P218_EXACT_PARENT: 1e532ba82eb98ef7b0b2a7be0423b8fb0b037714
+      P218_BAD_DOCX_BLOB: 89309d86a6fe9ce7c4a05f024388c40f6792d120
+      P218_APPROVED_DOCX_BLOB: f1c4877b26c632bd0b9abd0468716019da68bf7e
+      P218_APPROVED_DOCX_SOURCE: 741652ab4a78f170d2e9b598a7ec9ccd8e70a1d7
+      P218_DOCX_PATH: docs/04-C48 Language Specification Rev 0.11.docx
       ZXUX_REV12_SHA256: a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b
+      ZXUX_EVIDENCE_DIR: /tmp/zxux-p218-prerequisite-repair
 
     steps:
-      - name: Checkout exact admission parent
+      - name: Checkout exact repair parent
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: Guard authority and source scope
+      - name: Guard authority and diagnosed provenance defect
         shell: bash
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD^)" = "${P218_EXACT_PARENT}"
-          test "$(git rev-parse HEAD:v1/src/kernel/process.asm)" = "${P218_OLD_PROCESS_BLOB}"
-          test "$(git rev-parse HEAD:v1/tools-host/test-driver/phase2_kill_never_started.py)" = "${P218_OLD_TEST_BLOB}"
           test "$(git diff --name-only HEAD^ HEAD)" = ".github/workflows/p218-activation-admit.yml"
+          test "$(git rev-parse HEAD:"${P218_DOCX_PATH}")" = "${P218_BAD_DOCX_BLOB}"
+          test "$(git rev-parse "${P218_APPROVED_DOCX_SOURCE}:${P218_DOCX_PATH}")" = "${P218_APPROVED_DOCX_BLOB}"
+          grep -Fq "readonly C48_SPEC_DOCX_BLOB_SHA1=\"${P218_APPROVED_DOCX_BLOB}\"" tools/check_license_headers.sh
           grep -Fq 'REV12 / REV03 remain the active authority through completion of Phase 2.' docs/--W-A-R-N-I-N-G--.md
           grep -Fq 'REV13 / REV04 may exist in the repository as dormant prospective authorities.' docs/--W-A-R-N-I-N-G--.md
           test "$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV12.md | awk '{print $1}')" = "${ZXUX_REV12_SHA256}"
-          grep -Fq 'Stable Phase-2 runner cache session ID: `phase2-20260916-01`.' scratch/ZX-UX-RUNNER-CACHE-SESSION.md
           python3 tools/check_phase0_evidence.py --require-active
           python3 tools/check_phase1_evidence.py --require-active
 
-      - name: Assemble exact P2.18 activation candidate
+      - name: Restore exact approved C48 specification bytes
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
+          git checkout "${P218_APPROVED_DOCX_SOURCE}" -- "${P218_DOCX_PATH}"
+          test "$(git hash-object -- "${P218_DOCX_PATH}")" = "${P218_APPROVED_DOCX_BLOB}"
+          test "$(git diff --name-only)" = "${P218_DOCX_PATH}"
 
-          process = Path("v1/src/kernel/process.asm")
-          text = process.read_text(encoding="utf-8")
-          old = "ZX48_P2_18_KILL_ENABLED EQU 1\n"
-          if text.count(old) != 1:
-              raise SystemExit("P2.18 process activation shape changed")
-          process.write_text(text.replace(old, ""), encoding="utf-8", newline="\n")
-
-          driver = Path("v1/tools-host/test-driver/phase2_kill_never_started.py")
-          text = driver.read_text(encoding="utf-8")
-          edits = (
-              ("SENTINEL_PC = 0x9200", "SENTINEL_PC = 0x8D00"),
-              (
-                  '        "    DEVICE ZXSPECTRUM48\\n"\n        "    INCLUDE \\"../include/zx48ux.inc\\"\\n"',
-                  '        "    DEVICE ZXSPECTRUM48\\n"\n        "    DEFINE ZX48_P2_18_KILL_ENABLED\\n"\n        "    INCLUDE \\"../include/zx48ux.inc\\"\\n"',
-              ),
-              (
-                  '"passed": "ZX48_P2_18_KILL_ENABLED EQU 1" in helper and helper_start > core_end,',
-                  '"passed": helper_start > core_end and "ZX48_P2_18_KILL_ENABLED" not in helper,',
-              ),
-          )
-          for old, new in edits:
-              if text.count(old) != 1 or text.count(new) != 0:
-                  raise SystemExit(f"P2.18 candidate edit shape failed: {old[:72]!r}")
-              text = text.replace(old, new)
-          driver.write_text(text, encoding="utf-8", newline="\n")
-          PY
-
-          expected="$(printf '%s\n' v1/src/kernel/process.asm v1/tools-host/test-driver/phase2_kill_never_started.py)"
-          test "$(git diff --name-only | sort)" = "${expected}"
+      - name: Run three clean repair scans and mandatory gates
+        shell: bash
+        run: |
+          set -euo pipefail
           baseline=""
           for scan in 1 2 3; do
-            echo "P2.18 activation admission SCAN-${scan}"
-            test "$(git diff --name-only | sort)" = "${expected}"
-            ! grep -q '^ZX48_P2_18_KILL_ENABLED EQU 1$' v1/src/kernel/process.asm
-            grep -q 'SENTINEL_PC = 0x8D00' v1/tools-host/test-driver/phase2_kill_never_started.py
-            grep -q '"    DEFINE ZX48_P2_18_KILL_ENABLED\\n"' v1/tools-host/test-driver/phase2_kill_never_started.py
+            echo "P2.18 prerequisite repair SCAN-${scan}: CLEAN candidate check"
+            test "$(git diff --name-only)" = "${P218_DOCX_PATH}"
+            test "$(git hash-object -- "${P218_DOCX_PATH}")" = "${P218_APPROVED_DOCX_BLOB}"
+            test "$(git rev-parse HEAD:docs/01-ZX-UX-ARCHITECTURE-REV12.md)" = "$(git rev-parse HEAD^:docs/01-ZX-UX-ARCHITECTURE-REV12.md)"
+            test "$(git rev-parse HEAD:docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV03.md)" = "$(git rev-parse HEAD^:docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV03.md)"
+            test "$(git rev-parse HEAD:docs/01-ZX-UX-ARCHITECTURE-REV13.md)" = "$(git rev-parse HEAD^:docs/01-ZX-UX-ARCHITECTURE-REV13.md)"
+            test "$(git rev-parse HEAD:docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV04.md)" = "$(git rev-parse HEAD^:docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV04.md)"
             git diff --check
-            python3 -m py_compile v1/tools-host/test-driver/phase2_kill_never_started.py
-            find v1/tools-host/test-driver -type d -name __pycache__ -prune -exec rm -rf {} +
             ./tools/check_license_headers.sh
             ./tools/check_project_policy.py
-            digest="$(sha256sum v1/src/kernel/process.asm v1/tools-host/test-driver/phase2_kill_never_started.py | sha256sum | awk '{print $1}')"
+            digest="$(git hash-object -- "${P218_DOCX_PATH}")"
             if test -z "${baseline}"; then baseline="${digest}"; else test "${digest}" = "${baseline}"; fi
           done
 
-      - name: Commit exact candidate locally and remove one-shot workflow
+      - name: Commit exact tested repair and remove one-shot workflow
         shell: bash
         run: |
           set -euo pipefail
-          git config user.name "ZX-UX P2.18 admission runner"
+          git config user.name "ZX-UX P2.18 repair runner"
           git config user.email "tuklusan@users.noreply.github.com"
           git rm .github/workflows/p218-activation-admit.yml
-          git add v1/src/kernel/process.asm v1/tools-host/test-driver/phase2_kill_never_started.py
-          git commit -m "P2.18: admit caller-gated never-started kill activation"
+          git add "${P218_DOCX_PATH}"
+          git commit -m "docs: restore approved C48 specification bytes"
           test -z "$(git status --porcelain)"
+          test "$(git rev-parse HEAD:"${P218_DOCX_PATH}")" = "${P218_APPROVED_DOCX_BLOB}"
+          test "$(git diff --name-only HEAD^ HEAD | sort)" = "$(printf '%s\n' .github/workflows/p218-activation-admit.yml "${P218_DOCX_PATH}" | sort)"
 
-      - name: Select pinned Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.13.15'
-          check-latest: false
-
-      - name: Install native prerequisites
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends build-essential cmake gettext libaudiofile-dev libfreetype6-dev libgcrypt20-dev libglib2.0-dev libpng-dev libsdl1.2-dev libtool libxml2-dev perl pkg-config
-
-      - name: Restore Phase-2 runner cache session
-        uses: actions/cache@v4
-        with:
-          path: |
-            /tmp/zxux-tool-cache
-            tools/runtime
-          key: zxux-${{ runner.os }}-${{ env.ZXUX_RUNNER_SESSION_ID }}-${{ hashFiles('tools/manifest/toolchain.lock.json') }}
-
-      - name: Acquire or verify pinned project runtime
+      - name: Recheck mandatory gates on exact repair commit
         shell: bash
         run: |
           set -euo pipefail
-          if test -x tools/runtime/python/bin/python && tools/runtime/python/bin/python tools/scripts/verify-environment.py; then
-            echo "runner_cache_session=${ZXUX_RUNNER_SESSION_ID} verified_reuse=1"
-          else
-            rm -rf tools/runtime
-            python tools/scripts/bootstrap-environment.py
-            tools/runtime/python/bin/python tools/scripts/verify-environment.py
-            echo "runner_cache_session=${ZXUX_RUNNER_SESSION_ID} verified_reuse=0"
-          fi
-
-      - name: Run canonical P2.18 and preserve failure diagnostics
-        shell: bash
-        run: |
-          set +e
-          set -o pipefail
-          mkdir -p "${ZXUX_EVIDENCE_DIR}"
-          tools/runtime/python/bin/python v1/tools-host/run.py test --step P2.18 \
-            2>&1 | tee "${ZXUX_EVIDENCE_DIR}/P2.18.activation-admission.log"
-          rc="${PIPESTATUS[0]}"
-          printf '%s\n' "${rc}" > "${ZXUX_EVIDENCE_DIR}/P2.18.activation-admission.rc"
-          if test "${rc}" -ne 0; then
-            tools/runtime/python/bin/python v1/tools-host/test-driver/p218_failure_probe.py \
-              > "${ZXUX_EVIDENCE_DIR}/P2.18.failure-probe.log" 2>&1 || true
-          fi
-          exit "${rc}"
-
-      - name: Run frozen wait/zombie regression tranche
-        shell: bash
-        run: |
-          set -euo pipefail
-          for step in P2.14 P2.15 P2.16 P2.17; do
-            tools/runtime/python/bin/python v1/tools-host/run.py test --step "${step}"
-          done
-
-      - name: Recheck project policy on exact tested commit
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -z "$(git status --porcelain)"
           ./tools/check_license_headers.sh
           ./tools/check_project_policy.py
           python3 tools/check_phase0_evidence.py --require-active
           python3 tools/check_phase1_evidence.py --require-active
           test "$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV12.md | awk '{print $1}')" = "${ZXUX_REV12_SHA256}"
-          test "$(git diff --name-only HEAD^ HEAD | sort)" = "$(printf '%s\n' .github/workflows/p218-activation-admit.yml v1/src/kernel/process.asm v1/tools-host/test-driver/phase2_kill_never_started.py | sort)"
 
-      - name: Push exact tested candidate if main has not moved
+      - name: Push exact repair if main has not moved
         shell: bash
         run: |
           set -euo pipefail
@@ -194,25 +115,22 @@ jobs:
           test "${remote}" = "${GITHUB_SHA}"
           git push origin HEAD:main
 
-      - name: Collect admission evidence
+      - name: Collect repair evidence
         if: always()
         shell: bash
         run: |
           set -u
-          mkdir -p "${ZXUX_EVIDENCE_DIR}/build"
-          for path in v1/build/P2.18.test.json v1/build/kernel-p218.sym v1/build/p218-kill-never-started.asm v1/build/p218-kill-never-started.sym; do
-            if test -f "${path}"; then cp "${path}" "${ZXUX_EVIDENCE_DIR}/build/"; fi
-          done
+          mkdir -p "${ZXUX_EVIDENCE_DIR}"
           git rev-parse HEAD > "${ZXUX_EVIDENCE_DIR}/candidate-commit.txt"
           git rev-parse HEAD^ > "${ZXUX_EVIDENCE_DIR}/workflow-commit.txt"
-          git show --format= --binary HEAD > "${ZXUX_EVIDENCE_DIR}/candidate.patch"
-          find "${ZXUX_EVIDENCE_DIR}" -maxdepth 3 -type f -printf '%P\t%s bytes\n' | sort
+          git hash-object -- "${P218_DOCX_PATH}" > "${ZXUX_EVIDENCE_DIR}/docx-blob.txt" 2>/dev/null || true
+          git status --porcelain > "${ZXUX_EVIDENCE_DIR}/status.txt"
 
-      - name: Upload admission evidence
+      - name: Upload repair evidence
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: zxux-p218-activation-admit-${{ github.run_id }}-${{ github.run_attempt }}
-          path: /tmp/zxux-p218-activation-admit/
+          name: zxux-p218-prerequisite-repair-${{ github.run_id }}-${{ github.run_attempt }}
+          path: /tmp/zxux-p218-prerequisite-repair/
           retention-days: 90
           if-no-files-found: warn
