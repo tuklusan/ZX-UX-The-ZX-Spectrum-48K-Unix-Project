@@ -1,0 +1,250 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: P2.18 sentinel geometry repair
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/p218-sentinel-geometry-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      ZXUX_EVIDENCE_DIR: /tmp/zxux-p218-sentinel-geometry
+      P218_EXACT_PARENT: 8b15600b533d9f3b62d1f01f470cf774ef0aa17b
+      P218_OLD_TEST_BLOB: 0390c74a046003cfca71ec1bbb2102624607793f
+      P218_LANDED_CANDIDATE: b42798a7c75783efad17a1ff84bf940722791a2f
+      ZXUX_REV12_SHA256: a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b
+
+    steps:
+      - name: Checkout exact diagnostic parent
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Guard exact trigger and diagnosed geometry
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "${P218_EXACT_PARENT}"
+          test "$(git diff --name-only HEAD^ HEAD)" = ".github/workflows/p218-sentinel-geometry-fix.yml"
+          test "$(git rev-parse HEAD:v1/tools-host/test-driver/phase2_kill_never_started.py)" = "${P218_OLD_TEST_BLOB}"
+          git merge-base --is-ancestor "${P218_LANDED_CANDIDATE}" HEAD
+          git diff --quiet "${P218_LANDED_CANDIDATE}" -- v1/src/kernel/process.asm v1/tools-host/test-driver/run.py
+          grep -Fxq 'SENTINEL_PC = 0x9200' v1/tools-host/test-driver/phase2_kill_never_started.py
+          grep -Fxq 'ENTRY_PC = 0x9000' v1/tools-host/test-driver/fuse_harness.py
+          python3 - <<'PY'
+          # Canonical positive-test byte geometry from the exact current generator.
+          # The emitted program is 554 bytes at ENTRY_PC=0x9000, ending at 0x922A
+          # exclusive; the old eight-byte sentinel at 0x9200 therefore overwrites it.
+          entry = 0x9000
+          canonical_positive_length = 554
+          sentinel = 0x9200
+          sentinel_size = 8
+          assert entry < sentinel < entry + canonical_positive_length
+          assert sentinel + sentinel_size <= 0x10000
+          print(f"diagnosed_overlap=0x{sentinel:04X}-0x{sentinel + sentinel_size - 1:04X} ")
+          print(f"canonical_test=0x{entry:04X}-0x{entry + canonical_positive_length - 1:04X}")
+          PY
+          test -z "$(git status --porcelain)"
+
+      - name: Assemble exact sentinel-geometry repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("v1/tools-host/test-driver/phase2_kill_never_started.py")
+          text = path.read_text(encoding="utf-8")
+          edits = (
+              (
+                  "from fuse_harness import FAIL_PC, PASS_PC, run_sna\n",
+                  "from fuse_harness import ENTRY_PC, FAIL_PC, PASS_PC, run_sna\n",
+              ),
+              (
+                  "SENTINEL_PC = 0x9200\n",
+                  "SENTINEL_PC = 0x8D00\n",
+              ),
+              (
+                  "    assertions = _source_contract(root)\n    failed = [item[\"name\"] for item in assertions if item[\"passed\"] is not True]\n",
+                  "    assertions = _source_contract(root)\n"
+                  "    require(SENTINEL_PC + 8 <= ENTRY_PC, \"P2.18 child-PC sentinel overlaps test program entry\")\n"
+                  "    assertions.append({\n"
+                  "        \"name\": \"child-pc-sentinel-is-disjoint-from-test-program\",\n"
+                  "        \"passed\": True,\n"
+                  "        \"sentinel_pc\": f\"0x{SENTINEL_PC:04X}\",\n"
+                  "        \"sentinel_end\": f\"0x{SENTINEL_PC + 7:04X}\",\n"
+                  "        \"test_entry\": f\"0x{ENTRY_PC:04X}\",\n"
+                  "    })\n"
+                  "    failed = [item[\"name\"] for item in assertions if item[\"passed\"] is not True]\n",
+              ),
+          )
+          for old, new in edits:
+              if text.count(old) != 1 or new in text:
+                  raise SystemExit(f"P2.18 sentinel repair shape changed: {old[:72]!r}")
+              text = text.replace(old, new)
+          path.write_text(text, encoding="utf-8", newline="\n")
+          PY
+
+          git add v1/tools-host/test-driver/phase2_kill_never_started.py
+          git rm .github/workflows/p218-sentinel-geometry-fix.yml
+          expected="$(printf '%s\n' .github/workflows/p218-sentinel-geometry-fix.yml v1/tools-host/test-driver/phase2_kill_never_started.py | sort)"
+          test "$(git diff --cached --name-only | sort)" = "${expected}"
+          git diff --quiet
+          grep -Fxq 'SENTINEL_PC = 0x8D00' v1/tools-host/test-driver/phase2_kill_never_started.py
+          grep -Fq 'child-pc-sentinel-is-disjoint-from-test-program' v1/tools-host/test-driver/phase2_kill_never_started.py
+          git diff --cached --check
+
+      - name: Three clean repair scans and mandatory gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected="$(printf '%s\n' .github/workflows/p218-sentinel-geometry-fix.yml v1/tools-host/test-driver/phase2_kill_never_started.py | sort)"
+          baseline=""
+          for scan in 1 2 3; do
+            find . -type d -name __pycache__ -prune -exec rm -rf {} +
+            test "$(git diff --cached --name-only | sort)" = "${expected}"
+            git diff --quiet
+            git diff --cached --check
+            python3 -m py_compile v1/tools-host/test-driver/phase2_kill_never_started.py
+            python3 -m py_compile v1/tools-host/test-driver/p218_failure_probe.py
+            python3 -m py_compile v1/tools-host/test-driver/run.py
+            find . -type d -name __pycache__ -prune -exec rm -rf {} +
+            grep -Fxq 'SENTINEL_PC = 0x8D00' v1/tools-host/test-driver/phase2_kill_never_started.py
+            grep -Fq 'require(SENTINEL_PC + 8 <= ENTRY_PC' v1/tools-host/test-driver/phase2_kill_never_started.py
+            test "$(git rev-parse HEAD:docs/01-ZX-UX-ARCHITECTURE-REV12.md)" = "$(git rev-parse HEAD^:docs/01-ZX-UX-ARCHITECTURE-REV12.md)"
+            test "$(git rev-parse HEAD:docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV03.md)" = "$(git rev-parse HEAD^:docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV03.md)"
+            test "$(git rev-parse HEAD:docs/01-ZX-UX-ARCHITECTURE-REV13.md)" = "$(git rev-parse HEAD^:docs/01-ZX-UX-ARCHITECTURE-REV13.md)"
+            test "$(git rev-parse HEAD:docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV04.md)" = "$(git rev-parse HEAD^:docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV04.md)"
+            ./tools/check_license_headers.sh
+            ./tools/check_project_policy.py
+            digest="$(git diff --cached --binary | sha256sum | awk '{print $1}')"
+            if test -z "${baseline}"; then baseline="${digest}"; else test "${digest}" = "${baseline}"; fi
+            echo "SCAN-${scan}: CLEAN"
+            echo "scan_${scan}_candidate_sha256=${digest}"
+          done
+
+      - name: Commit exact repair candidate locally
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "ZX-UX P2.18 diagnostic runner"
+          git config user.email "tuklusan@users.noreply.github.com"
+          git commit -m "P2.18 test: separate child-PC sentinel from fixture code"
+          test -z "$(git status --porcelain)"
+          echo "candidate_commit=$(git rev-parse HEAD)"
+          echo "candidate_parent=$(git rev-parse HEAD^)"
+
+      - name: Require architecture identity and prior durable evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV12.md | awk '{print $1}')" = "${ZXUX_REV12_SHA256}"
+          python3 tools/check_phase0_evidence.py --require-active
+          python3 tools/check_phase1_evidence.py --require-active
+
+      - name: Select pinned Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13.15'
+          check-latest: false
+
+      - name: Install native prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential cmake gettext libaudiofile-dev libfreetype6-dev libgcrypt20-dev libglib2.0-dev libpng-dev libsdl1.2-dev libtool libxml2-dev perl pkg-config
+
+      - name: Acquire pinned project runtime
+        run: python tools/scripts/bootstrap-environment.py
+
+      - name: Certify pinned project runtime
+        run: tools/runtime/python/bin/python tools/scripts/verify-environment.py
+
+      - name: Execute repaired P2.18 build
+        run: tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P2.18 --evidence-dir "${ZXUX_EVIDENCE_DIR}"
+
+      - name: Execute repaired P2.18 test
+        shell: bash
+        run: |
+          set +e
+          set -o pipefail
+          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P2.18 --evidence-dir "${ZXUX_EVIDENCE_DIR}" \
+            2>&1 | tee "${ZXUX_EVIDENCE_DIR}/P2.18.test.log"
+          test_rc="${PIPESTATUS[0]}"
+          printf '%s\n' "${test_rc}" > "${ZXUX_EVIDENCE_DIR}/P2.18.test.rc"
+          if test "${test_rc}" -ne 0; then
+            tools/runtime/python/bin/python v1/tools-host/test-driver/p218_failure_probe.py \
+              2>&1 | tee "${ZXUX_EVIDENCE_DIR}/P2.18.failure-probe.log"
+            printf '%s\n' "${PIPESTATUS[0]}" > "${ZXUX_EVIDENCE_DIR}/P2.18.failure-probe.rc"
+          fi
+          exit "${test_rc}"
+
+      - name: Recheck mandatory gates on exact tested candidate
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+          python3 tools/check_phase0_evidence.py --require-active
+          python3 tools/check_phase1_evidence.py --require-active
+          test -z "$(git status --porcelain)"
+
+      - name: Push exact tested repair if main has not moved
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          candidate="$(git rev-parse HEAD)"
+          parent="$(git rev-parse HEAD^)"
+          git fetch --no-tags origin main
+          remote="$(git rev-parse FETCH_HEAD)"
+          echo "candidate_commit=${candidate}"
+          echo "candidate_parent=${parent}"
+          echo "remote_main=${remote}"
+          test "${remote}" = "${parent}"
+          git push --porcelain origin HEAD:main
+          git fetch --no-tags origin main
+          test "$(git rev-parse FETCH_HEAD)" = "${candidate}"
+
+      - name: Collect sentinel-geometry evidence
+        if: always()
+        shell: bash
+        run: |
+          set -u
+          mkdir -p "${ZXUX_EVIDENCE_DIR}/build"
+          git rev-parse HEAD > "${ZXUX_EVIDENCE_DIR}/candidate-commit.txt" 2>/dev/null || true
+          git rev-parse HEAD^ > "${ZXUX_EVIDENCE_DIR}/candidate-parent.txt" 2>/dev/null || true
+          git status --porcelain > "${ZXUX_EVIDENCE_DIR}/worktree-status.txt"
+          for path in v1/build/kernel-p218.sym v1/build/kernel-p218.lst v1/build/p218-kill-never-started.asm v1/build/p218-kill-never-started.sym; do
+            if test -f "${path}"; then cp "${path}" "${ZXUX_EVIDENCE_DIR}/build/"; fi
+          done
+          find "${ZXUX_EVIDENCE_DIR}" -maxdepth 3 -type f -printf '%P\t%s bytes\n' | sort
+
+      - name: Upload sentinel-geometry evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: zxux-p218-sentinel-geometry-${{ github.run_id }}-${{ github.run_attempt }}
+          path: /tmp/zxux-p218-sentinel-geometry/
+          retention-days: 90
+          if-no-files-found: error
