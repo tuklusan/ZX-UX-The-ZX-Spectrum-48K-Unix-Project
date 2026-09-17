@@ -30,7 +30,7 @@ jobs:
       PYTHONDONTWRITEBYTECODE: '1'
       ZXUX_RUNNER_SESSION_ID: phase2-20260916-01
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p218-dispatch-sentinel
-      P218_EXACT_PARENT: 8b84534132981b7cc5b689c90589ab07cedf68bf
+      P218_EXACT_PARENT: 1d49c78a0ce3f6466e163a4beb22b3a9fdd46614
       P218_OLD_PROCESS_BLOB: b0cd24ebbdc329543f5138c2d26d8a67453b77fd
       P218_OLD_TEST_BLOB: 0390c74a046003cfca71ec1bbb2102624607793f
       ZXUX_REV12_SHA256: a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b
@@ -46,7 +46,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD^)" = "${P218_EXACT_PARENT}"
-          test "$(git diff --name-only HEAD^ HEAD)" = ".github/workflows/p218-sentinel-geometry-fix.yml"
+          test "$(git diff --name-only HEAD^ HEAD)" = $'.github/workflows/p218-cleanup-admission-fix.yml\n.github/workflows/p218-sentinel-geometry-fix.yml'
           test "$(git rev-parse HEAD:v1/src/kernel/process.asm)" = "${P218_OLD_PROCESS_BLOB}"
           test "$(git rev-parse HEAD:v1/tools-host/test-driver/phase2_kill_never_started.py)" = "${P218_OLD_TEST_BLOB}"
           python3 - <<'PY'
@@ -267,6 +267,20 @@ jobs:
             printf '%s\n' "${PIPESTATUS[0]}" > "${ZXUX_EVIDENCE_DIR}/P2.18.failure-probe.rc"
           fi
           exit "${test_rc}"
+
+      - name: Preserve evidence and remove transient runtime/build residue
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${ZXUX_EVIDENCE_DIR}/build"
+          for path in v1/build/kernel-p218.sym v1/build/kernel-p218.lst v1/build/p218-kill-never-started.asm v1/build/p218-kill-never-started.sym v1/build/p218-kill-never-started.lst; do
+            if test -f "${path}"; then cp "${path}" "${ZXUX_EVIDENCE_DIR}/build/"; fi
+          done
+          git clean -fdx -- tools/runtime v1/build
+          test ! -e tools/runtime
+          test ! -e v1/build
+          test -z "$(git status --porcelain)"
 
       - name: Recheck mandatory gates on exact tested candidate
         if: success()
