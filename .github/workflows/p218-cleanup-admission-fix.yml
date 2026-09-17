@@ -73,20 +73,20 @@ jobs:
 
           anchor = "      - name: Recheck mandatory gates on exact tested candidate\n"
           cleanup = '''      - name: Preserve evidence and remove transient runtime/build residue
-        if: success()
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p "${ZXUX_EVIDENCE_DIR}/build"
-          for path in v1/build/kernel-p218.sym v1/build/kernel-p218.lst v1/build/p218-kill-never-started.asm v1/build/p218-kill-never-started.sym v1/build/p218-kill-never-started.lst; do
-            if test -f "${path}"; then cp "${path}" "${ZXUX_EVIDENCE_DIR}/build/"; fi
-          done
-          git clean -fdx -- tools/runtime v1/build
-          test ! -e tools/runtime
-          test ! -e v1/build
-          test -z "$(git status --porcelain)"
+                  if: success()
+                  shell: bash
+                  run: |
+                    set -euo pipefail
+                    mkdir -p "${ZXUX_EVIDENCE_DIR}/build"
+                    for path in v1/build/kernel-p218.sym v1/build/kernel-p218.lst v1/build/p218-kill-never-started.asm v1/build/p218-kill-never-started.sym v1/build/p218-kill-never-started.lst; do
+                      if test -f "${path}"; then cp "${path}" "${ZXUX_EVIDENCE_DIR}/build/"; fi
+                    done
+                    git clean -fdx -- tools/runtime v1/build
+                    test ! -e tools/runtime
+                    test ! -e v1/build
+                    test -z "$(git status --porcelain)"
 
-'''
+          '''
           if text.count(anchor) != 1 or cleanup in text:
               raise SystemExit("P2.18 cleanup insertion anchor failed")
           text = text.replace(anchor, cleanup + anchor)
