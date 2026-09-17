@@ -16,6 +16,7 @@
     INCLUDE "../../include/zx48ux.inc"
     INCLUDE "../../include/mex1.inc"
     INCLUDE "../../src/kernel/syscall.asm"
+    INCLUDE "../../src/kernel/interrupt.asm"
     INCLUDE "../../src/kernel/errors.asm"
     INCLUDE "../../src/kernel/memory.asm"
     INCLUDE "../../src/kernel/process.asm"
@@ -72,6 +73,57 @@ p222_process_noent:
     scf
     ret
 
+; Fixture-local production-equivalent live lookup required by TTY restoration.
+zx48_process_live_lookup:
+    call zx48_process_lookup
+    ret c
+    ld a,(ix+PROC_STATE)
+    cp PROC_ZOMBIE
+    jr z,p222_process_noent
+    xor a
+    ret
+
+; EMIT_MEMORY_ROUTINES references the resident process-count helper. The broad
+; EMIT_PROCESS_ROUTINES surface cannot be emitted here because syscall.asm
+; already supplies resident ABI/storage definitions, so preserve its contract
+; exactly in the standalone qualification fixture.
+zx48_process_count:
+    ld ix,process_table+PROC_DESC_SIZE
+    ld b,MAX_PROCESSES-1
+    ld c,0
+zx48_process_count_loop:
+    ld a,(ix+PROC_STATE)
+    or a
+    jr z,zx48_process_count_next
+    inc c
+zx48_process_count_next:
+    ld de,PROC_DESC_SIZE
+    add ix,de
+    djnz zx48_process_count_loop
+    ld a,c
+    or a
+    ret
+
+; EMIT_ZOMBIE_TRANSITION_ROUTINES reaches this helper on every tested child
+; exit. Reproduce the resident TTY-owner restoration semantics instead of
+; weakening the qualification path with a no-op stub.
+zx48_process_restore_tty_owner:
+    ld a,(current_pid)
+    ld b,a
+    ld a,(tty_input_owner)
+    cp b
+    ret nz
+    ld a,1
+    call zx48_process_live_lookup
+    jr c,zx48_process_tty_owner_zero
+    ld a,1
+    jr zx48_process_tty_owner_set
+zx48_process_tty_owner_zero:
+    xor a
+zx48_process_tty_owner_set:
+    ld (tty_input_owner),a
+    ret
+
 zx48_spawn_resolve_ram_object:
     ld ix,P222_GOOD_RECORD
     xor a
@@ -107,30 +159,30 @@ p222_cycle:
     ret c
     ld a,h
     or a
-    jr nz,p222_fail
+    jp nz,p222_fail
     ld a,l
     cp 2
-    jr nz,p222_fail
+    jp nz,p222_fail
 
     ld hl,P222_PROC1_ADDRESS
     call p222_gateway
     ret c
     ld a,h
     or a
-    jr nz,p222_fail
+    jp nz,p222_fail
     ld a,l
     cp 3
-    jr nz,p222_fail
+    jp nz,p222_fail
 
     ld hl,P222_PROC1_ADDRESS
     call p222_gateway
     ret c
     ld a,h
     or a
-    jr nz,p222_fail
+    jp nz,p222_fail
     ld a,l
     cp 4
-    jr nz,p222_fail
+    jp nz,p222_fail
 
     ld hl,P222_PROC1_ADDRESS
     call p222_gateway
@@ -187,7 +239,7 @@ p222_cycle:
     ld a,(p222_cycles_left)
     dec a
     ld (p222_cycles_left),a
-    jr nz,p222_cycle
+    jp nz,p222_cycle
     xor a
     ret
 
