@@ -313,6 +313,13 @@ jobs:
           test "$(git rev-parse HEAD)" = "$(cat /tmp/p222-admission-commit)"
           test "$(git rev-parse 'HEAD^{tree}')" = "$(cat /tmp/p222-admission-tree)"
           test -z "$(git status --porcelain)"
+          # The successful build/test gates intentionally create ignored runtime/build/cache
+          # products. Remove only those disposable products before repository-content gates.
+          rm -rf tools/runtime v1/build
+          find v1/tools-host/test-driver -type d -name __pycache__ -prune -exec rm -rf {} +
+          test -z "$(git status --porcelain)"
+          test "$(git rev-parse HEAD)" = "$(cat /tmp/p222-admission-commit)"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$(cat /tmp/p222-admission-tree)"
           ./tools/check_license_headers.sh
           ./tools/check_project_policy.py
           echo "P2.22 ADMISSION CANDIDATE PASS commit=$(git rev-parse HEAD) tree=$(git rev-parse 'HEAD^{tree}')"
