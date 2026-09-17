@@ -93,6 +93,8 @@ zx48_schedule_restore:
     ld (hl),e
     inc hl
     ld (hl),d
+    ; Consume the pending cancellation exactly once when E_INTR delivery commits.
+    res 0,(ix+PROC_FLAGS)
 zx48_schedule_not_cancelled:
     call zx48_kernel_stack_sample
     call zx48_kernel_stack_check
