@@ -194,30 +194,30 @@ p222_cycle:
     ret c
     ld a,h
     or a
-    jr nz,p222_fail
+    jp nz,p222_fail
     ld a,l
     cp 5
-    jr nz,p222_fail
+    jp nz,p222_fail
 
     ld hl,P222_PROC1_ADDRESS
     call p222_gateway
     ret c
     ld a,h
     or a
-    jr nz,p222_fail
+    jp nz,p222_fail
     ld a,l
     cp 6
-    jr nz,p222_fail
+    jp nz,p222_fail
 
     ld hl,P222_PROC1_ADDRESS
     call p222_gateway
     ret c
     ld a,h
     or a
-    jr nz,p222_fail
+    jp nz,p222_fail
     ld a,l
     cp 7
-    jr nz,p222_fail
+    jp nz,p222_fail
 
     ld a,2
     call p222_exit_reap
@@ -251,6 +251,12 @@ p222_cycle:
 p222_exit_reap:
     ld (p222_child_pid),a
     ld (current_pid),a
+    call zx48_process_lookup
+    ret c
+    ; Spawn publishes READY. This fixture invokes the child's exit directly
+    ; instead of running the scheduler, so model the scheduler's READY->RUNNING
+    ; transition before entering the production exit-to-zombie routine.
+    ld (ix+PROC_STATE),PROC_RUNNING
     xor a
     call zx48_process_exit_to_zombie
     ret c
