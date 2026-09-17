@@ -314,13 +314,138 @@ def _accounting_oracle(code: bytearray, symbols: dict[str, int], *, mirrors: boo
     return ((free_mirror, free), (od_mirror, ods), (parent_mirror, parent))
 
 
-def _positive(root: Path, symbols: dict[str, int], fixture: bytes) -> None:
+def _positive_base(symbols: dict[str, int]) -> bytearray:
     code = bytearray(b"\xF3" + phase1._ld_sp(TEST_STACK))
     code += phase1._call(symbols["p222_stress"]) + _jp_c(FAIL_PC)
+    return code
+
+
+def _run_positive_probe(
+    root: Path,
+    symbols: dict[str, int],
+    fixture: bytes,
+    label: str,
+    code: bytearray,
+    extra_regions: tuple[tuple[int, bytes], ...] = (),
+) -> None:
+    probe = bytearray(code)
+    probe += phase1._jp(PASS_PC)
+    try:
+        run_sna(
+            root,
+            bytes(probe),
+            patch=_patch(fixture, _regions(symbols) + extra_regions),
+            timeout=30.0,
+        )
+    except DriverError as exc:
+        raise Phase222Error(f"P2.22 positive diagnostic failed at {label}: {exc}") from exc
+
+
+def _diagnose_positive_failure(
+    root: Path,
+    symbols: dict[str, int],
+    fixture: bytes,
+    original: DriverError,
+) -> None:
+    code = bytearray(b"\xF3" + phase1._ld_sp(TEST_STACK))
+    code += phase1._call(symbols["zx48_process_links_init"]) + _jp_c(FAIL_PC)
+    _run_positive_probe(root, symbols, fixture, "process-links-init", code)
+
+    for last_pid in range(2, 8):
+        code = bytearray(b"\xF3" + phase1._ld_sp(TEST_STACK))
+        code += phase1._call(symbols["zx48_process_links_init"]) + _jp_c(FAIL_PC)
+        for pid in range(2, last_pid + 1):
+            code += phase1._ld_hl(PROC_ADDRESS) + phase1._call(symbols["p222_gateway"]) + _jp_c(FAIL_PC)
+            code += b"\x7C\xB7" + _jp_nz(FAIL_PC)
+            code += b"\x7D\xFE" + bytes((pid,)) + _jp_nz(FAIL_PC)
+        _run_positive_probe(root, symbols, fixture, f"spawns-through-pid{last_pid}", code)
+
+    for last_pid in range(2, 8):
+        code = bytearray(b"\xF3" + phase1._ld_sp(TEST_STACK))
+        code += phase1._call(symbols["zx48_process_links_init"]) + _jp_c(FAIL_PC)
+        for pid in range(2, 8):
+            code += phase1._ld_hl(PROC_ADDRESS) + phase1._call(symbols["p222_gateway"]) + _jp_c(FAIL_PC)
+            code += b"\x7C\xB7" + _jp_nz(FAIL_PC)
+            code += b"\x7D\xFE" + bytes((pid,)) + _jp_nz(FAIL_PC)
+        for pid in range(2, last_pid + 1):
+            code += b"\x3E" + bytes((pid,)) + phase1._call(symbols["p222_exit_reap"]) + _jp_c(FAIL_PC)
+        _run_positive_probe(root, symbols, fixture, f"exit-reap-through-pid{last_pid}", code)
+
+    code = _positive_base(symbols)
+    _run_positive_probe(root, symbols, fixture, "64-wave-stress-return", code)
+
+    code = _positive_base(symbols)
+    code += _expect_byte(symbols["p222_cycles_done"], STRESS_WAVES)
+    _run_positive_probe(root, symbols, fixture, "cycles-done-64", code)
+
+    free = _free_extents()
+    code = _positive_base(symbols)
+    _append_compare(code, symbols["memory_free_extents"], MIRROR_BASE, len(free))
+    _run_positive_probe(
+        root,
+        symbols,
+        fixture,
+        "free-extents-baseline",
+        code,
+        ((MIRROR_BASE, free),),
+    )
+
+    ods = _open_descriptions()
+    code = _positive_base(symbols)
+    _append_compare(code, symbols["open_description_table"], MIRROR_BASE, len(ods))
+    _run_positive_probe(
+        root,
+        symbols,
+        fixture,
+        "open-descriptions-baseline",
+        code,
+        ((MIRROR_BASE, ods),),
+    )
+
+    parent = _process_table()[PROC_DESC_SIZE : 2 * PROC_DESC_SIZE]
+    code = _positive_base(symbols)
+    _append_compare(code, symbols["process_table"] + PROC_DESC_SIZE, MIRROR_BASE, len(parent))
+    _run_positive_probe(
+        root,
+        symbols,
+        fixture,
+        "parent-descriptor-baseline",
+        code,
+        ((MIRROR_BASE, parent),),
+    )
+
+    code = _positive_base(symbols)
+    code += _expect_word(symbols["memory_live_allocations"], 0)
+    _run_positive_probe(root, symbols, fixture, "live-allocation-count-zero", code)
+
+    code = _positive_base(symbols)
+    code += _expect_byte(symbols["current_pid"], 1)
+    _run_positive_probe(root, symbols, fixture, "current-pid-parent", code)
+
+    code = _positive_base(symbols)
+    code += _expect_byte(symbols["p222_panic_code"], 0)
+    _run_positive_probe(root, symbols, fixture, "panic-code-clear", code)
+
+    code = _positive_base(symbols)
+    for pid in range(2, 8):
+        code += _expect_byte(symbols["process_table"] + pid * PROC_DESC_SIZE + PROC_STATE, 0)
+    _run_positive_probe(root, symbols, fixture, "child-slots-free", code)
+
+    raise Phase222Error(
+        "P2.22 full positive oracle failed although all isolated diagnostic probes passed: "
+        f"{original}"
+    ) from original
+
+
+def _positive(root: Path, symbols: dict[str, int], fixture: bytes) -> None:
+    code = _positive_base(symbols)
     code += _expect_byte(symbols["p222_cycles_done"], STRESS_WAVES)
     mirrors = _accounting_oracle(code, symbols, mirrors=True)
     code += phase1._jp(PASS_PC)
-    run_sna(root, bytes(code), patch=_patch(fixture, _regions(symbols) + mirrors), timeout=30.0)
+    try:
+        run_sna(root, bytes(code), patch=_patch(fixture, _regions(symbols) + mirrors), timeout=30.0)
+    except DriverError as exc:
+        _diagnose_positive_failure(root, symbols, fixture, exc)
 
 
 def _negative_skipped_free(root: Path, symbols: dict[str, int], fixture: bytes) -> None:
@@ -352,7 +477,7 @@ def dispatch(root: Path, action: str, step: str, *, sha256_file: Callable[[Path]
     require(free_bytes >= 0, "P2.22 resident ordinary kernel exceeds hard ceiling")
     assertions.append({"name": "resident-kernel-ordinary-code-remains-within-faff-ceiling", "passed": True, "free_bytes": free_bytes})
 
-    symbols = _symbols(fixture_symbols, ("p222_stress", "p222_gateway", "p222_cycles_done", "p222_panic_code", "zx48_process_links_init", "process_table", "current_pid", "open_description_table", "memory_free_extents", "memory_live_allocations", "tty_input_owner", "PROC_DESC_SIZE", "MAX_PROCESSES"))
+    symbols = _symbols(fixture_symbols, ("p222_stress", "p222_gateway", "p222_exit_reap", "p222_cycles_done", "p222_panic_code", "zx48_process_links_init", "process_table", "current_pid", "open_description_table", "memory_free_extents", "memory_live_allocations", "tty_input_owner", "PROC_DESC_SIZE", "MAX_PROCESSES"))
     require(symbols["PROC_DESC_SIZE"] == PROC_DESC_SIZE, "P2.22 process descriptor ABI changed")
     require(symbols["MAX_PROCESSES"] == PROCESS_COUNT, "P2.22 process-count ABI changed")
 
