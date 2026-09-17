@@ -31,7 +31,7 @@ jobs:
     timeout-minutes: 45
     env:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p221-qualification
-      P221_EXACT_PARENT: c1fa4419601716183ffe04a95821631286b70711
+      P221_EXACT_PARENT: 9e415b2dd52f432f1521b7e207745fe6ee49a50e
       ZXUX_REV12_SHA256: a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b
 
     steps:
@@ -48,8 +48,6 @@ jobs:
           git diff --name-only HEAD^ HEAD | sort > /tmp/p221-changed
           printf '%s\n' \
             .github/workflows/p221-qualification.yml \
-            v1/tools-host/test-driver/phase2_proc_info.py \
-            v1/tools-host/test-driver/run.py \
             | sort > /tmp/p221-expected
           diff -u /tmp/p221-expected /tmp/p221-changed
           test -z "$(git status --porcelain)"
