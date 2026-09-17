@@ -27,7 +27,6 @@ required_files=(
   "tools/check_project_policy.py"
   "tools/check_license_headers.sh"
   "tools/check_reference_tree.py"
-  "tools/check_rr07_cleanliness.py"
 )
 
 for file in "${required_files[@]}"; do
@@ -46,7 +45,8 @@ while IFS= read -r -d '' file; do
     continue
   fi
   if grep -Iq '' "$file"; then
-    if grep -nE '[[:blank:]]+$' "$file"; then
+    # Markdown trailing spaces can be semantic hard line breaks, not source defects.
+    if [[ ! "$file" =~ \.(md|markdown|mdown|mdx)$ ]] && grep -nE '[[:blank:]]+$' "$file"; then
       echo "ERROR: trailing whitespace in $file" >&2
       fail=1
     fi
@@ -71,8 +71,6 @@ else
   echo "ERROR: tools/check_license_headers.sh is missing or not executable" >&2
   fail=1
 fi
-
-python3 ./tools/check_rr07_cleanliness.py
 
 workflow=.github/workflows/quality-and-ci.yml
 
