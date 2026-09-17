@@ -30,7 +30,7 @@ jobs:
       PYTHONDONTWRITEBYTECODE: '1'
       ZXUX_RUNNER_SESSION_ID: phase2-20260916-01
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p218-dispatch-sentinel
-      P218_EXACT_PARENT: 76efb3f1f3f0fe824bdfa77fc425e90ad4971440
+      P218_EXACT_PARENT: 8b84534132981b7cc5b689c90589ab07cedf68bf
       P218_OLD_PROCESS_BLOB: b0cd24ebbdc329543f5138c2d26d8a67453b77fd
       P218_OLD_TEST_BLOB: 0390c74a046003cfca71ec1bbb2102624607793f
       ZXUX_REV12_SHA256: a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b
@@ -49,10 +49,21 @@ jobs:
           test "$(git diff --name-only HEAD^ HEAD)" = ".github/workflows/p218-sentinel-geometry-fix.yml"
           test "$(git rev-parse HEAD:v1/src/kernel/process.asm)" = "${P218_OLD_PROCESS_BLOB}"
           test "$(git rev-parse HEAD:v1/tools-host/test-driver/phase2_kill_never_started.py)" = "${P218_OLD_TEST_BLOB}"
-          grep -Fxq 'ZX48_P2_18_KILL_ENABLED EQU 1' v1/src/kernel/process.asm
-          grep -Fxq 'SENTINEL_PC = 0x9200' v1/tools-host/test-driver/phase2_kill_never_started.py
-          grep -Fq 'IFDEF ZX48_P2_18_KILL_ENABLED' v1/src/kernel/process.asm
-          grep -Fq 'jp z,zx48_process_kill_never_started' v1/src/kernel/process.asm
+          python3 - <<'PY'
+          from pathlib import Path
+          process = Path("v1/src/kernel/process.asm").read_text(encoding="utf-8")
+          driver = Path("v1/tools-host/test-driver/phase2_kill_never_started.py").read_text(encoding="utf-8")
+          checks = {
+              "helper-internal-activation-present": process.count("ZX48_P2_18_KILL_ENABLED EQU 1\n") == 1,
+              "conditional-dispatch-source-present": "IFDEF ZX48_P2_18_KILL_ENABLED" in process and "jp z,zx48_process_kill_never_started" in process,
+              "old-sentinel-present": "SENTINEL_PC = 0x9200\n" in driver,
+              "caller-define-not-yet-present": "DEFINE ZX48_P2_18_KILL_ENABLED" not in driver,
+          }
+          for name, passed in checks.items():
+              print(f"guard {name}={int(passed)}")
+              if not passed:
+                  raise SystemExit(f"guard failed: {name}")
+          PY
           test -z "$(git status --porcelain)"
 
       - name: Assemble exact caller-gated dispatch and sentinel repair
@@ -63,11 +74,11 @@ jobs:
           from pathlib import Path
 
           process = Path("v1/src/kernel/process.asm")
-          text = process.read_text(encoding="utf-8")
-          old = "ZX48_P2_18_KILL_ENABLED EQU 1\n"
-          if text.count(old) != 1:
+          process_text = process.read_text(encoding="utf-8")
+          old_activation = "ZX48_P2_18_KILL_ENABLED EQU 1\n"
+          if process_text.count(old_activation) != 1:
               raise SystemExit("P2.18 helper activation shape changed")
-          process.write_text(text.replace(old, ""), encoding="utf-8", newline="\n")
+          process.write_text(process_text.replace(old_activation, ""), encoding="utf-8", newline="\n")
 
           driver = Path("v1/tools-host/test-driver/phase2_kill_never_started.py")
           text = driver.read_text(encoding="utf-8")
@@ -76,10 +87,7 @@ jobs:
                   "from fuse_harness import FAIL_PC, PASS_PC, run_sna\n",
                   "from fuse_harness import ENTRY_PC, FAIL_PC, PASS_PC, run_sna\n",
               ),
-              (
-                  "SENTINEL_PC = 0x9200\n",
-                  "SENTINEL_PC = 0x8D00\n",
-              ),
+              ("SENTINEL_PC = 0x9200\n", "SENTINEL_PC = 0x8D00\n"),
               (
                   '        "    DEVICE ZXSPECTRUM48\\n"\n        "    INCLUDE \\"../include/zx48ux.inc\\"\\n"',
                   '        "    DEVICE ZXSPECTRUM48\\n"\n        "    DEFINE ZX48_P2_18_KILL_ENABLED\\n"\n        "    INCLUDE \\"../include/zx48ux.inc\\"\\n"',
@@ -120,7 +128,9 @@ jobs:
               ),
           )
           for old, new in edits:
-              if text.count(old) != 1 or new in text:
+              count = text.count(old)
+              print(f"edit anchor count={count} anchor={old[:64]!r}")
+              if count != 1 or new in text:
                   raise SystemExit(f"P2.18 driver exact edit shape failed: {old[:72]!r}")
               text = text.replace(old, new)
           driver.write_text(text, encoding="utf-8", newline="\n")
@@ -128,38 +138,58 @@ jobs:
 
           git add v1/src/kernel/process.asm v1/tools-host/test-driver/phase2_kill_never_started.py
           git rm .github/workflows/p218-sentinel-geometry-fix.yml
-          expected="$(printf '%s\n' .github/workflows/p218-sentinel-geometry-fix.yml v1/src/kernel/process.asm v1/tools-host/test-driver/phase2_kill_never_started.py | sort)"
-          test "$(git diff --cached --name-only | sort)" = "${expected}"
-          git diff --quiet
-          ! grep -q '^ZX48_P2_18_KILL_ENABLED EQU 1$' v1/src/kernel/process.asm
-          grep -Fq '"    DEFINE ZX48_P2_18_KILL_ENABLED\\n"' v1/tools-host/test-driver/phase2_kill_never_started.py
-          grep -Fxq 'SENTINEL_PC = 0x8D00' v1/tools-host/test-driver/phase2_kill_never_started.py
-          grep -Fq 'assembled-fixture-dispatches-to-never-started-helper' v1/tools-host/test-driver/phase2_kill_never_started.py
-          grep -Fq 'child-pc-sentinel-is-disjoint-from-test-program' v1/tools-host/test-driver/phase2_kill_never_started.py
+          echo '--- staged paths ---'
+          git diff --cached --name-only
+          echo '--- unstaged paths ---'
+          git diff --name-only
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+
+          expected = sorted([
+              ".github/workflows/p218-sentinel-geometry-fix.yml",
+              "v1/src/kernel/process.asm",
+              "v1/tools-host/test-driver/phase2_kill_never_started.py",
+          ])
+          actual = subprocess.check_output(["git", "diff", "--cached", "--name-only"], text=True).splitlines()
+          if sorted(actual) != expected:
+              raise SystemExit(f"staged path mismatch: expected={expected!r} actual={actual!r}")
+          unstaged = subprocess.check_output(["git", "diff", "--name-only"], text=True).splitlines()
+          if unstaged:
+              raise SystemExit(f"unexpected unstaged paths: {unstaged!r}")
+
+          process = Path("v1/src/kernel/process.asm").read_text(encoding="utf-8")
+          driver = Path("v1/tools-host/test-driver/phase2_kill_never_started.py").read_text(encoding="utf-8")
+          checks = {
+              "helper-internal-activation-removed": "ZX48_P2_18_KILL_ENABLED EQU 1" not in process,
+              "caller-define-present": '"    DEFINE ZX48_P2_18_KILL_ENABLED\\n"' in driver,
+              "sentinel-moved": "SENTINEL_PC = 0x8D00" in driver,
+              "entry-imported": "from fuse_harness import ENTRY_PC, FAIL_PC, PASS_PC, run_sna" in driver,
+              "listing-enabled": "--lst=p218-kill-never-started.lst" in driver,
+              "helper-symbol-requested": '"zx48_process_kill_never_started",' in driver,
+              "assembled-dispatch-proof-present": "assembled-fixture-dispatches-to-never-started-helper" in driver,
+              "sentinel-proof-present": "child-pc-sentinel-is-disjoint-from-test-program" in driver,
+          }
+          for name, passed in checks.items():
+              print(f"candidate {name}={int(passed)}")
+              if not passed:
+                  raise SystemExit(f"candidate validation failed: {name}")
+          PY
           git diff --cached --check
 
       - name: Three clean repair scans and mandatory gates
         shell: bash
         run: |
           set -euo pipefail
-          expected="$(printf '%s\n' .github/workflows/p218-sentinel-geometry-fix.yml v1/src/kernel/process.asm v1/tools-host/test-driver/phase2_kill_never_started.py | sort)"
           baseline=""
           for scan in 1 2 3; do
             find . -type d -name __pycache__ -prune -exec rm -rf {} +
-            test "$(git diff --cached --name-only | sort)" = "${expected}"
-            git diff --quiet
-            git diff --cached --check
             python3 -m py_compile v1/tools-host/test-driver/phase2_kill_never_started.py
             python3 -m py_compile v1/tools-host/test-driver/p218_failure_probe.py
             python3 -m py_compile v1/tools-host/test-driver/run.py
             find . -type d -name __pycache__ -prune -exec rm -rf {} +
-            ! grep -q '^ZX48_P2_18_KILL_ENABLED EQU 1$' v1/src/kernel/process.asm
-            grep -Fq '"    DEFINE ZX48_P2_18_KILL_ENABLED\\n"' v1/tools-host/test-driver/phase2_kill_never_started.py
-            grep -Fxq 'SENTINEL_PC = 0x8D00' v1/tools-host/test-driver/phase2_kill_never_started.py
-            test "$(git rev-parse HEAD:docs/01-ZX-UX-ARCHITECTURE-REV12.md)" = "$(git rev-parse HEAD^:docs/01-ZX-UX-ARCHITECTURE-REV12.md)"
-            test "$(git rev-parse HEAD:docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV03.md)" = "$(git rev-parse HEAD^:docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV03.md)"
-            test "$(git rev-parse HEAD:docs/01-ZX-UX-ARCHITECTURE-REV13.md)" = "$(git rev-parse HEAD^:docs/01-ZX-UX-ARCHITECTURE-REV13.md)"
-            test "$(git rev-parse HEAD:docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV04.md)" = "$(git rev-parse HEAD^:docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV04.md)"
+            git diff --cached --check
+            test -z "$(git diff --name-only)"
             ./tools/check_license_headers.sh
             ./tools/check_project_policy.py
             digest="$(git diff --cached --binary | sha256sum | awk '{print $1}')"
