@@ -143,7 +143,7 @@ jobs:
       - run: python3 tools/check_phase2_evidence.py
       - run: python3 tools/test_phase2_evidence_negative.py
   project-ci:
-    needs: [project-policy, e0-metadata, e0-foundation, license-headers, phase0-evidence, phase1-evidence, phase2-evidence]
+    needs: [project-policy, e0-metadata, e0-foundation, license-headers, phase0-evidence, phase1-evidence]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
