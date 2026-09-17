@@ -1,0 +1,182 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: P2.23 two-base relocatable execution qualification
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/p223-qualification.yml
+      - v1/tests/multiprocessing/p223-two-base-relocatable.asm
+      - v1/tools-host/test-driver/phase2_two_base_relocatable.py
+      - v1/tools-host/test-driver/run.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      ZXUX_EVIDENCE_DIR: /tmp/zxux-p223-qualification
+      P223_EXACT_PARENT: 02dc4117fc8369abcb5def21d9599626697c3171
+      ZXUX_REV12_SHA256: a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b
+
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Guard exact P2.23 candidate diff
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "${P223_EXACT_PARENT}"
+          git diff --name-only HEAD^ HEAD | sort > /tmp/p223-changed
+          printf '%s\n' \
+            .github/workflows/p223-qualification.yml \
+            v1/tests/multiprocessing/p223-two-base-relocatable.asm \
+            v1/tools-host/test-driver/phase2_two_base_relocatable.py \
+            v1/tools-host/test-driver/run.py \
+            | sort > /tmp/p223-expected
+          diff -u /tmp/p223-expected /tmp/p223-changed
+          test -z "$(git status --porcelain)"
+          echo "qualification_head=$(git rev-parse HEAD)"
+          echo "qualification_parent=$(git rev-parse HEAD^)"
+
+      - name: Three unchanged candidate scans
+        shell: bash
+        run: |
+          set -euo pipefail
+          baseline=""
+          tree_baseline="$(git rev-parse 'HEAD^{tree}')"
+          for scan in 1 2 3; do
+            git diff --check HEAD^ HEAD
+            python3 -m py_compile v1/tools-host/test-driver/phase2_two_base_relocatable.py
+            python3 -m py_compile v1/tools-host/test-driver/run.py
+            find v1/tools-host/test-driver -type d -name __pycache__ -prune -exec rm -rf {} +
+            grep -q 'EMIT_SPAWN_TRANSACTION_ROUTINES' v1/tests/multiprocessing/p223-two-base-relocatable.asm
+            grep -q 'EMIT_PARENT_CHILD_ROUTINES' v1/tests/multiprocessing/p223-two-base-relocatable.asm
+            grep -q 'EMIT_MEX1_RELOCATION_ROUTINES' v1/tests/multiprocessing/p223-two-base-relocatable.asm
+            test -z "$(git status --porcelain)"
+            test "$(git rev-parse 'HEAD^{tree}')" = "${tree_baseline}"
+            digest="$(
+              sha256sum \
+                v1/tests/multiprocessing/p223-two-base-relocatable.asm \
+                v1/tools-host/test-driver/phase2_two_base_relocatable.py \
+                v1/tools-host/test-driver/run.py \
+                .github/workflows/p223-qualification.yml \
+                | sha256sum | awk '{print $1}'
+            )"
+            if test -z "${baseline}"; then
+              baseline="${digest}"
+            else
+              test "${digest}" = "${baseline}"
+            fi
+            echo "SCAN-${scan}: CLEAN"
+            echo "scan_${scan}_candidate_sha256=${digest}"
+            echo "scan_${scan}_tree=${tree_baseline}"
+          done
+
+      - name: Mandatory license and project-policy gates
+        run: |
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+
+      - name: Require active architecture and prior durable evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV12.md | awk '{print $1}')" = "${ZXUX_REV12_SHA256}"
+          python3 tools/check_phase0_evidence.py --require-active
+          python3 tools/check_phase1_evidence.py --require-active
+
+      - name: Select pinned Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13.15'
+          check-latest: false
+
+      - name: Install native build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake gettext libaudiofile-dev libfreetype6-dev \
+            libgcrypt20-dev libglib2.0-dev libpng-dev libsdl1.2-dev libtool \
+            libxml2-dev perl pkg-config
+
+      - name: Acquire pinned project runtime
+        run: python tools/scripts/bootstrap-environment.py
+
+      - name: Certify pinned project runtime
+        run: tools/runtime/python/bin/python tools/scripts/verify-environment.py
+
+      - name: Regression-test relocation and spawn prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${ZXUX_EVIDENCE_DIR}"
+          for step in P2.03 P2.10 P2.22; do
+            tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step "${step}" \
+              2>&1 | tee "${ZXUX_EVIDENCE_DIR}/${step}.regression.log"
+          done
+
+      - name: Execute P2.23 build
+        shell: bash
+        run: |
+          set -o pipefail
+          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P2.23 \
+            2>&1 | tee "${ZXUX_EVIDENCE_DIR}/P2.23.build.log"
+
+      - name: Execute P2.23 test
+        shell: bash
+        run: |
+          set -o pipefail
+          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P2.23 \
+            2>&1 | tee "${ZXUX_EVIDENCE_DIR}/P2.23.test.log"
+
+      - name: Collect exact candidate evidence
+        if: always()
+        shell: bash
+        run: |
+          set -u
+          mkdir -p "${ZXUX_EVIDENCE_DIR}/build"
+          git rev-parse HEAD > "${ZXUX_EVIDENCE_DIR}/candidate-commit.txt"
+          git rev-parse 'HEAD^{tree}' > "${ZXUX_EVIDENCE_DIR}/candidate-tree.txt"
+          git status --porcelain > "${ZXUX_EVIDENCE_DIR}/worktree-status.txt"
+          sha256sum \
+            v1/tests/multiprocessing/p223-two-base-relocatable.asm \
+            v1/tools-host/test-driver/phase2_two_base_relocatable.py \
+            v1/tools-host/test-driver/run.py \
+            .github/workflows/p223-qualification.yml \
+            > "${ZXUX_EVIDENCE_DIR}/qualification-hashes.sha256"
+          for path in \
+            v1/build/kernel.bin \
+            v1/build/kernel-p1.lst \
+            v1/build/p223-two-base-relocatable.bin \
+            v1/build/p223-two-base-relocatable.sym; do
+            if test -f "${path}"; then cp "${path}" "${ZXUX_EVIDENCE_DIR}/build/"; fi
+          done
+
+      - name: Upload P2.23 qualification evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: zxux-p223-qualification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: /tmp/zxux-p223-qualification/
+          retention-days: 90
+          if-no-files-found: error

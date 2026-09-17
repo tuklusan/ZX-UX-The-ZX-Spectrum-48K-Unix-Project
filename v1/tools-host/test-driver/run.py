@@ -80,6 +80,7 @@ import phase2_kill_started
 import phase2_process_name
 import phase2_proc_info
 import phase2_spawn_exit_leak
+import phase2_two_base_relocatable
 from driver_core import (
     DriverError,
     find_root,
@@ -231,6 +232,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase2_proc_info.dispatch(root, action, step, **kwargs)
     if step == "P2.22":
         return phase2_spawn_exit_leak.dispatch(root, action, step, **kwargs)
+    if step == "P2.23":
+        return phase2_two_base_relocatable.dispatch(root, action, step, **kwargs)
     if step.startswith("P2."):
         raise DriverError(f"numbered Phase-2 step is not registered: {step}")
     raise DriverError(f"step is not registered with the deterministic test driver: {step}")
