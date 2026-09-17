@@ -29,6 +29,7 @@ jobs:
     timeout-minutes: 60
     env:
       BASE_MAIN: a1138391c913581dfaf20751520a188ad4d89b1a
+      STAGING_PARENT: 4e3274a5c12cc61d7469e2e8af6b991446bb0dc5
       QUALIFIED_SOURCE_COMMIT: df312c9d944aab0333599c290cfde68f2638c9b3
       QUALIFIED_TREE: 696950498ec95000ca3af7f6ca9d1049dea9da15
       PROCESS_BLOB: 15ebbdb485d789b4a450c8b0c8b79970baa940e8
@@ -49,8 +50,8 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
-          test "$(git rev-parse HEAD^)" = "${BASE_MAIN}"
-          git diff --name-only "${BASE_MAIN}" "${GITHUB_SHA}" | sort > /tmp/stage-changed
+          test "$(git rev-parse HEAD^)" = "${STAGING_PARENT}"
+          git diff --name-only "${STAGING_PARENT}" "${GITHUB_SHA}" | sort > /tmp/stage-changed
           printf '%s\n' .github/workflows/p222-admit-qualified.yml > /tmp/stage-expected
           diff -u /tmp/stage-expected /tmp/stage-changed
           test "$(git rev-parse "${QUALIFIED_SOURCE_COMMIT}^{tree}")" = "${QUALIFIED_TREE}"
@@ -166,6 +167,35 @@ jobs:
           architecture_sha256="$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV12.md | awk '{print $1}')"
           test "${architecture_sha256}" = "${ZXUX_REV12_SHA256}"
 
+      - name: Commit exact reviewed admission candidate locally
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add .github/workflows/candidate-kernel.yml .github/workflows/p222-qualification.yml v1/tools-host/test-driver/phase2_gate.py
+          git diff --cached --check
+          git diff --cached --name-only | sort > /tmp/staged-final
+          printf '%s\n' \
+            .github/workflows/candidate-kernel.yml \
+            .github/workflows/p222-admit-qualified.yml \
+            .github/workflows/p222-qualification.yml \
+            v1/tools-host/test-driver/phase2_gate.py \
+            | sort > /tmp/staged-expected
+          diff -u /tmp/staged-expected /tmp/staged-final
+          git -c user.name='Supratim Sanyal' \
+              -c user.email='tuklusan@users.noreply.github.com' \
+              commit -m 'P2.22 admit repeated spawn-exit leak gate'
+          git diff --name-only "${BASE_MAIN}" HEAD | sort > /tmp/cumulative-final
+          printf '%s\n' \
+            .github/workflows/candidate-kernel.yml \
+            .github/workflows/p222-qualification.yml \
+            v1/tools-host/test-driver/phase2_gate.py \
+            | sort > /tmp/cumulative-expected
+          diff -u /tmp/cumulative-expected /tmp/cumulative-final
+          test -z "$(git status --porcelain)"
+          git rev-parse HEAD > /tmp/p222-admission-commit
+          git rev-parse 'HEAD^{tree}' > /tmp/p222-admission-tree
+          echo "P2.22 ADMISSION CLEAN-CANDIDATE commit=$(cat /tmp/p222-admission-commit) tree=$(cat /tmp/p222-admission-tree)"
+
       - name: Select pinned Python
         uses: actions/setup-python@v6
         with:
@@ -255,10 +285,13 @@ jobs:
           print('P2.22 ADMISSION LEGACY-ELSE-NOT-SELECTED PASS')
           PY
 
-      - name: Recheck final invariants and commit admission
+      - name: Recheck final invariants on exact tested candidate
         shell: bash
         run: |
           set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$(cat /tmp/p222-admission-commit)"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$(cat /tmp/p222-admission-tree)"
+          test -z "$(git status --porcelain)"
           test "$(git hash-object v1/src/kernel/process.asm)" = "${PROCESS_BLOB}"
           test "$(git hash-object v1/src/kernel/memory.asm)" = "${MEMORY_BLOB}"
           python3 - <<'PY'
@@ -275,16 +308,8 @@ jobs:
           if memory.count(repaired) != 1:
               raise SystemExit('P2.22 ADMISSION allocator normalization invariant failed')
           PY
-          git add .github/workflows/candidate-kernel.yml .github/workflows/p222-qualification.yml v1/tools-host/test-driver/phase2_gate.py
-          git diff --cached --check
-          git diff --cached --name-only | sort > /tmp/staged-final
-          printf '%s\n'             .github/workflows/candidate-kernel.yml             .github/workflows/p222-admit-qualified.yml             .github/workflows/p222-qualification.yml             v1/tools-host/test-driver/phase2_gate.py             | sort > /tmp/staged-expected
-          diff -u /tmp/staged-expected /tmp/staged-final
-          git -c user.name='Supratim Sanyal'               -c user.email='tuklusan@users.noreply.github.com'               commit -m 'P2.22 admit repeated spawn-exit leak gate'
-          git diff --name-only "${BASE_MAIN}" HEAD | sort > /tmp/cumulative-final
-          printf '%s\n'             .github/workflows/candidate-kernel.yml             .github/workflows/p222-qualification.yml             v1/tools-host/test-driver/phase2_gate.py             | sort > /tmp/cumulative-expected
-          diff -u /tmp/cumulative-expected /tmp/cumulative-final
-          test -z "$(git status --porcelain)"
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
           echo "P2.22 ADMISSION CANDIDATE PASS commit=$(git rev-parse HEAD) tree=$(git rev-parse 'HEAD^{tree}')"
 
       - name: Fast-forward canonical main
