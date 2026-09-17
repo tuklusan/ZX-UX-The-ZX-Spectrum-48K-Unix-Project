@@ -29,7 +29,7 @@ P222_GOOD_RECORD   EQU $B000
 p222_start:
     EMIT_MEMORY_ROUTINES
     EMIT_USER_RANGE_VALIDATION_ROUTINE
-    EMIT_PROCESS_ROUTINES
+    EMIT_PROCESS_CAPACITY_ROUTINE
     EMIT_MEX1_RELOCATION_ROUTINES
     EMIT_ARG1_ROUTINES
     EMIT_ENV1_ROUTINES
@@ -44,6 +44,33 @@ p222_start:
 p222_gateway:
     ld (syscall_arg_hl),hl
     jp zx48_sys_spawn
+
+; Minimal process lookup surface required by the spawn transaction. The P2.22
+; fixture composes only the staged Phase-2 emitters it exercises, avoiding the
+; resident EMIT_PROCESS_ROUTINES storage/ABI definitions already supplied by
+; syscall.asm while preserving the production lookup contract.
+zx48_process_lookup:
+    cp MAX_PROCESSES
+    jr nc,p222_process_noent
+    ld c,a
+    ld ix,process_table
+    or a
+    jr z,p222_process_have_ptr
+    ld b,a
+    ld de,PROC_DESC_SIZE
+p222_process_ptr_loop:
+    add ix,de
+    djnz p222_process_ptr_loop
+p222_process_have_ptr:
+    ld a,(ix+PROC_STATE)
+    or a
+    jr z,p222_process_noent
+    xor a
+    ret
+p222_process_noent:
+    ld a,E_NOENT
+    scf
+    ret
 
 zx48_spawn_resolve_ram_object:
     ld ix,P222_GOOD_RECORD
@@ -183,6 +210,8 @@ p222_fail:
     ret
 
 syscall_arg_hl: dw 0
+current_pid: db 0
+process_table: defs MAX_PROCESSES*PROC_DESC_SIZE,0
 tty_input_owner: db 1
 p222_cycles_left: db 0
 p222_cycles_done: db 0

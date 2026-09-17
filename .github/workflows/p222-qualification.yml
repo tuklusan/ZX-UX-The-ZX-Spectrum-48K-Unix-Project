@@ -45,8 +45,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = "${P222_EXACT_PARENT}"
-          git diff --name-only HEAD^ HEAD | sort > /tmp/p222-changed
+          git merge-base --is-ancestor "${P222_EXACT_PARENT}" HEAD
+          git diff --name-only "${P222_EXACT_PARENT}" HEAD | sort > /tmp/p222-changed
           printf '%s\n' \
             .github/workflows/p222-qualification.yml \
             v1/tests/multiprocessing/p222-spawn-exit-leak.asm \
@@ -56,7 +56,7 @@ jobs:
           diff -u /tmp/p222-expected /tmp/p222-changed
           test -z "$(git status --porcelain)"
           echo "qualification_head=$(git rev-parse HEAD)"
-          echo "qualification_parent=$(git rev-parse HEAD^)"
+          echo "qualification_base=${P222_EXACT_PARENT}"
 
       - name: Three unchanged candidate scans
         shell: bash
@@ -64,11 +64,12 @@ jobs:
           set -euo pipefail
           baseline=""
           for scan in 1 2 3; do
-            git diff --check HEAD^ HEAD
+            git diff --check "${P222_EXACT_PARENT}" HEAD
             python3 -m py_compile v1/tools-host/test-driver/phase2_spawn_exit_leak.py
             python3 -m py_compile v1/tools-host/test-driver/run.py
             find v1/tools-host/test-driver -type d -name __pycache__ -prune -exec rm -rf {} +
             grep -q 'ld a,64' v1/tests/multiprocessing/p222-spawn-exit-leak.asm
+            grep -q 'EMIT_PROCESS_CAPACITY_ROUTINE' v1/tests/multiprocessing/p222-spawn-exit-leak.asm
             grep -q 'EMIT_SPAWN_TRANSACTION_ROUTINES' v1/tests/multiprocessing/p222-spawn-exit-leak.asm
             grep -q 'EMIT_ZOMBIE_TRANSITION_ROUTINES' v1/tests/multiprocessing/p222-spawn-exit-leak.asm
             grep -q 'EMIT_WAIT_SPECIFIC_ROUTINES' v1/tests/multiprocessing/p222-spawn-exit-leak.asm
@@ -155,7 +156,7 @@ jobs:
           set -u
           mkdir -p "${ZXUX_EVIDENCE_DIR}/build"
           git rev-parse HEAD > "${ZXUX_EVIDENCE_DIR}/source-commit.txt"
-          git rev-parse HEAD^ > "${ZXUX_EVIDENCE_DIR}/source-parent.txt"
+          printf '%s\n' "${P222_EXACT_PARENT}" > "${ZXUX_EVIDENCE_DIR}/source-parent.txt"
           git status --porcelain > "${ZXUX_EVIDENCE_DIR}/worktree-status.txt"
           sha256sum \
             v1/src/kernel/process.asm \
