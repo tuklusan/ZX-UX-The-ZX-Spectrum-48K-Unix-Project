@@ -173,6 +173,17 @@ def validate_common(record: Any) -> None:
         require(record["implementation_plan_sha256"] == _canonical_plan_sha256(), "implementation_plan_sha256 does not match canonical REV07")
         if record["step"] == "R16.00":
             require(record.get("bridge_source_commit") == record.get("source_commit"), "R16.00 bridge_source_commit must equal source_commit")
+        else:
+            root = Path(__file__).resolve().parents[3]
+            bridge_path = root / "v1/dist/certification/R16.00.result.json"
+            require(bridge_path.is_file(), "P3-P12 evidence requires admitted R16.00.result.json")
+            try:
+                bridge = json.loads(bridge_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as exc:
+                raise EvidenceError(f"invalid admitted R16.00.result.json: {exc}") from exc
+            require(bridge.get("step") == "R16.00" and bridge.get("action") == "result" and bridge.get("status") == "PASS", "admitted R16.00 PASS result required")
+            require(bridge.get("architecture_sha256") == record.get("architecture_sha256"), "P3-P12 architecture identity must match admitted R16.00")
+            require(bridge.get("implementation_plan_sha256") == record.get("implementation_plan_sha256"), "P3-P12 implementation-plan identity must match admitted R16.00")
     require(isinstance(record["worktree_clean"], bool), "worktree_clean must be Boolean")
     if record["status"] == "PASS":
         require(record["worktree_clean"] is True, "dirty-worktree PASS certification is forbidden")

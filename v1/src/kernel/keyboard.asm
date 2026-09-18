@@ -30,14 +30,15 @@ zx48_keyboard_init:
 zx48_keyboard_decode:
     call zx48_rom_key_scan
     jr nz,zx48_keyboard_none
-    ; KEY-SCAN returns an exact valid two-key chord in DE. 27h is CAPS SHIFT
-    ; and 24h is physical 1; invalid/multi-key chords already return NZ.
+    ; KEY-SCAN returns exact valid key positions in DE. 27h is CAPS SHIFT
+    ; and 24h is physical 1. Invalid or >2-key chords return NZ above.
     ld a,d
     cp $27
     jr nz,zx48_keyboard_decode_rom
     ld a,e
     cp $24
-    jr z,zx48_keyboard_edit
+    ld a,$1B
+    ret z
 zx48_keyboard_decode_rom:
     call zx48_rom_k_test
     jr nc,zx48_keyboard_none
@@ -54,17 +55,10 @@ zx48_keyboard_decode_rom:
     cp $0e
     jr nc,zx48_keyboard_none
     cp $0c
-    jr z,zx48_keyboard_delete
+    jr nz,zx48_keyboard_decoded
+    ld a,$08
 zx48_keyboard_decoded:
     or a
-    ret
-zx48_keyboard_delete:
-    ld a,$08
-    or a
-    ret
-zx48_keyboard_edit:
-    ; Physical CAPS SHIFT + 1 (EDIT) is the target ESC-equivalent.
-    ld a,$1B
     ret
 zx48_keyboard_none:
     ld a,E_AGAIN
@@ -78,8 +72,9 @@ zx48_keyboard_getkey:
     ld a,(current_pid)
     or a
     jr z,zx48_keyboard_busy
-    ld hl,tty_input_owner
-    cp (hl)
+    ld b,a
+    ld a,(tty_input_owner)
+    cp b
     jr nz,zx48_keyboard_busy
     call zx48_cursor_service
     call zx48_keyboard_decode
@@ -100,8 +95,8 @@ zx48_keyboard_wake_input:
     ld a,(ix+PROC_STATE)
     cp PROC_WAIT_INPUT
     ret nz
-    ; KEY-SCAN/K-TEST/K-DECODE and the ROM wrappers preserve IX, and IM2
-    ; does not schedule, so the already-validated owner descriptor remains live.
+    ; ROM KEY-SCAN/K-TEST/K-DECODE preserve IX, and IM2 never schedules.
+    ; The already validated live owner descriptor therefore remains current.
     call zx48_keyboard_decode
     ret c
     ld (ix+PROC_STATE),PROC_READY
@@ -116,10 +111,11 @@ zx48_keyboard_busy:
 ; Inputs none. Release only the current owner; PID 0 is the sole unowned value.
 zx48_keyboard_release:
     ld a,(current_pid)
-    ld hl,tty_input_owner
-    cp (hl)
+    ld b,a
+    ld a,(tty_input_owner)
+    cp b
     ret nz
     xor a
-    ld (hl),a
+    ld (tty_input_owner),a
     ret
     ENDM

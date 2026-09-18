@@ -17,6 +17,10 @@ from pathlib import Path
 import tempfile
 from typing import Any, Callable
 from driver_core import DriverError
+from fuse_harness import FAIL_PC, PASS_PC, run_sna
+import evidence
+import phase1
+import phase1_getkey
 
 REV12="a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b"
 REV03="067d96de9a8154d7f6e01bd5b96a3f35a9319a6c046f19125aea361182f055f7"
@@ -50,10 +54,65 @@ def _static(root:Path,sha256_file):
     kb=(root/"v1/src/kernel/keyboard.asm").read_text(encoding="utf-8").lower()
     intr=(root/"v1/src/kernel/interrupt.asm").read_text(encoding="utf-8").lower()
     abi=(root/"v1/docs/abi.md").read_text(encoding="utf-8")
-    require(all(token in kb for token in ("cp $27","cp $24","jr z,zx48_keyboard_edit","ld a,$1b")),"exact EDIT raw-key mapping missing")
+    require(all(token in kb for token in ("cp $27","cp $24","ld a,$1b","ret z")),"exact EDIT raw-key mapping missing")
     require("call zx48_rom_key" not in intr and "zx48_keyboard_decode" not in intr,"IM2 decoder edge forbidden")
     for token in ("CAPS SHIFT + 1","0x1B","CAPS SHIFT + SPACE","BREAK"): require(token in abi,f"ABI missing {token}")
     return [{"name":"rev16-identity-exact","passed":True},{"name":"rev07-identity-computed","passed":True,"sha256":pd},{"name":"edit-break-contract-static","passed":True},{"name":"historical-evidence-read-only","passed":True}]
+
+def _word(value:int)->bytes:
+    return bytes((value & 0xFF,(value >> 8) & 0xFF))
+def _call(address:int)->bytes:
+    return b"\\xCD"+_word(address)
+def _jp(address:int)->bytes:
+    return b"\\xC3"+_word(address)
+def _jp_c(address:int)->bytes:
+    return b"\\xDA"+_word(address)
+def _jp_nc(address:int)->bytes:
+    return b"\\xD2"+_word(address)
+def _jp_nz(address:int)->bytes:
+    return b"\\xC2"+_word(address)
+def _replace_kernel(kernel_bytes:bytes,replacements:tuple[tuple[int,bytes],...]):
+    patched=bytearray(kernel_bytes)
+    for address,payload in replacements:
+        offset=address-phase1.KERNEL_BASE
+        require(0 <= offset <= len(patched)-6,"R16 fixture patch outside kernel")
+        require(len(payload) <= 6,"R16 fixture stub too large")
+        patched[offset:offset+6]=payload+b"\\x00"*(6-len(payload))
+    return phase1._kernel_patch(bytes(patched))
+def _target_input_tests(root:Path,labels:dict[str,int],kernel_bytes:bytes)->None:
+    decode=labels["zx48_keyboard_decode"]; scan=labels["zx48_rom_key_scan"]; ktest=labels["zx48_rom_k_test"]; e_again=labels["E_AGAIN"]
+    base=b"\\xF3"+b"\\x31"+_word(phase1.USER_STACK)
+    exact=bytearray(base)+_call(decode)+_jp_c(FAIL_PC)+bytes((0xFE,0x1B))+_jp_nz(FAIL_PC)+_jp(PASS_PC)
+    run_sna(root,bytes(exact),patch=_replace_kernel(kernel_bytes,((scan,b"\\x11\\x24\\x27\\xAF\\xC9"),)))
+    invalid=bytearray(base)+_call(decode)+_jp_nc(FAIL_PC)+bytes((0xFE,e_again & 0xFF))+_jp_nz(FAIL_PC)+_jp(PASS_PC)
+    run_sna(root,bytes(invalid),patch=_replace_kernel(kernel_bytes,((scan,b"\\x11\\x24\\x27\\xF6\\x01\\xC9"),)))
+    shifts=bytearray(base)+_call(decode)+_jp_nc(FAIL_PC)+bytes((0xFE,e_again & 0xFF))+_jp_nz(FAIL_PC)+_jp(PASS_PC)
+    run_sna(root,bytes(shifts),patch=_replace_kernel(kernel_bytes,((scan,b"\\x11\\x18\\x27\\xAF\\xC9"),(ktest,b"\\xB7\\xC9"))))
+    old=phase1_getkey.KEY_VALUE
+    try:
+        phase1_getkey.KEY_VALUE=0x1B
+        phase1_getkey._success_fixture(root,labels,kernel_bytes)
+    finally:
+        phase1_getkey.KEY_VALUE=old
+def _schema_negatives(root:Path,sha256_file)->None:
+    plan=sha256_file(root/"docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md")
+    good=evidence.valid_fixture("R16.00")
+    good["implementation_plan_sha256"]=plan
+    good["bridge_source_commit"]=good["source_commit"]
+    evidence.validate_final_record(good)
+    for label,mutate in (
+        ("missing-plan",lambda r:r.pop("implementation_plan_sha256")),
+        ("wrong-plan",lambda r:r.__setitem__("implementation_plan_sha256","0"*64)),
+        ("wrong-bridge-source",lambda r:r.__setitem__("bridge_source_commit","f"*40)),
+    ):
+        bad=json.loads(json.dumps(good)); mutate(bad)
+        try:
+            evidence.validate_final_record(bad)
+        except evidence.EvidenceError:
+            continue
+        raise BridgeError(f"prospective evidence negative oracle unexpectedly passed: {label}")
+    evidence.validate_final_record(evidence.valid_fixture("E0.04"))
+
 def _regress(root:Path,run_command,python_tool:Path):
     commands=[]; driver=root/"v1/tools-host/test-driver/run.py"
     with tempfile.TemporaryDirectory(prefix="zxux-r1600-") as tmp:
@@ -78,6 +137,17 @@ def dispatch(root:Path,action:str,step:str,*,sha256_file:Callable[[Path],str],ru
     kernel=root/"v1/build/kernel.bin"; require(kernel.is_file() and kernel.stat().st_size==8192,"kernel must be 8192 bytes")
     assertions.append({"name":"kernel-build-8192","passed":True})
     if action=="test":
+        labels=phase1._labels(root/"v1/build/kernel.lst",("zx48_keyboard_decode","zx48_rom_key_scan","zx48_rom_k_test","E_AGAIN","zx48_kernel_stack_init","current_pid","tty_input_owner","cursor_service_parity","screen_mutation_depth","tty_cursor_shape","tty_cursor_visible","tty_row","tty_col","tty_wrap_pending"))
+        kernel_bytes=kernel.read_bytes()
+        _target_input_tests(root,labels,kernel_bytes)
+        _schema_negatives(root,sha256_file)
+        assertions.extend([
+            {"name":"exact-edit-raw-chord-to-1b-runtime","passed":True},
+            {"name":"invalid-multikey-edit-negative-runtime","passed":True},
+            {"name":"caps-symbol-not-esc-runtime","passed":True},
+            {"name":"sys-con-getkey-h0-l1b-runtime","passed":True},
+            {"name":"prospective-schema-negative-suite-pass","passed":True},
+        ])
         commands.extend(_regress(root,run_command,require_project_tool(root,"tools/runtime/python/bin/python")))
         assertions.extend([{"name":"e001-e003-e004-regression-pass","passed":True},{"name":"p1-41-current-tree-non-admitting-regression-pass","passed":True},{"name":"p2-24-current-tree-non-admitting-regression-pass","passed":True}])
     names=("docs/01-ZX-UX-ARCHITECTURE-REV12.md","docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV03.md","docs/01-ZX-UX-ARCHITECTURE-REV16.md","docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md","v1/src/kernel/interrupt.asm","v1/src/kernel/keyboard.asm","v1/src/kernel/console.asm","v1/src/kernel/syscall.asm","v1/docs/abi.md","tools/scripts/verify-environment.py","v1/tools-host/test-driver/run.py","v1/tools-host/test-driver/driver_core.py","v1/tools-host/test-driver/evidence.py","v1/tools-host/test-driver/revision16_bridge.py","v1/docs/test-plan.md","v1/dist/certification/README.md","v1/build/kernel.bin")

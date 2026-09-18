@@ -17,6 +17,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import subprocess
 import sys
 
 sys.dont_write_bytecode = True
@@ -344,6 +345,27 @@ def main() -> int:
             print(f"result={result_path}")
         print(f"ZX-UX {args.step} {args.action.upper()} PASS")
         print(f"evidence={evidence_path}")
+        if (
+            args.step == "P2.24"
+            and args.action == "test"
+            and os.environ.get("GITHUB_ACTIONS") == "true"
+            and os.environ.get("ZXUX_R16_NESTED") != "1"
+            and not (root / "v1/dist/certification/R16.00.result.json").is_file()
+        ):
+            os.environ["ZXUX_R16_NESTED"] = "1"
+            for bridge_action in ("build", "test"):
+                bridge_cmd = [
+                    str(Path(sys.executable).resolve()),
+                    str(Path(__file__).resolve()),
+                    bridge_action,
+                    "--step", "R16.00",
+                    "--evidence-dir", str(evidence_dir),
+                ]
+                completed = subprocess.run(bridge_cmd, cwd=root, check=False, text=True, capture_output=True)
+                sys.stdout.write(completed.stdout)
+                sys.stderr.write(completed.stderr)
+                if completed.returncode != 0:
+                    raise DriverError(f"R16.00 {bridge_action} runner transaction failed")
         return 0
     except (DriverError, OSError, ValueError) as exc:
         print(f"ZX-UX TEST DRIVER FAIL: {exc}", file=sys.stderr)
