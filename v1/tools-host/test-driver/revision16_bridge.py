@@ -138,7 +138,7 @@ def dispatch(root:Path,action:str,step:str,*,sha256_file:Callable[[Path],str],ru
     assertions.append({"name":"kernel-build-8192","passed":True})
     assertions.append({"name":"kernel-symbol-table-present","passed":True})
     if action=="test":
-        labels=phase1._labels(root/"v1/build/kernel.lst",("zx48_keyboard_decode","zx48_rom_key_scan","zx48_rom_k_test","E_AGAIN","zx48_kernel_stack_init","current_pid","tty_input_owner","cursor_service_parity","screen_mutation_depth","tty_cursor_shape","tty_cursor_visible","tty_row","tty_col","tty_wrap_pending"))
+        labels=phase1._labels(listing,("zx48_keyboard_decode","zx48_rom_key_scan","zx48_rom_k_test","E_AGAIN","zx48_kernel_stack_init","current_pid","tty_input_owner","cursor_service_parity","screen_mutation_depth","tty_cursor_shape","tty_cursor_visible","tty_row","tty_col","tty_wrap_pending"))
         kernel_bytes=kernel.read_bytes()
         _target_input_tests(root,labels,kernel_bytes)
         _schema_negatives(root,sha256_file)
