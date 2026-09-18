@@ -63,6 +63,9 @@ declare -A explicit_header_exemptions=(
   ["docs/04-C48 Language Specification Rev 0.11.docx"]="Binary DOCX specification cannot carry the plaintext project header; exact Git blob identity is verified before this exemption is honored."
   ["docs/05-C48 Compiler User Manual Rev 0.11.docx"]="Binary DOCX user manual cannot carry the plaintext project header."
   ["docs/images/zx-ux-hero.png"]="Binary PNG hero image cannot carry the plaintext project header."
+  ["docs/images/doc-thumbs/c48-compiler-user-manual-r011.png"]="Binary PNG document thumbnail cannot carry the plaintext project header."
+  ["docs/images/doc-thumbs/c48-language-spec-r011.png"]="Binary PNG document thumbnail cannot carry the plaintext project header."
+  ["docs/images/doc-thumbs/zxux-user-manual-r12.png"]="Binary PNG document thumbnail cannot carry the plaintext project header."
   ["v1/assets/SANYALnet-Labs-4x8-font-0.bin"]="Binary 4x8 font asset cannot carry the plaintext project header."
 )
 

@@ -144,13 +144,13 @@ That constraint is the project.
 
 ## Documentation
 
-Current ZX-UX books and specifications:
+Current ZX-UX books and specifications — click a cover to open the document:
 
-| Document | Description |
-|---|---|
-| [ZX-UX User Manual Revision 12](docs/00-ZX-UX_User_Manual_Revision_12.docx) | ZX-UX user manual |
-| [C48 Language Specification Rev 0.11](docs/04-C48%20Language%20Specification%20Rev%200.11.docx) | Language specification for C48 |
-| [C48 Compiler User Manual Rev 0.11](docs/05-C48%20Compiler%20User%20Manual%20Rev%200.11.docx) | C48 compiler and programming guide |
+| ZX-UX User Manual | C48 Language Specification | C48 Compiler User Manual |
+|:---:|:---:|:---:|
+| [<img src="docs/images/doc-thumbs/zxux-user-manual-r12.png" width="220" alt="First page of ZX-UX User Manual Revision 12">](docs/00-ZX-UX_User_Manual_Revision_12.docx) | [<img src="docs/images/doc-thumbs/c48-language-spec-r011.png" width="220" alt="First page of C48 Language Specification Rev 0.11">](docs/04-C48%20Language%20Specification%20Rev%200.11.docx) | [<img src="docs/images/doc-thumbs/c48-compiler-user-manual-r011.png" width="220" alt="First page of C48 Compiler User Manual Rev 0.11">](docs/05-C48%20Compiler%20User%20Manual%20Rev%200.11.docx) |
+| [**ZX-UX User Manual Revision 12**](docs/00-ZX-UX_User_Manual_Revision_12.docx) | [**C48 Language Specification Rev 0.11**](docs/04-C48%20Language%20Specification%20Rev%200.11.docx) | [**C48 Compiler User Manual Rev 0.11**](docs/05-C48%20Compiler%20User%20Manual%20Rev%200.11.docx) |
+| ZX-UX user manual | C48 language specification | C48 compiler and programming guide |
 
 ---
 
