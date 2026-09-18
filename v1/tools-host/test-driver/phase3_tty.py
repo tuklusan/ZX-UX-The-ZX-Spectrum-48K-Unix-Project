@@ -72,7 +72,7 @@ def _binding_ok(root: Path) -> bool:
     interrupt = (root / "v1/src/kernel/interrupt.asm").read_text(encoding="utf-8")
     return all((
         "zx48_od_create:" in handles,
-        "OD_KIND_TTY" in handles,
+        "OD_KIND_TTY" in syscall,
         "zx48_console_write:" in console,
         "zx48_tty_ioctl:" in console,
         "zx48_sys_read_tty:\n    call zx48_keyboard_getkey" in syscall,
