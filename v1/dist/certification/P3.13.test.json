@@ -1,0 +1,40 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {"name":"write-checks-read-endpoint-before-copy","passed":true},
+    {"name":"broken-pipe-returns-e-pipe","passed":true},
+    {"name":"final-read-close-clears-logical-reader","passed":true},
+    {"name":"read-close-wakes-writers","passed":true},
+    {"name":"od-release-defers-endpoint-close-until-final-ref","passed":true},
+    {"name":"final-read-od-release-closes-pipe-endpoint","passed":true},
+    {"name":"duplicate-read-ref-prevents-premature-e-pipe","passed":true},
+    {"name":"final-read-close-enables-e-pipe","passed":true},
+    {"name":"broken-pipe-has-no-hidden-write","passed":true}
+  ],
+  "commands": [{
+    "argv":["tools/runtime/sjasmplus/bin/sjasmplus","--nologo","--lst=../../build/kernel-p1.lst","--sym=../../build/kernel-p1.sym","kernel.asm"],
+    "cwd":"v1/src/kernel",
+    "duration_ms":34,
+    "exit_code":0,
+    "stderr":"Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12482 lines, work time: 0.033 seconds\n",
+    "stdout":"",
+    "timed_out":false
+  }],
+  "hashes":{
+    "v1/build/kernel.bin":"4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/dist/certification/P3.12.test.json":"6989eb444e5abb24fedb7f17c447eed199d7c140d12d5a503ea7de7c4fa734fe",
+    "v1/src/kernel/handles.asm":"3ce446fcc68f95b4cec52fee6b6202ec85a58bb5fcbc9bd7e41c9e517c16d016",
+    "v1/src/kernel/pipe.asm":"d2ccc787714ab8af9ddf275b50e92db59aee00fbccf912c0ac0134dc6127beec",
+    "v1/tools-host/test-driver/phase3_pipe_broken.py":"6d4c41a45b8dde1226699954a9cc482539fd3f8209de139e6257274bb29a7b8b",
+    "v1/tools-host/test-driver/run.py":"861506ca85d5df35c4d1c48ef7372551c4b75baf55fac23de2f1589bff32b5aa"
+  },
+  "implementation_plan_sha256":"840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites":{"P3.12":"PASS"},
+  "schema":2,
+  "source_commit":"f04a284f3b5547cf5a94b25a6a6695a03e7f98c0",
+  "status":"PASS",
+  "step":"P3.13",
+  "toolchain_lock_sha256":"1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean":true
+}
