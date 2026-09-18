@@ -1,0 +1,2453 @@
+{
+  "action": "result",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "rev16-identity-exact",
+      "passed": true
+    },
+    {
+      "name": "rev07-identity-computed",
+      "passed": true,
+      "sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc"
+    },
+    {
+      "name": "edit-break-contract-static",
+      "passed": true
+    },
+    {
+      "name": "historical-evidence-read-only",
+      "passed": true
+    },
+    {
+      "name": "kernel-build-8192",
+      "passed": true
+    },
+    {
+      "name": "kernel-symbol-table-present",
+      "passed": true
+    },
+    {
+      "name": "exact-edit-raw-chord-to-1b-runtime",
+      "passed": true
+    },
+    {
+      "name": "invalid-multikey-edit-negative-runtime",
+      "passed": true
+    },
+    {
+      "name": "caps-symbol-not-esc-runtime",
+      "passed": true
+    },
+    {
+      "name": "sys-con-getkey-h0-l1b-runtime",
+      "passed": true
+    },
+    {
+      "name": "prospective-schema-negative-suite-pass",
+      "passed": true
+    },
+    {
+      "name": "e001-e003-e004-regression-pass",
+      "passed": true
+    },
+    {
+      "name": "p1-41-current-tree-non-admitting-regression-pass",
+      "passed": true
+    },
+    {
+      "name": "p2-24-current-tree-non-admitting-regression-pass",
+      "passed": true
+    },
+    {
+      "name": "same-clean-bridge-source-candidate-all-records",
+      "passed": true
+    }
+  ],
+  "bridge_source_commit": "acb20d3a7c12677be411e24576c6919800b23384",
+  "commands": [
+    {
+      "argv": [
+        "git",
+        "hash-object",
+        "docs/01-ZX-UX-ARCHITECTURE-REV12.md"
+      ],
+      "cwd": ".",
+      "duration_ms": 2,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "56f509189de369038258cca0f61ae0f59ddd4a04\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "git",
+        "hash-object",
+        "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV03.md"
+      ],
+      "cwd": ".",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "173c82c30c3787a0a020833b49e3e486e570840e\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12451 lines, work time: 0.033 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "E0.01",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/e0"
+      ],
+      "cwd": ".",
+      "duration_ms": 350,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX E0.01 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/e0/E0.01.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "E0.01",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/e0"
+      ],
+      "cwd": ".",
+      "duration_ms": 338,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX E0.01 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/e0/E0.01.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "E0.03",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/e0"
+      ],
+      "cwd": ".",
+      "duration_ms": 335,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX E0.03 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/e0/E0.03.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "E0.03",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/e0"
+      ],
+      "cwd": ".",
+      "duration_ms": 708,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX E0.03 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/e0/E0.03.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "E0.04",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/e0"
+      ],
+      "cwd": ".",
+      "duration_ms": 302,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX E0.04 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/e0/E0.04.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "E0.04",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/e0"
+      ],
+      "cwd": ".",
+      "duration_ms": 305,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX E0.04 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/e0/E0.04.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.01",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 338,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.01 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.01.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.01",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 398,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.01 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.01.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.02",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 344,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.02 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.02.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.02",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 430,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.02 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.02.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.03",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 338,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.03 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.03.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.03",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 399,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.03 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.03.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.04",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 345,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.04 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.04.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.04",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 406,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.04 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.04.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.05",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 344,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.05 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.05.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.05",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 402,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.05 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.05.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.06",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 339,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.06 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.06.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.06",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 406,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.06 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.06.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.07",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 346,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.07 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.07.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.07",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 403,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.07 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.07.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.08",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 350,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.08 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.08.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.08",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 409,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.08 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.08.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.09",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 349,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.09 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.09.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.09",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 413,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.09 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.09.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.10",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 342,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.10 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.10.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.10",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 401,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.10 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.10.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.11",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 341,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.11 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.11.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.11",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 399,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.11 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.11.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.12",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 338,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.12 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.12.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.12",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 462,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.12 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.12.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.13",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 336,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.13 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.13.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.13",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 945,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.13 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.13.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.14",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 344,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.14 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.14.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.14",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 492,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.14 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.14.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.15",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 330,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.15 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.15.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.15",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 572,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.15 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.15.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.16",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 336,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.16 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.16.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.16",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 578,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.16 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.16.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.17",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 344,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.17 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.17.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.17",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 574,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.17 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.17.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.18",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 334,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.18 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.18.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.18",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 745,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.18 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.18.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.19",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 347,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.19 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.19.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.19",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 520,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.19 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.19.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.20",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 339,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.20 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.20.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.20",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 585,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.20 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.20.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.21",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 344,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.21 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.21.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.21",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 1289,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.21 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.21.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.22",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 341,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.22 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.22.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.22",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 1638,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.22 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.22.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.23",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 345,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.23 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.23.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.23",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 728,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.23 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.23.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.24",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 346,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.24 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.24.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.24",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 715,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.24 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.24.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.25",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 351,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.25 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.25.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.25",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 595,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.25 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.25.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.26",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 344,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.26 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.26.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.26",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 590,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.26 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.26.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.27",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 340,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.27 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.27.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.27",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 589,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.27 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.27.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.28",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 340,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.28 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.28.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.28",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 473,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.28 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.28.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.29",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 335,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.29 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.29.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.29",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 456,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.29 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.29.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.30",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 332,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.30 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.30.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.30",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 570,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.30 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.30.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.31",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 336,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.31 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.31.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.31",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 623,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.31 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.31.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.32",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 347,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.32 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.32.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.32",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 472,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.32 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.32.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.33",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 347,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.33 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.33.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.33",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 528,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.33 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.33.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.34",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 340,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.34 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.34.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.34",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 519,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.34 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.34.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.35",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 339,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.35 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.35.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.35",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 1408,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.35 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.35.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.36",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 339,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.36 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.36.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.36",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 2410,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.36 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.36.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.37",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 330,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.37 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.37.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.37",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 1027,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.37 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.37.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.38",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 333,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.38 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.38.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.38",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 521,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.38 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.38.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.39",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 332,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.39 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.39.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.39",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 1085,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.39 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.39.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.40",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 336,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.40 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.40.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.40",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 1048,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.40 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.40.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P1.41",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 321,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.41 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.41.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P1.41",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p1"
+      ],
+      "cwd": ".",
+      "duration_ms": 716,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P1.41 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p1/P1.41.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P2.01",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 329,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.01 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.01.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P2.01",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 388,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.01 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.01.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P2.02",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 332,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.02 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.02.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P2.02",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 330,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.02 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.02.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P2.03",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 305,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.03 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.03.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P2.03",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 1045,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.03 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.03.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P2.04",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 309,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.04 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.04.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P2.04",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 530,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.04 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.04.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P2.05",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 312,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.05 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.05.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P2.05",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 757,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.05 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.05.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P2.06",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 311,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.06 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.06.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P2.06",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 1213,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.06 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.06.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P2.07",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 320,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.07 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.07.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P2.07",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 2084,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.07 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.07.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P2.08",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 316,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.08 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.08.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P2.08",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 855,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.08 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.08.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P2.09",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 350,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.09 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.09.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P2.09",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 1797,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.09 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.09.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P2.10",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 354,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.10 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.10.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P2.10",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 1109,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.10 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.10.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P2.11",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 357,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.11 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.11.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P2.11",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 1102,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.11 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.11.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P2.12",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 350,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.12 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.12.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P2.12",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 777,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.12 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.12.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P2.13",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 339,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.13 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.13.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P2.13",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 417,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.13 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.13.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P2.14",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 353,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.14 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.14.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P2.14",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 610,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.14 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.14.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P2.15",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 353,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.15 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.15.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P2.15",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 596,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.15 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.15.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P2.16",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 354,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.16 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.16.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P2.16",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 610,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.16 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.16.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P2.17",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 346,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.17 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.17.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P2.17",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 471,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.17 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.17.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P2.18",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 348,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.18 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.18.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P2.18",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 506,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.18 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.18.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P2.19",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 333,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.19 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.19.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P2.19",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 523,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.19 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.19.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P2.20",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 345,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.20 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.20.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P2.20",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 456,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.20 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.20.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P2.21",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 337,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.21 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.21.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P2.21",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 694,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.21 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.21.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P2.22",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 369,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.22 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.22.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P2.22",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 23508,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.22 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.22.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P2.23",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 358,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.23 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.23.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P2.23",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 575,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.23 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.23.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "build",
+        "--step",
+        "P2.24",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 311,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.24 BUILD PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.24.build.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P2.24",
+        "--evidence-dir",
+        "/tmp/zxux-r1600-l06icmh0/p2"
+      ],
+      "cwd": ".",
+      "duration_ms": 49173,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P2.24 TEST PASS\nevidence=/tmp/zxux-r1600-l06icmh0/p2/P2.24.test.json\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "docs/01-ZX-UX-ARCHITECTURE-REV12.md": "a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b",
+    "docs/01-ZX-UX-ARCHITECTURE-REV16.md": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+    "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV03.md": "067d96de9a8154d7f6e01bd5b96a3f35a9319a6c046f19125aea361182f055f7",
+    "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+    "tools/scripts/verify-environment.py": "650e8a92a0a21701e5b75034783f256d03faf0ef4f2ed8ecd129d6723d9eee31",
+    "v1/build/kernel.bin": "660da2a7aef42ab35f138b288073582963c887767bf68ea6d151538a47a368d4",
+    "v1/dist/certification/README.md": "14d7df93ae8012f32d02c716d0a3c6283e44e8399b13836939f2ac26ca6d98e0",
+    "v1/docs/abi.md": "1068ba55ee10e381726a3a634cc6d81735094720d753a1c648f4a1c31b15854c",
+    "v1/docs/test-plan.md": "ced5cb8b95f221fad5927f96e93bf254dc3227c7f86c5a964dd924a0ca9e6a46",
+    "v1/src/kernel/console.asm": "b064fff503bd1c498b46a4890537423a1857b842406480ffa9233db54ee461e3",
+    "v1/src/kernel/interrupt.asm": "cf70af177c18f323ac368f45468dbe907aef3d76488f92d844570b6875d5c9de",
+    "v1/src/kernel/keyboard.asm": "9eb14508a6b31b20779ef2c390a0b0ccbdc26292fdefdbe5cfe5de0375c32ea2",
+    "v1/src/kernel/syscall.asm": "50a7df7371e29a48439f4d064ef33a37ed9cc079736590e97ded36702a8c2277",
+    "v1/tools-host/test-driver/driver_core.py": "e593decfba7c71b0a45060af90dd163ff2650624c3aab4b7b03ecc34de4da026",
+    "v1/tools-host/test-driver/evidence.py": "177f7274e12e972339ee4660cdc66809990e4decb7e808f15ec15ea661e629f8",
+    "v1/tools-host/test-driver/revision16_bridge.py": "f59c6f2ada2eba92ecae762702fe4affdb74ad17efb31cc1776842452fdd081a",
+    "v1/tools-host/test-driver/run.py": "69c3583eb838f3ce6dcc22ede89e506f112b9cab66ebabab85eb57c722c1cb4e"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "pass_marker": "ZX-UX REV16 PHASE-3 BASELINE BRIDGE PASS",
+  "prerequisites": {
+    "P2.24": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "acb20d3a7c12677be411e24576c6919800b23384",
+  "status": "PASS",
+  "step": "R16.00",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

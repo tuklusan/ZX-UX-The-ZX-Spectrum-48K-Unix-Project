@@ -1,0 +1,104 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "rev16-identity-exact",
+      "passed": true
+    },
+    {
+      "name": "rev07-identity-computed",
+      "passed": true,
+      "sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc"
+    },
+    {
+      "name": "edit-break-contract-static",
+      "passed": true
+    },
+    {
+      "name": "historical-evidence-read-only",
+      "passed": true
+    },
+    {
+      "name": "kernel-build-8192",
+      "passed": true
+    },
+    {
+      "name": "kernel-symbol-table-present",
+      "passed": true
+    }
+  ],
+  "bridge_source_commit": "acb20d3a7c12677be411e24576c6919800b23384",
+  "commands": [
+    {
+      "argv": [
+        "git",
+        "hash-object",
+        "docs/01-ZX-UX-ARCHITECTURE-REV12.md"
+      ],
+      "cwd": ".",
+      "duration_ms": 2,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "56f509189de369038258cca0f61ae0f59ddd4a04\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "git",
+        "hash-object",
+        "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV03.md"
+      ],
+      "cwd": ".",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "173c82c30c3787a0a020833b49e3e486e570840e\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12451 lines, work time: 0.032 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "docs/01-ZX-UX-ARCHITECTURE-REV12.md": "a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b",
+    "docs/01-ZX-UX-ARCHITECTURE-REV16.md": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+    "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV03.md": "067d96de9a8154d7f6e01bd5b96a3f35a9319a6c046f19125aea361182f055f7",
+    "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+    "tools/scripts/verify-environment.py": "650e8a92a0a21701e5b75034783f256d03faf0ef4f2ed8ecd129d6723d9eee31",
+    "v1/build/kernel.bin": "660da2a7aef42ab35f138b288073582963c887767bf68ea6d151538a47a368d4",
+    "v1/dist/certification/README.md": "14d7df93ae8012f32d02c716d0a3c6283e44e8399b13836939f2ac26ca6d98e0",
+    "v1/docs/abi.md": "1068ba55ee10e381726a3a634cc6d81735094720d753a1c648f4a1c31b15854c",
+    "v1/docs/test-plan.md": "ced5cb8b95f221fad5927f96e93bf254dc3227c7f86c5a964dd924a0ca9e6a46",
+    "v1/src/kernel/console.asm": "b064fff503bd1c498b46a4890537423a1857b842406480ffa9233db54ee461e3",
+    "v1/src/kernel/interrupt.asm": "cf70af177c18f323ac368f45468dbe907aef3d76488f92d844570b6875d5c9de",
+    "v1/src/kernel/keyboard.asm": "9eb14508a6b31b20779ef2c390a0b0ccbdc26292fdefdbe5cfe5de0375c32ea2",
+    "v1/src/kernel/syscall.asm": "50a7df7371e29a48439f4d064ef33a37ed9cc079736590e97ded36702a8c2277",
+    "v1/tools-host/test-driver/driver_core.py": "e593decfba7c71b0a45060af90dd163ff2650624c3aab4b7b03ecc34de4da026",
+    "v1/tools-host/test-driver/evidence.py": "177f7274e12e972339ee4660cdc66809990e4decb7e808f15ec15ea661e629f8",
+    "v1/tools-host/test-driver/revision16_bridge.py": "f59c6f2ada2eba92ecae762702fe4affdb74ad17efb31cc1776842452fdd081a",
+    "v1/tools-host/test-driver/run.py": "69c3583eb838f3ce6dcc22ede89e506f112b9cab66ebabab85eb57c722c1cb4e"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P2.24": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "acb20d3a7c12677be411e24576c6919800b23384",
+  "status": "PASS",
+  "step": "R16.00",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
