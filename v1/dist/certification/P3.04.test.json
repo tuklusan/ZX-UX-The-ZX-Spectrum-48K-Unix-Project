@@ -1,0 +1,81 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "null-is-generic-open-description-kind",
+      "passed": true
+    },
+    {
+      "name": "null-read-is-immediate-zero-byte-success",
+      "passed": true
+    },
+    {
+      "name": "null-write-returns-full-request-count",
+      "passed": true
+    },
+    {
+      "name": "null-seek-is-not-supported",
+      "passed": true
+    },
+    {
+      "name": "null-ioctl-is-kind-rejected",
+      "passed": true
+    },
+    {
+      "name": "null-kind-is-nonzero-live-description-kind",
+      "passed": true
+    },
+    {
+      "name": "null-read-hl-zero-and-buffer-unchanged",
+      "passed": true
+    },
+    {
+      "name": "null-write-returns-full-count",
+      "passed": true
+    },
+    {
+      "name": "null-seek-enotsup",
+      "passed": true
+    },
+    {
+      "name": "null-invalid-ioctl-enotsup",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12471 lines, work time: 0.033 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "660da2a7aef42ab35f138b288073582963c887767bf68ea6d151538a47a368d4",
+    "v1/dist/certification/P3.03.test.json": "0482f527daa9dcfea8bda46c6b8ca84c785953a3fed3a4b039afc84dd34f74dc",
+    "v1/src/kernel/handles.asm": "d9a0c978d0bf312b2d63900c902b2f05e9d165dbc72d95b794f11314c8edad86",
+    "v1/src/kernel/syscall.asm": "50a7df7371e29a48439f4d064ef33a37ed9cc079736590e97ded36702a8c2277",
+    "v1/tools-host/test-driver/phase3_null.py": "7fba78a0c94daab07073b9885d743bfd01e8092432e81b1e3e926b908ca7c023",
+    "v1/tools-host/test-driver/run.py": "72a48d04238228cdccc7db9deca5d9dd850344bfe32ec7d46d5f384ba94646e3"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P3.03": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "bc5d23796f0332267dd32127a497b802e4d83630",
+  "status": "PASS",
+  "step": "P3.04",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
