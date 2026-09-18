@@ -46,19 +46,6 @@ zx48_handles_init:
     ldir
     ret
 
-; C=exact /dev/tty access mask: O_READ, O_WRITE, or both.
-; Returns one independent OD_KIND_TTY open description.
-zx48_tty_description_create:
-    ld a,c
-    and O_READ|O_WRITE
-    jr z,zx48_handle_inval
-    ld a,c
-    and $fc
-    jr nz,zx48_handle_inval
-    ld b,OD_KIND_TTY
-    ld d,0
-    jp zx48_od_create
-
 ; A=index -> IX record. A is preserved on success.
 zx48_od_ptr:
     cp OPEN_DESCRIPTION_COUNT
@@ -317,10 +304,6 @@ zx48_handles_close_all_next:
     xor a
     ret
 
-zx48_handle_inval:
-    ld a,E_INVAL
-    scf
-    ret
 zx48_handle_noent:
     ld a,E_NOENT
     scf

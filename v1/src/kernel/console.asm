@@ -48,10 +48,6 @@ zx48_console_init:
     ld (tty_mode),a
     ret
 
-; Canonical /dev/tty input byte source. No tty-mode or token translation occurs.
-zx48_tty_read_byte:
-    jp zx48_keyboard_getkey
-
 zx48_console_clear:
     call zx48_cursor_hide
 zx48_console_clear_body:
@@ -208,7 +204,6 @@ zx48_console_wrap_store:
     ret
 
 ; HL=buffer,BC=count; returns HL=bytes written.
-zx48_tty_write_bytes:
 zx48_console_write:
     ld (console_count),bc
 zx48_console_write_loop:
@@ -246,7 +241,6 @@ zx48_console_clear_attr_row:
     ret
 
 ; HL -> {handle,request,arg_ptr}; caller verified tty handle.
-zx48_tty_ioctl_dispatch:
 zx48_tty_ioctl:
     inc hl
     ld a,(hl)

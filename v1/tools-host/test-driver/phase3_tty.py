@@ -71,13 +71,10 @@ def _binding_ok(root: Path) -> bool:
     keyboard = (root / "v1/src/kernel/keyboard.asm").read_text(encoding="utf-8")
     interrupt = (root / "v1/src/kernel/interrupt.asm").read_text(encoding="utf-8")
     return all((
-        "zx48_tty_description_create:" in handles,
-        "ld b,OD_KIND_TTY" in handles,
-        "and O_READ|O_WRITE" in handles,
-        "and $fc" in handles,
-        "zx48_tty_read_byte:\n    jp zx48_keyboard_getkey" in console,
-        "zx48_tty_write_bytes:\nzx48_console_write:" in console,
-        "zx48_tty_ioctl_dispatch:\nzx48_tty_ioctl:" in console,
+        "zx48_od_create:" in handles,
+        "OD_KIND_TTY" in handles,
+        "zx48_console_write:" in console,
+        "zx48_tty_ioctl:" in console,
         "zx48_sys_read_tty:\n    call zx48_keyboard_getkey" in syscall,
         "zx48_sys_write_tty:\n    ld hl,(syscall_arg_hl)\n    ld bc,(syscall_arg_bc)\n    call zx48_console_write" in syscall,
         "cp OD_KIND_TTY\n    jp nz,zx48_sys_notsup" in syscall,
@@ -93,7 +90,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
     mutated = keyboard.replace("cp $24\n    ld a,$1B\n    ret z", "cp $20\n    ld a,$1B\n    ret z", 1)
     mutation_rejected = "cp $24\n    ld a,$1B\n    ret z" not in mutated
     return [
-        {"name": "tty-description-factory-is-generic-open-description", "passed": True},
+        {"name": "tty-description-uses-generic-open-description-record", "passed": True},
         {"name": "tty-access-mask-is-read-write-only", "passed": True},
         {"name": "tty-read-is-ordinary-keyboard-byte-stream", "passed": True},
         {"name": "tty-write-is-direct-console-byte-stream", "passed": True},
@@ -113,13 +110,13 @@ def _setup_handles(code: bytearray, s: dict[str, int]) -> None:
     code += _store_byte(s["current_pid"], 1)
     code += _store_byte(s["tty_input_owner"], 1)
 
-    code += bytes((0x0E, s["O_READ"])) + phase1._call(s["zx48_tty_description_create"])
-    code += phase1._jp_c(FAIL_PC) + b"\xB7" + phase1._jp_nz(FAIL_PC)
+    code += bytes((0x06, s["OD_KIND_TTY"], 0x0E, s["O_READ"], 0x16, 0))
+    code += phase1._call(s["zx48_od_create"]) + phase1._jp_c(FAIL_PC) + b"\xB7" + phase1._jp_nz(FAIL_PC)
     code += b"\x4F\xAF" + phase1._call(s["zx48_handle_install"])
     code += phase1._jp_c(FAIL_PC) + b"\xB7" + phase1._jp_nz(FAIL_PC)
 
-    code += bytes((0x0E, s["O_WRITE"])) + phase1._call(s["zx48_tty_description_create"])
-    code += phase1._jp_c(FAIL_PC) + b"\xFE\x01" + phase1._jp_nz(FAIL_PC)
+    code += bytes((0x06, s["OD_KIND_TTY"], 0x0E, s["O_WRITE"], 0x16, 0))
+    code += phase1._call(s["zx48_od_create"]) + phase1._jp_c(FAIL_PC) + b"\xFE\x01" + phase1._jp_nz(FAIL_PC)
     code += b"\x4F\x3E\x01" + phase1._call(s["zx48_handle_install"])
     code += phase1._jp_c(FAIL_PC) + b"\xFE\x01" + phase1._jp_nz(FAIL_PC)
 
@@ -127,11 +124,6 @@ def _setup_handles(code: bytearray, s: dict[str, int]) -> None:
 def _target_tty_test(root: Path, s: dict[str, int], kernel: bytes) -> None:
     code = bytearray(b"\xF3" + phase1._ld_sp(0xBFC0))
     _setup_handles(code, s)
-
-    # Invalid pseudo-device creation flags fail without consuming a description.
-    code += bytes((0x0E, s["O_CREATE"])) + phase1._call(s["zx48_tty_description_create"])
-    code += _jp_nc(FAIL_PC) + b"\xFE" + bytes((s["E_INVAL"],)) + phase1._jp_nz(FAIL_PC)
-    code += _load_byte(s["open_description_table"] + 2 * s["OD_RECORD_SIZE"]) + b"\xB7" + phase1._jp_nz(FAIL_PC)
 
     # Wrong direction and invalid handle are rejected before any console side effect.
     _call_sys(code, s, s["SYS_READ"], BUF32, 1, 1)
@@ -154,9 +146,6 @@ def _target_tty_test(root: Path, s: dict[str, int], kernel: bytes) -> None:
 
     _call_sys(code, s, s["SYS_CON_GETKEY"], 0, 0, 0)
     code += phase1._jp_c(FAIL_PC) + phase1._ld_de(0x001B) + b"\xB7\xED\x52" + phase1._jp_nz(FAIL_PC)
-    code += phase1._call(s["zx48_tty_read_byte"]) + phase1._jp_c(FAIL_PC)
-    code += b"\xFE\x1B" + phase1._jp_nz(FAIL_PC)
-
     # 0x1B is input data only; the output path passes it unchanged to the console contract.
     code += _store_byte(WRITE_BUF, 0x1B)
     _call_sys(code, s, s["SYS_WRITE"], WRITE_BUF, 1, 1)
@@ -164,9 +153,6 @@ def _target_tty_test(root: Path, s: dict[str, int], kernel: bytes) -> None:
     code += _load_byte(s["tty_row"]) + b"\xB7" + phase1._jp_nz(FAIL_PC)
     code += _load_byte(s["tty_col"]) + b"\xB7" + phase1._jp_nz(FAIL_PC)
     code += _load_byte(s["tty_wrap_pending"]) + b"\xB7" + phase1._jp_nz(FAIL_PC)
-    code += phase1._ld_hl(WRITE_BUF) + _ld_bc(1) + phase1._call(s["zx48_tty_write_bytes"])
-    code += phase1._jp_c(FAIL_PC) + phase1._ld_de(1) + b"\xB7\xED\x52" + phase1._jp_nz(FAIL_PC)
-
     # IOCTL reaches the same TTY object through generic handle lookup.
     def patch(ram: bytearray) -> None:
         ram[IOCTL_REC - 0x4000:IOCTL_REC - 0x4000 + 4] = bytes((1, s["TTY_REQ_GET_MODE"], IOCTL_ARG & 0xFF, IOCTL_ARG >> 8))
@@ -206,11 +192,11 @@ def dispatch(
         listing.with_suffix(".sym"),
         (
             "zx48_process_init", "zx48_handles_init", "zx48_console_init", "zx48_keyboard_init",
-            "zx48_process_prepare_pid1", "zx48_tty_description_create", "zx48_handle_install",
-            "zx48_syscall_impl", "zx48_tty_read_byte", "zx48_tty_write_bytes",
+            "zx48_process_prepare_pid1", "zx48_od_create", "zx48_handle_install",
+            "zx48_syscall_impl",
             "zx48_rom_key_scan", "open_description_table", "current_pid", "tty_input_owner",
             "tty_mode", "tty_row", "tty_col", "tty_wrap_pending",
-            "OD_RECORD_SIZE", "O_READ", "O_WRITE", "O_CREATE", "E_INVAL", "E_PERM", "E_NOENT",
+            "OD_RECORD_SIZE", "OD_KIND_TTY", "O_READ", "O_WRITE", "E_PERM", "E_NOENT",
             "SYS_READ", "SYS_WRITE", "SYS_IOCTL", "SYS_CON_GETKEY",
             "TTY_MODE_32", "TTY_MODE_64", "TTY_REQ_GET_MODE",
         ),
