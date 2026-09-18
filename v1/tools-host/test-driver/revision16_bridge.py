@@ -134,8 +134,12 @@ def dispatch(root:Path,action:str,step:str,*,sha256_file:Callable[[Path],str],ru
     assembler=require_project_tool(root,"tools/runtime/sjasmplus/bin/sjasmplus")
     r=run_command([assembler,"--nologo","--lst=../../build/kernel.lst","kernel.asm"],cwd=root/"v1/src/kernel",timeout_seconds=120.0); commands.append(r)
     require(not r.timed_out and r.exit_code==0,"kernel assembly failed")
-    kernel=root/"v1/build/kernel.bin"; require(kernel.is_file() and kernel.stat().st_size==8192,"kernel must be 8192 bytes")
+    kernel=root/"v1/build/kernel.bin"
+    listing=root/"v1/build/kernel.lst"
+    require(kernel.is_file() and kernel.stat().st_size==8192,"kernel must be 8192 bytes")
+    require(listing.is_file(),"kernel symbol table missing")
     assertions.append({"name":"kernel-build-8192","passed":True})
+    assertions.append({"name":"kernel-symbol-table-present","passed":True})
     if action=="test":
         labels=phase1._labels(root/"v1/build/kernel.lst",("zx48_keyboard_decode","zx48_rom_key_scan","zx48_rom_k_test","E_AGAIN","zx48_kernel_stack_init","current_pid","tty_input_owner","cursor_service_parity","screen_mutation_depth","tty_cursor_shape","tty_cursor_visible","tty_row","tty_col","tty_wrap_pending"))
         kernel_bytes=kernel.read_bytes()
