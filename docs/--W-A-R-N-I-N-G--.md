@@ -82,10 +82,11 @@ That is worse than an obvious failure. It is a silent provenance break.
 The project presently has a deliberate authority transition model:
 
 - REV12 / REV03 remain the active authority through completion of Phase 2.
-- REV13 / REV04 may exist in the repository as dormant prospective authorities.
+- REV13 / REV04 remain frozen, never-activated historical prospective revisions.
+- REV14 / REV05 are the current dormant prospective authorities.
 - Their presence alone does not activate them.
-- The authority switch occurs only through the defined `R13.00` bridge after Phase 2 has fully closed and the bridge has passed its required admission and validation gates.
-- After check-in, **REV12, REV03, REV13, and REV04 must all remain byte-for-byte unchanged.**
+- The authority switch occurs only through the defined `R14.00` bridge after Phase 2 has fully closed and the bridge has passed its required admission and validation gates.
+- After check-in, **REV12, REV03, REV13, REV04, REV14, and REV05 must all remain byte-for-byte unchanged.**
 
 Do not "prepare" the transition by editing any of those files in place.
 
