@@ -51,6 +51,10 @@ INITIAL_CONTEXT_ARG_LEN       EQU 8
 INITIAL_CONTEXT_ENV_PTR       EQU 10
 INITIAL_CONTEXT_SEED_SIZE     EQU 12
 
+    ASSERT MAX_PROCESSES = 8
+    ASSERT PROC_DESC_SIZE <= PROCESS_DESC_MAX_SIZE
+    ASSERT MAX_PROCESSES*PROC_DESC_SIZE <= PROCESS_TABLE_BUDGET
+
 ; P2.09 pure PID-capacity scan. The helper performs no writes and deliberately
 ; examines exactly PID2..PID7. Success leaves IX at the first FREE descriptor,
 ; C/A equal to its PID, and carry clear. A full table returns E_AGAIN/carry set.
@@ -421,6 +425,7 @@ zx48_process_wait_reap:
     xor a
     ret
 
+process_fixed_state_start:
 process_name_sh: db 's','h',0,0,0,0,0,0,0,0
 process_info_ptr: dw 0
 process_temp_pid: db 0
@@ -429,6 +434,7 @@ process_wait_target: db 0
 process_wait_has_child: db 0
 current_pid: db 0
 process_table: defs MAX_PROCESSES*PROC_DESC_SIZE,0
+process_fixed_state_end:
     ENDM
 
 

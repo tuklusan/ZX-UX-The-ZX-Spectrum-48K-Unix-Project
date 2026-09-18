@@ -19,7 +19,7 @@ OD_REFS_O                  EQU 2
 OD_ID_O                    EQU 3
 OD_OFFSET_O                EQU 4
 OD_AUX_O                   EQU 6
-OD_COMPACT_SIZE            EQU 8
+OD_COMPACT_SIZE            EQU OD_RECORD_SIZE
 
 ; Fixed fast-data area: runtime state does not consume the ordinary code/data pool.
 HANDLE_FAST_BASE           EQU FAST_RESERVE_START
@@ -29,6 +29,11 @@ handle_dup_source          EQU HANDLE_FAST_BASE+2
 handle_dup_destination     EQU HANDLE_FAST_BASE+3
 open_description_table     EQU HANDLE_FAST_BASE+4
 HANDLE_FAST_END            EQU open_description_table+OPEN_DESCRIPTION_COUNT*OD_COMPACT_SIZE
+
+    ASSERT OPEN_DESCRIPTION_COUNT = 24
+    ASSERT OD_COMPACT_SIZE <= OD_DESC_SIZE
+    ASSERT OPEN_DESCRIPTION_COUNT*OD_COMPACT_SIZE <= OPEN_DESCRIPTION_BUDGET
+    ASSERT HANDLE_FAST_END <= FAST_RESERVE_END+1
 
     MACRO EMIT_HANDLE_ROUTINES
 zx48_handles_init:
