@@ -82,12 +82,12 @@ That is worse than an obvious failure. It is a silent provenance break.
 The project presently has a deliberate authority transition model:
 
 - REV12 / REV03 are the immutable historical authorities for completed Phase 2.
-- REV13 / REV04 and REV14 / REV05 are frozen, never-activated historical prospective revisions.
-- REV05 is frozen at its actual bytes despite its stale embedded Revision-13 identity and stale `Revision-14/04` bridge labels; it must not be repaired in place.
-- REV15 / REV06 are the current dormant prospective authorities.
+- REV13 / REV04, REV14 / REV05, and REV15 / REV06 are frozen, never-activated historical prospective revisions.
+- REV05 and REV06 remain frozen at their actual bytes despite their stale embedded authority defects; neither may be repaired in place.
+- REV16 / REV07 are the current dormant prospective authorities.
 - Their presence alone does not activate them.
-- The authority switch occurs only through the defined `R15.00` bridge after Phase 2, with the exact REV15/REV06 identities pinned by the master workflow.
-- After check-in, **REV12, REV03, REV13, REV04, REV14, REV05, REV15, and REV06 must all remain byte-for-byte unchanged.**
+- The authority switch occurs only through the defined `R16.00` bridge after Phase 2, with the exact REV16/REV07 identities pinned by the master workflow.
+- After check-in, **REV12, REV03, REV13, REV04, REV14, REV05, REV15, REV06, REV16, and REV07 must all remain byte-for-byte unchanged.**
 
 Do not "prepare" the transition by editing any of those files in place.
 
