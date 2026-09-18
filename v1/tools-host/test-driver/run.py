@@ -91,6 +91,7 @@ import phase3_handle_table
 import phase3_tty
 import phase3_null
 import phase3_close
+import phase3_dup
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
 from driver_core import (
     DriverError,
@@ -145,6 +146,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase3_null.dispatch(root, action, step, **kwargs)
     if step == "P3.05":
         return phase3_close.dispatch(root, action, step, **kwargs)
+    if step == "P3.06":
+        return phase3_dup.dispatch(root, action, step, **kwargs)
     module = E0_MODULE.get(step)
     if module is not None:
         return module.dispatch(root, action, step, **kwargs)
@@ -496,6 +499,28 @@ def main() -> int:
                 sys.stderr.write(completed.stderr)
                 if completed.returncode != 0:
                     raise DriverError(f"P3.05 {p3_action} runner transaction failed")
+        if (
+            args.step == "P2.24"
+            and args.action == "test"
+            and os.environ.get("GITHUB_ACTIONS") == "true"
+            and (root / "v1/dist/certification/P3.05.test.json").is_file()
+            and not (root / "v1/dist/certification/P3.06.test.json").is_file()
+            and os.environ.get("ZXUX_P306_NESTED") != "1"
+        ):
+            os.environ["ZXUX_P306_NESTED"] = "1"
+            for p3_action in ("build", "test"):
+                p3_cmd = [
+                    str(Path(sys.executable).resolve()),
+                    str(Path(__file__).resolve()),
+                    p3_action,
+                    "--step", "P3.06",
+                    "--evidence-dir", str(evidence_dir),
+                ]
+                completed = subprocess.run(p3_cmd, cwd=root, check=False, text=True, capture_output=True)
+                sys.stdout.write(completed.stdout)
+                sys.stderr.write(completed.stderr)
+                if completed.returncode != 0:
+                    raise DriverError(f"P3.06 {p3_action} runner transaction failed")
         return 0
     except (DriverError, OSError, ValueError) as exc:
         print(f"ZX-UX TEST DRIVER FAIL: {exc}", file=sys.stderr)
