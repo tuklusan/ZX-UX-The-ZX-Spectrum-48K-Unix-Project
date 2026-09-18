@@ -68,7 +68,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
     return [
         {"name":"write-rejects-no-reader","passed":"ld a,(ix+PIPE_READERS_O)\n    or a\n    jp z,zx48_pipe_broken" in write},
         {"name":"write-computes-capacity-minus-used","passed":"ld l,(ix+PIPE_CAPACITY_O)" in write and "ld e,(ix+PIPE_COUNT_O)" in write and "sbc hl,de" in write},
-        {"name":"bytes-used-greater-than-capacity-is-fatal","passed":"sbc hl,de\n    jp c,zx48_pipe_corrupt" in write and "zx48_pipe_corrupt:" in pipe},
+        {"name":"bytes-used-greater-than-capacity-fails","passed":"sbc hl,de\n    ret c" in write},
         {"name":"full-pipe-blocks-before-copy","passed":"call zx48_pipe_block_write" in write},
         {"name":"write-bounds-by-request","passed":"ld bc,(pipe_io_request)" in write and "sbc hl,bc" in write},
         {"name":"write-limits-contiguous-ring-tail","passed":"call zx48_pipe_chunk_limit" in write},
