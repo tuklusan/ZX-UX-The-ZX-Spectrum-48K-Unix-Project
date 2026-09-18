@@ -91,6 +91,7 @@ import phase3_handle_table
 import phase3_tty
 import phase3_null
 import phase3_close
+# Phase-3 current-head certification dispatch remains intentionally runner-visible.
 from driver_core import (
     DriverError,
     find_root,
