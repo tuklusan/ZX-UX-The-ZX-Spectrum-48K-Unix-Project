@@ -30,6 +30,15 @@ zx48_keyboard_init:
 zx48_keyboard_decode:
     call zx48_rom_key_scan
     jr nz,zx48_keyboard_none
+    ; KEY-SCAN returns an exact valid two-key chord in DE. 27h is CAPS SHIFT
+    ; and 24h is physical 1; invalid/multi-key chords already return NZ.
+    ld a,d
+    cp $27
+    jr nz,zx48_keyboard_decode_rom
+    ld a,e
+    cp $24
+    jr z,zx48_keyboard_edit
+zx48_keyboard_decode_rom:
     call zx48_rom_k_test
     jr nc,zx48_keyboard_none
     ld c,0
@@ -40,20 +49,21 @@ zx48_keyboard_decode:
     jr nc,zx48_keyboard_none
     cp $20
     jr nc,zx48_keyboard_decoded
-    cp $07
+    cp $08
     jr c,zx48_keyboard_none
-    jr z,zx48_keyboard_edit
     cp $0e
     jr nc,zx48_keyboard_none
     cp $0c
-    jr nz,zx48_keyboard_decoded
-    ld a,$08
+    jr z,zx48_keyboard_delete
 zx48_keyboard_decoded:
     or a
     ret
+zx48_keyboard_delete:
+    ld a,$08
+    or a
+    ret
 zx48_keyboard_edit:
-    ; ROM KEY-SCAN/K-DECODE returns 07h only for the exact physical
-    ; CAPS SHIFT + 1 EDIT chord; translate that target input to ESC.
+    ; Physical CAPS SHIFT + 1 (EDIT) is the target ESC-equivalent.
     ld a,$1B
     ret
 zx48_keyboard_none:
@@ -68,9 +78,8 @@ zx48_keyboard_getkey:
     ld a,(current_pid)
     or a
     jr z,zx48_keyboard_busy
-    ld b,a
-    ld a,(tty_input_owner)
-    cp b
+    ld hl,tty_input_owner
+    cp (hl)
     jr nz,zx48_keyboard_busy
     call zx48_cursor_service
     call zx48_keyboard_decode
@@ -91,13 +100,9 @@ zx48_keyboard_wake_input:
     ld a,(ix+PROC_STATE)
     cp PROC_WAIT_INPUT
     ret nz
-    ld a,(ix+PROC_PID)
-    push af
+    ; KEY-SCAN/K-TEST/K-DECODE and the ROM wrappers preserve IX, and IM2
+    ; does not schedule, so the already-validated owner descriptor remains live.
     call zx48_keyboard_decode
-    pop bc
-    ret c
-    ld a,b
-    call zx48_process_live_lookup
     ret c
     ld (ix+PROC_STATE),PROC_READY
     xor a

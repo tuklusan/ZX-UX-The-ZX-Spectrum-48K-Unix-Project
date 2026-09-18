@@ -50,7 +50,7 @@ def _static(root:Path,sha256_file):
     kb=(root/"v1/src/kernel/keyboard.asm").read_text(encoding="utf-8").lower()
     intr=(root/"v1/src/kernel/interrupt.asm").read_text(encoding="utf-8").lower()
     abi=(root/"v1/docs/abi.md").read_text(encoding="utf-8")
-    require("zx48_keyboard_edit_exact:" in kb and "ld a,$1b" in kb,"EDIT mapping missing")
+    require(all(token in kb for token in ("cp $27","cp $24","jr z,zx48_keyboard_edit","ld a,$1b")),"exact EDIT raw-key mapping missing")
     require("call zx48_rom_key" not in intr and "zx48_keyboard_decode" not in intr,"IM2 decoder edge forbidden")
     for token in ("CAPS SHIFT + 1","0x1B","CAPS SHIFT + SPACE","BREAK"): require(token in abi,f"ABI missing {token}")
     return [{"name":"rev16-identity-exact","passed":True},{"name":"rev07-identity-computed","passed":True,"sha256":pd},{"name":"edit-break-contract-static","passed":True},{"name":"historical-evidence-read-only","passed":True}]
