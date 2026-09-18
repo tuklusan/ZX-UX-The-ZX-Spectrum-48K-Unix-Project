@@ -281,6 +281,8 @@ def _assemble_fixture(root: Path, run_command: Callable[..., Any], require_proje
         "zx48_pipe_endpoint_closed:\n"
         "    xor a\n"
         "    ret\n"
+        "zx48_pipe_free_panic:\n"
+        "    jp zx48_panic\n"
         "zx48_panic:\n"
         "    jp $0000\n"
         "syscall_arg_hl: dw 0\n"
