@@ -32,7 +32,9 @@ The Z80A is an 8-bit processor with a 16-bit address space, 16-bit register pair
 
 ZX-UX reserves just **8 KiB for its resident kernel** at the top of RAM.
 
-That leaves roughly **40 KiB outside the kernel** for the Spectrum display and system areas, stored objects, program data, process stacks and user programs.
+The other 40 KiB is not all available to programs. The fixed Spectrum display consumes **6912 bytes**, and ZX-UX reserves another **1280 bytes** at `0x5B00-0x5FFF` for ROM compatibility and workspace. Together those low-memory reservations consume exactly **8 KiB**.
+
+That leaves an exact **32 KiB task/RAM-object arena** for the shell, programs, process stacks, pipes, stored objects, compiler workspace and other dynamically allocated state.
 
 Every byte has employment.
 
@@ -125,7 +127,9 @@ The SDK is a separate host-side development project. It is **not** the finished 
 | CPU class | 8-bit CPU with 16-bit addressing and register-pair operations |
 | RAM | 48 KiB |
 | ZX-UX resident kernel | 8 KiB |
-| RAM outside kernel | Roughly 40 KiB |
+| Screen bitmap + attributes | 6912 bytes |
+| ROM compatibility/workspace | 1280 bytes |
+| Task/RAM-object arena | **32 KiB** |
 | ROM | 16 KiB Sinclair ROM |
 | Display | 256×192 bitmap + 32×24 colour attributes |
 | Storage | Cassette |
