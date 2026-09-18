@@ -1,0 +1,36 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {"name":"dup-retains-same-open-description","passed":true},
+    {"name":"spawn-retains-existing-open-descriptions","passed":true},
+    {"name":"spawn-installs-same-od-identities","passed":true},
+    {"name":"final-ref-only-closes-logical-endpoint","passed":true},
+    {"name":"logical-endpoint-counts-distinct-from-od-refs","passed":true},
+    {"name":"pipe-free-requires-both-endpoints-closed","passed":true},
+    {"name":"pipe-free-scans-all-waiters","passed":true},
+    {"name":"block-links-before-schedule","passed":true},
+    {"name":"wake-unlinks-before-ready","passed":true}
+  ],
+  "commands": [{
+    "argv":["tools/runtime/sjasmplus/bin/sjasmplus","--nologo","--lst=../../build/kernel-p1.lst","--sym=../../build/kernel-p1.sym","kernel.asm"],
+    "cwd":"v1/src/kernel","duration_ms":27,"exit_code":0,
+    "stderr":"Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12482 lines, work time: 0.025 seconds\n",
+    "stdout":"","timed_out":false
+  }],
+  "hashes":{
+    "v1/build/kernel.bin":"4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/dist/certification/P3.13.test.json":"ac914fae46a0e8db5733ea8923c0fadf7e6df0e01eb5c428a0d2a1bb449f1b05",
+    "v1/src/kernel/handles.asm":"3ce446fcc68f95b4cec52fee6b6202ec85a58bb5fcbc9bd7e41c9e517c16d016",
+    "v1/src/kernel/pipe.asm":"d2ccc787714ab8af9ddf275b50e92db59aee00fbccf912c0ac0134dc6127beec",
+    "v1/src/kernel/process.asm":"20c3d59193ab983524cb18e0263b3e7c96dd3b3987d10522f7e33a2c442ef696",
+    "v1/tools-host/test-driver/phase3_pipe_lifetime.py":"5917a311fd12de935415ea259f104dab09c095be9adc1b2bb40282391a205489",
+    "v1/tools-host/test-driver/run.py":"a09971112cd795897d1093ef39e9578b6682b13c1a588810d7c24b01327584c6"
+  },
+  "implementation_plan_sha256":"840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites":{"P3.13":"PASS"},
+  "schema":2,"source_commit":"f42ced33dd5cc9bd77d12cd22b671b84c99d1ca6",
+  "status":"PASS","step":"P3.14",
+  "toolchain_lock_sha256":"1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean":true
+}
