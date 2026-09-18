@@ -107,48 +107,48 @@ def run_fixture(root,s,fixture):
     code += phase1._ld_hl(PROC_CONS)+phase1._call(s["p317_gateway"])+jp_c(FAIL_PC)
     code += b"\x7D\xFE\x03"+jp_nz(FAIL_PC)
     # producer retains writer only
-    code += bytes((0x3E,2))+phase1._ld_mem_a(s["current_pid"])
+    code += bytes((0x3E,2))+b"\\x32"+w(s["current_pid"])
     code += b"\x3E\x00"+phase1._call(s["zx48_handle_close"])+jp_c(FAIL_PC)
     code += b"\x3E\x02"+phase1._call(s["zx48_handle_close"])+jp_c(FAIL_PC)
     # consumer retains reader only
-    code += bytes((0x3E,3))+phase1._ld_mem_a(s["current_pid"])
+    code += bytes((0x3E,3))+b"\\x32"+w(s["current_pid"])
     code += b"\x3E\x01"+phase1._call(s["zx48_handle_close"])+jp_c(FAIL_PC)
     code += b"\x3E\x02"+phase1._call(s["zx48_handle_close"])+jp_c(FAIL_PC)
     # parent drops both
-    code += bytes((0x3E,1))+phase1._ld_mem_a(s["current_pid"])
+    code += bytes((0x3E,1))+b"\\x32"+w(s["current_pid"])
     code += b"\x3E\x00"+phase1._call(s["zx48_handle_close"])+jp_c(FAIL_PC)
     code += b"\x3E\x01"+phase1._call(s["zx48_handle_close"])+jp_c(FAIL_PC)
     # shrink logical capacity for deterministic stress
     code += phase1._ld_hl(8)+b"\x22"+w(pipe+s["PIPE_CAPACITY_O"])
     # consumer blocks on empty read through handle
-    code += bytes((0x3E,3))+phase1._ld_mem_a(s["current_pid"])
+    code += bytes((0x3E,3))+b"\\x32"+w(s["current_pid"])
     code += b"\x3E\x00"+phase1._ld_hl(DST)+b"\x01"+w(len(CHUNK))+phase1._call(s["p317_read_handle"])
     code += jp_nc(FAIL_PC)
     code += expb(p3+PROC_STATE,s["PROC_WAIT_PIPE_READ"])+expb(p3+PROC_WAIT_OBJECT,1)+expb(s["p317_schedule_count"],1)
     # producer writes exact 8 bytes; wakes consumer
-    code += bytes((0x3E,2))+phase1._ld_mem_a(s["current_pid"])
+    code += bytes((0x3E,2))+b"\\x32"+w(s["current_pid"])
     code += b"\x3E\x01"+phase1._ld_hl(SRC)+b"\x01"+w(len(CHUNK))+phase1._call(s["p317_write_handle"])+jp_c(FAIL_PC)
     code += expw(s["pipe_table"]+s["PIPE_COUNT_O"],8)+expb(p3+PROC_STATE,s["PROC_READY"])
     # full-pipe extra write blocks producer and reaches scheduler
     code += b"\x3E\x01"+phase1._ld_hl(SRC)+b"\x01\x01\x00"+phase1._call(s["p317_write_handle"])+jp_nc(FAIL_PC)
     code += expb(p2+PROC_STATE,s["PROC_WAIT_PIPE_WRITE"])+expb(s["p317_schedule_count"],2)
     # consumer drains, waking producer
-    code += bytes((0x3E,3))+phase1._ld_mem_a(s["current_pid"])
+    code += bytes((0x3E,3))+b"\\x32"+w(s["current_pid"])
     code += b"\x3E\x00"+phase1._ld_hl(DST)+b"\x01"+w(len(CHUNK))+phase1._call(s["p317_read_handle"])+jp_c(FAIL_PC)
     code += expb(p2+PROC_STATE,s["PROC_READY"])+expw(s["pipe_table"]+s["PIPE_COUNT_O"],0)
     for i,b in enumerate(CHUNK): code += expb(DST+i,b)
     # stress 16 fill/block/drain cycles; failure to block/wake cannot reach PASS.
     for _ in range(16):
-      code += bytes((0x3E,2))+phase1._ld_mem_a(s["current_pid"])
+      code += bytes((0x3E,2))+b"\\x32"+w(s["current_pid"])
       code += b"\x3E\x01"+phase1._ld_hl(SRC)+b"\x01"+w(len(CHUNK))+phase1._call(s["p317_write_handle"])+jp_c(FAIL_PC)
       code += b"\x3E\x01"+phase1._ld_hl(SRC)+b"\x01\x01\x00"+phase1._call(s["p317_write_handle"])+jp_nc(FAIL_PC)
-      code += bytes((0x3E,3))+phase1._ld_mem_a(s["current_pid"])
+      code += bytes((0x3E,3))+b"\\x32"+w(s["current_pid"])
       code += b"\x3E\x00"+phase1._ld_hl(DST)+b"\x01"+w(len(CHUNK))+phase1._call(s["p317_read_handle"])+jp_c(FAIL_PC)
       code += expb(p2+PROC_STATE,s["PROC_READY"])
     code += expb(s["p317_schedule_count"],18)
     # final writer close, then EOF is zero-byte success
-    code += bytes((0x3E,2))+phase1._ld_mem_a(s["current_pid"])+b"\x3E\x01"+phase1._call(s["zx48_handle_close"])+jp_c(FAIL_PC)
-    code += bytes((0x3E,3))+phase1._ld_mem_a(s["current_pid"])+b"\x3E\x00"+phase1._ld_hl(DST)+b"\x01\x01\x00"+phase1._call(s["p317_read_handle"])+jp_c(FAIL_PC)
+    code += bytes((0x3E,2))+b"\\x32"+w(s["current_pid"])+b"\x3E\x01"+phase1._call(s["zx48_handle_close"])+jp_c(FAIL_PC)
+    code += bytes((0x3E,3))+b"\\x32"+w(s["current_pid"])+b"\x3E\x00"+phase1._ld_hl(DST)+b"\x01\x01\x00"+phase1._call(s["p317_read_handle"])+jp_c(FAIL_PC)
     code += phase1._ld_de(0)+b"\xB7\xED\x52"+jp_nz(FAIL_PC)
     code += expb(s["p317_panic_code"],0)+phase1._jp(PASS_PC)
     run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0)
