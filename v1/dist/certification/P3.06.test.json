@@ -45,6 +45,7 @@
     {
       "name": "destination-ff-chooses-lowest-free-slot",
       "passed": true
+    },
     {
       "name": "dup-shares-offset-and-decoder-state",
       "passed": true
@@ -60,6 +61,7 @@
     {
       "name": "dead-source-enoent-atomic",
       "passed": true
+    },
     {
       "name": "no-free-handle-enospc-retain-rollback",
       "passed": true
