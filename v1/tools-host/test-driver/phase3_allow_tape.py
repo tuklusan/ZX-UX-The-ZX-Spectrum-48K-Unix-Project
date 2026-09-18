@@ -31,8 +31,8 @@ def dispatch(root: Path, action: str, step: str, *, sha256_file: Callable[[Path]
     if failed: raise DriverError(f"P3.16 static contract failures: {failed}")
     result,kernel,_=phase1._assemble_kernel(root,run_command,require_project_tool)
     if action=="test":
-        fixture_binary, fixture_listing, fixture_symbols, fixture_result = phase2_spawn._assemble_fixture(root, run_command, require_project_tool)
-        syms=phase2_spawn._parse_symbols(fixture_symbols)
+        fixture_command, fixture_binary, fixture_listing, fixture_symbols = phase2_spawn._assemble_fixture(root, run_command, require_project_tool)
+        syms=phase2_spawn._symbols(fixture_symbols, ("p209_gateway","p209_bad_gateway","zx48_sys_spawn","zx48_sys_spawn_preflight","process_table","p209_allocator_state","p209_open_state","SYS_SPAWN","PROC1_SIZE","PROC1_PATH_MAX","MAX_PROCESSES","PROC_DESC_SIZE","E_INVAL","E_TOOLONG","E_AGAIN","E_NOTSUP"))
         valid=phase2_spawn._proc1(flags=1)
         phase2_spawn._run_preflight_case(root,syms,fixture_binary,proc=valid)
         phase2_spawn._run_preflight_case(root,syms,fixture_binary,proc=phase2_spawn._proc1(flags=2),expected_error=syms["E_INVAL"])
