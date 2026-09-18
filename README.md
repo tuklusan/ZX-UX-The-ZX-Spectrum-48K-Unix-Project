@@ -34,7 +34,7 @@ ZX-UX reserves just **8 KiB for its resident kernel** at the top of RAM.
 
 The other 40 KiB is not all available to programs. The fixed Spectrum display consumes **6912 bytes**, and ZX-UX reserves another **1280 bytes** at `0x5B00-0x5FFF` for ROM compatibility and workspace. Together those low-memory reservations consume exactly **8 KiB**.
 
-That leaves an exact **32 KiB task/RAM-object arena** for the shell, programs, process stacks, pipes, stored objects, compiler workspace and other dynamically allocated state.
+That leaves an exact **32 KiB task/RAM-object arena**. It is a shared working arena for the whole live system — shell, programs, process stacks, pipes, compiler workspace, RAM-resident objects and other dynamic state — **not 32 KiB available to a single application**.
 
 Every byte has employment.
 
