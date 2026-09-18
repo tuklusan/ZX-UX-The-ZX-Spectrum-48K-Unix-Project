@@ -203,13 +203,19 @@ def validate_final_record(record: Any) -> None:
     validate_common(record)
     require(record.get("action") == "result", "final result action must be result")
     marker = record.get("pass_marker")
-    require(
-        isinstance(marker, str)
-        and marker.startswith("ZX-UX ")
-        and marker.endswith(" PASS")
-        and record["step"] in marker,
-        "valid step-specific PASS marker required",
-    )
+    if record["step"] == "R16.00":
+        require(
+            marker == "ZX-UX REV16 PHASE-3 BASELINE BRIDGE PASS",
+            "valid R16.00 PASS marker required",
+        )
+    else:
+        require(
+            isinstance(marker, str)
+            and marker.startswith("ZX-UX ")
+            and marker.endswith(" PASS")
+            and record["step"] in marker,
+            "valid step-specific PASS marker required",
+        )
     require(record["status"] == "PASS", "final result status must be PASS")
 
 
@@ -219,7 +225,11 @@ def valid_fixture(step: str = "E0.04") -> dict[str, Any]:
         "step": step,
         "action": "result",
         "status": "PASS",
-        "pass_marker": f"ZX-UX {step} CERTIFICATION PASS",
+        "pass_marker": (
+            "ZX-UX REV16 PHASE-3 BASELINE BRIDGE PASS"
+            if step == "R16.00"
+            else f"ZX-UX {step} CERTIFICATION PASS"
+        ),
         "source_commit": "0" * 40,
         "toolchain_lock_sha256": "1" * 64,
         "architecture_sha256": "2" * 64,
