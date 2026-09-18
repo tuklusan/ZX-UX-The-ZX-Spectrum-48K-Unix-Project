@@ -1,0 +1,13 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {"name":"proc1-allow-tape-bit-is-exactly-bit0","passed":true},
+    {"name":"spawn-rejects-all-unknown-proc1-flags","passed":true},
+    {"name":"exec-rejects-all-unknown-proc1-flags","passed":true}
+  ],
+  "commands": [{"argv":["tools/runtime/sjasmplus/bin/sjasmplus","--nologo","--lst=../../build/kernel-p1.lst","--sym=../../build/kernel-p1.sym","kernel.asm"],"cwd":"v1/src/kernel","duration_ms":35,"exit_code":0,"stderr":"Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12482 lines, work time: 0.033 seconds\n","stdout":"","timed_out":false}],
+  "hashes":{"v1/build/kernel.bin":"4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6","v1/dist/certification/P3.15.test.json":"def582c467a78cc1bd2e6d4cd79065a27e1560bfacb5ddf66b183bffd738585e","v1/src/kernel/process.asm":"20c3d59193ab983524cb18e0263b3e7c96dd3b3987d10522f7e33a2c442ef696","v1/src/kernel/syscall.asm":"50a7df7371e29a48439f4d064ef33a37ed9cc079736590e97ded36702a8c2277","v1/tools-host/test-driver/phase3_allow_tape.py":"7f56c53c097839d00317657be4a5db4a2c6f263edc1247d49d2b821552b2291b","v1/tools-host/test-driver/run.py":"6f781f14b7451fbec2cc75638f5da268ea14377ceade87ba9c6367f59b85e443"},
+  "implementation_plan_sha256":"840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites":{"P3.15":"PASS"},"schema":2,"source_commit":"f12b088924d8ad3b650caa3e195c176941932730","status":"PASS","step":"P3.16","toolchain_lock_sha256":"1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244","worktree_clean":true
+}
