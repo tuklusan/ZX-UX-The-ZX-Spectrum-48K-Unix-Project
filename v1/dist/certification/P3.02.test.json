@@ -1,0 +1,125 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "exact-eight-handle-slots",
+      "passed": true
+    },
+    {
+      "name": "slot-free-encoding-ff",
+      "passed": true
+    },
+    {
+      "name": "open-description-id-range-0-through-23",
+      "passed": true
+    },
+    {
+      "name": "process-handle-array-is-eight-one-byte-slots",
+      "passed": true
+    },
+    {
+      "name": "handle-lookup-rejects-free-and-out-of-range",
+      "passed": true
+    },
+    {
+      "name": "install-rejects-requested-slot-eight",
+      "passed": true
+    },
+    {
+      "name": "auto-install-scans-exactly-eight",
+      "passed": true
+    },
+    {
+      "name": "dup-failure-releases-retained-description",
+      "passed": true
+    },
+    {
+      "name": "close-clears-slot-before-release",
+      "passed": true
+    },
+    {
+      "name": "slot-count-assembler-asserted",
+      "passed": true
+    },
+    {
+      "name": "exact-eight-slots-runtime-symbol",
+      "passed": true
+    },
+    {
+      "name": "valid-open-description-range-runtime-symbol",
+      "passed": true
+    },
+    {
+      "name": "handle-array-exactly-eight-bytes",
+      "passed": true
+    },
+    {
+      "name": "all-eight-slots-encode-only-open-description-ids",
+      "passed": true
+    },
+    {
+      "name": "stdin-stdout-stderr-slots-0-1-2-exact",
+      "passed": true
+    },
+    {
+      "name": "ninth-auto-slot-enospc-no-mutation",
+      "passed": true
+    },
+    {
+      "name": "requested-slot-eight-enospc-no-mutation",
+      "passed": true
+    },
+    {
+      "name": "failed-dup-install-does-not-leak-reference",
+      "passed": true
+    },
+    {
+      "name": "id-24-in-process-slot-rejected",
+      "passed": true
+    },
+    {
+      "name": "close-removes-slot-and-final-reference-atomically",
+      "passed": true
+    },
+    {
+      "name": "offset-state-remains-in-open-description-not-slot",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12471 lines, work time: 0.033 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "660da2a7aef42ab35f138b288073582963c887767bf68ea6d151538a47a368d4",
+    "v1/dist/certification/P3.01.test.json": "b34a1a70505c8ff2540de7c14c81d91499c2101641ba6de7fbb23523114d4635",
+    "v1/dist/certification/R16.00.result.json": "b2ee997a2235ff1041bb6dc8471f0c45cb215e58e5a3bcca194b554ad95516ad",
+    "v1/src/kernel/handles.asm": "d9a0c978d0bf312b2d63900c902b2f05e9d165dbc72d95b794f11314c8edad86",
+    "v1/tools-host/test-driver/phase3_handle_table.py": "6892bec539b439bc3c5fcd68a82253e023042ec384bdfd3dd81d9e0508ed6424",
+    "v1/tools-host/test-driver/run.py": "3513a5008d2ec82f59e69f0839472f97d8000ba15e803393ec2331debe104dd2"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P3.01": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "c555e2c856d7bac06d36fd37fe0e831af3cfc94e",
+  "status": "PASS",
+  "step": "P3.02",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
