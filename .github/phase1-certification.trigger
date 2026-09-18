@@ -12,3 +12,4 @@
 #
 # Phase 1 certification trigger. Change only after the new Phase 0 evidence is active.
 # Rebaseline recertification trigger for Phase 0 activation 5fb743e6787157175e7bacfe01f1e215e615fca1.
+# R16.00 source-candidate companion validation trigger.
