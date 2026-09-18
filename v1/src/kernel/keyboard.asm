@@ -25,66 +25,9 @@ zx48_keyboard_init:
     ld (break_pending),a
     ret
 
-; Physical EDIT is exact CAPS SHIFT + 1 and is decoded only in ordinary task
-; context. No BASIC EDIT/extended-mode token is allowed to escape.
-zx48_keyboard_edit_exact:
-    ld bc,$FEFE
-    in a,(c)
-    and $1F
-    cp $1E
-    jr nz,zx48_keyboard_edit_no
-    ld bc,$F7FE
-    in a,(c)
-    and $1F
-    cp $1E
-    jr nz,zx48_keyboard_edit_no
-    ld bc,$FDFE
-    in a,(c)
-    and $1F
-    cp $1F
-    jr nz,zx48_keyboard_edit_no
-    ld bc,$FBFE
-    in a,(c)
-    and $1F
-    cp $1F
-    jr nz,zx48_keyboard_edit_no
-    ld bc,$EFFE
-    in a,(c)
-    and $1F
-    cp $1F
-    jr nz,zx48_keyboard_edit_no
-    ld bc,$DFFE
-    in a,(c)
-    and $1F
-    cp $1F
-    jr nz,zx48_keyboard_edit_no
-    ld bc,$BFFE
-    in a,(c)
-    and $1F
-    cp $1F
-    jr nz,zx48_keyboard_edit_no
-    ld bc,$7FFE
-    in a,(c)
-    and $1F
-    cp $1F
-    jr nz,zx48_keyboard_edit_no
-    xor a
-    ret
-zx48_keyboard_edit_no:
-    ld a,1
-    or a
-    ret
-
 ; Decode one supported foreground key without using the BASIC line editor.
-; Exact physical EDIT maps to target ESC 0x1B before any ROM decoder is used.
-; Other supported keys retain the historical KEY-SCAN/K-TEST/K-DECODE path.
+; KEY-SCAN/K-TEST supply exact shift/main codes; K-DECODE is used in L mode.
 zx48_keyboard_decode:
-    call zx48_keyboard_edit_exact
-    jr nz,zx48_keyboard_decode_rom
-    ld a,$1B
-    or a
-    ret
-zx48_keyboard_decode_rom:
     call zx48_rom_key_scan
     jr nz,zx48_keyboard_none
     call zx48_rom_k_test
@@ -97,18 +40,21 @@ zx48_keyboard_decode_rom:
     jr nc,zx48_keyboard_none
     cp $20
     jr nc,zx48_keyboard_decoded
-    cp $08
+    cp $07
     jr c,zx48_keyboard_none
+    jr z,zx48_keyboard_edit
     cp $0e
     jr nc,zx48_keyboard_none
     cp $0c
-    jr z,zx48_keyboard_delete
+    jr nz,zx48_keyboard_decoded
+    ld a,$08
 zx48_keyboard_decoded:
     or a
     ret
-zx48_keyboard_delete:
-    ld a,$08
-    or a
+zx48_keyboard_edit:
+    ; ROM KEY-SCAN/K-DECODE returns 07h only for the exact physical
+    ; CAPS SHIFT + 1 EDIT chord; translate that target input to ESC.
+    ld a,$1B
     ret
 zx48_keyboard_none:
     ld a,E_AGAIN
@@ -165,11 +111,10 @@ zx48_keyboard_busy:
 ; Inputs none. Release only the current owner; PID 0 is the sole unowned value.
 zx48_keyboard_release:
     ld a,(current_pid)
-    ld b,a
-    ld a,(tty_input_owner)
-    cp b
+    ld hl,tty_input_owner
+    cp (hl)
     ret nz
     xor a
-    ld (tty_input_owner),a
+    ld (hl),a
     ret
     ENDM
