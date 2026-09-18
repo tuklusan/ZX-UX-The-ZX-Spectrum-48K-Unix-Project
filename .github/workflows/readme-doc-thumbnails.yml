@@ -1,0 +1,60 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: README document thumbnails
+
+on:
+  push:
+    paths:
+      - ".github/workflows/readme-doc-thumbnails.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install render tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libreoffice-writer poppler-utils
+
+      - name: Render first pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/zxux-docthumbs/pdf /tmp/zxux-docthumbs/png
+
+          render_one() {
+            src="$1"
+            stem="$2"
+            libreoffice --headless --convert-to pdf --outdir /tmp/zxux-docthumbs/pdf "$src"
+            pdf="/tmp/zxux-docthumbs/pdf/$(basename "${src%.docx}").pdf"
+            pdftoppm -f 1 -singlefile -png -scale-to-x 420 -scale-to-y -1 "$pdf" "/tmp/zxux-docthumbs/png/$stem"
+          }
+
+          render_one "docs/00-ZX-UX_User_Manual_Revision_12.docx" "zxux-user-manual-r12"
+          render_one "docs/04-C48 Language Specification Rev 0.11.docx" "c48-language-spec-r011"
+          render_one "docs/05-C48 Compiler User Manual Rev 0.11.docx" "c48-compiler-user-manual-r011"
+
+          sha256sum /tmp/zxux-docthumbs/png/*.png
+
+      - name: Upload thumbnails
+        uses: actions/upload-artifact@v7
+        with:
+          name: readme-doc-thumbnails
+          path: /tmp/zxux-docthumbs/png/*.png
+          if-no-files-found: error
+          retention-days: 1
