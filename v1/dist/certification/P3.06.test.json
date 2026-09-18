@@ -1,0 +1,107 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "dup1-record-is-exact-two-byte-source-destination",
+      "passed": true
+    },
+    {
+      "name": "source-must-be-live-handle",
+      "passed": true
+    },
+    {
+      "name": "destination-ff-selects-auto-slot",
+      "passed": true
+    },
+    {
+      "name": "source-equals-explicit-destination-is-noop",
+      "passed": true
+    },
+    {
+      "name": "dup-retains-existing-description",
+      "passed": true
+    },
+    {
+      "name": "dup-never-allocates-description",
+      "passed": true
+    },
+    {
+      "name": "failed-install-rolls-back-retain",
+      "passed": true
+    },
+    {
+      "name": "sysdup-rejects-source-outside-0-through-7",
+      "passed": true
+    },
+    {
+      "name": "sysdup-rejects-explicit-destination-outside-0-through-7",
+      "passed": true
+    },
+    {
+      "name": "source-self-explicit-destination-noop",
+      "passed": true
+    },
+    {
+      "name": "destination-ff-chooses-lowest-free-slot",
+      "passed": true
+    {
+      "name": "dup-shares-offset-and-decoder-state",
+      "passed": true
+    },
+    {
+      "name": "dup-does-not-allocate-open-description",
+      "passed": true
+    },
+    {
+      "name": "occupied-different-destination-ebusy-atomic",
+      "passed": true
+    },
+    {
+      "name": "dead-source-enoent-atomic",
+      "passed": true
+    {
+      "name": "no-free-handle-enospc-retain-rollback",
+      "passed": true
+    },
+    {
+      "name": "duplicate-final-close-lifetime-exact",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12484 lines, work time: 0.032 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "3c05e079e8c43abb09df8973ef4c4a15b46f59ff297db9f99c6e74deae5a38d9",
+    "v1/dist/certification/P3.05.test.json": "83382254b53a8e54d9b1c91f870436bbb523005799c3e09de8c77cf2d85a72dc",
+    "v1/src/kernel/handles.asm": "3ce446fcc68f95b4cec52fee6b6202ec85a58bb5fcbc9bd7e41c9e517c16d016",
+    "v1/src/kernel/syscall.asm": "50a7df7371e29a48439f4d064ef33a37ed9cc079736590e97ded36702a8c2277",
+    "v1/tools-host/test-driver/phase3_dup.py": "219fa66874a7adfa406481dad16c0971884987eca0cc290a7a62e9f6e227ad31",
+    "v1/tools-host/test-driver/run.py": "c490b35b309f948f0fb122538bb1d136fa11143f45c2ff73d48f3a5a0b7c7589"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P3.05": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "eb9bf9c0f5d6c7b8427f7151f03b25b61ad83c74",
+  "status": "PASS",
+  "step": "P3.06",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
