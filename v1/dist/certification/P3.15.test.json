@@ -1,0 +1,100 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "rw-requires-d-zero-before-handle",
+      "passed": true
+    },
+    {
+      "name": "rw-validates-handle-and-access-before-count",
+      "passed": true
+    },
+    {
+      "name": "zero-count-returns-before-buffer-validation",
+      "passed": true
+    },
+    {
+      "name": "nonzero-validates-complete-range-before-dispatch",
+      "passed": true
+    },
+    {
+      "name": "read-register-contract-preserved",
+      "passed": true
+    },
+    {
+      "name": "write-register-contract-preserved",
+      "passed": true
+    },
+    {
+      "name": "logical-null-eof-is-hl-zero-success",
+      "passed": true
+    },
+    {
+      "name": "range-rejects-wrap-before-region-check",
+      "passed": true
+    },
+    {
+      "name": "range-separates-display-and-user-arena",
+      "passed": true
+    },
+    {
+      "name": "display-full-range-valid",
+      "passed": true
+    },
+    {
+      "name": "ordinary-arena-full-range-valid",
+      "passed": true
+    },
+    {
+      "name": "rom-compat-kernel-cross-bound-wrap-invalid",
+      "passed": true
+    },
+    {
+      "name": "zero-count-poisoned-buffer-not-dereferenced",
+      "passed": true
+    },
+    {
+      "name": "zero-count-invalid-handle-still-errors",
+      "passed": true
+    },
+    {
+      "name": "ordinary-stream-eof-is-zero-byte-success",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12482 lines, work time: 0.033 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/dist/certification/P3.14.test.json": "cd2e6c4911c0a48847fe452c60a3148bda141206befca687b4a94194721dbb62",
+    "v1/src/kernel/syscall.asm": "50a7df7371e29a48439f4d064ef33a37ed9cc079736590e97ded36702a8c2277",
+    "v1/tools-host/test-driver/phase3_rw_validation.py": "559724bdd058eb59de20ef9e40be04650747961bd2de35bb83914f49fae2c7ec",
+    "v1/tools-host/test-driver/run.py": "4aa26355a73fcf7d400ed9d5d3890360dca93e467c65307bc8095880effeccd0"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequsites": {
+    "P3.14": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "378d9f06cb85e354d899f58c74664ac631f7ac30",
+  "status": "PASS",
+  "step": "P3.15",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
