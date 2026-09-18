@@ -332,7 +332,7 @@ zx48_pipe_write_retry:
     ld d,(ix+PIPE_COUNT_O+1)
     or a
     sbc hl,de
-    jp c,zx48_pipe_corrupt
+    ret c
     jr nz,zx48_pipe_write_copy
     ld a,(pipe_active_slot)
     ld c,a
@@ -389,16 +389,14 @@ zx48_pipe_write_wpos_ok:
 
 ; A=ring position, BC=candidate. Return BC limited to bytes before ring wrap.
 zx48_pipe_chunk_limit:
-    ld d,b
-    ld e,c
+    push bc
     ld l,(ix+PIPE_CAPACITY_O)
     ld h,(ix+PIPE_CAPACITY_O+1)
     ld c,a
     ld b,0
     or a
     sbc hl,bc
-    ld b,d
-    ld c,e
+    pop bc
     push hl
     or a
     sbc hl,bc
@@ -412,10 +410,6 @@ zx48_pipe_broken:
     ld a,E_PIPE
     scf
     ret
-
-zx48_pipe_corrupt:
-    ld a,PANIC_ALLOCATOR
-    jp zx48_panic
 
 ; C=pipe slot. Blocking is restartable because zero bytes have transferred.
 zx48_pipe_block_read:

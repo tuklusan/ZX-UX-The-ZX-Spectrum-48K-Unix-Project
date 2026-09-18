@@ -147,12 +147,7 @@ def _corrupt_count_fixture(root: Path, s: dict[str, int], kernel: bytes) -> None
     code += bytes((0xFE, s["E_INVAL"])) + phase1._jp_nz(FAIL_PC)
     code += phase1._jp(PASS_PC)
 
-    patched = bytearray(kernel)
-    offset = s["zx48_panic"] - phase1.KERNEL_BASE
-    payload = bytes((0x3E, s["E_INVAL"], 0x37, 0xC9))
-    require(0 <= offset <= len(patched) - len(payload), "panic patch outside kernel")
-    patched[offset:offset + len(payload)] = payload
-    run_sna(root, bytes(code), patch=phase1._kernel_patch(bytes(patched)))
+    run_sna(root, bytes(code), patch=phase1._kernel_patch(kernel))
 
 
 def dispatch(
@@ -177,7 +172,7 @@ def dispatch(
         listing.with_suffix(".sym"),
         (
             "zx48_memory_init","zx48_process_init","zx48_handles_init","zx48_pipe_init",
-            "zx48_process_prepare_pid1","zx48_pipe_create","zx48_pipe_write","zx48_panic",
+            "zx48_process_prepare_pid1","zx48_pipe_create","zx48_pipe_write",
             "current_pid","pipe_table","PIPE_BUFFER_SIZE","PIPE_WPOS_O","PIPE_COUNT_O",
             "FAST_END","E_INVAL",
         ),
