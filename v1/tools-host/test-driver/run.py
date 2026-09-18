@@ -101,7 +101,6 @@ import phase3_pipe_full
 import phase3_pipe_broken
 import phase3_pipe_lifetime
 import phase3_rw_validation
-import phase3_rw_validation
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
 from driver_core import (
     DriverError,
@@ -174,8 +173,6 @@ def dispatch(root: Path, action: str, step: str):
         return phase3_pipe_broken.dispatch(root, action, step, **kwargs)
     if step == "P3.14":
         return phase3_pipe_lifetime.dispatch(root, action, step, **kwargs)
-    if step == "P3.15":
-        return phase3_rw_validation.dispatch(root, action, step, **kwargs)
     if step == "P3.15":
         return phase3_rw_validation.dispatch(root, action, step, **kwargs)
     module = E0_MODULE.get(step)
