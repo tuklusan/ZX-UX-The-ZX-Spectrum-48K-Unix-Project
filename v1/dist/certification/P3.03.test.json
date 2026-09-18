@@ -1,0 +1,116 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "tty-description-uses-generic-open-description-record",
+      "passed": true
+    },
+    {
+      "name": "tty-access-mask-is-read-write-only",
+      "passed": true
+    },
+    {
+      "name": "tty-read-is-ordinary-keyboard-byte-stream",
+      "passed": true
+    },
+    {
+      "name": "tty-write-is-direct-console-byte-stream",
+      "passed": true
+    },
+    {
+      "name": "tty-ioctl-dispatch-is-kind-gated",
+      "passed": true
+    },
+    {
+      "name": "edit-exact-chord-remains-sole-1b-source",
+      "passed": true
+    },
+    {
+      "name": "break-producer-contains-no-1b-path",
+      "passed": true
+    },
+    {
+      "name": "reject-edit-comparator-mutation",
+      "passed": true
+    },
+    {
+      "name": "tty-read-and-write-descriptions-are-independent-open-descriptions",
+      "passed": true
+    },
+    {
+      "name": "tty-modes-32-and-64-are-distinct",
+      "passed": true
+    },
+    {
+      "name": "tty32-edit-read-is-exact-1b",
+      "passed": true
+    },
+    {
+      "name": "tty64-edit-read-is-exact-1b",
+      "passed": true
+    },
+    {
+      "name": "sys-con-getkey-and-tty-read-match-byte-for-byte",
+      "passed": true
+    },
+    {
+      "name": "tty-write-preserves-input-only-1b-output-policy",
+      "passed": true
+    },
+    {
+      "name": "tty-ioctl-routes-through-generic-handle",
+      "passed": true
+    },
+    {
+      "name": "wrong-direction-read-write-errors-exact",
+      "passed": true
+    },
+    {
+      "name": "invalid-handle-error-exact",
+      "passed": true
+    },
+    {
+      "name": "break-raw-matrix-remains-cancellation-producer-not-1b",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 20,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12471 lines, work time: 0.020 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "660da2a7aef42ab35f138b288073582963c887767bf68ea6d151538a47a368d4",
+    "v1/dist/certification/P3.02.test.json": "8d9841b5abf482782d57e2ebbf93d87685f7cf207363829af58ca21b3a165e43",
+    "v1/src/kernel/console.asm": "b064fff503bd1c498b46a4890537423a1857b842406480ffa9233db54ee461e3",
+    "v1/src/kernel/handles.asm": "d9a0c978d0bf312b2d63900c902b2f05e9d165dbc72d95b794f11314c8edad86",
+    "v1/src/kernel/interrupt.asm": "cf70af177c18f323ac368f45468dbe907aef3d76488f92d844570b6875d5c9de",
+    "v1/src/kernel/keyboard.asm": "9eb14508a6b31b20779ef2c390a0b0ccbdc26292fdefdbe5cfe5de0375c32ea2",
+    "v1/src/kernel/syscall.asm": "50a7df7371e29a48439f4d064ef33a37ed9cc079736590e97ded36702a8c2277",
+    "v1/tools-host/test-driver/phase3_tty.py": "be3a1f960557a938acc13b6c7d316bd47de8d41e94344ab44545dbe4444fdbd5",
+    "v1/tools-host/test-driver/run.py": "ae759c36c3f2b24cc407e4ae98e5ce2f3adfda20a4e1187ad7b1a26fae47ad55"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P3.02": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "e6205aeb5a4e73ef28b324ea00f121ebd27b3e3e",
+  "status": "PASS",
+  "step": "P3.03",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
