@@ -109,6 +109,13 @@ zx48_spawn_resolve_ram_object:
     xor a
     ret
 
+zx48_memcpy:
+    ld a,b
+    or c
+    ret z
+    ldir
+    ret
+
 zx48_schedule:
     ld a,(p317_schedule_count)
     inc a
