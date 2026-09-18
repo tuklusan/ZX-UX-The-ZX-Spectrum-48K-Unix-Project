@@ -142,7 +142,7 @@ def dispatch(
         (
             "zx48_memory_init","zx48_process_init","zx48_handles_init","zx48_pipe_init",
             "zx48_process_prepare_pid1","zx48_pipe_create","zx48_pipe_try_free",
-            "zx48_od_retain","zx48_od_release","process_table","pipe_table",
+            "zx48_od_retain","zx48_od_release","current_pid","process_table","pipe_table",
             "open_description_table","PROC_DESC_SIZE","PROC_STATE","PROC_WAIT_OBJECT",
             "PROC_WAIT_CHILD","PROC_READY","OD_RECORD_SIZE","OD_REFS_O",
             "PIPE_BUFFER_SIZE","PIPE_PTR_O","PIPE_CAPACITY_O","PIPE_READERS_O",
