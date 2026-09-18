@@ -129,6 +129,144 @@ jobs:
           "$py" v1/tools-host/test-driver/run.py build --step P2.24
           "$py" v1/tools-host/test-driver/run.py test --step P2.24
 
+      - name: Validate staged R16.00 bridge evidence
+        if: hashFiles('v1/dist/certification/R16.00.result.json') == ''
+        run: |
+          set -euo pipefail
+          py=tools/runtime/python/bin/python
+          test -f "$ZXUX_EVIDENCE_DIR/R16.00.build.json"
+          test -f "$ZXUX_EVIDENCE_DIR/R16.00.test.json"
+          test -f "$ZXUX_EVIDENCE_DIR/R16.00.result.json"
+          "$py" v1/tools-host/test-driver/evidence.py --driver-record "$ZXUX_EVIDENCE_DIR/R16.00.build.json"
+          "$py" v1/tools-host/test-driver/evidence.py --driver-record "$ZXUX_EVIDENCE_DIR/R16.00.test.json"
+          "$py" v1/tools-host/test-driver/evidence.py "$ZXUX_EVIDENCE_DIR/R16.00.result.json"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          d=Path(os.environ["ZXUX_EVIDENCE_DIR"])
+          source=os.environ["GITHUB_SHA"]
+          arch="24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c"
+          plan="840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc"
+          for name in ("R16.00.build.json","R16.00.test.json","R16.00.result.json"):
+              r=json.loads((d/name).read_text())
+              assert r["status"]=="PASS", name
+              assert r["source_commit"]==source, name
+              assert r["bridge_source_commit"]==source, name
+              assert r["architecture_sha256"]==arch, name
+              assert r["implementation_plan_sha256"]==plan, name
+          result=json.loads((d/"R16.00.result.json").read_text())
+          assert result["pass_marker"]=="ZX-UX REV16 PHASE-3 BASELINE BRIDGE PASS"
+          print("ZX-UX R16.00 STAGED EVIDENCE IDENTITY PASS")
+          PY
+          git clean -fdX v1/build tools/runtime
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+
+      - name: Wait for R16.00 companion validations
+        if: hashFiles('v1/dist/certification/R16.00.result.json') == ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json, os, time, urllib.request
+          repo=os.environ["GITHUB_REPOSITORY"]; sha=os.environ["GITHUB_SHA"]
+          required={"ZX-UX Quality and CI","ZX-UX Phase 1 Certification"}
+          url=f"https://api.github.com/repos/{repo}/actions/runs?head_sha={sha}&per_page=100"
+          headers={"Authorization":f"Bearer {os.environ['GH_TOKEN']}","Accept":"application/vnd.github+json"}
+          deadline=time.time()+2400
+          while True:
+              with urllib.request.urlopen(urllib.request.Request(url,headers=headers),timeout=30) as r:
+                  runs=json.load(r).get("workflow_runs",[])
+              found={x.get("name"):x for x in runs if x.get("name") in required}
+              failed=[n for n,x in found.items() if x.get("status")=="completed" and x.get("conclusion")!="success"]
+              if failed: raise SystemExit("R16 companion validation failed: "+", ".join(sorted(failed)))
+              if required.issubset(found) and all(found[n].get("status")=="completed" and found[n].get("conclusion")=="success" for n in required):
+                  break
+              if time.time()>deadline: raise SystemExit("R16 companion validation timeout")
+              time.sleep(20)
+          PY
+
+      - name: Admit exact R16.00 evidence
+        if: hashFiles('v1/dist/certification/R16.00.result.json') == ''
+        run: |
+          set -euo pipefail
+          for name in R16.00.build.json R16.00.test.json R16.00.result.json; do
+            cp "$ZXUX_EVIDENCE_DIR/$name" "v1/dist/certification/$name"
+          done
+          git add v1/dist/certification/R16.00.build.json v1/dist/certification/R16.00.test.json v1/dist/certification/R16.00.result.json
+          changed="$(git diff --cached --name-only)"
+          test "$(printf '%s\n' "$changed" | wc -l)" -eq 3
+          bad="$(printf '%s\n' "$changed" | grep -Ev '^v1/dist/certification/R16\.00\.(build|test|result)\.json        run: tools/runtime/python/bin/python tools/finalize_phase2_evidence.py --root "$GITHUB_WORKSPACE" --evidence-dir "$ZXUX_EVIDENCE_DIR"
+
+      - name: Recheck source-candidate policy gates
+        if: hashFiles('v1/dist/certification/phase-2.json') == ''
+        run: |
+          git clean -fdX v1/build tools/runtime
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+
+      - name: Wait for companion source-candidate validations
+        if: hashFiles('v1/dist/certification/phase-2.json') == ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json, os, time, urllib.request
+          repo=os.environ["GITHUB_REPOSITORY"]; sha=os.environ["GITHUB_SHA"]
+          required={"ZX-UX Quality and CI","ZX-UX Phase 1 Certification"}
+          url=f"https://api.github.com/repos/{repo}/actions/runs?head_sha={sha}&per_page=100"
+          headers={"Authorization":f"Bearer {os.environ['GH_TOKEN']}","Accept":"application/vnd.github+json"}
+          deadline=time.time()+2400
+          while True:
+              with urllib.request.urlopen(urllib.request.Request(url,headers=headers),timeout=30) as r:
+                  runs=json.load(r).get("workflow_runs",[])
+              found={x.get("name"):x for x in runs if x.get("name") in required}
+              failed=[n for n,x in found.items() if x.get("status")=="completed" and x.get("conclusion")!="success"]
+              if failed: raise SystemExit("companion validation failed: "+", ".join(sorted(failed)))
+              if required.issubset(found) and all(found[n].get("status")=="completed" and found[n].get("conclusion")=="success" for n in required):
+                  break
+              if time.time()>deadline: raise SystemExit("companion validation timeout")
+              time.sleep(20)
+          PY
+
+      - name: Admit exact Phase 2 evidence
+        if: hashFiles('v1/dist/certification/phase-2.json') == ''
+        run: |
+          set -euo pipefail
+          source_sha="$GITHUB_SHA"
+          for n in $(seq -w 10 24); do
+            cp "$ZXUX_EVIDENCE_DIR/P2.$n.build.json" "v1/dist/certification/P2.$n.build.json"
+            cp "$ZXUX_EVIDENCE_DIR/P2.$n.test.json" "v1/dist/certification/P2.$n.test.json"
+          done
+          cp "$ZXUX_EVIDENCE_DIR/phase-2.json" v1/dist/certification/phase-2.json
+          git config user.name "ZX-UX Certification"
+          git config user.email "zxux-certification@users.noreply.github.com"
+          git add v1/dist/certification
+          git diff --cached --quiet && { echo "no Phase-2 evidence to admit"; exit 1; }
+          git commit -m "phase2: activate Phase-2 certification evidence for $source_sha"
+          git push origin HEAD:main
+
+      - name: Validate active Phase 2 evidence
+        if: hashFiles('v1/dist/certification/phase-2.json') != ''
+        run: |
+          python3 tools/check_phase2_evidence.py --require-active
+          python3 tools/test_phase2_evidence_negative.py
+
+      - name: Upload Phase 2 scratch evidence and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: zxux-phase2-${{ github.run_id }}-${{ github.run_attempt }}
+          path: /tmp/zxux-phase2-evidence-${{ github.run_id }}-${{ github.run_attempt }}/**/*.json
+          retention-days: 90
+          if-no-files-found: warn
+ || true)"
+          test -z "$bad"
+          git config user.name "ZX-UX Certification"
+          git config user.email "zxux-certification@users.noreply.github.com"
+          git commit -m "R16.00: admit REV16 REV07 bridge evidence for $GITHUB_SHA"
+          git push origin HEAD:main
+
       - name: Finalize Phase 2 aggregate evidence
         if: hashFiles('v1/dist/certification/phase-2.json') == ''
         run: tools/runtime/python/bin/python tools/finalize_phase2_evidence.py --root "$GITHUB_WORKSPACE" --evidence-dir "$ZXUX_EVIDENCE_DIR"
