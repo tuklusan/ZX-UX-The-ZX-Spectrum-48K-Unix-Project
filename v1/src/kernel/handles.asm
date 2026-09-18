@@ -140,7 +140,7 @@ zx48_od_release:
     push ix
     call zx48_free
     pop ix
-    jp c,zx48_pipe_free_panic
+    jp c,zx48_handle_free_panic
 zx48_od_release_no_decoder:
     ld d,(ix+OD_KIND_O)
     ld e,(ix+OD_ID_O)
@@ -318,4 +318,7 @@ zx48_handle_busy:
     ld a,E_BUSY
     scf
     ret
+zx48_handle_free_panic:
+    ld a,PANIC_ALLOCATOR
+    jp zx48_panic
     ENDM
