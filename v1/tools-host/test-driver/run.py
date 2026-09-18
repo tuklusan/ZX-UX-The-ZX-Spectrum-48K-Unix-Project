@@ -89,6 +89,7 @@ import revision16_bridge
 import phase3_open_descriptions
 import phase3_handle_table
 import phase3_tty
+import phase3_null
 from driver_core import (
     DriverError,
     find_root,
@@ -138,6 +139,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase3_handle_table.dispatch(root, action, step, **kwargs)
     if step == "P3.03":
         return phase3_tty.dispatch(root, action, step, **kwargs)
+    if step == "P3.04":
+        return phase3_null.dispatch(root, action, step, **kwargs)
     module = E0_MODULE.get(step)
     if module is not None:
         return module.dispatch(root, action, step, **kwargs)
@@ -445,6 +448,28 @@ def main() -> int:
                 sys.stderr.write(completed.stderr)
                 if completed.returncode != 0:
                     raise DriverError(f"P3.03 {p3_action} runner transaction failed")
+        if (
+            args.step == "P2.24"
+            and args.action == "test"
+            and os.environ.get("GITHUB_ACTIONS") == "true"
+            and (root / "v1/dist/certification/P3.03.test.json").is_file()
+            and not (root / "v1/dist/certification/P3.04.test.json").is_file()
+            and os.environ.get("ZXUX_P304_NESTED") != "1"
+        ):
+            os.environ["ZXUX_P304_NESTED"] = "1"
+            for p3_action in ("build", "test"):
+                p3_cmd = [
+                    str(Path(sys.executable).resolve()),
+                    str(Path(__file__).resolve()),
+                    p3_action,
+                    "--step", "P3.04",
+                    "--evidence-dir", str(evidence_dir),
+                ]
+                completed = subprocess.run(p3_cmd, cwd=root, check=False, text=True, capture_output=True)
+                sys.stdout.write(completed.stdout)
+                sys.stderr.write(completed.stderr)
+                if completed.returncode != 0:
+                    raise DriverError(f"P3.04 {p3_action} runner transaction failed")
         return 0
     except (DriverError, OSError, ValueError) as exc:
         print(f"ZX-UX TEST DRIVER FAIL: {exc}", file=sys.stderr)
