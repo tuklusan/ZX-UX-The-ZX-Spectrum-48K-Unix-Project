@@ -1,0 +1,45 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {"name":"read-bounds-by-available-count","passed":true},
+    {"name":"read-bounds-by-request","passed":true},
+    {"name":"read-limits-contiguous-ring-tail","passed":true},
+    {"name":"read-copies-only-selected-count","passed":true},
+    {"name":"read-advances-ring-index","passed":true},
+    {"name":"read-decrements-available-count","passed":true},
+    {"name":"read-wakes-writers-after-copy","passed":true},
+    {"name":"empty-with-writers-blocks-before-copy","passed":true},
+    {"name":"empty-without-writers-is-eof","passed":true},
+    {"name":"wraparound-two-chunk-vector-exact","passed":true},
+    {"name":"request-limit-prevents-overcopy","passed":true},
+    {"name":"available-count-limit-prevents-overcopy","passed":true},
+    {"name":"read-index-and-count-updates-exact","passed":true}
+  ],
+  "commands": [
+    {
+      "argv": ["tools/runtime/sjasmplus/bin/sjasmplus","--nologo","--lst=../../build/kernel-p1.lst","--sym=../../build/kernel-p1.sym","kernel.asm"],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12484 lines, work time: 0.032 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "3c05e079e8c43abb09df8973ef4c4a15b46f59ff297db9f99c6e74deae5a38d9",
+    "v1/dist/certification/P3.08.test.json": "ea3de03cebf76934b3c0f334bfce60fa620bcef17c59deeb3126886adbe88f3f",
+    "v1/src/kernel/pipe.asm": "04ef0030d9329d85b105ef0b52a0300ff2046b6db1ef3e069e9f2d986ce7212b",
+    "v1/tools-host/test-driver/phase3_pipe_read.py": "65a73db2cde9c92ccc05a0f7227fce496b8f91bccbcd8bf25be17a05adaf6f36",
+    "v1/tools-host/test-driver/run.py": "4da669ea54ab7bf821a7ea808198d0355d6bf9468001cf3f58e7a57e4d1a4118"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {"P3.08":"PASS"},
+  "schema": 2,
+  "source_commit": "65d9b9125cd443a84ce62f518524a74e3c2339eb",
+  "status": "PASS",
+  "step": "P3.09",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
