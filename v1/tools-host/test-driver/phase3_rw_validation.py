@@ -53,6 +53,7 @@ def _source_contract(root:Path)->list[dict[str,object]]:
 def _fixture(root:Path,s:dict[str,int],kernel:bytes)->None:
     code=bytearray()
     phase3_pipe_create._setup(code,s)
+    code += b"\x21"+_word(0xA100)+phase1._call(s["zx48_pipe_create"])+phase1._jp_c(FAIL_PC)
     guard=BUF
     code += phase3_pipe_create._store_byte(guard,0xA5)
     # Invalid D must fail even when count zero.
@@ -82,7 +83,7 @@ def dispatch(root:Path,action:str,step:str,*,sha256_file:Callable[[Path],str],ru
     result,kernel,listing=phase1._assemble_kernel(root,run_command,require_project_tool)
     syms=phase3_open_descriptions._symbols(listing.with_suffix(".sym"),(
       "zx48_memory_init","zx48_process_init","zx48_handles_init","zx48_pipe_init","zx48_process_prepare_pid1",
-      "zx48_syscall_impl","SYS_READ","SYS_WRITE","E_INVAL","current_pid"
+      "zx48_syscall_impl","zx48_pipe_create","SYS_READ","SYS_WRITE","E_INVAL","current_pid"
     ))
     if action=="test":
       _fixture(root,syms,kernel.read_bytes())
