@@ -12,7 +12,7 @@
 
 # ZX-UX Version-1 Test Plan
 
-This plan defines the deterministic host-side test contract. Revision 12 remains the architecture authority.
+This plan defines the deterministic host-side test contract. Revision 12 / Revision 03 remain historical through Phase 2. R16.00 alone admits Revision 16 / Revision 07 for Phase 3 and later work.
 
 ## Root and tool resolution
 
@@ -22,13 +22,13 @@ The canonical final host interpreter is `tools/runtime/python/bin/python`. The c
 
 ## Driver interface
 
-Every registered E0 and Phase-0 step has the exact entry points:
+Every registered certification step uses the exact entry points:
 
 `<project-local-python> v1/tools-host/test-driver/run.py build --step <STEP-ID>`
 
 `<project-local-python> v1/tools-host/test-driver/run.py test --step <STEP-ID>`
 
-Unknown numbered E0 or Phase-0 identifiers are rejected; there is no generic prefix fallback. Every subprocess has a finite timeout. Captured command, stdout, stderr, outcome, hashes, and named assertions are retained in machine-readable evidence.
+Unknown step identifiers are rejected; there is no generic prefix fallback. Evidence syntax accepts R16.00 and P0-P12; dispatch remains explicit. Every subprocess has a finite timeout. Captured command, stdout, stderr, outcome, hashes, and named assertions are retained in machine-readable evidence.
 
 ## E0.03 driver acceptance
 
@@ -48,9 +48,9 @@ The relocation test depends only on the copied root marker, never the original c
 
 Certification starts from an already-committed clean source checkout. Build and test records are written first to an external staging directory, never into the source worktree. Every E0.01-E0.06 and P0.01-P0.34 step requires `<STEP-ID>.build.json` and `<STEP-ID>.test.json`. E0.04 and P0.34 additionally require `<STEP-ID>.result.json`; Phase 0 additionally requires `phase-0.json`.
 
-Every schema-2 record includes exact `source_commit`, `toolchain_lock_sha256`, `architecture_sha256`, Boolean `worktree_clean`, prerequisite states, command data, stable root-relative hashes, and named assertions. Result records also include their exact PASS marker. A missing or malformed field, failed assertion, wrong source/digest, false clean-state claim, or missing prerequisite is a hard failure.
+Every schema-2 record includes exact `source_commit`, `toolchain_lock_sha256`, `architecture_sha256`, Boolean `worktree_clean`, prerequisite states, command data, stable root-relative hashes, and named assertions. R16.00 and every new P3-P12 record additionally require `implementation_plan_sha256` matching canonical Revision 07. R16.00 build/test/result also identify the same `bridge_source_commit`. Result records also include their exact PASS marker. A missing or malformed field, failed assertion, wrong source/digest, false clean-state claim, or missing prerequisite is a hard failure.
 
-After the complete ordered certification passes, staged JSON bytes are copied unchanged into `v1/dist/certification/` in a separate evidence-only commit. Durable records continue to name the certified source commit. GitHub Actions artifacts are transport/diagnostics only and cannot replace committed evidence.
+R16.00 first certifies one clean bridge source-candidate commit into external scratch. Only after all bridge gates pass are the frozen R16.00 build/test/result bytes copied unchanged into `v1/dist/certification/` in a separate evidence-only admission commit. Other result boundaries retain the same anti-self-reference rule. Durable records continue to name the certified source commit. GitHub Actions artifacts are transport/diagnostics only and cannot replace committed evidence.
 
 ## Emulator evidence hierarchy
 

@@ -26,7 +26,9 @@ from typing import Sequence
 ROOT_MARKER = b"ZX-UX project root"
 DEFAULT_TIMEOUT_SECONDS = 30.0
 TOOLCHAIN_LOCK = Path("tools/manifest/toolchain.lock.json")
-ARCHITECTURE = Path("docs/01-ZX-UX-ARCHITECTURE-REV12.md")
+ARCHITECTURE = Path("docs/01-ZX-UX-ARCHITECTURE-REV16.md")
+HISTORICAL_ARCHITECTURE = Path("docs/01-ZX-UX-ARCHITECTURE-REV12.md")
+IMPLEMENTATION_PLAN = Path("docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md")
 
 
 class DriverError(RuntimeError):
@@ -49,6 +51,7 @@ class SourceState:
     source_commit: str
     toolchain_lock_sha256: str
     architecture_sha256: str
+    implementation_plan_sha256: str
     worktree_clean: bool
 
 
@@ -142,10 +145,12 @@ def read_source_state(root: Path) -> SourceState:
     if len(source_commit) != 40 or any(ch not in "0123456789abcdef" for ch in source_commit):
         raise DriverError(f"invalid source commit identity: {source_commit!r}")
     status = _git(root, "status", "--porcelain=v1", "--untracked-files=all")
+    architecture = HISTORICAL_ARCHITECTURE if os.environ.get("ZXUX_SOURCE_EPOCH") == "historical" else ARCHITECTURE
     return SourceState(
         source_commit=source_commit,
         toolchain_lock_sha256=sha256_file(root_path(root, TOOLCHAIN_LOCK)),
-        architecture_sha256=sha256_file(root_path(root, ARCHITECTURE)),
+        architecture_sha256=sha256_file(root_path(root, architecture)),
+        implementation_plan_sha256=sha256_file(root_path(root, IMPLEMENTATION_PLAN)),
         worktree_clean=(status == ""),
     )
 
@@ -224,6 +229,10 @@ def write_evidence(
         "hashes": dict(sorted(hashes.items())),
         "assertions": assertions,
     }
+    if step == "R16.00" or (step.startswith("P") and step.split(".", 1)[0][1:].isdigit() and int(step.split(".", 1)[0][1:]) >= 3):
+        payload["implementation_plan_sha256"] = source_state.implementation_plan_sha256
+    if step == "R16.00":
+        payload["bridge_source_commit"] = source_state.source_commit
     destination.write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",

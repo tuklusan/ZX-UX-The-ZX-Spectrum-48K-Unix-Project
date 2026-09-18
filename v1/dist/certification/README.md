@@ -16,8 +16,8 @@
 Actions artifacts and scratch directories are diagnostics or transport only and do
 not substitute for committed evidence.
 
-The canonical naming convention is exact: every numbered E0 and Phase-0 step has
-`<STEP-ID>.build.json` and `<STEP-ID>.test.json`. E0.04 and P0.34 are explicit
+The canonical naming convention is exact: every numbered certification step has
+`<STEP-ID>.build.json` and `<STEP-ID>.test.json`. E0.04, P0.34, and R16.00 are explicit
 certification-result boundaries and additionally require `<STEP-ID>.result.json`.
 Phase aggregates are named `phase-<N>.json`; Phase 0 therefore closes with
 `phase-0.json`. A human-readable `.log` exists only when a step explicitly requires
@@ -34,6 +34,7 @@ Every durable build, test, and result record uses evidence schema 2 and records:
 - exact certified `source_commit`;
 - `toolchain_lock_sha256`;
 - `architecture_sha256`;
+- `implementation_plan_sha256` for R16.00 and every new P3-P12 record;
 - Boolean `worktree_clean`;
 - prerequisite step statuses;
 - command records;
@@ -52,9 +53,7 @@ The deterministic driver verifies cleanliness before each numbered step and writ
 scratch evidence to a directory outside the source worktree. Generated evidence must
 not make later clean-worktree checks false.
 
-After a complete clean-source certification run passes, the staged records are copied
-unchanged into `v1/dist/certification` and committed in a subsequent evidence-only
-check-in. The durable records continue to name the earlier source check-in in
+For R16.00, one clean bridge source-candidate commit is certified first and all three staged records name that same `source_commit` and `bridge_source_commit`. Only those frozen records are copied unchanged into `v1/dist/certification` in a subsequent evidence-only admission check-in. The durable records continue to name the earlier source check-in in
 `source_commit`; an evidence check-in never pretends to certify its own hash.
 
 ## Acceptance rule

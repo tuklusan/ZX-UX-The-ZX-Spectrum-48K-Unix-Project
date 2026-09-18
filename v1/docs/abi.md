@@ -12,8 +12,7 @@
 
 # ZX-UX Version-1 ABI
 
-Revision 12 is authoritative. This document is the executable-development summary
-for the target assembler sources.
+Revision 16 is authoritative after admitted R16.00. Historical E0-P2 evidence remains bound to Revision 12 / Revision 03. This document is the executable-development summary for the current target assembler sources.
 
 ## Address-space contract
 
@@ -61,6 +60,19 @@ Version 1 uses these syscall ranges:
 - `68-6E`: serialized ROM floating-point and ROM information.
 
 Number gaps are reserved expansion space.
+
+## Console input ABI
+
+Physical `CAPS SHIFT + 1` (`EDIT`) is the sole tty ESC-equivalent. In ordinary
+task context it decodes to the single target byte `0x1B` in both tty32 and tty64.
+The same byte is returned by `SYS_CON_GETKEY`, exposed by `/dev/tty` reads, and
+observed by C48 `getchar()` when stdin is the tty. No BASIC EDIT or extended-mode
+token is exposed, and `CAPS SHIFT + SYMBOL SHIFT` is not an ESC alias.
+
+Physical `CAPS SHIFT + SPACE` remains BREAK. BREAK is sampled by IM2 as cooperative
+cancellation, never decodes to `0x1B`, and is distinct from EDIT. Successful
+`SYS_CON_GETKEY` returns H=`0`, L=the target byte. Byte `0x1B` is input data;
+this ABI assigns it no console-output control meaning.
 
 ## Time ABI
 

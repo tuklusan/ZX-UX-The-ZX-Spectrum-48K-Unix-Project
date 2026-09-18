@@ -14,6 +14,8 @@
 from __future__ import annotations
 
 import argparse
+import json
+import os
 from pathlib import Path
 import sys
 
@@ -82,6 +84,7 @@ import phase2_proc_info
 import phase2_spawn_exit_leak
 import phase2_two_base_relocatable
 import phase2_acceptance
+import revision16_bridge
 from driver_core import (
     DriverError,
     find_root,
@@ -123,6 +126,8 @@ def dispatch(root: Path, action: str, step: str):
         "run_command": run_command,
         "require_project_tool": require_project_tool,
     }
+    if step == "R16.00":
+        return revision16_bridge.dispatch(root, action, step, **kwargs)
     module = E0_MODULE.get(step)
     if module is not None:
         return module.dispatch(root, action, step, **kwargs)
@@ -257,6 +262,8 @@ def prerequisite_statuses(step: str) -> dict[str, str]:
         number = int(step.split(".", 1)[1])
         if 1 <= number <= 24:
             return {"P1.41": "PASS"} if number == 1 else {f"P2.{number - 1:02d}": "PASS"}
+    if step == "R16.00":
+        return {"P2.24": "PASS"}
     return {}
 
 
@@ -265,6 +272,7 @@ def source_state_unchanged(before, after) -> bool:
         before.source_commit == after.source_commit
         and before.toolchain_lock_sha256 == after.toolchain_lock_sha256
         and before.architecture_sha256 == after.architecture_sha256
+        and before.implementation_plan_sha256 == after.implementation_plan_sha256
         and after.worktree_clean
     )
 
@@ -282,6 +290,10 @@ def main() -> int:
         if args.probe_root:
             print(root)
             return 0
+        if args.step.startswith(("E0.", "P0.", "P1.", "P2.")):
+            os.environ["ZXUX_SOURCE_EPOCH"] = "historical"
+        else:
+            os.environ.pop("ZXUX_SOURCE_EPOCH", None)
         source_state = require_clean_source(root)
         evidence_dir = resolve_evidence_dir(root, source_state.source_commit, args.evidence_dir)
         commands, hashes, assertions = dispatch(root, args.action, args.step)
@@ -304,6 +316,32 @@ def main() -> int:
         )
         if failed_assertions:
             raise DriverError(f"{len(failed_assertions)} assertion(s) failed")
+        if args.step == "R16.00" and args.action == "test":
+            build_path = evidence_dir / "R16.00.build.json"
+            if not build_path.is_file():
+                raise DriverError("R16.00 result requires matching build evidence")
+            build_record = json.loads(build_path.read_text(encoding="utf-8"))
+            test_record = json.loads(evidence_path.read_text(encoding="utf-8"))
+            for record in (build_record, test_record):
+                if record.get("status") != "PASS" or record.get("source_commit") != source_state.source_commit:
+                    raise DriverError("R16.00 source-candidate mismatch")
+                if record.get("implementation_plan_sha256") != source_state.implementation_plan_sha256:
+                    raise DriverError("R16.00 plan identity mismatch")
+            result = {
+                "schema": 2, "step": "R16.00", "action": "result", "status": "PASS",
+                "pass_marker": revision16_bridge.PASS_MARKER,
+                "source_commit": source_state.source_commit, "bridge_source_commit": source_state.source_commit,
+                "toolchain_lock_sha256": source_state.toolchain_lock_sha256,
+                "architecture_sha256": source_state.architecture_sha256,
+                "implementation_plan_sha256": source_state.implementation_plan_sha256,
+                "worktree_clean": True, "prerequisites": {"P2.24": "PASS"},
+                "commands": test_record["commands"], "hashes": test_record["hashes"],
+                "assertions": test_record["assertions"] + [{"name":"same-clean-bridge-source-candidate-all-records","passed":True}],
+            }
+            result_path = evidence_dir / "R16.00.result.json"
+            result_path.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+            print(revision16_bridge.PASS_MARKER)
+            print(f"result={result_path}")
         print(f"ZX-UX {args.step} {args.action.upper()} PASS")
         print(f"evidence={evidence_path}")
         return 0

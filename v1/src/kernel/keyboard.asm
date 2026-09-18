@@ -25,9 +25,66 @@ zx48_keyboard_init:
     ld (break_pending),a
     ret
 
+; Physical EDIT is exact CAPS SHIFT + 1 and is decoded only in ordinary task
+; context. No BASIC EDIT/extended-mode token is allowed to escape.
+zx48_keyboard_edit_exact:
+    ld bc,$FEFE
+    in a,(c)
+    and $1F
+    cp $1E
+    jr nz,zx48_keyboard_edit_no
+    ld bc,$F7FE
+    in a,(c)
+    and $1F
+    cp $1E
+    jr nz,zx48_keyboard_edit_no
+    ld bc,$FDFE
+    in a,(c)
+    and $1F
+    cp $1F
+    jr nz,zx48_keyboard_edit_no
+    ld bc,$FBFE
+    in a,(c)
+    and $1F
+    cp $1F
+    jr nz,zx48_keyboard_edit_no
+    ld bc,$EFFE
+    in a,(c)
+    and $1F
+    cp $1F
+    jr nz,zx48_keyboard_edit_no
+    ld bc,$DFFE
+    in a,(c)
+    and $1F
+    cp $1F
+    jr nz,zx48_keyboard_edit_no
+    ld bc,$BFFE
+    in a,(c)
+    and $1F
+    cp $1F
+    jr nz,zx48_keyboard_edit_no
+    ld bc,$7FFE
+    in a,(c)
+    and $1F
+    cp $1F
+    jr nz,zx48_keyboard_edit_no
+    xor a
+    ret
+zx48_keyboard_edit_no:
+    ld a,1
+    or a
+    ret
+
 ; Decode one supported foreground key without using the BASIC line editor.
-; KEY-SCAN/K-TEST supply exact shift/main codes; K-DECODE is used in L mode.
+; Exact physical EDIT maps to target ESC 0x1B before any ROM decoder is used.
+; Other supported keys retain the historical KEY-SCAN/K-TEST/K-DECODE path.
 zx48_keyboard_decode:
+    call zx48_keyboard_edit_exact
+    jr nz,zx48_keyboard_decode_rom
+    ld a,$1B
+    or a
+    ret
+zx48_keyboard_decode_rom:
     call zx48_rom_key_scan
     jr nz,zx48_keyboard_none
     call zx48_rom_k_test

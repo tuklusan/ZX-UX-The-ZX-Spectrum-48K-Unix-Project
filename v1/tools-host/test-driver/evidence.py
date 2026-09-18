@@ -23,7 +23,7 @@ from typing import Any
 SCHEMA = 2
 HEX40 = re.compile(r"^[0-9a-f]{40}$")
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
-STEP_ID = re.compile(r"^(?:E0|P(?:0|[1-9]|10))\.[0-9]{2}$")
+STEP_ID = re.compile(r"^(?:R16|E0|P(?:0|[1-9]|1[0-2]))\.[0-9]{2}$")
 COMMON_FIELDS = (
     "schema",
     "step",
@@ -136,6 +136,21 @@ def validate_prerequisites(prerequisites: Any, status: str) -> None:
             require(prerequisite_status == "PASS", f"prerequisite {name!r} is not PASS")
 
 
+def _prospective_step(step: str) -> bool:
+    if step == "R16.00":
+        return True
+    if not step.startswith("P"):
+        return False
+    phase = step.split(".", 1)[0][1:]
+    return phase.isdigit() and int(phase) >= 3
+
+
+def _canonical_plan_sha256() -> str:
+    import hashlib
+    root = Path(__file__).resolve().parents[3]
+    return hashlib.sha256((root / "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md").read_bytes()).hexdigest()
+
+
 def validate_common(record: Any) -> None:
     require(isinstance(record, dict), "certification record must be an object")
     missing = [field for field in COMMON_FIELDS if field not in record]
@@ -152,6 +167,12 @@ def validate_common(record: Any) -> None:
     )
     validate_hash(record["toolchain_lock_sha256"], "toolchain_lock_sha256")
     validate_hash(record["architecture_sha256"], "architecture_sha256")
+    if _prospective_step(record["step"]):
+        require("implementation_plan_sha256" in record, "implementation_plan_sha256 required for R16.00/P3-P12 evidence")
+        validate_hash(record["implementation_plan_sha256"], "implementation_plan_sha256")
+        require(record["implementation_plan_sha256"] == _canonical_plan_sha256(), "implementation_plan_sha256 does not match canonical REV07")
+        if record["step"] == "R16.00":
+            require(record.get("bridge_source_commit") == record.get("source_commit"), "R16.00 bridge_source_commit must equal source_commit")
     require(isinstance(record["worktree_clean"], bool), "worktree_clean must be Boolean")
     if record["status"] == "PASS":
         require(record["worktree_clean"] is True, "dirty-worktree PASS certification is forbidden")
