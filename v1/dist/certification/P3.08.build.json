@@ -1,0 +1,100 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "pipe-count-exact-four",
+      "passed": true
+    },
+    {
+      "name": "normal-buffer-exact-256",
+      "passed": true
+    },
+    {
+      "name": "single-fallback-exact-128",
+      "passed": true
+    },
+    {
+      "name": "pipe-record-has-buffer-indices-count-capacity-endpoint-counts",
+      "passed": true
+    },
+    {
+      "name": "waiter-bookkeeping-is-linked-by-pipe-slot",
+      "passed": true
+    },
+    {
+      "name": "preflight-requires-two-process-handles",
+      "passed": true
+    },
+    {
+      "name": "preflight-requires-two-open-descriptions",
+      "passed": true
+    },
+    {
+      "name": "preflight-reserves-one-free-pipe-slot",
+      "passed": true
+    },
+    {
+      "name": "buffer-policy-fast-required-normal-and-fallback",
+      "passed": true
+    },
+    {
+      "name": "two-endpoint-descriptions-created-before-publication",
+      "passed": true
+    },
+    {
+      "name": "two-handles-installed-before-publication",
+      "passed": true
+    },
+    {
+      "name": "result-slots-written-only-at-commit",
+      "passed": true
+    },
+    {
+      "name": "rollback-paths-release-handles-descriptions-buffer",
+      "passed": true
+    },
+    {
+      "name": "sys-pipe-validates-two-byte-result-range-first",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12484 lines, work time: 0.033 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "3c05e079e8c43abb09df8973ef4c4a15b46f59ff297db9f99c6e74deae5a38d9",
+    "v1/dist/certification/P3.07.test.json": "225d65353b40301762fd3675907094c08c5c89325ead81d0a4bff093615e586b",
+    "v1/include/zx48ux.inc": "6260d9bfd4a5785e68c657601efa9113bfac8deaf56a67abd27f72c25c60bb5f",
+    "v1/src/kernel/handles.asm": "3ce446fcc68f95b4cec52fee6b6202ec85a58bb5fcbc9bd7e41c9e517c16d016",
+    "v1/src/kernel/memory.asm": "290e34e60b37f22bf89446b43e851a1d1ae0e087f09af801743937f734d9d4ab",
+    "v1/src/kernel/pipe.asm": "04ef0030d9329d85b105ef0b52a0300ff2046b6db1ef3e069e9f2d986ce7212b",
+    "v1/src/kernel/syscall.asm": "50a7df7371e29a48439f4d064ef33a37ed9cc079736590e97ded36702a8c2277",
+    "v1/tools-host/test-driver/phase3_pipe_create.py": "881b7cb1d46f82a4fdcb267bca70debc4f613dae07ca3470b190b9c94b82cabd",
+    "v1/tools-host/test-driver/run.py": "7137373641f17f95abe59c09461ec1c698b45ab8cba0c81f21a7e243ea0b982e"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P3.07": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "598972e00c2e3994c64420698d17b8c7ba4cf426",
+  "status": "PASS",
+  "step": "P3.08",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
