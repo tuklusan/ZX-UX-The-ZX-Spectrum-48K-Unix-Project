@@ -39,6 +39,10 @@ def _word(value: int) -> bytes:
     return bytes((value & 0xFF, (value >> 8) & 0xFF))
 
 
+def _jp_nc(address: int) -> bytes:
+    return b"\xD2" + _word(address)
+
+
 def _assert_hl(code: bytearray, expected: int) -> None:
     code += phase1._ld_de(expected) + b"\xB7\xED\x52" + phase1._jp_nz(FAIL_PC)
 
@@ -112,7 +116,7 @@ def _dup_eof_fixture(root: Path, s: dict[str, int], kernel: bytes) -> None:
     code += b"\x21" + _word(SCRATCH)
     code += b"\x01\x01\x00"
     code += phase1._call(s["zx48_pipe_read"])
-    code += phase1._jp_nc(FAIL_PC)
+    code += _jp_nc(FAIL_PC)
     code += bytes((0xFE, s["E_INTR"])) + phase1._jp_nz(FAIL_PC)
 
     code += b"\x3E\x01" + phase1._call(s["zx48_od_release"]) + phase1._jp_c(FAIL_PC)
