@@ -18,13 +18,15 @@ on:
       - ".github/workflows/readme-doc-thumbnails.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   render:
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Install render tools
         run: |
@@ -51,10 +53,63 @@ jobs:
 
           sha256sum /tmp/zxux-docthumbs/png/*.png
 
-      - name: Upload thumbnails
-        uses: actions/upload-artifact@v7
-        with:
-          name: readme-doc-thumbnails
-          path: /tmp/zxux-docthumbs/png/*.png
-          if-no-files-found: error
-          retention-days: 1
+      - name: Stage thumbnails and README
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p docs/images/doc-thumbs
+          cp /tmp/zxux-docthumbs/png/*.png docs/images/doc-thumbs/
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          readme_path = Path("README.md")
+          readme = readme_path.read_text(encoding="utf-8")
+          start = readme.index("## Documentation\n")
+          end = readme.index("\n---\n", start)
+
+          section = """## Documentation
+
+Current ZX-UX books and specifications — click a cover to open the document:
+
+| ZX-UX User Manual | C48 Language Specification | C48 Compiler User Manual |
+|:---:|:---:|:---:|
+| [<img src="docs/images/doc-thumbs/zxux-user-manual-r12.png" width="220" alt="First page of ZX-UX User Manual Revision 12">](docs/00-ZX-UX_User_Manual_Revision_12.docx) | [<img src="docs/images/doc-thumbs/c48-language-spec-r011.png" width="220" alt="First page of C48 Language Specification Rev 0.11">](docs/04-C48%20Language%20Specification%20Rev%200.11.docx) | [<img src="docs/images/doc-thumbs/c48-compiler-user-manual-r011.png" width="220" alt="First page of C48 Compiler User Manual Rev 0.11">](docs/05-C48%20Compiler%20User%20Manual%20Rev%200.11.docx) |
+| [**ZX-UX User Manual Revision 12**](docs/00-ZX-UX_User_Manual_Revision_12.docx) | [**C48 Language Specification Rev 0.11**](docs/04-C48%20Language%20Specification%20Rev%200.11.docx) | [**C48 Compiler User Manual Rev 0.11**](docs/05-C48%20Compiler%20User%20Manual%20Rev%200.11.docx) |
+| ZX-UX user manual | C48 language specification | C48 compiler and programming guide |
+"""
+          readme_path.write_text(readme[:start] + section + readme[end:], encoding="utf-8")
+
+          checker_path = Path("tools/check_license_headers.sh")
+          checker = checker_path.read_text(encoding="utf-8")
+          anchor = '  ["docs/images/zx-ux-hero.png"]="Binary PNG hero image cannot carry the plaintext project header."'
+          additions = [
+              '  ["docs/images/doc-thumbs/zxux-user-manual-r12.png"]="Binary PNG document thumbnail cannot carry the plaintext project header."',
+              '  ["docs/images/doc-thumbs/c48-language-spec-r011.png"]="Binary PNG document thumbnail cannot carry the plaintext project header."',
+              '  ["docs/images/doc-thumbs/c48-compiler-user-manual-r011.png"]="Binary PNG document thumbnail cannot carry the plaintext project header."',
+          ]
+          if anchor not in checker:
+              raise SystemExit("license exemption anchor missing")
+          for line in additions:
+              if line not in checker:
+                  checker = checker.replace(anchor, anchor + "\n" + line)
+          checker_path.write_text(checker, encoding="utf-8")
+          PY
+
+      - name: Validate exact staged bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+          git diff --check
+
+      - name: Commit thumbnails
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "Supratim Sanyal"
+          git config user.email "tuklusan@users.noreply.github.com"
+          git add README.md tools/check_license_headers.sh docs/images/doc-thumbs
+          git commit -m "Add document cover thumbnails to README"
+          git push origin HEAD:main
