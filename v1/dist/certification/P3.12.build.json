@@ -1,0 +1,39 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {"name":"full-write-blocks-when-readers-remain","passed":true},
+    {"name":"write-block-records-wait-object","passed":true},
+    {"name":"write-block-records-wait-state","passed":true},
+    {"name":"write-block-yields-to-scheduler","passed":true},
+    {"name":"reader-wakes-writers","passed":true},
+    {"name":"wake-selects-write-waiters","passed":true},
+    {"name":"wake-clears-object-and-readies","passed":true},
+    {"name":"scheduler-has-ready-selection","passed":true}
+  ],
+  "commands": [{
+    "argv": ["tools/runtime/sjasmplus/bin/sjasmplus","--nologo","--lst=../../build/kernel-p1.lst","--sym=../../build/kernel-p1.sym","kernel.asm"],
+    "cwd": "v1/src/kernel",
+    "duration_ms": 35,
+    "exit_code": 0,
+    "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12482 lines, work time: 0.033 seconds\n",
+    "stdout": "",
+    "timed_out": false
+  }],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/dist/certification/P3.11.test.json": "b66c23b601522d4b554c1ec52336c519ccfb80c5151c492d2bf28d978789c10d",
+    "v1/src/kernel/pipe.asm": "d2ccc787714ab8af9ddf275b50e92db59aee00fbccf912c0ac0134dc6127beec",
+    "v1/src/kernel/scheduler.asm": "42947c46e444e02a1175256835720f097b7f22e1771cdd95c820c7ba308e0211",
+    "v1/tools-host/test-driver/phase3_pipe_full.py": "340738fe8a16a74926ea40651bb82f014bdf7036bf02688499551f9a507c5d7e",
+    "v1/tools-host/test-driver/run.py": "abff80e0001bd02fa6cfcee0569221d77c126d289f3a6c261811bcae97734893"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {"P3.11":"PASS"},
+  "schema": 2,
+  "source_commit": "12ef58c8d9ed8fbb059ab39f358b6d1886ccdace",
+  "status": "PASS",
+  "step": "P3.12",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
