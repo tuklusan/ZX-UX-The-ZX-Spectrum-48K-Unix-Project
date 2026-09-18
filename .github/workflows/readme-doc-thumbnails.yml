@@ -19,47 +19,31 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 jobs:
-  render:
+  publish:
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: Install render tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libreoffice-writer poppler-utils
-
-      - name: Render first pages
+      - name: Restore verified thumbnail artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p /tmp/zxux-docthumbs/pdf /tmp/zxux-docthumbs/png
-
-          render_one() {
-            src="$1"
-            stem="$2"
-            libreoffice --headless --convert-to pdf --outdir /tmp/zxux-docthumbs/pdf "$src"
-            pdf="/tmp/zxux-docthumbs/pdf/$(basename "${src%.docx}").pdf"
-            pdftoppm -f 1 -singlefile -png -scale-to-x 420 -scale-to-y -1 "$pdf" "/tmp/zxux-docthumbs/png/$stem"
-          }
-
-          render_one "docs/00-ZX-UX_User_Manual_Revision_12.docx" "zxux-user-manual-r12"
-          render_one "docs/04-C48 Language Specification Rev 0.11.docx" "c48-language-spec-r011"
-          render_one "docs/05-C48 Compiler User Manual Rev 0.11.docx" "c48-compiler-user-manual-r011"
-
-          sha256sum /tmp/zxux-docthumbs/png/*.png
-
-      - name: Stage thumbnails and README
-        shell: bash
-        run: |
-          set -euo pipefail
+          curl -fL             -H "Authorization: Bearer $GH_TOKEN"             -H "Accept: application/vnd.github+json"             "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/10553506525/zip"             -o /tmp/readme-doc-thumbnails.zip
           mkdir -p docs/images/doc-thumbs
-          cp /tmp/zxux-docthumbs/png/*.png docs/images/doc-thumbs/
+          unzip -o /tmp/readme-doc-thumbnails.zip -d docs/images/doc-thumbs
+          sha256sum docs/images/doc-thumbs/*.png
 
+      - name: Update README and license exemptions
+        shell: bash
+        run: |
+          set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
 
