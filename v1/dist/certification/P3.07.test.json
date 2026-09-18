@@ -1,0 +1,80 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "independent-open-allocates-new-description",
+      "passed": true
+    },
+    {
+      "name": "independent-open-does-not-match-existing-identity",
+      "passed": true
+    },
+    {
+      "name": "new-description-zeroes-offset",
+      "passed": true
+    },
+    {
+      "name": "new-description-zeroes-decoder-pointer",
+      "passed": true
+    },
+    {
+      "name": "description-record-owns-offset-and-decoder",
+      "passed": true
+    },
+    {
+      "name": "same-object-independent-opens-use-distinct-descriptions",
+      "passed": true
+    },
+    {
+      "name": "two-independent-opens-seek-independently",
+      "passed": true
+    },
+    {
+      "name": "packed-decoder-state-pointers-are-independent",
+      "passed": true
+    },
+    {
+      "name": "accidental-shared-offset-negative-detected",
+      "passed": true
+    },
+    {
+      "name": "independent-final-close-frees-both-decoder-states",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12484 lines, work time: 0.032 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "3c05e079e8c43abb09df8973ef4c4a15b46f59ff297db9f99c6e74deae5a38d9",
+    "v1/dist/certification/P3.06.test.json": "ca4e43babfc0b1530f377d31461db4b655dd2b076d99b194599f34b61119981f",
+    "v1/src/kernel/handles.asm": "3ce446fcc68f95b4cec52fee6b6202ec85a58bb5fcbc9bd7e41c9e517c16d016",
+    "v1/tools-host/test-driver/phase3_independent_open.py": "5d2c3994d4925318c24152392a32a9414d90eeda1dfaec74ec20df09eafc58be",
+    "v1/tools-host/test-driver/run.py": "afa731533553a7e7e019358845b82464aa81938f3ef11d729c1e1adea4061e88"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P3.06": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "9cf45debc161d2794a92f6ad7dc39ac53093966d",
+  "status": "PASS",
+  "step": "P3.07",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
