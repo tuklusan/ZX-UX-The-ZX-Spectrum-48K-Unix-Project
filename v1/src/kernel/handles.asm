@@ -140,7 +140,7 @@ zx48_od_release:
     push ix
     call zx48_free
     pop ix
-    ld a,PANIC_ALLOCATOR
+    ld a,PANIC_SCHEDULER
     jp c,zx48_panic
 zx48_od_release_no_decoder:
     ld d,(ix+OD_KIND_O)
