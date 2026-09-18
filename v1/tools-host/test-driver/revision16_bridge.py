@@ -13,6 +13,7 @@
 
 from __future__ import annotations
 import json
+import os
 from pathlib import Path
 import tempfile
 from typing import Any, Callable
@@ -115,19 +116,30 @@ def _schema_negatives(root:Path,sha256_file)->None:
 
 def _regress(root:Path,run_command,python_tool:Path):
     commands=[]; driver=root/"v1/tools-host/test-driver/run.py"
-    with tempfile.TemporaryDirectory(prefix="zxux-r1600-") as tmp:
-        base=Path(tmp)
-        for step in ("E0.01","E0.03","E0.04"):
-            for action in ("build","test"):
-                r=run_command([python_tool,driver,action,"--step",step,"--evidence-dir",base/"e0"],cwd=root,timeout_seconds=2700.0); commands.append(r)
-                require(not r.timed_out and r.exit_code==0,f"{step} {action} regression failed")
-        for phase,last,out in ((1,41,"p1"),(2,24,"p2")):
-            for n in range(1,last+1):
-                step=f"P{phase}.{n:02d}"
+    old_evidence=os.environ.get("ZXUX_EVIDENCE_DIR")
+    try:
+        with tempfile.TemporaryDirectory(prefix="zxux-r1600-") as tmp:
+            base=Path(tmp)
+            os.environ["ZXUX_EVIDENCE_DIR"]=str(base/"e0")
+            for step in ("E0.01","E0.03","E0.04"):
                 for action in ("build","test"):
-                    r=run_command([python_tool,driver,action,"--step",step,"--evidence-dir",base/out],cwd=root,timeout_seconds=2700.0); commands.append(r)
-                    require(not r.timed_out and r.exit_code==0,f"{step} {action} regression failed")
+                    r=run_command([python_tool,driver,action,"--step",step,"--evidence-dir",base/"e0"],cwd=root,timeout_seconds=2700.0); commands.append(r)
+                    require(not r.timed_out and r.exit_code==0,f"{step} {action} regression failed: stdout={r.stdout!r} stderr={r.stderr!r}")
+            for phase,last,out in ((1,41,"p1"),(2,24,"p2")):
+                evidence_dir=base/out
+                os.environ["ZXUX_EVIDENCE_DIR"]=str(evidence_dir)
+                for n in range(1,last+1):
+                    step=f"P{phase}.{n:02d}"
+                    for action in ("build","test"):
+                        r=run_command([python_tool,driver,action,"--step",step,"--evidence-dir",evidence_dir],cwd=root,timeout_seconds=2700.0); commands.append(r)
+                        require(not r.timed_out and r.exit_code==0,f"{step} {action} regression failed: stdout={r.stdout!r} stderr={r.stderr!r}")
+    finally:
+        if old_evidence is None:
+            os.environ.pop("ZXUX_EVIDENCE_DIR",None)
+        else:
+            os.environ["ZXUX_EVIDENCE_DIR"]=old_evidence
     return commands
+
 def dispatch(root:Path,action:str,step:str,*,sha256_file:Callable[[Path],str],run_command:Callable[...,Any],require_project_tool:Callable[[Path,str|Path],Path]):
     require(step=="R16.00" and action in ("build","test"),f"unsupported bridge dispatch: {step} {action}")
     commands=_historical(root,sha256_file,run_command); assertions=_static(root,sha256_file)
