@@ -1,0 +1,144 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "exact-24-open-description-pool",
+      "passed": true
+    },
+    {
+      "name": "eight-byte-record-within-twelve-byte-cap",
+      "passed": true
+    },
+    {
+      "name": "open-description-table-budget-288",
+      "passed": true
+    },
+    {
+      "name": "process-table-budget-448",
+      "passed": true
+    },
+    {
+      "name": "combined-planning-budget-896",
+      "passed": true
+    },
+    {
+      "name": "record-owns-kind-access-ref-identity-offset-decoder",
+      "passed": true
+    },
+    {
+      "name": "dup-retains-existing-description",
+      "passed": true
+    },
+    {
+      "name": "create-zeroes-independent-offset-and-decoder",
+      "passed": true
+    },
+    {
+      "name": "refcount-overflow-fails-closed",
+      "passed": true
+    },
+    {
+      "name": "process-handle-slots-own-description-ids",
+      "passed": true
+    },
+    {
+      "name": "process-descriptor-budget-asserted",
+      "passed": true
+    },
+    {
+      "name": "fast-reserve-bound-asserted",
+      "passed": true
+    },
+    {
+      "name": "scheduler-fixed-state-present",
+      "passed": true
+    },
+    {
+      "name": "exact-24-records-runtime-symbol",
+      "passed": true
+    },
+    {
+      "bytes": 8,
+      "name": "record-size-at-most-12",
+      "passed": true
+    },
+    {
+      "bytes": 192,
+      "name": "open-table-at-most-288",
+      "passed": true
+    },
+    {
+      "bytes": 48,
+      "name": "process-descriptor-at-most-56",
+      "passed": true
+    },
+    {
+      "bytes": 384,
+      "name": "process-table-at-most-448",
+      "passed": true
+    },
+    {
+      "bytes": 603,
+      "name": "combined-fixed-planning-at-most-896",
+      "passed": true
+    },
+    {
+      "name": "24-allocate-25th-enospc-complete-rollback",
+      "passed": true
+    },
+    {
+      "name": "independent-opens-have-independent-offset-state",
+      "passed": true
+    },
+    {
+      "name": "retained-reference-shares-offset-and-refcount",
+      "passed": true
+    },
+    {
+      "name": "refcount-overflow-negative",
+      "passed": true
+    },
+    {
+      "name": "corrupt-free-record-retain-negative",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12470 lines, work time: 0.032 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "660da2a7aef42ab35f138b288073582963c887767bf68ea6d151538a47a368d4",
+    "v1/dist/certification/R16.00.result.json": "b2ee997a2235ff1041bb6dc8471f0c45cb215e58e5a3bcca194b554ad95516ad",
+    "v1/include/zx48ux.inc": "6260d9bfd4a5785e68c657601efa9113bfac8deaf56a67abd27f72c25c60bb5f",
+    "v1/src/kernel/handles.asm": "4ce1c6f36cf112af94fc9efd86aeaaefc2a508ada129dbf0471049d0ae9d41a6",
+    "v1/src/kernel/process.asm": "20c3d59193ab983524cb18e0263b3e7c96dd3b3987d10522f7e33a2c442ef696",
+    "v1/src/kernel/scheduler.asm": "42947c46e444e02a1175256835720f097b7f22e1771cdd95c820c7ba308e0211",
+    "v1/tools-host/test-driver/phase3_open_descriptions.py": "4be8f206585abca95723ac849c613b044dfd2a4b2b3a37a5bd65114b398d403d",
+    "v1/tools-host/test-driver/run.py": "8b65ac421602d12b4e88e3871334bf80c891facbfaa996da43458ce88c698308"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "R16.00": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "8f79a2950ccee3cce850e516ebd25966935f7ae5",
+  "status": "PASS",
+  "step": "P3.01",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
