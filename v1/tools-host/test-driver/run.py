@@ -96,6 +96,7 @@ import phase3_independent_open
 import phase3_pipe_create
 import phase3_pipe_read
 import phase3_pipe_blocking
+import phase3_pipe_write
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
 from driver_core import (
     DriverError,
@@ -160,6 +161,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase3_pipe_read.dispatch(root, action, step, **kwargs)
     if step == "P3.10":
         return phase3_pipe_blocking.dispatch(root, action, step, **kwargs)
+    if step == "P3.11":
+        return phase3_pipe_write.dispatch(root, action, step, **kwargs)
     module = E0_MODULE.get(step)
     if module is not None:
         return module.dispatch(root, action, step, **kwargs)

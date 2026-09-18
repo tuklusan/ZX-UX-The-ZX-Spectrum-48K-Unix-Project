@@ -332,6 +332,7 @@ zx48_pipe_write_retry:
     ld d,(ix+PIPE_COUNT_O+1)
     or a
     sbc hl,de
+    jp c,zx48_pipe_corrupt
     jr nz,zx48_pipe_write_copy
     ld a,(pipe_active_slot)
     ld c,a
@@ -411,6 +412,10 @@ zx48_pipe_broken:
     ld a,E_PIPE
     scf
     ret
+
+zx48_pipe_corrupt:
+    ld a,PANIC_ALLOCATOR
+    jp zx48_panic
 
 ; C=pipe slot. Blocking is restartable because zero bytes have transferred.
 zx48_pipe_block_read:
