@@ -20,6 +20,7 @@ OD_ID_O                    EQU 3
 OD_OFFSET_O                EQU 4
 OD_AUX_O                   EQU 6
 OD_COMPACT_SIZE            EQU OD_RECORD_SIZE
+PACKED_READER_STATE_SIZE  EQU 272
 
 ; Fixed fast-data area: runtime state does not consume the ordinary code/data pool.
 HANDLE_FAST_BASE           EQU FAST_RESERVE_START
@@ -130,6 +131,17 @@ zx48_od_release:
     dec a
     ld (ix+OD_REFS_O),a
     ret nz
+    ld l,(ix+OD_AUX_O)
+    ld h,(ix+OD_AUX_O+1)
+    ld a,h
+    or l
+    jr z,zx48_od_release_no_decoder
+    ld bc,PACKED_READER_STATE_SIZE
+    push ix
+    call zx48_free
+    pop ix
+    jp c,zx48_pipe_free_panic
+zx48_od_release_no_decoder:
     ld d,(ix+OD_KIND_O)
     ld e,(ix+OD_ID_O)
     push ix
@@ -289,14 +301,8 @@ zx48_handles_close_all_current:
 zx48_handles_close_all_loop:
     push bc
     ld a,b
-    call zx48_handle_lookup
-    pop bc
-    jr c,zx48_handles_close_all_next
-    push bc
-    ld a,b
     call zx48_handle_close
     pop bc
-zx48_handles_close_all_next:
     inc b
     ld a,b
     cp MAX_HANDLES_PER_PROCESS
