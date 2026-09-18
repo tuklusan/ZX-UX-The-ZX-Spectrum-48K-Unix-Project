@@ -62,32 +62,32 @@ def _static(root:Path,sha256_file):
 def _word(value:int)->bytes:
     return bytes((value & 0xFF,(value >> 8) & 0xFF))
 def _call(address:int)->bytes:
-    return b"\\xCD"+_word(address)
+    return b"\xCD"+_word(address)
 def _jp(address:int)->bytes:
-    return b"\\xC3"+_word(address)
+    return b"\xC3"+_word(address)
 def _jp_c(address:int)->bytes:
-    return b"\\xDA"+_word(address)
+    return b"\xDA"+_word(address)
 def _jp_nc(address:int)->bytes:
-    return b"\\xD2"+_word(address)
+    return b"\xD2"+_word(address)
 def _jp_nz(address:int)->bytes:
-    return b"\\xC2"+_word(address)
+    return b"\xC2"+_word(address)
 def _replace_kernel(kernel_bytes:bytes,replacements:tuple[tuple[int,bytes],...]):
     patched=bytearray(kernel_bytes)
     for address,payload in replacements:
         offset=address-phase1.KERNEL_BASE
         require(0 <= offset <= len(patched)-6,"R16 fixture patch outside kernel")
         require(len(payload) <= 6,"R16 fixture stub too large")
-        patched[offset:offset+6]=payload+b"\\x00"*(6-len(payload))
+        patched[offset:offset+6]=payload+b"\x00"*(6-len(payload))
     return phase1._kernel_patch(bytes(patched))
 def _target_input_tests(root:Path,labels:dict[str,int],kernel_bytes:bytes)->None:
     decode=labels["zx48_keyboard_decode"]; scan=labels["zx48_rom_key_scan"]; ktest=labels["zx48_rom_k_test"]; e_again=labels["E_AGAIN"]
-    base=b"\\xF3"+b"\\x31"+_word(phase1.USER_STACK)
+    base=b"\xF3"+b"\x31"+_word(phase1.USER_STACK)
     exact=bytearray(base)+_call(decode)+_jp_c(FAIL_PC)+bytes((0xFE,0x1B))+_jp_nz(FAIL_PC)+_jp(PASS_PC)
-    run_sna(root,bytes(exact),patch=_replace_kernel(kernel_bytes,((scan,b"\\x11\\x24\\x27\\xAF\\xC9"),)))
+    run_sna(root,bytes(exact),patch=_replace_kernel(kernel_bytes,((scan,b"\x11\x24\x27\xAF\xC9"),)))
     invalid=bytearray(base)+_call(decode)+_jp_nc(FAIL_PC)+bytes((0xFE,e_again & 0xFF))+_jp_nz(FAIL_PC)+_jp(PASS_PC)
-    run_sna(root,bytes(invalid),patch=_replace_kernel(kernel_bytes,((scan,b"\\x11\\x24\\x27\\xF6\\x01\\xC9"),)))
+    run_sna(root,bytes(invalid),patch=_replace_kernel(kernel_bytes,((scan,b"\x11\x24\x27\xF6\x01\xC9"),)))
     shifts=bytearray(base)+_call(decode)+_jp_nc(FAIL_PC)+bytes((0xFE,e_again & 0xFF))+_jp_nz(FAIL_PC)+_jp(PASS_PC)
-    run_sna(root,bytes(shifts),patch=_replace_kernel(kernel_bytes,((scan,b"\\x11\\x18\\x27\\xAF\\xC9"),(ktest,b"\\xB7\\xC9"))))
+    run_sna(root,bytes(shifts),patch=_replace_kernel(kernel_bytes,((scan,b"\x11\x18\x27\xAF\xC9"),(ktest,b"\xB7\xC9"))))
     old=phase1_getkey.KEY_VALUE
     try:
         phase1_getkey.KEY_VALUE=0x1B
