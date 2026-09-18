@@ -1,0 +1,74 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "empty-with-writers-enters-read-wait",
+      "passed": true
+    },
+    {
+      "name": "empty-without-writers-returns-zero",
+      "passed": true
+    },
+    {
+      "name": "block-records-pipe-and-wait-state",
+      "passed": true
+    },
+    {
+      "name": "block-yields-through-scheduler",
+      "passed": true
+    },
+    {
+      "name": "writer-wake-selects-read-waiters",
+      "passed": true
+    },
+    {
+      "name": "wake-clears-object-and-readies-task",
+      "passed": true
+    },
+    {
+      "name": "write-path-wakes-readers",
+      "passed": true
+    },
+    {
+      "name": "pipe-endpoint-close-only-after-final-od-ref",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 27,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12484 lines, work time: 0.025 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "3c05e079e8c43abb09df8973ef4c4a15b46f59ff297db9f99c6e74deae5a38d9",
+    "v1/dist/certification/P3.09.test.json": "56fa7c7a9f778623bc7b5105a369b30ec77266cef683a736ff54636807865344",
+    "v1/src/kernel/handles.asm": "3ce446fcc68f95b4cec52fee6b6202ec85a58bb5fcbc9bd7e41c9e517c16d016",
+    "v1/src/kernel/pipe.asm": "04ef0030d9329d85b105ef0b52a0300ff2046b6db1ef3e069e9f2d986ce7212b",
+    "v1/src/kernel/scheduler.asm": "42947c46e444e02a1175256835720f097b7f22e1771cdd95c820c7ba308e0211",
+    "v1/tools-host/test-driver/phase3_pipe_blocking.py": "001d1dfe80ce43066b2435e80cef88c86a6d4db73a855b3be22486cd967921b7",
+    "v1/tools-host/test-driver/run.py": "f0455f6579c18978a6c9264f01ba66e82f31d5ae76211cbf49e8fbb4e32223b9"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P3.09": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "9b45c90ba27f265ee2e284c481852b15c9f38855",
+  "status": "PASS",
+  "step": "P3.10",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
