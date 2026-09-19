@@ -421,20 +421,12 @@ zx48_object_nospc:
     ret
 
 ; Resolve path to path_dir/path_name. Fixed namespace only; repeated slash allowed.
+; The 31-byte limit is applied to the normalized absolute result, not raw input.
 zx48_path_resolve:
     ld (path_source),hl
-    ld b,0
-zx48_path_len:
     ld a,(hl)
     or a
-    jr z,zx48_path_len_ok
-    inc b
-    ld a,b
-    cp 32
-    jr nc,zx48_path_long
-    inc hl
-    jr zx48_path_len
-zx48_path_len_ok:
+    jr z,zx48_path_invalid
     ld hl,(path_source)
     ld a,(hl)
     cp '/'
@@ -500,19 +492,21 @@ zx48_path_final_slash:
 zx48_path_final_check:
     or a
     jr nz,zx48_path_noent
+    ld hl,(path_after)
+    ld a,(hl)
+    cp '/'
+    jr z,zx48_path_empty_final
     ld hl,path_name
     call zx48_name_validate
     ret c
-    ld a,(path_dir)
     ld c,PATH_KIND_BASE
-    or a
-    ret
+    jp zx48_path_finish
 zx48_path_parent:
     ld a,(path_dir)
     cp DIR_USERHOME
     jr z,zx48_path_parent_home
     or a
-    jr z,zx48_path_component_next
+    jr z,zx48_path_invalid
     xor a
     ld (path_dir),a
     jr zx48_path_component_next
@@ -523,9 +517,61 @@ zx48_path_component_next:
     ld hl,(path_after)
     jr zx48_path_component
 zx48_path_dir_done:
-    ld a,(path_dir)
     ld c,PATH_KIND_DIR
+    jp zx48_path_finish
+
+; C=PATH_KIND_*. Enforce canonical normalized absolute path length <=31.
+zx48_path_finish:
+    ld a,c
+    ld (path_result_kind),a
+    ld a,(path_dir)
+    cp DIR_ROOT
+    jr z,zx48_path_len_root
+    cp DIR_HOME
+    jr z,zx48_path_len_home
+    cp DIR_USERHOME
+    jr z,zx48_path_len_userhome
+    ld b,4
+    jr zx48_path_len_kind
+zx48_path_len_root:
+    ld b,1
+    jr zx48_path_len_kind
+zx48_path_len_home:
+    ld b,5
+    jr zx48_path_len_kind
+zx48_path_len_userhome:
+    ld a,(session_user_len)
+    add a,6
+    ld b,a
+zx48_path_len_kind:
+    ld a,(path_result_kind)
+    cp PATH_KIND_BASE
+    jr nz,zx48_path_len_check
+    ld a,(path_dir)
+    cp DIR_ROOT
+    jr z,zx48_path_len_name
+    inc b
+zx48_path_len_name:
+    ld hl,path_name
+zx48_path_len_name_loop:
+    ld a,(hl)
     or a
+    jr z,zx48_path_len_check
+    inc b
+    inc hl
+    jr zx48_path_len_name_loop
+zx48_path_len_check:
+    ld a,b
+    cp 32
+    jr nc,zx48_path_long
+    ld a,(path_dir)
+    ld c,(path_result_kind)
+    or a
+    ret
+zx48_path_empty_final:
+zx48_path_invalid:
+    ld a,E_INVAL
+    scf
     ret
 zx48_path_long:
     ld a,E_TOOLONG
@@ -1349,6 +1395,7 @@ object_cwd: db 0
 path_source: dw 0
 path_after: dw 0
 path_dir: db 0
+path_result_kind: db 0
 path_name: defs 11,0
 session_user_len: db 0
 session_user: defs 9,0
