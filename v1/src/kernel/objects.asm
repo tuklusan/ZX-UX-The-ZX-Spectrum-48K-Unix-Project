@@ -2046,6 +2046,166 @@ ns_kind: db 0
 
 
 ;
+; P4.08 staged atomic RAW write/growth contract.
+;
+; IX=mutable RAW object record, DE=logical offset, HL=source, BC=count.
+; Success commits all BC bytes and returns HL=BC. Extending writes first build
+; a complete private replacement and publish it only after every fallible step.
+    MACRO EMIT_P408_RAW_WRITE_ROUTINES
+zx48_p408_raw_write:
+    ld (p408_object_ptr),ix
+    ld (p408_source),hl
+    ld (p408_count),bc
+    ld (p408_offset),de
+
+    ld a,b
+    or c
+    jr nz,zx48_p408_nonzero
+    ld hl,0
+    xor a
+    ret
+
+zx48_p408_nonzero:
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    and OBJ_PACKED
+    jp nz,zx48_p408_notsup
+
+    ld l,(ix+OBJ_LOGICAL_LENGTH)
+    ld h,(ix+OBJ_LOGICAL_LENGTH+1)
+    ld (p408_old_length),hl
+    ld e,(ix+OBJ_ALLOCATION_PTR)
+    ld d,(ix+OBJ_ALLOCATION_PTR+1)
+    ld (p408_old_ptr),de
+
+    ; Sparse holes are never created: offset must be <= old logical length.
+    ld de,(p408_offset)
+    or a
+    sbc hl,de
+    jp c,zx48_p408_invalid
+
+    ; Widen offset+count before narrowing. Carry or >32768 is E_NOSPC.
+    ld hl,(p408_offset)
+    ld bc,(p408_count)
+    add hl,bc
+    jp c,zx48_p408_nospc
+    ld a,h
+    cp ARENA_SIZE/256
+    jr c,zx48_p408_end_ok
+    jr nz,zx48_p408_nospc
+    ld a,l
+    or a
+    jr nz,zx48_p408_nospc
+zx48_p408_end_ok:
+    ld (p408_end),hl
+
+    ; new_length=max(old_length,end).
+    ld de,(p408_old_length)
+    or a
+    sbc hl,de
+    jr c,zx48_p408_in_place
+    jr z,zx48_p408_in_place
+    ld hl,(p408_end)
+    ld (p408_new_length),hl
+    jr zx48_p408_extend
+
+zx48_p408_in_place:
+    ld hl,(p408_old_ptr)
+    ld de,(p408_offset)
+    add hl,de
+    ex de,hl
+    ld hl,(p408_source)
+    ld bc,(p408_count)
+    ldir
+    ld hl,(p408_count)
+    xor a
+    ret
+
+zx48_p408_extend:
+    ; A complete private replacement must exist before the object record changes.
+    ld bc,(p408_new_length)
+    ld a,ALLOC_COLD_PREFERRED
+    call zx48_alloc
+    ret c
+    ld (p408_new_ptr),hl
+
+    ; Copy the complete old representation first.
+    ld bc,(p408_old_length)
+    ld a,b
+    or c
+    jr z,zx48_p408_copy_write
+    ld hl,(p408_old_ptr)
+    ld de,(p408_new_ptr)
+    ldir
+
+zx48_p408_copy_write:
+    ld hl,(p408_new_ptr)
+    ld de,(p408_offset)
+    add hl,de
+    ex de,hl
+    ld hl,(p408_source)
+    ld bc,(p408_count)
+    ldir
+
+    ; Commit is bounded metadata only: RAW lengths stay equal and pointer swaps once.
+    ld ix,(p408_object_ptr)
+    ld hl,(p408_new_ptr)
+    ld (ix+OBJ_ALLOCATION_PTR),l
+    ld (ix+OBJ_ALLOCATION_PTR+1),h
+    ld hl,(p408_new_length)
+    ld (ix+OBJ_LOGICAL_LENGTH),l
+    ld (ix+OBJ_LOGICAL_LENGTH+1),h
+    ld (ix+OBJ_STORAGE_LENGTH),l
+    ld (ix+OBJ_STORAGE_LENGTH+1),h
+
+    ; The now-unreachable prior allocation is released after publication.
+    ld hl,(p408_old_ptr)
+    ld bc,(p408_old_length)
+    ld a,b
+    or c
+    jr z,zx48_p408_extend_done
+    bit 0,c
+    jr z,zx48_p408_old_even
+    inc bc
+zx48_p408_old_even:
+    call zx48_free
+    ; A valid resident object owns a valid allocator extent; this cannot fail.
+    ret c
+zx48_p408_extend_done:
+    ld hl,(p408_count)
+    xor a
+    ret
+
+; IX=RAW object, HL=source, BC=count. This helper selects current EOF then uses
+; the identical transaction; P4.09 later binds every O_APPEND description write.
+zx48_p408_raw_write_at_eof:
+    ld e,(ix+OBJ_LOGICAL_LENGTH)
+    ld d,(ix+OBJ_LOGICAL_LENGTH+1)
+    jp zx48_p408_raw_write
+
+zx48_p408_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+zx48_p408_nospc:
+    ld a,E_NOSPC
+    scf
+    ret
+zx48_p408_notsup:
+    ld a,E_NOTSUP
+    scf
+    ret
+
+p408_object_ptr: dw 0
+p408_source: dw 0
+p408_count: dw 0
+p408_offset: dw 0
+p408_old_length: dw 0
+p408_old_ptr: dw 0
+p408_end: dw 0
+p408_new_length: dw 0
+p408_new_ptr: dw 0
+    ENDM
+
 ; P4.07 staged RAW RAM-object read/seek contract. The qualification fixture
 ; emits this with the admitted handle and mutable-object helpers without
 ; increasing the resident kernel code pool before the later Phase-4 integration.
