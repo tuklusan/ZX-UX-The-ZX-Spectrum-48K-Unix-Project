@@ -1,0 +1,73 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "target-validator-uses-17th-bit-carry-before-region-decision",
+      "passed": true
+    },
+    {
+      "name": "target-validator-enforces-single-display-or-user-arena-region",
+      "passed": true
+    },
+    {
+      "name": "zero-count-validates-handle-before-skipping-buffer",
+      "passed": true
+    },
+    {
+      "name": "bounded-path-scan-validates-each-byte-before-dereference",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 27,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12492 lines, work time: 0.026 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p209-spawn.lst",
+        "--sym=p209-spawn.sym",
+        "p209-spawn.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 8,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 5327 lines, work time: 0.007 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p209-spawn.bin": "d9807ced440e367cdf813b8e37fbdd15f2542b4e5a7c2ab78bcebfdde1095ae5",
+    "v1/dist/certification/P3.18.test.json": "b96c30d01c6c3ef6469726c7a86506510868c8f626e20ef1908d35d6d9d42938",
+    "v1/src/kernel/syscall.asm": "c24c522a649435b1bea32869cacbb64ec010ffdb1eb106746e6a40f9439cae80",
+    "v1/tools-host/test-driver/phase2_spawn.py": "b35992482dc8f410202c8c7584d36c90db7457a56f3885b6c3b39be030c2d526",
+    "v1/tools-host/test-driver/phase3_widened_ranges.py": "cccb021f362fbe3f323320f6ad41ae92c8034f31ad188f485eb12053c0c5c22d",
+    "v1/tools-host/test-driver/run.py": "0a460f19476276d67369fc77e4d120655fceb8fe1cf0e44f7ab2a71b6ac3a817"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P3.18": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "bd1d1efc3e6faf244aa6e98c0194371fe23cccca",
+  "status": "PASS",
+  "step": "P3.19",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
