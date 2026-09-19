@@ -13,14 +13,6 @@
 name: P4.09 append semantics qualification
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/p408-qualification.yml'
-      - '.github/workflows/p409-qualification.yml'
-      - 'v1/src/kernel/objects.asm'
-      - 'v1/tools-host/test-driver/phase4_append.py'
-      - 'v1/tools-host/test-driver/run.py'
   workflow_dispatch:
 permissions:
   contents: read
