@@ -54,6 +54,7 @@ def _assemble(root: Path, run_command: Callable[..., Any], require_project_tool:
     fixture.write_text(
         """    DEVICE ZXSPECTRUM48
     INCLUDE "../include/zx48ux.inc"
+PROC_HANDLES EQU 16
 PROC_CWD EQU 28
     ORG $C000
 current_pid: db 1
