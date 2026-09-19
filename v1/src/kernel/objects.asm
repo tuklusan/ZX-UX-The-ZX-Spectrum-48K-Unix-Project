@@ -1569,8 +1569,9 @@ zx48_path_resolve:
     ld a,b
     cp 32
     jr nc,.long
+    ld a,(ns_kind)
+    ld c,a
     ld a,(ns_dir)
-    ld c,(ns_kind)
     or a
     ret
 .long:

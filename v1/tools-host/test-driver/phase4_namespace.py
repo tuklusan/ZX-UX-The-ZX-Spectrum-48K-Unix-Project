@@ -166,26 +166,6 @@ def _target_matrix(root: Path, s: dict[str, int], module: bytes) -> None:
             _emit_error(code, s, addresses[index], errno)
         execute(label, emit)
 
-    execute("harness-smoke", lambda code: None)
-
-    def root_return(code: bytearray) -> None:
-        code += phase1._ld_hl(addresses[0]) + phase1._call(s["zx48_path_resolve"])
-    execute("root-return", root_return)
-
-    def root_carry(code: bytearray) -> None:
-        code += phase1._ld_hl(addresses[0]) + phase1._call(s["zx48_path_resolve"]) + phase1._jp_c(FAIL_PC)
-    execute("root-carry", root_carry)
-
-    def root_directory(code: bytearray) -> None:
-        code += phase1._ld_hl(addresses[0]) + phase1._call(s["zx48_path_resolve"]) + phase1._jp_c(FAIL_PC)
-        code += bytes((0xFE, s["DIR_ROOT"] & 0xFF)) + phase1._jp_nz(FAIL_PC)
-    execute("root-directory", root_directory)
-
-    def root_kind(code: bytearray) -> None:
-        code += phase1._ld_hl(addresses[0]) + phase1._call(s["zx48_path_resolve"]) + phase1._jp_c(FAIL_PC)
-        code += bytes((0x79, 0xFE, s["PATH_KIND_DIR"] & 0xFF)) + phase1._jp_nz(FAIL_PC)
-    execute("root-kind", root_kind)
-
     success("root", 0, s["DIR_ROOT"], s["PATH_KIND_DIR"])
     success("bin", 1, s["DIR_BIN"], s["PATH_KIND_DIR"])
     success("repeated-separators", 2, s["DIR_BIN"], s["PATH_KIND_DIR"])
