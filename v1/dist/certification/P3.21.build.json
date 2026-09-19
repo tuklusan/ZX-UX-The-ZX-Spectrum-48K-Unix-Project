@@ -1,0 +1,70 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "p3-21-rev07-contract-present",
+      "passed": true
+    },
+    {
+      "name": "p3-21-rev16-identity-exact",
+      "passed": true
+    },
+    {
+      "name": "p3-21-rev07-identity-exact",
+      "passed": true
+    },
+    {
+      "name": "phase3-aggregate-boundary-stops-before-phase4",
+      "passed": true
+    },
+    {
+      "name": "all-p3-01-through-p3-20-build-test-evidence-pass",
+      "passed": true,
+      "record_count": 40
+    },
+    {
+      "name": "durable-phase3-evidence-preserves-rev16-rev07-identities",
+      "passed": true
+    },
+    {
+      "name": "frozen-p3-15-test-prerequisite-key-typo-preserved-and-hash-chained",
+      "passed": true
+    },
+    {
+      "name": "negative-missing-phase3-component-rejected",
+      "passed": true
+    },
+    {
+      "name": "negative-edit-escape-proof-weakening-rejected",
+      "passed": true
+    },
+    {
+      "name": "negative-authority-identity-mutation-rejected",
+      "passed": true
+    }
+  ],
+  "commands": [],
+  "hashes": {
+    "docs/01-ZX-UX-ARCHITECTURE-REV16.md": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+    "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+    "v1/dist/certification/P3.20.test.json": "2c657fb3003650b332e5a2b06ae62edb535368aa60ad6cdce4a08c2ce98752b2",
+    "v1/tools-host/test-driver/phase3_acceptance.py": "73960115237c49999740be3c11afe74e0d3b936d97c4f8f323a7db992b9149cf",
+    "v1/tools-host/test-driver/phase3_ioctl.py": "87d17996f030af1c49fee06cc25f527467ba0895b3e12bafdca2243abba44c35",
+    "v1/tools-host/test-driver/phase3_pipe2.py": "63fc10d8f4b2870070ca5a76d9da504baa6687a31c1bf2765668324ecd8a2e61",
+    "v1/tools-host/test-driver/phase3_pipe3.py": "4e5c6c16dca9760bf32c68bb5a3becbd5dce3eb61aec468989c36f5182634c0c",
+    "v1/tools-host/test-driver/phase3_tty.py": "be3a1f960557a938acc13b6c7d316bd47de8d41e94344ab44545dbe4444fdbd5",
+    "v1/tools-host/test-driver/phase3_widened_ranges.py": "cccb021f362fbe3f323320f6ad41ae92c8034f31ad188f485eb12053c0c5c22d",
+    "v1/tools-host/test-driver/run.py": "9daed49b85393c4b0ca19975e9b98836417e103d66e37f6e88e0e66015a49e72"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P3.20": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "4d092dc1e72ec359fe3624d195ec8680184b1c4c",
+  "status": "PASS",
+  "step": "P3.21",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
