@@ -484,6 +484,7 @@ P416_SINK_FINAL_MEMORY  EQU 0
 P416_SINK_CALLER_STREAM EQU 1
 P416_SINK_DISCARD       EQU 2
 P416_SINK_TAPE_PIPE     EQU 3
+P416_CRC_INITIAL        EQU -1
 
     MACRO EMIT_P416_ZXP1_DECODER
 zx48_p416_decode:
@@ -541,7 +542,7 @@ zx48_p416_history_ok:
     ld a,(p416_crc_enable)
     or a
     jr z,zx48_p416_loop
-    ld hl,$ffff
+    ld hl,P416_CRC_INITIAL
     ld (p416_crc),hl
 
 zx48_p416_loop:
@@ -792,7 +793,7 @@ zx48_p416_inval:
 
 p416_sink: db 0
 p416_crc_enable: db 0
-p416_crc: dw $ffff
+p416_crc: dw P416_CRC_INITIAL
 p416_in_ptr: dw 0
 p416_phys_left: dw 0
 p416_logical_total: dw 0
