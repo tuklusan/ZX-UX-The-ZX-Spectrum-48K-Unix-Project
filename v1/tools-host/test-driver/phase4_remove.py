@@ -171,8 +171,9 @@ def _target(root: Path, s: dict[str, int], module: bytes) -> None:
             ram[DATA_BASE - 0x4000:DATA_BASE - 0x4000 + len(payload)] = payload
             if records:
                 ram[table - 0x4000:table - 0x4000 + len(records)] = records
+            off = od_table - 0x4000
+            ram[off:off + 24 * 8] = bytes(24 * 8)
             if open_slot is not None:
-                off = od_table - 0x4000
                 ram[off + 0] = s["OD_KIND_OBJECT"]
                 ram[off + 1] = s["O_READ"]
                 ram[off + 2] = 1
