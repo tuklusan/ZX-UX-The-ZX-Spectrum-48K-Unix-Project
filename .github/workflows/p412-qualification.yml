@@ -1,0 +1,100 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: P4.12 SYS_LIST qualification
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      ZXUX_EVIDENCE_DIR: /tmp/zxux-p412-qualification
+      P412_EXACT_PARENT: e00b18a54207833c09be8887de95fedbc3fcb0a5
+      ZXUX_REV16_SHA256: 24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c
+      ZXUX_REV07_SHA256: 840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc
+    steps:
+      - uses: actions/checkout@v7
+        with: {fetch-depth: 0}
+      - name: Guard exact P4.12 candidate diff
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "$P412_EXACT_PARENT"
+          git diff --name-only HEAD^ HEAD | sort > /tmp/p412-changed
+          printf '%s\n' \
+            .github/workflows/p412-dispatch-once.yml \
+            .github/workflows/p412-qualification.yml | sort > /tmp/p412-expected
+          diff -u /tmp/p412-expected /tmp/p412-changed
+          git diff --check HEAD^ HEAD
+          test -z "$(git status --porcelain)"
+      - name: Three unchanged candidate scans
+        run: |
+          set -euo pipefail
+          baseline=""
+          tree="$(git rev-parse 'HEAD^{tree}')"
+          for scan in 1 2 3; do
+            python3 -m py_compile v1/tools-host/test-driver/phase4_list.py v1/tools-host/test-driver/run.py
+            find v1/tools-host/test-driver -type d -name __pycache__ -prune -exec rm -rf {} +
+            test -z "$(git status --porcelain)"
+            test "$(git rev-parse 'HEAD^{tree}')" = "$tree"
+            digest="$(sha256sum v1/src/kernel/objects.asm v1/tools-host/test-driver/phase4_list.py v1/tools-host/test-driver/run.py .github/workflows/p412-dispatch-once.yml .github/workflows/p412-qualification.yml v1/dist/certification/P4.11.test.json v1/dist/certification/P4.11.requalification.test.json | sha256sum | awk '{print $1}')"
+            if test -z "$baseline"; then baseline="$digest"; else test "$baseline" = "$digest"; fi
+            echo "SCAN-$scan: CLEAN"
+          done
+      - name: Mandatory gates
+        run: |
+          set -euo pipefail
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+          test "$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV16.md | awk '{print $1}')" = "$ZXUX_REV16_SHA256"
+          test "$(sha256sum docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md | awk '{print $1}')" = "$ZXUX_REV07_SHA256"
+          test -s v1/dist/certification/P4.11.test.json
+          grep -q '"status": "PASS"' v1/dist/certification/P4.11.test.json
+          test -s v1/dist/certification/P4.11.requalification.test.json
+          grep -q '"status": "PASS"' v1/dist/certification/P4.11.requalification.test.json
+          grep -q '"source_commit": "bb4be59016cf44727e884ca7bfb71bc2785d8298"' v1/dist/certification/P4.11.requalification.test.json
+      - uses: actions/setup-python@v6
+        with: {python-version: '3.13.15', check-latest: false}
+      - name: Install native build prerequisites
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential cmake gettext libaudiofile-dev libfreetype6-dev libgcrypt20-dev libglib2.0-dev libpng-dev libsdl1.2-dev libtool libxml2-dev perl pkg-config
+      - name: Acquire pinned runtime
+        run: python tools/scripts/bootstrap-environment.py
+      - name: Certify pinned runtime
+        run: tools/runtime/python/bin/python tools/scripts/verify-environment.py
+      - name: Recheck E0.05 repository policy
+        run: |
+          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step E0.05 --evidence-dir /tmp/zxux-p412-e005
+          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step E0.05 --evidence-dir /tmp/zxux-p412-e005
+      - name: Execute P4.12 build
+        run: tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P4.12
+      - name: Execute P4.12 test
+        run: tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P4.12
+      - name: Collect exact evidence
+        if: always()
+        run: |
+          mkdir -p "$ZXUX_EVIDENCE_DIR/meta"
+          git rev-parse HEAD > "$ZXUX_EVIDENCE_DIR/meta/candidate-commit.txt"
+          git rev-parse 'HEAD^{tree}' > "$ZXUX_EVIDENCE_DIR/meta/candidate-tree.txt"
+          git status --porcelain > "$ZXUX_EVIDENCE_DIR/meta/worktree-status.txt"
+      - name: Upload exact evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: zxux-p412-qualification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: /tmp/zxux-p412-qualification/
+          retention-days: 90
+          if-no-files-found: error
