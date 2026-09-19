@@ -81,6 +81,11 @@ def setup(code: bytearray, s: dict[str, int]) -> None:
     create_handle(code, s, 2, s["OD_KIND_TAPE"])
     pid2_state = s["process_table"] + 2 * s["PROC_DESC_SIZE"] + s["PROC_STATE"]
     code += store(pid2_state, s["PROC_READY"])
+    # Give PID2 its own valid /dev/tty handle so the non-PID1 ownership
+    # negative reaches the permission check rather than failing handle lookup.
+    code += store(s["current_pid"], 2)
+    create_handle(code, s, 0, s["OD_KIND_TTY"])
+    code += store(s["current_pid"], 1)
 
 def source_contract(root: Path) -> list[dict[str, object]]:
     syscall=(root/"v1/src/kernel/syscall.asm").read_text(encoding="utf-8")
