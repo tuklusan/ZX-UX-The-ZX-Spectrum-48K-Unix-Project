@@ -473,3 +473,327 @@ zx_pack_successes: dw 0
 zx_info_ptr: dw 0
 zx_info_scratch: defs 20,0
     ENDM
+
+;
+; P4.16 bounded ZXP1 target decoder. One token parser feeds exactly four sinks.
+; A=sink, HL=physical source, BC=physical length, DE=logical length,
+; IX=256-byte history for streaming sinks, IY=destination for memory/stream sinks.
+; p416_crc_enable!=0 requests CRC-16/CCITT-FALSE over emitted logical bytes.
+;
+P416_SINK_FINAL_MEMORY  EQU 0
+P416_SINK_CALLER_STREAM EQU 1
+P416_SINK_DISCARD       EQU 2
+P416_SINK_TAPE_PIPE     EQU 3
+
+    MACRO EMIT_P416_ZXP1_DECODER
+zx48_p416_decode:
+    cp P416_SINK_TAPE_PIPE+1
+    jp nc,zx48_p416_inval
+    ld (p416_sink),a
+    ld (p416_in_ptr),hl
+    ld (p416_phys_left),bc
+    ld (p416_logical_total),de
+    xor a
+    ld (p416_logical_pos),a
+    ld (p416_logical_pos+1),a
+    push ix
+    pop hl
+    ld (p416_history_ptr),hl
+    push iy
+    pop hl
+    ld (p416_sink_base),hl
+    ld (p416_sink_ptr),hl
+
+    ; Widened physical source span: non-empty [start,start+len-1] may not wrap.
+    ld bc,(p416_phys_left)
+    ld a,b
+    or c
+    jr z,zx48_p416_input_span_ok
+    dec bc
+    ld hl,(p416_in_ptr)
+    add hl,bc
+    jp c,zx48_p416_format
+zx48_p416_input_span_ok:
+
+    ; Memory-writing sinks also prove the complete declared output span up front.
+    ld a,(p416_sink)
+    cp P416_SINK_DISCARD
+    jr nc,zx48_p416_sink_span_ok
+    ld bc,(p416_logical_total)
+    ld a,b
+    or c
+    jr z,zx48_p416_sink_span_ok
+    dec bc
+    ld hl,(p416_sink_base)
+    add hl,bc
+    jp c,zx48_p416_inval
+zx48_p416_sink_span_ok:
+
+    ld a,(p416_sink)
+    or a
+    jr z,zx48_p416_history_ok
+    ld hl,(p416_history_ptr)
+    ld a,h
+    or l
+    jp z,zx48_p416_inval
+zx48_p416_history_ok:
+
+    ld a,(p416_crc_enable)
+    or a
+    jr z,zx48_p416_loop
+    ld hl,$ffff
+    ld (p416_crc),hl
+
+zx48_p416_loop:
+    ld hl,(p416_logical_pos)
+    ld de,(p416_logical_total)
+    or a
+    sbc hl,de
+    jr z,zx48_p416_finish
+    ld bc,(p416_phys_left)
+    ld a,b
+    or c
+    jp z,zx48_p416_format
+    call zx48_p416_get_byte
+    ret c
+    cp $40
+    jr c,zx48_p416_literal
+    cp $80
+    jr c,zx48_p416_rle
+
+    ; BACKREF length=(token&7f)+3, then one distance_minus_1 byte.
+    and $7f
+    add a,3
+    ld (p416_count),a
+    call zx48_p416_check_advance
+    ret c
+    call zx48_p416_get_byte
+    ret c
+    ld (p416_distance_minus_1),a
+    inc a
+    jr nz,zx48_p416_back_distance_ready
+    ld bc,256
+    jr zx48_p416_back_distance_word
+zx48_p416_back_distance_ready:
+    ld c,a
+    ld b,0
+zx48_p416_back_distance_word:
+    ld hl,(p416_logical_pos)
+    or a
+    sbc hl,bc
+    jp c,zx48_p416_format
+    ld (p416_back_pos),hl
+zx48_p416_back_loop:
+    ld hl,(p416_back_pos)
+    call zx48_p416_history_read
+    ret c
+    call zx48_p416_emit
+    ret c
+    ld hl,(p416_back_pos)
+    inc hl
+    ld (p416_back_pos),hl
+    ld hl,p416_count
+    dec (hl)
+    jr nz,zx48_p416_back_loop
+    jr zx48_p416_loop
+
+zx48_p416_literal:
+    inc a
+    ld (p416_count),a
+    call zx48_p416_check_advance
+    ret c
+zx48_p416_literal_loop:
+    call zx48_p416_get_byte
+    ret c
+    call zx48_p416_emit
+    ret c
+    ld hl,p416_count
+    dec (hl)
+    jr nz,zx48_p416_literal_loop
+    jr zx48_p416_loop
+
+zx48_p416_rle:
+    and $3f
+    add a,3
+    ld (p416_count),a
+    call zx48_p416_check_advance
+    ret c
+    call zx48_p416_get_byte
+    ret c
+    ld (p416_repeat),a
+zx48_p416_rle_loop:
+    ld a,(p416_repeat)
+    call zx48_p416_emit
+    ret c
+    ld hl,p416_count
+    dec (hl)
+    jr nz,zx48_p416_rle_loop
+    jr zx48_p416_loop
+
+; A <- next physical byte, exact bounded cursor.
+zx48_p416_get_byte:
+    ld bc,(p416_phys_left)
+    ld a,b
+    or c
+    jp z,zx48_p416_format
+    ld hl,(p416_in_ptr)
+    ld a,(hl)
+    ld (p416_byte),a
+    dec bc
+    ld (p416_phys_left),bc
+    ld a,b
+    or c
+    jr z,zx48_p416_get_no_advance
+    inc hl
+    jp z,zx48_p416_format
+    ld (p416_in_ptr),hl
+    jr zx48_p416_get_done
+zx48_p416_get_no_advance:
+    inc hl
+    ld (p416_in_ptr),hl
+zx48_p416_get_done:
+    ld a,(p416_byte)
+    or a
+    ret
+
+; count byte must fit remaining logical output using widened carry/compare checks.
+zx48_p416_check_advance:
+    ld a,(p416_count)
+    ld e,a
+    ld d,0
+    ld hl,(p416_logical_pos)
+    add hl,de
+    jp c,zx48_p416_format
+    ld bc,(p416_logical_total)
+    or a
+    sbc hl,bc
+    jp c,zx48_p416_advance_ok
+    jp z,zx48_p416_advance_ok
+    jp zx48_p416_format
+zx48_p416_advance_ok:
+    xor a
+    ret
+
+; A=logical byte. Update optional CRC, streaming history and selected sink.
+zx48_p416_emit:
+    ld (p416_byte),a
+    ld a,(p416_crc_enable)
+    or a
+    jr z,zx48_p416_emit_history
+    ld a,(p416_byte)
+    call zx48_p416_crc_byte
+
+zx48_p416_emit_history:
+    ld a,(p416_sink)
+    or a
+    jr z,zx48_p416_emit_sink
+    ld hl,(p416_history_ptr)
+    ld de,(p416_logical_pos)
+    ld a,e
+    ld e,a
+    ld d,0
+    add hl,de
+    ld a,(p416_byte)
+    ld (hl),a
+
+zx48_p416_emit_sink:
+    ld a,(p416_sink)
+    cp P416_SINK_DISCARD
+    jr nc,zx48_p416_emit_pos
+    ld hl,(p416_sink_ptr)
+    ld a,(p416_byte)
+    ld (hl),a
+    inc hl
+    ld (p416_sink_ptr),hl
+
+zx48_p416_emit_pos:
+    ld hl,(p416_logical_pos)
+    inc hl
+    ld (p416_logical_pos),hl
+    xor a
+    ret
+
+; HL=prior logical position -> A=byte. FINAL_MEMORY reads destination directly;
+; all streaming sinks use the caller-supplied 256-byte circular history.
+zx48_p416_history_read:
+    ld de,(p416_logical_pos)
+    push hl
+    or a
+    ex de,hl
+    sbc hl,de
+    pop hl
+    ld a,h
+    or a
+    jp nz,zx48_p416_format
+    ld a,(p416_sink)
+    or a
+    jr nz,zx48_p416_history_ring
+    ld de,(p416_sink_base)
+    add hl,de
+    ld a,(hl)
+    or a
+    ret
+zx48_p416_history_ring:
+    ld a,l
+    ld l,a
+    ld h,0
+    ld de,(p416_history_ptr)
+    add hl,de
+    ld a,(hl)
+    or a
+    ret
+
+; CRC-16/CCITT-FALSE, polynomial 0x1021, initial 0xffff.
+zx48_p416_crc_byte:
+    ld hl,(p416_crc)
+    xor h
+    ld h,a
+    ld b,8
+zx48_p416_crc_bit:
+    add hl,hl
+    jr nc,zx48_p416_crc_next
+    ld a,h
+    xor $10
+    ld h,a
+    ld a,l
+    xor $21
+    ld l,a
+zx48_p416_crc_next:
+    djnz zx48_p416_crc_bit
+    ld (p416_crc),hl
+    ret
+
+zx48_p416_finish:
+    ld hl,(p416_phys_left)
+    ld a,h
+    or l
+    jp nz,zx48_p416_format
+    ld hl,(p416_logical_pos)
+    xor a
+    ret
+
+zx48_p416_format:
+    ld a,E_FORMAT
+    scf
+    ret
+zx48_p416_inval:
+    ld a,E_INVAL
+    scf
+    ret
+
+p416_sink: db 0
+p416_crc_enable: db 0
+p416_crc: dw $ffff
+p416_in_ptr: dw 0
+p416_phys_left: dw 0
+p416_logical_total: dw 0
+p416_logical_pos: dw 0
+p416_history_ptr: dw 0
+p416_sink_base: dw 0
+p416_sink_ptr: dw 0
+p416_back_pos: dw 0
+p416_count: db 0
+p416_repeat: db 0
+p416_distance_minus_1: db 0
+p416_byte: db 0
+    ENDM
