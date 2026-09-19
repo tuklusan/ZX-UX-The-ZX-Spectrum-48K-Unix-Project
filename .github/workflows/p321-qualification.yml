@@ -30,7 +30,7 @@ jobs:
     timeout-minutes: 45
     env:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p321-qualification
-      P321_EXACT_PARENT: a22a005442d1c399c798a7eb442d9792b8adc810
+      P321_EXACT_PARENT: 67110f33ab916d1ba5a2dc07e1ceef0b52261906
       ZXUX_REV16_SHA256: 24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c
       ZXUX_REV07_SHA256: 840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc
     steps:
@@ -43,7 +43,7 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD^)" = "$P321_EXACT_PARENT"
           git diff --name-only HEAD^ HEAD | sort > /tmp/p321-changed
-          printf '%s\n' .github/workflows/p320-qualification.yml .github/workflows/p321-qualification.yml v1/tools-host/test-driver/phase3_acceptance.py v1/tools-host/test-driver/run.py | sort > /tmp/p321-expected
+          printf '%s\n' .github/workflows/p321-qualification.yml v1/tools-host/test-driver/phase3_acceptance.py | sort > /tmp/p321-expected
           diff -u /tmp/p321-expected /tmp/p321-changed
           git diff --check HEAD^ HEAD
           test -z "$(git status --porcelain)"
