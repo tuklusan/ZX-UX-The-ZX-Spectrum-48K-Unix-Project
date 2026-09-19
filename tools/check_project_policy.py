@@ -78,6 +78,53 @@ def scan_paths_and_files() -> int:
     return failures
 
 
+def scan_qualification_workflows() -> int:
+    failures = 0
+    workflow_dir = ROOT / ".github" / "workflows"
+
+    for pattern in ("*qualification.yml", "*qualification.yaml"):
+        for path in sorted(workflow_dir.glob(pattern)):
+            display = path.relative_to(ROOT).as_posix()
+            try:
+                lines = path.read_text(encoding="utf-8").splitlines()
+            except (OSError, UnicodeDecodeError) as exc:
+                print(f"ERROR: cannot inspect qualification workflow {display}: {exc}", file=sys.stderr)
+                failures += 1
+                continue
+
+            on_lines = [index for index, line in enumerate(lines) if line == "on:"]
+            if len(on_lines) != 1:
+                print(
+                    f"ERROR: qualification workflow must have exactly one block-style on: section: {display}",
+                    file=sys.stderr,
+                )
+                failures += 1
+                continue
+
+            triggers: list[str] = []
+            for line in lines[on_lines[0] + 1 :]:
+                if line and not line[0].isspace() and not line.lstrip().startswith("#"):
+                    break
+                if (
+                    line.startswith("  ")
+                    and not line.startswith("    ")
+                    and line.strip()
+                    and not line.lstrip().startswith("#")
+                ):
+                    key, separator, _ = line[2:].partition(":")
+                    if separator:
+                        triggers.append(key.strip())
+
+            if triggers != ["workflow_dispatch"]:
+                print(
+                    f"ERROR: qualification workflow must be workflow_dispatch-only: {display}",
+                    file=sys.stderr,
+                )
+                failures += 1
+
+    return failures
+
+
 def scan_workflow_metadata() -> int:
     failures = 0
 
@@ -121,7 +168,11 @@ def scan_workflow_metadata() -> int:
 
 
 def main() -> int:
-    failures = scan_paths_and_files() + scan_workflow_metadata()
+    failures = (
+        scan_paths_and_files()
+        + scan_qualification_workflows()
+        + scan_workflow_metadata()
+    )
     if failures:
         print(f"Project policy gate failed with {failures} violation(s).", file=sys.stderr)
         return 1

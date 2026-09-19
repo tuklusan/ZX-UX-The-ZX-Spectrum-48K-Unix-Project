@@ -13,11 +13,7 @@
 name: P2.18 exact-head final qualification
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - .github/workflows/p218-final-qualification.yml
+  workflow_dispatch:
 
 permissions:
   contents: read
