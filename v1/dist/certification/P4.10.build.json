@@ -1,0 +1,86 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "truncate-saves-old-allocation-before-publication",
+      "passed": true
+    },
+    {
+      "name": "truncate-publishes-empty-raw-bounded-metadata",
+      "passed": true
+    },
+    {
+      "name": "truncate-releases-old-payload-after-publication",
+      "passed": true
+    },
+    {
+      "name": "truncate-rounds-odd-packed-storage-for-free",
+      "passed": true
+    },
+    {
+      "name": "allocator-corruption-after-publication-panics",
+      "passed": true
+    },
+    {
+      "name": "open-reserves-description-handle-before-truncate",
+      "passed": true
+    },
+    {
+      "name": "trunc-append-is-retained-on-open-description",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12807 lines, work time: 0.033 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p410-trunc.lst",
+        "--sym=p410-trunc.sym",
+        "p410-trunc.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 20,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 6945 lines, work time: 0.018 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p410-trunc.bin": "430b79f24b86a064baeae99a0bd12ae2f6cff30f168dae52a3f0119c3793045b",
+    "v1/dist/certification/P4.09.test.json": "cf05ee0b574e79c5a26952142fc8895532cdffb5df0262632b4c78aced16aaf1",
+    "v1/src/kernel/memory.asm": "290e34e60b37f22bf89446b43e851a1d1ae0e087f09af801743937f734d9d4ab",
+    "v1/src/kernel/objects.asm": "8b199535b238d964b067cb8fd7fde2516cad6f3f25d8f35af3673bae8f77e021",
+    "v1/src/kernel/syscall.asm": "2bd684bd69f0c28d3fb961bb2b8729f2027efe8260291438d7ecc2881057ee83",
+    "v1/tools-host/test-driver/phase4_trunc.py": "ccc2ca0829c3f882f1604487dad70783642ea33a79dda0d0c3660d7fe3095d75",
+    "v1/tools-host/test-driver/run.py": "49f548bf3a8b1d5a949c4413f619c1beb9711311de7b062ad55d38cee568c230"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P4.09": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "427bb589f8a66f3d2e07a9bc6658b26ace28478c",
+  "status": "PASS",
+  "step": "P4.10",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
