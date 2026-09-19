@@ -3775,7 +3775,7 @@ zx48_p415_sys_rename:
     ld a,(p414_new_dir)
     ld hl,p414_new_name
     call zx48_p405_object_lookup
-    jr c,zx48_p415_invalid
+    jp c,zx48_p415_invalid
     ld (p415_destination_ptr),ix
     ld a,c
     ld (p415_destination_slot),a
@@ -3808,7 +3808,7 @@ zx48_p415_sys_rename:
     jr z,zx48_p415_payload_distinct
     or a
     sbc hl,de
-    jr z,zx48_p415_invalid
+    jp z,zx48_p415_invalid
 zx48_p415_payload_distinct:
 
     ; Save old destination ownership for post-commit release.
