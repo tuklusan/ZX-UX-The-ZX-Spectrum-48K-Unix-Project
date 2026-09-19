@@ -3067,7 +3067,7 @@ zx48_p412_path_ok:
     ; Index 255 is the unconditional ABI terminator and never writes LISTOUT1.
     ld a,(p412_index)
     inc a
-    jr z,zx48_p412_end
+    jp z,zx48_p412_end
 
     ld hl,(p412_path_ptr)
     call zx48_path_resolve
@@ -3098,10 +3098,10 @@ zx48_p412_dev:
 zx48_p412_home:
     ld a,(session_user_len)
     or a
-    jr z,zx48_p412_end
+    jp z,zx48_p412_end
     ld a,(p412_index)
     or a
-    jr nz,zx48_p412_end
+    jp nz,zx48_p412_end
     call zx48_p412_clear_out
     ld hl,session_user
     ld de,(p412_out_ptr)
@@ -3116,7 +3116,7 @@ zx48_p412_fixed:
     ld (p412_fixed_type),a
     ld a,(p412_index)
     cp b
-    jr nc,zx48_p412_end
+    jp nc,zx48_p412_end
     or a
     jr z,zx48_p412_fixed_emit
     ld c,a
@@ -3216,10 +3216,10 @@ zx48_p412_bcat_next_pop:
 zx48_p412_selection_done:
     ld a,(p412_best_kind)
     or a
-    jr z,zx48_p412_end
+    jp z,zx48_p412_end
     ld a,(p412_remaining)
     or a
-    jr z,zx48_p412_emit_best
+    jp z,zx48_p412_emit_best
 
     ld hl,(p412_best_ptr)
     ld de,p412_prev_name
