@@ -2834,3 +2834,592 @@ zx48_p411_stat_tape:
 p411_stat_dir: db 0
 p411_stat_record: defs 10,0
     ENDM
+
+
+;
+; P4.12 staged SYS_LIST/BCAT union contract.
+; LIST1 and LISTOUT1 remain exact packed ABI records. Dynamic enumeration selects
+; the requested sorted entry without allocating a visible-entry array.
+;
+    MACRO EMIT_P412_LIST_ROUTINES
+
+; HL=BCAT payload, BC=payload length. On success retain the validated catalog.
+zx48_p412_bincat_admit:
+    ld (p412_bincat_candidate),hl
+    ld (p412_bincat_length),bc
+    ld a,(hl)
+    cp 'B'
+    jp nz,zx48_p412_bcat_format
+    inc hl
+    ld a,(hl)
+    cp 'C'
+    jp nz,zx48_p412_bcat_format
+    inc hl
+    ld a,(hl)
+    cp 'A'
+    jp nz,zx48_p412_bcat_format
+    inc hl
+    ld a,(hl)
+    cp 'T'
+    jp nz,zx48_p412_bcat_format
+    inc hl
+    ld a,(hl)
+    cp 1
+    jp nz,zx48_p412_bcat_format
+    inc hl
+    ld a,(hl)
+    cp 224
+    jp nc,zx48_p412_bcat_format
+    ld (p412_bincat_count),a
+    inc hl
+    ld a,(hl)
+    inc hl
+    or (hl)
+    jp nz,zx48_p412_bcat_format
+
+    ; Exact length = 8 + entry_count*12.
+    ld a,(p412_bincat_count)
+    ld b,a
+    ld hl,8
+    ld de,12
+    ld a,b
+    or a
+    jr z,zx48_p412_bcat_length_ready
+zx48_p412_bcat_length_loop:
+    add hl,de
+    djnz zx48_p412_bcat_length_loop
+zx48_p412_bcat_length_ready:
+    ld de,(p412_bincat_length)
+    or a
+    sbc hl,de
+    jp nz,zx48_p412_bcat_format
+
+    ld hl,(p412_bincat_candidate)
+    ld de,8
+    add hl,de
+    ld (p412_bcat_entry),hl
+    xor a
+    ld (p412_bcat_have_prev),a
+    ld a,(p412_bincat_count)
+    ld (p412_bcat_remaining),a
+
+zx48_p412_bcat_validate_loop:
+    ld a,(p412_bcat_remaining)
+    or a
+    jr z,zx48_p412_bcat_valid
+
+    ld hl,(p412_bcat_entry)
+    call zx48_p412_bcat_name_validate
+    jp c,zx48_p412_bcat_format
+
+    ld hl,(p412_bcat_entry)
+    ld de,10
+    add hl,de
+    ld a,(hl)
+    cp OBJ_BIN
+    jp nz,zx48_p412_bcat_format
+    inc hl
+    ld a,(hl)
+    cp 1
+    jp nz,zx48_p412_bcat_format
+
+    ld a,(p412_bcat_have_prev)
+    or a
+    jr z,zx48_p412_bcat_save_prev
+    ld hl,(p412_bcat_prev)
+    ld de,(p412_bcat_entry)
+    call zx48_p412_cmp10
+    ; Strict previous < current: carry only.
+    jp nc,zx48_p412_bcat_format
+
+zx48_p412_bcat_save_prev:
+    ld hl,(p412_bcat_entry)
+    ld (p412_bcat_prev),hl
+    ld a,1
+    ld (p412_bcat_have_prev),a
+    ld de,12
+    add hl,de
+    ld (p412_bcat_entry),hl
+    ld a,(p412_bcat_remaining)
+    dec a
+    ld (p412_bcat_remaining),a
+    jr zx48_p412_bcat_validate_loop
+
+zx48_p412_bcat_valid:
+    ld hl,(p412_bincat_candidate)
+    ld (p412_bincat_ptr),hl
+    xor a
+    ret
+
+; HL=name[10]. Lower-case command name, NUL/zero padded or full ten.
+zx48_p412_bcat_name_validate:
+    ld b,10
+    ld c,0
+zx48_p412_bcat_name_loop:
+    ld a,(hl)
+    or a
+    jr z,zx48_p412_bcat_name_zero
+    ld a,c
+    or a
+    jr nz,zx48_p412_bcat_name_bad
+    ld a,(hl)
+    cp 'a'
+    jr c,zx48_p412_bcat_name_digit
+    cp 'z'+1
+    jr c,zx48_p412_bcat_name_next
+zx48_p412_bcat_name_digit:
+    ld a,(hl)
+    cp '0'
+    jr c,zx48_p412_bcat_name_punct
+    cp '9'+1
+    jr c,zx48_p412_bcat_name_next
+zx48_p412_bcat_name_punct:
+    ld a,(hl)
+    cp '_'
+    jr z,zx48_p412_bcat_name_next
+    cp '-'
+    jr z,zx48_p412_bcat_name_next
+    cp '.'
+    jr nz,zx48_p412_bcat_name_bad
+zx48_p412_bcat_name_next:
+    inc hl
+    djnz zx48_p412_bcat_name_loop
+    xor a
+    ret
+zx48_p412_bcat_name_zero:
+    ld a,b
+    cp 10
+    jr z,zx48_p412_bcat_name_bad
+    ld c,1
+    inc hl
+    djnz zx48_p412_bcat_name_loop
+    xor a
+    ret
+zx48_p412_bcat_name_bad:
+    ld a,E_FORMAT
+    scf
+    ret
+
+; HL=left name[10], DE=right name[10]. Z equal; C left<right; NC/NZ left>right.
+zx48_p412_cmp10:
+    ld b,10
+zx48_p412_cmp10_loop:
+    ld a,(de)
+    ld c,a
+    ld a,(hl)
+    cp c
+    ret c
+    jr nz,zx48_p412_cmp10_greater
+    inc hl
+    inc de
+    djnz zx48_p412_cmp10_loop
+    xor a
+    ret
+zx48_p412_cmp10_greater:
+    or a
+    ret
+
+; HL -> LIST1 {path_ptr,u8 index,u8 reserved,u16 out_ptr}.
+zx48_p412_sys_list:
+    ld (p412_req_ptr),hl
+    ld bc,6
+    call zx48_user_range_validate
+    ret c
+
+    ld hl,(p412_req_ptr)
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (p412_path_ptr),de
+    inc hl
+    ld a,(hl)
+    ld (p412_index),a
+    inc hl
+    ld a,(hl)
+    or a
+    jp nz,zx48_p412_invalid
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (p412_out_ptr),de
+
+    ex de,hl
+    ld bc,16
+    call zx48_user_range_validate
+    ret c
+
+    ; Validate the complete path before resolution.
+    ld hl,(p412_path_ptr)
+zx48_p412_path_validate:
+    push hl
+    ld bc,1
+    call zx48_user_range_validate
+    pop hl
+    ret c
+    ld a,(hl)
+    or a
+    jr z,zx48_p412_path_ok
+    inc hl
+    jr zx48_p412_path_validate
+
+zx48_p412_path_ok:
+    ; Index 255 is the unconditional ABI terminator and never writes LISTOUT1.
+    ld a,(p412_index)
+    inc a
+    jr z,zx48_p412_end
+
+    ld hl,(p412_path_ptr)
+    call zx48_path_resolve
+    ret c
+    ld a,c
+    cp PATH_KIND_DIR
+    jp nz,zx48_p412_perm
+    ld a,(ns_dir)
+    ld (p412_dir),a
+    cp DIR_ROOT
+    jp z,zx48_p412_root
+    cp DIR_DEV
+    jp z,zx48_p412_dev
+    cp DIR_HOME
+    jp z,zx48_p412_home
+    jp zx48_p412_dynamic
+
+zx48_p412_root:
+    ld hl,p412_root_entries
+    ld b,5
+    ld a,OBJ_DIR
+    jp zx48_p412_fixed
+zx48_p412_dev:
+    ld hl,p412_dev_entries
+    ld b,3
+    ld a,OBJ_DEV
+    jp zx48_p412_fixed
+zx48_p412_home:
+    ld a,(session_user_len)
+    or a
+    jr z,zx48_p412_end
+    ld a,(p412_index)
+    or a
+    jr nz,zx48_p412_end
+    call zx48_p412_clear_out
+    ld hl,session_user
+    ld de,(p412_out_ptr)
+    ld a,(session_user_len)
+    ld c,a
+    ld b,0
+    ldir
+    ld a,OBJ_DIR
+    jp zx48_p412_emit_fixed_tail
+
+zx48_p412_fixed:
+    ld (p412_fixed_type),a
+    ld a,(p412_index)
+    cp b
+    jr nc,zx48_p412_end
+    or a
+    jr z,zx48_p412_fixed_emit
+    ld c,a
+zx48_p412_fixed_seek:
+    ld de,10
+    add hl,de
+    dec c
+    jr nz,zx48_p412_fixed_seek
+zx48_p412_fixed_emit:
+    ld (p412_fixed_name),hl
+    call zx48_p412_clear_out
+    ld hl,(p412_fixed_name)
+    ld de,(p412_out_ptr)
+    ld bc,10
+    ldir
+    ld a,(p412_fixed_type)
+zx48_p412_emit_fixed_tail:
+    ld de,(p412_out_ptr)
+    ld hl,10
+    add hl,de
+    ld (hl),a
+    inc hl
+    xor a
+    ld (hl),a
+    inc hl
+    ld (hl),a
+    inc hl
+    ld (hl),a
+    inc hl
+    ld a,STATE_PSEUDO
+    ld (hl),a
+    inc hl
+    ld a,(p412_dir)
+    ld (hl),a
+    ld hl,1
+    xor a
+    ret
+
+; Sorted dynamic enumeration by repeated minimum selection.
+zx48_p412_dynamic:
+    xor a
+    ld (p412_prev_valid),a
+    ld a,(p412_index)
+    ld (p412_remaining),a
+zx48_p412_select_next:
+    xor a
+    ld (p412_best_kind),a
+
+    ld ix,p405_object_table
+    ld b,RAM_OBJECT_COUNT
+zx48_p412_scan_ram:
+    ld a,(ix+OBJ_TYPE_ID)
+    or a
+    jr z,zx48_p412_scan_ram_next
+    ld a,(ix+OBJ_DIR_ID)
+    ld c,a
+    ld a,(p412_dir)
+    cp c
+    jr nz,zx48_p412_scan_ram_next
+    call zx48_p412_consider_ix
+zx48_p412_scan_ram_next:
+    ld de,OBJ_RECORD_SIZE
+    add ix,de
+    djnz zx48_p412_scan_ram
+
+    ld a,(p412_dir)
+    cp DIR_BIN
+    jr nz,zx48_p412_selection_done
+    ld hl,(p412_bincat_ptr)
+    ld a,h
+    or l
+    jr z,zx48_p412_selection_done
+    ld a,(hl)
+    ; Catalog was admitted earlier; count is the authoritative bounded byte.
+    ld de,5
+    add hl,de
+    ld b,(hl)
+    ld hl,(p412_bincat_ptr)
+    ld de,8
+    add hl,de
+zx48_p412_scan_bcat:
+    ld a,b
+    or a
+    jr z,zx48_p412_selection_done
+    push bc
+    push hl
+    call zx48_p412_bcat_shadowed
+    pop hl
+    jr c,zx48_p412_bcat_next_pop
+    call zx48_p412_consider_hl_bcat
+zx48_p412_bcat_next_pop:
+    ld de,12
+    add hl,de
+    pop bc
+    djnz zx48_p412_scan_bcat
+
+zx48_p412_selection_done:
+    ld a,(p412_best_kind)
+    or a
+    jr z,zx48_p412_end
+    ld a,(p412_remaining)
+    or a
+    jr z,zx48_p412_emit_best
+
+    ld hl,(p412_best_ptr)
+    ld de,p412_prev_name
+    ld bc,10
+    ldir
+    ld a,1
+    ld (p412_prev_valid),a
+    ld a,(p412_remaining)
+    dec a
+    ld (p412_remaining),a
+    jr zx48_p412_select_next
+
+; IX=RAM record candidate.
+zx48_p412_consider_ix:
+    push bc
+    push ix
+    pop hl
+    call zx48_p412_consider_common
+    pop bc
+    ret
+
+; HL=BCAT entry candidate.
+zx48_p412_consider_hl_bcat:
+    ld a,2
+    ld (p412_candidate_kind),a
+    jp zx48_p412_consider_common_entry
+
+zx48_p412_consider_common:
+    ld a,1
+    ld (p412_candidate_kind),a
+zx48_p412_consider_common_entry:
+    ld (p412_candidate_ptr),hl
+    ld a,(p412_prev_valid)
+    or a
+    jr z,zx48_p412_consider_best
+    ld de,p412_prev_name
+    call zx48_p412_cmp10
+    ret c
+    ret z
+zx48_p412_consider_best:
+    ld a,(p412_best_kind)
+    or a
+    jr z,zx48_p412_accept_candidate
+    ld hl,(p412_candidate_ptr)
+    ld de,(p412_best_ptr)
+    call zx48_p412_cmp10
+    ret nc
+zx48_p412_accept_candidate:
+    ld hl,(p412_candidate_ptr)
+    ld (p412_best_ptr),hl
+    ld a,(p412_candidate_kind)
+    ld (p412_best_kind),a
+    ret
+
+; HL=BCAT entry name. Carry when a resident /bin object shadows exact name.
+zx48_p412_bcat_shadowed:
+    ld (p412_candidate_ptr),hl
+    ld ix,p405_object_table
+    ld b,RAM_OBJECT_COUNT
+zx48_p412_shadow_loop:
+    ld a,(ix+OBJ_TYPE_ID)
+    or a
+    jr z,zx48_p412_shadow_next
+    ld a,(ix+OBJ_DIR_ID)
+    cp DIR_BIN
+    jr nz,zx48_p412_shadow_next
+    push bc
+    push ix
+    pop hl
+    ld de,(p412_candidate_ptr)
+    call zx48_p412_cmp10
+    pop bc
+    jr z,zx48_p412_shadow_yes
+zx48_p412_shadow_next:
+    ld de,OBJ_RECORD_SIZE
+    add ix,de
+    djnz zx48_p412_shadow_loop
+    or a
+    ret
+zx48_p412_shadow_yes:
+    scf
+    ret
+
+zx48_p412_emit_best:
+    call zx48_p412_clear_out
+    ld a,(p412_best_kind)
+    cp 1
+    jr z,zx48_p412_emit_ram
+
+    ; BCAT-only TAPE_BACKED.
+    ld hl,(p412_best_ptr)
+    ld de,(p412_out_ptr)
+    ld bc,10
+    ldir
+    ld a,OBJ_BIN
+    ld (de),a
+    inc de
+    xor a
+    ld (de),a
+    inc de
+    ld a,$ff
+    ld (de),a
+    inc de
+    ld (de),a
+    inc de
+    ld a,STATE_TAPE_BACKED
+    ld (de),a
+    inc de
+    ld a,DIR_BIN
+    ld (de),a
+    ld hl,1
+    xor a
+    ret
+
+zx48_p412_emit_ram:
+    ld hl,(p412_best_ptr)
+    push hl
+    pop ix
+    ld de,(p412_out_ptr)
+    ld bc,10
+    ldir
+    ld a,(ix+OBJ_TYPE_ID)
+    ld (de),a
+    inc de
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    ld (de),a
+    inc de
+    ld a,(ix+OBJ_LOGICAL_LENGTH)
+    ld (de),a
+    inc de
+    ld a,(ix+OBJ_LOGICAL_LENGTH+1)
+    ld (de),a
+    inc de
+    ld a,STATE_RAM
+    ld (de),a
+    inc de
+    ld a,(ix+OBJ_DIR_ID)
+    ld (de),a
+    ld hl,1
+    xor a
+    ret
+
+zx48_p412_clear_out:
+    ld hl,(p412_out_ptr)
+    xor a
+    ld (hl),a
+    ld de,(p412_out_ptr)
+    inc de
+    ld bc,15
+    ldir
+    ret
+
+zx48_p412_end:
+    ld hl,0
+    xor a
+    ret
+zx48_p412_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+zx48_p412_perm:
+    ld a,E_PERM
+    scf
+    ret
+zx48_p412_bcat_format:
+    ld a,E_FORMAT
+    scf
+    ret
+
+p412_root_entries:
+    db 'b','i','n',0,0,0,0,0,0,0
+    db 'd','e','v',0,0,0,0,0,0,0
+    db 'e','t','c',0,0,0,0,0,0,0
+    db 'h','o','m','e',0,0,0,0,0,0
+    db 't','m','p',0,0,0,0,0,0,0
+p412_dev_entries:
+    db 'n','u','l','l',0,0,0,0,0,0
+    db 't','a','p','e',0,0,0,0,0,0
+    db 't','t','y',0,0,0,0,0,0,0
+
+p412_req_ptr: dw 0
+p412_path_ptr: dw 0
+p412_out_ptr: dw 0
+p412_bincat_candidate: dw 0
+p412_bincat_ptr: dw 0
+p412_bincat_length: dw 0
+p412_bcat_entry: dw 0
+p412_bcat_prev: dw 0
+p412_best_ptr: dw 0
+p412_candidate_ptr: dw 0
+p412_fixed_name: dw 0
+p412_index: db 0
+p412_dir: db 0
+p412_fixed_type: db 0
+p412_bincat_count: db 0
+p412_bcat_remaining: db 0
+p412_bcat_have_prev: db 0
+p412_prev_valid: db 0
+p412_remaining: db 0
+p412_best_kind: db 0
+p412_candidate_kind: db 0
+p412_prev_name: defs 10,0
+    ENDM
