@@ -77,7 +77,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
         {"name": "reserved-u16-is-always-zeroed", "passed": "ld bc,9" in omacro and "p411_stat_record: defs 10,0" in omacro},
         {"name": "ram-stat-copies-type-flags-logical-storage-directory", "passed": all(x in omacro for x in ("OBJ_TYPE_ID", "OBJ_FLAGS_BYTE", "OBJ_LOGICAL_LENGTH", "OBJ_STORAGE_LENGTH", "OBJ_DIR_ID", "STATE_RAM"))},
         {"name": "packed-physical-length-is-record-storage-length", "passed": "OBJ_STORAGE_LENGTH" in omacro and "p411_stat_record+4" in omacro},
-        {"name": "tape-backed-lengths-are-ffff", "passed": "ld hl,$ffff" in omacro and "STATE_TAPE_BACKED" in omacro},
+        {"name": "tape-backed-lengths-are-ffff", "passed": "ld hl,0-1" in omacro and "STATE_TAPE_BACKED" in omacro},
         {"name": "pseudo-dir-dev-lengths-are-zero", "passed": "OBJ_DIR" in omacro and "OBJ_DEV" in omacro and omacro.count("STATE_PSEUDO") >= 2},
         {"name": "resident-exact-name-precedes-bcat", "passed": omacro.index("call zx48_p405_object_lookup") < omacro.index("call zx48_p405_is_bcat")},
     ]
