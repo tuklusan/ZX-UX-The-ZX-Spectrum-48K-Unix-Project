@@ -65,7 +65,7 @@ jobs:
           ./tools/check_project_policy.py
           test "$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV16.md | awk '{print $1}')" = "$ZXUX_REV16_SHA256"
           test "$(sha256sum docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md | awk '{print $1}')" = "$ZXUX_REV07_SHA256"
-          test "$(sha256sum tools/toolchain.lock.json | awk '{print $1}')" = "$ZXUX_TOOLCHAIN_LOCK_SHA256"
+          test "$(sha256sum tools/manifest/toolchain.lock.json | awk '{print $1}')" = "$ZXUX_TOOLCHAIN_LOCK_SHA256"
           test -s v1/dist/certification/P4.15.test.json
           grep -q '"status": "PASS"' v1/dist/certification/P4.15.test.json
           grep -q '"source_commit": "9458a3e1f2fcd9449891663bc817888ca92a8451"' v1/dist/certification/P4.15.test.json
