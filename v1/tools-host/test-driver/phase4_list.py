@@ -79,7 +79,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
         {"name": "list1-exact-six-byte-record", "passed": "HL -> LIST1 {path_ptr,u8 index,u8 reserved,u16 out_ptr}." in macro and "ld bc,6" in macro},
         {"name": "listout1-exact-sixteen-byte-range", "passed": "ld bc,16" in macro and "p412_out_ptr" in macro},
         {"name": "reserved-byte-must-be-zero", "passed": "jp nz,zx48_p412_invalid" in macro},
-        {"name": "index-255-unconditional-terminator", "passed": macro.index("inc a\n    jr z,zx48_p412_end") < macro.index("call zx48_path_resolve")},
+        {"name": "index-255-unconditional-terminator", "passed": macro.index("inc a\n    jp z,zx48_p412_end") < macro.index("call zx48_path_resolve")},
         {"name": "fixed-root-and-dev-tables-exact", "passed": all(x in macro for x in ("p412_root_entries:", "p412_dev_entries:", "'b','i','n'", "'n','u','l','l'"))},
         {"name": "dynamic-order-uses-minimum-selection", "passed": all(x in macro for x in ("zx48_p412_select_next:", "zx48_p412_accept_candidate:", "p412_prev_name"))},
         {"name": "bcat-count-224-rejected", "passed": "cp 224" in macro and "jp nc,zx48_p412_bcat_format" in macro},
