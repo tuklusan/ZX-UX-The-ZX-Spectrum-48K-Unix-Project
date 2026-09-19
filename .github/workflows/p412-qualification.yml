@@ -24,7 +24,7 @@ jobs:
     timeout-minutes: 45
     env:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p412-qualification
-      P412_EXACT_PARENT: b575a81b3a24b7592c89a6c5f52da61fdd5a9729
+      P412_EXACT_PARENT: 37fa2d629b34f632a3af188e37ab6b1f3c735348
       ZXUX_REV16_SHA256: 24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c
       ZXUX_REV07_SHA256: 840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc
     steps:
