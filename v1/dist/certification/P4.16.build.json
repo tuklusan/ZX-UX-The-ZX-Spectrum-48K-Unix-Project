@@ -1,0 +1,56 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {"name": "exact-four-sinks", "passed": true},
+    {"name": "single-token-parser", "passed": true},
+    {"name": "literal-rle-backref-grammar", "passed": true},
+    {"name": "exact-physical-completion", "passed": true},
+    {"name": "exact-logical-completion", "passed": true},
+    {"name": "prewrite-logical-overrun-guard", "passed": true},
+    {"name": "widened-input-span-guard", "passed": true},
+    {"name": "widened-output-span-guard", "passed": true},
+    {"name": "widened-logical-advance-guard", "passed": true},
+    {"name": "distance-256-explicitly-valid", "passed": true},
+    {"name": "byte-at-a-time-overlap", "passed": true},
+    {"name": "optional-logical-crc", "passed": true},
+    {"name": "no-terminator", "passed": true}
+  ],
+  "commands": [
+    {
+      "argv": ["tools/runtime/sjasmplus/bin/sjasmplus", "--nologo", "--lst=../../build/kernel-p1.lst", "--sym=../../build/kernel-p1.sym", "kernel.asm"],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12869 lines, work time: 0.033 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": ["tools/runtime/sjasmplus/bin/sjasmplus", "--nologo", "--lst=p416-zxpack-decoder.lst", "--sym=p416-zxpack-decoder.sym", "p416-zxpack-decoder.asm"],
+      "cwd": "v1/build",
+      "duration_ms": 6,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 1392 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p416-zxpack-decoder.bin": "218a5bb9be003dcff52af1b6fff9d2c1a60dda19f90bf590ba9feeba37689e13",
+    "v1/dist/certification/P4.15.test.json": "224bc88616e6f94b3d9d7d183da3a62688847e57b6f0a34c53767e697aef2af5",
+    "v1/src/kernel/zxpack.asm": "b53443a7e37b5ce23766d40e045fc80edeff392030f13d08371e25df4cb76291",
+    "v1/tools-host/test-driver/phase4_zxpack_decoder.py": "4bcff6bce02ca06769f7ccafe8b39e6caa1ba7aae5833631700484ff122c860a",
+    "v1/tools-host/test-driver/run.py": "3c7b4b61c325e45d331b9449c1c6afe5b08c341f924e7d6df4dfae0f30fd23fa",
+    "v1/tools-host/zxpack/zxpack.py": "6683dd91f6cd214393881baf1f50621f4f7cca36543468ea84783d0dd75c09c8"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {"P4.15": "PASS"},
+  "schema": 2,
+  "source_commit": "c76b25ac498e854e8a5a918c80f18ea73244d916",
+  "status": "PASS",
+  "step": "P4.16",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
