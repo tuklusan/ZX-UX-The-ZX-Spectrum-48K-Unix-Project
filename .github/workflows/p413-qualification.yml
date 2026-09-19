@@ -24,7 +24,7 @@ jobs:
     timeout-minutes: 45
     env:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p413-qualification
-      P413_EXACT_PARENT: 35540225958fc1abbc1dcabb8bffbedd971c748f
+      P413_EXACT_PARENT: 5e3174ff0d2cb3a5845bf78a2f982f43c9907b0a
       ZXUX_REV16_SHA256: 24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c
       ZXUX_REV07_SHA256: 840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc
     steps:
