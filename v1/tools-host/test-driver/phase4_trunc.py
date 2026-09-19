@@ -235,6 +235,20 @@ def _target(root: Path, s: dict[str, int], module: bytes) -> None:
     execute("diag-trunc-append-open-empty-state", code, raw)
 
     code = open_call(flags) + phase1._jp_c(FAIL_PC)
+    code += bytes((0x3E, 0x00)) + phase1._call(s["zx48_handle_lookup"]) + phase1._jp_c(FAIL_PC)
+    code += byte_eq(od + s["OD_KIND_O"], s["OD_KIND_OBJECT"])
+    code += byte_eq(od + s["OD_ID_O"], 0)
+    execute("diag-trunc-append-handle-lookup", code, raw)
+
+    code = open_call(flags) + phase1._jp_c(FAIL_PC)
+    code += bytes((0x3E, 0x00)) + phase1._call(s["zx48_handle_lookup"]) + phase1._jp_c(FAIL_PC)
+    code += bytes((0xDD, 0x7E, s["OD_ID_O"])) + phase1._call(s["zx48_p405_object_ptr_slot"]) + phase1._jp_c(FAIL_PC)
+    code += phase1._ld_hl(source) + b"\x01\x02\x00"
+    code += phase1._call(s["zx48_p408_raw_write_at_eof"]) + phase1._jp_c(FAIL_PC)
+    code += bytes((0x7C, 0xB5)) + phase1._jp_nz(FAIL_PC)
+    execute("diag-trunc-append-direct-p408-return", code, raw)
+
+    code = open_call(flags) + phase1._jp_c(FAIL_PC)
     code += phase1._ld_hl(source) + b"\x01\x02\x00" + bytes((0x1E, 0x00, 0x16, 0x00))
     code += phase1._call(s["zx48_p409_sys_write"]) + phase1._jp_c(FAIL_PC)
     code += bytes((0x7C, 0xB5)) + phase1._jp_nz(FAIL_PC)
@@ -289,9 +303,9 @@ def dispatch(
     fixture_result, binary, listing = _assemble(root, run_command, require_project_tool)
     commands = [kernel_result, fixture_result]
     names = (
-        "zx48_sys_open", "zx48_p409_sys_write", "p405_object_table", "open_description_table", "fake_process",
+        "zx48_sys_open", "zx48_p409_sys_write", "zx48_handle_lookup", "zx48_p405_object_ptr_slot", "zx48_p408_raw_write_at_eof", "p405_object_table", "open_description_table", "fake_process",
         "memory_free_extents", "memory_live_allocations", "ARENA_START", "ARENA_SIZE",
-        "OD_ACCESS_O", "OD_OFFSET_O", "OD_KIND_OBJECT", "O_WRITE", "O_TRUNC", "O_APPEND",
+        "OD_KIND_O", "OD_ACCESS_O", "OD_ID_O", "OD_OFFSET_O", "OD_KIND_OBJECT", "O_WRITE", "O_TRUNC", "O_APPEND",
         "OBJ_DAT", "OBJ_PACKED", "DIR_TMP", "E_NOSPC",
     )
     symbols = phase3_open_descriptions._symbols(listing.with_suffix(".sym"), names)
