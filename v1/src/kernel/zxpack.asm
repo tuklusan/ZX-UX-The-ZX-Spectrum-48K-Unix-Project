@@ -807,3 +807,42 @@ p416_repeat: db 0
 p416_distance_minus_1: db 0
 p416_byte: db 0
     ENDM
+
+
+;
+; P4.17 per-open PACKED reader state. The allocation is exactly 256 bytes of
+; circular history followed by one exact 16-byte kernel-private control record.
+;
+P417_HISTORY_SIZE             EQU 256
+P417_CONTROL_SIZE             EQU 16
+P417_STATE_SIZE               EQU 272
+P417_HISTORY_O                EQU 0
+P417_CONTROL_O                EQU 256
+P417_CTRL_PHYSICAL_POS_O      EQU P417_CONTROL_O+0
+P417_CTRL_LOGICAL_POS_O       EQU P417_CONTROL_O+2
+P417_CTRL_HISTORY_INDEX_O     EQU P417_CONTROL_O+4
+P417_CTRL_HISTORY_COUNT_O     EQU P417_CONTROL_O+5
+P417_CTRL_PENDING_KIND_O      EQU P417_CONTROL_O+7
+P417_CTRL_PENDING_COUNT_O     EQU P417_CONTROL_O+8
+P417_CTRL_PARAMETER_O         EQU P417_CONTROL_O+9
+P417_CTRL_RESERVED_O          EQU P417_CONTROL_O+10
+P417_CTRL_RESERVED_SIZE       EQU 6
+
+    ASSERT P417_HISTORY_SIZE+P417_CONTROL_SIZE = P417_STATE_SIZE
+    ASSERT P417_CTRL_RESERVED_O+P417_CTRL_RESERVED_SIZE = P417_STATE_SIZE
+
+    MACRO EMIT_P417_PACKED_READER_STATE_ROUTINES
+; HL=272-byte state allocation. Initialize history and every control byte.
+zx48_p417_state_init:
+    push hl
+    xor a
+    ld (hl),a
+    ld d,h
+    ld e,l
+    inc de
+    ld bc,P417_STATE_SIZE-1
+    ldir
+    pop hl
+    xor a
+    ret
+    ENDM
