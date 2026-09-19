@@ -98,7 +98,7 @@ def patch(fixture,regs):
         o=a-0x4000; ram[o:o+len(d)]=d
     return p
 
-def run_fixture(root,s,fixture,stop=99,stress_cycles=16):
+def run_fixture(root,s,fixture,stop=99,stress_cycles=16,stress_probe=0):
     p2=s["process_table"]+2*48; p3=s["process_table"]+3*48
     pipe=s["pipe_table"]
     code=bytearray(b"\xF3"+phase1._ld_sp(STACK))
@@ -171,10 +171,22 @@ def run_fixture(root,s,fixture,stop=99,stress_cycles=16):
       code += bytes((0x3E,2))+bytes((0x32,))+w(s["current_pid"])
       code += b"\x3E\x01"+phase1._ld_hl(STRESS_SRC)+b"\x01\x80\x00"+phase1._call(s["p317_write_handle"])+jp_c(FAIL_PC)
       code += expw(s["pipe_table"]+s["PIPE_COUNT_O"],128)
+      if stress_probe==1:
+        code += phase1._jp(PASS_PC)
+        run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0); return
       code += b"\x3E\x01"+phase1._ld_hl(STRESS_SRC)+b"\x01\x01\x00"+phase1._call(s["p317_write_handle"])+jp_nc(FAIL_PC)
+      if stress_probe==2:
+        code += phase1._jp(PASS_PC)
+        run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0); return
       code += expb(p2+PROC_STATE,s["PROC_WAIT_PIPE_WRITE"])
+      if stress_probe==3:
+        code += phase1._jp(PASS_PC)
+        run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0); return
       code += bytes((0x3E,3))+bytes((0x32,))+w(s["current_pid"])
       code += b"\x3E\x00"+phase1._ld_hl(STRESS_DST)+b"\x01\x80\x00"+phase1._call(s["p317_read_handle"])+jp_c(FAIL_PC)
+      if stress_probe==4:
+        code += phase1._jp(PASS_PC)
+        run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0); return
       code += expb(p2+PROC_STATE,s["PROC_READY"])+expw(s["pipe_table"]+s["PIPE_COUNT_O"],0)
       code += expb(STRESS_DST,0)+expb(STRESS_DST+127,127)
     code += expb(s["p317_schedule_count"],1+stress_cycles)
@@ -214,6 +226,11 @@ def dispatch(root,action,step,*,sha256_file:Callable[[Path],str],run_command:Cal
           run_fixture(root,s,fb.read_bytes(),stop=stage)
         except DriverError as exc:
           raise P317Error(f"P3.17 runtime stage {stage} failed: {exc}") from exc
+      for probe in range(1,5):
+        try:
+          run_fixture(root,s,fb.read_bytes(),stop=8,stress_cycles=1,stress_probe=probe)
+        except DriverError as exc:
+          raise P317Error(f"P3.17 stress probe {probe} failed: {exc}") from exc
       for cycles in range(1,17):
         try:
           run_fixture(root,s,fb.read_bytes(),stop=8,stress_cycles=cycles)
