@@ -3546,3 +3546,202 @@ p413_old_length: dw 0
 p413_object_ptr: dw 0
 p413_zero_record: defs OBJ_RECORD_SIZE,0
     ENDM
+
+
+;
+; P4.14 staged SYS_RENAME: exact no-op, case-only rename, and collision-safe
+; destination validation. P4.15 extends the distinct-destination path to atomic
+; replacement after closed-object qualification.
+;
+    MACRO EMIT_P414_RENAME_ROUTINES
+
+; HL -> REN1 {u16 old_path_ptr,u16 new_path_ptr}.
+zx48_p414_sys_rename:
+    ld (p414_req_ptr),hl
+    ld bc,4
+    call zx48_user_range_validate
+    ret c
+
+    ld hl,(p414_req_ptr)
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (p414_old_path),de
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (p414_new_path),de
+
+    ld hl,(p414_old_path)
+    call zx48_p414_validate_cstr
+    ret c
+    ld hl,(p414_new_path)
+    call zx48_p414_validate_cstr
+    ret c
+
+    ; Resolve and qualify mutable exact source.
+    ld hl,(p414_old_path)
+    call zx48_path_resolve
+    ret c
+    ld (p414_old_dir),a
+    ld a,c
+    cp PATH_KIND_BASE
+    jp nz,zx48_p414_perm
+    ld hl,path_name
+    ld de,p414_old_name
+    ld bc,11
+    ldir
+
+    ld a,(p414_old_dir)
+    ld hl,p414_old_name
+    call zx48_p405_object_lookup
+    jr nc,zx48_p414_source_found
+    ld a,(p414_old_dir)
+    cp DIR_BIN
+    jr nz,zx48_p414_noent
+    ld hl,p414_old_name
+    call zx48_p405_is_bcat
+    jp z,zx48_p414_perm
+zx48_p414_noent:
+    ld a,E_NOENT
+    scf
+    ret
+
+zx48_p414_source_found:
+    ld (p414_source_ptr),ix
+    ld a,c
+    ld (p414_source_slot),a
+    ld a,(ix+OBJ_TYPE_ID)
+    ld (p414_source_type),a
+    ld b,a
+    ld a,(p414_old_dir)
+    call zx48_object_public_type_allowed
+    jp c,zx48_p414_perm
+
+    ; Resolve the destination fully before any mutation.
+    ld hl,(p414_new_path)
+    call zx48_path_resolve
+    ret c
+    ld (p414_new_dir),a
+    ld a,c
+    cp PATH_KIND_BASE
+    jp nz,zx48_p414_perm
+    ld hl,path_name
+    ld de,p414_new_name
+    ld bc,11
+    ldir
+
+    ; Existing source type must be legal in the fixed destination directory.
+    ld a,(p414_source_type)
+    ld b,a
+    ld a,(p414_new_dir)
+    call zx48_object_public_type_allowed
+    jp c,zx48_p414_perm
+
+    ; Exact same normalized path is a no-op success.
+    ld a,(p414_old_dir)
+    ld d,a
+    ld a,(p414_new_dir)
+    cp d
+    jr nz,zx48_p414_not_same
+    ld hl,p414_old_name
+    ld de,p414_new_name
+    call zx48_p414_name_equal
+    jr nz,zx48_p414_not_same
+    ld hl,0
+    xor a
+    ret
+
+zx48_p414_not_same:
+    ; A distinct resident target is a collision at P4.14. P4.15 replaces this
+    ; branch with the closed-object atomic replacement transaction.
+    ld a,(p414_new_dir)
+    ld hl,p414_new_name
+    call zx48_p405_object_lookup
+    jr c,zx48_p414_no_resident_target
+
+    ld a,(ix+OBJ_TYPE_ID)
+    ld b,a
+    ld a,(p414_new_dir)
+    call zx48_object_public_type_allowed
+    jp c,zx48_p414_perm
+    ld a,E_EXIST
+    scf
+    ret
+
+zx48_p414_no_resident_target:
+    ; Catalog-only TAPE_BACKED metadata cannot be a replacement destination.
+    ld a,(p414_new_dir)
+    cp DIR_BIN
+    jr nz,zx48_p414_commit
+    ld hl,p414_new_name
+    call zx48_p405_is_bcat
+    jp z,zx48_p414_perm
+
+zx48_p414_commit:
+    ; Bounded metadata-only commit. Payload bytes/representation are untouched.
+    ld ix,(p414_source_ptr)
+    push ix
+    pop de
+    ld hl,p414_new_name
+    ld b,10
+zx48_p414_name_copy:
+    ld a,(hl)
+    ld (de),a
+    inc hl
+    inc de
+    djnz zx48_p414_name_copy
+    ld a,(p414_new_dir)
+    ld (ix+OBJ_DIR_ID),a
+    ld hl,0
+    xor a
+    ret
+
+; HL -> NUL path; prove every byte is in an ABI-valid user range before resolve.
+zx48_p414_validate_cstr:
+zx48_p414_validate_cstr_loop:
+    push hl
+    ld bc,1
+    call zx48_user_range_validate
+    pop hl
+    ret c
+    ld a,(hl)
+    or a
+    ret z
+    inc hl
+    jr zx48_p414_validate_cstr_loop
+
+; HL/DE -> two NUL-terminated <=10-byte names. Z iff exact byte equality.
+zx48_p414_name_equal:
+    ld b,11
+zx48_p414_name_equal_loop:
+    ld a,(de)
+    ld c,a
+    ld a,(hl)
+    cp c
+    ret nz
+    or a
+    ret z
+    inc hl
+    inc de
+    djnz zx48_p414_name_equal_loop
+    xor a
+    ret
+
+zx48_p414_perm:
+    ld a,E_PERM
+    scf
+    ret
+
+p414_req_ptr: dw 0
+p414_old_path: dw 0
+p414_new_path: dw 0
+p414_source_ptr: dw 0
+p414_old_dir: db 0
+p414_new_dir: db 0
+p414_source_slot: db 0
+p414_source_type: db 0
+p414_old_name: defs 11,0
+p414_new_name: defs 11,0
+    ENDM
