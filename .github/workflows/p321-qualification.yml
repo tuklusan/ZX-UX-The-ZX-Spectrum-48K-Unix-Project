@@ -30,7 +30,7 @@ jobs:
     timeout-minutes: 45
     env:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p321-qualification
-      P321_EXACT_PARENT: 67110f33ab916d1ba5a2dc07e1ceef0b52261906
+      P321_EXACT_PARENT: 858f80367746be84e9a2c0c0dbdb56331ea34499
       ZXUX_REV16_SHA256: 24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c
       ZXUX_REV07_SHA256: 840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc
     steps:
