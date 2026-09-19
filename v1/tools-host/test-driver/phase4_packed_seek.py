@@ -56,13 +56,13 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
     m = zx.split("MACRO EMIT_P418_PACKED_SEEK_ROUTINES", 1)[1].split("ENDM", 1)[0]
     return [
         {"name": "seek-bounds-inclusive-eof", "passed": "p418_logical_length" in m and "zx48_p418_inval:" in m},
-        {"name": "backward-reset", "passed": "target < current" in m and "call zx48_p418_reset" in m},
+        {"name": "backward-reset", "passed": "jr c,zx48_p418_forward" in m and "call zx48_p418_reset" in m},
         {"name": "forward-continues-current-state", "passed": "zx48_p418_forward:" in m and "zx48_p418_step" in m},
         {"name": "discard-only-no-materialization", "passed": "FINAL_MEMORY" not in m and "zx48_alloc" not in m},
-        {"name": "persistent-physical-logical-cursors", "passed": "P417_CTRL_PHYSICAL_POS_O" in m and "P417_CTRL_LOGICAL_POS_O" in m},
-        {"name": "persistent-pending-command", "passed": all(x in m for x in ("P417_CTRL_PENDING_KIND_O", "P417_CTRL_PENDING_COUNT_O", "P417_CTRL_PARAMETER_O"))},
-        {"name": "overlap-history-ring", "passed": "P417_CTRL_HISTORY_INDEX_O" in m and "P417_CTRL_HISTORY_COUNT_O" in m},
-        {"name": "exact-eof-physical-completion", "passed": "P418_CTRL_PHYSICAL_LENGTH_O" in m and "jp nz,zx48_p418_format" in m},
+        {"name": "persistent-physical-logical-cursors", "passed": all(x in m for x in ("P418_C_PHYSICAL_POS", "P418_C_LOGICAL_POS")) and all(x in zx for x in ("P417_CTRL_PHYSICAL_POS_O", "P417_CTRL_LOGICAL_POS_O"))},
+        {"name": "persistent-pending-command", "passed": all(x in m for x in ("P418_C_PENDING_KIND", "P418_C_PENDING_COUNT", "P418_C_PARAMETER")) and all(x in zx for x in ("P417_CTRL_PENDING_KIND_O", "P417_CTRL_PENDING_COUNT_O", "P417_CTRL_PARAMETER_O"))},
+        {"name": "overlap-history-ring", "passed": all(x in m for x in ("P418_C_HISTORY_INDEX", "P418_C_HISTORY_COUNT")) and all(x in zx for x in ("P417_CTRL_HISTORY_INDEX_O", "P417_CTRL_HISTORY_COUNT_O"))},
+        {"name": "exact-eof-physical-completion", "passed": "P418_C_PHYSICAL_LENGTH" in m and "P418_CTRL_PHYSICAL_LENGTH_O" in zx and "jp nz,zx48_p418_format" in m},
         {"name": "source-span-prevalidated", "passed": "dec bc\n    add hl,bc" in m and "jp c,zx48_p418_format" in m},
         {"name": "no-duplicate-state-allocation", "passed": "ALLOC_COLD_PREFERRED" not in m},
     ]
