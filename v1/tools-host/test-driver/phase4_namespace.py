@@ -133,36 +133,9 @@ def _target_matrix(root: Path, s: dict[str, int], module: bytes) -> None:
     payload = bytearray()
     for item in paths:
         addresses.append(cursor)
-        encoded = item.encode("ascii") + b"\0"
+        encoded = item.encode("ascii") + b"\\0"
         payload += encoded
         cursor += len(encoded)
-
-    code = bytearray(b"\xF3" + phase1._ld_sp(0xBFC0))
-    _emit_success(code, s, addresses[0], s["DIR_ROOT"], s["PATH_KIND_DIR"])
-    _emit_success(code, s, addresses[1], s["DIR_BIN"], s["PATH_KIND_DIR"])
-    _emit_success(code, s, addresses[2], s["DIR_BIN"], s["PATH_KIND_DIR"])
-    _emit_success(code, s, addresses[3], s["DIR_DEV"], s["PATH_KIND_DIR"])
-    _emit_success(code, s, addresses[4], s["DIR_ETC"], s["PATH_KIND_DIR"])
-    _emit_success(code, s, addresses[5], s["DIR_HOME"], s["PATH_KIND_DIR"])
-    _emit_success(code, s, addresses[6], s["DIR_TMP"], s["PATH_KIND_DIR"])
-    _emit_success(code, s, addresses[7], s["DIR_BIN"], s["PATH_KIND_DIR"])
-    _emit_success(code, s, addresses[8], s["DIR_ROOT"], s["PATH_KIND_DIR"])
-    _emit_error(code, s, addresses[9], s["E_INVAL"])
-    _emit_error(code, s, addresses[10], s["E_NOENT"])
-    _emit_error(code, s, addresses[11], s["E_INVAL"])
-    _emit_success(code, s, addresses[12], s["DIR_BIN"], s["PATH_KIND_DIR"])
-    _emit_success(code, s, addresses[13], s["DIR_BIN"], s["PATH_KIND_BASE"])
-    _emit_error(code, s, addresses[14], s["E_NOENT"])
-
-    code += b"\x3E\x05\x32" + _word(s["session_user_len"])
-    code += phase1._ld_hl(USER_BASE) + phase1._ld_de(s["session_user"]) + b"\x01\x05\x00\xED\xB0"
-    _emit_success(code, s, addresses[14], s["DIR_USERHOME"], s["PATH_KIND_DIR"])
-
-    code += bytes((0x3E, s["DIR_BIN"], 0x32)) + _word(s["fake_process"] + 28)
-    _emit_success(code, s, addresses[15], s["DIR_BIN"], s["PATH_KIND_BASE"])
-    _emit_success(code, s, addresses[16], s["DIR_BIN"], s["PATH_KIND_BASE"])
-    _emit_error(code, s, addresses[17], s["E_TOOLONG"])
-    code += phase1._jp(PASS_PC)
 
     def patch(ram: bytearray) -> None:
         moff = NAMESPACE_BASE - 0x4000
@@ -170,9 +143,57 @@ def _target_matrix(root: Path, s: dict[str, int], module: bytes) -> None:
         off = PATH_BASE - 0x4000
         ram[off:off + len(payload)] = payload
         uoff = USER_BASE - 0x4000
-        ram[uoff:uoff + 6] = b"alice\0"
+        ram[uoff:uoff + 6] = b"alice\\0"
 
-    run_sna(root, bytes(code), patch=patch)
+    def execute(label: str, emit: Callable[[bytearray], None]) -> None:
+        code = bytearray(b"\\xF3" + phase1._ld_sp(0xBFC0))
+        emit(code)
+        code += phase1._jp(PASS_PC)
+        try:
+            run_sna(root, bytes(code), patch=patch)
+        except DriverError as exc:
+            raise Phase4NamespaceError(f"P4.01 target case failed: {label}: {exc}") from exc
+
+    def success(label: str, index: int, directory: int, kind: int, prefix: bytes = b"") -> None:
+        def emit(code: bytearray) -> None:
+            code += prefix
+            _emit_success(code, s, addresses[index], directory, kind)
+        execute(label, emit)
+
+    def error(label: str, index: int, errno: int, prefix: bytes = b"") -> None:
+        def emit(code: bytearray) -> None:
+            code += prefix
+            _emit_error(code, s, addresses[index], errno)
+        execute(label, emit)
+
+    success("root", 0, s["DIR_ROOT"], s["PATH_KIND_DIR"])
+    success("bin", 1, s["DIR_BIN"], s["PATH_KIND_DIR"])
+    success("repeated-separators", 2, s["DIR_BIN"], s["PATH_KIND_DIR"])
+    success("dev", 3, s["DIR_DEV"], s["PATH_KIND_DIR"])
+    success("etc", 4, s["DIR_ETC"], s["PATH_KIND_DIR"])
+    success("home", 5, s["DIR_HOME"], s["PATH_KIND_DIR"])
+    success("tmp", 6, s["DIR_TMP"], s["PATH_KIND_DIR"])
+    success("dot", 7, s["DIR_BIN"], s["PATH_KIND_DIR"])
+    success("dotdot", 8, s["DIR_ROOT"], s["PATH_KIND_DIR"])
+    error("above-root", 9, s["E_INVAL"])
+    error("unknown-intermediate", 10, s["E_NOENT"])
+    error("trailing-separator", 11, s["E_INVAL"])
+    success("raw-long-normalized-short", 12, s["DIR_BIN"], s["PATH_KIND_DIR"])
+    success("absolute-base", 13, s["DIR_BIN"], s["PATH_KIND_BASE"])
+    error("prelogin-userhome", 14, s["E_NOENT"])
+
+    user_prefix = (
+        b"\\x3E\\x05\\x32" + _word(s["session_user_len"])
+        + phase1._ld_hl(USER_BASE) + phase1._ld_de(s["session_user"])
+        + b"\\x01\\x05\\x00\\xED\\xB0"
+    )
+    success("postlogin-userhome", 14, s["DIR_USERHOME"], s["PATH_KIND_DIR"], user_prefix)
+
+    cwd_prefix = bytes((0x3E, s["DIR_BIN"], 0x32)) + _word(s["fake_process"] + 28)
+    success("relative-base", 15, s["DIR_BIN"], s["PATH_KIND_BASE"], cwd_prefix)
+    success("normalized-length-31", 16, s["DIR_BIN"], s["PATH_KIND_BASE"])
+    error("normalized-length-32", 17, s["E_TOOLONG"])
+
 def dispatch(
     root: Path,
     action: str,
