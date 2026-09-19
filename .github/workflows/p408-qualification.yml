@@ -31,7 +31,7 @@ jobs:
     timeout-minutes: 45
     env:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p408-qualification
-      P408_EXACT_PARENT: 84da8e288812e3ab0a759d411fcea13a9893d2ad
+      P408_EXACT_PARENT: 4552a2451126c6bc022298137eb5977c7490b88b
       ZXUX_REV16_SHA256: 24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c
       ZXUX_REV07_SHA256: 840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc
     steps:
@@ -42,7 +42,7 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD^)" = "$P408_EXACT_PARENT"
           git diff --name-only HEAD^ HEAD | sort > /tmp/p408-changed
-          printf '%s\n' .github/workflows/p407-qualification.yml .github/workflows/p408-qualification.yml v1/src/kernel/objects.asm v1/tools-host/test-driver/phase4_raw_write.py v1/tools-host/test-driver/run.py | sort > /tmp/p408-expected
+          printf '%s\n' .github/workflows/p408-qualification.yml v1/src/kernel/objects.asm v1/tools-host/test-driver/phase4_raw_write.py | sort > /tmp/p408-expected
           diff -u /tmp/p408-expected /tmp/p408-changed
           git diff --check HEAD^ HEAD
           test -z "$(git status --porcelain)"

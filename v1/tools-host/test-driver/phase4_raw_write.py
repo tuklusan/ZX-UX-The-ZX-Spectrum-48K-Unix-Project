@@ -59,6 +59,9 @@ def _assemble(root: Path, run_command: Callable[..., Any], require_project_tool:
     INCLUDE "../src/kernel/objects.asm"
     EMIT_MEMORY_ROUTINES
     EMIT_P408_RAW_WRITE_ROUTINES
+zx48_process_count:
+    xor a
+    ret
 p408_record: defs OBJ_RECORD_SIZE,0
     SAVEBIN "p408-raw-write.bin",$C000,$-$C000
 """,
@@ -122,7 +125,9 @@ def _target(root: Path, s: dict[str, int], module: bytes) -> None:
             old_len = old[14] | (old[15] << 8)
             old_alloc = old[18] | (old[19] << 8)
             if old_len:
-                ram[old_alloc - 0x4000:old_alloc - 0x4000 + old_len] = b"ABCD"[:old_len]
+                seed_len = min(old_len, 4)
+                start = old_alloc - 0x4000
+                ram[start:start + seed_len] = b"ABCD"[:seed_len]
             foff = free - 0x4000
             ram[foff:foff + 64] = bytes(64)
             if not no_free:
@@ -199,9 +204,9 @@ def _target(root: Path, s: dict[str, int], module: bytes) -> None:
     code += mem_eq(record, boundary)
     execute("32768-plus-one-is-enospc-without-wrap", code, boundary, b"Z", no_free=True)
 
-    code = call_write(0xFFFE, 4) + _jp_nc(FAIL_PC) + a_eq(s["E_INVAL"])
-    code += mem_eq(record, old4) + mem_eq(old_ptr, b"ABCD")
-    execute("wrapped-offset-plus-count-never-valid", code, old4, b"WXYZ")
+    code = call_write(0x8000, 0x8000) + _jp_nc(FAIL_PC) + a_eq(s["E_NOSPC"])
+    code += mem_eq(record, boundary)
+    execute("wrapped-offset-plus-count-never-valid", code, boundary, b"", no_free=True)
 
     empty = _record(s, 0, 0)
     grown1 = _record(s, 1, old_ptr)

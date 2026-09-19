@@ -2091,10 +2091,10 @@ zx48_p408_nonzero:
     ld a,h
     cp ARENA_SIZE/256
     jr c,zx48_p408_end_ok
-    jr nz,zx48_p408_nospc
+    jp nz,zx48_p408_nospc
     ld a,l
     or a
-    jr nz,zx48_p408_nospc
+    jp nz,zx48_p408_nospc
 zx48_p408_end_ok:
     ld (p408_end),hl
 
