@@ -23,7 +23,7 @@ jobs:
     timeout-minutes: 45
     env:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p411-qualification
-      P411_EXACT_PARENT: a7a7defeb49052397ca2eea9d5803d95b3275c0e
+      P411_EXACT_PARENT: 8599bc018e6d37c1aedd74ca718fc1e6296b5856
       ZXUX_REV16_SHA256: 24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c
       ZXUX_REV07_SHA256: 840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc
     steps:
@@ -34,7 +34,9 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD^)" = "$P411_EXACT_PARENT"
           git diff --name-only HEAD^ HEAD | sort > /tmp/p411-changed
-          printf '%s\n' .github/workflows/p411-qualification.yml | sort > /tmp/p411-expected
+          printf '%s\n' \
+            .github/workflows/p411-dispatch-once.yml \
+            .github/workflows/p411-qualification.yml | sort > /tmp/p411-expected
           diff -u /tmp/p411-expected /tmp/p411-changed
           git diff --check HEAD^ HEAD
           test -z "$(git status --porcelain)"
