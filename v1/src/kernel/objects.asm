@@ -3423,3 +3423,122 @@ p412_best_kind: db 0
 p412_candidate_kind: db 0
 p412_prev_name: defs 10,0
     ENDM
+
+
+;
+; P4.13 staged SYS_REMOVE contract. Removal is limited to closed mutable RAM
+; objects. Namespace-only, catalog-only and protected metadata are immutable.
+;
+    MACRO EMIT_P413_REMOVE_ROUTINES
+
+; HL=NUL-terminated path.
+zx48_p413_sys_remove:
+    call zx48_path_resolve
+    ret c
+    ld (p413_dir),a
+    ld a,c
+    cp PATH_KIND_DIR
+    jp z,zx48_p413_perm
+
+    ld a,(p413_dir)
+    cp DIR_DEV
+    jp z,zx48_p413_perm
+
+    ld a,(p413_dir)
+    ld hl,path_name
+    call zx48_p405_object_lookup
+    jr nc,zx48_p413_found
+
+    ; A catalog-only /bin entry is visible metadata but not mutable storage.
+    ld a,(p413_dir)
+    cp DIR_BIN
+    jr nz,zx48_p413_noent
+    ld hl,path_name
+    call zx48_p405_is_bcat
+    jp z,zx48_p413_perm
+zx48_p413_noent:
+    ld a,E_NOENT
+    scf
+    ret
+
+zx48_p413_found:
+    ; Public mutable placement only. Protected system metadata never enters the
+    ; removal transaction even if a malformed fixture injects such a record.
+    ld a,(ix+OBJ_TYPE_ID)
+    cp OBJ_SYS
+    jp z,zx48_p413_perm
+    cp OBJ_FNT
+    jp z,zx48_p413_perm
+    ld a,(ix+OBJ_DIR_ID)
+    cp DIR_BIN
+    jr z,zx48_p413_mutable_dir
+    cp DIR_ETC
+    jr z,zx48_p413_mutable_dir
+    cp DIR_USERHOME
+    jr z,zx48_p413_mutable_dir
+    cp DIR_TMP
+    jp nz,zx48_p413_perm
+
+zx48_p413_mutable_dir:
+    ld a,c
+    ld (p413_slot),a
+    call zx48_object_no_open_references
+    ret c
+
+    ; Preserve payload ownership before touching the table entry.
+    ld l,(ix+OBJ_ALLOCATION_PTR)
+    ld h,(ix+OBJ_ALLOCATION_PTR+1)
+    ld (p413_old_ptr),hl
+    ld c,(ix+OBJ_STORAGE_LENGTH)
+    ld b,(ix+OBJ_STORAGE_LENGTH+1)
+    bit 0,c
+    jr z,zx48_p413_length_ready
+    inc bc
+zx48_p413_length_ready:
+    ld (p413_old_length),bc
+
+    ; Free first; any allocator corruption is fatal and cannot be reported as a
+    ; partially completed namespace mutation.
+    ld hl,(p413_old_ptr)
+    ld a,h
+    or l
+    jr z,zx48_p413_clear_state
+    ld bc,(p413_old_length)
+    call zx48_free
+    jr nc,zx48_p413_clear_state
+    ld a,PANIC_SCHEDULER
+    jp zx48_panic
+
+zx48_p413_clear_state:
+    ; Removal invalidates all transient zxpack candidate pointers/identity.
+    xor a
+    ld hl,0
+    ld (zx_object_ptr),hl
+    ld (zx_new_ptr),hl
+    ld (zx_encoded_len),hl
+    ld (zx_slot),a
+
+    ; Free the bounded table slot by clearing all twenty bytes. Occupancy/type is
+    ; among the cleared bytes; no BCAT byte is touched.
+    push ix
+    pop hl
+    ld de,p413_zero_record
+    ex de,hl
+    ld bc,OBJ_RECORD_SIZE
+    ldir
+
+    ld hl,0
+    xor a
+    ret
+
+zx48_p413_perm:
+    ld a,E_PERM
+    scf
+    ret
+
+p413_dir: db 0
+p413_slot: db 0
+p413_old_ptr: dw 0
+p413_old_length: dw 0
+p413_zero_record: defs OBJ_RECORD_SIZE,0
+    ENDM
