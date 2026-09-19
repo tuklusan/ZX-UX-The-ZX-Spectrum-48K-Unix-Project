@@ -1,0 +1,102 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "write-validates-handle-write-and-object-kind",
+      "passed": true
+    },
+    {
+      "name": "append-flag-read-from-shared-open-description",
+      "passed": true
+    },
+    {
+      "name": "append-reselects-eof-via-p408-transaction",
+      "passed": true
+    },
+    {
+      "name": "append-branch-does-not-use-stored-offset-before-write",
+      "passed": true
+    },
+    {
+      "name": "successful-append-publishes-new-eof-to-shared-offset",
+      "passed": true
+    },
+    {
+      "name": "nonappend-path-retains-offset-write-semantics",
+      "passed": true
+    },
+    {
+      "name": "failed-write-cannot-advance-shared-offset",
+      "passed": true
+    },
+    {
+      "name": "seek-then-append-reselects-current-eof-runtime",
+      "passed": true
+    },
+    {
+      "name": "offset-based-append-bug-fixture-cannot-pass",
+      "passed": true
+    },
+    {
+      "name": "append-failure-preserves-prewrite-object-and-offset-runtime",
+      "passed": true
+    },
+    {
+      "name": "nonappend-control-remains-offset-based-runtime",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 43,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12807 lines, work time: 0.041 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p409-append.lst",
+        "--sym=p409-append.sym",
+        "p409-append.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 17,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 5635 lines, work time: 0.015 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p409-append.bin": "664072428e16f303eeb148bde25b9a241ea459eb41af02ee06a7b983dfeaecaf",
+    "v1/dist/certification/P4.08.test.json": "f86f3a9c7963343e0031afca44c0c71dac3d212ee6f2a8b2451edab1ffd7381c",
+    "v1/src/kernel/handles.asm": "dd82383ab1e65ea830e7b22b8f6366ee56ba0dfa14f170a2a443dfff5427a655",
+    "v1/src/kernel/memory.asm": "290e34e60b37f22bf89446b43e851a1d1ae0e087f09af801743937f734d9d4ab",
+    "v1/src/kernel/objects.asm": "292704cdd2b1ea85d205edecab6794ea02d05f1e27755fd5d73bd445e60e7438",
+    "v1/tools-host/test-driver/phase4_append.py": "a11281eaccb41074e7e8a734e05757990d53343500e05e29da9bc30859ac3eda",
+    "v1/tools-host/test-driver/run.py": "88e9b9dc1ea3ba692be3ca0f6635301670873c0d294d54824fa8ba66b6257438"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P4.08": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "e9eb7bc01f1e96dd1dfc78dada965bfd2558337d",
+  "status": "PASS",
+  "step": "P4.09",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
