@@ -2046,6 +2046,91 @@ ns_kind: db 0
 
 
 ;
+; P4.09 staged O_APPEND write contract. Every append write reselects current
+; logical EOF immediately before the P4.08 atomic RAW transaction, so SYS_SEEK
+; can change the shared offset but can never turn append into overwrite.
+;
+    MACRO EMIT_P409_APPEND_ROUTINES
+; E=handle,D=0,HL=source,BC=count -> HL=full count or error.
+zx48_p409_sys_write:
+    ld a,d
+    or a
+    jp nz,zx48_p409_invalid
+    ld (p409_source),hl
+    ld (p409_count),bc
+    ld a,e
+    call zx48_handle_lookup
+    ret c
+    ld a,(ix+OD_ACCESS_O)
+    ld (p409_access),a
+    and O_WRITE
+    jp z,zx48_p409_perm
+    ld a,(ix+OD_KIND_O)
+    cp OD_KIND_OBJECT
+    jp nz,zx48_p409_notsup
+    push ix
+    pop hl
+    ld (p409_od_ptr),hl
+    ld a,(ix+OD_ID_O)
+    call zx48_p405_object_ptr_slot
+    ret c
+
+    ld a,(p409_access)
+    and O_APPEND
+    jr z,zx48_p409_offset_write
+    ld hl,(p409_source)
+    ld bc,(p409_count)
+    call zx48_p408_raw_write_at_eof
+    ret c
+    ; Successful append offset becomes the newly committed current EOF.
+    ld l,(ix+OBJ_LOGICAL_LENGTH)
+    ld h,(ix+OBJ_LOGICAL_LENGTH+1)
+    jr zx48_p409_commit_offset
+
+zx48_p409_offset_write:
+    ld de,(p409_od_ptr)
+    push de
+    pop iy
+    ld e,(iy+OD_OFFSET_O)
+    ld d,(iy+OD_OFFSET_O+1)
+    ld hl,(p409_source)
+    ld bc,(p409_count)
+    call zx48_p408_raw_write
+    ret c
+    ld de,(p409_count)
+    ld iy,(p409_od_ptr)
+    ld l,(iy+OD_OFFSET_O)
+    ld h,(iy+OD_OFFSET_O+1)
+    add hl,de
+
+zx48_p409_commit_offset:
+    ld iy,(p409_od_ptr)
+    ld (iy+OD_OFFSET_O),l
+    ld (iy+OD_OFFSET_O+1),h
+    ld hl,(p409_count)
+    xor a
+    ret
+
+zx48_p409_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+zx48_p409_perm:
+    ld a,E_PERM
+    scf
+    ret
+zx48_p409_notsup:
+    ld a,E_NOTSUP
+    scf
+    ret
+
+p409_source: dw 0
+p409_count: dw 0
+p409_od_ptr: dw 0
+p409_access: db 0
+    ENDM
+
+;
 ; P4.08 staged atomic RAW write/growth contract.
 ;
 ; IX=mutable RAW object record, DE=logical offset, HL=source, BC=count.
