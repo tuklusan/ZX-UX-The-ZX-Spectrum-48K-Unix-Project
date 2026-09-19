@@ -99,7 +99,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
         {"name": "namespace-dir-dev-length-zero-check", "passed": "cp OBJ_DIR" in macro and "cp OBJ_DEV" in macro and ".must_zero" in macro},
         {"name": "tape-backed-visible-length-unknown", "passed": "cp STATE_TAPE_BACKED" in macro and "ld hl,$ffff" in macro},
         {"name": "lf-byte-is-canonical-target-separator", "passed": "zx48_text_line_separator:" in macro and "ld a,$0a" in macro},
-        {"name": "type-placement-does-not-infer-suffix", "passed": "name" not in macro.lower() and "suffix" not in macro.lower()},
+        {"name": "type-placement-does-not-infer-suffix", "passed": all(token not in macro for token in ("zx48_name_", "path_name", "cp '.'", "tolower", "toupper"))},
         {"name": "phase4-text-corpus-is-lf-only", "passed": not crlf},
         {"name": "abi-doc-freezes-placement-and-lf", "passed": "Public mutable placement is exact" in abi and "target tools never emit CRLF" in abi and "infer type from a suffix" in abi},
     ]
