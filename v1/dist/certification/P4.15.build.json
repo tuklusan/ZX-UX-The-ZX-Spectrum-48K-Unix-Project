@@ -1,0 +1,88 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "delegates-p414-unless-distinct-destination",
+      "passed": true
+    },
+    {
+      "name": "source-and-destination-closed-before-commit",
+      "passed": true
+    },
+    {
+      "name": "records-validated-before-commit",
+      "passed": true
+    },
+    {
+      "name": "destination-compatibility-before-commit",
+      "passed": true
+    },
+    {
+      "name": "publish-before-old-destination-free",
+      "passed": true
+    },
+    {
+      "name": "source-cleared-after-free",
+      "passed": true
+    },
+    {
+      "name": "payload-alias-rejected-precommit",
+      "passed": true
+    },
+    {
+      "name": "no-payload-copy-or-recompression",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12869 lines, work time: 0.034 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p415-rename-replace.lst",
+        "--sym=p415-rename-replace.sym",
+        "p415-rename-replace.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 15,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 6951 lines, work time: 0.014 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p415-rename-replace.bin": "ba28e36e74d662de5886986c779cd3dc2c8cceb23f82aff3f8ab8fab135f953c",
+    "v1/dist/certification/P4.14.test.json": "ac3a8115cc4043c8f234881d527c2f4ebb00d84c4659570b14808b9508ca99a1",
+    "v1/src/kernel/objects.asm": "34ce56b1b000530ae739b96c61e71fa1338dc87ae362b53b3d67845fd7ce3196",
+    "v1/tools-host/test-driver/phase4_rename_replace.py": "d0543d1c4809f7e13a002966c82cd4bb9ae8ed0a18782f910a7a7d9c0a308ea1",
+    "v1/tools-host/test-driver/run.py": "c2d618af32e5e6d9266774089571810068e372578318af5a4badbf647bf2c81f"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P4.14": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "9458a3e1f2fcd9449891663bc817888ca92a8451",
+  "status": "PASS",
+  "step": "P4.15",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
