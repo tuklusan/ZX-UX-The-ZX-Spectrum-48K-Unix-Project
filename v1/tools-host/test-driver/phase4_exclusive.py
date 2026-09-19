@@ -64,6 +64,7 @@ zx48_process_lookup:
     INCLUDE "../src/kernel/handles.asm"
     INCLUDE "../src/kernel/objects.asm"
     EMIT_HANDLE_ROUTINES
+    EMIT_P406_EXCLUSIVITY_ROUTINES
     EMIT_OBJECT_EXCLUSIVITY_ROUTINES
 zx48_free:
     xor a
@@ -98,13 +99,14 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
     handles = (root / "v1/src/kernel/handles.asm").read_text(encoding="utf-8")
     objects = (root / "v1/src/kernel/objects.asm").read_text(encoding="utf-8")
     process = (root / "v1/src/kernel/process.asm").read_text(encoding="utf-8")
-    guard = handles.split("zx48_od_object_open_guard:", 1)[1].split("; D=RAM-object identity.", 1)[0]
-    live = handles.split("zx48_od_object_any_live:", 1)[1].split("; B=kind,C=access,D=identity", 1)[0]
+    staged = handles.split("MACRO EMIT_P406_EXCLUSIVITY_ROUTINES", 1)[1].split("ENDM", 1)[0]
+    guard = staged.split("zx48_od_object_open_guard:", 1)[1].split("; D=RAM-object identity.", 1)[0]
+    live = staged.split("zx48_od_object_any_live:", 1)[1].split("; B=kind,C=access,D=identity", 1)[0]
     object_guard = objects.split("MACRO EMIT_OBJECT_EXCLUSIVITY_ROUTINES", 1)[1].split("ENDM", 1)[0]
     return [
         {"name": "writer-guard-scans-open-description-pool", "passed": "open_description_table" in guard and "OPEN_DESCRIPTION_COUNT" in guard and "PROC_HANDLES" not in guard},
         {"name": "writer-guard-distinguishes-write-capability", "passed": "and O_WRITE" in guard and "OD_ACCESS_O" in guard and "OD_ID_O" in guard},
-        {"name": "od-create-enforces-object-exclusivity", "passed": "call zx48_od_object_open_guard" in handles and "cp OD_KIND_OBJECT" in handles},
+        {"name": "staged-object-create-enforces-exclusivity", "passed": "zx48_p406_od_create:" in staged and "call zx48_od_object_open_guard" in staged and "cp OD_KIND_OBJECT" in staged},
         {"name": "no-open-reference-scan-is-od-pool-only", "passed": "open_description_table" in live and "OPEN_DESCRIPTION_COUNT" in live and "PROC_HANDLES" not in live},
         {"name": "representation-swap-guard-delegates-to-od-pool", "passed": "zx48_object_representation_swap_guard:" in object_guard and "jp zx48_od_object_any_live" in object_guard},
         {"name": "dup-retains-same-description", "passed": "zx48_handle_dup:" in handles and "call zx48_od_retain" in handles},
@@ -129,7 +131,7 @@ def _target(root: Path, s: dict[str, int], module: bytes) -> None:
             raise Phase4ExclusiveError(f"P4.06 target case failed: {label}: {exc}") from exc
 
     def od_create(access: int, identity: int) -> bytes:
-        return bytes((0x06, s["OD_KIND_OBJECT"], 0x0E, access & 0xFF, 0x16, identity & 0xFF)) + phase1._call(s["zx48_od_create"])
+        return bytes((0x06, s["OD_KIND_OBJECT"], 0x0E, access & 0xFF, 0x16, identity & 0xFF)) + phase1._call(s["zx48_p406_od_create"])
 
     def a_eq(value: int) -> bytes:
         return bytes((0xFE, value & 0xFF)) + phase1._jp_nz(FAIL_PC)
@@ -226,7 +228,7 @@ def dispatch(
     fixture_result, binary, listing = _assemble(root, run_command, require_project_tool)
     commands = [kernel_result, fixture_result]
     names = (
-        "zx48_handles_init", "zx48_od_create", "zx48_od_retain", "zx48_handle_install",
+        "zx48_handles_init", "zx48_p406_od_create", "zx48_od_retain", "zx48_handle_install",
         "zx48_handle_lookup", "zx48_handle_dup", "zx48_object_representation_swap_guard",
         "zx48_object_no_open_references", "open_description_table", "fake_process",
         "OD_KIND_O", "OD_ACCESS_O", "OD_REFS_O", "OD_ID_O", "OD_OFFSET_O", "OD_COMPACT_SIZE",

@@ -32,7 +32,7 @@ jobs:
     timeout-minutes: 45
     env:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p406-qualification
-      P406_EXACT_PARENT: a729418bab6210eeed262e9544b4809b57984a12
+      P406_EXACT_PARENT: bb161d1cbff60801e23424b327c0ccdbf0ecc07f
       ZXUX_REV16_SHA256: 24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c
       ZXUX_REV07_SHA256: 840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc
     steps:
@@ -43,7 +43,7 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD^)" = "$P406_EXACT_PARENT"
           git diff --name-only HEAD^ HEAD | sort > /tmp/p406-changed
-          printf '%s\n' .github/workflows/p405-qualification.yml .github/workflows/p406-qualification.yml v1/src/kernel/handles.asm v1/src/kernel/objects.asm v1/tools-host/test-driver/phase4_exclusive.py v1/tools-host/test-driver/run.py | sort > /tmp/p406-expected
+          printf '%s\n' .github/workflows/p406-qualification.yml v1/src/kernel/handles.asm v1/tools-host/test-driver/phase4_exclusive.py | sort > /tmp/p406-expected
           diff -u /tmp/p406-expected /tmp/p406-changed
           git diff --check HEAD^ HEAD
           test -z "$(git status --porcelain)"
