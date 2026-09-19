@@ -101,6 +101,12 @@ is_generated_certification_json() {
   [[ "$candidate" == "$GENERATED_CERTIFICATION_DIR"/*.json ]]
 }
 
+is_readme_file() {
+  local candidate="$1"
+  local basename="${candidate##*/}"
+  [[ "${basename^^}" == README* ]]
+}
+
 compute_git_tree_sha1() {
   local root="$1"
   python3 - "$root" <<'PYTREE'
@@ -231,6 +237,11 @@ fi
 while IFS= read -r -d '' file; do
   file="${file#./}"
   [[ "$file" == "$LICENSE_PATH" ]] && continue
+
+  if is_readme_file "$file"; then
+    explicitly_exempt=$((explicitly_exempt + 1))
+    continue
+  fi
 
   if [[ "$file" == "$PRESERVED_REFERENCE_DIR"/* ]]; then
     explicitly_exempt=$((explicitly_exempt + 1))
