@@ -1,0 +1,93 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "exact-256-plus-16-layout",
+      "passed": true
+    },
+    {
+      "name": "control-fields-frozen",
+      "passed": true
+    },
+    {
+      "name": "state-init-exact-size",
+      "passed": true
+    },
+    {
+      "name": "packed-readonly-only",
+      "passed": true
+    },
+    {
+      "name": "exact-272-cold-allocation",
+      "passed": true
+    },
+    {
+      "name": "state-attached-to-shared-od",
+      "passed": true
+    },
+    {
+      "name": "enomem-rolls-back-description",
+      "passed": true
+    },
+    {
+      "name": "final-release-frees-272",
+      "passed": true
+    },
+    {
+      "name": "retain-does-not-allocate",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 25,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12934 lines, work time: 0.024 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p417-packed-state.lst",
+        "--sym=p417-packed-state.sym",
+        "p417-packed-state.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2002 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p417-packed-state.bin": "8c572cb608d75eb63ca45d8ab88251a319b1d40f40310de46c5db133e58fea65",
+    "v1/dist/certification/P4.16.test.json": "de44081dc7e9fb81858152cf47d48b63df143517a13905cbff6143d1d790288e",
+    "v1/src/kernel/handles.asm": "0c4051d934a502d96d3cb95501dc12e0e922aa99a14007dd62b7a096e1bfb9ac",
+    "v1/src/kernel/zxpack.asm": "bfde5d33aaf779bc91acab0a6d6322108d79cbe6b193ffda13dc8b1347be8657",
+    "v1/tools-host/test-driver/phase4_packed_state.py": "1a290f009e66b4196a02b5f4de7cad4e08ff9bb4c37aac1933da276e9d2044fb",
+    "v1/tools-host/test-driver/run.py": "d0d253b908bb6722bf37be69765c088516f04b3111a46c20a35a276bda52c1b2"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P4.16": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "582aa0ea12bc12b47eb55e28d12c2faaf2a99938",
+  "status": "PASS",
+  "step": "P4.17",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
