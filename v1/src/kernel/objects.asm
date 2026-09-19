@@ -2135,7 +2135,8 @@ zx48_p405_object_create:
     call zx48_name_validate
     ret c
     ld a,(p405_create_dir)
-    ld b,(p405_create_type)
+    ld a,(p405_create_type)
+    ld b,a
     call zx48_object_public_type_allowed
     ret c
     ld a,(p405_create_dir)
@@ -2157,7 +2158,8 @@ zx48_p405_object_create_scan:
     scf
     ret
 zx48_p405_object_create_found:
-    ld (p405_create_slot),c
+    ld a,c
+    ld (p405_create_slot),a
     push ix
     pop de
     ld hl,(p405_create_name)
@@ -2192,7 +2194,8 @@ zx48_p405_object_create_meta:
     ; Type is the occupancy/publication byte and is committed last.
     ld a,(p405_create_type)
     ld (ix+OBJ_TYPE_ID),a
-    ld c,(p405_create_slot)
+    ld a,(p405_create_slot)
+    ld c,a
     xor a
     or a
     ret

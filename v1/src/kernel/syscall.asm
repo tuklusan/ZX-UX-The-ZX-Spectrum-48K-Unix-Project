@@ -916,7 +916,8 @@ zx48_p405_open_resolve:
     ; Publish an open description/handle. Exhaustion rolls the empty new object back.
     ld d,c
     ld b,OD_KIND_OBJECT
-    ld c,(p405_open_flags)
+    ld a,(p405_open_flags)
+    ld c,a
     call zx48_p405_open_allocate
     jr c,zx48_p405_open_create_rollback
     ld a,OD_KIND_OBJECT
@@ -947,7 +948,8 @@ zx48_p405_open_existing:
     ld a,(p405_open_slot)
     ld d,a
     ld b,OD_KIND_OBJECT
-    ld c,(p405_open_flags)
+    ld a,(p405_open_flags)
+    ld c,a
     call zx48_p405_open_allocate
     ret c
     ld a,OD_KIND_OBJECT
@@ -978,7 +980,8 @@ zx48_p405_open_device:
     ld (p405_result_kind),a
     ld b,a
     ld d,0
-    ld c,(p405_open_flags)
+    ld a,(p405_open_flags)
+    ld c,a
     call zx48_p405_open_allocate
     ret c
     xor a

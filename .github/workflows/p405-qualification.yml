@@ -32,7 +32,7 @@ jobs:
     timeout-minutes: 45
     env:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p405-qualification
-      P405_EXACT_PARENT: 992b4af7f610e82f4541e624df18c1f304a58569
+      P405_EXACT_PARENT: 40cf4fcea632c360ddfc05522a7e567175826489
       ZXUX_REV16_SHA256: 24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c
       ZXUX_REV07_SHA256: 840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc
     steps:
@@ -43,7 +43,7 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD^)" = "$P405_EXACT_PARENT"
           git diff --name-only HEAD^ HEAD | sort > /tmp/p405-changed
-          printf '%s\n' .github/workflows/p405-qualification.yml v1/tools-host/test-driver/phase4_open.py | sort > /tmp/p405-expected
+          printf '%s\n' .github/workflows/p405-qualification.yml v1/src/kernel/objects.asm v1/src/kernel/syscall.asm v1/tools-host/test-driver/phase4_open.py | sort > /tmp/p405-expected
           diff -u /tmp/p405-expected /tmp/p405-changed
           git diff --check HEAD^ HEAD
           test -z "$(git status --porcelain)"
