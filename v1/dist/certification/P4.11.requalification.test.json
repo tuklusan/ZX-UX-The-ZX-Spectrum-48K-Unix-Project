@@ -81,9 +81,9 @@
         "kernel.asm"
       ],
       "cwd": "v1/src/kernel",
-      "duration_ms": 34,
+      "duration_ms": 31,
       "exit_code": 0,
-      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12869 lines, work time: 0.033 seconds\n",
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12869 lines, work time: 0.030 seconds\n",
       "stdout": "",
       "timed_out": false
     },
@@ -96,9 +96,9 @@
         "p411-stat.asm"
       ],
       "cwd": "v1/build",
-      "duration_ms": 12,
+      "duration_ms": 11,
       "exit_code": 0,
-      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 5153 lines, work time: 0.011 seconds\n",
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 5153 lines, work time: 0.010 seconds\n",
       "stdout": "",
       "timed_out": false
     }
@@ -107,9 +107,9 @@
     "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
     "v1/build/p411-stat.bin": "ceeb0f37f51d1f9a69443f6954279570831a7b43d38241a3b86dd890d98b6905",
     "v1/dist/certification/P4.10.test.json": "eb570d3736bac01b380767f92831fcd34425d0b5e7cd6cbe0d97856e8d623e68",
-    "v1/src/kernel/objects.asm": "de35659b58beca17576abf622ea09f4a889bccea52710c1ab4c653492c3d9965",
+    "v1/src/kernel/objects.asm": "42774e112d92321eb868c12f0bd145ada6c4c390a1d6ef9bb4f3d9262ce83260",
     "v1/src/kernel/syscall.asm": "bfcc48c8f258fa10ab647c3474fc826b1f798f1a3fed9bf7359084ea8b47835a",
-    "v1/tools-host/test-driver/phase4_stat.py": "ca18e33459e928a11d873e42e9707ff7e3a978058e53cd9719382f9b3b919912",
+    "v1/tools-host/test-driver/phase4_stat.py": "3dfa02b8fbe6521a5c304120a91b040c4ac6d476f02da5ad6167f50524f5bada",
     "v1/tools-host/test-driver/run.py": "44aef4b8456148665652fa5786537c0a0b6ff33eb777120a8b78e3ec3badd8a1"
   },
   "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
@@ -117,7 +117,7 @@
     "P4.10": "PASS"
   },
   "schema": 2,
-  "source_commit": "bda9baea0d098303e172d670ced53aac513cdbc1",
+  "source_commit": "bb4be59016cf44727e884ca7bfb71bc2785d8298",
   "status": "PASS",
   "step": "P4.11",
   "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
