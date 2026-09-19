@@ -1,0 +1,109 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "seek-validates-d-and-handle-before-offset-write",
+      "passed": true
+    },
+    {
+      "name": "seek-only-ram-object-descriptions",
+      "passed": true
+    },
+    {
+      "name": "seek-range-is-zero-through-logical-eof",
+      "passed": true
+    },
+    {
+      "name": "raw-read-requires-read-access",
+      "passed": true
+    },
+    {
+      "name": "raw-logical-physical-lengths-must-match",
+      "passed": true
+    },
+    {
+      "name": "zero-transfer-returns-before-allocation-pointer",
+      "passed": true
+    },
+    {
+      "name": "nonzero-allocation-pointer-is-even",
+      "passed": true
+    },
+    {
+      "name": "read-updates-shared-open-description-offset",
+      "passed": true
+    },
+    {
+      "name": "packed-path-not-mutated-by-raw-routines",
+      "passed": true
+    },
+    {
+      "name": "raw-read-eof-and-shared-offset-runtime",
+      "passed": true
+    },
+    {
+      "name": "seek-zero-eof-and-beyond-eof-runtime",
+      "passed": true
+    },
+    {
+      "name": "zero-length-raw-sentinel-runtime",
+      "passed": true
+    },
+    {
+      "name": "unseekable-invalid-d-handle-runtime",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 37,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12807 lines, work time: 0.035 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p407-raw-read.lst",
+        "--sym=p407-raw-read.sym",
+        "p407-raw-read.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 13,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 4294 lines, work time: 0.012 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p407-raw-read.bin": "d6cb44eb8e74ad5bcef00ba5e7a74a5d6dedae45d8c43f24c8c57809e9afce0d",
+    "v1/dist/certification/P4.06.test.json": "95d6a240e9a72e321077cdf31185f8d92976b950c2b6b483b57b4bd488f60288",
+    "v1/src/kernel/handles.asm": "dd82383ab1e65ea830e7b22b8f6366ee56ba0dfa14f170a2a443dfff5427a655",
+    "v1/src/kernel/objects.asm": "5b776a9afda40929b228d168e753ffa5583e268569b5288867654f7ae106daf2",
+    "v1/tools-host/test-driver/phase4_raw_read.py": "5b07c78aea71beed20183080fc5492d338d8377e6aa10d90d6fb7ea17a368ec7",
+    "v1/tools-host/test-driver/run.py": "563dba5935df2cf832deb18f84df9f75a729940fdd80f50e19339571e029987b"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P4.06": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "4ac630e9d2098d625188c827d1768f538f364951",
+  "status": "PASS",
+  "step": "P4.07",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
