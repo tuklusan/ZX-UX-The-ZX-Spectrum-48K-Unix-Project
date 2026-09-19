@@ -241,6 +241,19 @@ def _target(root: Path, s: dict[str, int], module: bytes) -> None:
     execute("diag-trunc-append-handle-lookup", code, raw)
 
     code = open_call(flags) + phase1._jp_c(FAIL_PC)
+    code += bytes((0x3E, s["ALLOC_COLD_PREFERRED"])) + b"\x01\x02\x00"
+    code += phase1._call(s["zx48_alloc"]) + phase1._jp_c(FAIL_PC)
+    code += b"\x11" + _word(old_ptr) + b"\xB7\xED\x52" + phase1._jp_nz(FAIL_PC)
+    execute("diag-trunc-append-allocator", code, raw)
+
+    code = open_call(flags) + phase1._jp_c(FAIL_PC)
+    code += bytes((0x3E, 0x00)) + phase1._call(s["zx48_handle_lookup"]) + phase1._jp_c(FAIL_PC)
+    code += bytes((0xDD, 0x7E, s["OD_ID_O"])) + phase1._call(s["zx48_p405_object_ptr_slot"]) + phase1._jp_c(FAIL_PC)
+    code += phase1._ld_hl(source) + b"\x01\x02\x00"
+    code += phase1._call(s["zx48_p408_raw_write_at_eof"]) + phase1._jp_c(FAIL_PC)
+    execute("diag-trunc-append-direct-p408-success", code, raw)
+
+    code = open_call(flags) + phase1._jp_c(FAIL_PC)
     code += bytes((0x3E, 0x00)) + phase1._call(s["zx48_handle_lookup"]) + phase1._jp_c(FAIL_PC)
     code += bytes((0xDD, 0x7E, s["OD_ID_O"])) + phase1._call(s["zx48_p405_object_ptr_slot"]) + phase1._jp_c(FAIL_PC)
     code += phase1._ld_hl(source) + b"\x01\x02\x00"
@@ -303,8 +316,8 @@ def dispatch(
     fixture_result, binary, listing = _assemble(root, run_command, require_project_tool)
     commands = [kernel_result, fixture_result]
     names = (
-        "zx48_sys_open", "zx48_p409_sys_write", "zx48_handle_lookup", "zx48_p405_object_ptr_slot", "zx48_p408_raw_write_at_eof", "p405_object_table", "open_description_table", "fake_process",
-        "memory_free_extents", "memory_live_allocations", "ARENA_START", "ARENA_SIZE",
+        "zx48_sys_open", "zx48_p409_sys_write", "zx48_handle_lookup", "zx48_p405_object_ptr_slot", "zx48_p408_raw_write_at_eof", "zx48_alloc", "p405_object_table", "open_description_table", "fake_process",
+        "memory_free_extents", "memory_live_allocations", "ARENA_START", "ARENA_SIZE", "ALLOC_COLD_PREFERRED",
         "OD_KIND_O", "OD_ACCESS_O", "OD_ID_O", "OD_OFFSET_O", "OD_KIND_OBJECT", "O_WRITE", "O_TRUNC", "O_APPEND",
         "OBJ_DAT", "OBJ_PACKED", "DIR_TMP", "E_NOSPC",
     )
