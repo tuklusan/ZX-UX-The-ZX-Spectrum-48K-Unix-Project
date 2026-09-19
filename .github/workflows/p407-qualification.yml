@@ -31,7 +31,7 @@ jobs:
     timeout-minutes: 45
     env:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p407-qualification
-      P407_EXACT_PARENT: aea0c75c8729ed82d30adc1303b54ca013403aee
+      P407_EXACT_PARENT: 6a8c7d04e84b3efd7b8ae71422a64b95bef24239
       ZXUX_REV16_SHA256: 24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c
       ZXUX_REV07_SHA256: 840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc
     steps:

@@ -2055,14 +2055,14 @@ ns_kind: db 0
 zx48_p407_sys_seek:
     ld a,d
     or a
-    jr nz,zx48_p407_invalid
+    jp nz,zx48_p407_invalid
     ld (p407_request_offset),hl
     ld a,e
     call zx48_handle_lookup
     ret c
     ld a,(ix+OD_KIND_O)
     cp OD_KIND_OBJECT
-    jr nz,zx48_p407_notsup
+    jp nz,zx48_p407_notsup
     push ix
     pop hl
     ld (p407_od_ptr),hl
@@ -2071,13 +2071,13 @@ zx48_p407_sys_seek:
     ret c
     ld a,(ix+OBJ_FLAGS_BYTE)
     and OBJ_PACKED
-    jr nz,zx48_p407_notsup
+    jp nz,zx48_p407_notsup
     ld l,(ix+OBJ_LOGICAL_LENGTH)
     ld h,(ix+OBJ_LOGICAL_LENGTH+1)
     ld de,(p407_request_offset)
     or a
     sbc hl,de
-    jr c,zx48_p407_invalid
+    jp c,zx48_p407_invalid
     ld ix,(p407_od_ptr)
     ld hl,(p407_request_offset)
     ld (ix+OD_OFFSET_O),l
@@ -2090,7 +2090,7 @@ zx48_p407_sys_seek:
 zx48_p407_sys_read:
     ld a,d
     or a
-    jr nz,zx48_p407_invalid
+    jp nz,zx48_p407_invalid
     ld (p407_buffer),hl
     ld (p407_count),bc
     ld a,e
@@ -2098,10 +2098,10 @@ zx48_p407_sys_read:
     ret c
     ld a,(ix+OD_ACCESS_O)
     and O_READ
-    jr z,zx48_p407_perm
+    jp z,zx48_p407_perm
     ld a,(ix+OD_KIND_O)
     cp OD_KIND_OBJECT
-    jr nz,zx48_p407_notsup
+    jp nz,zx48_p407_notsup
     ld l,(ix+OD_OFFSET_O)
     ld h,(ix+OD_OFFSET_O+1)
     ld (p407_current_offset),hl
@@ -2113,7 +2113,7 @@ zx48_p407_sys_read:
     ret c
     ld a,(ix+OBJ_FLAGS_BYTE)
     and OBJ_PACKED
-    jr nz,zx48_p407_notsup
+    jp nz,zx48_p407_notsup
 
     ld l,(ix+OBJ_LOGICAL_LENGTH)
     ld h,(ix+OBJ_LOGICAL_LENGTH+1)
@@ -2122,13 +2122,13 @@ zx48_p407_sys_read:
     ld d,(ix+OBJ_STORAGE_LENGTH+1)
     or a
     sbc hl,de
-    jr nz,zx48_p407_format
+    jp nz,zx48_p407_format
 
     ld hl,(p407_length)
     ld de,(p407_current_offset)
     or a
     sbc hl,de
-    jr c,zx48_p407_invalid
+    jp c,zx48_p407_invalid
     ld (p407_available),hl
 
     ld de,(p407_count)
@@ -2149,9 +2149,9 @@ zx48_p407_read_have_count:
     ld d,(ix+OBJ_ALLOCATION_PTR+1)
     ld a,d
     or e
-    jr z,zx48_p407_format
+    jp z,zx48_p407_format
     bit 0,e
-    jr nz,zx48_p407_format
+    jp nz,zx48_p407_format
     ld hl,(p407_current_offset)
     add hl,de
     ld de,(p407_buffer)
