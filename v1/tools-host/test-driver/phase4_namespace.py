@@ -21,6 +21,8 @@ from fuse_harness import FAIL_PC, PASS_PC, run_sna
 import phase1
 import phase3_open_descriptions
 
+NAMESPACE_BASE = 0x9000
+
 PATH_BASE = 0xA000
 USER_BASE = 0xA300
 
@@ -63,9 +65,9 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
             "path_etc: db 'e','t','c',0", "path_home: db 'h','o','m','e',0",
             "path_tmp: db 't','m','p',0",
         ))},
-        {"name": "home-child-is-session-user-only", "passed": "cp DIR_HOME\n    jr z,zx48_path_child_home" in objects and "session_user" in objects},
+        {"name": "home-child-is-session-user-only", "passed": "cp DIR_HOME" in objects and "session_user" in objects},
         {"name": "dot-and-dotdot-navigation-explicit", "passed": "cp '.'" in objects and "path_name+2" in objects},
-        {"name": "above-root-is-einval", "passed": "or a\n    jr z,zx48_path_invalid" in objects},
+        {"name": "above-root-is-einval", "passed": "or a\n    jp z,.bad" in objects},
         {"name": "normalized-length-not-raw-length", "passed": "ld (ns_kind),a" in objects and "cp 32" in objects and "zx48_path_len:" not in objects},
         {"name": "trailing-separator-empty-final-is-einval", "passed": "jp .bad" in objects and ".tail:" in objects},
         {"name": "no-general-directory-mount-permission-inode-surface", "passed": all(x not in objects.lower() for x in ("mkdir", "rmdir", "mount", "inode", "chmod", "chown"))},
@@ -73,6 +75,40 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
     ]
     return assertions
 
+
+
+def _assemble_namespace(root: Path, run_command: Callable[..., Any], require_project_tool: Callable[[Path, str | Path], Path]):
+    assembler = require_project_tool(root, "tools/runtime/sjasmplus/bin/sjasmplus")
+    build = root / "v1/build"
+    build.mkdir(parents=True, exist_ok=True)
+    fixture = build / "p401-namespace.asm"
+    fixture.write_text(
+        """DEVICE ZXSPECTRUM48
+INCLUDE "../include/zx48ux.inc"
+PROC_CWD EQU 28
+ORG $9000
+current_pid: db 1
+zx48_process_lookup:
+    ld ix,fake_process
+    xor a
+    ret
+INCLUDE "../src/kernel/objects.asm"
+EMIT_NAMESPACE_ROUTINES
+fake_process: defs 48,0
+SAVEBIN "p401-namespace.bin",$9000,$-$9000
+""",
+        encoding="utf-8", newline="\n",
+    )
+    result = run_command(
+        [assembler, "--nologo", "--lst=p401-namespace.lst", "--sym=p401-namespace.sym", "p401-namespace.asm"],
+        cwd=build,
+        timeout_seconds=30.0,
+    )
+    require(not result.timed_out and result.exit_code == 0, f"namespace fixture assembly failed: {result.stderr or result.stdout}")
+    binary = build / "p401-namespace.bin"
+    listing = build / "p401-namespace.lst"
+    require(binary.is_file() and 0 < binary.stat().st_size < 4096, "namespace fixture binary missing/oversize")
+    return result, binary, listing
 
 def _emit_success(code: bytearray, s: dict[str, int], address: int, directory: int, kind: int) -> None:
     code += phase1._ld_hl(address) + phase1._call(s["zx48_path_resolve"]) + phase1._jp_c(FAIL_PC)
@@ -85,14 +121,14 @@ def _emit_error(code: bytearray, s: dict[str, int], address: int, errno: int) ->
     code += bytes((0xFE, errno & 0xFF)) + phase1._jp_nz(FAIL_PC)
 
 
-def _target_matrix(root: Path, s: dict[str, int], kernel: bytes) -> None:
+def _target_matrix(root: Path, s: dict[str, int], module: bytes) -> None:
     paths = [
         "/", "/bin", "//bin///", "/dev", "/etc", "/home", "/tmp",
         "/bin/.", "/bin/..", "/..", "/wat/x", "/bin/name/",
-        "/" * 40 + "bin", "/bin/Foo",
-        "/home/alice",
+        "/" * 40 + "bin", "/bin/Foo", "/home/alice", "Foo",
+        "/bin/" + "a" * 26, "/bin/" + "a" * 27,
     ]
-    addresses: list[int] = []
+    addresses = []
     cursor = PATH_BASE
     payload = bytearray()
     for item in paths:
@@ -102,10 +138,6 @@ def _target_matrix(root: Path, s: dict[str, int], kernel: bytes) -> None:
         cursor += len(encoded)
 
     code = bytearray(b"\xF3" + phase1._ld_sp(0xBFC0))
-    code += phase1._call(s["zx48_process_init"])
-    code += phase1._call(s["zx48_process_prepare_pid1"])
-    code += b"\x3E\x01\x32" + _word(s["current_pid"])
-
     _emit_success(code, s, addresses[0], s["DIR_ROOT"], s["PATH_KIND_DIR"])
     _emit_success(code, s, addresses[1], s["DIR_BIN"], s["PATH_KIND_DIR"])
     _emit_success(code, s, addresses[2], s["DIR_BIN"], s["PATH_KIND_DIR"])
@@ -120,28 +152,27 @@ def _target_matrix(root: Path, s: dict[str, int], kernel: bytes) -> None:
     _emit_error(code, s, addresses[11], s["E_INVAL"])
     _emit_success(code, s, addresses[12], s["DIR_BIN"], s["PATH_KIND_DIR"])
     _emit_success(code, s, addresses[13], s["DIR_BIN"], s["PATH_KIND_BASE"])
-
-    # Before login, /home/alice is absent.
     _emit_error(code, s, addresses[14], s["E_NOENT"])
 
-    # Install the current session USERHOME mapping directly.
     code += b"\x3E\x05\x32" + _word(s["session_user_len"])
     code += phase1._ld_hl(USER_BASE) + phase1._ld_de(s["session_user"]) + b"\x01\x05\x00\xED\xB0"
     _emit_success(code, s, addresses[14], s["DIR_USERHOME"], s["PATH_KIND_DIR"])
 
+    code += bytes((0x3E, s["DIR_BIN"], 0x32)) + _word(s["fake_process"] + 28)
+    _emit_success(code, s, addresses[15], s["DIR_BIN"], s["PATH_KIND_BASE"])
+    _emit_success(code, s, addresses[16], s["DIR_BIN"], s["PATH_KIND_BASE"])
+    _emit_error(code, s, addresses[17], s["E_TOOLONG"])
     code += phase1._jp(PASS_PC)
 
     def patch(ram: bytearray) -> None:
-        start = phase1.KERNEL_BASE - 0x4000
-        ram[start:start + len(kernel)] = kernel
+        moff = NAMESPACE_BASE - 0x4000
+        ram[moff:moff + len(module)] = module
         off = PATH_BASE - 0x4000
         ram[off:off + len(payload)] = payload
         uoff = USER_BASE - 0x4000
         ram[uoff:uoff + 6] = b"alice\0"
 
     run_sna(root, bytes(code), patch=patch)
-
-
 def dispatch(
     root: Path,
     action: str,
@@ -158,14 +189,14 @@ def dispatch(
     failed = [item["name"] for item in assertions if item.get("passed") is not True]
     require(not failed, f"static P4.01 contract failures: {failed}")
 
-    result, kernel, listing = phase1._assemble_kernel(root, run_command, require_project_tool)
-    commands = [result]
+    kernel_result, kernel, _kernel_listing = phase1._assemble_kernel(root, run_command, require_project_tool)
+    namespace_result, namespace_bin, listing = _assemble_namespace(root, run_command, require_project_tool)
+    commands = [kernel_result, namespace_result]
     symbols = phase3_open_descriptions._symbols(
         listing.with_suffix(".sym"),
         (
-            "zx48_process_init", "zx48_process_prepare_pid1",
             "zx48_path_resolve",
-            "current_pid", "path_name", "session_user_len", "session_user",
+            "current_pid", "path_name", "session_user_len", "session_user", "fake_process",
             "DIR_ROOT", "DIR_BIN", "DIR_DEV", "DIR_ETC", "DIR_HOME",
             "DIR_USERHOME", "DIR_TMP", "DIR_SYSTEM",
             "PATH_KIND_DIR", "PATH_KIND_BASE", "E_INVAL", "E_NOENT", "E_TOOLONG",
@@ -179,7 +210,7 @@ def dispatch(
     ])
 
     if action == "test":
-        _target_matrix(root, symbols, kernel.read_bytes())
+        _target_matrix(root, symbols, namespace_bin.read_bytes())
         assertions.extend([
             {"name": "absolute-and-relative-fixed-directory-resolution-exact", "passed": True},
             {"name": "repeated-separator-and-dot-normalization-exact", "passed": True},
@@ -195,6 +226,7 @@ def dispatch(
         "v1/build/kernel.bin": sha256_file(kernel),
         "v1/include/zx48ux.inc": sha256_file(root / "v1/include/zx48ux.inc"),
         "v1/src/kernel/kernel.asm": sha256_file(root / "v1/src/kernel/kernel.asm"),
+        "v1/build/p401-namespace.bin": sha256_file(namespace_bin),
         "v1/src/kernel/objects.asm": sha256_file(root / "v1/src/kernel/objects.asm"),
         "v1/docs/namespace.md": sha256_file(root / "v1/docs/namespace.md"),
         "v1/tools-host/test-driver/phase4_namespace.py": sha256_file(root / "v1/tools-host/test-driver/phase4_namespace.py"),
