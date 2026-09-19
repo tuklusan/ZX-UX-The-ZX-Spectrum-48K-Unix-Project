@@ -196,6 +196,9 @@ def _target(root: Path, s: dict[str, int], module: bytes) -> None:
             out += byte_eq(address + index, value)
         return bytes(out)
 
+    def hl_eq(value: int) -> bytes:
+        return b"\x11" + _word(value) + b"\xB7\xED\x52" + phase1._jp_nz(FAIL_PC)
+
     write = s["O_WRITE"]
     trunc = s["O_TRUNC"]
     append = s["O_APPEND"]
@@ -243,7 +246,7 @@ def _target(root: Path, s: dict[str, int], module: bytes) -> None:
     code = open_call(flags) + phase1._jp_c(FAIL_PC)
     code += bytes((0x3E, s["ALLOC_COLD_PREFERRED"])) + b"\x01\x02\x00"
     code += phase1._call(s["zx48_alloc"]) + phase1._jp_c(FAIL_PC)
-    code += b"\x11" + _word(old_ptr) + b"\xB7\xED\x52" + phase1._jp_nz(FAIL_PC)
+    code += hl_eq(old_ptr)
     execute("diag-trunc-append-allocator", code, raw)
 
     code = open_call(flags) + phase1._jp_c(FAIL_PC)
@@ -258,13 +261,13 @@ def _target(root: Path, s: dict[str, int], module: bytes) -> None:
     code += bytes((0xDD, 0x7E, s["OD_ID_O"])) + phase1._call(s["zx48_p405_object_ptr_slot"]) + phase1._jp_c(FAIL_PC)
     code += phase1._ld_hl(source) + b"\x01\x02\x00"
     code += phase1._call(s["zx48_p408_raw_write_at_eof"]) + phase1._jp_c(FAIL_PC)
-    code += bytes((0x7C, 0xB5)) + phase1._jp_nz(FAIL_PC)
+    code += hl_eq(2)
     execute("diag-trunc-append-direct-p408-return", code, raw)
 
     code = open_call(flags) + phase1._jp_c(FAIL_PC)
     code += phase1._ld_hl(source) + b"\x01\x02\x00" + bytes((0x1E, 0x00, 0x16, 0x00))
     code += phase1._call(s["zx48_p409_sys_write"]) + phase1._jp_c(FAIL_PC)
-    code += bytes((0x7C, 0xB5)) + phase1._jp_nz(FAIL_PC)
+    code += hl_eq(2)
     execute("diag-trunc-append-write-return", code, raw)
 
     code = open_call(flags) + phase1._jp_c(FAIL_PC)
@@ -288,7 +291,7 @@ def _target(root: Path, s: dict[str, int], module: bytes) -> None:
     code = open_call(flags) + phase1._jp_c(FAIL_PC)
     code += phase1._ld_hl(source) + b"\x01\x02\x00" + bytes((0x1E, 0x00, 0x16, 0x00))
     code += phase1._call(s["zx48_p409_sys_write"]) + phase1._jp_c(FAIL_PC)
-    code += bytes((0x7C, 0xB5)) + phase1._jp_nz(FAIL_PC)
+    code += hl_eq(2)
     code += mem_eq(old_ptr, b"XY")
     code += mem_eq(table, grown)
     code += byte_eq(od + s["OD_ACCESS_O"], flags)
