@@ -103,7 +103,6 @@ def _target_matrix(root: Path, s: dict[str, int], kernel: bytes) -> None:
 
     code = bytearray(b"\xF3" + phase1._ld_sp(0xBFC0))
     code += phase1._call(s["zx48_process_init"])
-    code += phase1._call(s["zx48_objects_init"])
     code += phase1._call(s["zx48_process_prepare_pid1"])
     code += b"\x3E\x01\x32" + _word(s["current_pid"])
 
@@ -164,7 +163,7 @@ def dispatch(
     symbols = phase3_open_descriptions._symbols(
         listing.with_suffix(".sym"),
         (
-            "zx48_process_init", "zx48_objects_init", "zx48_process_prepare_pid1",
+            "zx48_process_init", "zx48_process_prepare_pid1",
             "zx48_path_resolve", "zx48_object_chdir", "zx48_namespace_set_user",
             "current_pid", "path_name",
             "DIR_ROOT", "DIR_BIN", "DIR_DEV", "DIR_ETC", "DIR_HOME",

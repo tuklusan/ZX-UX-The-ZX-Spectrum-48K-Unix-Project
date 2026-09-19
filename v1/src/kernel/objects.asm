@@ -1407,3 +1407,413 @@ cwd_buffer: defs 16,0
 cwd_length: db 0
 object_table: defs RAM_OBJECT_COUNT*OBJ_RECORD_SIZE,0
     ENDM
+
+;
+; P4.01 namespace-only kernel footprint.  The full object-store macro above is
+; intentionally not emitted until later Phase-4 steps require it.
+;
+    MACRO EMIT_NAMESPACE_ROUTINES
+zx48_name_validate:
+    ld (ns_name_ptr),hl
+    ld b,0
+.ns_nv_loop:
+    ld a,(hl)
+    or a
+    jr z,.ns_nv_end
+    inc b
+    ld a,b
+    cp 11
+    jr nc,.ns_nv_long
+    ld a,(hl)
+    call zx48_name_char_valid
+    jr c,.ns_nv_bad
+    inc hl
+    jr .ns_nv_loop
+.ns_nv_end:
+    ld a,b
+    or a
+    jr z,.ns_nv_bad
+    ld hl,(ns_name_ptr)
+    cp 1
+    jr nz,.ns_nv_ok
+    ld a,(hl)
+    cp '.'
+    jr z,.ns_nv_bad
+.ns_nv_ok:
+    ld a,b
+    or a
+    ret
+.ns_nv_long:
+    ld a,E_TOOLONG
+    scf
+    ret
+.ns_nv_bad:
+    ld a,E_INVAL
+    scf
+    ret
+
+zx48_name_char_valid:
+    cp '0'
+    jr c,.ns_ncv_punct
+    cp '9'+1
+    jr c,.ns_ncv_ok
+    cp 'A'
+    jr c,.ns_ncv_punct
+    cp 'Z'+1
+    jr c,.ns_ncv_ok
+    cp 'a'
+    jr c,.ns_ncv_punct
+    cp 'z'+1
+    jr c,.ns_ncv_ok
+.ns_ncv_punct:
+    cp '_'
+    jr z,.ns_ncv_ok
+    cp '-'
+    jr z,.ns_ncv_ok
+    cp '.'
+    jr z,.ns_ncv_ok
+    scf
+    ret
+.ns_ncv_ok:
+    or a
+    ret
+
+zx48_cstr_equal:
+    ld a,(de)
+    cp (hl)
+    ret nz
+    or a
+    ret z
+    inc de
+    inc hl
+    jr zx48_cstr_equal
+
+zx48_path_resolve:
+    ld (ns_path_source),hl
+    ld a,(hl)
+    or a
+    jr z,.ns_path_invalid
+    cp '/'
+    jr z,.ns_path_abs
+    ld a,(current_pid)
+    call zx48_process_lookup
+    ret c
+    ld a,(ix+PROC_CWD)
+    ld (ns_path_dir),a
+    ld hl,(ns_path_source)
+    jr .ns_path_component
+.ns_path_abs:
+    xor a
+    ld (ns_path_dir),a
+.ns_path_skip:
+    inc hl
+.ns_path_component:
+    ld a,(hl)
+    cp '/'
+    jr z,.ns_path_skip
+    or a
+    jr z,.ns_path_dir_done
+    ld de,path_name
+    ld b,0
+.ns_path_copy:
+    ld a,(hl)
+    or a
+    jr z,.ns_path_component_end
+    cp '/'
+    jr z,.ns_path_component_end
+    inc b
+    ld a,b
+    cp 11
+    jr nc,.ns_path_long
+    ld a,(hl)
+    ld (de),a
+    inc de
+    inc hl
+    jr .ns_path_copy
+.ns_path_component_end:
+    xor a
+    ld (de),a
+    ld (ns_path_after),hl
+    ld hl,path_name
+    ld de,path_dot
+    call zx48_cstr_equal
+    jr z,.ns_path_component_next
+    ld hl,path_name
+    ld de,path_dotdot
+    call zx48_cstr_equal
+    jr z,.ns_path_parent
+    call zx48_path_child_dir
+    jr nc,.ns_path_component_next
+    ld hl,(ns_path_after)
+.ns_path_final_slash:
+    ld a,(hl)
+    cp '/'
+    jr nz,.ns_path_final_check
+    inc hl
+    jr .ns_path_final_slash
+.ns_path_final_check:
+    or a
+    jr nz,.ns_path_noent
+    ld hl,(ns_path_after)
+    ld a,(hl)
+    cp '/'
+    jr z,.ns_path_invalid
+    ld hl,path_name
+    call zx48_name_validate
+    ret c
+    ld c,PATH_KIND_BASE
+    jp .ns_path_finish
+.ns_path_parent:
+    ld a,(ns_path_dir)
+    cp DIR_USERHOME
+    jr z,.ns_path_parent_home
+    cp DIR_BIN
+    jr z,.ns_path_parent_root
+    cp DIR_DEV
+    jr z,.ns_path_parent_root
+    cp DIR_ETC
+    jr z,.ns_path_parent_root
+    cp DIR_HOME
+    jr z,.ns_path_parent_root
+    cp DIR_TMP
+    jr z,.ns_path_parent_root
+    or a
+    jr z,.ns_path_invalid
+.ns_path_parent_root:
+    xor a
+    ld (ns_path_dir),a
+    jr .ns_path_component_next
+.ns_path_parent_home:
+    ld a,DIR_HOME
+    ld (ns_path_dir),a
+.ns_path_component_next:
+    ld hl,(ns_path_after)
+    jr .ns_path_component
+.ns_path_dir_done:
+    ld c,PATH_KIND_DIR
+.ns_path_finish:
+    ld a,c
+    ld (ns_path_kind),a
+    ld a,(ns_path_dir)
+    cp DIR_ROOT
+    jr z,.ns_len_root
+    cp DIR_HOME
+    jr z,.ns_len_home
+    cp DIR_USERHOME
+    jr z,.ns_len_userhome
+    ld b,4
+    jr .ns_len_kind
+.ns_len_root:
+    ld b,1
+    jr .ns_len_kind
+.ns_len_home:
+    ld b,5
+    jr .ns_len_kind
+.ns_len_userhome:
+    ld a,(session_user_len)
+    add a,6
+    ld b,a
+.ns_len_kind:
+    ld a,(ns_path_kind)
+    cp PATH_KIND_BASE
+    jr nz,.ns_len_check
+    ld a,(ns_path_dir)
+    cp DIR_ROOT
+    jr z,.ns_len_name
+    inc b
+.ns_len_name:
+    ld hl,path_name
+.ns_len_name_loop:
+    ld a,(hl)
+    or a
+    jr z,.ns_len_check
+    inc b
+    inc hl
+    jr .ns_len_name_loop
+.ns_len_check:
+    ld a,b
+    cp 32
+    jr nc,.ns_path_long
+    ld a,(ns_path_dir)
+    ld c,(ns_path_kind)
+    or a
+    ret
+.ns_path_long:
+    ld a,E_TOOLONG
+    scf
+    ret
+.ns_path_noent:
+    ld a,E_NOENT
+    scf
+    ret
+.ns_path_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+
+zx48_path_child_dir:
+    ld a,(ns_path_dir)
+    or a
+    jr z,.ns_child_root
+    cp DIR_HOME
+    jr z,.ns_child_home
+    scf
+    ret
+.ns_child_root:
+    ld hl,path_name
+    ld de,path_bin
+    call zx48_cstr_equal
+    jr z,.ns_set_bin
+    ld hl,path_name
+    ld de,path_dev
+    call zx48_cstr_equal
+    jr z,.ns_set_dev
+    ld hl,path_name
+    ld de,path_etc
+    call zx48_cstr_equal
+    jr z,.ns_set_etc
+    ld hl,path_name
+    ld de,path_home
+    call zx48_cstr_equal
+    jr z,.ns_set_home
+    ld hl,path_name
+    ld de,path_tmp
+    call zx48_cstr_equal
+    jr z,.ns_set_tmp
+    scf
+    ret
+.ns_child_home:
+    ld a,(session_user_len)
+    or a
+    jr z,.ns_child_fail
+    ld hl,path_name
+    ld de,session_user
+    call zx48_cstr_equal
+    jr nz,.ns_child_fail
+    ld a,DIR_USERHOME
+    ld (ns_path_dir),a
+    xor a
+    or a
+    ret
+.ns_child_fail:
+    scf
+    ret
+.ns_set_bin:
+    ld a,DIR_BIN
+    jr .ns_set
+.ns_set_dev:
+    ld a,DIR_DEV
+    jr .ns_set
+.ns_set_etc:
+    ld a,DIR_ETC
+    jr .ns_set
+.ns_set_home:
+    ld a,DIR_HOME
+    jr .ns_set
+.ns_set_tmp:
+    ld a,DIR_TMP
+.ns_set:
+    ld (ns_path_dir),a
+    xor a
+    or a
+    ret
+
+zx48_namespace_set_user:
+    cp 1
+    jr c,.ns_user_bad_arg
+    cp 9
+    jr nc,.ns_user_bad_arg
+    ld (session_user_len),a
+    ld b,a
+    ld de,session_user
+    ld c,0
+.ns_user_copy:
+    ld a,(hl)
+    ld (de),a
+    ld a,c
+    or a
+    jr nz,.ns_user_later
+    ld a,(hl)
+    cp 'a'
+    jr c,.ns_user_bad
+    cp 'z'+1
+    jr nc,.ns_user_bad
+    jr .ns_user_store
+.ns_user_later:
+    ld a,(hl)
+    cp 'a'
+    jr c,.ns_user_digit
+    cp 'z'+1
+    jr c,.ns_user_store
+.ns_user_digit:
+    cp '0'
+    jr c,.ns_user_punct
+    cp '9'+1
+    jr c,.ns_user_store
+.ns_user_punct:
+    cp '_'
+    jr z,.ns_user_store
+    cp '-'
+    jr nz,.ns_user_bad
+.ns_user_store:
+    ld a,(hl)
+    ld (de),a
+    inc hl
+    inc de
+    inc c
+    djnz .ns_user_copy
+    xor a
+    ld (de),a
+    ld a,1
+    call zx48_process_ptr
+    ld (ix+PROC_CWD),DIR_USERHOME
+    xor a
+    or a
+    ret
+.ns_user_bad:
+    xor a
+    ld (session_user_len),a
+.ns_user_bad_arg:
+    ld a,E_INVAL
+    scf
+    ret
+
+zx48_object_chdir:
+    call zx48_path_resolve
+    ret c
+    ld a,c
+    cp PATH_KIND_DIR
+    jr nz,.ns_chdir_noent
+    ld (ns_cwd),a
+    ld a,(ns_path_dir)
+    ld (ns_cwd),a
+    ld a,(current_pid)
+    call zx48_process_lookup
+    ret c
+    ld a,(ns_cwd)
+    ld (ix+PROC_CWD),a
+    xor a
+    or a
+    ret
+.ns_chdir_noent:
+    ld a,E_NOENT
+    scf
+    ret
+
+path_dot: db '.',0
+path_dotdot: db '.','.',0
+path_bin: db 'b','i','n',0
+path_dev: db 'd','e','v',0
+path_etc: db 'e','t','c',0
+path_home: db 'h','o','m','e',0
+path_tmp: db 't','m','p',0
+path_name: defs 11,0
+session_user_len: db 0
+session_user: defs 9,0
+ns_name_ptr: dw 0
+ns_path_source: dw 0
+ns_path_after: dw 0
+ns_path_dir: db 0
+ns_path_kind: db 0
+ns_cwd: db 0
+    ENDM
