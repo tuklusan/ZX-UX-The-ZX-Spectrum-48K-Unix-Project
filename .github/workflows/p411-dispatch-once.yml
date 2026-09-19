@@ -33,7 +33,7 @@ jobs:
         run: |
           set -euo pipefail
           for attempt in 1 2 3 4 5; do
-            if gh workflow run p411-qualification.yml --ref main; then
+            if gh workflow run p411-qualification.yml --repo tuklusan/ZX-UX-The-ZX-Spectrum-48K-Unix-Project --ref main; then
               exit 0
             fi
             sleep 5
