@@ -10,7 +10,7 @@
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
 
-name: P4.18 one-shot qualification and admission bridge v4
+name: P4.18 one-shot qualification and admission bridge v5
 
 on:
   push:
@@ -21,6 +21,7 @@ on:
 permissions:
   actions: write
   contents: write
+  statuses: write
 
 jobs:
   qualify-and-admit:
@@ -30,6 +31,11 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+
+      - name: Mark bridge pending
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" -f state=pending -f context=p418-bridge -f description="qualification and admission running"
 
       - name: Dispatch exact P4.18 qualification
         id: dispatch
@@ -127,3 +133,15 @@ jobs:
           done
           test "$seen" -eq 1
           exit 1
+
+      - name: Mark bridge PASS
+        if: ${{ success() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" -f state=success -f context=p418-bridge -f description="qualification, admission, validations PASS"
+
+      - name: Mark bridge FAIL
+        if: ${{ failure() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" -f state=failure -f context=p418-bridge -f description="qualification/admission bridge failed"
