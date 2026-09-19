@@ -1,0 +1,117 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "zero-count-is-immediate-full-success",
+      "passed": true
+    },
+    {
+      "name": "sparse-hole-offset-rejected-before-copy",
+      "passed": true
+    },
+    {
+      "name": "offset-plus-count-is-widened",
+      "passed": true
+    },
+    {
+      "name": "growth-limit-is-exact-32768",
+      "passed": true
+    },
+    {
+      "name": "private-replacement-before-metadata-commit",
+      "passed": true
+    },
+    {
+      "name": "old-bytes-and-full-write-copied-before-commit",
+      "passed": true
+    },
+    {
+      "name": "raw-logical-storage-lengths-commit-together",
+      "passed": true
+    },
+    {
+      "name": "old-allocation-freed-only-after-swap",
+      "passed": true
+    },
+    {
+      "name": "append-helper-uses-identical-transaction",
+      "passed": true
+    },
+    {
+      "name": "packed-write-not-handled-by-raw-path",
+      "passed": true
+    },
+    {
+      "name": "in-range-write-is-full-count-runtime",
+      "passed": true
+    },
+    {
+      "name": "growth-private-swap-and-append-helper-runtime",
+      "passed": true
+    },
+    {
+      "name": "enomem-preserves-old-object-runtime",
+      "passed": true
+    },
+    {
+      "name": "widened-boundary-and-wrap-rejection-runtime",
+      "passed": true
+    },
+    {
+      "name": "zero-length-growth-allocation-runtime",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 36,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12807 lines, work time: 0.034 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p408-raw-write.lst",
+        "--sym=p408-raw-write.sym",
+        "p408-raw-write.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 10,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 4037 lines, work time: 0.009 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p408-raw-write.bin": "4d82c2f710e3a3012043c61587b76600589d8a251bbc9767a83cc42025dfb049",
+    "v1/dist/certification/P4.07.test.json": "2169927170b9192b17fc9cde338c8779165c3c48f48580ba6ea5964ac77dd366",
+    "v1/src/kernel/memory.asm": "290e34e60b37f22bf89446b43e851a1d1ae0e087f09af801743937f734d9d4ab",
+    "v1/src/kernel/objects.asm": "2265c4fde2b457b11a1291a2eb1e1110382f96551e9fbbe25674952545fe5fdd",
+    "v1/tools-host/test-driver/phase4_raw_write.py": "0dfed57f49dba42d7ec0e6a3a140a36995b5a8b27d187de71cb47329f00e91bd",
+    "v1/tools-host/test-driver/run.py": "25a78c717b1fcb6a62782a1a8420e29ec819a54957023be82dca60ef228f408f"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P4.07": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "a9b78eed1f776f6889762ddfef70b854adeead83",
+  "status": "PASS",
+  "step": "P4.08",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
