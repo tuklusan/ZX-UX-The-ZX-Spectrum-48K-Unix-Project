@@ -95,17 +95,25 @@ def patch(fixture,regs):
         o=a-0x4000; ram[o:o+len(d)]=d
     return p
 
-def run_fixture(root,s,fixture):
+def run_fixture(root,s,fixture,stop=99):
     p2=s["process_table"]+2*48; p3=s["process_table"]+3*48
     pipe=s["pipe_table"]
     code=bytearray(b"\xF3"+phase1._ld_sp(STACK))
     code += phase1._call(s["zx48_process_links_init"])+jp_c(FAIL_PC)
     code += phase1._ld_hl(PIPE_RESULT)+phase1._call(s["zx48_pipe_create"])+jp_c(FAIL_PC)
     code += expb(PIPE_RESULT,0)+expb(PIPE_RESULT+1,1)
+    if stop==1:
+      code += phase1._jp(PASS_PC)
+      run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0)
+      return
     code += phase1._ld_hl(PROC_PROD)+phase1._call(s["p317_gateway"])+jp_c(FAIL_PC)+expw(PROC_PROD,PROC_PROD)[:0]
     code += b"\x7D\xFE\x02"+jp_nz(FAIL_PC)
     code += phase1._ld_hl(PROC_CONS)+phase1._call(s["p317_gateway"])+jp_c(FAIL_PC)
     code += b"\x7D\xFE\x03"+jp_nz(FAIL_PC)
+    if stop==2:
+      code += phase1._jp(PASS_PC)
+      run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0)
+      return
     # producer retains writer only
     code += bytes((0x3E,2))+bytes((0x32,))+w(s["current_pid"])
     code += b"\x3E\x00"+phase1._call(s["zx48_handle_close"])+jp_c(FAIL_PC)
@@ -119,24 +127,44 @@ def run_fixture(root,s,fixture):
     code += b"\x3E\x00"+phase1._call(s["zx48_handle_close"])+jp_c(FAIL_PC)
     code += b"\x3E\x01"+phase1._call(s["zx48_handle_close"])+jp_c(FAIL_PC)
     # shrink logical capacity for deterministic stress
+    if stop==3:
+      code += phase1._jp(PASS_PC)
+      run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0)
+      return
     code += phase1._ld_hl(8)+b"\x22"+w(pipe+s["PIPE_CAPACITY_O"])
     # consumer blocks on empty read through handle
     code += bytes((0x3E,3))+bytes((0x32,))+w(s["current_pid"])
     code += b"\x3E\x00"+phase1._ld_hl(DST)+b"\x01"+w(len(CHUNK))+phase1._call(s["p317_read_handle"])
     code += jp_nc(FAIL_PC)
     code += expb(p3+PROC_STATE,s["PROC_WAIT_PIPE_READ"])+expb(p3+PROC_WAIT_OBJECT,1)+expb(s["p317_schedule_count"],1)
+    if stop==4:
+      code += phase1._jp(PASS_PC)
+      run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0)
+      return
     # producer writes exact 8 bytes; wakes consumer
     code += bytes((0x3E,2))+bytes((0x32,))+w(s["current_pid"])
     code += b"\x3E\x01"+phase1._ld_hl(SRC)+b"\x01"+w(len(CHUNK))+phase1._call(s["p317_write_handle"])+jp_c(FAIL_PC)
     code += expw(s["pipe_table"]+s["PIPE_COUNT_O"],8)+expb(p3+PROC_STATE,s["PROC_READY"])
+    if stop==5:
+      code += phase1._jp(PASS_PC)
+      run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0)
+      return
     # full-pipe extra write blocks producer and reaches scheduler
     code += b"\x3E\x01"+phase1._ld_hl(SRC)+b"\x01\x01\x00"+phase1._call(s["p317_write_handle"])+jp_nc(FAIL_PC)
     code += expb(p2+PROC_STATE,s["PROC_WAIT_PIPE_WRITE"])+expb(s["p317_schedule_count"],2)
+    if stop==6:
+      code += phase1._jp(PASS_PC)
+      run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0)
+      return
     # consumer drains, waking producer
     code += bytes((0x3E,3))+bytes((0x32,))+w(s["current_pid"])
     code += b"\x3E\x00"+phase1._ld_hl(DST)+b"\x01"+w(len(CHUNK))+phase1._call(s["p317_read_handle"])+jp_c(FAIL_PC)
     code += expb(p2+PROC_STATE,s["PROC_READY"])+expw(s["pipe_table"]+s["PIPE_COUNT_O"],0)
     for i,b in enumerate(CHUNK): code += expb(DST+i,b)
+    if stop==7:
+      code += phase1._jp(PASS_PC)
+      run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0)
+      return
     # stress 16 fill/block/drain cycles; failure to block/wake cannot reach PASS.
     for _ in range(16):
       code += bytes((0x3E,2))+bytes((0x32,))+w(s["current_pid"])
@@ -146,6 +174,10 @@ def run_fixture(root,s,fixture):
       code += b"\x3E\x00"+phase1._ld_hl(DST)+b"\x01"+w(len(CHUNK))+phase1._call(s["p317_read_handle"])+jp_c(FAIL_PC)
       code += expb(p2+PROC_STATE,s["PROC_READY"])
     code += expb(s["p317_schedule_count"],18)
+    if stop==8:
+      code += phase1._jp(PASS_PC)
+      run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0)
+      return
     # final writer close, then EOF is zero-byte success
     code += bytes((0x3E,2))+bytes((0x32,))+w(s["current_pid"])+b"\x3E\x01"+phase1._call(s["zx48_handle_close"])+jp_c(FAIL_PC)
     code += bytes((0x3E,3))+bytes((0x32,))+w(s["current_pid"])+b"\x3E\x00"+phase1._ld_hl(DST)+b"\x01\x01\x00"+phase1._call(s["p317_read_handle"])+jp_c(FAIL_PC)
@@ -173,7 +205,11 @@ def dispatch(root,action,step,*,sha256_file:Callable[[Path],str],run_command:Cal
     names=("p317_gateway","p317_read_handle","p317_write_handle","zx48_process_links_init","zx48_pipe_create","zx48_handle_close","process_table","current_pid","open_description_table","memory_free_extents","memory_live_allocations","pipe_table","p317_schedule_count","p317_panic_code","PIPE_CAPACITY_O","PIPE_COUNT_O","PROC_WAIT_PIPE_READ","PROC_WAIT_PIPE_WRITE","PROC_READY")
     s=phase2_two_base_relocatable._symbols(fs,names)
     if action=="test":
-      run_fixture(root,s,fb.read_bytes())
+      for stage in range(1,10):
+        try:
+          run_fixture(root,s,fb.read_bytes(),stop=stage)
+        except DriverError as exc:
+          raise P317Error(f"P3.17 runtime stage {stage} failed: {exc}") from exc
       assertions += [
         {"name":"two-real-spawned-processes-transfer-exact-stream-through-inherited-pipe-handles","passed":True},
         {"name":"reader-and-writer-block-wake-states-are-exact","passed":True},
