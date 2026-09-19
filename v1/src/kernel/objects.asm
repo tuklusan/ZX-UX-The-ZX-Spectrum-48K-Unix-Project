@@ -181,13 +181,13 @@ pinned_bootstrap_metadata: dw 0
 zx48_object_payload_type_validate:
     ld a,b
     cp OBJ_TXT
-    jr c,.bad
+    jr c,zx48_object_payload_type_bad
     cp OBJ_SYS+1
-    jr nc,.bad
+    jr nc,zx48_object_payload_type_bad
     xor a
     or a
     ret
-.bad:
+zx48_object_payload_type_bad:
     ld a,E_INVAL
     scf
     ret
@@ -197,36 +197,36 @@ zx48_object_public_type_allowed:
     ld c,a
     ld a,b
     cp OBJ_TXT
-    jr c,.perm
+    jr c,zx48_object_public_type_perm
     cp OBJ_CFG+1
-    jr nc,.perm
+    jr nc,zx48_object_public_type_perm
     ld a,c
     cp DIR_BIN
-    jr z,.bin
+    jr z,zx48_object_public_type_bin
     cp DIR_ETC
-    jr z,.etc
+    jr z,zx48_object_public_type_etc
     cp DIR_USERHOME
-    jr z,.ok
+    jr z,zx48_object_public_type_ok
     cp DIR_TMP
-    jr z,.ok
-    jr .perm
-.bin:
+    jr z,zx48_object_public_type_ok
+    jr zx48_object_public_type_perm
+zx48_object_public_type_bin:
     ld a,b
     cp OBJ_BIN
-    jr z,.ok
-    jr .perm
-.etc:
+    jr z,zx48_object_public_type_ok
+    jr zx48_object_public_type_perm
+zx48_object_public_type_etc:
     ld a,b
     cp OBJ_TXT
-    jr z,.ok
+    jr z,zx48_object_public_type_ok
     cp OBJ_CFG
-    jr z,.ok
-    jr .perm
-.ok:
+    jr z,zx48_object_public_type_ok
+    jr zx48_object_public_type_perm
+zx48_object_public_type_ok:
     xor a
     or a
     ret
-.perm:
+zx48_object_public_type_perm:
     ld a,E_PERM
     scf
     ret
@@ -234,17 +234,17 @@ zx48_object_public_type_allowed:
 ; A=directory,B=type. Internal bootstrap owns only SYSTEM FNT/SYS publication.
 zx48_object_bootstrap_type_allowed:
     cp DIR_SYSTEM
-    jr nz,.perm
+    jr nz,zx48_object_bootstrap_type_perm
     ld a,b
     cp OBJ_FNT
-    jr z,.ok
+    jr z,zx48_object_bootstrap_type_ok
     cp OBJ_SYS
-    jr z,.ok
-.perm:
+    jr z,zx48_object_bootstrap_type_ok
+zx48_object_bootstrap_type_perm:
     ld a,E_PERM
     scf
     ret
-.ok:
+zx48_object_bootstrap_type_ok:
     xor a
     or a
     ret
@@ -252,11 +252,11 @@ zx48_object_bootstrap_type_allowed:
 ; A=namespace state. Exact IDs 0..3 only.
 zx48_namespace_state_validate:
     cp STATE_PSEUDO+1
-    jr nc,.bad
+    jr nc,zx48_namespace_state_bad
     xor a
     or a
     ret
-.bad:
+zx48_namespace_state_bad:
     ld a,E_INVAL
     scf
     ret
@@ -264,11 +264,11 @@ zx48_namespace_state_validate:
 ; A=public object flags. Only bit0 OBJ_PACKED may be set.
 zx48_object_public_flags_validate:
     and $fe
-    jr nz,.bad
+    jr nz,zx48_object_public_flags_bad
     xor a
     or a
     ret
-.bad:
+zx48_object_public_flags_bad:
     ld a,E_INVAL
     scf
     ret
@@ -277,20 +277,20 @@ zx48_object_public_flags_validate:
 zx48_object_namespace_length_validate:
     ld a,b
     cp OBJ_DIR
-    jr z,.must_zero
+    jr z,zx48_object_namespace_length_must_zero
     cp OBJ_DEV
-    jr z,.must_zero
+    jr z,zx48_object_namespace_length_must_zero
     xor a
     or a
     ret
-.must_zero:
+zx48_object_namespace_length_must_zero:
     ld a,h
     or l
-    jr nz,.bad
+    jr nz,zx48_object_namespace_length_bad
     xor a
     or a
     ret
-.bad:
+zx48_object_namespace_length_bad:
     ld a,E_INVAL
     scf
     ret
@@ -298,18 +298,18 @@ zx48_object_namespace_length_validate:
 ; A=namespace state, HL=resident logical length. BCAT-only tape entries are unknown.
 zx48_object_visible_length:
     cp STATE_TAPE_BACKED
-    jr z,.unknown
+    jr z,zx48_object_visible_length_unknown
     cp STATE_PSEUDO+1
-    jr nc,.bad
+    jr nc,zx48_object_visible_length_bad
     xor a
     or a
     ret
-.unknown:
+zx48_object_visible_length_unknown:
     ld hl,$ffff
     xor a
     or a
     ret
-.bad:
+zx48_object_visible_length_bad:
     ld a,E_INVAL
     scf
     ret

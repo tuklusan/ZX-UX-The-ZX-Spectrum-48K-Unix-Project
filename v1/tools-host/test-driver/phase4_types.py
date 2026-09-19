@@ -96,7 +96,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
         {"name": "public-placement-matrix-explicit", "passed": all(item in macro for item in ("DIR_BIN", "DIR_ETC", "DIR_USERHOME", "DIR_TMP", "OBJ_BIN", "OBJ_TXT", "OBJ_CFG"))},
         {"name": "system-bootstrap-fnt-sys-only", "passed": all(item in macro for item in ("DIR_SYSTEM", "OBJ_FNT", "OBJ_SYS"))},
         {"name": "m48o-payload-range-excludes-dir-dev", "passed": "cp OBJ_SYS+1" in macro and "cp OBJ_TXT" in macro},
-        {"name": "namespace-dir-dev-length-zero-check", "passed": "cp OBJ_DIR" in macro and "cp OBJ_DEV" in macro and ".must_zero" in macro},
+        {"name": "namespace-dir-dev-length-zero-check", "passed": "cp OBJ_DIR" in macro and "cp OBJ_DEV" in macro and "zx48_object_namespace_length_must_zero" in macro},
         {"name": "tape-backed-visible-length-unknown", "passed": "cp STATE_TAPE_BACKED" in macro and "ld hl,$ffff" in macro},
         {"name": "lf-byte-is-canonical-target-separator", "passed": "zx48_text_line_separator:" in macro and "ld a,$0a" in macro},
         {"name": "type-placement-does-not-infer-suffix", "passed": all(token not in macro for token in ("zx48_name_", "path_name", "cp '.'", "tolower", "toupper"))},
