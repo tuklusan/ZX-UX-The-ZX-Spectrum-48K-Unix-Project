@@ -95,7 +95,7 @@ def patch(fixture,regs):
         o=a-0x4000; ram[o:o+len(d)]=d
     return p
 
-def run_fixture(root,s,fixture,stop=99):
+def run_fixture(root,s,fixture,stop=99,stress_cycles=16):
     p2=s["process_table"]+2*48; p3=s["process_table"]+3*48
     pipe=s["pipe_table"]
     code=bytearray(b"\xF3"+phase1._ld_sp(STACK))
@@ -166,14 +166,14 @@ def run_fixture(root,s,fixture,stop=99):
       run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0)
       return
     # stress 16 fill/block/drain cycles; failure to block/wake cannot reach PASS.
-    for _ in range(16):
+    for _ in range(stress_cycles):
       code += bytes((0x3E,2))+bytes((0x32,))+w(s["current_pid"])
       code += b"\x3E\x01"+phase1._ld_hl(SRC)+b"\x01"+w(len(CHUNK))+phase1._call(s["p317_write_handle"])+jp_c(FAIL_PC)
       code += b"\x3E\x01"+phase1._ld_hl(SRC)+b"\x01\x01\x00"+phase1._call(s["p317_write_handle"])+jp_nc(FAIL_PC)
       code += bytes((0x3E,3))+bytes((0x32,))+w(s["current_pid"])
       code += b"\x3E\x00"+phase1._ld_hl(DST)+b"\x01"+w(len(CHUNK))+phase1._call(s["p317_read_handle"])+jp_c(FAIL_PC)
       code += expb(p2+PROC_STATE,s["PROC_READY"])
-    code += expb(s["p317_schedule_count"],18)
+    code += expb(s["p317_schedule_count"],2+stress_cycles)
     if stop==8:
       code += phase1._jp(PASS_PC)
       run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0)
@@ -205,11 +205,20 @@ def dispatch(root,action,step,*,sha256_file:Callable[[Path],str],run_command:Cal
     names=("p317_gateway","p317_read_handle","p317_write_handle","zx48_process_links_init","zx48_pipe_create","zx48_handle_close","process_table","current_pid","open_description_table","memory_free_extents","memory_live_allocations","pipe_table","p317_schedule_count","p317_panic_code","PIPE_CAPACITY_O","PIPE_COUNT_O","PROC_WAIT_PIPE_READ","PROC_WAIT_PIPE_WRITE","PROC_READY")
     s=phase2_two_base_relocatable._symbols(fs,names)
     if action=="test":
-      for stage in range(1,10):
+      for stage in range(1,8):
         try:
           run_fixture(root,s,fb.read_bytes(),stop=stage)
         except DriverError as exc:
           raise P317Error(f"P3.17 runtime stage {stage} failed: {exc}") from exc
+      for cycles in range(1,17):
+        try:
+          run_fixture(root,s,fb.read_bytes(),stop=8,stress_cycles=cycles)
+        except DriverError as exc:
+          raise P317Error(f"P3.17 stress cycle {cycles} failed: {exc}") from exc
+      try:
+        run_fixture(root,s,fb.read_bytes(),stop=9,stress_cycles=16)
+      except DriverError as exc:
+        raise P317Error(f"P3.17 EOF stage failed: {exc}") from exc
       assertions += [
         {"name":"two-real-spawned-processes-transfer-exact-stream-through-inherited-pipe-handles","passed":True},
         {"name":"reader-and-writer-block-wake-states-are-exact","passed":True},
