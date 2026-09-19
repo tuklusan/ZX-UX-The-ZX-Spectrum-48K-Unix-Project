@@ -2046,6 +2046,161 @@ ns_kind: db 0
 
 
 ;
+/ P4.07 staged RAW RAM-object read/seek contract. The qualification fixture
+; emits this with the admitted handle and mutable-object helpers without
+; increasing the resident kernel code pool before the later Phase-4 integration.
+;
+    MACRO EMIT_P407_RAW_IO_ROUTINES
+; E=handle,D=0,HL=absolute logical offset -> HL=new offset.
+zx48_p407_sys_seek:
+    ld a,d
+    or a
+    jr nz,zx48_p407_invalid
+    ld (p407_request_offset),hl
+    ld a,e
+    call zx48_handle_lookup
+    ret c
+    ld a,(ix+OD_KIND_O)
+    cp OD_KIND_OBJECT
+    jr nz,zx48_p407_notsup
+    push ix
+    pop hl
+    ld (p407_od_ptr),hl
+    ld a,(ix+OD_ID_O)
+    call zx48_p405_object_ptr_slot
+    ret c
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    and OBJ_PACKED
+    jr nz,zx48_p407_notsup
+    ld l,(ix+OBJ_LOGICAL_LENGTH)
+    ld h,(ix+OBJ_LOGICAL_LENGTH+1)
+    ld de,(p407_request_offset)
+    or a
+    sbc hl,de
+    jr c,zx48_p407_invalid
+    ld ix,(p407_od_ptr)
+    ld hl,(p407_request_offset)
+    ld (ix+OD_OFFSET_O),l
+    ld (ix+OD_OFFSET_O+1),h
+    xor a
+    ret
+
+; E=handle,D=0,HL=buffer,BC=count -> HL=bytes read.
+; RAW reads are bounded by logical EOF and update the shared OD offset.
+zx48_p407_sys_read:
+    ld a,d
+    or a
+    jr nz,zx48_p407_invalid
+    ld (p407_buffer),hl
+    ld (p407_count),bc
+    ld a,e
+    call zx48_handle_lookup
+    ret c
+    ld a,(ix+OD_ACCESS_O)
+    and O_READ
+    jr z,zx48_p407_perm
+    ld a,(ix+OD_KIND_O)
+    cp OD_KIND_OBJECT
+    jr nz,zx48_p407_notsup
+    ld l,(ix+OD_OFFSET_O)
+    ld h,(ix+OD_OFFSET_O+1)
+    ld (p407_current_offset),hl
+    push ix
+    pop hl
+    ld (p407_od_ptr),hl
+    ld a,(ix+OD_ID_O)
+    call zx48_p405_object_ptr_slot
+    ret c
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    and OBJ_PACKED
+    jr nz,zx48_p407_notsup
+
+    ld l,(ix+OBJ_LOGICAL_LENGTH)
+    ld h,(ix+OBJ_LOGICAL_LENGTH+1)
+    ld (p407_length),hl
+    ld e,(ix+OBJ_STORAGE_LENGTH)
+    ld d,(ix+OBJ_STORAGE_LENGTH+1)
+    or a
+    sbc hl,de
+    jr nz,zx48_p407_format
+
+    ld hl,(p407_length)
+    ld de,(p407_current_offset)
+    or a
+    sbc hl,de
+    jr c,zx48_p407_invalid
+    ld (p407_available),hl
+
+    ld de,(p407_count)
+    or a
+    sbc hl,de
+    jr c,zx48_p407_read_use_available
+    ld hl,(p407_count)
+    jr zx48_p407_read_have_count
+zx48_p407_read_use_available:
+    ld hl,(p407_available)
+zx48_p407_read_have_count:
+    ld (p407_transfer),hl
+    ld a,h
+    or l
+    jr z,zx48_p407_read_zero
+
+    ld e,(ix+OBJ_ALLOCATION_PTR)
+    ld d,(ix+OBJ_ALLOCATION_PTR+1)
+    ld a,d
+    or e
+    jr z,zx48_p407_format
+    bit 0,e
+    jr nz,zx48_p407_format
+    ld hl,(p407_current_offset)
+    add hl,de
+    ld de,(p407_buffer)
+    ld bc,(p407_transfer)
+    ldir
+
+    ld hl,(p407_current_offset)
+    ld de,(p407_transfer)
+    add hl,de
+    ld ix,(p407_od_ptr)
+    ld (ix+OD_OFFSET_O),l
+    ld (ix+OD_OFFSET_O+1),h
+    ld hl,(p407_transfer)
+    xor a
+    ret
+
+zx48_p407_read_zero:
+    ld hl,0
+    xor a
+    ret
+
+zx48_p407_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+zx48_p407_perm:
+    ld a,E_PERM
+    scf
+    ret
+zx48_p407_notsup:
+    ld a,E_NOTSUP
+    scf
+    ret
+zx48_p407_format:
+    ld a,E_FORMAT
+    scf
+    ret
+
+p407_buffer: dw 0
+p407_count: dw 0
+p407_request_offset: dw 0
+p407_current_offset: dw 0
+p407_length: dw 0
+p407_available: dw 0
+p407_transfer: dw 0
+p407_od_ptr: dw 0
+    ENDM
+
+;
 ; P4.06 object-side open-reference guards. Representation swaps and tests for an
 ; unreferenced mutable object delegate to the bounded open-description pool.
 ;

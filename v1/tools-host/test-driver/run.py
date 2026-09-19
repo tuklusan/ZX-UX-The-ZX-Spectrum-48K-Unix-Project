@@ -113,6 +113,7 @@ import phase4_records
 import phase4_types
 import phase4_open
 import phase4_exclusive
+import phase4_raw_read
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
 from driver_core import (
     DriverError,
@@ -211,6 +212,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase4_open.dispatch(root, action, step, **kwargs)
     if step == "P4.06":
         return phase4_exclusive.dispatch(root, action, step, **kwargs)
+    if step == "P4.07":
+        return phase4_raw_read.dispatch(root, action, step, **kwargs)
     if step.startswith("P4."):
         raise DriverError(f"numbered Phase-4 step is not registered: {step}")
     module = E0_MODULE.get(step)
