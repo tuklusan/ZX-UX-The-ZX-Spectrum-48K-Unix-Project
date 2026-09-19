@@ -2821,7 +2821,7 @@ zx48_p411_stat_tape:
     call zx48_p411_stat_clear
     ld a,OBJ_BIN
     ld (p411_stat_record+0),a
-    ld hl,$ffff
+    ld hl,0-1
     ld (p411_stat_record+2),hl
     ld (p411_stat_record+4),hl
     ld a,DIR_BIN
