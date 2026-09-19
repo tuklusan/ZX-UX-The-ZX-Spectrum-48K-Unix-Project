@@ -2043,3 +2043,220 @@ ns_name_ptr: dw 0
 ns_dir: db 0
 ns_kind: db 0
     ENDM
+
+
+;
+; P4.05 typed-open object side. The compact Phase-4 fixture emits this together
+; with the already-qualified namespace and placement routines.
+;
+P405_KIND_OBJECT          EQU 1
+P405_KIND_TTY             EQU 2
+P405_KIND_NULL            EQU 3
+P405_KIND_TAPE            EQU 4
+P405_KIND_PINNED          EQU 5
+
+    MACRO EMIT_OBJECT_OPEN_ROUTINES
+; A=dir,HL=NUL name -> IX record,C=slot.
+zx48_p405_object_lookup:
+    ld (p405_lookup_dir),a
+    ld (p405_lookup_name),hl
+    ld ix,p405_object_table
+    ld c,0
+    ld b,RAM_OBJECT_COUNT
+zx48_p405_object_lookup_loop:
+    ld a,(ix+OBJ_TYPE_ID)
+    or a
+    jr z,zx48_p405_object_lookup_next
+    ld a,(ix+OBJ_DIR_ID)
+    ld d,a
+    ld a,(p405_lookup_dir)
+    cp d
+    jr nz,zx48_p405_object_lookup_next
+    push bc
+    push ix
+    pop de
+    ld hl,(p405_lookup_name)
+    call zx48_p405_name_equal_record
+    pop bc
+    jr z,zx48_p405_object_lookup_found
+zx48_p405_object_lookup_next:
+    ld de,OBJ_RECORD_SIZE
+    add ix,de
+    inc c
+    djnz zx48_p405_object_lookup_loop
+    ld a,E_NOENT
+    scf
+    ret
+zx48_p405_object_lookup_found:
+    xor a
+    or a
+    ret
+
+; HL=NUL name,DE=record name[10]. Z iff exact byte-for-byte case match.
+zx48_p405_name_equal_record:
+    ld b,10
+zx48_p405_name_equal_record_loop:
+    ld a,(hl)
+    ld c,a
+    ld a,(de)
+    cp c
+    ret nz
+    inc hl
+    inc de
+    ld a,c
+    or a
+    ret z
+    djnz zx48_p405_name_equal_record_loop
+    ld a,(hl)
+    or a
+    ret
+
+; A=dir,B=type,HL=name -> IX newly published empty RAW record,C=slot.
+zx48_p405_object_create:
+    ld (p405_create_dir),a
+    ld a,b
+    ld (p405_create_type),a
+    ld (p405_create_name),hl
+    call zx48_name_validate
+    ret c
+    ld a,(p405_create_dir)
+    ld b,(p405_create_type)
+    call zx48_object_public_type_allowed
+    ret c
+    ld a,(p405_create_dir)
+    ld hl,(p405_create_name)
+    call zx48_p405_object_lookup
+    jr nc,zx48_p405_object_exists
+    ld ix,p405_object_table
+    ld c,0
+    ld b,RAM_OBJECT_COUNT
+zx48_p405_object_create_scan:
+    ld a,(ix+OBJ_TYPE_ID)
+    or a
+    jr z,zx48_p405_object_create_found
+    ld de,OBJ_RECORD_SIZE
+    add ix,de
+    inc c
+    djnz zx48_p405_object_create_scan
+    ld a,E_NOSPC
+    scf
+    ret
+zx48_p405_object_create_found:
+    ld (p405_create_slot),c
+    push ix
+    pop de
+    ld hl,(p405_create_name)
+    ld b,10
+zx48_p405_object_create_name:
+    ld a,(hl)
+    or a
+    jr z,zx48_p405_object_create_pad
+    ld (de),a
+    inc de
+    inc hl
+    djnz zx48_p405_object_create_name
+    jr zx48_p405_object_create_meta
+zx48_p405_object_create_pad:
+    xor a
+zx48_p405_object_create_pad_loop:
+    ld (de),a
+    inc de
+    djnz zx48_p405_object_create_pad_loop
+zx48_p405_object_create_meta:
+    ld a,(p405_create_dir)
+    ld (ix+OBJ_DIR_ID),a
+    xor a
+    ld (ix+OBJ_FLAGS_BYTE),a
+    ld (ix+OBJ_RESERVED_BYTE),a
+    ld (ix+OBJ_LOGICAL_LENGTH),a
+    ld (ix+OBJ_LOGICAL_LENGTH+1),a
+    ld (ix+OBJ_STORAGE_LENGTH),a
+    ld (ix+OBJ_STORAGE_LENGTH+1),a
+    ld (ix+OBJ_ALLOCATION_PTR),a
+    ld (ix+OBJ_ALLOCATION_PTR+1),a
+    ; Type is the occupancy/publication byte and is committed last.
+    ld a,(p405_create_type)
+    ld (ix+OBJ_TYPE_ID),a
+    ld c,(p405_create_slot)
+    xor a
+    or a
+    ret
+zx48_p405_object_exists:
+    ld a,E_EXIST
+    scf
+    ret
+
+; IX=existing mutable record. Commit the required empty RAW representation.
+zx48_p405_object_truncate:
+    xor a
+    ld (ix+OBJ_FLAGS_BYTE),a
+    ld (ix+OBJ_RESERVED_BYTE),a
+    ld (ix+OBJ_LOGICAL_LENGTH),a
+    ld (ix+OBJ_LOGICAL_LENGTH+1),a
+    ld (ix+OBJ_STORAGE_LENGTH),a
+    ld (ix+OBJ_STORAGE_LENGTH+1),a
+    ld (ix+OBJ_ALLOCATION_PTR),a
+    ld (ix+OBJ_ALLOCATION_PTR+1),a
+    or a
+    ret
+
+; A=dir,HL=name. Z iff this is the fixed pinned /bin/sh object.
+zx48_p405_is_pinned:
+    cp DIR_BIN
+    ret nz
+    ld de,p405_pinned_name
+    jp zx48_cstr_equal
+
+; A=dir,HL=name. Z iff this is the BCAT-only /bin/tapeonly entry.
+zx48_p405_is_bcat:
+    cp DIR_BIN
+    ret nz
+    ld de,p405_bcat_name
+    jp zx48_cstr_equal
+
+; A=dir,HL=name -> A=P405_KIND_* for fixed device.
+zx48_p405_device_kind:
+    cp DIR_DEV
+    jr nz,zx48_p405_device_noent
+    ld de,p405_tty_name
+    call zx48_cstr_equal
+    jr z,zx48_p405_device_tty
+    ld hl,path_name
+    ld de,p405_null_name
+    call zx48_cstr_equal
+    jr z,zx48_p405_device_null
+    ld hl,path_name
+    ld de,p405_tape_name
+    call zx48_cstr_equal
+    jr z,zx48_p405_device_tape
+zx48_p405_device_noent:
+    ld a,E_NOENT
+    scf
+    ret
+zx48_p405_device_tty:
+    ld a,P405_KIND_TTY
+    or a
+    ret
+zx48_p405_device_null:
+    ld a,P405_KIND_NULL
+    or a
+    ret
+zx48_p405_device_tape:
+    ld a,P405_KIND_TAPE
+    or a
+    ret
+
+p405_pinned_name: db 's','h',0
+p405_bcat_name: db 't','a','p','e','o','n','l','y',0
+p405_tty_name: db 't','t','y',0
+p405_null_name: db 'n','u','l','l',0
+p405_tape_name: db 't','a','p','e',0
+p405_lookup_dir: db 0
+p405_lookup_name: dw 0
+p405_create_dir: db 0
+p405_create_type: db 0
+p405_create_name: dw 0
+p405_create_slot: db 0
+p405_object_table: defs RAM_OBJECT_COUNT*OBJ_RECORD_SIZE,0
+p405_object_table_end:
+    ENDM

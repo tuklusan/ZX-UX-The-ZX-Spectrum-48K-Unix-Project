@@ -800,3 +800,200 @@ zx48_sys_spawn_preflight_invalid:
     scf
     ret
     ENDM
+
+
+;
+; P4.05 compact SYS_OPEN transaction. This is emitted by the exact P4.05
+; qualification fixture; later Phase-4 steps attach shared open descriptions.
+;
+    MACRO EMIT_P405_SYS_OPEN_ROUTINES
+; HL=NUL path,C=open flags,B=creation type when O_CREATE.
+zx48_sys_open:
+    ld (p405_open_path),hl
+    ld a,c
+    ld (p405_open_flags),a
+    ld a,b
+    ld (p405_open_type),a
+
+    ; Reject unknown flag bits and illegal dependencies before path/object mutation.
+    ld a,(p405_open_flags)
+    and $c0
+    jp nz,zx48_p405_open_invalid
+    ld a,(p405_open_flags)
+    and O_READ+O_WRITE
+    jp z,zx48_p405_open_invalid
+    ld a,(p405_open_flags)
+    and O_TRUNC+O_APPEND
+    jr z,zx48_p405_open_excl_check
+    ld a,(p405_open_flags)
+    and O_WRITE
+    jp z,zx48_p405_open_invalid
+zx48_p405_open_excl_check:
+    ld a,(p405_open_flags)
+    and O_EXCL
+    jr z,zx48_p405_open_type_check
+    ld a,(p405_open_flags)
+    and O_CREATE
+    jp z,zx48_p405_open_invalid
+
+zx48_p405_open_type_check:
+    ld a,(p405_open_flags)
+    and O_CREATE
+    jr nz,zx48_p405_open_create_type
+    ld a,(p405_open_type)
+    or a
+    jp nz,zx48_p405_open_invalid
+    jr zx48_p405_open_resolve
+zx48_p405_open_create_type:
+    ld a,(p405_open_type)
+    cp OBJ_CFG+1
+    jp nc,zx48_p405_open_invalid
+
+zx48_p405_open_resolve:
+    ld hl,(p405_open_path)
+    call zx48_path_resolve
+    ret c
+    ld (p405_open_dir),a
+    ld a,c
+    cp PATH_KIND_DIR
+    jp z,zx48_p405_open_perm
+
+    ld a,(p405_open_dir)
+    cp DIR_DEV
+    jp z,zx48_p405_open_device
+
+    ld a,(p405_open_dir)
+    ld hl,path_name
+    call zx48_p405_is_pinned
+    jp z,zx48_p405_open_pinned
+
+    ld a,(p405_open_dir)
+    ld hl,path_name
+    call zx48_p405_object_lookup
+    jr nc,zx48_p405_open_existing
+
+    ld a,(p405_open_dir)
+    ld hl,path_name
+    call zx48_p405_is_bcat
+    jp z,zx48_p405_open_again
+
+    ld a,(p405_open_flags)
+    and O_CREATE
+    jp z,zx48_p405_open_noent
+    ld a,(p405_open_type)
+    or a
+    jp z,zx48_p405_open_invalid
+    ld b,a
+    ld a,(p405_open_dir)
+    ld hl,path_name
+    call zx48_p405_object_create
+    ret c
+    jp zx48_p405_open_object_success
+
+zx48_p405_open_existing:
+    ld a,(p405_open_flags)
+    and O_EXCL
+    jp nz,zx48_p405_open_exist
+    ld a,(p405_open_flags)
+    and O_TRUNC
+    jr z,zx48_p405_open_object_success
+    call zx48_p405_object_truncate
+    ret c
+
+zx48_p405_open_object_success:
+    ld a,P405_KIND_OBJECT
+    ld (p405_result_kind),a
+    ld a,c
+    ld (p405_result_id),a
+    ld a,(ix+OBJ_TYPE_ID)
+    ld (p405_result_type),a
+    ld a,(p405_open_flags)
+    ld (p405_result_flags),a
+    ld l,c
+    ld h,0
+    xor a
+    ret
+
+zx48_p405_open_device:
+    ld a,(p405_open_type)
+    or a
+    jp nz,zx48_p405_open_invalid
+    ld a,(p405_open_flags)
+    and O_CREATE+O_TRUNC+O_APPEND+O_EXCL
+    jp nz,zx48_p405_open_perm
+    ld a,(p405_open_dir)
+    ld hl,path_name
+    call zx48_p405_device_kind
+    ret c
+    ld (p405_result_kind),a
+    xor a
+    ld (p405_result_id),a
+    ld (p405_result_type),a
+    ld a,(p405_open_flags)
+    ld (p405_result_flags),a
+    ld hl,0
+    xor a
+    ret
+
+zx48_p405_open_pinned:
+    ld a,(p405_open_flags)
+    and O_EXCL
+    jp nz,zx48_p405_open_exist
+    ld a,(p405_open_flags)
+    and O_CREATE+O_TRUNC+O_APPEND
+    jp nz,zx48_p405_open_perm
+    ld a,(p405_open_flags)
+    and O_WRITE
+    jp nz,zx48_p405_open_perm
+    ld a,P405_KIND_PINNED
+    ld (p405_result_kind),a
+    xor a
+    ld (p405_result_id),a
+    ld a,OBJ_BIN
+    ld (p405_result_type),a
+    ld a,(p405_open_flags)
+    ld (p405_result_flags),a
+    ld hl,0
+    xor a
+    ret
+
+; /dev/tape is control-only. Byte I/O and unsupported ioctls never move tape.
+zx48_p405_tape_read:
+zx48_p405_tape_write:
+zx48_p405_tape_ioctl:
+    ld a,E_NOTSUP
+    scf
+    ret
+
+zx48_p405_open_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+zx48_p405_open_noent:
+    ld a,E_NOENT
+    scf
+    ret
+zx48_p405_open_perm:
+    ld a,E_PERM
+    scf
+    ret
+zx48_p405_open_again:
+    ld a,E_AGAIN
+    scf
+    ret
+zx48_p405_open_exist:
+    ld a,E_EXIST
+    scf
+    ret
+
+p405_open_path: dw 0
+p405_open_flags: db 0
+p405_open_type: db 0
+p405_open_dir: db 0
+p405_result_kind: db 0
+p405_result_id: db 0
+p405_result_type: db 0
+p405_result_flags: db 0
+; Diagnostic stand-in for physical tape position/state; P4.05 routines never write it.
+p405_tape_motion: db $5a
+    ENDM

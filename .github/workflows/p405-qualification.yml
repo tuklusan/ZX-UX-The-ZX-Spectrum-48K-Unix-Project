@@ -10,9 +10,18 @@
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
 
-name: P4.04 directory type-placement qualification
+name: P4.05 SYS_OPEN typed creation qualification
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/p404-qualification.yml'
+      - '.github/workflows/p405-qualification.yml'
+      - 'v1/src/kernel/objects.asm'
+      - 'v1/src/kernel/syscall.asm'
+      - 'v1/tools-host/test-driver/phase4_open.py'
+      - 'v1/tools-host/test-driver/run.py'
   workflow_dispatch:
 permissions:
   contents: read
@@ -22,20 +31,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      ZXUX_EVIDENCE_DIR: /tmp/zxux-p404-qualification
-      P404_EXACT_PARENT: 22fca89343cec5ea056e2924bf3d35558fa6f731
+      ZXUX_EVIDENCE_DIR: /tmp/zxux-p405-qualification
+      P405_EXACT_PARENT: 7406c42cd03a19b444984cbd31e9cbcb08fdf247
       ZXUX_REV16_SHA256: 24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c
       ZXUX_REV07_SHA256: 840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc
     steps:
       - uses: actions/checkout@v7
         with: {fetch-depth: 0}
-      - name: Guard exact P4.04 candidate diff
+      - name: Guard exact P4.05 candidate diff
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = "$P404_EXACT_PARENT"
-          git diff --name-only HEAD^ HEAD | sort > /tmp/p404-changed
-          printf '%s\n' .github/workflows/p404-qualification.yml v1/src/kernel/objects.asm v1/tools-host/test-driver/phase4_types.py | sort > /tmp/p404-expected
-          diff -u /tmp/p404-expected /tmp/p404-changed
+          test "$(git rev-parse HEAD^)" = "$P405_EXACT_PARENT"
+          git diff --name-only HEAD^ HEAD | sort > /tmp/p405-changed
+          printf '%s\n' .github/workflows/p404-qualification.yml .github/workflows/p405-qualification.yml v1/src/kernel/objects.asm v1/src/kernel/syscall.asm v1/tools-host/test-driver/phase4_open.py v1/tools-host/test-driver/run.py | sort > /tmp/p405-expected
+          diff -u /tmp/p405-expected /tmp/p405-changed
           git diff --check HEAD^ HEAD
           test -z "$(git status --porcelain)"
       - name: Three unchanged candidate scans
@@ -44,11 +53,11 @@ jobs:
           baseline=""
           tree="$(git rev-parse 'HEAD^{tree}')"
           for scan in 1 2 3; do
-            python3 -m py_compile v1/tools-host/test-driver/phase4_types.py v1/tools-host/test-driver/run.py
+            python3 -m py_compile v1/tools-host/test-driver/phase4_open.py v1/tools-host/test-driver/run.py
             find v1/tools-host/test-driver -type d -name __pycache__ -prune -exec rm -rf {} +
             test -z "$(git status --porcelain)"
             test "$(git rev-parse 'HEAD^{tree}')" = "$tree"
-            digest="$(sha256sum v1/include/zx48ux.inc v1/src/kernel/objects.asm v1/docs/abi.md v1/tools-host/test-driver/phase4_types.py v1/tools-host/test-driver/run.py .github/workflows/p403-qualification.yml .github/workflows/p404-qualification.yml v1/dist/certification/P4.03.test.json | sha256sum | awk '{print $1}')"
+            digest="$(sha256sum v1/src/kernel/objects.asm v1/src/kernel/syscall.asm v1/tools-host/test-driver/phase4_open.py v1/tools-host/test-driver/run.py .github/workflows/p404-qualification.yml .github/workflows/p405-qualification.yml v1/dist/certification/P4.04.test.json | sha256sum | awk '{print $1}')"
             if test -z "$baseline"; then baseline="$digest"; else test "$baseline" = "$digest"; fi
             echo "SCAN-$scan: CLEAN"
           done
@@ -58,9 +67,9 @@ jobs:
           ./tools/check_project_policy.py
           test "$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV16.md | awk '{print $1}')" = "$ZXUX_REV16_SHA256"
           test "$(sha256sum docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md | awk '{print $1}')" = "$ZXUX_REV07_SHA256"
-          test -s v1/dist/certification/P4.03.test.json
-          grep -q '"status": "PASS"' v1/dist/certification/P4.03.test.json
-          grep -q '"source_commit": "4c5f3e8593ff166481fbd41da23b6a5d620a77f3"' v1/dist/certification/P4.03.test.json
+          test -s v1/dist/certification/P4.04.test.json
+          grep -q '"status": "PASS"' v1/dist/certification/P4.04.test.json
+          grep -q '"source_commit": "3b7d6ed61169d22a83ffcd55c62e23e22db52a85"' v1/dist/certification/P4.04.test.json
       - uses: actions/setup-python@v6
         with: {python-version: '3.13.15', check-latest: false}
       - name: Install native build prerequisites
@@ -69,10 +78,10 @@ jobs:
         run: python tools/scripts/bootstrap-environment.py
       - name: Certify pinned runtime
         run: tools/runtime/python/bin/python tools/scripts/verify-environment.py
-      - name: Execute P4.04 build
-        run: tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P4.04
-      - name: Execute P4.04 test
-        run: tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P4.04
+      - name: Execute P4.05 build
+        run: tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P4.05
+      - name: Execute P4.05 test
+        run: tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P4.05
       - name: Collect exact evidence
         if: always()
         run: |
@@ -84,7 +93,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: zxux-p404-qualification-${{ github.run_id }}-${{ github.run_attempt }}
-          path: /tmp/zxux-p404-qualification/
+          name: zxux-p405-qualification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: /tmp/zxux-p405-qualification/
           retention-days: 90
           if-no-files-found: error
