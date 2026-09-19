@@ -1033,3 +1033,65 @@ p405_result_handle: db 0
 ; Diagnostic stand-in for physical tape position/state; P4.05 routines never write it.
 p405_tape_motion: db $5a
     ENDM
+
+
+;
+; P4.11 staged SYS_STAT ABI. Validate STAT1, the complete ten-byte output range,
+; and every path byte before resolving metadata. Copy only after full success.
+;
+    MACRO EMIT_P411_SYS_STAT_ROUTINES
+; HL -> STAT1 {u16 path_ptr,u16 out_ptr}.
+zx48_p411_sys_stat:
+    ld (p411_stat_req_ptr),hl
+    ld bc,4
+    call zx48_user_range_validate
+    ret c
+
+    ld hl,(p411_stat_req_ptr)
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (p411_stat_path_ptr),de
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (p411_stat_out_ptr),de
+
+    ex de,hl
+    ld bc,10
+    call zx48_user_range_validate
+    ret c
+
+    ; Validate the complete NUL-terminated path one byte at a time. This keeps
+    ; raw repeated separators legal while preventing reads into protected memory.
+    ld hl,(p411_stat_path_ptr)
+zx48_p411_stat_path_validate:
+    push hl
+    ld bc,1
+    call zx48_user_range_validate
+    pop hl
+    ret c
+    ld a,(hl)
+    or a
+    jr z,zx48_p411_stat_path_ok
+    inc hl
+    jr zx48_p411_stat_path_validate
+
+zx48_p411_stat_path_ok:
+    ld hl,(p411_stat_path_ptr)
+    call zx48_p411_stat_resolve
+    ret c
+
+    ld hl,p411_stat_record
+    ld de,(p411_stat_out_ptr)
+    ld bc,10
+    ldir
+    ld hl,0
+    xor a
+    ret
+
+p411_stat_req_ptr: dw 0
+p411_stat_path_ptr: dw 0
+p411_stat_out_ptr: dw 0
+    ENDM
