@@ -1,0 +1,73 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "fixture-composes-three-stage-spawn-handle-pipe-and-wait-routines",
+      "passed": true
+    },
+    {
+      "name": "pipe-eof-is-reference-counted-on-final-writer",
+      "passed": true
+    },
+    {
+      "name": "spawn-inherits-open-description-references",
+      "passed": true
+    },
+    {
+      "name": "wait-reaps-zombie-child",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12482 lines, work time: 0.033 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=../../build/p318-pipe3.sym",
+        "pipe3.asm"
+      ],
+      "cwd": "v1/tests/multiprocessing",
+      "duration_ms": 28,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 11833 lines, work time: 0.027 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p318-pipe3.bin": "70234be0e695de94907fc7875ad90c8622b8c9951ebd2d5b01ed5f8ce037718b",
+    "v1/dist/certification/P3.17.test.json": "8a29ea953c302192cafa3b6a9de02a74e1bd221ec8a9ffba7ec2f19917a3e8c3",
+    "v1/src/kernel/pipe.asm": "d2ccc787714ab8af9ddf275b50e92db59aee00fbccf912c0ac0134dc6127beec",
+    "v1/src/kernel/process.asm": "20c3d59193ab983524cb18e0263b3e7c96dd3b3987d10522f7e33a2c442ef696",
+    "v1/tests/multiprocessing/pipe3.asm": "5591dfbdde9a980ed28203c5f57ab5bf3d7da087d260cac9fcdcd8ea6a952f6a",
+    "v1/tools-host/test-driver/phase3_pipe3.py": "4e5c6c16dca9760bf32c68bb5a3becbd5dce3eb61aec468989c36f5182634c0c",
+    "v1/tools-host/test-driver/run.py": "11748ff4c3f3db54f888fdb3efb2b25a78834b1b3790abcee5bf15bcb02f4e19"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P3.17": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "36c63c41a1002af6b961eaf9283ebc3685c6022d",
+  "status": "PASS",
+  "step": "P3.18",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
