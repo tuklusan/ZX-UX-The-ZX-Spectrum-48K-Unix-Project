@@ -126,7 +126,7 @@ def wait_zombie(code,s,pid,status_off):
     p=s["process_table"]+pid*48
     code += setpid(1,s)
     code += bytes((0x3E,PROC_ZOMBIE,0x32))+w(p+PROC_STATE)
-    code += bytes((0x11,))+w(STATUS+status_off)+bytes((0x3E,pid))+phase1._call(s["zx48_process_wait"])+jp_c(FAIL_PC)
+    code += bytes((0x11,))+w(STATUS+status_off)+bytes((0x3E,pid))+phase1._call(s["zx48_process_wait_specific"])+jp_c(FAIL_PC)
     code += b"\x7D"+bytes((0xFE,pid))+jp_nz(FAIL_PC)
     code += expb(p+PROC_STATE,0)
     return code
@@ -202,7 +202,7 @@ def dispatch(root,action,step,*,sha256_file:Callable[[Path],str],run_command:Cal
     require(all(a["passed"] for a in assertions),f"P3.18 static failures: {[a['name'] for a in assertions if not a['passed']]}")
     kr,kernel,listing=phase1._assemble_kernel(root,run_command,require_project_tool)
     fr,fb,fs=assemble(root,run_command,require_project_tool)
-    names=("p318_gateway","p318_read_handle","p318_write_handle","zx48_process_links_init","zx48_process_wait","zx48_pipe_create","zx48_handle_close","process_table","current_pid","open_description_table","memory_free_extents","memory_live_allocations","pipe_table","p318_panic_code","PIPE_RECORD_SIZE","PIPE_COUNT_O","PROC_WAIT_PIPE_READ")
+    names=("p318_gateway","p318_read_handle","p318_write_handle","zx48_process_links_init","zx48_process_wait_specific","zx48_pipe_create","zx48_handle_close","process_table","current_pid","open_description_table","memory_free_extents","memory_live_allocations","pipe_table","p318_panic_code","PIPE_RECORD_SIZE","PIPE_COUNT_O","PROC_WAIT_PIPE_READ")
     s=phase2_two_base_relocatable._symbols(fs,names)
     if action=="test":
       run_fixture(root,s,fb.read_bytes(),retain_parent_writer=False)
