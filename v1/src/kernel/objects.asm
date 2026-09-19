@@ -2640,7 +2640,16 @@ zx48_p405_object_rollback_create:
     ret
 
 ; IX=existing mutable record. Commit the required empty RAW representation.
+; All fallible open-resource reservation is complete before this routine runs.
+; Publication is bounded metadata; the now-unreachable old extent is released after.
 zx48_p405_object_truncate:
+    ld l,(ix+OBJ_ALLOCATION_PTR)
+    ld h,(ix+OBJ_ALLOCATION_PTR+1)
+    ld (p405_truncate_old_ptr),hl
+    ld c,(ix+OBJ_STORAGE_LENGTH)
+    ld b,(ix+OBJ_STORAGE_LENGTH+1)
+    ld (p405_truncate_old_length),bc
+
     xor a
     ld (ix+OBJ_FLAGS_BYTE),a
     ld (ix+OBJ_RESERVED_BYTE),a
@@ -2650,8 +2659,20 @@ zx48_p405_object_truncate:
     ld (ix+OBJ_STORAGE_LENGTH+1),a
     ld (ix+OBJ_ALLOCATION_PTR),a
     ld (ix+OBJ_ALLOCATION_PTR+1),a
-    or a
-    ret
+
+    ld hl,(p405_truncate_old_ptr)
+    ld a,h
+    or l
+    ret z
+    ld bc,(p405_truncate_old_length)
+    bit 0,c
+    jr z,zx48_p405_object_truncate_even
+    inc bc
+zx48_p405_object_truncate_even:
+    call zx48_free
+    ret nc
+    ld a,PANIC_SCHEDULER
+    jp zx48_panic
 
 ; A=dir,HL=name. Z iff this is the catalog-only /bin/sh entry when no RAM shadow exists.
 zx48_p405_is_bcat:
@@ -2703,6 +2724,8 @@ p405_create_dir: db 0
 p405_create_type: db 0
 p405_create_name: dw 0
 p405_create_slot: db 0
+p405_truncate_old_ptr: dw 0
+p405_truncate_old_length: dw 0
 p405_object_table: defs RAM_OBJECT_COUNT*OBJ_RECORD_SIZE,0
 p405_object_table_end:
     ENDM
