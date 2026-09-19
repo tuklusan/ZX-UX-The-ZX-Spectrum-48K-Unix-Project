@@ -189,8 +189,8 @@ def _target(root: Path, s: dict[str, int], module: bytes) -> None:
 
     def success(label: str, path: str, index: int, expected: bytes, *, records: bytes = b"", catalog: bytes = b"", user: bytes = b"") -> None:
         code = (admit(catalog) if catalog else b"") + list_call() + phase1._jp_c(FAIL_PC)
-        code += b"\x7C\xB5" + phase1._jp_nz(FAIL_PC)
-        code += b"\x2C" + phase1._jp_nz(FAIL_PC)
+        code += b"\x7C\xB7" + phase1._jp_nz(FAIL_PC)
+        code += b"\x7D\xFE\x01" + phase1._jp_nz(FAIL_PC)
         code += mem_eq(OUT_BASE, expected)
         execute(label, code, patch(path, index, records=records, bcat=catalog, user=user))
 
