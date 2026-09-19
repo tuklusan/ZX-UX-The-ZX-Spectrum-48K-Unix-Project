@@ -1,0 +1,129 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "open-flag-values-exact",
+      "passed": true
+    },
+    {
+      "name": "unknown-and-access-flags-validated",
+      "passed": true
+    },
+    {
+      "name": "trunc-append-require-write",
+      "passed": true
+    },
+    {
+      "name": "excl-requires-create",
+      "passed": true
+    },
+    {
+      "name": "noncreate-requires-zero-type",
+      "passed": true
+    },
+    {
+      "name": "create-publishes-type-last",
+      "passed": true
+    },
+    {
+      "name": "existing-trunc-commits-empty-raw",
+      "passed": true
+    },
+    {
+      "name": "pseudo-devices-explicit",
+      "passed": true
+    },
+    {
+      "name": "bcat-only-name-explicit",
+      "passed": true
+    },
+    {
+      "name": "open-allocates-description-and-lowest-handle",
+      "passed": true
+    },
+    {
+      "name": "tape-byte-io-ioctl-notsup",
+      "passed": true
+    },
+    {
+      "name": "typed-open-does-not-infer-suffix",
+      "passed": true
+    },
+    {
+      "name": "full-open-flag-type-path-matrix-runtime",
+      "passed": true
+    },
+    {
+      "name": "absent-create-and-existing-type-preservation-exact",
+      "passed": true
+    },
+    {
+      "name": "trunc-append-empty-raw-and-append-state-exact",
+      "passed": true
+    },
+    {
+      "name": "pseudo-bcat-and-tape-control-rules-exact",
+      "passed": true
+    },
+    {
+      "name": "description-handle-capacity-rollback-exact",
+      "passed": true
+    },
+    {
+      "name": "all-negative-cases-fail-before-publication",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12725 lines, work time: 0.033 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p405-open.lst",
+        "--sym=p405-open.sym",
+        "p405-open.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 14,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 5160 lines, work time: 0.012 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p405-open.bin": "158bc2c68a60617e5c0d152f8bac61f5fa5f5400a2b5c898c262733944399f6e",
+    "v1/dist/certification/P4.04.test.json": "ae2abcb937ce5bd6d93fb6d9f4f750b7040504c6110ed2d90c88f0818af1e995",
+    "v1/src/kernel/objects.asm": "51218f1d36310fefc64a6e5bcea5c1d7dd9b8a9d4a158c465524ba7157e8f350",
+    "v1/src/kernel/syscall.asm": "2bd684bd69f0c28d3fb961bb2b8729f2027efe8260291438d7ecc2881057ee83",
+    "v1/tools-host/test-driver/phase4_open.py": "de2ef97dec9d4d08f9a47491a48a77cba7e6fc214bde9ae4f4f5122253ba05d2",
+    "v1/tools-host/test-driver/run.py": "cb7974d9f20e815200f3ce2c9a4a644caedee909092d3752e5aada17fda99e37"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P4.04": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "d653ce6290f34bec503bb951bc80a75cf18d82f1",
+  "status": "PASS",
+  "step": "P4.05",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
