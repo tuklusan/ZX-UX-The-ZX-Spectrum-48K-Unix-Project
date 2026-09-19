@@ -112,16 +112,16 @@ zx48_user_range_validate:
     or c
     jr z,zx48_user_range_ok
     push hl
-    ; HL plus carry is the exact 17-bit end_exclusive. A carry with low word
-    ; zero is exactly 0x10000 and is not an arithmetic overflow; any other
-    ; carry is greater than 0x10000. BC is nonzero, so a no-carry result is
-    ; necessarily strictly greater than the original start.
+    ; ADD HL,BC plus carry is the exact 17-bit widened end_exclusive.
+    ; Any carry is fail-closed here: exact 0x10000 would have end byte 0xFFFF,
+    ; which cannot lie in either permitted ABI region, while all larger carries
+    ; violate end_exclusive <= 0x10000. Thus no narrowing precedes the decision.
     add hl,bc
     jr c,zx48_user_range_wrap
+    ; BC is nonzero and no carry occurred, so end_exclusive > start.
     dec hl
     ex de,hl
     pop hl
-zx48_user_range_regions:
     ld a,h
     cp $40
     jr c,zx48_user_range_bad
@@ -146,15 +146,6 @@ zx48_user_range_display:
     xor a
     ret
 zx48_user_range_wrap:
-    ld a,h
-    or l
-    jr nz,zx48_user_range_wrap_bad
-    ; exact end_exclusive 0x10000: end_exclusive-1 is 0xFFFF.
-    dec hl
-    ex de,hl
-    pop hl
-    jr zx48_user_range_regions
-zx48_user_range_wrap_bad:
     pop hl
 zx48_user_range_bad:
     ld a,E_INVAL

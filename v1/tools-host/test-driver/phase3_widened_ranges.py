@@ -48,7 +48,7 @@ def source_contract(root):
     p=s[s.index("zx48_sys_rw_prepare:"):s.index("; E=handle,D=0,HL=buffer,BC=count.")]
     q=s[s.index("zx48_sys_spawn_preflight:"):s.index("    ENDM",s.index("zx48_sys_spawn_preflight:"))]
     return [
-      {"name":"target-validator-uses-17th-bit-carry-before-region-decision","passed":"add hl,bc" in v and "jr c,zx48_user_range_wrap" in v and "exact end_exclusive 0x10000" in v and "jr nz,zx48_user_range_wrap_bad" in v},
+      {"name":"target-validator-uses-17th-bit-carry-before-region-decision","passed":"ADD HL,BC plus carry is the exact 17-bit widened end_exclusive" in v and "add hl,bc" in v and "jr c,zx48_user_range_wrap" in v and "no narrowing precedes the decision" in v},
       {"name":"target-validator-enforces-single-display-or-user-arena-region","passed":all(x in v for x in ("cp $5B","cp $60","cp $E0"))},
       {"name":"zero-count-validates-handle-before-skipping-buffer","passed":p.index("call zx48_handle_lookup")<p.index("ret z")<p.index("call zx48_user_range_validate")},
       {"name":"bounded-path-scan-validates-each-byte-before-dereference","passed":"ld bc,1\n    call zx48_user_range_validate" in q and "ld a,E_TOOLONG" in q},
