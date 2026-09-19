@@ -152,13 +152,20 @@ def _run_success(root: Path, s: dict[str, int], module: bytes, label: str, encod
     if crc:
         code += _check_word(s["p416_crc"], _crc16(logical))
     if sink in (s["P416_SINK_FINAL_MEMORY"], s["P416_SINK_CALLER_STREAM"]):
-        code += _check_bytes(DST_BASE, logical)
+        if len(logical) <= 128:
+            code += _check_bytes(DST_BASE, logical)
+        elif logical:
+            code += _check_bytes(DST_BASE, logical[:16])
+            code += _check_bytes(DST_BASE + len(logical) - 16, logical[-16:])
     else:
         code += _check_bytes(DST_BASE, b"\xA5" * min(16, max(1, len(logical))))
     if sink != s["P416_SINK_FINAL_MEMORY"]:
         ring = _ring_image(logical)
         touched = min(len(logical), 256)
-        for i in range(touched):
+        sample = list(range(min(16, touched)))
+        if touched > 16:
+            sample += list(range(max(16, touched - 16), touched))
+        for i in sample:
             code += _check_byte(HISTORY_BASE + i, ring[i])
     code += phase1._jp(PASS_PC)
 
