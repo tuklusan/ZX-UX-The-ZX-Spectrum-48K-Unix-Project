@@ -56,6 +56,7 @@ def _assemble(root: Path, run_command: Callable[..., Any], require_project_tool:
     INCLUDE "../include/zx48ux.inc"
 PANIC_SCHEDULER EQU $03
 PROC_HANDLES EQU 16
+PROC_CWD EQU 28
     ORG $C000
 current_pid: db 1
 zx48_process_lookup:
@@ -67,6 +68,8 @@ zx48_process_lookup:
     INCLUDE "../src/kernel/objects.asm"
     EMIT_MEMORY_ROUTINES
     EMIT_HANDLE_ROUTINES
+    EMIT_NAMESPACE_ROUTINES
+    EMIT_OBJECT_TYPE_ROUTINES
     EMIT_OBJECT_OPEN_ROUTINES
     EMIT_P408_RAW_WRITE_ROUTINES
     EMIT_P409_APPEND_ROUTINES
