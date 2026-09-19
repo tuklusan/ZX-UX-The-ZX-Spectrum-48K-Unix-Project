@@ -192,6 +192,35 @@ def _target(root: Path, s: dict[str, int], module: bytes) -> None:
         return bytes(code)
 
     grown6 = _record(s, 6, old_ptr + 4)
+
+    code = bytes((0x3E, 0x00)) + phase1._call(s["zx48_handle_lookup"]) + phase1._jp_c(FAIL_PC)
+    code += bytes((0xDD, 0xE5, 0xE1)) + hl_eq(od)
+    execute("diag-handle-lookup", code, offset=1)
+
+    code = bytes((0x3E, 0x00)) + phase1._call(s["zx48_handle_lookup"]) + phase1._jp_c(FAIL_PC)
+    code += bytes((0xDD, 0x7E, s["OD_ID_O"])) + phase1._call(s["zx48_p405_object_ptr_slot"]) + phase1._jp_c(FAIL_PC)
+    code += bytes((0xDD, 0xE5, 0xE1)) + hl_eq(obj)
+    execute("diag-object-slot", code, offset=1)
+
+    code = bytes((0xDD, 0x21)) + _word(obj) + phase1._ld_hl(SOURCE_BASE) + b"\x01" + _word(2)
+    code += phase1._call(s["zx48_p408_raw_write_at_eof"]) + phase1._jp_c(FAIL_PC) + hl_eq(2)
+    execute("diag-direct-p408-append-return", code, offset=1)
+
+    code = call_write() + phase1._jp_c(FAIL_PC) + hl_eq(2)
+    execute("diag-p409-return", code, offset=1)
+
+    code = call_write() + phase1._jp_c(FAIL_PC)
+    code += mem_eq(old_ptr + 4, b"ABCDXY")
+    execute("diag-p409-data", code, offset=1)
+
+    code = call_write() + phase1._jp_c(FAIL_PC)
+    code += mem_eq(obj, grown6)
+    execute("diag-p409-object-record", code, offset=1)
+
+    code = call_write() + phase1._jp_c(FAIL_PC)
+    code += byte_eq(od + s["OD_OFFSET_O"], 6) + byte_eq(od + s["OD_OFFSET_O"] + 1, 0)
+    execute("diag-p409-offset", code, offset=1)
+
     code = call_write() + phase1._jp_c(FAIL_PC) + hl_eq(2)
     code += mem_eq(old_ptr + 4, b"ABCDXY")
     code += mem_eq(obj, grown6)
@@ -235,7 +264,8 @@ def dispatch(
     fixture_result, binary, listing = _assemble(root, run_command, require_project_tool)
     commands = [kernel_result, fixture_result]
     names = (
-        "zx48_p409_sys_write", "p405_object_table", "open_description_table", "fake_process",
+        "zx48_p409_sys_write", "zx48_handle_lookup", "zx48_p405_object_ptr_slot", "zx48_p408_raw_write_at_eof",
+        "p405_object_table", "open_description_table", "fake_process",
         "memory_free_extents", "memory_live_allocations", "ARENA_START", "ARENA_SIZE",
         "OD_KIND_O", "OD_ACCESS_O", "OD_REFS_O", "OD_ID_O", "OD_OFFSET_O", "OD_KIND_OBJECT",
         "O_WRITE", "O_APPEND", "HANDLE_FREE", "DIR_TMP", "OBJ_DAT", "E_NOMEM",
