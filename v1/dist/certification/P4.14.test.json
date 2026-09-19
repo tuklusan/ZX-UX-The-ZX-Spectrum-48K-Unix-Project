@@ -1,0 +1,120 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "ren1-is-exact-four-byte-pointer-pair",
+      "passed": true
+    },
+    {
+      "name": "both-paths-prevalidated-before-resolution",
+      "passed": true
+    },
+    {
+      "name": "source-must-be-mutable-ram",
+      "passed": true
+    },
+    {
+      "name": "destination-type-compatibility-precedes-mutation",
+      "passed": true
+    },
+    {
+      "name": "exact-same-path-is-noop",
+      "passed": true
+    },
+    {
+      "name": "case-only-rename-can-commit",
+      "passed": true
+    },
+    {
+      "name": "distinct-resident-collision-precommit",
+      "passed": true
+    },
+    {
+      "name": "catalog-only-destination-protected",
+      "passed": true
+    },
+    {
+      "name": "commit-is-metadata-only",
+      "passed": true
+    },
+    {
+      "name": "exact-same-noop-runtime",
+      "passed": true
+    },
+    {
+      "name": "case-only-rename-runtime",
+      "passed": true
+    },
+    {
+      "name": "compatible-cross-directory-runtime",
+      "passed": true
+    },
+    {
+      "name": "incompatible-cross-directory-rollback-runtime",
+      "passed": true
+    },
+    {
+      "name": "distinct-collision-rollback-runtime",
+      "passed": true
+    },
+    {
+      "name": "catalog-source-destination-protected-runtime",
+      "passed": true
+    },
+    {
+      "name": "ren1-protected-range-rejected-runtime",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12869 lines, work time: 0.034 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p414-rename.lst",
+        "--sym=p414-rename.sym",
+        "p414-rename.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 14,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 6101 lines, work time: 0.012 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p414-rename.bin": "023bca2e44ae5546f23dca53509a0d2d00b4d46ba0e1cdd30df7eaf3616940e3",
+    "v1/dist/certification/P4.13.test.json": "4430b63cc9f6dda2ad8cfc19f74a8655669badf535c223b5136fe1ee6c22f771",
+    "v1/src/kernel/objects.asm": "dffc0faf16551d78b438f59f05cd7a011dfcd4db48fe5c08488de8c524e0eb40",
+    "v1/tools-host/test-driver/phase4_rename.py": "9b74f06dd7648f713f90f3a6121a50100aef33f8f53f5c0f72a536ac26e8ae2c",
+    "v1/tools-host/test-driver/run.py": "60978abd07e67c30be00ace152e6a15fd675a38abd2e0c754266375eecf86099"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P4.13": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "72a08440191335c3069f43d640f668783ce39fa6",
+  "status": "PASS",
+  "step": "P4.14",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
