@@ -38,6 +38,7 @@ jobs:
             .github/workflows/p415-dispatch-once.yml \
             .github/workflows/p415-qualification.yml \
             v1/src/kernel/objects.asm \
+            v1/tools-host/test-driver/phase4_rename_replace.py \
             v1/tools-host/test-driver/run.py | sort > /tmp/p415-expected
           diff -u /tmp/p415-expected /tmp/p415-changed
           git diff --check "$P415_BASE" HEAD
