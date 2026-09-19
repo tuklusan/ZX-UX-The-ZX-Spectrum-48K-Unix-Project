@@ -846,3 +846,332 @@ zx48_p417_state_init:
     xor a
     ret
     ENDM
+
+
+;
+; P4.18 packed seek/restart. This bounded stateful DISCARD walker operates on
+; the P4.17 per-open history/control record. Backward seeks reset decoder state
+; to logical zero; forward seeks continue from the current decoder position.
+;
+P418_PENDING_NONE             EQU 0
+P418_PENDING_LITERAL          EQU 1
+P418_PENDING_RLE              EQU 2
+P418_PENDING_BACKREF          EQU 3
+P418_CTRL_SOURCE_BASE_O       EQU P417_CTRL_RESERVED_O+0
+P418_CTRL_PHYSICAL_LENGTH_O   EQU P417_CTRL_RESERVED_O+2
+P418_CTRL_BIND_RESERVED_O     EQU P417_CTRL_RESERVED_O+4
+
+    ASSERT P418_CTRL_BIND_RESERVED_O+2 = P417_STATE_SIZE
+
+    MACRO EMIT_P418_PACKED_SEEK_ROUTINES
+; IX=state, HL=physical source, BC=physical length. Bind immutable source span
+; and reset decoder state to logical offset zero.
+zx48_p418_state_bind:
+    ld (p418_state_ptr),ix
+    ld (p418_source_base),hl
+    ld (p418_physical_length),bc
+    ld a,b
+    or c
+    jr z,zx48_p418_bind_span_ok
+    push hl
+    dec bc
+    add hl,bc
+    pop hl
+    jp c,zx48_p418_format
+zx48_p418_bind_span_ok:
+    ld de,P418_CTRL_SOURCE_BASE_O
+    add ix,de
+    ld (ix+0),l
+    ld (ix+1),h
+    ld hl,(p418_physical_length)
+    ld (ix+2),l
+    ld (ix+3),h
+    ld ix,(p418_state_ptr)
+    jp zx48_p418_reset
+
+; IX=state, HL=target logical offset, DE=declared logical length.
+; 0..logical_length inclusive are legal. Success leaves control logical pos
+; exactly target and never materializes object payload.
+zx48_p418_seek:
+    ld (p418_state_ptr),ix
+    ld (p418_target),hl
+    ld (p418_logical_length),de
+
+    ; Widened target <= logical_length check.
+    or a
+    sbc hl,de
+    jp c,zx48_p418_target_valid
+    jr z,zx48_p418_target_valid
+    jp zx48_p418_inval
+zx48_p418_target_valid:
+    ld ix,(p418_state_ptr)
+    ld l,(ix+P417_CTRL_LOGICAL_POS_O)
+    ld h,(ix+P417_CTRL_LOGICAL_POS_O+1)
+    ld de,(p418_target)
+    or a
+    sbc hl,de
+    jr c,zx48_p418_forward
+    jr z,zx48_p418_seek_finish
+
+    ; target < current: restart from zero, preserving source binding.
+    ld ix,(p418_state_ptr)
+    call zx48_p418_reset
+    ret c
+
+zx48_p418_forward:
+zx48_p418_seek_loop:
+    ld ix,(p418_state_ptr)
+    ld l,(ix+P417_CTRL_LOGICAL_POS_O)
+    ld h,(ix+P417_CTRL_LOGICAL_POS_O+1)
+    ld de,(p418_target)
+    or a
+    sbc hl,de
+    jr z,zx48_p418_seek_finish
+    call zx48_p418_step
+    ret c
+    jr zx48_p418_seek_loop
+
+zx48_p418_seek_finish:
+    ; Only logical EOF requires exact physical completion and no pending output.
+    ld hl,(p418_target)
+    ld de,(p418_logical_length)
+    or a
+    sbc hl,de
+    jr nz,zx48_p418_seek_ok
+    ld ix,(p418_state_ptr)
+    ld a,(ix+P417_CTRL_PENDING_COUNT_O)
+    or a
+    jp nz,zx48_p418_format
+    ld l,(ix+P417_CTRL_PHYSICAL_POS_O)
+    ld h,(ix+P417_CTRL_PHYSICAL_POS_O+1)
+    ld e,(ix+P418_CTRL_PHYSICAL_LENGTH_O)
+    ld d,(ix+P418_CTRL_PHYSICAL_LENGTH_O+1)
+    or a
+    sbc hl,de
+    jp nz,zx48_p418_format
+zx48_p418_seek_ok:
+    xor a
+    ret
+
+; Reset history and mutable 10-byte control prefix; preserve source base/length.
+zx48_p418_reset:
+    ld (p418_state_ptr),ix
+    push ix
+    pop hl
+    xor a
+    ld (hl),a
+    ld d,h
+    ld e,l
+    inc de
+    ld bc,P417_HISTORY_SIZE-1
+    ldir
+    ld ix,(p418_state_ptr)
+    ld de,P417_CONTROL_O
+    add ix,de
+    ld b,10
+zx48_p418_reset_control:
+    ld (ix+0),0
+    inc ix
+    djnz zx48_p418_reset_control
+    ld ix,(p418_state_ptr)
+    xor a
+    ret
+
+; Emit exactly one logical byte into the circular history, advancing persistent
+; physical/logical/pending state. No final-memory sink is touched.
+zx48_p418_step:
+    ld ix,(p418_state_ptr)
+    ld a,(ix+P417_CTRL_PENDING_COUNT_O)
+    or a
+    jr nz,zx48_p418_pending
+
+    call zx48_p418_get_physical
+    ret c
+    cp $40
+    jr c,zx48_p418_new_literal
+    cp $80
+    jr c,zx48_p418_new_rle
+
+    and $7f
+    add a,3
+    ld ix,(p418_state_ptr)
+    ld (ix+P417_CTRL_PENDING_COUNT_O),a
+    ld (ix+P417_CTRL_PENDING_KIND_O),P418_PENDING_BACKREF
+    call zx48_p418_get_physical
+    ret c
+    ld ix,(p418_state_ptr)
+    ld (ix+P417_CTRL_PARAMETER_O),a
+    jr zx48_p418_pending_backref
+
+zx48_p418_new_literal:
+    inc a
+    ld ix,(p418_state_ptr)
+    ld (ix+P417_CTRL_PENDING_COUNT_O),a
+    ld (ix+P417_CTRL_PENDING_KIND_O),P418_PENDING_LITERAL
+    jr zx48_p418_pending_literal
+
+zx48_p418_new_rle:
+    and $3f
+    add a,3
+    ld ix,(p418_state_ptr)
+    ld (ix+P417_CTRL_PENDING_COUNT_O),a
+    ld (ix+P417_CTRL_PENDING_KIND_O),P418_PENDING_RLE
+    call zx48_p418_get_physical
+    ret c
+    ld ix,(p418_state_ptr)
+    ld (ix+P417_CTRL_PARAMETER_O),a
+    jr zx48_p418_pending_rle
+
+zx48_p418_pending:
+    ld ix,(p418_state_ptr)
+    ld a,(ix+P417_CTRL_PENDING_KIND_O)
+    cp P418_PENDING_LITERAL
+    jr z,zx48_p418_pending_literal
+    cp P418_PENDING_RLE
+    jr z,zx48_p418_pending_rle
+    cp P418_PENDING_BACKREF
+    jr z,zx48_p418_pending_backref
+    jp zx48_p418_format
+
+zx48_p418_pending_literal:
+    call zx48_p418_get_physical
+    ret c
+    jr zx48_p418_emit
+
+zx48_p418_pending_rle:
+    ld ix,(p418_state_ptr)
+    ld a,(ix+P417_CTRL_PARAMETER_O)
+    jr zx48_p418_emit
+
+zx48_p418_pending_backref:
+    ld ix,(p418_state_ptr)
+    ld a,(ix+P417_CTRL_PARAMETER_O)
+    inc a
+    jr nz,zx48_p418_back_distance_byte
+    ld hl,256
+    jr zx48_p418_back_distance_ready
+zx48_p418_back_distance_byte:
+    ld l,a
+    ld h,0
+zx48_p418_back_distance_ready:
+    ld a,(ix+P417_CTRL_HISTORY_COUNT_O)
+    ld e,a
+    ld d,0
+    ld a,e
+    cp $ff
+    jr nz,zx48_p418_hist_count_word
+    ; history_count=255 is distinct from saturated 256; saturation is encoded
+    ; as zero with nonzero logical position after 256 bytes.
+zx48_p418_hist_count_word:
+    push hl
+    ex de,hl
+    or a
+    sbc hl,de
+    pop hl
+    jr nc,zx48_p418_back_count_ok
+    ; Special distance 256 is legal once logical position >=256.
+    ld a,h
+    cp 1
+    jp nz,zx48_p418_format
+    ld a,l
+    or a
+    jp nz,zx48_p418_format
+    ld l,(ix+P417_CTRL_LOGICAL_POS_O)
+    ld h,(ix+P417_CTRL_LOGICAL_POS_O+1)
+    ld a,h
+    or a
+    jp z,zx48_p418_format
+zx48_p418_back_count_ok:
+    ld a,(ix+P417_CTRL_HISTORY_INDEX_O)
+    sub l
+    ld e,a
+    ld d,0
+    push ix
+    pop hl
+    add hl,de
+    ld a,(hl)
+
+zx48_p418_emit:
+    ld (p418_byte),a
+    ld ix,(p418_state_ptr)
+    ld a,(ix+P417_CTRL_HISTORY_INDEX_O)
+    ld e,a
+    ld d,0
+    push ix
+    pop hl
+    add hl,de
+    ld a,(p418_byte)
+    ld (hl),a
+
+    ld ix,(p418_state_ptr)
+    ld a,(ix+P417_CTRL_HISTORY_INDEX_O)
+    inc a
+    ld (ix+P417_CTRL_HISTORY_INDEX_O),a
+    ld a,(ix+P417_CTRL_HISTORY_COUNT_O)
+    cp $ff
+    jr z,zx48_p418_history_count_done
+    inc a
+    ld (ix+P417_CTRL_HISTORY_COUNT_O),a
+zx48_p418_history_count_done:
+    ld l,(ix+P417_CTRL_LOGICAL_POS_O)
+    ld h,(ix+P417_CTRL_LOGICAL_POS_O+1)
+    inc hl
+    jp z,zx48_p418_format
+    ld (ix+P417_CTRL_LOGICAL_POS_O),l
+    ld (ix+P417_CTRL_LOGICAL_POS_O+1),h
+    ld a,(ix+P417_CTRL_PENDING_COUNT_O)
+    dec a
+    ld (ix+P417_CTRL_PENDING_COUNT_O),a
+    jr nz,zx48_p418_emit_done
+    ld (ix+P417_CTRL_PENDING_KIND_O),P418_PENDING_NONE
+zx48_p418_emit_done:
+    xor a
+    ret
+
+; A <- bounded physical byte; advances persistent physical offset.
+zx48_p418_get_physical:
+    ld ix,(p418_state_ptr)
+    ld l,(ix+P417_CTRL_PHYSICAL_POS_O)
+    ld h,(ix+P417_CTRL_PHYSICAL_POS_O+1)
+    ld e,(ix+P418_CTRL_PHYSICAL_LENGTH_O)
+    ld d,(ix+P418_CTRL_PHYSICAL_LENGTH_O+1)
+    push hl
+    or a
+    sbc hl,de
+    pop hl
+    jp nc,zx48_p418_format
+    ld e,(ix+P418_CTRL_SOURCE_BASE_O)
+    ld d,(ix+P418_CTRL_SOURCE_BASE_O+1)
+    push hl
+    add hl,de
+    jp c,zx48_p418_get_wrap
+    ld a,(hl)
+    ld (p418_byte),a
+    pop hl
+    inc hl
+    ld ix,(p418_state_ptr)
+    ld (ix+P417_CTRL_PHYSICAL_POS_O),l
+    ld (ix+P417_CTRL_PHYSICAL_POS_O+1),h
+    ld a,(p418_byte)
+    or a
+    ret
+zx48_p418_get_wrap:
+    pop hl
+    jp zx48_p418_format
+
+zx48_p418_inval:
+    ld a,E_INVAL
+    scf
+    ret
+zx48_p418_format:
+    ld a,E_FORMAT
+    scf
+    ret
+
+p418_state_ptr: dw 0
+p418_source_base: dw 0
+p418_physical_length: dw 0
+p418_target: dw 0
+p418_logical_length: dw 0
+p418_byte: db 0
+    ENDM
