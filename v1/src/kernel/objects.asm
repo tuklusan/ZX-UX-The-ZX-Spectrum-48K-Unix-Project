@@ -23,6 +23,155 @@ OBJ_ALLOCATION_PTR        EQU 18
 PATH_KIND_DIR             EQU 0
 PATH_KIND_BASE            EQU 1
 
+;
+; P4.03 mutable-record footprint. Later Phase-4 steps attach namespace and I/O
+; semantics; this macro freezes the record bytes, capacity and representation
+; invariants without pulling the full object-store implementation into the kernel.
+;
+    MACRO EMIT_OBJECT_RECORD_ROUTINES
+zx48_object_records_init:
+    xor a
+    ld hl,object_record_table
+    ld de,object_record_table+1
+    ld bc,RAM_OBJECT_COUNT*OBJ_RECORD_SIZE-1
+    ld (hl),a
+    ldir
+    ret
+
+; A=slot -> IX exact 20-byte record, C=slot.
+zx48_object_record_ptr:
+    cp RAM_OBJECT_COUNT
+    jr nc,.invalid
+    ld c,a
+    ld ix,object_record_table
+    or a
+    ret z
+    ld b,a
+    ld de,OBJ_RECORD_SIZE
+.ptr_loop:
+    add ix,de
+    djnz .ptr_loop
+    xor a
+    or a
+    ret
+.invalid:
+    ld a,E_INVAL
+    scf
+    ret
+
+; Claim the first free mutable slot. Occupancy is type!=0; P4.04 freezes type IDs.
+zx48_object_record_claim:
+    ld ix,object_record_table
+    ld c,0
+    ld b,RAM_OBJECT_COUNT
+.claim_loop:
+    ld a,(ix+OBJ_TYPE_ID)
+    or a
+    jr z,.claim
+    ld de,OBJ_RECORD_SIZE
+    add ix,de
+    inc c
+    djnz .claim_loop
+    ld a,E_NOSPC
+    scf
+    ret
+.claim:
+    ld (ix+OBJ_TYPE_ID),1
+    xor a
+    or a
+    ret
+
+; IX=record. Validate only P4.03 representation/accounting invariants.
+zx48_object_record_validate:
+    ld a,(ix+OBJ_RESERVED_BYTE)
+    or a
+    jr nz,.bad
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    and $fe
+    jr nz,.bad
+
+    ld l,(ix+OBJ_LOGICAL_LENGTH)
+    ld h,(ix+OBJ_LOGICAL_LENGTH+1)
+    ld e,(ix+OBJ_STORAGE_LENGTH)
+    ld d,(ix+OBJ_STORAGE_LENGTH+1)
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    and OBJ_PACKED
+    jr nz,.packed
+
+    ; RAW: physical and logical lengths are identical.
+    or a
+    sbc hl,de
+    jr nz,.bad
+    jr .allocation
+.packed:
+    ; PACKED: physical length is strictly smaller than logical length.
+    or a
+    sbc hl,de
+    jr c,.bad
+    jr z,.bad
+
+.allocation:
+    ld l,(ix+OBJ_ALLOCATION_PTR)
+    ld h,(ix+OBJ_ALLOCATION_PTR+1)
+    ld a,d
+    or e
+    jr nz,.resident
+    ld a,h
+    or l
+    jr nz,.bad
+    xor a
+    or a
+    ret
+
+.resident:
+    bit 0,l
+    jr nz,.bad
+    ld a,h
+    cp $60
+    jr c,.bad
+    cp $e0
+    jr nc,.bad
+
+    ; Allocator ownership is storage_length rounded only to two-byte alignment.
+    ld b,d
+    ld c,e
+    bit 0,c
+    jr z,.rounded
+    inc bc
+    ld a,b
+    or c
+    jr z,.bad
+.rounded:
+    add hl,bc
+    jr c,.bad
+    ld a,h
+    cp $e0
+    jr c,.ok
+    jr nz,.bad
+    ld a,l
+    or a
+    jr nz,.bad
+.ok:
+    xor a
+    or a
+    ret
+.bad:
+    ld a,E_INVAL
+    scf
+    ret
+
+; Ordinary mutable payloads request COLD_PREFERRED; allocator policy owns fallback.
+zx48_object_payload_class:
+    ld a,ALLOC_COLD_PREFERRED
+    ret
+
+object_record_table:
+    defs RAM_OBJECT_COUNT*OBJ_RECORD_SIZE,0
+object_record_table_end:
+; Pinned bootstrap metadata is separate and consumes no mutable record slot.
+pinned_bootstrap_metadata: dw 0
+    ENDM
+
     MACRO EMIT_OBJECT_ROUTINES
 zx48_objects_init:
     xor a

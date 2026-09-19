@@ -124,6 +124,31 @@ are invalid as persistent M48O payload types.
 
 Names are case-sensitive and shipped user-visible names are lower-case.
 
+### Mutable RAM object record
+
+There are exactly 32 mutable RAM object records, each exactly 20 bytes (640 bytes total).
+Fixed pseudo-files/devices and pinned bootstrap metadata are separate and consume no
+mutable slot. The byte layout is frozen:
+
+| Offset | Size | Field |
+| --- | ---: | --- |
+| +0 | 10 | exact case-sensitive base name, NUL/zero padded when shorter than 10 bytes |
+| +10 | 1 | directory ID |
+| +11 | 1 | type |
+| +12 | 1 | flags; only bit 0 `OBJ_PACKED` is public |
+| +13 | 1 | reserved, exactly zero |
+| +14 | 2 | logical length, little-endian |
+| +16 | 2 | storage length, little-endian |
+| +18 | 2 | allocation pointer, little-endian |
+
+RAW records require storage length equal to logical length. PACKED records require
+storage length strictly smaller than logical length. Zero-length RAW has storage
+length zero and allocation pointer zero. Every nonzero payload pointer is even,
+lies within `6000-DFFF`, and owns exactly storage length rounded only to the
+allocator's two-byte alignment. Ordinary mutable payload allocation requests
+`COLD_PREFERRED`; the shared arena allocator may fall back to FAST when COLD has no
+suitable extent.
+
 ## Object formats
 
 MEX1 and OBJ1 headers are exactly 24 bytes. M48O headers are exactly 32 bytes.
