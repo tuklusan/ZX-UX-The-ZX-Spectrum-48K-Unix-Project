@@ -550,7 +550,7 @@ zx48_p416_loop:
     ld de,(p416_logical_total)
     or a
     sbc hl,de
-    jr z,zx48_p416_finish
+    jp z,zx48_p416_finish
     ld bc,(p416_phys_left)
     ld a,b
     or c
@@ -629,7 +629,7 @@ zx48_p416_rle_loop:
     ld hl,p416_count
     dec (hl)
     jr nz,zx48_p416_rle_loop
-    jr zx48_p416_loop
+    jp zx48_p416_loop
 
 ; A <- next physical byte, exact bounded cursor.
 zx48_p416_get_byte:
