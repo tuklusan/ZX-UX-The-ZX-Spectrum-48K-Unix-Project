@@ -50,7 +50,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
         {"name": "destination-compatibility-before-commit", "passed": "call zx48_object_public_type_allowed" in m and m.index("call zx48_object_public_type_allowed") < publish},
         {"name": "publish-before-old-destination-free", "passed": publish < free},
         {"name": "source-cleared-after-free", "passed": free < m.index("zx48_p415_remove_source:")},
-        {"name": "payload-alias-rejected-precommit", "passed": "jr z,zx48_p415_invalid" in m[:publish]},
+        {"name": "payload-alias-rejected-precommit", "passed": ("jr z,zx48_p415_invalid" in m[:publish] or "jp z,zx48_p415_invalid" in m[:publish])},
         {"name": "no-payload-copy-or-recompression", "passed": "zx48_alloc" not in m and "zx48_zxpack" not in m},
     ]
 
