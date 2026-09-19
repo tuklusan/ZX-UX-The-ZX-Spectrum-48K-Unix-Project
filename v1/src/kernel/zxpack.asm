@@ -721,10 +721,16 @@ zx48_p416_history_read:
     or a
     ex de,hl
     sbc hl,de
-    pop hl
     ld a,h
     or a
-    jp nz,zx48_p416_format
+    jr z,zx48_p416_history_distance_ok
+    cp 1
+    jp nz,zx48_p416_history_distance_bad
+    ld a,l
+    or a
+    jp nz,zx48_p416_history_distance_bad
+zx48_p416_history_distance_ok:
+    pop hl
     ld a,(p416_sink)
     or a
     jr nz,zx48_p416_history_ring
@@ -733,6 +739,9 @@ zx48_p416_history_read:
     ld a,(hl)
     or a
     ret
+zx48_p416_history_distance_bad:
+    pop hl
+    jp zx48_p416_format
 zx48_p416_history_ring:
     ld a,l
     ld l,a
