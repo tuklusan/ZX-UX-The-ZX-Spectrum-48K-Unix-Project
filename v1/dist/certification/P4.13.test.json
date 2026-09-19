@@ -1,0 +1,124 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "remove-register-contract-is-path-in-hl",
+      "passed": true
+    },
+    {
+      "name": "directory-and-device-are-protected",
+      "passed": true
+    },
+    {
+      "name": "catalog-only-bin-is-protected",
+      "passed": true
+    },
+    {
+      "name": "system-metadata-is-protected",
+      "passed": true
+    },
+    {
+      "name": "live-open-description-blocks-remove",
+      "passed": true
+    },
+    {
+      "name": "payload-free-precedes-table-clear",
+      "passed": true
+    },
+    {
+      "name": "odd-storage-rounded-before-free",
+      "passed": true
+    },
+    {
+      "name": "zxpack-candidate-state-cleared",
+      "passed": true
+    },
+    {
+      "name": "record-slot-cleared-as-one-bounded-record",
+      "passed": true
+    },
+    {
+      "name": "bcat-storage-never-mutated",
+      "passed": true
+    },
+    {
+      "name": "allocator-corruption-panics",
+      "passed": true
+    },
+    {
+      "name": "closed-object-freed-and-slot-cleared-runtime",
+      "passed": true
+    },
+    {
+      "name": "open-object-ebusy-unchanged-runtime",
+      "passed": true
+    },
+    {
+      "name": "protected-pseudo-catalog-eperm-runtime",
+      "passed": true
+    },
+    {
+      "name": "missing-object-enoent-runtime",
+      "passed": true
+    },
+    {
+      "name": "zxpack-candidate-state-cleared-runtime",
+      "passed": true
+    },
+    {
+      "name": "bin-shadow-removal-reveals-bcat-runtime",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 20,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12869 lines, work time: 0.019 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p413-remove.lst",
+        "--sym=p413-remove.sym",
+        "p413-remove.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 10,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 6910 lines, work time: 0.009 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p413-remove.bin": "08b8769506c2ee211252af608b0c3a9618b3ce74f61482d4918552831ad61a12",
+    "v1/dist/certification/P4.12.test.json": "dc080fc94366be16020eb8c076a636d75e279be30835d92cfab3929eb1fc0494",
+    "v1/src/kernel/objects.asm": "117ba07db2b2e7e9a7560905d9f76f8116357dc1e8ec354a1a70f4ae3522a41e",
+    "v1/tools-host/test-driver/phase4_remove.py": "0cfbc5c28c2ffe9a9a7f6b74d9ee54876dd885580e6ddf38e966bbb069f7eb8e",
+    "v1/tools-host/test-driver/run.py": "fe6ee4cd0b95dd1f486b25e138963032f361474972bd0b0fc1058be4eb0ffdf5"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P4.12": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "13c6039a4dc2e1c10884de885970de0c616366ea",
+  "status": "PASS",
+  "step": "P4.13",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
