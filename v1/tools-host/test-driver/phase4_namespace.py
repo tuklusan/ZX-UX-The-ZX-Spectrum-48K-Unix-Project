@@ -133,7 +133,7 @@ def _target_matrix(root: Path, s: dict[str, int], module: bytes) -> None:
     payload = bytearray()
     for item in paths:
         addresses.append(cursor)
-        encoded = item.encode("ascii") + b"\\0"
+        encoded = item.encode("ascii") + bytes((0,))
         payload += encoded
         cursor += len(encoded)
 
@@ -143,10 +143,10 @@ def _target_matrix(root: Path, s: dict[str, int], module: bytes) -> None:
         off = PATH_BASE - 0x4000
         ram[off:off + len(payload)] = payload
         uoff = USER_BASE - 0x4000
-        ram[uoff:uoff + 6] = b"alice\\0"
+        ram[uoff:uoff + 6] = b"alice" + bytes((0,))
 
     def execute(label: str, emit: Callable[[bytearray], None]) -> None:
-        code = bytearray(b"\\xF3" + phase1._ld_sp(0xBFC0))
+        code = bytearray(bytes((0xF3,)) + phase1._ld_sp(0xBFC0))
         emit(code)
         code += phase1._jp(PASS_PC)
         try:
@@ -183,9 +183,9 @@ def _target_matrix(root: Path, s: dict[str, int], module: bytes) -> None:
     error("prelogin-userhome", 14, s["E_NOENT"])
 
     user_prefix = (
-        b"\\x3E\\x05\\x32" + _word(s["session_user_len"])
+        bytes((0x3E, 0x05, 0x32)) + _word(s["session_user_len"])
         + phase1._ld_hl(USER_BASE) + phase1._ld_de(s["session_user"])
-        + b"\\x01\\x05\\x00\\xED\\xB0"
+        + bytes((0x01, 0x05, 0x00, 0xED, 0xB0))
     )
     success("postlogin-userhome", 14, s["DIR_USERHOME"], s["PATH_KIND_DIR"], user_prefix)
 
