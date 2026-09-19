@@ -225,13 +225,19 @@ def dispatch(root,action,step,*,sha256_file:Callable[[Path],str],run_command:Cal
           run_fixture(root,s,fb.read_bytes(),retain_parent_writer=False,stop=stage)
         except DriverError as exc:
           raise P318Error(f"P3.18 positive runtime stage {stage} failed: {exc}") from exc
-      run_fixture(root,s,fb.read_bytes(),retain_parent_writer=False)
+      try:
+        run_fixture(root,s,fb.read_bytes(),retain_parent_writer=False)
+      except DriverError as exc:
+        raise P318Error(f"P3.18 full positive pipeline failed: {exc}") from exc
       assertions += [
         {"name":"three-spawned-stages-transfer-exact-bytes-through-two-true-pipes","passed":True},
         {"name":"parent-drops-stream-references-and-waits-for-all-three-children","passed":True},
         {"name":"eof-arrives-only-after-final-writer-reference-closes","passed":True},
       ]
-      run_fixture(root,s,fb.read_bytes(),retain_parent_writer=True)
+      try:
+        run_fixture(root,s,fb.read_bytes(),retain_parent_writer=True)
+      except DriverError as exc:
+        raise P318Error(f"P3.18 retained-parent-writer negative fixture failed: {exc}") from exc
       assertions.append({"name":"retained-parent-writer-negative-fixture-detects-blocked-eof-before-release","passed":True})
     return [kr,fr],{
       "v1/build/kernel.bin":sha256_file(kernel),
