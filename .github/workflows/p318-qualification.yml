@@ -13,16 +13,6 @@
 name: P3.18 three-stage pipeline qualification
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - .github/workflows/p318-qualification.yml
-      - v1/tests/multiprocessing/pipe3.asm
-      - v1/tools-host/test-driver/phase3_pipe3.py
-      - v1/tools-host/test-driver/run.py
-      - v1/src/kernel/pipe.asm
-      - v1/src/kernel/process.asm
   workflow_dispatch:
 
 permissions:

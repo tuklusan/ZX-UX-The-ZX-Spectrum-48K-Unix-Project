@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 45
     env:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p319-qualification
-      P319_EXACT_PARENT: a7ec7abe60b53457898b2a58b5670d5a9469e6b7
+      P319_EXACT_PARENT: 77ddca05ffd51127efce15a273d49371c75e13bb
     steps:
       - uses: actions/checkout@v7
         with: {fetch-depth: 0}
