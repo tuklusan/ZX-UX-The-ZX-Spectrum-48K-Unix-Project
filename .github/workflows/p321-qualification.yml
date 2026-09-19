@@ -10,10 +10,17 @@
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
 
-name: P3.20 SYS_IOCTL qualification
+name: P3.21 Phase 3 aggregate qualification
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/p320-qualification.yml
+      - .github/workflows/p321-qualification.yml
+      - v1/tools-host/test-driver/phase3_acceptance.py
+      - v1/tools-host/test-driver/run.py
+
 permissions:
   contents: read
 
@@ -22,22 +29,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      ZXUX_EVIDENCE_DIR: /tmp/zxux-p320-qualification
-      P320_EXACT_PARENT: f9d518b78c85433ba42a31aabcffec14ce227543
+      ZXUX_EVIDENCE_DIR: /tmp/zxux-p321-qualification
+      P321_EXACT_PARENT: a22a005442d1c399c798a7eb442d9792b8adc810
       ZXUX_REV16_SHA256: 24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c
       ZXUX_REV07_SHA256: 840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@v7
         with: {fetch-depth: 0}
-      - name: Guard exact P3.20 candidate diff
+      - name: Guard exact P3.21 candidate diff
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = "$P320_EXACT_PARENT"
-          git diff --name-only HEAD^ HEAD | sort > /tmp/p320-changed
-          printf '%s\n' .github/workflows/p320-qualification.yml v1/tools-host/test-driver/phase3_ioctl.py | sort > /tmp/p320-expected
-          diff -u /tmp/p320-expected /tmp/p320-changed
+          test "$(git rev-parse HEAD^)" = "$P321_EXACT_PARENT"
+          git diff --name-only HEAD^ HEAD | sort > /tmp/p321-changed
+          printf '%s\n' .github/workflows/p320-qualification.yml .github/workflows/p321-qualification.yml v1/tools-host/test-driver/phase3_acceptance.py v1/tools-host/test-driver/run.py | sort > /tmp/p321-expected
+          diff -u /tmp/p321-expected /tmp/p321-changed
           git diff --check HEAD^ HEAD
           test -z "$(git status --porcelain)"
       - name: Three unchanged candidate scans
@@ -47,11 +54,11 @@ jobs:
           baseline=""
           tree="$(git rev-parse 'HEAD^{tree}')"
           for scan in 1 2 3; do
-            python3 -m py_compile v1/tools-host/test-driver/phase3_ioctl.py v1/tools-host/test-driver/run.py
+            python3 -m py_compile v1/tools-host/test-driver/phase3_acceptance.py v1/tools-host/test-driver/run.py
             find v1/tools-host/test-driver -type d -name __pycache__ -prune -exec rm -rf {} +
             test -z "$(git status --porcelain)"
             test "$(git rev-parse 'HEAD^{tree}')" = "$tree"
-            digest="$(sha256sum v1/tools-host/test-driver/phase3_ioctl.py v1/tools-host/test-driver/run.py .github/workflows/p319-qualification.yml .github/workflows/p320-qualification.yml | sha256sum | awk '{print $1}')"
+            digest="$(sha256sum v1/tools-host/test-driver/phase3_acceptance.py v1/tools-host/test-driver/run.py .github/workflows/p320-qualification.yml .github/workflows/p321-qualification.yml | sha256sum | awk '{print $1}')"
             if test -z "$baseline"; then baseline="$digest"; else test "$baseline" = "$digest"; fi
             echo "SCAN-$scan: CLEAN"
           done
@@ -61,8 +68,8 @@ jobs:
           ./tools/check_project_policy.py
           test "$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV16.md | awk '{print $1}')" = "$ZXUX_REV16_SHA256"
           test "$(sha256sum docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md | awk '{print $1}')" = "$ZXUX_REV07_SHA256"
-          test -s v1/dist/certification/P3.19.test.json
-          grep -q '"status": "PASS"' v1/dist/certification/P3.19.test.json
+          test -s v1/dist/certification/P3.20.test.json
+          grep -q '"status": "PASS"' v1/dist/certification/P3.20.test.json
       - uses: actions/setup-python@v6
         with: {python-version: '3.13.15', check-latest: false}
       - name: Install native build prerequisites
@@ -71,15 +78,19 @@ jobs:
         run: python tools/scripts/bootstrap-environment.py
       - name: Certify pinned runtime
         run: tools/runtime/python/bin/python tools/scripts/verify-environment.py
-      - name: Execute P3.20 build
-        run: tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P3.20
-      - name: Execute P3.20 test
-        run: tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P3.20
+      - name: Execute P3.21 build
+        run: tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P3.21
+      - name: Execute P3.21 aggregate test
+        run: |
+          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P3.21
+          test -s "$ZXUX_EVIDENCE_DIR/P3.21.result.json"
+          grep -q '"status": "PASS"' "$ZXUX_EVIDENCE_DIR/P3.21.result.json"
+          grep -q 'ZX-UX PHASE 3 ACCEPTANCE PASS' "$ZXUX_EVIDENCE_DIR/P3.21.result.json"
       - name: Collect exact evidence
         if: always()
         run: |
           mkdir -p "$ZXUX_EVIDENCE_DIR/build"
-          cp v1/dist/certification/P3.20.*.json "$ZXUX_EVIDENCE_DIR/build/" 2>/dev/null || true
+          cp "$ZXUX_EVIDENCE_DIR"/P3.21.*.json "$ZXUX_EVIDENCE_DIR/build/" 2>/dev/null || true
           git rev-parse HEAD > "$ZXUX_EVIDENCE_DIR/candidate-commit.txt"
           git rev-parse 'HEAD^{tree}' > "$ZXUX_EVIDENCE_DIR/candidate-tree.txt"
           git status --porcelain > "$ZXUX_EVIDENCE_DIR/worktree-status.txt"
@@ -87,7 +98,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: zxux-p320-qualification-${{ github.run_id }}-${{ github.run_attempt }}
-          path: /tmp/zxux-p320-qualification/
+          name: zxux-p321-qualification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: /tmp/zxux-p321-qualification/
           retention-days: 90
           if-no-files-found: error

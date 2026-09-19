@@ -106,6 +106,7 @@ import phase3_pipe2
 import phase3_pipe3
 import phase3_widened_ranges
 import phase3_ioctl
+import phase3_acceptance
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
 from driver_core import (
     DriverError,
@@ -190,6 +191,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase3_widened_ranges.dispatch(root, action, step, **kwargs)
     if step == "P3.20":
         return phase3_ioctl.dispatch(root, action, step, **kwargs)
+    if step == "P3.21":
+        return phase3_acceptance.dispatch(root, action, step, **kwargs)
     module = E0_MODULE.get(step)
     if module is not None:
         return module.dispatch(root, action, step, **kwargs)
@@ -382,6 +385,36 @@ def main() -> int:
         )
         if failed_assertions:
             raise DriverError(f"{len(failed_assertions)} assertion(s) failed")
+        if args.step == "P3.21" and args.action == "test":
+            build_path = evidence_dir / "P3.21.build.json"
+            if not build_path.is_file():
+                raise DriverError("P3.21 result requires matching build evidence")
+            build_record = json.loads(build_path.read_text(encoding="utf-8"))
+            test_record = json.loads(evidence_path.read_text(encoding="utf-8"))
+            for record in (build_record, test_record):
+                if record.get("status") != "PASS" or record.get("source_commit") != source_state.source_commit:
+                    raise DriverError("P3.21 source-candidate mismatch")
+                if record.get("architecture_sha256") != source_state.architecture_sha256:
+                    raise DriverError("P3.21 architecture identity mismatch")
+                if record.get("implementation_plan_sha256") != source_state.implementation_plan_sha256:
+                    raise DriverError("P3.21 plan identity mismatch")
+            result = {
+                "schema": 2, "step": "P3.21", "action": "result", "status": "PASS",
+                "pass_marker": phase3_acceptance.PASS_MARKER,
+                "source_commit": source_state.source_commit,
+                "toolchain_lock_sha256": source_state.toolchain_lock_sha256,
+                "architecture_sha256": source_state.architecture_sha256,
+                "implementation_plan_sha256": source_state.implementation_plan_sha256,
+                "worktree_clean": True, "prerequisites": {"P3.20": "PASS"},
+                "commands": test_record["commands"], "hashes": test_record["hashes"],
+                "assertions": test_record["assertions"] + [
+                    {"name":"same-clean-phase3-aggregate-source-candidate-all-records","passed":True}
+                ],
+            }
+            result_path = evidence_dir / "P3.21.result.json"
+            result_path.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+            print(phase3_acceptance.PASS_MARKER)
+            print(f"result={result_path}")
         if args.step == "R16.00" and args.action == "test":
             build_path = evidence_dir / "R16.00.build.json"
             if not build_path.is_file():
