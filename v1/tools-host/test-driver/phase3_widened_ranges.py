@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any, Callable
 from driver_core import DriverError
 from fuse_harness import FAIL_PC, PASS_PC, run_sna
-import phase1, phase3_null, phase3_open_descriptions, phase3_tty
+import phase1, phase2_spawn, phase3_null, phase3_open_descriptions, phase3_tty
 
 GUARD=0xA180
 class P319Error(DriverError): pass
@@ -33,6 +33,14 @@ def oracle(start,length):
     last=end-1
     same=(0x4000<=start<=0x5AFF and 0x4000<=last<=0x5AFF) or (0x6000<=start<=0xDFFF and 0x6000<=last<=0xDFFF)
     return (same,end)
+
+def owned_oracle(start,length,owned_start,owned_length):
+    ok,end=oracle(start,length)
+    owned_end=int(owned_start)+int(owned_length)
+    return ok and start>=owned_start and end<=owned_end, end, owned_end
+
+def wrapped16_end(start,length):
+    return (int(start)+int(length)) & 0xFFFF
 
 def source_contract(root):
     s=(root/"v1/src/kernel/syscall.asm").read_text()
@@ -59,19 +67,43 @@ def matrix(root,s,kernel):
     code+=phase3_null._load_byte(GUARD)+b"\xFE\xA5"+phase1._jp_nz(FAIL_PC)
     code+=phase1._jp(PASS_PC); run_sna(root,bytes(code),patch=phase1._kernel_patch(kernel))
 
+def string_matrix(root,run_command,require_project_tool):
+    cmd,fb,_lst,fs=phase2_spawn._assemble_fixture(root,run_command,require_project_tool)
+    names=("zx48_sys_spawn_preflight","process_table","p209_allocator_state","p209_open_state","PROC1_SIZE","PROC1_PATH_MAX","MAX_PROCESSES","PROC_DESC_SIZE","E_INVAL","E_TOOLONG")
+    s=phase2_spawn._symbols(fs,names)
+    f=fb.read_bytes()
+    phase2_spawn._run_preflight_case(root,s,f,proc=phase2_spawn._proc1(),path=b"x"*phase2_spawn.PROC1_PATH_MAX+b"\0")
+    phase2_spawn._run_preflight_case(root,s,f,proc=phase2_spawn._proc1(),path=b"x"*(phase2_spawn.PROC1_PATH_MAX+1),expected_error=s["E_TOOLONG"])
+    phase2_spawn._run_preflight_case(root,s,f,proc=phase2_spawn._proc1(path_ptr=0x5AFE),path_address=0x5AFE,path=b"x\0")
+    phase2_spawn._run_preflight_case(root,s,f,proc=phase2_spawn._proc1(path_ptr=0x5AFF),path_address=0x5AFF,path=b"x",expected_error=s["E_INVAL"])
+    phase2_spawn._run_preflight_case(root,s,f,proc=phase2_spawn._proc1(path_ptr=0xDFFF),path_address=0xDFFF,path=b"x",expected_error=s["E_INVAL"])
+    return cmd,fb
+
 def dispatch(root,action,step,*,sha256_file:Callable[[Path],str],run_command:Callable[...,Any],require_project_tool:Callable[[Path,str|Path],Path]):
     if step!="P3.19": raise P319Error("wrong step")
     assertions=source_contract(root); require(all(x["passed"] for x in assertions),"P3.19 static contract failure")
     r,k,l=phase1._assemble_kernel(root,run_command,require_project_tool)
+    string_cmd,string_bin=string_matrix(root,run_command,require_project_tool) if action=="test" else phase2_spawn._assemble_fixture(root,run_command,require_project_tool)[:2]
     s=phase3_open_descriptions._symbols(l.with_suffix(".sym"),("zx48_memory_init","zx48_process_init","zx48_handles_init","zx48_process_prepare_pid1","zx48_od_create","zx48_handle_install","zx48_syscall_impl","current_pid","OD_KIND_NULL","O_READ","O_WRITE","SYS_READ","SYS_WRITE","E_INVAL","E_NOENT"))
     if action=="test":
         matrix(root,s,k.read_bytes())
+        own_ok,own_end,alloc_end=owned_oracle(0x8100,0x0100,0x8000,0x0200)
+        own_bad,bad_end,_=owned_oracle(0x8180,0x0100,0x8000,0x0200)
+        require(own_ok and not own_bad and own_end==0x8200 and bad_end==0x8280 and alloc_end==0x8200,"ownership oracle mismatch")
+        wrapped=wrapped16_end(0xFFF0,0x0020)
+        require(wrapped==0x0010 and oracle(0xFFF0,0x0020)==(False,0x10010),"16-bit wrap mutation was not detected")
         assertions += [
-          {"name":"widened-end-dff0-plus-0030-rejected-pre-side-effect","passed":True,"end_exclusive":0xE020},
-          {"name":"widened-end-fff0-plus-0020-rejected-pre-side-effect","passed":True,"end_exclusive":0x10010},
-          {"name":"display-workspace-bridge-5af0-plus-0020-rejected","passed":True,"end_exclusive":0x5B10},
-          {"name":"7ff0-plus-0020-accepted-within-single-user-arena-region","passed":True,"end_exclusive":0x8010},
+          {"name":"widened-end-dff0-plus-0030-rejected-pre-side-effect","passed":True,"end_exclusive":0xE020,"same_region":False},
+          {"name":"widened-end-fff0-plus-0020-rejected-pre-side-effect","passed":True,"end_exclusive":0x10010,"wrapped16_end":0x0010},
+          {"name":"display-workspace-bridge-5af0-plus-0020-rejected","passed":True,"end_exclusive":0x5B10,"same_region":False},
+          {"name":"7ff0-plus-0020-accepted-within-single-user-arena-region","passed":True,"end_exclusive":0x8010,"same_region":True},
+          {"name":"process-owned-range-entirely-inside-allocation-accepted-by-oracle","passed":True,"start":0x8100,"end_exclusive":own_end,"owned_end_exclusive":alloc_end},
+          {"name":"process-owned-range-crossing-allocation-end-rejected-by-oracle","passed":True,"start":0x8180,"end_exclusive":bad_end,"owned_end_exclusive":alloc_end},
           {"name":"zero-count-poison-pointer-not-dereferenced-valid-handle","passed":True},
           {"name":"zero-count-poison-pointer-invalid-handle-still-errors","passed":True},
+          {"name":"nul-string-max-plus-terminator-accepted","passed":True,"lexical_max":phase2_spawn.PROC1_PATH_MAX},
+          {"name":"unterminated-string-at-lexical-limit-returns-e-toolong","passed":True},
+          {"name":"unterminated-string-at-display-region-boundary-returns-e-inval","passed":True},
+          {"name":"unterminated-string-at-user-arena-boundary-returns-e-inval","passed":True},
         ]
-    return [r],{"v1/build/kernel.bin":sha256_file(k),"v1/src/kernel/syscall.asm":sha256_file(root/"v1/src/kernel/syscall.asm"),"v1/tools-host/test-driver/phase3_widened_ranges.py":sha256_file(root/"v1/tools-host/test-driver/phase3_widened_ranges.py"),"v1/tools-host/test-driver/run.py":sha256_file(root/"v1/tools-host/test-driver/run.py"),"v1/dist/certification/P3.18.test.json":sha256_file(root/"v1/dist/certification/P3.18.test.json")},assertions
+    return [r,string_cmd],{"v1/build/kernel.bin":sha256_file(k),"v1/build/p209-spawn.bin":sha256_file(string_bin),"v1/src/kernel/syscall.asm":sha256_file(root/"v1/src/kernel/syscall.asm"),"v1/tools-host/test-driver/phase2_spawn.py":sha256_file(root/"v1/tools-host/test-driver/phase2_spawn.py"),"v1/tools-host/test-driver/phase3_widened_ranges.py":sha256_file(root/"v1/tools-host/test-driver/phase3_widened_ranges.py"),"v1/tools-host/test-driver/run.py":sha256_file(root/"v1/tools-host/test-driver/run.py"),"v1/dist/certification/P3.18.test.json":sha256_file(root/"v1/dist/certification/P3.18.test.json")},assertions
