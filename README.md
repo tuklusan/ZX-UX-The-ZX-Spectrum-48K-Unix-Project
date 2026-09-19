@@ -13,7 +13,7 @@
 # ZX-UX — Unix for the Sinclair ZX Spectrum 48K
 
 <p align="center">
-  <img src="docs/images/zx-ux-hero.svg" alt="ZX-UX Unix-like operating system and C development environment for the original Sinclair ZX Spectrum 48K">
+  <img src="https://github.com/tuklusan/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/blob/main/docs/images/zx-ux-hero-animated.gif" alt="ZX-UX Unix-like operating system and C development environment for the original Sinclair ZX Spectrum 48K">
 </p>
 
 <h2 align="center">🚧 COMING SOON</h2>
