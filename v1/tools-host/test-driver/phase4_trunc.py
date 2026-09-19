@@ -224,12 +224,45 @@ def _target(root: Path, s: dict[str, int], module: bytes) -> None:
     execute("description-failure-before-commit-preserves-object-and-allocation", code, raw, ods_full=True)
 
     flags = write | trunc | append
+    grown = _record(b"file", s["DIR_TMP"], s["OBJ_DAT"], logical=2, storage=2, ptr=old_ptr)
+
+    code = open_call(flags) + phase1._jp_c(FAIL_PC)
+    code += mem_eq(table, empty)
+    code += mem_eq(free, _word(old_ptr) + _word(arena_size))
+    code += mem_eq(live, _word(0))
+    code += byte_eq(od + s["OD_ACCESS_O"], flags)
+    code += byte_eq(od + s["OD_OFFSET_O"], 0) + byte_eq(od + s["OD_OFFSET_O"] + 1, 0)
+    execute("diag-trunc-append-open-empty-state", code, raw)
+
+    code = open_call(flags) + phase1._jp_c(FAIL_PC)
+    code += phase1._ld_hl(source) + b"\x01\x02\x00" + bytes((0x1E, 0x00, 0x16, 0x00))
+    code += phase1._call(s["zx48_p409_sys_write"]) + phase1._jp_c(FAIL_PC)
+    code += bytes((0x7C, 0xB5)) + phase1._jp_nz(FAIL_PC)
+    execute("diag-trunc-append-write-return", code, raw)
+
+    code = open_call(flags) + phase1._jp_c(FAIL_PC)
+    code += phase1._ld_hl(source) + b"\x01\x02\x00" + bytes((0x1E, 0x00, 0x16, 0x00))
+    code += phase1._call(s["zx48_p409_sys_write"]) + phase1._jp_c(FAIL_PC)
+    code += mem_eq(old_ptr, b"XY")
+    execute("diag-trunc-append-data", code, raw)
+
+    code = open_call(flags) + phase1._jp_c(FAIL_PC)
+    code += phase1._ld_hl(source) + b"\x01\x02\x00" + bytes((0x1E, 0x00, 0x16, 0x00))
+    code += phase1._call(s["zx48_p409_sys_write"]) + phase1._jp_c(FAIL_PC)
+    code += mem_eq(table, grown)
+    execute("diag-trunc-append-record", code, raw)
+
+    code = open_call(flags) + phase1._jp_c(FAIL_PC)
+    code += phase1._ld_hl(source) + b"\x01\x02\x00" + bytes((0x1E, 0x00, 0x16, 0x00))
+    code += phase1._call(s["zx48_p409_sys_write"]) + phase1._jp_c(FAIL_PC)
+    code += byte_eq(od + s["OD_OFFSET_O"], 2) + byte_eq(od + s["OD_OFFSET_O"] + 1, 0)
+    execute("diag-trunc-append-offset", code, raw)
+
     code = open_call(flags) + phase1._jp_c(FAIL_PC)
     code += phase1._ld_hl(source) + b"\x01\x02\x00" + bytes((0x1E, 0x00, 0x16, 0x00))
     code += phase1._call(s["zx48_p409_sys_write"]) + phase1._jp_c(FAIL_PC)
     code += bytes((0x7C, 0xB5)) + phase1._jp_nz(FAIL_PC)
     code += mem_eq(old_ptr, b"XY")
-    grown = _record(b"file", s["DIR_TMP"], s["OBJ_DAT"], logical=2, storage=2, ptr=old_ptr)
     code += mem_eq(table, grown)
     code += byte_eq(od + s["OD_ACCESS_O"], flags)
     code += byte_eq(od + s["OD_OFFSET_O"], 2) + byte_eq(od + s["OD_OFFSET_O"] + 1, 0)
