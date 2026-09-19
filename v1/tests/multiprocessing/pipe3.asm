@@ -23,6 +23,8 @@
     INCLUDE "../../src/kernel/objects.asm"
 
 P318_GOOD_RECORD EQU $B000
+PANIC_SCHEDULER  EQU $03
+PANIC_ALLOCATOR  EQU $02
 
     ORG $E000
 p318_start:
