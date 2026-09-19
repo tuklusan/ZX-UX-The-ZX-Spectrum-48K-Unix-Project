@@ -1,0 +1,76 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "basename-length-exactly-one-through-ten",
+      "passed": true
+    },
+    {
+      "name": "portable-character-set-is-literal",
+      "passed": true
+    },
+    {
+      "name": "exact-dot-and-dotdot-rejected",
+      "passed": true
+    },
+    {
+      "name": "path-base-validates-before-publication",
+      "passed": true
+    },
+    {
+      "name": "exact-case-comparator-has-no-folding",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 36,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12492 lines, work time: 0.034 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p402-names.lst",
+        "--sym=p402-names.sym",
+        "p402-names.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 7,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2351 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p402-names.bin": "95e95c42ca87b6049c3c70e129a26fcd488724a39180e48c6bf9599f12feec7b",
+    "v1/dist/certification/P4.01.test.json": "e5ebfa9821585c9c90ef984b69d023e766dd262f19f5800f40f2af45fe799d78",
+    "v1/src/kernel/objects.asm": "6691e51d4cf9700d88ac83c9852c3a55d28e21be79ab466d26287342811ee1e2",
+    "v1/tools-host/test-driver/phase4_names.py": "184c73ee24a166089b497199951e3bb6b550e91b153bb0e27c1c18a13138010e",
+    "v1/tools-host/test-driver/run.py": "dc98b56c89189e2837b8d34359ca2e05efbb357f0e30741f5f2dbb7a0cf5e286"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P4.01": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "5c4b16993556afe31c0fede078f2ecfd545656b7",
+  "status": "PASS",
+  "step": "P4.02",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
