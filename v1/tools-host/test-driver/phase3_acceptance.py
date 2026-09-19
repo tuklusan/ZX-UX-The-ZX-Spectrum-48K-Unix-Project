@@ -110,11 +110,12 @@ def validate_record(record: dict[str, Any], step: str, action: str) -> None:
     require(record.get("architecture_sha256")==ARCH_SHA256, f"{step}.{action}: REV16 identity mismatch")
     require(record.get("implementation_plan_sha256")==PLAN_SHA256, f"{step}.{action}: REV07 identity mismatch")
     expected=expected_prereq(step)
-    if step=="P3.15":
-        # Preserve and validate the already-admitted P3.15 evidence byte contract:
-        # those immutable records contain the historical field spelling "prerequsites".
+    if step=="P3.15" and action=="test":
+        # Preserve the already-admitted P3.15 test evidence byte contract:
+        # that immutable record contains the historical field spelling "prerequsites".
         require(record.get("prerequisites") is None, f"{step}.{action}: unexpected corrected prerequisite field")
         require(record.get("prerequsites")==expected, f"{step}.{action}: admitted prerequisite chain mismatch")
+        require("v1/dist/certification/P3.14.test.json" in record.get("hashes",{}), f"{step}.{action}: predecessor hash missing")
     else:
         require(record.get("prerequisites")==expected, f"{step}.{action}: prerequisite chain mismatch")
     source=record.get("source_commit")
