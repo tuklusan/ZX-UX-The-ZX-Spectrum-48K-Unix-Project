@@ -10,7 +10,7 @@
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
 
-name: P4.18 one-shot qualification dispatch bridge v3
+name: P4.18 one-shot qualification and admission bridge v4
 
 on:
   push:
@@ -20,22 +20,110 @@ on:
 
 permissions:
   actions: write
-  contents: read
+  contents: write
 
 jobs:
-  dispatch:
+  qualify-and-admit:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 45
     steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
       - name: Dispatch exact P4.18 qualification
+        id: dispatch
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          for attempt in 1 2 3 4 5; do
-            if gh workflow run p418-qualification.yml --repo tuklusan/ZX-UX-The-ZX-Spectrum-48K-Unix-Project --ref main; then
-              exit 0
+          candidate="${GITHUB_SHA}"
+          gh workflow run p418-qualification.yml --repo "${GITHUB_REPOSITORY}" --ref main
+          run_id=""
+          for attempt in $(seq 1 30); do
+            run_id="$(gh run list --repo "${GITHUB_REPOSITORY}" --workflow p418-qualification.yml --event workflow_dispatch --limit 10 --json databaseId,headSha,status --jq '.[] | select(.headSha=="'${candidate}'") | .databaseId' | head -n1)"
+            if test -n "$run_id"; then
+              break
             fi
-            sleep 5
+            sleep 2
           done
+          test -n "$run_id"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          gh run watch "$run_id" --repo "${GITHUB_REPOSITORY}" --exit-status
+
+      - name: Download and validate exact P4.18 evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.dispatch.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/p418-admit
+          mkdir -p /tmp/p418-admit
+          gh run download "$RUN_ID" --repo "${GITHUB_REPOSITORY}" --name "zxux-p418-qualification-${RUN_ID}-1" --dir /tmp/p418-admit
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          root=Path("/tmp/p418-admit")
+          sha=os.environ["GITHUB_SHA"]
+          for name, action in (("P4.18.build.json","build"),("P4.18.test.json","test")):
+              p=root/name
+              if not p.is_file():
+                  raise SystemExit(f"missing {name}")
+              d=json.loads(p.read_text())
+              assert d["step"]=="P4.18"
+              assert d["action"]==action
+              assert d["status"]=="PASS"
+              assert d["source_commit"]==sha
+              assert d["worktree_clean"] is True
+              assert d["prerequisites"]=={"P4.17":"PASS"}
+          meta=(root/"meta"/"candidate-commit.txt").read_text().strip()
+          status=(root/"meta"/"worktree-status.txt").read_text()
+          assert meta==sha
+          assert status==""
+          PY
+
+      - name: Admit P4.18 evidence only
+        id: admit
+        run: |
+          set -euo pipefail
+          cp /tmp/p418-admit/P4.18.build.json v1/dist/certification/P4.18.build.json
+          cp /tmp/p418-admit/P4.18.test.json v1/dist/certification/P4.18.test.json
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+          git diff --check
+          git add v1/dist/certification/P4.18.build.json v1/dist/certification/P4.18.test.json
+          test "$(git diff --cached --name-only | sort)" = "$(printf '%s\n' v1/dist/certification/P4.18.build.json v1/dist/certification/P4.18.test.json | sort)"
+          git config user.name github-actions
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m "P4.18: admit qualified packed seek evidence"
+          admission_sha="$(git rev-parse HEAD)"
+          echo "admission_sha=$admission_sha" >> "$GITHUB_OUTPUT"
+          git push origin HEAD:main
+
+      - name: Require admission-triggered validations PASS
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ADMISSION_SHA: ${{ steps.admit.outputs.admission_sha }}
+        run: |
+          set -euo pipefail
+          seen=0
+          for attempt in $(seq 1 120); do
+            data="$(gh run list --repo "${GITHUB_REPOSITORY}" --commit "$ADMISSION_SHA" --event push --limit 100 --json databaseId,name,status,conclusion)"
+            count="$(jq 'length' <<<"$data")"
+            if test "$count" -gt 0; then
+              seen=1
+              active="$(jq '[.[] | select(.status!="completed")] | length' <<<"$data")"
+              bad="$(jq '[.[] | select(.status=="completed" and (.conclusion!="success" and .conclusion!="skipped"))] | length' <<<"$data")"
+              if test "$bad" -gt 0; then
+                jq . <<<"$data"
+                exit 1
+              fi
+              if test "$active" -eq 0; then
+                jq . <<<"$data"
+                exit 0
+              fi
+            fi
+            sleep 15
+          done
+          test "$seen" -eq 1
           exit 1
