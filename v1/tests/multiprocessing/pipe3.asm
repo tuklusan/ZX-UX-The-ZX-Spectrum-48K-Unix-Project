@@ -38,7 +38,6 @@ p318_start:
     EMIT_HANDLE_ROUTINES
     EMIT_PARENT_CHILD_ROUTINES
     EMIT_WAIT_SPECIFIC_ROUTINES
-    EMIT_ZOMBIE_TRANSITION_ROUTINES
     EMIT_SPAWN_PREFLIGHT_ROUTINES
     EMIT_SPAWN_TRANSACTION_ROUTINES
     EMIT_PIPE_ROUTINES
@@ -93,15 +92,6 @@ p318_process_noent:
     scf
     ret
 
-zx48_process_live_lookup:
-    call zx48_process_lookup
-    ret c
-    ld a,(ix+PROC_STATE)
-    cp PROC_ZOMBIE
-    jr z,p318_process_noent
-    xor a
-    ret
-
 zx48_process_count:
     ld ix,process_table+PROC_DESC_SIZE
     ld b,MAX_PROCESSES-1
@@ -119,23 +109,6 @@ p318_process_count_next:
     or a
     ret
 
-zx48_process_restore_tty_owner:
-    ld a,(current_pid)
-    ld b,a
-    ld a,(tty_input_owner)
-    cp b
-    ret nz
-    ld a,1
-    call zx48_process_live_lookup
-    jr c,p318_tty_owner_zero
-    ld a,1
-    jr p318_tty_owner_set
-p318_tty_owner_zero:
-    xor a
-p318_tty_owner_set:
-    ld (tty_input_owner),a
-    ret
-
 zx48_spawn_resolve_ram_object:
     ld ix,P318_GOOD_RECORD
     xor a
@@ -149,12 +122,6 @@ zx48_memcpy:
     ret
 
 zx48_schedule:
-    ld a,(current_pid)
-    call zx48_process_lookup
-    ret c
-    ld a,(ix+PROC_STATE)
-    cp PROC_ZOMBIE
-    ret z
     scf
     ret
 
@@ -166,7 +133,6 @@ zx48_panic:
 syscall_arg_hl: dw 0
 current_pid: db 0
 process_table: defs MAX_PROCESSES*PROC_DESC_SIZE,0
-tty_input_owner: db 1
 p318_panic_code: db 0
 
 p318_end:

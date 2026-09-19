@@ -41,7 +41,6 @@ PAYLOAD=b"PIPE3-OK"
 HANDLE_FREE=0xFF
 PROC_STATE=2
 PROC_READY=1
-PROC_RUNNING=2
 PROC_ZOMBIE=8
 PROC_WAIT_OBJECT=15
 PROC_HANDLES=16
@@ -123,17 +122,10 @@ def spawn(code,s,ptr,want):
     code += b"\x7D"+bytes((0xFE,want))+jp_nz(FAIL_PC)
     return code
 
-def exit_child(code,s,pid):
-    p=s["process_table"]+pid*48
-    code += setpid(pid,s)
-    code += bytes((0x3E,PROC_RUNNING,0x32))+w(p+PROC_STATE)
-    code += b"\xAF"+phase1._call(s["zx48_process_exit_to_zombie"])+jp_c(FAIL_PC)
-    code += expb(p+PROC_STATE,PROC_ZOMBIE)
-    return code
-
 def wait_zombie(code,s,pid,status_off):
     p=s["process_table"]+pid*48
     code += setpid(1,s)
+    code += bytes((0x3E,PROC_ZOMBIE,0x32))+w(p+PROC_STATE)
     code += bytes((0x11,))+w(STATUS+status_off)+bytes((0x3E,pid))+phase1._call(s["zx48_process_wait_specific"])+jp_c(FAIL_PC)
     code += b"\x7D"+bytes((0xFE,pid))+jp_nz(FAIL_PC)
     code += expb(p+PROC_STATE,0)
@@ -182,11 +174,9 @@ def run_fixture(root,s,fixture,retain_parent_writer=False,stop=99):
         code += phase1._jp(PASS_PC)
         run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0); return
 
-    # Stages A and B finish through the production exit-to-zombie path. Their
-    # remaining pipe references are released by process exit, so EOF on pipe2
-    # depends on whether the parent retained its own writer reference.
-    code=exit_child(code,s,2)
-    code=exit_child(code,s,3)
+    # Final stage writers close. Pipe2 EOF is governed by the final writer ref.
+    code=close(code,s,2,(1,))
+    code=close(code,s,3,(0,1))
     code += expw(pipe2+s["PIPE_COUNT_O"],0)
     code=transfer(code,s,4,0,DST,1,False)
     if retain_parent_writer:
@@ -201,7 +191,7 @@ def run_fixture(root,s,fixture,retain_parent_writer=False,stop=99):
         raise P318Error("P3.18 retained parent writer did not trigger timeout/deadlock detector")
     code += jp_c(FAIL_PC)
     code += phase1._ld_de(0)+b"\xB7\xED\x52"+jp_nz(FAIL_PC)
-    code=exit_child(code,s,4)
+    code=close(code,s,4,(0,))
     if stop==5:
         code += phase1._jp(PASS_PC)
         run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0); return
@@ -228,7 +218,7 @@ def source_contract(root):
     pipe=(root/"v1/src/kernel/pipe.asm").read_text()
     process=(root/"v1/src/kernel/process.asm").read_text()
     return [
-      {"name":"fixture-composes-three-stage-spawn-handle-pipe-exit-and-wait-routines","passed":all(x in fixture for x in ("EMIT_SPAWN_TRANSACTION_ROUTINES","EMIT_HANDLE_ROUTINES","EMIT_PIPE_ROUTINES","EMIT_PARENT_CHILD_ROUTINES","EMIT_ZOMBIE_TRANSITION_ROUTINES","jp zx48_sys_spawn"))},
+      {"name":"fixture-composes-three-stage-spawn-handle-pipe-and-wait-routines","passed":all(x in fixture for x in ("EMIT_SPAWN_TRANSACTION_ROUTINES","EMIT_HANDLE_ROUTINES","EMIT_PIPE_ROUTINES","EMIT_PARENT_CHILD_ROUTINES","jp zx48_sys_spawn"))},
       {"name":"pipe-eof-is-reference-counted-on-final-writer","passed":"PIPE_WRITERS_O" in pipe and "zx48_pipe_close_reader" in pipe},
       {"name":"spawn-inherits-open-description-references","passed":"call zx48_od_retain" in process},
       {"name":"wait-reaps-zombie-child","passed":"zx48_process_wait_reap:" in process},
@@ -240,7 +230,7 @@ def dispatch(root,action,step,*,sha256_file:Callable[[Path],str],run_command:Cal
     require(all(a["passed"] for a in assertions),f"P3.18 static failures: {[a['name'] for a in assertions if not a['passed']]}")
     kr,kernel,listing=phase1._assemble_kernel(root,run_command,require_project_tool)
     fr,fb,fs=assemble(root,run_command,require_project_tool)
-    names=("p318_gateway","p318_read_handle","p318_write_handle","zx48_process_links_init","zx48_process_wait_specific","zx48_process_exit_to_zombie","zx48_pipe_create","zx48_handle_close","process_table","current_pid","open_description_table","memory_free_extents","memory_live_allocations","pipe_table","p318_panic_code","PIPE_RECORD_SIZE","PIPE_COUNT_O","PROC_WAIT_PIPE_READ")
+    names=("p318_gateway","p318_read_handle","p318_write_handle","zx48_process_links_init","zx48_process_wait_specific","zx48_pipe_create","zx48_handle_close","process_table","current_pid","open_description_table","memory_free_extents","memory_live_allocations","pipe_table","p318_panic_code","PIPE_RECORD_SIZE","PIPE_COUNT_O","PROC_WAIT_PIPE_READ")
     s=phase2_two_base_relocatable._symbols(fs,names)
     if action=="test":
       for stage in range(1,9):

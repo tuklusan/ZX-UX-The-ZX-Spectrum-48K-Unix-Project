@@ -34,7 +34,7 @@ jobs:
     timeout-minutes: 45
     env:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p318-qualification
-      P318_EXACT_PARENT: 88cd1f3b10383e80948fe00ba662c6a13fe2f6fb
+      P318_EXACT_PARENT: 0989226a0b732ac539d73c3cc68d4fed8ddceb5f
       ZXUX_REV16_SHA256: 24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c
       ZXUX_REV07_SHA256: 840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc
 
