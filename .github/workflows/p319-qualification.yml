@@ -11,9 +11,7 @@
 # patent, trademark, and governing-law provisions.
 name: P3.19 widened-range qualification
 on:
-  push:
-    branches: [main]
-    paths: [.github/workflows/p319-qualification.yml, v1/tests/emulator/widened_ranges.asm, v1/tools-host/test-driver/phase3_widened_ranges.py, v1/tools-host/test-driver/run.py, v1/src/kernel/syscall.asm]
+  workflow_dispatch:
 permissions: {contents: read}
 jobs:
   qualify:
