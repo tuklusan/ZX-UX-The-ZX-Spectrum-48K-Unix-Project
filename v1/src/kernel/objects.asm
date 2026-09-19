@@ -2046,6 +2046,18 @@ ns_kind: db 0
 
 
 ;
+; P4.06 object-side open-reference guards. Representation swaps and tests for an
+; unreferenced mutable object delegate to the bounded open-description pool.
+;
+    MACRO EMIT_OBJECT_EXCLUSIVITY_ROUTINES
+; A=RAM-object slot. E_BUSY iff any live open description references it.
+zx48_object_no_open_references:
+zx48_object_representation_swap_guard:
+    ld d,a
+    jp zx48_od_object_any_live
+    ENDM
+
+;
 ; P4.05 typed-open object side. The compact Phase-4 fixture emits this together
 ; with the already-qualified namespace and placement routines.
 ;

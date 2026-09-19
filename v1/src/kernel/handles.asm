@@ -63,8 +63,79 @@ zx48_od_ptr:
     or a
     ret
 
+; C=requested access,D=RAM-object identity. Scan the bounded OD pool only.
+; A distinct write-capable description conflicts with every existing description
+; for the same object; a read-only description conflicts only with an existing writer.
+zx48_od_object_open_guard:
+    ld a,c
+    and O_WRITE
+    ld e,a
+    ld ix,open_description_table
+    ld b,OPEN_DESCRIPTION_COUNT
+zx48_od_object_open_guard_loop:
+    ld a,(ix+OD_KIND_O)
+    cp OD_KIND_OBJECT
+    jr nz,zx48_od_object_open_guard_next
+    ld a,(ix+OD_ID_O)
+    cp d
+    jr nz,zx48_od_object_open_guard_next
+    ld a,e
+    or a
+    jr nz,zx48_od_object_open_guard_busy
+    ld a,(ix+OD_ACCESS_O)
+    and O_WRITE
+    jr nz,zx48_od_object_open_guard_busy
+zx48_od_object_open_guard_next:
+    push de
+    ld de,OD_COMPACT_SIZE
+    add ix,de
+    pop de
+    djnz zx48_od_object_open_guard_loop
+    xor a
+    or a
+    ret
+zx48_od_object_open_guard_busy:
+    ld a,E_BUSY
+    scf
+    ret
+
+; D=RAM-object identity. Any live OD blocks representation swaps/removal.
+zx48_od_object_any_live:
+    ld ix,open_description_table
+    ld b,OPEN_DESCRIPTION_COUNT
+zx48_od_object_any_live_loop:
+    ld a,(ix+OD_KIND_O)
+    cp OD_KIND_OBJECT
+    jr nz,zx48_od_object_any_live_next
+    ld a,(ix+OD_ID_O)
+    cp d
+    jr z,zx48_od_object_any_live_busy
+zx48_od_object_any_live_next:
+    push de
+    ld de,OD_COMPACT_SIZE
+    add ix,de
+    pop de
+    djnz zx48_od_object_any_live_loop
+    xor a
+    or a
+    ret
+zx48_od_object_any_live_busy:
+    ld a,E_BUSY
+    scf
+    ret
+
 ; B=kind,C=access,D=identity -> A=index, IX record, refs=1.
 zx48_od_create:
+    ld a,b
+    cp OD_KIND_OBJECT
+    jr nz,zx48_od_create_alloc
+    push bc
+    push de
+    call zx48_od_object_open_guard
+    pop de
+    pop bc
+    ret c
+zx48_od_create_alloc:
     push bc
     push de
     ld ix,open_description_table
