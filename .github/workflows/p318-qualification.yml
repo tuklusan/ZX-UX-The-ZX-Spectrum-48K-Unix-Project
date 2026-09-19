@@ -34,13 +34,13 @@ jobs:
     timeout-minutes: 45
     env:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p318-qualification
-      P318_EXACT_PARENT: 2d75d20a512a4457767aff282e910b6904e39cb7
+      P318_EXACT_PARENT: c6dd11c975ef29f397d635aa684ea844836e94e9
       ZXUX_REV16_SHA256: 24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c
       ZXUX_REV07_SHA256: 840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc
 
     steps:
       - name: Checkout exact candidate
-        uses: actions/checkout$v7
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -98,7 +98,7 @@ jobs:
           grep -q '"status": "PASS"' v1/dist/certification/P3.17.test.json
 
       - name: Select pinned Python
-        uses: actions/setup-python$v6
+        uses: actions/setup-python@v6
         with:
           python-version: '3.13.15'
           check-latest: false
@@ -143,7 +143,7 @@ jobs:
 
       - name: Upload P3.18 qualification evidence
         if: always()
-        uses: actions/upload-artifact$v7
+        uses: actions/upload-artifact@v7
         with:
           name: zxux-p318-qualification-${{ github.run_id }}-${{ github.run_attempt }}
           path: /tmp/zxux-p318-qualification/
