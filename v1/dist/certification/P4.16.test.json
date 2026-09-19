@@ -2,31 +2,100 @@
   "action": "test",
   "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
   "assertions": [
-    {"name": "exact-four-sinks", "passed": true},
-    {"name": "single-token-parser", "passed": true},
-    {"name": "literal-rle-backref-grammar", "passed": true},
-    {"name": "exact-physical-completion", "passed": true},
-    {"name": "exact-logical-completion", "passed": true},
-    {"name": "prewrite-logical-overrun-guard", "passed": true},
-    {"name": "widened-input-span-guard", "passed": true},
-    {"name": "widened-output-span-guard", "passed": true},
-    {"name": "widened-logical-advance-guard", "passed": true},
-    {"name": "distance-256-explicitly-valid", "passed": true},
-    {"name": "byte-at-a-time-overlap", "passed": true},
-    {"name": "optional-logical-crc", "passed": true},
-    {"name": "no-terminator", "passed": true},
-    {"name": "all-four-sinks-identical-runtime", "passed": true},
-    {"name": "literal-rle-backref-boundaries-runtime", "passed": true},
-    {"name": "distance-1-and-256-overlap-runtime", "passed": true},
-    {"name": "host-optimized-oracle-runtime", "passed": true},
-    {"name": "crc-ccitt-false-runtime", "passed": true},
-    {"name": "exact-physical-logical-completion-runtime", "passed": true},
-    {"name": "malformed-and-truncated-rejected-runtime", "passed": true},
-    {"name": "widened-wrap-guards-runtime", "passed": true}
+    {
+      "name": "exact-four-sinks",
+      "passed": true
+    },
+    {
+      "name": "single-token-parser",
+      "passed": true
+    },
+    {
+      "name": "literal-rle-backref-grammar",
+      "passed": true
+    },
+    {
+      "name": "exact-physical-completion",
+      "passed": true
+    },
+    {
+      "name": "exact-logical-completion",
+      "passed": true
+    },
+    {
+      "name": "prewrite-logical-overrun-guard",
+      "passed": true
+    },
+    {
+      "name": "widened-input-span-guard",
+      "passed": true
+    },
+    {
+      "name": "widened-output-span-guard",
+      "passed": true
+    },
+    {
+      "name": "widened-logical-advance-guard",
+      "passed": true
+    },
+    {
+      "name": "distance-256-explicitly-valid",
+      "passed": true
+    },
+    {
+      "name": "byte-at-a-time-overlap",
+      "passed": true
+    },
+    {
+      "name": "optional-logical-crc",
+      "passed": true
+    },
+    {
+      "name": "no-terminator",
+      "passed": true
+    },
+    {
+      "name": "all-four-sinks-identical-runtime",
+      "passed": true
+    },
+    {
+      "name": "literal-rle-backref-boundaries-runtime",
+      "passed": true
+    },
+    {
+      "name": "distance-1-and-256-overlap-runtime",
+      "passed": true
+    },
+    {
+      "name": "host-optimized-oracle-runtime",
+      "passed": true
+    },
+    {
+      "name": "crc-ccitt-false-runtime",
+      "passed": true
+    },
+    {
+      "name": "exact-physical-logical-completion-runtime",
+      "passed": true
+    },
+    {
+      "name": "malformed-and-truncated-rejected-runtime",
+      "passed": true
+    },
+    {
+      "name": "widened-wrap-guards-runtime",
+      "passed": true
+    }
   ],
   "commands": [
     {
-      "argv": ["tools/runtime/sjasmplus/bin/sjasmplus", "--nologo", "--lst=../../build/kernel-p1.lst", "--sym=../../build/kernel-p1.sym", "kernel.asm"],
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
       "cwd": "v1/src/kernel",
       "duration_ms": 35,
       "exit_code": 0,
@@ -35,7 +104,13 @@
       "timed_out": false
     },
     {
-      "argv": ["tools/runtime/sjasmplus/bin/sjasmplus", "--nologo", "--lst=p416-zxpack-decoder.lst", "--sym=p416-zxpack-decoder.sym", "p416-zxpack-decoder.asm"],
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p416-zxpack-decoder.lst",
+        "--sym=p416-zxpack-decoder.sym",
+        "p416-zxpack-decoder.asm"
+      ],
       "cwd": "v1/build",
       "duration_ms": 6,
       "exit_code": 0,
@@ -54,7 +129,9 @@
     "v1/tools-host/zxpack/zxpack.py": "6683dd91f6cd214393881baf1f50621f4f7cca36543468ea84783d0dd75c09c8"
   },
   "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
-  "prerequisites": {"P4.15": "PASS"},
+  "prerequisites": {
+    "P4.15": "PASS"
+  },
   "schema": 2,
   "source_commit": "c76b25ac498e854e8a5a918c80f18ea73244d916",
   "status": "PASS",
