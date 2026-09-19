@@ -195,8 +195,17 @@ def run_fixture(root,s,fixture,retain_parent_writer=False,stop=99):
     # Parent performs real wait/reap operations on all three completed pipeline
     # children after dropping its stream references.
     code=wait_zombie(code,s,2,0)
+    if stop==6:
+        code += phase1._jp(PASS_PC)
+        run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0); return
     code=wait_zombie(code,s,3,1)
+    if stop==7:
+        code += phase1._jp(PASS_PC)
+        run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0); return
     code=wait_zombie(code,s,4,2)
+    if stop==8:
+        code += phase1._jp(PASS_PC)
+        run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0); return
     code += expb(s["p318_panic_code"],0)+phase1._jp(PASS_PC)
     run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0)
 
@@ -220,7 +229,7 @@ def dispatch(root,action,step,*,sha256_file:Callable[[Path],str],run_command:Cal
     names=("p318_gateway","p318_read_handle","p318_write_handle","zx48_process_links_init","zx48_process_wait_specific","zx48_pipe_create","zx48_handle_close","process_table","current_pid","open_description_table","memory_free_extents","memory_live_allocations","pipe_table","p318_panic_code","PIPE_RECORD_SIZE","PIPE_COUNT_O","PROC_WAIT_PIPE_READ")
     s=phase2_two_base_relocatable._symbols(fs,names)
     if action=="test":
-      for stage in range(1,6):
+      for stage in range(1,9):
         try:
           run_fixture(root,s,fb.read_bytes(),retain_parent_writer=False,stop=stage)
         except DriverError as exc:
