@@ -34,7 +34,7 @@ jobs:
     timeout-minutes: 45
     env:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p320-qualification
-      P320_EXACT_PARENT: 2f21275dfa195ad7f12e5f774a4d78d54a58ccb1
+      P320_EXACT_PARENT: 3cf9147f334fd0313ba788a9a16c7ffae98cf43a
       ZXUX_REV16_SHA256: 24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c
       ZXUX_REV07_SHA256: 840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc
     steps:

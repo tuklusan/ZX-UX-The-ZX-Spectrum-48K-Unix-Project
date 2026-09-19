@@ -102,7 +102,7 @@ def source_contract(root: Path) -> list[dict[str, object]]:
       {"name":"ioctl-nontty-path-has-no-tape-motion","passed":"tape" not in block.lower()},
     ]
 
-def target_matrix(root: Path, s: dict[str, int], kernel: bytes) -> None:
+def target_matrix(root: Path, s: dict[str, int], kernel: bytes, stop: int = 99) -> None:
     code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0))
     setup(code,s)
     code += store(IOCTL_ARG+0,0xA5)+store(IOCTL_ARG+1,0x5A)+store(IOCTL_ARG+2,0xC3)
@@ -110,6 +110,8 @@ def target_matrix(root: Path, s: dict[str, int], kernel: bytes) -> None:
     # 01 GET_MODE: writable u8 only.
     ioctl(code,s,0,s["TTY_REQ_GET_MODE"],IOCTL_ARG); ok(code)
     expect_byte(code,IOCTL_ARG,s["TTY_MODE_64"]); expect_byte(code,IOCTL_ARG+1,0x5A)
+    if stop == 1:
+        code += phase1._jp(PASS_PC); run_sna(root,bytes(code),patch=phase1._kernel_patch(kernel)); return
 
     # 02 SET_MODE: readable u8, exact 32/64 values.
     code += store(IOCTL_ARG,s["TTY_MODE_32"])
@@ -118,11 +120,15 @@ def target_matrix(root: Path, s: dict[str, int], kernel: bytes) -> None:
     code += store(IOCTL_ARG,s["TTY_MODE_64"])
     ioctl(code,s,0,s["TTY_REQ_SET_MODE"],IOCTL_ARG); ok(code)
     expect_byte(code,s["tty_mode"],s["TTY_MODE_64"])
+    if stop == 2:
+        code += phase1._jp(PASS_PC); run_sna(root,bytes(code),patch=phase1._kernel_patch(kernel)); return
 
     # 03 GET_SIZE: exactly two writable bytes: cols,24.
     code += store(IOCTL_ARG,0xA5)+store(IOCTL_ARG+1,0x5A)+store(IOCTL_ARG+2,0xC3)
     ioctl(code,s,0,s["TTY_REQ_GET_SIZE"],IOCTL_ARG); ok(code)
     expect_byte(code,IOCTL_ARG,s["TTY_MODE_64"]); expect_byte(code,IOCTL_ARG+1,24); expect_byte(code,IOCTL_ARG+2,0xC3)
+    if stop == 3:
+        code += phase1._jp(PASS_PC); run_sna(root,bytes(code),patch=phase1._kernel_patch(kernel)); return
 
     # 04/05 cursor shape: all exact values 0/1/2.
     for shape in (0,1,2):
@@ -132,11 +138,15 @@ def target_matrix(root: Path, s: dict[str, int], kernel: bytes) -> None:
         code += store(IOCTL_ARG,0xA5)+store(IOCTL_ARG+1,0x5A)
         ioctl(code,s,0,s["TTY_REQ_GET_CURSOR"],IOCTL_ARG); ok(code)
         expect_byte(code,IOCTL_ARG,shape); expect_byte(code,IOCTL_ARG+1,0x5A)
+    if stop == 4:
+        code += phase1._jp(PASS_PC); run_sna(root,bytes(code),patch=phase1._kernel_patch(kernel)); return
 
     # 06 GET_INPUT_OWNER.
     code += store(IOCTL_ARG,0xA5)+store(IOCTL_ARG+1,0x5A)
     ioctl(code,s,0,s["TTY_REQ_GET_OWNER"],IOCTL_ARG); ok(code)
     expect_byte(code,IOCTL_ARG,1); expect_byte(code,IOCTL_ARG+1,0x5A)
+    if stop == 5:
+        code += phase1._jp(PASS_PC); run_sna(root,bytes(code),patch=phase1._kernel_patch(kernel)); return
 
     # 07 SET_INPUT_OWNER: PID1 may assign live PID2 and PID0.
     code += store(IOCTL_ARG,2)
@@ -145,6 +155,8 @@ def target_matrix(root: Path, s: dict[str, int], kernel: bytes) -> None:
     code += store(IOCTL_ARG,0)
     ioctl(code,s,0,s["TTY_REQ_SET_OWNER"],IOCTL_ARG); ok(code)
     expect_byte(code,s["tty_input_owner"],0)
+    if stop == 6:
+        code += phase1._jp(PASS_PC); run_sna(root,bytes(code),patch=phase1._kernel_patch(kernel)); return
 
     # Dead nonzero PID is E_NOENT and leaves owner unchanged.
     code += store(IOCTL_ARG,3)
@@ -156,6 +168,8 @@ def target_matrix(root: Path, s: dict[str, int], kernel: bytes) -> None:
     ioctl(code,s,0,s["TTY_REQ_SET_OWNER"],IOCTL_ARG); expect_error(code,s["E_PERM"])
     expect_byte(code,s["tty_input_owner"],0)
     code += store(s["current_pid"],1)
+    if stop == 7:
+        code += phase1._jp(PASS_PC); run_sna(root,bytes(code),patch=phase1._kernel_patch(kernel)); return
 
     # Unknown request, invalid handle, NULL and TAPE are exact no-side-effect errors.
     code += store(s["tty_mode"],s["TTY_MODE_64"])+store(s["tty_cursor_shape"],2)+store(s["tty_input_owner"],1)
@@ -164,11 +178,15 @@ def target_matrix(root: Path, s: dict[str, int], kernel: bytes) -> None:
     ioctl(code,s,1,s["TTY_REQ_GET_MODE"],IOCTL_ARG); expect_error(code,s["E_NOTSUP"])
     ioctl(code,s,2,s["TTY_REQ_GET_MODE"],IOCTL_ARG); expect_error(code,s["E_NOTSUP"])
     expect_byte(code,s["tty_mode"],s["TTY_MODE_64"]); expect_byte(code,s["tty_cursor_shape"],2); expect_byte(code,s["tty_input_owner"],1)
+    if stop == 8:
+        code += phase1._jp(PASS_PC); run_sna(root,bytes(code),patch=phase1._kernel_patch(kernel)); return
 
     # Malformed packing: swapped handle/request resolves to NULL and is rejected.
     set_record(code,s["TTY_REQ_GET_MODE"],0,IOCTL_ARG)
     phase3_tty._call_sys(code,s,s["SYS_IOCTL"],IOCTL_REC,0,0); expect_error(code,s["E_NOTSUP"])
     expect_byte(code,s["tty_mode"],s["TTY_MODE_64"])
+    if stop == 9:
+        code += phase1._jp(PASS_PC); run_sna(root,bytes(code),patch=phase1._kernel_patch(kernel)); return
 
     # Complete IOCTL1 and request-specific pointed ranges fail before side effect.
     phase3_tty._call_sys(code,s,s["SYS_IOCTL"],0xDFFE,0,0); expect_error(code,s["E_INVAL"])
@@ -177,6 +195,8 @@ def target_matrix(root: Path, s: dict[str, int], kernel: bytes) -> None:
     expect_byte(code,s["tty_mode"],s["TTY_MODE_64"])
     ioctl(code,s,0,s["TTY_REQ_GET_SIZE"],0xDFFF); expect_error(code,s["E_INVAL"])
     expect_byte(code,s["tty_mode"],s["TTY_MODE_64"])
+    if stop == 10:
+        code += phase1._jp(PASS_PC); run_sna(root,bytes(code),patch=phase1._kernel_patch(kernel)); return
 
     # Invalid request-specific values are exact E_INVAL and atomic.
     code += store(IOCTL_ARG,33)
@@ -185,6 +205,8 @@ def target_matrix(root: Path, s: dict[str, int], kernel: bytes) -> None:
     code += store(IOCTL_ARG,3)
     ioctl(code,s,0,s["TTY_REQ_SET_CURSOR"],IOCTL_ARG); expect_error(code,s["E_INVAL"])
     expect_byte(code,s["tty_cursor_shape"],2)
+    if stop == 11:
+        code += phase1._jp(PASS_PC); run_sna(root,bytes(code),patch=phase1._kernel_patch(kernel)); return
 
     # Owner-exit restoration helper: live PID1, then absent PID1 -> PID0.
     code += store(s["current_pid"],1)+store(IOCTL_ARG,2)
@@ -196,6 +218,8 @@ def target_matrix(root: Path, s: dict[str, int], kernel: bytes) -> None:
     pid1_state=s["process_table"]+s["PROC_DESC_SIZE"]+s["PROC_STATE"]
     code += store(pid1_state,0)+store(s["current_pid"],2)+phase1._call(s["zx48_process_restore_tty_owner"])
     expect_byte(code,s["tty_input_owner"],0)
+    if stop == 12:
+        code += phase1._jp(PASS_PC); run_sna(root,bytes(code),patch=phase1._kernel_patch(kernel)); return
 
     code += phase1._jp(PASS_PC)
     run_sna(root,bytes(code),patch=phase1._kernel_patch(kernel))
@@ -218,7 +242,13 @@ def dispatch(root: Path, action: str, step: str, *, sha256_file: Callable[[Path]
     ))
     require([s[f"TTY_REQ_{n}"] for n in ("GET_MODE","SET_MODE","GET_SIZE","SET_CURSOR","GET_CURSOR","GET_OWNER","SET_OWNER")]==list(range(1,8)),"P3.20 request IDs changed")
     if action=="test":
-        target_matrix(root,s,kernel.read_bytes())
+        kernel_bytes=kernel.read_bytes()
+        for stage in range(1,13):
+            try:
+                target_matrix(root,s,kernel_bytes,stop=stage)
+            except DriverError as exc:
+                raise Phase3IoctlError(f"P3.20 runtime stage {stage} failed: {exc}") from exc
+        target_matrix(root,s,kernel_bytes)
         assertions += [
           {"name":"tty-request-01-get-mode-u8-exact","passed":True},
           {"name":"tty-request-02-set-mode-u8-32-64-exact","passed":True},
