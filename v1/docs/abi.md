@@ -149,6 +149,24 @@ allocator's two-byte alignment. Ordinary mutable payload allocation requests
 `COLD_PREFERRED`; the shared arena allocator may fall back to FAST when COLD has no
 suitable extent.
 
+### Object type, state, and placement rules
+
+Namespace state IDs are RAM=0, TAPE_BACKED=1, PINNED_SYSTEM=2, and PSEUDO=3.
+Only public flag bit 0 (`OBJ_PACKED`) is defined; every other public flag bit is
+zero. M48O payload types are exactly TXT through SYS (1..11); DIR=12 and DEV=13
+are namespace-only and never payload types.
+
+Public mutable placement is exact: `/bin` accepts BIN only; `/etc` accepts TXT
+or CFG only; USERHOME and TMP accept ordinary types 1..10. ROOT, DEV, and HOME
+accept no mutable creation. SYSTEM is not a public save/load target; only the
+internal bootstrap path may publish FNT or SYS there. Namespace DIR/DEV entries
+always report zero length.
+
+A BCAT-only TAPE_BACKED entry reports logical/list length `0xFFFF` until it is
+loaded. TXT, C, ASM, and CFG content uses LF byte `0x0A` as the canonical line
+separator. Host text assets are LF-normalized and target tools never emit CRLF.
+Type is explicit metadata: neither kernel nor target tools infer type from a suffix.
+
 ## Object formats
 
 MEX1 and OBJ1 headers are exactly 24 bytes. M48O headers are exactly 32 bytes.

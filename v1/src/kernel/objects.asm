@@ -172,6 +172,154 @@ object_record_table_end:
 pinned_bootstrap_metadata: dw 0
     ENDM
 
+;
+; P4.04 type/state placement contract. This remains independently emit-able so the
+; exact matrix can be qualified without admitting later object open/I/O semantics.
+;
+    MACRO EMIT_OBJECT_TYPE_ROUTINES
+; B=type. M48O payload types are exactly TXT..SYS (1..11).
+zx48_object_payload_type_validate:
+    ld a,b
+    cp OBJ_TXT
+    jr c,.bad
+    cp OBJ_SYS+1
+    jr nc,.bad
+    xor a
+    or a
+    ret
+.bad:
+    ld a,E_INVAL
+    scf
+    ret
+
+; A=directory,B=type. Public mutable placement excludes SYSTEM and fixed roots.
+zx48_object_public_type_allowed:
+    ld c,a
+    ld a,b
+    cp OBJ_TXT
+    jr c,.perm
+    cp OBJ_CFG+1
+    jr nc,.perm
+    ld a,c
+    cp DIR_BIN
+    jr z,.bin
+    cp DIR_ETC
+    jr z,.etc
+    cp DIR_USERHOME
+    jr z,.ok
+    cp DIR_TMP
+    jr z,.ok
+    jr .perm
+.bin:
+    ld a,b
+    cp OBJ_BIN
+    jr z,.ok
+    jr .perm
+.etc:
+    ld a,b
+    cp OBJ_TXT
+    jr z,.ok
+    cp OBJ_CFG
+    jr z,.ok
+    jr .perm
+.ok:
+    xor a
+    or a
+    ret
+.perm:
+    ld a,E_PERM
+    scf
+    ret
+
+; A=directory,B=type. Internal bootstrap owns only SYSTEM FNT/SYS publication.
+zx48_object_bootstrap_type_allowed:
+    cp DIR_SYSTEM
+    jr nz,.perm
+    ld a,b
+    cp OBJ_FNT
+    jr z,.ok
+    cp OBJ_SYS
+    jr z,.ok
+.perm:
+    ld a,E_PERM
+    scf
+    ret
+.ok:
+    xor a
+    or a
+    ret
+
+; A=namespace state. Exact IDs 0..3 only.
+zx48_namespace_state_validate:
+    cp STATE_PSEUDO+1
+    jr nc,.bad
+    xor a
+    or a
+    ret
+.bad:
+    ld a,E_INVAL
+    scf
+    ret
+
+; A=public object flags. Only bit0 OBJ_PACKED may be set.
+zx48_object_public_flags_validate:
+    and $fe
+    jr nz,.bad
+    xor a
+    or a
+    ret
+.bad:
+    ld a,E_INVAL
+    scf
+    ret
+
+; B=type,HL=reported length. Namespace-only DIR/DEV lengths must be zero.
+zx48_object_namespace_length_validate:
+    ld a,b
+    cp OBJ_DIR
+    jr z,.must_zero
+    cp OBJ_DEV
+    jr z,.must_zero
+    xor a
+    or a
+    ret
+.must_zero:
+    ld a,h
+    or l
+    jr nz,.bad
+    xor a
+    or a
+    ret
+.bad:
+    ld a,E_INVAL
+    scf
+    ret
+
+; A=namespace state, HL=resident logical length. BCAT-only tape entries are unknown.
+zx48_object_visible_length:
+    cp STATE_TAPE_BACKED
+    jr z,.unknown
+    cp STATE_PSEUDO+1
+    jr nc,.bad
+    xor a
+    or a
+    ret
+.unknown:
+    ld hl,$ffff
+    xor a
+    or a
+    ret
+.bad:
+    ld a,E_INVAL
+    scf
+    ret
+
+; Canonical target line separator for TXT/C/ASM/CFG content.
+zx48_text_line_separator:
+    ld a,$0a
+    ret
+    ENDM
+
     MACRO EMIT_OBJECT_ROUTINES
 zx48_objects_init:
     xor a
