@@ -13,13 +13,7 @@
 name: P3.21 Phase 3 aggregate qualification
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/p320-qualification.yml
-      - .github/workflows/p321-qualification.yml
-      - v1/tools-host/test-driver/phase3_acceptance.py
-      - v1/tools-host/test-driver/run.py
+  workflow_dispatch:
 
 permissions:
   contents: read
