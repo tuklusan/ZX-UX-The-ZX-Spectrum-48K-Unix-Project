@@ -131,7 +131,7 @@ def wait_zombie(code,s,pid,status_off):
     code += expb(p+PROC_STATE,0)
     return code
 
-def run_fixture(root,s,fixture,retain_parent_writer=False):
+def run_fixture(root,s,fixture,retain_parent_writer=False,stop=99):
     p4=s["process_table"]+4*48
     pipe2=s["pipe_table"]+s["PIPE_RECORD_SIZE"]
     code=bytearray(b"\xF3"+phase1._ld_sp(STACK))
@@ -140,9 +140,15 @@ def run_fixture(root,s,fixture,retain_parent_writer=False):
     code += expb(PIPE1_RESULT,0)+expb(PIPE1_RESULT+1,1)
     code += phase1._ld_hl(PIPE2_RESULT)+phase1._call(s["zx48_pipe_create"])+jp_c(FAIL_PC)
     code += expb(PIPE2_RESULT,2)+expb(PIPE2_RESULT+1,3)
+    if stop==1:
+        code += phase1._jp(PASS_PC)
+        run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0); return
     code=spawn(code,s,PROC_A,2)
     code=spawn(code,s,PROC_B,3)
     code=spawn(code,s,PROC_C,4)
+    if stop==2:
+        code += phase1._jp(PASS_PC)
+        run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0); return
 
     # Stage A retains pipe1 writer only; stage B links pipe1 reader to pipe2 writer;
     # stage C retains pipe2 reader only.
@@ -154,6 +160,9 @@ def run_fixture(root,s,fixture,retain_parent_writer=False):
     code=close(code,s,1,(0,1,2))
     if not retain_parent_writer:
         code=close(code,s,1,(3,))
+    if stop==3:
+        code += phase1._jp(PASS_PC)
+        run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0); return
 
     code=transfer(code,s,2,1,SRC,len(PAYLOAD),True)+jp_c(FAIL_PC)
     code=transfer(code,s,3,0,MID,len(PAYLOAD),False)+jp_c(FAIL_PC)
@@ -161,6 +170,9 @@ def run_fixture(root,s,fixture,retain_parent_writer=False):
     code=transfer(code,s,3,3,MID,len(PAYLOAD),True)+jp_c(FAIL_PC)
     code=transfer(code,s,4,2,DST,len(PAYLOAD),False)+jp_c(FAIL_PC)
     for i,b in enumerate(PAYLOAD): code += expb(DST+i,b)
+    if stop==4:
+        code += phase1._jp(PASS_PC)
+        run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0); return
 
     # Final stage writers close. Pipe2 EOF is governed by the final writer ref.
     code=close(code,s,2,(1,))
@@ -176,6 +188,9 @@ def run_fixture(root,s,fixture,retain_parent_writer=False):
         code += jp_c(FAIL_PC)
     code += phase1._ld_de(0)+b"\xB7\xED\x52"+jp_nz(FAIL_PC)
     code=close(code,s,4,(2,))
+    if stop==5:
+        code += phase1._jp(PASS_PC)
+        run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0); return
 
     # Parent performs real wait/reap operations on all three completed pipeline
     # children after dropping its stream references.
@@ -205,6 +220,11 @@ def dispatch(root,action,step,*,sha256_file:Callable[[Path],str],run_command:Cal
     names=("p318_gateway","p318_read_handle","p318_write_handle","zx48_process_links_init","zx48_process_wait_specific","zx48_pipe_create","zx48_handle_close","process_table","current_pid","open_description_table","memory_free_extents","memory_live_allocations","pipe_table","p318_panic_code","PIPE_RECORD_SIZE","PIPE_COUNT_O","PROC_WAIT_PIPE_READ")
     s=phase2_two_base_relocatable._symbols(fs,names)
     if action=="test":
+      for stage in range(1,6):
+        try:
+          run_fixture(root,s,fb.read_bytes(),retain_parent_writer=False,stop=stage)
+        except DriverError as exc:
+          raise P318Error(f"P3.18 positive runtime stage {stage} failed: {exc}") from exc
       run_fixture(root,s,fb.read_bytes(),retain_parent_writer=False)
       assertions += [
         {"name":"three-spawned-stages-transfer-exact-bytes-through-two-true-pipes","passed":True},
