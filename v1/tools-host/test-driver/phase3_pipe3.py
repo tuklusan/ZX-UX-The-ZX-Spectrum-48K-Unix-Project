@@ -79,16 +79,16 @@ def table():
     d[48+28]=6
     return bytes(d)
 
-def proc1():
+def proc1(stdin_handle,stdout_handle,stderr_handle):
     arg=phase2_spawn_atomic._arg1(b"/bin/good")
-    return phase2_spawn_atomic._proc1(path_ptr=PATH,arg_ptr=ARG,arg_len=len(arg),env_ptr=ENV,env_len=len(phase2_spawn_atomic.ENV1_EMPTY),stdin_handle=0,stdout_handle=1,stderr_handle=1)
+    return phase2_spawn_atomic._proc1(path_ptr=PATH,arg_ptr=ARG,arg_len=len(arg),env_ptr=ENV,env_len=len(phase2_spawn_atomic.ENV1_EMPTY),stdin_handle=stdin_handle,stdout_handle=stdout_handle,stderr_handle=stderr_handle)
 
 def regions(s):
     mex=phase2_spawn_atomic._mex()
     arg=phase2_spawn_atomic._arg1(b"/bin/good")
     return (
       (PATH,b"/bin/good\0"),(ARG,arg),(ENV,phase2_spawn_atomic.ENV1_EMPTY),
-      (PROC_A,proc1()),(PROC_B,proc1()),(PROC_C,proc1()),(MEX,mex),
+      (PROC_A,proc1(0,1,1)),(PROC_B,proc1(0,3,3)),(PROC_C,proc1(2,0,0)),(MEX,mex),
       (RECORD,phase2_spawn_atomic._record(b"good",2,MEX,len(mex))),
       (s["process_table"],table()),(s["current_pid"],b"\x01"),
       (s["open_description_table"],bytes(24*8)),
@@ -152,9 +152,9 @@ def run_fixture(root,s,fixture,retain_parent_writer=False,stop=99):
 
     # Stage A retains pipe1 writer only; stage B links pipe1 reader to pipe2 writer;
     # stage C retains pipe2 reader only.
-    code=close(code,s,2,(0,2,3))
-    code=close(code,s,3,(1,2))
-    code=close(code,s,4,(0,1,3))
+    code=close(code,s,2,(0,2))
+    code=close(code,s,3,(2,))
+    code=close(code,s,4,(1,2))
     # Parent always drops pipe1 refs and pipe2 reader. Positive path also drops the
     # final pipe2 writer; the negative fixture intentionally retains that one ref.
     code=close(code,s,1,(0,1,2))
@@ -167,8 +167,8 @@ def run_fixture(root,s,fixture,retain_parent_writer=False,stop=99):
     code=transfer(code,s,2,1,SRC,len(PAYLOAD),True)+jp_c(FAIL_PC)
     code=transfer(code,s,3,0,MID,len(PAYLOAD),False)+jp_c(FAIL_PC)
     for i,b in enumerate(PAYLOAD): code += expb(MID+i,b)
-    code=transfer(code,s,3,3,MID,len(PAYLOAD),True)+jp_c(FAIL_PC)
-    code=transfer(code,s,4,2,DST,len(PAYLOAD),False)+jp_c(FAIL_PC)
+    code=transfer(code,s,3,1,MID,len(PAYLOAD),True)+jp_c(FAIL_PC)
+    code=transfer(code,s,4,0,DST,len(PAYLOAD),False)+jp_c(FAIL_PC)
     for i,b in enumerate(PAYLOAD): code += expb(DST+i,b)
     if stop==4:
         code += phase1._jp(PASS_PC)
@@ -176,18 +176,18 @@ def run_fixture(root,s,fixture,retain_parent_writer=False,stop=99):
 
     # Final stage writers close. Pipe2 EOF is governed by the final writer ref.
     code=close(code,s,2,(1,))
-    code=close(code,s,3,(0,3))
+    code=close(code,s,3,(0,1))
     code += expw(pipe2+s["PIPE_COUNT_O"],0)
-    code=transfer(code,s,4,2,DST,1,False)
+    code=transfer(code,s,4,0,DST,1,False)
     if retain_parent_writer:
         code += jp_nc(FAIL_PC)
         code += expb(p4+PROC_STATE,s["PROC_WAIT_PIPE_READ"])
         code=close(code,s,1,(3,))
-        code=transfer(code,s,4,2,DST,1,False)+jp_c(FAIL_PC)
+        code=transfer(code,s,4,0,DST,1,False)+jp_c(FAIL_PC)
     else:
         code += jp_c(FAIL_PC)
     code += phase1._ld_de(0)+b"\xB7\xED\x52"+jp_nz(FAIL_PC)
-    code=close(code,s,4,(2,))
+    code=close(code,s,4,(0,))
     if stop==5:
         code += phase1._jp(PASS_PC)
         run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0); return
