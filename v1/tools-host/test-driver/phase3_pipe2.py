@@ -34,7 +34,10 @@ RECORD=0xB000
 PIPE_RESULT=0x8E00
 SRC=0x5200
 DST=0x5300
+STRESS_SRC=0x5400
+STRESS_DST=0x5500
 CHUNK=b"PIPE2-OK"
+STRESS=bytes(range(128))
 PROC_STATE=2
 PROC_WAIT_OBJECT=15
 PROC_HANDLES=16
@@ -85,7 +88,7 @@ def regions(s):
       (s["process_table"],table()),(s["current_pid"],b"\x01"),
       (s["open_description_table"],bytes(24*8)),
       (s["memory_free_extents"],phase2_spawn_exit_leak._free_extents()),
-      (s["memory_live_allocations"],b"\x00\x00"),(SRC,CHUNK),(DST,b"\x00"*len(CHUNK)),
+      (s["memory_live_allocations"],b"\x00\x00"),(SRC,CHUNK),(DST,b"\x00"*len(CHUNK)),(STRESS_SRC,STRESS),(STRESS_DST,b"\x00"*len(STRESS)),
     )
 
 def patch(fixture,regs):
@@ -131,7 +134,7 @@ def run_fixture(root,s,fixture,stop=99,stress_cycles=16):
       code += phase1._jp(PASS_PC)
       run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0)
       return
-    code += phase1._ld_hl(8)+b"\x22"+w(pipe+s["PIPE_CAPACITY_O"])
+    code += phase1._ld_hl(128)+b"\x22"+w(pipe+s["PIPE_CAPACITY_O"])
     # consumer blocks on empty read through handle
     code += bytes((0x3E,3))+bytes((0x32,))+w(s["current_pid"])
     code += b"\x3E\x00"+phase1._ld_hl(DST)+b"\x01"+w(len(CHUNK))+phase1._call(s["p317_read_handle"])
@@ -149,31 +152,32 @@ def run_fixture(root,s,fixture,stop=99,stress_cycles=16):
       code += phase1._jp(PASS_PC)
       run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0)
       return
-    # full-pipe extra write blocks producer and reaches scheduler
-    code += b"\x3E\x01"+phase1._ld_hl(SRC)+b"\x01\x01\x00"+phase1._call(s["p317_write_handle"])+jp_nc(FAIL_PC)
-    code += expb(p2+PROC_STATE,s["PROC_WAIT_PIPE_WRITE"])+expb(s["p317_schedule_count"],2)
+    # consumer drains the exact byte stream.
+    code += bytes((0x3E,3))+bytes((0x32,))+w(s["current_pid"])
+    code += b"\x3E\x00"+phase1._ld_hl(DST)+b"\x01"+w(len(CHUNK))+phase1._call(s["p317_read_handle"])+jp_c(FAIL_PC)
+    code += expw(s["pipe_table"]+s["PIPE_COUNT_O"],0)
+    for i,b in enumerate(CHUNK): code += expb(DST+i,b)
     if stop==6:
       code += phase1._jp(PASS_PC)
       run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0)
       return
-    # consumer drains, waking producer
-    code += bytes((0x3E,3))+bytes((0x32,))+w(s["current_pid"])
-    code += b"\x3E\x00"+phase1._ld_hl(DST)+b"\x01"+w(len(CHUNK))+phase1._call(s["p317_read_handle"])+jp_c(FAIL_PC)
-    code += expb(p2+PROC_STATE,s["PROC_READY"])+expw(s["pipe_table"]+s["PIPE_COUNT_O"],0)
-    for i,b in enumerate(CHUNK): code += expb(DST+i,b)
     if stop==7:
       code += phase1._jp(PASS_PC)
       run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0)
       return
-    # stress 16 fill/block/drain cycles; failure to block/wake cannot reach PASS.
+    # Stress the canonical 128-byte fallback capacity. Each full-buffer
+    # extra write must block; each drain must wake the producer.
     for _ in range(stress_cycles):
       code += bytes((0x3E,2))+bytes((0x32,))+w(s["current_pid"])
-      code += b"\x3E\x01"+phase1._ld_hl(SRC)+b"\x01"+w(len(CHUNK))+phase1._call(s["p317_write_handle"])+jp_c(FAIL_PC)
-      code += b"\x3E\x01"+phase1._ld_hl(SRC)+b"\x01\x01\x00"+phase1._call(s["p317_write_handle"])+jp_nc(FAIL_PC)
+      code += b"\x3E\x01"+phase1._ld_hl(STRESS_SRC)+b"\x01\x80\x00"+phase1._call(s["p317_write_handle"])+jp_c(FAIL_PC)
+      code += expw(s["pipe_table"]+s["PIPE_COUNT_O"],128)
+      code += b"\x3E\x01"+phase1._ld_hl(STRESS_SRC)+b"\x01\x01\x00"+phase1._call(s["p317_write_handle"])+jp_nc(FAIL_PC)
+      code += expb(p2+PROC_STATE,s["PROC_WAIT_PIPE_WRITE"])
       code += bytes((0x3E,3))+bytes((0x32,))+w(s["current_pid"])
-      code += b"\x3E\x00"+phase1._ld_hl(DST)+b"\x01"+w(len(CHUNK))+phase1._call(s["p317_read_handle"])+jp_c(FAIL_PC)
-      code += expb(p2+PROC_STATE,s["PROC_READY"])
-    code += expb(s["p317_schedule_count"],2+stress_cycles)
+      code += b"\x3E\x00"+phase1._ld_hl(STRESS_DST)+b"\x01\x80\x00"+phase1._call(s["p317_read_handle"])+jp_c(FAIL_PC)
+      code += expb(p2+PROC_STATE,s["PROC_READY"])+expw(s["pipe_table"]+s["PIPE_COUNT_O"],0)
+      code += expb(STRESS_DST,0)+expb(STRESS_DST+127,127)
+    code += expb(s["p317_schedule_count"],1+stress_cycles)
     if stop==8:
       code += phase1._jp(PASS_PC)
       run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0)
