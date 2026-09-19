@@ -1,0 +1,103 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "fixed-directory-ids-root-through-system-exact",
+      "passed": true
+    },
+    {
+      "name": "fixed-root-children-bin-dev-etc-home-tmp-only",
+      "passed": true
+    },
+    {
+      "name": "home-child-is-session-user-only",
+      "passed": true
+    },
+    {
+      "name": "dot-and-dotdot-navigation-explicit",
+      "passed": true
+    },
+    {
+      "name": "above-root-is-einval",
+      "passed": true
+    },
+    {
+      "name": "normalized-length-not-raw-length",
+      "passed": true
+    },
+    {
+      "name": "trailing-separator-empty-final-is-einval",
+      "passed": true
+    },
+    {
+      "name": "no-general-directory-mount-permission-inode-surface",
+      "passed": true
+    },
+    {
+      "name": "namespace-contract-document-present",
+      "passed": true
+    },
+    {
+      "name": "runtime-directory-id-sequence-exact",
+      "passed": true
+    },
+    {
+      "name": "path-kind-values-distinct",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12492 lines, work time: 0.033 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p401-namespace.lst",
+        "--sym=p401-namespace.sym",
+        "p401-namespace.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 7,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2187 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p401-namespace.bin": "8a0184c51610658ea1db6d871256394380ff22e808a82130eb239bbab098e041",
+    "v1/dist/certification/phase-3.json": "444169c610c4bff236f9084ff4ce4136f9c189624f569106c6e82d49782867fe",
+    "v1/docs/namespace.md": "2b1b5d0fb4094ff5965f25e50af0be178b09946625a15ff00cea466f96aa7f0e",
+    "v1/include/zx48ux.inc": "6260d9bfd4a5785e68c657601efa9113bfac8deaf56a67abd27f72c25c60bb5f",
+    "v1/src/kernel/kernel.asm": "c7f520614d10b3510682c36183812fe8c2134a0baa167969b84301fa4207305a",
+    "v1/src/kernel/objects.asm": "c34a206e3fa589ea4ebb300a4561109fc23bd56dd748a6079b58df49a410f7df",
+    "v1/tools-host/test-driver/phase4_namespace.py": "7ab65838187af9a66630fdf53572f997207a67794c515fe62f7a6dc8d9501dd9",
+    "v1/tools-host/test-driver/run.py": "c7caa8411447ca04562255df3f4b3216f4561dc69a306bcc0362686fd2a0c8ef"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P3.21": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "703f5fe67d006a81d542c0f2c1f720db057f8662",
+  "status": "PASS",
+  "step": "P4.01",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
