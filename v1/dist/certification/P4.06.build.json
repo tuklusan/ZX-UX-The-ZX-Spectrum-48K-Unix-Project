@@ -1,0 +1,90 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "writer-guard-scans-open-description-pool",
+      "passed": true
+    },
+    {
+      "name": "writer-guard-distinguishes-write-capability",
+      "passed": true
+    },
+    {
+      "name": "staged-object-create-enforces-exclusivity",
+      "passed": true
+    },
+    {
+      "name": "no-open-reference-scan-is-od-pool-only",
+      "passed": true
+    },
+    {
+      "name": "representation-swap-guard-delegates-to-od-pool",
+      "passed": true
+    },
+    {
+      "name": "dup-retains-same-description",
+      "passed": true
+    },
+    {
+      "name": "spawn-inheritance-retains-same-description",
+      "passed": true
+    },
+    {
+      "name": "open-description-pool-remains-bounded-24",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12807 lines, work time: 0.034 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p406-exclusive.lst",
+        "--sym=p406-exclusive.sym",
+        "p406-exclusive.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 8,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 3354 lines, work time: 0.006 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p406-exclusive.bin": "03220cd5fc7989d527629ddea31ee3b928005c31d21c0e53b2372491a6b43c0b",
+    "v1/dist/certification/P4.05.test.json": "39f0098364ea30aab7b147e1b339169ad6ff45edc666d372389027d093475b45",
+    "v1/src/kernel/handles.asm": "dd82383ab1e65ea830e7b22b8f6366ee56ba0dfa14f170a2a443dfff5427a655",
+    "v1/src/kernel/objects.asm": "666389e1866718fbd4dcc434d07b643ca248ff1d224d1b6afdc44b8c5045e459",
+    "v1/src/kernel/process.asm": "20c3d59193ab983524cb18e0263b3e7c96dd3b3987d10522f7e33a2c442ef696",
+    "v1/tools-host/test-driver/phase4_exclusive.py": "e9d18edee2a822b32e2431a0974d0f7f8561a271d1fbe3ef8e8d443c2d7222e7",
+    "v1/tools-host/test-driver/run.py": "bf4f5466c911b42f3e8cc411280e053b586717c3b4b29d1918972e920b24fa49"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P4.05": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "b7d637c7bcfa706694deb14bb796a97b67022bd8",
+  "status": "PASS",
+  "step": "P4.06",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
