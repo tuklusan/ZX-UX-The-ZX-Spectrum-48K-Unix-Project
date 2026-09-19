@@ -2046,7 +2046,7 @@ ns_kind: db 0
 
 
 ;
-/ P4.07 staged RAW RAM-object read/seek contract. The qualification fixture
+; P4.07 staged RAW RAM-object read/seek contract. The qualification fixture
 ; emits this with the admitted handle and mutable-object helpers without
 ; increasing the resident kernel code pool before the later Phase-4 integration.
 ;

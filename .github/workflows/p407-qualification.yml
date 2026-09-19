@@ -31,7 +31,7 @@ jobs:
     timeout-minutes: 45
     env:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p407-qualification
-      P407_EXACT_PARENT: 6f4bd4b431d927da5c0f063d1cf220ce87535af8
+      P407_EXACT_PARENT: aea0c75c8729ed82d30adc1303b54ca013403aee
       ZXUX_REV16_SHA256: 24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c
       ZXUX_REV07_SHA256: 840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc
     steps:
@@ -42,7 +42,7 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD^)" = "$P407_EXACT_PARENT"
           git diff --name-only HEAD^ HEAD | sort > /tmp/p407-changed
-          printf '%s\n' .github/workflows/p406-qualification.yml .github/workflows/p407-qualification.yml v1/src/kernel/objects.asm v1/tools-host/test-driver/phase4_raw_read.py v1/tools-host/test-driver/run.py | sort > /tmp/p407-expected
+          printf '%s\n' .github/workflows/p407-qualification.yml v1/src/kernel/objects.asm v1/tools-host/test-driver/phase4_raw_read.py | sort > /tmp/p407-expected
           diff -u /tmp/p407-expected /tmp/p407-changed
           git diff --check HEAD^ HEAD
           test -z "$(git status --porcelain)"

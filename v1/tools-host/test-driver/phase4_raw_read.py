@@ -110,7 +110,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
         {"name": "raw-logical-physical-lengths-must-match", "passed": "OBJ_LOGICAL_LENGTH" in macro and "OBJ_STORAGE_LENGTH" in macro and "E_FORMAT" in macro},
         {"name": "zero-transfer-returns-before-allocation-pointer", "passed": macro.index("zx48_p407_read_zero:") > macro.index("OBJ_ALLOCATION_PTR")},
         {"name": "nonzero-allocation-pointer-is-even", "passed": "bit 0,e" in macro and "OBJ_ALLOCATION_PTR" in macro},
-        {"name": "read-updates-shared-open-description-offset", "passed": macro.count("(ix+OD_OFFSET_O)") >= 4},
+        {"name": "read-updates-shared-open-description-offset", "passed": all(line in macro for line in ("ld l,(ix+OD_OFFSET_O)", "ld h,(ix+OD_OFFSET_O+1)", "ld (ix+OD_OFFSET_O),l", "ld (ix+OD_OFFSET_O+1),h"))},
         {"name": "packed-path-not-mutated-by-raw-routines", "passed": macro.count("and OBJ_PACKED") >= 2 and "zx48_p407_notsup" in macro},
     ]
 
