@@ -2729,3 +2729,108 @@ p405_truncate_old_length: dw 0
 p405_object_table: defs RAM_OBJECT_COUNT*OBJ_RECORD_SIZE,0
 p405_object_table_end:
     ENDM
+
+
+;
+; P4.11 staged SYS_STAT metadata resolver. Produces the exact ten-byte
+; STATOUT1 record in p411_stat_record without exposing partial output.
+;
+    MACRO EMIT_P411_STAT_OBJECT_ROUTINES
+zx48_p411_stat_clear:
+    xor a
+    ld hl,p411_stat_record
+    ld de,p411_stat_record+1
+    ld bc,9
+    ld (hl),a
+    ldir
+    ret
+
+; HL=NUL path -> p411_stat_record exact STATOUT1.
+zx48_p411_stat_resolve:
+    call zx48_path_resolve
+    ret c
+    ld (p411_stat_dir),a
+    ld a,c
+    cp PATH_KIND_DIR
+    jr z,zx48_p411_stat_dir
+
+    ld a,(p411_stat_dir)
+    cp DIR_DEV
+    jr z,zx48_p411_stat_dev
+
+    ; Resident exact-name RAM metadata shadows catalog-only tape metadata.
+    ld a,(p411_stat_dir)
+    ld hl,path_name
+    call zx48_p405_object_lookup
+    jr nc,zx48_p411_stat_ram
+
+    ld a,(p411_stat_dir)
+    ld hl,path_name
+    call zx48_p405_is_bcat
+    jr z,zx48_p411_stat_tape
+    ld a,E_NOENT
+    scf
+    ret
+
+zx48_p411_stat_ram:
+    call zx48_p411_stat_clear
+    ld a,(ix+OBJ_TYPE_ID)
+    ld (p411_stat_record+0),a
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    ld (p411_stat_record+1),a
+    ld l,(ix+OBJ_LOGICAL_LENGTH)
+    ld h,(ix+OBJ_LOGICAL_LENGTH+1)
+    ld (p411_stat_record+2),hl
+    ld l,(ix+OBJ_STORAGE_LENGTH)
+    ld h,(ix+OBJ_STORAGE_LENGTH+1)
+    ld (p411_stat_record+4),hl
+    ld a,(ix+OBJ_DIR_ID)
+    ld (p411_stat_record+6),a
+    ld a,STATE_RAM
+    ld (p411_stat_record+7),a
+    xor a
+    ret
+
+zx48_p411_stat_dir:
+    call zx48_p411_stat_clear
+    ld a,OBJ_DIR
+    ld (p411_stat_record+0),a
+    ld a,(p411_stat_dir)
+    ld (p411_stat_record+6),a
+    ld a,STATE_PSEUDO
+    ld (p411_stat_record+7),a
+    xor a
+    ret
+
+zx48_p411_stat_dev:
+    ld a,(p411_stat_dir)
+    ld hl,path_name
+    call zx48_p405_device_kind
+    ret c
+    call zx48_p411_stat_clear
+    ld a,OBJ_DEV
+    ld (p411_stat_record+0),a
+    ld a,DIR_DEV
+    ld (p411_stat_record+6),a
+    ld a,STATE_PSEUDO
+    ld (p411_stat_record+7),a
+    xor a
+    ret
+
+zx48_p411_stat_tape:
+    call zx48_p411_stat_clear
+    ld a,OBJ_BIN
+    ld (p411_stat_record+0),a
+    ld hl,$ffff
+    ld (p411_stat_record+2),hl
+    ld (p411_stat_record+4),hl
+    ld a,DIR_BIN
+    ld (p411_stat_record+6),a
+    ld a,STATE_TAPE_BACKED
+    ld (p411_stat_record+7),a
+    xor a
+    ret
+
+p411_stat_dir: db 0
+p411_stat_record: defs 10,0
+    ENDM
