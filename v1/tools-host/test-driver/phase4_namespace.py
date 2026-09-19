@@ -21,7 +21,7 @@ from fuse_harness import FAIL_PC, PASS_PC, run_sna
 import phase1
 import phase3_open_descriptions
 
-NAMESPACE_BASE = 0x9000
+NAMESPACE_BASE = 0xC000
 
 PATH_BASE = 0xA000
 USER_BASE = 0xA300
@@ -86,7 +86,7 @@ def _assemble_namespace(root: Path, run_command: Callable[..., Any], require_pro
         """    DEVICE ZXSPECTRUM48
     INCLUDE "../include/zx48ux.inc"
 PROC_CWD EQU 28
-    ORG $9000
+    ORG $C000
 current_pid: db 1
 zx48_process_lookup:
     ld ix,fake_process
@@ -95,7 +95,7 @@ zx48_process_lookup:
     INCLUDE "../src/kernel/objects.asm"
     EMIT_NAMESPACE_ROUTINES
 fake_process: defs 48,0
-    SAVEBIN "p401-namespace.bin",$9000,$-$9000
+    SAVEBIN "p401-namespace.bin",$C000,$-$C000
 """,
         encoding="utf-8", newline="\n",
     )
