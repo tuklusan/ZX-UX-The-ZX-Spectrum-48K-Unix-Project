@@ -195,6 +195,7 @@ def dispatch(
     hashes = {
         "v1/build/kernel.bin": sha256_file(kernel),
         "v1/include/zx48ux.inc": sha256_file(root / "v1/include/zx48ux.inc"),
+        "v1/src/kernel/kernel.asm": sha256_file(root / "v1/src/kernel/kernel.asm"),
         "v1/src/kernel/objects.asm": sha256_file(root / "v1/src/kernel/objects.asm"),
         "v1/docs/namespace.md": sha256_file(root / "v1/docs/namespace.md"),
         "v1/tools-host/test-driver/phase4_namespace.py": sha256_file(root / "v1/tools-host/test-driver/phase4_namespace.py"),

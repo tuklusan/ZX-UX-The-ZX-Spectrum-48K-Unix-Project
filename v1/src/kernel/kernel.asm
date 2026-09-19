@@ -33,6 +33,7 @@
     INCLUDE "console.asm"
     INCLUDE "keyboard.asm"
     INCLUDE "udg.asm"
+    INCLUDE "objects.asm"
 
     ORG KERNEL_START
 kernel_image_start:
@@ -82,6 +83,8 @@ kernel_mod_keyboard:
     EMIT_KEYBOARD_ROUTINES
 kernel_mod_udg:
     EMIT_UDG_ROUTINES
+kernel_mod_objects:
+    EMIT_OBJECT_ROUTINES
 kernel_ordinary_used_end:
     ASSERT $ <= KERNEL_CODE_END+1
     DEFS KERNEL_CODE_END+1-$,0
