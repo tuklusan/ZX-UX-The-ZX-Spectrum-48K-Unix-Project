@@ -90,7 +90,7 @@ def source_contract(root: Path) -> list[dict[str, object]]:
     tty=console[console.index("TTY_REQ_GET_MODE"):console.index("CONSOLE_STATE_BASE")]
     impl=console[console.index("zx48_tty_ioctl:"):console.index("    ENDM",console.index("zx48_tty_ioctl:"))]
     return [
-      {"name":"ioctl1-is-exact-packed-four-byte-record","passed":"HL -> IOCTL1 {handle,request,u16 arg_ptr}" in block and "ld bc,4" in block},
+      {"name":"ioctl1-is-exact-packed-four-byte-record","passed":"HL -> IOCTL1 {handle,request,u16 arg_ptr}" in syscall and "ld bc,4" in block},
       {"name":"complete-ioctl1-range-precedes-handle-record-dereference","passed":block.index("call zx48_user_range_validate") < block.index("ld a,(hl)") < block.index("call zx48_handle_lookup")},
       {"name":"tty-kind-gate-precedes-request-dispatch","passed":block.index("cp OD_KIND_TTY") < block.index("cp TTY_REQ_GET_MODE")},
       {"name":"pointed-range-validated-before-tty-action","passed":block.index("call zx48_user_range_validate",block.index("zx48_sys_ioctl_arg:")) < block.index("call zx48_tty_ioctl")},

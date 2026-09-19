@@ -34,7 +34,7 @@ jobs:
     timeout-minutes: 45
     env:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p320-qualification
-      P320_EXACT_PARENT: f72185ccfbd3ba458c63366df173dc5782c762d3
+      P320_EXACT_PARENT: 2f21275dfa195ad7f12e5f774a4d78d54a58ccb1
       ZXUX_REV16_SHA256: 24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c
       ZXUX_REV07_SHA256: 840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc
     steps:
@@ -47,7 +47,7 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD^)" = "$P320_EXACT_PARENT"
           git diff --name-only HEAD^ HEAD | sort > /tmp/p320-changed
-          printf '%s\n' .github/workflows/p319-qualification.yml .github/workflows/p320-qualification.yml v1/tools-host/test-driver/phase3_ioctl.py v1/tools-host/test-driver/run.py | sort > /tmp/p320-expected
+          printf '%s\n' .github/workflows/p320-qualification.yml v1/tools-host/test-driver/phase3_ioctl.py | sort > /tmp/p320-expected
           diff -u /tmp/p320-expected /tmp/p320-changed
           git diff --check HEAD^ HEAD
           test -z "$(git status --porcelain)"
