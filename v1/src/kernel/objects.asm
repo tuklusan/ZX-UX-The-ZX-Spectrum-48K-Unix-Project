@@ -3480,10 +3480,12 @@ zx48_p413_found:
     jp nz,zx48_p413_perm
 
 zx48_p413_mutable_dir:
+    ld (p413_object_ptr),ix
     ld a,c
     ld (p413_slot),a
     call zx48_object_no_open_references
     ret c
+    ld ix,(p413_object_ptr)
 
     ; Preserve payload ownership before touching the table entry.
     ld l,(ix+OBJ_ALLOCATION_PTR)
@@ -3510,6 +3512,7 @@ zx48_p413_length_ready:
     jp zx48_panic
 
 zx48_p413_clear_state:
+    ld ix,(p413_object_ptr)
     ; Removal invalidates all transient zxpack candidate pointers/identity.
     xor a
     ld hl,0
@@ -3540,5 +3543,6 @@ p413_dir: db 0
 p413_slot: db 0
 p413_old_ptr: dw 0
 p413_old_length: dw 0
+p413_object_ptr: dw 0
 p413_zero_record: defs OBJ_RECORD_SIZE,0
     ENDM
