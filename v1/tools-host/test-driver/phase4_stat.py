@@ -162,7 +162,7 @@ def _target(root: Path, s: dict[str, int], module: bytes) -> None:
                 if 0 <= start < len(ram):
                     ram[start:min(start + 10, len(ram))] = bytes((out_fill,)) * min(10, len(ram) - start)
             if bad_path_byte:
-                ram[0x5FFF - 0x4000] = ord("x")
+                ram[0x5AFF - 0x4000] = ord("x")
         return apply
 
     def mem_eq(address: int, expected: bytes) -> bytes:
