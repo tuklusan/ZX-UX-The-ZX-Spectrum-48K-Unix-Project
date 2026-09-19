@@ -110,6 +110,7 @@ zx48_process_lookup:
     INCLUDE "../src/kernel/objects.asm"
     INCLUDE "../src/kernel/syscall.asm"
     EMIT_NAMESPACE_ROUTINES
+    EMIT_OBJECT_TYPE_ROUTINES
     EMIT_OBJECT_OPEN_ROUTINES
     EMIT_USER_RANGE_VALIDATION_ROUTINE
     EMIT_P412_LIST_ROUTINES
