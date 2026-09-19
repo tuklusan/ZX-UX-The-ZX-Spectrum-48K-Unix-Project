@@ -1,0 +1,121 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "record-size-and-count-exact",
+      "passed": true
+    },
+    {
+      "name": "all-eight-record-offsets-frozen",
+      "passed": true
+    },
+    {
+      "name": "record-table-is-exact-640-bytes",
+      "passed": true
+    },
+    {
+      "name": "flags-and-reserved-validated",
+      "passed": true
+    },
+    {
+      "name": "raw-packed-length-invariants-target-side",
+      "passed": true
+    },
+    {
+      "name": "allocation-pointer-even-and-arena-bounded",
+      "passed": true
+    },
+    {
+      "name": "allocator-accounting-rounds-only-two-byte-alignment",
+      "passed": true
+    },
+    {
+      "name": "ordinary-payload-class-is-cold-preferred",
+      "passed": true
+    },
+    {
+      "name": "pinned-metadata-outside-mutable-table",
+      "passed": true
+    },
+    {
+      "name": "abi-doc-freezes-record-layout",
+      "passed": true
+    },
+    {
+      "name": "assembled-table-size-exact-640",
+      "passed": true
+    },
+    {
+      "name": "assembled-record-count-exact-32",
+      "passed": true
+    },
+    {
+      "name": "raw-packed-zero-and-ten-byte-name-records-decode-exact",
+      "passed": true
+    },
+    {
+      "name": "all-invalid-representation-vectors-fail-before-publication",
+      "passed": true
+    },
+    {
+      "name": "exact-32-slot-capacity-and-33rd-enospc",
+      "passed": true
+    },
+    {
+      "name": "cold-and-fast-resident-records-preserve-accounting",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12492 lines, work time: 0.033 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p403-records.lst",
+        "--sym=p403-records.sym",
+        "p403-records.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 6,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2302 lines, work timee: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p403-records.bin": "66ee0873a502b14e625ffb9b3d9db9aa3e4c66557d0fc79e733c0dfa12cb09ad",
+    "v1/dist/certification/P4.02.test.json": "877ea5093f5de239967e04dcedfb1060409325d742141a9087dabfd3a99ed26c",
+    "v1/docs/abi.md": "22663713d1f967735f2f3974ecbd85229613141dcf231cbdc48e0071450c8ce2",
+    "v1/src/kernel/objects.asm": "aab08c27eaae43141f5f45edaa0a3379c4376fae6e0db9adf095d3e41b398f0d",
+    "v1/tools-host/test-driver/phase4_records.py": "22f9c7e56d3f3da0dbf6e9b9eb977999ab513d7b7f33e75ff7ced2ace3e66b24",
+    "v1/tools-host/test-driver/run.py": "7fc78c585001917f45db0a14a28752aa8fe7834df4f6a933fac485288bcca3b8"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P4.02": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "4c5f3e8593ff166481fbd41da23b6a5d620a77f3",
+  "status": "PASS",
+  "step": "P4.03",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
