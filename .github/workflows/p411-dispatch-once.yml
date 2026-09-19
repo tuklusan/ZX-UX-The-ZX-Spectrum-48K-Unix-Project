@@ -10,7 +10,7 @@
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
 
-name: P4.11 one-shot qualification dispatch bridge v4
+name: P4.11 one-shot qualification dispatch bridge v5
 
 on:
   push:

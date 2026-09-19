@@ -23,7 +23,7 @@ jobs:
     timeout-minutes: 45
     env:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p411-qualification
-      P411_EXACT_PARENT: 424160b807edb3689c9bcddb3aeacf55eafc562f
+      P411_EXACT_PARENT: c1e095e0ffc16dbaaeff3e135ed56bcc29c9d0f9
       ZXUX_REV16_SHA256: 24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c
       ZXUX_REV07_SHA256: 840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc
     steps:
@@ -71,6 +71,10 @@ jobs:
         run: python tools/scripts/bootstrap-environment.py
       - name: Certify pinned runtime
         run: tools/runtime/python/bin/python tools/scripts/verify-environment.py
+      - name: Recheck E0.05 repository policy
+        run: |
+          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step E0.05 --evidence-dir /tmp/zxux-p411-e005
+          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step E0.05 --evidence-dir /tmp/zxux-p411-e005
       - name: Execute P4.11 build
         run: tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P4.11
       - name: Execute P4.11 test
