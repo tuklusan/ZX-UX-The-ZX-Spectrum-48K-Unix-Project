@@ -56,6 +56,10 @@ p318_read_handle:
     ld a,(ix+OD_ID_O)
     jp zx48_pipe_read
 
+zx48_syscall_resume_wait_specific:
+    ld a,PANIC_SCHEDULER
+    jp zx48_panic
+
 p318_write_handle:
     push hl
     push bc
