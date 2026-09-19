@@ -305,7 +305,7 @@ zx48_object_visible_length:
     or a
     ret
 zx48_object_visible_length_unknown:
-    ld hl,$ffff
+    ld hl,0-1
     xor a
     or a
     ret
