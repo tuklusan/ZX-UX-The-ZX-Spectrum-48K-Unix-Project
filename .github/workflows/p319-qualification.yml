@@ -1,0 +1,62 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+name: P3.19 widened-range qualification
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/p319-qualification.yml, v1/tests/emulator/widened_ranges.asm, v1/tools-host/test-driver/phase3_widened_ranges.py, v1/tools-host/test-driver/run.py, v1/src/kernel/syscall.asm]
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      ZXUX_EVIDENCE_DIR: /tmp/zxux-p319-qualification
+      P319_EXACT_PARENT: a7ec7abe60b53457898b2a58b5670d5a9469e6b7
+    steps:
+      - uses: actions/checkout@v7
+        with: {fetch-depth: 0}
+      - name: Guard exact P3.19 candidate
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "$P319_EXACT_PARENT"
+          git diff --check HEAD^ HEAD
+          test -z "$(git status --porcelain)"
+      - name: Mandatory gates
+        run: |
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+          test -s v1/dist/certification/P3.18.test.json
+          grep -q '"status": "PASS"' v1/dist/certification/P3.18.test.json
+      - uses: actions/setup-python@v6
+        with: {python-version: '3.13.15', check-latest: false}
+      - name: Install native build prerequisites
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential cmake gettext libaudiofile-dev libfreetype6-dev libgcrypt20-dev libglib2.0-dev libpng-dev libsdl1.2-dev libtool libxml2-dev perl pkg-config
+      - name: Acquire pinned runtime
+        run: python tools/scripts/bootstrap-environment.py
+      - name: Certify pinned runtime
+        run: tools/runtime/python/bin/python tools/scripts/verify-environment.py
+      - name: Execute P3.19
+        run: |
+          mkdir -p "$ZXUX_EVIDENCE_DIR"
+          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P3.19
+          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P3.19
+      - name: Collect evidence
+        if: always()
+        run: |
+          mkdir -p "$ZXUX_EVIDENCE_DIR/build"
+          cp v1/dist/certification/P3.19.*.json "$ZXUX_EVIDENCE_DIR/build/" 2>/dev/null || true
+          git rev-parse HEAD > "$ZXUX_EVIDENCE_DIR/candidate-commit.txt"
+          git rev-parse 'HEAD^{tree}' > "$ZXUX_EVIDENCE_DIR/candidate-tree.txt"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with: {name: "zxux-p319-qualification-${{ github.run_id }}-${{ github.run_attempt }}", path: /tmp/zxux-p319-qualification/, retention-days: 90, if-no-files-found: error}

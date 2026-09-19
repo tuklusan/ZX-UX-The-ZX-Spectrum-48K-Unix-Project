@@ -104,6 +104,7 @@ import phase3_rw_validation
 import phase3_allow_tape
 import phase3_pipe2
 import phase3_pipe3
+import phase3_widened_ranges
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
 from driver_core import (
     DriverError,
@@ -184,6 +185,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase3_pipe2.dispatch(root, action, step, **kwargs)
     if step == "P3.18":
         return phase3_pipe3.dispatch(root, action, step, **kwargs)
+    if step == "P3.19":
+        return phase3_widened_ranges.dispatch(root, action, step, **kwargs)
     module = E0_MODULE.get(step)
     if module is not None:
         return module.dispatch(root, action, step, **kwargs)
