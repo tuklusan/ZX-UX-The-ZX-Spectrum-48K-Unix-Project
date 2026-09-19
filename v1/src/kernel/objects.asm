@@ -1424,6 +1424,84 @@ zx48_cstr_equal:
     inc hl
     jr zx48_cstr_equal
 
+; HL=NUL exact-case portable base name. A=len on success.
+zx48_name_validate:
+    ld (ns_name_ptr),hl
+    ld b,0
+.name_loop:
+    ld a,(hl)
+    or a
+    jr z,.name_end
+    inc b
+    ld a,b
+    cp 11
+    jr nc,.name_long
+    ld a,(hl)
+    call zx48_name_char_valid
+    jr c,.name_bad
+    inc hl
+    jr .name_loop
+.name_end:
+    ld a,b
+    or a
+    jr z,.name_bad
+    cp 1
+    jr z,.check_dot
+    cp 2
+    jr nz,.name_ok
+    ld hl,(ns_name_ptr)
+    ld a,(hl)
+    cp '.'
+    jr nz,.name_ok
+    inc hl
+    ld a,(hl)
+    cp '.'
+    jr z,.name_bad
+    jr .name_ok
+.check_dot:
+    ld hl,(ns_name_ptr)
+    ld a,(hl)
+    cp '.'
+    jr z,.name_bad
+.name_ok:
+    ld a,b
+    or a
+    ret
+.name_long:
+    ld a,E_TOOLONG
+    scf
+    ret
+.name_bad:
+    ld a,E_INVAL
+    scf
+    ret
+
+zx48_name_char_valid:
+    cp '0'
+    jr c,.name_punct
+    cp '9'+1
+    jr c,.name_char_ok
+    cp 'A'
+    jr c,.name_punct
+    cp 'Z'+1
+    jr c,.name_char_ok
+    cp 'a'
+    jr c,.name_punct
+    cp 'z'+1
+    jr c,.name_char_ok
+.name_punct:
+    cp '_'
+    jr z,.name_char_ok
+    cp '-'
+    jr z,.name_char_ok
+    cp '.'
+    jr z,.name_char_ok
+    scf
+    ret
+.name_char_ok:
+    or a
+    ret
+
 zx48_path_resolve:
     ld (ns_src),hl
     ld a,(hl)
@@ -1518,6 +1596,9 @@ zx48_path_resolve:
     jp .bad
 
 .base:
+    ld hl,path_name
+    call zx48_name_validate
+    ret c
     ld c,PATH_KIND_BASE
     jr .finish
 .next:
@@ -1661,6 +1742,7 @@ session_user_len: db 0
 session_user: defs 9,0
 ns_src: dw 0
 ns_after: dw 0
+ns_name_ptr: dw 0
 ns_dir: db 0
 ns_kind: db 0
     ENDM
