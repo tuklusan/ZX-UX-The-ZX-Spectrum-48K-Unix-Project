@@ -3745,3 +3745,183 @@ p414_source_type: db 0
 p414_old_name: defs 11,0
 p414_new_name: defs 11,0
     ENDM
+
+;
+; P4.15 distinct-destination SYS_RENAME replacement transaction. P4.14 remains
+; the immutable no-op/case-only/collision baseline; this wrapper handles only the
+; validated E_EXIST path and preserves all P4.14 semantics otherwise.
+;
+    MACRO EMIT_P415_RENAME_REPLACEMENT_ROUTINES
+
+; HL -> REN1. Delegate every non-replacement case to the P4.14 implementation.
+zx48_p415_sys_rename:
+    call zx48_p414_sys_rename
+    ret nc
+    cp E_EXIST
+    ret nz
+
+    ; P4.14 reached E_EXIST only after fully validating both paths, source type,
+    ; destination directory compatibility and mutable resident destination type.
+    ; Re-establish exact source/destination records and perform every fallible
+    ; check before the first object-table byte is changed.
+    ld ix,(p414_source_ptr)
+    ld a,(p414_source_slot)
+    call zx48_object_no_open_references
+    ret c
+    ld ix,(p414_source_ptr)
+    call zx48_p415_record_validate
+    ret c
+
+    ld a,(p414_new_dir)
+    ld hl,p414_new_name
+    call zx48_p405_object_lookup
+    jr c,zx48_p415_invalid
+    ld (p415_destination_ptr),ix
+    ld a,c
+    ld (p415_destination_slot),a
+
+    ; Destination metadata must itself be an ordinary mutable public RAM object.
+    ld a,(ix+OBJ_TYPE_ID)
+    ld b,a
+    ld a,(p414_new_dir)
+    call zx48_object_public_type_allowed
+    ret c
+
+    ld ix,(p415_destination_ptr)
+    call zx48_p415_record_validate
+    ret c
+    ld a,(p415_destination_slot)
+    call zx48_object_no_open_references
+    ret c
+
+    ; A malformed table must never cause the replacement to free the payload that
+    ; is about to become the destination's payload.
+    ld ix,(p414_source_ptr)
+    ld l,(ix+OBJ_ALLOCATION_PTR)
+    ld h,(ix+OBJ_ALLOCATION_PTR+1)
+    ld (p415_source_payload),hl
+    ld ix,(p415_destination_ptr)
+    ld e,(ix+OBJ_ALLOCATION_PTR)
+    ld d,(ix+OBJ_ALLOCATION_PTR+1)
+    ld a,h
+    or l
+    jr z,zx48_p415_payload_distinct
+    or a
+    sbc hl,de
+    jr z,zx48_p415_invalid
+zx48_p415_payload_distinct:
+
+    ; Save old destination ownership for post-commit release.
+    ld ix,(p415_destination_ptr)
+    ld l,(ix+OBJ_ALLOCATION_PTR)
+    ld h,(ix+OBJ_ALLOCATION_PTR+1)
+    ld (p415_old_destination_ptr),hl
+    ld c,(ix+OBJ_STORAGE_LENGTH)
+    ld b,(ix+OBJ_STORAGE_LENGTH+1)
+    bit 0,c
+    jr z,zx48_p415_old_length_ready
+    inc bc
+zx48_p415_old_length_ready:
+    ld (p415_old_destination_length),bc
+
+    ; Build the complete replacement record privately. The source payload pointer,
+    ; lengths, flags and type are copied as metadata only; payload bytes are never
+    ; read, copied, decoded, packed or recompressed.
+    ld hl,(p414_source_ptr)
+    ld de,p415_replacement_record
+    ld bc,OBJ_RECORD_SIZE
+    ldir
+    ld hl,p414_new_name
+    ld de,p415_replacement_record+OBJ_NAME
+    ld bc,10
+    ldir
+    ld a,(p414_new_dir)
+    ld (p415_replacement_record+OBJ_DIR_ID),a
+
+    ; Single metadata publication step: the destination entry now owns the source
+    ; payload. No fallible operation occurs before this point after validation.
+    ld hl,p415_replacement_record
+    ld de,(p415_destination_ptr)
+    ld bc,OBJ_RECORD_SIZE
+    ldir
+
+    ; Release the superseded destination payload only after publication. Allocator
+    ; corruption after commit is fatal rather than observable partial rename state.
+    ld hl,(p415_old_destination_ptr)
+    ld a,h
+    or l
+    jr z,zx48_p415_remove_source
+    ld bc,(p415_old_destination_length)
+    call zx48_free
+    jr nc,zx48_p415_remove_source
+    ld a,PANIC_SCHEDULER
+    jp zx48_panic
+
+zx48_p415_remove_source:
+    ; Remove the old source name/slot after ownership has transferred.
+    ld hl,p415_zero_record
+    ld de,(p414_source_ptr)
+    ld bc,OBJ_RECORD_SIZE
+    ldir
+    ld hl,0
+    xor a
+    ret
+
+; IX -> resident mutable record. Reject malformed metadata before replacement.
+zx48_p415_record_validate:
+    ld a,(ix+OBJ_RESERVED_BYTE)
+    or a
+    jr nz,zx48_p415_invalid
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    and $fe
+    jr nz,zx48_p415_invalid
+
+    ld l,(ix+OBJ_LOGICAL_LENGTH)
+    ld h,(ix+OBJ_LOGICAL_LENGTH+1)
+    ld e,(ix+OBJ_STORAGE_LENGTH)
+    ld d,(ix+OBJ_STORAGE_LENGTH+1)
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    and OBJ_PACKED
+    jr nz,zx48_p415_validate_packed
+    or a
+    sbc hl,de
+    jr nz,zx48_p415_invalid
+    jr zx48_p415_validate_allocation
+
+zx48_p415_validate_packed:
+    or a
+    sbc hl,de
+    jr c,zx48_p415_invalid
+    jr z,zx48_p415_invalid
+
+zx48_p415_validate_allocation:
+    ld l,(ix+OBJ_ALLOCATION_PTR)
+    ld h,(ix+OBJ_ALLOCATION_PTR+1)
+    ld a,d
+    or e
+    jr z,zx48_p415_storage_zero
+    ld a,h
+    or l
+    jr z,zx48_p415_invalid
+    xor a
+    ret
+zx48_p415_storage_zero:
+    ld a,h
+    or l
+    jr nz,zx48_p415_invalid
+    xor a
+    ret
+
+zx48_p415_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+
+p415_destination_ptr: dw 0
+p415_source_payload: dw 0
+p415_old_destination_ptr: dw 0
+p415_old_destination_length: dw 0
+p415_destination_slot: db 0
+p415_replacement_record: defs OBJ_RECORD_SIZE,0
+p415_zero_record: defs OBJ_RECORD_SIZE,0
+    ENDM
