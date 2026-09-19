@@ -63,11 +63,25 @@ zx48_process_lookup:
     ret
     INCLUDE "../src/kernel/objects.asm"
     INCLUDE "../src/kernel/syscall.asm"
+    INCLUDE "../src/kernel/handles.asm"
     EMIT_NAMESPACE_ROUTINES
     EMIT_OBJECT_TYPE_ROUTINES
     EMIT_OBJECT_OPEN_ROUTINES
+    EMIT_HANDLE_ROUTINES
     EMIT_P405_SYS_OPEN_ROUTINES
-fake_process: defs 48,0
+zx48_free:
+    xor a
+    ret
+zx48_pipe_endpoint_closed:
+    xor a
+    ret
+zx48_panic:
+    scf
+    ret
+fake_process:
+    defs 16,0
+    defs 8,HANDLE_FREE
+    defs 24,0
     SAVEBIN "p405-open.bin",$C000,$-$C000
 """,
         encoding="utf-8",
@@ -104,8 +118,9 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
         {"name": "noncreate-requires-zero-type", "passed": "p405_open_type" in smacro and "zx48_p405_open_type_check" in smacro},
         {"name": "create-publishes-type-last", "passed": "Type is the occupancy/publication byte and is committed last." in omacro},
         {"name": "existing-trunc-commits-empty-raw", "passed": "zx48_p405_object_truncate:" in omacro and all(x in omacro for x in ("OBJ_FLAGS_BYTE", "OBJ_LOGICAL_LENGTH", "OBJ_STORAGE_LENGTH", "OBJ_ALLOCATION_PTR"))},
-        {"name": "pseudo-devices-and-pinned-path-explicit", "passed": all(x in omacro for x in ("p405_tty_name", "p405_null_name", "p405_tape_name", "p405_pinned_name"))},
+        {"name": "pseudo-devices-explicit", "passed": all(x in omacro for x in ("p405_tty_name", "p405_null_name", "p405_tape_name"))},
         {"name": "bcat-only-name-explicit", "passed": "p405_bcat_name" in omacro and "E_AGAIN" in smacro},
+        {"name": "open-allocates-description-and-lowest-handle", "passed": all(x in smacro for x in ("zx48_od_create", "zx48_handle_install", "HANDLE_FREE", "zx48_od_release"))},
         {"name": "tape-byte-io-ioctl-notsup", "passed": all(x in smacro for x in ("zx48_p405_tape_read:", "zx48_p405_tape_write:", "zx48_p405_tape_ioctl:", "E_NOTSUP"))},
         {"name": "typed-open-does-not-infer-suffix", "passed": "suffix" not in omacro.lower() and "suffix" not in smacro.lower()},
     ]
@@ -126,7 +141,7 @@ def _record(name: bytes, directory: int, type_id: int, flags: int = 0, logical: 
 
 def _target(root: Path, s: dict[str, int], module: bytes) -> None:
     paths = [
-        "/tmp", "/tmp/file", "/tmp/new", "/bin/new", "/bin/sh", "/bin/tapeonly",
+        "/tmp", "/tmp/file", "/tmp/new", "/bin/new", "/bin/sh",
         "/dev/tty", "/dev/null", "/dev/tape", "/dev/foo", "/dev/TTY",
     ]
     addresses: dict[str, int] = {}
@@ -139,8 +154,10 @@ def _target(root: Path, s: dict[str, int], module: bytes) -> None:
         cursor += len(encoded)
 
     table = s["p405_object_table"]
+    od_table = s["open_description_table"]
+    fake_process = s["fake_process"]
 
-    def patch_factory(record: bytes | None = None):
+    def patch_factory(record: bytes | None = None, *, handles_full: bool = False, ods_full: bool = False):
         def patch(ram: bytearray) -> None:
             moff = MODULE_BASE - 0x4000
             ram[moff:moff + len(module)] = module
@@ -149,6 +166,12 @@ def _target(root: Path, s: dict[str, int], module: bytes) -> None:
             if record is not None:
                 roff = table - 0x4000
                 ram[roff:roff + 20] = record
+            if handles_full:
+                hoff = fake_process - 0x4000 + 16
+                ram[hoff:hoff + 8] = bytes((0,)) * 8
+            if ods_full:
+                for index in range(24):
+                    ram[od_table - 0x4000 + index * 8] = s["OD_KIND_OBJECT"]
         return patch
 
     def mem_eq(address: int, data: bytes) -> bytes:
@@ -169,10 +192,10 @@ def _target(root: Path, s: dict[str, int], module: bytes) -> None:
             + phase1._call(s["zx48_sys_open"])
         )
 
-    def execute(label: str, code: bytes, record: bytes | None = None) -> None:
+    def execute(label: str, code: bytes, record: bytes | None = None, *, handles_full: bool = False, ods_full: bool = False) -> None:
         body = bytes((0xF3,)) + phase1._ld_sp(0xBFC0) + code + phase1._jp(PASS_PC)
         try:
-            run_sna(root, body, patch=patch_factory(record))
+            run_sna(root, body, patch=patch_factory(record, handles_full=handles_full, ods_full=ods_full))
         except DriverError as exc:
             raise Phase4OpenError(f"P4.05 target case failed: {label}: {exc}") from exc
 
@@ -210,10 +233,13 @@ def _target(root: Path, s: dict[str, int], module: bytes) -> None:
 
     existing = _record(b"file", s["DIR_TMP"], s["OBJ_DAT"])
     code = open_call("/tmp/file", read | create, s["OBJ_C"]) + phase1._jp_c(FAIL_PC)
+    code += bytes((0x7C, 0xB5)) + phase1._jp_nz(FAIL_PC)
     code += mem_eq(table, existing)
-    code += byte_eq(s["p405_result_kind"], s["P405_KIND_OBJECT"])
+    code += byte_eq(s["p405_result_kind"], s["OD_KIND_OBJECT"])
     code += byte_eq(s["p405_result_type"], s["OBJ_DAT"])
-    execute("existing-type-preserved", code, existing)
+    code += byte_eq(fake_process + 16, 0)
+    code += mem_eq(od_table, bytes((s["OD_KIND_OBJECT"], read | create, 1, 0, 0, 0, 0, 0)))
+    execute("existing-type-preserved-lowest-handle", code, existing)
 
     expect_error(
         "existing-excl-eexist-unchanged",
@@ -222,9 +248,21 @@ def _target(root: Path, s: dict[str, int], module: bytes) -> None:
 
     created = _record(b"new", s["DIR_TMP"], s["OBJ_C"])
     code = open_call("/tmp/new", write | create, s["OBJ_C"]) + phase1._jp_c(FAIL_PC)
+    code += bytes((0x7C, 0xB5)) + phase1._jp_nz(FAIL_PC)
     code += mem_eq(table, created)
     code += byte_eq(s["p405_result_type"], s["OBJ_C"])
-    execute("absent-create-empty-raw", code)
+    code += byte_eq(fake_process + 16, 0)
+    execute("absent-create-empty-raw-lowest-handle", code)
+
+    code = open_call("/tmp/new", write | create, s["OBJ_C"]) + _jp_nc(FAIL_PC)
+    code += bytes((0xFE, s["E_NOSPC"])) + phase1._jp_nz(FAIL_PC)
+    code += mem_eq(table, bytes(20))
+    execute("handle-exhaustion-rolls-back-create", code, handles_full=True)
+
+    code = open_call("/tmp/new", write | create, s["OBJ_C"]) + _jp_nc(FAIL_PC)
+    code += bytes((0xFE, s["E_NOSPC"])) + phase1._jp_nz(FAIL_PC)
+    code += mem_eq(table, bytes(20))
+    execute("description-exhaustion-rolls-back-create", code, ods_full=True)
 
     packed = _record(b"file", s["DIR_TMP"], s["OBJ_DAT"], s["OBJ_PACKED"], 5, 3, s["ARENA_START"])
     truncated = _record(b"file", s["DIR_TMP"], s["OBJ_DAT"])
@@ -234,28 +272,32 @@ def _target(root: Path, s: dict[str, int], module: bytes) -> None:
     code += byte_eq(s["p405_result_flags"], flags)
     execute("trunc-append-empty-then-retain-append", code, packed)
 
+    code = open_call("/tmp/file", flags, 0) + _jp_nc(FAIL_PC)
+    code += bytes((0xFE, s["E_NOSPC"])) + phase1._jp_nz(FAIL_PC)
+    code += mem_eq(table, packed)
+    execute("trunc-handle-exhaustion-preserves-object", code, packed, handles_full=True)
+
     for path, kind, flags in (
-        ("/dev/tty", s["P405_KIND_TTY"], read),
-        ("/dev/null", s["P405_KIND_NULL"], write),
-        ("/dev/tape", s["P405_KIND_TAPE"], read | write),
+        ("/dev/tty", s["OD_KIND_TTY"], read),
+        ("/dev/null", s["OD_KIND_NULL"], write),
+        ("/dev/tape", s["OD_KIND_TAPE"], read | write),
     ):
         code = open_call(path, flags, 0) + phase1._jp_c(FAIL_PC)
         code += byte_eq(s["p405_result_kind"], kind)
         execute(f"pseudo-open-{path}", code)
 
-    code = open_call("/bin/sh", read, 0) + phase1._jp_c(FAIL_PC)
-    code += byte_eq(s["p405_result_kind"], s["P405_KIND_PINNED"])
-    execute("pinned-read-open", code)
-    expect_error("pinned-write-perm", "/bin/sh", write, 0, s["E_PERM"])
-    expect_error("pinned-create-perm", "/bin/sh", read | create, 0, s["E_PERM"])
-    expect_error("pinned-excl-eexist", "/bin/sh", read | create | excl, 0, s["E_EXIST"])
-
     zero_record = bytes(20)
-    code = open_call("/bin/tapeonly", read, 0) + _jp_nc(FAIL_PC)
+    code = open_call("/bin/sh", read, 0) + _jp_nc(FAIL_PC)
     code += bytes((0xFE, s["E_AGAIN"])) + phase1._jp_nz(FAIL_PC)
     code += mem_eq(table, zero_record)
     code += byte_eq(s["p405_tape_motion"], 0x5A)
     execute("bcat-only-eagain-no-motion", code)
+
+    shadow = _record(b"sh", s["DIR_BIN"], s["OBJ_BIN"])
+    code = open_call("/bin/sh", read, 0) + phase1._jp_c(FAIL_PC)
+    code += byte_eq(s["p405_result_kind"], s["OD_KIND_OBJECT"])
+    code += byte_eq(s["p405_result_type"], s["OBJ_BIN"])
+    execute("resident-exact-name-shadows-bcat", code, shadow)
 
     for routine in ("zx48_p405_tape_read", "zx48_p405_tape_write", "zx48_p405_tape_ioctl"):
         code = phase1._call(s[routine]) + _jp_nc(FAIL_PC)
@@ -286,11 +328,11 @@ def dispatch(
     names = (
         "zx48_sys_open", "zx48_p405_tape_read", "zx48_p405_tape_write", "zx48_p405_tape_ioctl",
         "p405_object_table", "p405_object_table_end", "p405_result_kind", "p405_result_type",
-        "p405_result_flags", "p405_tape_motion",
-        "P405_KIND_OBJECT", "P405_KIND_TTY", "P405_KIND_NULL", "P405_KIND_TAPE", "P405_KIND_PINNED",
+        "p405_result_flags", "p405_result_handle", "p405_tape_motion", "open_description_table", "fake_process",
+        "OD_KIND_TTY", "OD_KIND_NULL", "OD_KIND_TAPE", "OD_KIND_OBJECT",
         "O_READ", "O_WRITE", "O_CREATE", "O_TRUNC", "O_APPEND", "O_EXCL",
-        "OBJ_TXT", "OBJ_C", "OBJ_DAT", "OBJ_SYS", "OBJ_PACKED", "DIR_TMP", "ARENA_START",
-        "E_INVAL", "E_NOENT", "E_PERM", "E_AGAIN", "E_NOTSUP", "E_EXIST",
+        "OBJ_TXT", "OBJ_BIN", "OBJ_C", "OBJ_DAT", "OBJ_SYS", "OBJ_PACKED", "DIR_BIN", "DIR_TMP", "ARENA_START",
+        "E_INVAL", "E_NOENT", "E_PERM", "E_AGAIN", "E_NOTSUP", "E_EXIST", "E_NOSPC",
     )
     symbols = phase3_open_descriptions._symbols(listing.with_suffix(".sym"), names)
     require(symbols["p405_object_table_end"] - symbols["p405_object_table"] == 640, "P4.05 object table footprint changed")
@@ -302,7 +344,8 @@ def dispatch(
             {"name": "full-open-flag-type-path-matrix-runtime", "passed": True},
             {"name": "absent-create-and-existing-type-preservation-exact", "passed": True},
             {"name": "trunc-append-empty-raw-and-append-state-exact", "passed": True},
-            {"name": "pseudo-pinned-bcat-and-tape-control-rules-exact", "passed": True},
+            {"name": "pseudo-bcat-and-tape-control-rules-exact", "passed": True},
+            {"name": "description-handle-capacity-rollback-exact", "passed": True},
             {"name": "all-negative-cases-fail-before-publication", "passed": True},
         ])
 

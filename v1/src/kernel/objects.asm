@@ -2049,12 +2049,6 @@ ns_kind: db 0
 ; P4.05 typed-open object side. The compact Phase-4 fixture emits this together
 ; with the already-qualified namespace and placement routines.
 ;
-P405_KIND_OBJECT          EQU 1
-P405_KIND_TTY             EQU 2
-P405_KIND_NULL            EQU 3
-P405_KIND_TAPE            EQU 4
-P405_KIND_PINNED          EQU 5
-
     MACRO EMIT_OBJECT_OPEN_ROUTINES
 ; A=dir,HL=NUL name -> IX record,C=slot.
 zx48_p405_object_lookup:
@@ -2090,6 +2084,27 @@ zx48_p405_object_lookup_next:
 zx48_p405_object_lookup_found:
     xor a
     or a
+    ret
+
+; A=slot -> IX exact mutable record,C=slot.
+zx48_p405_object_ptr_slot:
+    cp RAM_OBJECT_COUNT
+    jr nc,zx48_p405_object_invalid
+    ld c,a
+    ld ix,p405_object_table
+    or a
+    ret z
+    ld b,a
+    ld de,OBJ_RECORD_SIZE
+zx48_p405_object_ptr_loop:
+    add ix,de
+    djnz zx48_p405_object_ptr_loop
+    xor a
+    or a
+    ret
+zx48_p405_object_invalid:
+    ld a,E_INVAL
+    scf
     ret
 
 ; HL=NUL name,DE=record name[10]. Z iff exact byte-for-byte case match.
@@ -2186,6 +2201,23 @@ zx48_p405_object_exists:
     scf
     ret
 
+; C=slot. Roll back an empty object published only for this failed open.
+zx48_p405_object_rollback_create:
+    ld a,c
+    call zx48_p405_object_ptr_slot
+    ret c
+    push ix
+    pop hl
+    ld de,0
+    add hl,de
+    ld de,p405_zero_record
+    ex de,hl
+    ld bc,OBJ_RECORD_SIZE
+    ldir
+    xor a
+    or a
+    ret
+
 ; IX=existing mutable record. Commit the required empty RAW representation.
 zx48_p405_object_truncate:
     xor a
@@ -2200,21 +2232,14 @@ zx48_p405_object_truncate:
     or a
     ret
 
-; A=dir,HL=name. Z iff this is the fixed pinned /bin/sh object.
-zx48_p405_is_pinned:
-    cp DIR_BIN
-    ret nz
-    ld de,p405_pinned_name
-    jp zx48_cstr_equal
-
-; A=dir,HL=name. Z iff this is the BCAT-only /bin/tapeonly entry.
+; A=dir,HL=name. Z iff this is the catalog-only /bin/sh entry when no RAM shadow exists.
 zx48_p405_is_bcat:
     cp DIR_BIN
     ret nz
     ld de,p405_bcat_name
     jp zx48_cstr_equal
 
-; A=dir,HL=name -> A=P405_KIND_* for fixed device.
+; A=dir,HL=name -> A=OD_KIND_* for fixed device.
 zx48_p405_device_kind:
     cp DIR_DEV
     jr nz,zx48_p405_device_noent
@@ -2234,23 +2259,23 @@ zx48_p405_device_noent:
     scf
     ret
 zx48_p405_device_tty:
-    ld a,P405_KIND_TTY
+    ld a,OD_KIND_TTY
     or a
     ret
 zx48_p405_device_null:
-    ld a,P405_KIND_NULL
+    ld a,OD_KIND_NULL
     or a
     ret
 zx48_p405_device_tape:
-    ld a,P405_KIND_TAPE
+    ld a,OD_KIND_TAPE
     or a
     ret
 
-p405_pinned_name: db 's','h',0
-p405_bcat_name: db 't','a','p','e','o','n','l','y',0
+p405_bcat_name: db 's','h',0
 p405_tty_name: db 't','t','y',0
 p405_null_name: db 'n','u','l','l',0
 p405_tape_name: db 't','a','p','e',0
+p405_zero_record: defs OBJ_RECORD_SIZE,0
 p405_lookup_dir: db 0
 p405_lookup_name: dw 0
 p405_create_dir: db 0
