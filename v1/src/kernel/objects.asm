@@ -1413,7 +1413,7 @@ object_table: defs RAM_OBJECT_COUNT*OBJ_RECORD_SIZE,0
 ; intentionally not emitted until later Phase-4 steps require it.
 ;
     MACRO EMIT_NAMESPACE_ROUTINES
-; P4.01 compact fixed-namespace resolver.
+; P4.01 fixed namespace only. Base-name policy is added by P4.02.
 zx48_cstr_equal:
     ld a,(de)
     cp (hl)
@@ -1437,123 +1437,93 @@ zx48_path_resolve:
     ld a,(ix+PROC_CWD)
     ld (ns_dir),a
     ld hl,(ns_src)
-    jr .comp
+    jr .component
 .abs:
     xor a
     ld (ns_dir),a
 .skip:
     inc hl
-.comp:
+.component:
     ld a,(hl)
     cp '/'
     jr z,.skip
     or a
-    jr z,.dir_done
+    jp z,.dir_done
     ld de,path_name
     ld b,0
 .copy:
     ld a,(hl)
     or a
-    jr z,.endcomp
+    jr z,.copied
     cp '/'
-    jr z,.endcomp
+    jr z,.copied
     inc b
     ld a,b
-    cp 11
+    cp 32
     jp nc,.long
     ld a,(hl)
     ld (de),a
     inc de
     inc hl
     jr .copy
-.endcomp:
+.copied:
     xor a
     ld (de),a
     ld (ns_after),hl
-    ld hl,path_name
-    ld de,path_dot
-    call zx48_cstr_equal
-    jr z,.next
-    ld hl,path_name
-    ld de,path_dotdot
-    call zx48_cstr_equal
-    jr z,.parent
-    call zx48_path_child_dir
-    jr nc,.next
-    ld a,(ns_dir)
-    cp DIR_HOME
-    jr z,.noent
-    ld hl,(ns_after)
-    ld a,(hl)
-    or a
-    jr z,.final
-    cp '/'
-    jr nz,.noent
-.trailing:
-    inc hl
-    ld a,(hl)
-    cp '/'
-    jr z,.trailing
-    or a
-    jr nz,.noent
-    jp .bad
-.final:
-    ld hl,path_name
-    ld b,0
-.vloop:
-    ld a,(hl)
-    or a
-    jr z,.vok
-    inc b
-    cp '0'
-    jr c,.punct
-    cp '9'+1
-    jr c,.vnext
-    cp 'A'
-    jr c,.punct
-    cp 'Z'+1
-    jr c,.vnext
-    cp 'a'
-    jr c,.punct
-    cp 'z'+1
-    jr c,.vnext
-.punct:
-    cp '_'
-    jr z,.vnext
-    cp '-'
-    jr z,.vnext
-    cp '.'
-    jp nz,.bad
-.vnext:
-    inc hl
-    jr .vloop
-.vok:
-    ld a,b
-    or a
-    jp z,.bad
-    cp 1
-    jr nz,.base
+
     ld a,(path_name)
     cp '.'
-    jp z,.bad
-.base:
-    ld c,PATH_KIND_BASE
-    jr .finish
-.parent:
+    jr nz,.child
+    ld a,(path_name+1)
+    or a
+    jr z,.next
+    cp '.'
+    jr nz,.child
+    ld a,(path_name+2)
+    or a
+    jr nz,.child
     ld a,(ns_dir)
     or a
     jp z,.bad
     cp DIR_USERHOME
-    jr nz,.to_root
+    jr nz,.parent_root
     ld a,DIR_HOME
     ld (ns_dir),a
     jr .next
-.to_root:
+.parent_root:
     xor a
     ld (ns_dir),a
+    jr .next
+
+.child:
+    call zx48_path_child_dir
+    jr nc,.next
+    ld a,(ns_dir)
+    cp DIR_HOME
+    jp z,.noent
+
+    ld hl,(ns_after)
+    ld a,(hl)
+    or a
+    jr z,.base
+.tail:
+    cp '/'
+    jp nz,.noent
+    inc hl
+    ld a,(hl)
+    cp '/'
+    jr z,.tail
+    or a
+    jp nz,.noent
+    jp .bad
+
+.base:
+    ld c,PATH_KIND_BASE
+    jr .finish
 .next:
     ld hl,(ns_after)
-    jr .comp
+    jp .component
+
 .dir_done:
     ld c,PATH_KIND_DIR
 .finish:
@@ -1561,41 +1531,41 @@ zx48_path_resolve:
     ld (ns_kind),a
     ld a,(ns_dir)
     cp DIR_ROOT
-    jr z,.len_root
+    jr z,.rootlen
     cp DIR_HOME
-    jr z,.len_home
+    jr z,.homelen
     cp DIR_USERHOME
-    jr z,.len_user
+    jr z,.userlen
     ld b,4
-    jr .len_kind
-.len_root:
+    jr .kindlen
+.rootlen:
     ld b,1
-    jr .len_kind
-.len_home:
+    jr .kindlen
+.homelen:
     ld b,5
-    jr .len_kind
-.len_user:
+    jr .kindlen
+.userlen:
     ld a,(session_user_len)
     add a,6
     ld b,a
-.len_kind:
+.kindlen:
     ld a,(ns_kind)
     cp PATH_KIND_BASE
-    jr nz,.len_check
+    jr nz,.lencheck
     ld a,(ns_dir)
     or a
-    jr z,.count_name
+    jr z,.count
     inc b
-.count_name:
+.count:
     ld hl,path_name
-.cnl:
+.countloop:
     ld a,(hl)
     or a
-    jr z,.len_check
+    jr z,.lencheck
     inc b
     inc hl
-    jr .cnl
-.len_check:
+    jr .countloop
+.lencheck:
     ld a,b
     cp 32
     jr nc,.long
@@ -1680,14 +1650,12 @@ zx48_path_child_dir:
     or a
     ret
 
-path_dot: db '.',0
-path_dotdot: db '.','.',0
 path_bin: db 'b','i','n',0
 path_dev: db 'd','e','v',0
 path_etc: db 'e','t','c',0
 path_home: db 'h','o','m','e',0
 path_tmp: db 't','m','p',0
-path_name: defs 11,0
+path_name: defs 32,0
 session_user_len: db 0
 session_user: defs 9,0
 ns_src: dw 0

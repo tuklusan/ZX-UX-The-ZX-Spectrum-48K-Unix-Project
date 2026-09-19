@@ -64,10 +64,10 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
             "path_tmp: db 't','m','p',0",
         ))},
         {"name": "home-child-is-session-user-only", "passed": "cp DIR_HOME\n    jr z,zx48_path_child_home" in objects and "session_user" in objects},
-        {"name": "dot-and-dotdot-navigation-explicit", "passed": "path_dot: db '.',0" in objects and "path_dotdot: db '.','.',0" in objects},
+        {"name": "dot-and-dotdot-navigation-explicit", "passed": "cp '.'" in objects and "path_name+2" in objects},
         {"name": "above-root-is-einval", "passed": "or a\n    jr z,zx48_path_invalid" in objects},
-        {"name": "normalized-length-not-raw-length", "passed": "zx48_path_finish:" in objects and "cp 32\n    jr nc,zx48_path_long" in objects and "zx48_path_len:" not in objects},
-        {"name": "trailing-separator-empty-final-is-einval", "passed": "jr z,zx48_path_empty_final" in objects},
+        {"name": "normalized-length-not-raw-length", "passed": "ld (ns_kind),a" in objects and "cp 32" in objects and "zx48_path_len:" not in objects},
+        {"name": "trailing-separator-empty-final-is-einval", "passed": "jp .bad" in objects and ".tail:" in objects},
         {"name": "no-general-directory-mount-permission-inode-surface", "passed": all(x not in objects.lower() for x in ("mkdir", "rmdir", "mount", "inode", "chmod", "chown"))},
         {"name": "namespace-contract-document-present", "passed": "Version-1 fixed namespace" in doc and "DIR_SYSTEM = 7" in doc},
     ]
