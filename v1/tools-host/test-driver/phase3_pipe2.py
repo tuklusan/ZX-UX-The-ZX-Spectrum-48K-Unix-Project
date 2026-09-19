@@ -170,6 +170,8 @@ def run_fixture(root,s,fixture,stop=99,stress_cycles=16,stress_probe=0):
     for _ in range(stress_cycles):
       code += bytes((0x3E,2))+bytes((0x32,))+w(s["current_pid"])
       code += b"\x3E\x01"+phase1._ld_hl(STRESS_SRC)+b"\x01\x80\x00"+phase1._call(s["p317_write_handle"])+jp_c(FAIL_PC)
+      code += expw(s["pipe_table"]+s["PIPE_COUNT_O"],120)
+      code += b"\x3E\x01"+phase1._ld_hl(STRESS_SRC+120)+b"\x01\x08\x00"+phase1._call(s["p317_write_handle"])+jp_c(FAIL_PC)
       code += expw(s["pipe_table"]+s["PIPE_COUNT_O"],128)
       if stress_probe==1:
         code += phase1._jp(PASS_PC)
@@ -184,6 +186,8 @@ def run_fixture(root,s,fixture,stop=99,stress_cycles=16,stress_probe=0):
         run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0); return
       code += bytes((0x3E,3))+bytes((0x32,))+w(s["current_pid"])
       code += b"\x3E\x00"+phase1._ld_hl(STRESS_DST)+b"\x01\x80\x00"+phase1._call(s["p317_read_handle"])+jp_c(FAIL_PC)
+      code += expw(s["pipe_table"]+s["PIPE_COUNT_O"],8)
+      code += b"\x3E\x00"+phase1._ld_hl(STRESS_DST+120)+b"\x01\x08\x00"+phase1._call(s["p317_read_handle"])+jp_c(FAIL_PC)
       if stress_probe==4:
         code += phase1._jp(PASS_PC)
         run_sna(root,bytes(code),patch=patch(fixture,regions(s)),timeout=30.0); return
