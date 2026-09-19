@@ -1,0 +1,105 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "list1-exact-six-byte-record",
+      "passed": true
+    },
+    {
+      "name": "listout1-exact-sixteen-byte-range",
+      "passed": true
+    },
+    {
+      "name": "reserved-byte-must-be-zero",
+      "passed": true
+    },
+    {
+      "name": "index-255-unconditional-terminator",
+      "passed": true
+    },
+    {
+      "name": "fixed-root-and-dev-tables-exact",
+      "passed": true
+    },
+    {
+      "name": "dynamic-order-uses-minimum-selection",
+      "passed": true
+    },
+    {
+      "name": "bcat-count-224-rejected",
+      "passed": true
+    },
+    {
+      "name": "bcat-exact-length-validated",
+      "passed": true
+    },
+    {
+      "name": "bcat-strict-sort-and-duplicate-rejection",
+      "passed": true
+    },
+    {
+      "name": "resident-bin-shadows-exact-bcat-name",
+      "passed": true
+    },
+    {
+      "name": "bcat-only-length-unknown",
+      "passed": true
+    },
+    {
+      "name": "ram-list-length-is-logical",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12869 lines, work time: 0.033 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p412-list.lst",
+        "--sym=p412-list.sym",
+        "p412-list.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 15,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 6169 lines, work time: 0.013 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p412-list.bin": "1fe7e2091c06db9f2962a34a1ce64092f7e51ffc5bbd9d3b48b36ceeff4b4aef",
+    "v1/dist/certification/P4.11.requalification.test.json": "8d1ea3a8dfff87393b83c1347dfb36acbfe86aee1a23191e8b1bb8a9c91f3e25",
+    "v1/dist/certification/P4.11.test.json": "bfd52541f4c0d56b4085bfe8776dd565a73957fce81f29d300dccfc288174220",
+    "v1/src/kernel/objects.asm": "97ed6f1a94d4665a9753084ac3842d6987907f8009cbbdff591e2de8b69e3710",
+    "v1/tools-host/test-driver/phase4_list.py": "07cbadeff2c37c452b366f06aea3e9df30175ff78a793c4fb7d93dfb81a38e0c",
+    "v1/tools-host/test-driver/run.py": "1ce0da8790d6e934f28b5e904c75b18e2de9159068bfab65a0578f910203d83a"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P4.11": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "5ff96e13526b27b1bda4954bcd55c7fdb474524f",
+  "status": "PASS",
+  "step": "P4.12",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
