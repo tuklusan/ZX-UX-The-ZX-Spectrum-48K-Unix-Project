@@ -225,23 +225,6 @@ def _target(root: Path, s: dict[str, int], module: bytes) -> None:
     expect_error("directory-open-perm", "/tmp", read, 0, s["E_PERM"])
     expect_error("missing-without-create", "/tmp/new", read, 0, s["E_NOENT"])
     expect_error("missing-create-zero-type", "/tmp/new", write | create, 0, s["E_INVAL"])
-
-    code = phase1._ld_hl(addresses["/bin/new"]) + phase1._call(s["zx48_path_resolve"]) + phase1._jp_c(FAIL_PC)
-    code += bytes((0xFE, s["DIR_BIN"])) + phase1._jp_nz(FAIL_PC)
-    code += bytes((0x79, 0xFE, s["PATH_KIND_BASE"])) + phase1._jp_nz(FAIL_PC)
-    code += mem_eq(s["path_name"], b"new\0")
-    execute("diag-bin-path-resolve", code)
-
-    code = bytes((0x3E, s["DIR_BIN"], 0x06, s["OBJ_C"])) + phase1._call(s["zx48_object_public_type_allowed"])
-    code += _jp_nc(FAIL_PC) + bytes((0xFE, s["E_PERM"])) + phase1._jp_nz(FAIL_PC)
-    execute("diag-bin-c-placement", code)
-
-    code = bytes((0x3E, s["DIR_BIN"], 0x06, s["OBJ_C"])) + phase1._ld_hl(addresses["/bin/new"] + 5)
-    code += phase1._call(s["zx48_p405_object_create"]) + _jp_nc(FAIL_PC)
-    code += bytes((0xFE, s["E_PERM"])) + phase1._jp_nz(FAIL_PC)
-    code += mem_eq(table, bytes(20))
-    execute("diag-bin-c-object-create", code)
-
     expect_error("bin-rejects-c", "/bin/new", write | create, s["OBJ_C"], s["E_PERM"])
     expect_error("unknown-device", "/dev/foo", read, 0, s["E_NOENT"])
     expect_error("device-case-sensitive", "/dev/TTY", read, 0, s["E_NOENT"])
@@ -349,7 +332,6 @@ def dispatch(
         "p405_object_table", "p405_object_table_end", "p405_result_kind", "p405_result_type",
         "p405_result_flags", "p405_result_handle", "p405_tape_motion", "open_description_table", "fake_process",
         "OD_KIND_TTY", "OD_KIND_NULL", "OD_KIND_TAPE", "OD_KIND_OBJECT",
-        "zx48_path_resolve", "zx48_object_public_type_allowed", "zx48_p405_object_create", "path_name", "PATH_KIND_BASE",
         "O_READ", "O_WRITE", "O_CREATE", "O_TRUNC", "O_APPEND", "O_EXCL",
         "OBJ_TXT", "OBJ_BIN", "OBJ_C", "OBJ_DAT", "OBJ_SYS", "OBJ_PACKED", "DIR_BIN", "DIR_TMP", "ARENA_START",
         "E_INVAL", "E_NOENT", "E_PERM", "E_AGAIN", "E_NOTSUP", "E_EXIST", "E_NOSPC",

@@ -2134,9 +2134,9 @@ zx48_p405_object_create:
     ld (p405_create_name),hl
     call zx48_name_validate
     ret c
-    ld a,(p405_create_dir)
     ld a,(p405_create_type)
     ld b,a
+    ld a,(p405_create_dir)
     call zx48_object_public_type_allowed
     ret c
     ld a,(p405_create_dir)
