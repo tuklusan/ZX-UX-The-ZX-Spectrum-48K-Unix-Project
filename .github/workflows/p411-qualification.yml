@@ -23,7 +23,7 @@ jobs:
     timeout-minutes: 45
     env:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p411-qualification
-      P411_EXACT_PARENT: 3e3d4ac03af693f7fcb8745d775d366507ba6221
+      P411_EXACT_PARENT: 53f2b3ae5caaf368503c90c19c096f32e4db8366
       ZXUX_REV16_SHA256: 24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c
       ZXUX_REV07_SHA256: 840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc
     steps:
@@ -48,7 +48,7 @@ jobs:
             find v1/tools-host/test-driver -type d -name __pycache__ -prune -exec rm -rf {} +
             test -z "$(git status --porcelain)"
             test "$(git rev-parse 'HEAD^{tree}')" = "$tree"
-            digest="$(sha256sum v1/src/kernel/objects.asm v1/src/kernel/syscall.asm v1/tools-host/test-driver/phase4_stat.py v1/tools-host/test-driver/run.py .github/workflows/p411-qualification.yml v1/dist/certification/P4.10.test.json | sha256sum | awk '{print $1}')"
+            digest="$(sha256sum v1/src/kernel/objects.asm v1/src/kernel/syscall.asm v1/tools-host/test-driver/phase4_stat.py v1/tools-host/test-driver/run.py .github/workflows/p411-dispatch-once.yml .github/workflows/p411-qualification.yml v1/dist/certification/P4.10.test.json | sha256sum | awk '{print $1}')"
             if test -z "$baseline"; then baseline="$digest"; else test "$baseline" = "$digest"; fi
             echo "SCAN-$scan: CLEAN"
           done
