@@ -2082,7 +2082,13 @@ zx48_p409_sys_write:
     ld bc,(p409_count)
     call zx48_p408_raw_write_at_eof
     ret c
-    ; Successful append offset becomes the newly committed current EOF.
+    ; P4.08 may release the old allocation after committing the replacement,
+    ; and zx48_free is free to clobber IX. Reload the authoritative object slot
+    ; before publishing the newly committed EOF into the shared description.
+    ld iy,(p409_od_ptr)
+    ld a,(iy+OD_ID_O)
+    call zx48_p405_object_ptr_slot
+    ret c
     ld l,(ix+OBJ_LOGICAL_LENGTH)
     ld h,(ix+OBJ_LOGICAL_LENGTH+1)
     jr zx48_p409_commit_offset
