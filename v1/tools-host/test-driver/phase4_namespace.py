@@ -83,19 +83,19 @@ def _assemble_namespace(root: Path, run_command: Callable[..., Any], require_pro
     build.mkdir(parents=True, exist_ok=True)
     fixture = build / "p401-namespace.asm"
     fixture.write_text(
-        """DEVICE ZXSPECTRUM48
-INCLUDE "../include/zx48ux.inc"
+        """    DEVICE ZXSPECTRUM48
+    INCLUDE "../include/zx48ux.inc"
 PROC_CWD EQU 28
-ORG $9000
+    ORG $9000
 current_pid: db 1
 zx48_process_lookup:
     ld ix,fake_process
     xor a
     ret
-INCLUDE "../src/kernel/objects.asm"
-EMIT_NAMESPACE_ROUTINES
+    INCLUDE "../src/kernel/objects.asm"
+    EMIT_NAMESPACE_ROUTINES
 fake_process: defs 48,0
-SAVEBIN "p401-namespace.bin",$9000,$-$9000
+    SAVEBIN "p401-namespace.bin",$9000,$-$9000
 """,
         encoding="utf-8", newline="\n",
     )
