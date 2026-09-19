@@ -209,7 +209,7 @@ def dispatch(root: Path, action: str, step: str, *, sha256_file: Callable[[Path]
     assertions += [
       {"name":"all-p3-01-through-p3-20-build-test-evidence-pass","passed":len(records)==40,"record_count":len(records)},
       {"name":"durable-phase3-evidence-preserves-rev16-rev07-identities","passed":True},
-      {"name":"frozen-p3-15-prerequisite-key-typo-preserved-and-hash-chained","passed":True},
+      {"name":"frozen-p3-15-test-prerequisite-key-typo-preserved-and-hash-chained","passed":True},
       {"name":"negative-missing-phase3-component-rejected","passed":True},
       {"name":"negative-edit-escape-proof-weakening-rejected","passed":True},
       {"name":"negative-authority-identity-mutation-rejected","passed":True},
