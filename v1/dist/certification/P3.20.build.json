@@ -1,0 +1,83 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "ioctl1-is-exact-packed-four-byte-record",
+      "passed": true
+    },
+    {
+      "name": "complete-ioctl1-range-precedes-handle-record-dereference",
+      "passed": true
+    },
+    {
+      "name": "tty-kind-gate-precedes-request-dispatch",
+      "passed": true
+    },
+    {
+      "name": "pointed-range-validated-before-tty-action",
+      "passed": true
+    },
+    {
+      "name": "all-seven-request-ids-frozen-literal-01-through-07",
+      "passed": true
+    },
+    {
+      "name": "get-size-is-only-two-byte-pointed-record",
+      "passed": true
+    },
+    {
+      "name": "unknown-tty-request-is-enotsup",
+      "passed": true
+    },
+    {
+      "name": "set-owner-is-pid1-only-and-nonzero-owner-must-be-live",
+      "passed": true
+    },
+    {
+      "name": "owner-exit-restores-live-pid1-or-pid0",
+      "passed": true
+    },
+    {
+      "name": "ioctl-nontty-path-has-no-tape-motion",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 27,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12492 lines, work time: 0.025 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/dist/certification/P3.19.test.json": "c610516f35de9ed4cde5033cafe7659c81dfb1329ff0657b9b3adae35386e06e",
+    "v1/src/kernel/console.asm": "b064fff503bd1c498b46a4890537423a1857b842406480ffa9233db54ee461e3",
+    "v1/src/kernel/handles.asm": "3ce446fcc68f95b4cec52fee6b6202ec85a58bb5fcbc9bd7e41c9e517c16d016",
+    "v1/src/kernel/process.asm": "20c3d59193ab983524cb18e0263b3e7c96dd3b3987d10522f7e33a2c442ef696",
+    "v1/src/kernel/syscall.asm": "c24c522a649435b1bea32869cacbb64ec010ffdb1eb106746e6a40f9439cae80",
+    "v1/tools-host/test-driver/phase3_ioctl.py": "87d17996f030af1c49fee06cc25f527467ba0895b3e12bafdca2243abba44c35",
+    "v1/tools-host/test-driver/run.py": "b43bf4cdcc9d49133921619dc57a0c9dffc5321fbaa0344619bfe55fdce4589c"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P3.19": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "5fa55ac3c6837b8378d7b52392cc19d4b7551c30",
+  "status": "PASS",
+  "step": "P3.20",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
