@@ -401,3 +401,68 @@ zx48_p406_od_create:
     ret c
     jp zx48_od_create
     ENDM
+
+
+;
+; P4.17 packed read-only open-description allocation. A=object flags,
+; B=kind,C=open flags,D=identity. PACKED read-only object opens allocate exactly
+; one 272-byte COLD_PREFERRED state and attach it to OD_AUX. dup/inheritance
+; continue to use zx48_od_retain and therefore share this single state.
+;
+    MACRO EMIT_P417_PACKED_OD_ROUTINES
+zx48_p417_od_create:
+    ld (p417_object_flags),a
+    ld a,b
+    cp OD_KIND_OBJECT
+    jp nz,zx48_od_create
+    ld a,c
+    and O_READ|O_WRITE
+    cp O_READ
+    jp nz,zx48_od_create
+    ld a,(p417_object_flags)
+    and OBJ_PACKED
+    jp z,zx48_od_create
+
+    call zx48_od_create
+    ret c
+    ld (p417_od_index),a
+
+    ld bc,PACKED_READER_STATE_SIZE
+    ld a,ALLOC_COLD_PREFERRED
+    call zx48_alloc
+    jr c,zx48_p417_od_alloc_fail
+    ld (p417_state_ptr),hl
+    call zx48_p417_state_init
+
+    ld a,(p417_od_index)
+    call zx48_od_ptr
+    jp c,zx48_p417_od_internal_fail
+    ld hl,(p417_state_ptr)
+    ld (ix+OD_AUX_O),l
+    ld (ix+OD_AUX_O+1),h
+    ld a,(p417_od_index)
+    or a
+    ret
+
+zx48_p417_od_alloc_fail:
+    ld (p417_error),a
+    ld a,(p417_od_index)
+    call zx48_od_release
+    ld a,(p417_error)
+    scf
+    ret
+
+zx48_p417_od_internal_fail:
+    ld hl,(p417_state_ptr)
+    ld bc,PACKED_READER_STATE_SIZE
+    call zx48_free
+    ld a,(p417_od_index)
+    call zx48_od_release
+    ld a,PANIC_SCHEDULER
+    jp zx48_panic
+
+p417_object_flags: db 0
+p417_od_index: db 0
+p417_state_ptr: dw 0
+p417_error: db 0
+    ENDM
