@@ -121,12 +121,12 @@ def _target_matrix(root: Path, s: dict[str, int], kernel: bytes) -> None:
     _emit_success(code, s, addresses[12], s["DIR_BIN"], s["PATH_KIND_DIR"])
     _emit_success(code, s, addresses[13], s["DIR_BIN"], s["PATH_KIND_BASE"])
 
-    # Before login, /home/alice is not a directory.
-    code += phase1._ld_hl(addresses[14]) + phase1._call(s["zx48_object_chdir"]) + _jp_nc(FAIL_PC)
-    code += bytes((0xFE, s["E_NOENT"])) + phase1._jp_nz(FAIL_PC)
+    # Before login, /home/alice is absent.
+    _emit_error(code, s, addresses[14], s["E_NOENT"])
 
-    # Login installs exactly the current session USERHOME mapping.
-    code += phase1._ld_hl(USER_BASE) + b"\x3E\x05" + phase1._call(s["zx48_namespace_set_user"]) + phase1._jp_c(FAIL_PC)
+    # Install the current session USERHOME mapping directly.
+    code += b"\x3E\x05\x32" + _word(s["session_user_len"])
+    code += phase1._ld_hl(USER_BASE) + phase1._ld_de(s["session_user"]) + b"\x01\x05\x00\xED\xB0"
     _emit_success(code, s, addresses[14], s["DIR_USERHOME"], s["PATH_KIND_DIR"])
 
     code += phase1._jp(PASS_PC)
@@ -164,8 +164,8 @@ def dispatch(
         listing.with_suffix(".sym"),
         (
             "zx48_process_init", "zx48_process_prepare_pid1",
-            "zx48_path_resolve", "zx48_object_chdir", "zx48_namespace_set_user",
-            "current_pid", "path_name",
+            "zx48_path_resolve",
+            "current_pid", "path_name", "session_user_len", "session_user",
             "DIR_ROOT", "DIR_BIN", "DIR_DEV", "DIR_ETC", "DIR_HOME",
             "DIR_USERHOME", "DIR_TMP", "DIR_SYSTEM",
             "PATH_KIND_DIR", "PATH_KIND_BASE", "E_INVAL", "E_NOENT", "E_TOOLONG",

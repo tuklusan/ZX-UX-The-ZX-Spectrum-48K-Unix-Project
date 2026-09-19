@@ -1413,71 +1413,7 @@ object_table: defs RAM_OBJECT_COUNT*OBJ_RECORD_SIZE,0
 ; intentionally not emitted until later Phase-4 steps require it.
 ;
     MACRO EMIT_NAMESPACE_ROUTINES
-zx48_name_validate:
-    ld (ns_name_ptr),hl
-    ld b,0
-.ns_nv_loop:
-    ld a,(hl)
-    or a
-    jr z,.ns_nv_end
-    inc b
-    ld a,b
-    cp 11
-    jr nc,.ns_nv_long
-    ld a,(hl)
-    call zx48_name_char_valid
-    jr c,.ns_nv_bad
-    inc hl
-    jr .ns_nv_loop
-.ns_nv_end:
-    ld a,b
-    or a
-    jr z,.ns_nv_bad
-    ld hl,(ns_name_ptr)
-    cp 1
-    jr nz,.ns_nv_ok
-    ld a,(hl)
-    cp '.'
-    jr z,.ns_nv_bad
-.ns_nv_ok:
-    ld a,b
-    or a
-    ret
-.ns_nv_long:
-    ld a,E_TOOLONG
-    scf
-    ret
-.ns_nv_bad:
-    ld a,E_INVAL
-    scf
-    ret
-
-zx48_name_char_valid:
-    cp '0'
-    jr c,.ns_ncv_punct
-    cp '9'+1
-    jr c,.ns_ncv_ok
-    cp 'A'
-    jr c,.ns_ncv_punct
-    cp 'Z'+1
-    jr c,.ns_ncv_ok
-    cp 'a'
-    jr c,.ns_ncv_punct
-    cp 'z'+1
-    jr c,.ns_ncv_ok
-.ns_ncv_punct:
-    cp '_'
-    jr z,.ns_ncv_ok
-    cp '-'
-    jr z,.ns_ncv_ok
-    cp '.'
-    jr z,.ns_ncv_ok
-    scf
-    ret
-.ns_ncv_ok:
-    or a
-    ret
-
+; P4.01 compact fixed-namespace resolver.
 zx48_cstr_equal:
     ld a,(de)
     cp (hl)
@@ -1489,315 +1425,259 @@ zx48_cstr_equal:
     jr zx48_cstr_equal
 
 zx48_path_resolve:
-    ld (ns_path_source),hl
+    ld (ns_src),hl
     ld a,(hl)
     or a
-    jr z,.ns_path_invalid
+    jp z,.bad
     cp '/'
-    jr z,.ns_path_abs
+    jr z,.abs
     ld a,(current_pid)
     call zx48_process_lookup
     ret c
     ld a,(ix+PROC_CWD)
-    ld (ns_path_dir),a
-    ld hl,(ns_path_source)
-    jr .ns_path_component
-.ns_path_abs:
+    ld (ns_dir),a
+    ld hl,(ns_src)
+    jr .comp
+.abs:
     xor a
-    ld (ns_path_dir),a
-.ns_path_skip:
+    ld (ns_dir),a
+.skip:
     inc hl
-.ns_path_component:
+.comp:
     ld a,(hl)
     cp '/'
-    jr z,.ns_path_skip
+    jr z,.skip
     or a
-    jr z,.ns_path_dir_done
+    jr z,.dir_done
     ld de,path_name
     ld b,0
-.ns_path_copy:
+.copy:
     ld a,(hl)
     or a
-    jr z,.ns_path_component_end
+    jr z,.endcomp
     cp '/'
-    jr z,.ns_path_component_end
+    jr z,.endcomp
     inc b
     ld a,b
     cp 11
-    jr nc,.ns_path_long
+    jp nc,.long
     ld a,(hl)
     ld (de),a
     inc de
     inc hl
-    jr .ns_path_copy
-.ns_path_component_end:
+    jr .copy
+.endcomp:
     xor a
     ld (de),a
-    ld (ns_path_after),hl
+    ld (ns_after),hl
     ld hl,path_name
     ld de,path_dot
     call zx48_cstr_equal
-    jr z,.ns_path_component_next
+    jr z,.next
     ld hl,path_name
     ld de,path_dotdot
     call zx48_cstr_equal
-    jr z,.ns_path_parent
+    jr z,.parent
     call zx48_path_child_dir
-    jr nc,.ns_path_component_next
-    ld hl,(ns_path_after)
-.ns_path_final_slash:
+    jr nc,.next
+    ld a,(ns_dir)
+    cp DIR_HOME
+    jr z,.noent
+    ld hl,(ns_after)
     ld a,(hl)
+    or a
+    jr z,.final
     cp '/'
-    jr nz,.ns_path_final_check
+    jr nz,.noent
+.trailing:
     inc hl
-    jr .ns_path_final_slash
-.ns_path_final_check:
-    or a
-    jr nz,.ns_path_noent
-    ld hl,(ns_path_after)
     ld a,(hl)
     cp '/'
-    jr z,.ns_path_invalid
-    ld hl,path_name
-    call zx48_name_validate
-    ret c
-    ld c,PATH_KIND_BASE
-    jp .ns_path_finish
-.ns_path_parent:
-    ld a,(ns_path_dir)
-    cp DIR_USERHOME
-    jr z,.ns_path_parent_home
-    cp DIR_BIN
-    jr z,.ns_path_parent_root
-    cp DIR_DEV
-    jr z,.ns_path_parent_root
-    cp DIR_ETC
-    jr z,.ns_path_parent_root
-    cp DIR_HOME
-    jr z,.ns_path_parent_root
-    cp DIR_TMP
-    jr z,.ns_path_parent_root
+    jr z,.trailing
     or a
-    jr z,.ns_path_invalid
-.ns_path_parent_root:
-    xor a
-    ld (ns_path_dir),a
-    jr .ns_path_component_next
-.ns_path_parent_home:
-    ld a,DIR_HOME
-    ld (ns_path_dir),a
-.ns_path_component_next:
-    ld hl,(ns_path_after)
-    jr .ns_path_component
-.ns_path_dir_done:
-    ld c,PATH_KIND_DIR
-.ns_path_finish:
-    ld a,c
-    ld (ns_path_kind),a
-    ld a,(ns_path_dir)
-    cp DIR_ROOT
-    jr z,.ns_len_root
-    cp DIR_HOME
-    jr z,.ns_len_home
+    jr nz,.noent
+    jp .bad
+.final:
+    ld hl,path_name
+    ld b,0
+.vloop:
+    ld a,(hl)
+    or a
+    jr z,.vok
+    inc b
+    cp '0'
+    jr c,.punct
+    cp '9'+1
+    jr c,.vnext
+    cp 'A'
+    jr c,.punct
+    cp 'Z'+1
+    jr c,.vnext
+    cp 'a'
+    jr c,.punct
+    cp 'z'+1
+    jr c,.vnext
+.punct:
+    cp '_'
+    jr z,.vnext
+    cp '-'
+    jr z,.vnext
+    cp '.'
+    jp nz,.bad
+.vnext:
+    inc hl
+    jr .vloop
+.vok:
+    ld a,b
+    or a
+    jp z,.bad
+    cp 1
+    jr nz,.base
+    ld a,(path_name)
+    cp '.'
+    jp z,.bad
+.base:
+    ld c,PATH_KIND_BASE
+    jr .finish
+.parent:
+    ld a,(ns_dir)
+    or a
+    jp z,.bad
     cp DIR_USERHOME
-    jr z,.ns_len_userhome
+    jr nz,.to_root
+    ld a,DIR_HOME
+    ld (ns_dir),a
+    jr .next
+.to_root:
+    xor a
+    ld (ns_dir),a
+.next:
+    ld hl,(ns_after)
+    jr .comp
+.dir_done:
+    ld c,PATH_KIND_DIR
+.finish:
+    ld a,c
+    ld (ns_kind),a
+    ld a,(ns_dir)
+    cp DIR_ROOT
+    jr z,.len_root
+    cp DIR_HOME
+    jr z,.len_home
+    cp DIR_USERHOME
+    jr z,.len_user
     ld b,4
-    jr .ns_len_kind
-.ns_len_root:
+    jr .len_kind
+.len_root:
     ld b,1
-    jr .ns_len_kind
-.ns_len_home:
+    jr .len_kind
+.len_home:
     ld b,5
-    jr .ns_len_kind
-.ns_len_userhome:
+    jr .len_kind
+.len_user:
     ld a,(session_user_len)
     add a,6
     ld b,a
-.ns_len_kind:
-    ld a,(ns_path_kind)
+.len_kind:
+    ld a,(ns_kind)
     cp PATH_KIND_BASE
-    jr nz,.ns_len_check
-    ld a,(ns_path_dir)
-    cp DIR_ROOT
-    jr z,.ns_len_name
+    jr nz,.len_check
+    ld a,(ns_dir)
+    or a
+    jr z,.count_name
     inc b
-.ns_len_name:
+.count_name:
     ld hl,path_name
-.ns_len_name_loop:
+.cnl:
     ld a,(hl)
     or a
-    jr z,.ns_len_check
+    jr z,.len_check
     inc b
     inc hl
-    jr .ns_len_name_loop
-.ns_len_check:
+    jr .cnl
+.len_check:
     ld a,b
     cp 32
-    jr nc,.ns_path_long
-    ld a,(ns_path_dir)
-    ld c,(ns_path_kind)
+    jr nc,.long
+    ld a,(ns_dir)
+    ld c,(ns_kind)
     or a
     ret
-.ns_path_long:
+.long:
     ld a,E_TOOLONG
     scf
     ret
-.ns_path_noent:
+.noent:
     ld a,E_NOENT
     scf
     ret
-.ns_path_invalid:
+.bad:
     ld a,E_INVAL
     scf
     ret
 
 zx48_path_child_dir:
-    ld a,(ns_path_dir)
+    ld a,(ns_dir)
     or a
-    jr z,.ns_child_root
+    jr z,.root
     cp DIR_HOME
-    jr z,.ns_child_home
+    jr z,.home
     scf
     ret
-.ns_child_root:
+.root:
     ld hl,path_name
     ld de,path_bin
     call zx48_cstr_equal
-    jr z,.ns_set_bin
+    jr z,.bin
     ld hl,path_name
     ld de,path_dev
     call zx48_cstr_equal
-    jr z,.ns_set_dev
+    jr z,.dev
     ld hl,path_name
     ld de,path_etc
     call zx48_cstr_equal
-    jr z,.ns_set_etc
+    jr z,.etc
     ld hl,path_name
     ld de,path_home
     call zx48_cstr_equal
-    jr z,.ns_set_home
+    jr z,.home_dir
     ld hl,path_name
     ld de,path_tmp
     call zx48_cstr_equal
-    jr z,.ns_set_tmp
+    jr z,.tmp
     scf
     ret
-.ns_child_home:
+.home:
     ld a,(session_user_len)
     or a
-    jr z,.ns_child_fail
+    jr z,.fail
     ld hl,path_name
     ld de,session_user
     call zx48_cstr_equal
-    jr nz,.ns_child_fail
+    jr nz,.fail
     ld a,DIR_USERHOME
-    ld (ns_path_dir),a
-    xor a
-    or a
-    ret
-.ns_child_fail:
+    jr .set
+.fail:
     scf
     ret
-.ns_set_bin:
+.bin:
     ld a,DIR_BIN
-    jr .ns_set
-.ns_set_dev:
+    jr .set
+.dev:
     ld a,DIR_DEV
-    jr .ns_set
-.ns_set_etc:
+    jr .set
+.etc:
     ld a,DIR_ETC
-    jr .ns_set
-.ns_set_home:
+    jr .set
+.home_dir:
     ld a,DIR_HOME
-    jr .ns_set
-.ns_set_tmp:
+    jr .set
+.tmp:
     ld a,DIR_TMP
-.ns_set:
-    ld (ns_path_dir),a
+.set:
+    ld (ns_dir),a
     xor a
     or a
-    ret
-
-zx48_namespace_set_user:
-    cp 1
-    jr c,.ns_user_bad_arg
-    cp 9
-    jr nc,.ns_user_bad_arg
-    ld (session_user_len),a
-    ld b,a
-    ld de,session_user
-    ld c,0
-.ns_user_copy:
-    ld a,(hl)
-    ld (de),a
-    ld a,c
-    or a
-    jr nz,.ns_user_later
-    ld a,(hl)
-    cp 'a'
-    jr c,.ns_user_bad
-    cp 'z'+1
-    jr nc,.ns_user_bad
-    jr .ns_user_store
-.ns_user_later:
-    ld a,(hl)
-    cp 'a'
-    jr c,.ns_user_digit
-    cp 'z'+1
-    jr c,.ns_user_store
-.ns_user_digit:
-    cp '0'
-    jr c,.ns_user_punct
-    cp '9'+1
-    jr c,.ns_user_store
-.ns_user_punct:
-    cp '_'
-    jr z,.ns_user_store
-    cp '-'
-    jr nz,.ns_user_bad
-.ns_user_store:
-    ld a,(hl)
-    ld (de),a
-    inc hl
-    inc de
-    inc c
-    djnz .ns_user_copy
-    xor a
-    ld (de),a
-    ld a,1
-    call zx48_process_ptr
-    ld (ix+PROC_CWD),DIR_USERHOME
-    xor a
-    or a
-    ret
-.ns_user_bad:
-    xor a
-    ld (session_user_len),a
-.ns_user_bad_arg:
-    ld a,E_INVAL
-    scf
-    ret
-
-zx48_object_chdir:
-    call zx48_path_resolve
-    ret c
-    ld a,c
-    cp PATH_KIND_DIR
-    jr nz,.ns_chdir_noent
-    ld (ns_cwd),a
-    ld a,(ns_path_dir)
-    ld (ns_cwd),a
-    ld a,(current_pid)
-    call zx48_process_lookup
-    ret c
-    ld a,(ns_cwd)
-    ld (ix+PROC_CWD),a
-    xor a
-    or a
-    ret
-.ns_chdir_noent:
-    ld a,E_NOENT
-    scf
     ret
 
 path_dot: db '.',0
@@ -1810,10 +1690,8 @@ path_tmp: db 't','m','p',0
 path_name: defs 11,0
 session_user_len: db 0
 session_user: defs 9,0
-ns_name_ptr: dw 0
-ns_path_source: dw 0
-ns_path_after: dw 0
-ns_path_dir: db 0
-ns_path_kind: db 0
-ns_cwd: db 0
+ns_src: dw 0
+ns_after: dw 0
+ns_dir: db 0
+ns_kind: db 0
     ENDM
