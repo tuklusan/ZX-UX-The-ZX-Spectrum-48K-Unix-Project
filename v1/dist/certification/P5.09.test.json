@@ -1,0 +1,113 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "exact-case-requested-path-match",
+      "passed": true
+    },
+    {
+      "name": "forward-sequential-header-search",
+      "passed": true
+    },
+    {
+      "name": "nonmatch-payload-consumed-bounded",
+      "passed": true
+    },
+    {
+      "name": "raw-private-loader-before-commit",
+      "passed": true
+    },
+    {
+      "name": "packed-private-loader-before-commit",
+      "passed": true
+    },
+    {
+      "name": "public-placement-validated",
+      "passed": true
+    },
+    {
+      "name": "existing-live-description-blocks-replace",
+      "passed": true
+    },
+    {
+      "name": "publication-precedes-old-free",
+      "passed": true
+    },
+    {
+      "name": "candidate-cleared-on-reuse",
+      "passed": true
+    },
+    {
+      "name": "failure-drops-only-private-incoming",
+      "passed": true
+    },
+    {
+      "name": "public-sys-tape-load-routes-explicit-loader",
+      "passed": true
+    },
+    {
+      "name": "explicit-load-composition-assembles",
+      "passed": true
+    },
+    {
+      "name": "corrupt-private-load-cannot-reach-publish-by-control-flow",
+      "passed": true
+    },
+    {
+      "name": "case-mismatch-consumes-and-continues-without-namespace-write",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13518 lines, work time: 0.033 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p509-explicit-load.lst",
+        "--sym=p509-explicit-load.sym",
+        "p509-explicit-load.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 18,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\ntape.asm(1948): warning: value 0xCB34 is truncated to 8bit value: 0x34\np509-explicit-load.asm(24): ^ emitted from here\ntape.asm(2094): warning: value 0xCB34 is truncated to 8bit value: 0x34\np509-explicit-load.asm(24): ^ emitted from here\nPass 3 complete\nErrors: 0, warnings: 2, compiled: 7067 lines, work time: 0.017 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p509-explicit-load.bin": "d77df50129b403ae24cc6088933dc7da541887ce43151afa829e8f1040314245",
+    "v1/dist/certification/P5.08.build.json": "3f896df726ea0b278adbe7c68dce583894d30e8c6c09e2f99cf5b4792a729b5e",
+    "v1/dist/certification/P5.08.test.json": "d1f0c6d943497e81a21bfddbcd167edf38710a22e9be9cbade9c0b035335d082",
+    "v1/src/kernel/tape.asm": "dc526453dc35b286ccdeaf964f1a24e5da3264a1241257314dabc19872373bfe",
+    "v1/tools-host/test-driver/phase5_explicit_load.py": "d8fe99ddc46c6e38d8d2c0ee718023daa62b04a8efae0b71fdf0bd2a1a44daf2",
+    "v1/tools-host/test-driver/run.py": "a6bb5e3ba14bf3279ea5e31a89b7996168deb2636e2705c6861a051cb893c46f"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P5.08": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "5fd02ea56f243a585b3580eab895e5a8a0218198",
+  "status": "PASS",
+  "step": "P5.09",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
