@@ -1535,7 +1535,10 @@ zx48_p507_lock_acquire:
     jr nz,zx48_p507_busy
     inc a
     ld (p507_tape_lock),a
-    call zx48_scheduler_tape_blocking_enter
+    ld (p507_tape_blocking),a
+    ld hl,(p507_tape_intervals)
+    inc hl
+    ld (p507_tape_intervals),hl
     xor a
     or a
     ret
@@ -1546,7 +1549,7 @@ zx48_p507_busy:
 zx48_p507_lock_release:
     xor a
     ld (p507_tape_lock),a
-    call zx48_scheduler_tape_blocking_leave
+    ld (p507_tape_blocking),a
     ret
 
 ; P5.13 replaces this foreground consent hook with visible prompt/input logic.
@@ -1564,6 +1567,8 @@ p507_chunk_len: dw 0
 p507_target: db 0
 p507_type: db 0
 p507_tape_lock: db 0
+p507_tape_blocking: db 0
+p507_tape_intervals: dw 0
 p507_error: db 0
     ENDM
 
