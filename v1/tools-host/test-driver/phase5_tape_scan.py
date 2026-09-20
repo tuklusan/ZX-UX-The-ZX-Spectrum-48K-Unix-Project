@@ -150,12 +150,18 @@ test_frees: db 0
         probe=b"\xF3"+phase1._ld_sp(STACK)+phase1._ld_hl(header_addr)+phase1._call(s["zx48_p511_scan_next"])+phase1._jp_c(FAIL_PC)+phase1._jp(PASS_PC)
         try: run_sna(root,probe,patch=patch)
         except DriverError as e: raise P511Error(f"P5.11 runtime {label} call failed: {e}") from e
-        code=b"\xF3"+phase1._ld_sp(STACK)+phase1._ld_hl(header_addr)+phase1._call(s["zx48_p511_scan_next"])+phase1._jp_c(FAIL_PC)
-        code+=phase1._ld_de(1)+b"\xB7\xED\x52"+phase1._jp_nz(FAIL_PC)
-        code+=checkb(header_addr,ord("M"))+checkb(header_addr+16,ord(expected_name))
-        code+=checkb(s["test_allocs"],expected_allocs)+checkb(s["test_frees"],expected_allocs)+checkb(s["p507_tape_lock"],0)+phase1._jp(PASS_PC)
-        try: run_sna(root,code,patch=patch)
-        except DriverError as e: raise P511Error(f"P5.11 runtime {label} postconditions failed: {e}") from e
+        checks=[
+          ("return-hl",phase1._ld_de(1)+b"\xB7\xED\x52"+phase1._jp_nz(FAIL_PC)),
+          ("header-magic",checkb(header_addr,ord("M"))),
+          ("header-name",checkb(header_addr+16,ord(expected_name))),
+          ("alloc-count",checkb(s["test_allocs"],expected_allocs)),
+          ("free-count",checkb(s["test_frees"],expected_allocs)),
+          ("lock-release",checkb(s["p507_tape_lock"],0)),
+        ]
+        for check_name,check_code in checks:
+          code=b"\xF3"+phase1._ld_sp(STACK)+phase1._ld_hl(header_addr)+phase1._call(s["zx48_p511_scan_next"])+phase1._jp_c(FAIL_PC)+check_code+phase1._jp(PASS_PC)
+          try: run_sna(root,code,patch=patch)
+          except DriverError as e: raise P511Error(f"P5.11 runtime {label} {check_name} failed: {e}") from e
 
       raw_blocks=[hdr("raw",1,5,raw,raw,False)]+[raw[i:i+512] for i in range(0,len(raw),512)]
       packed_blocks=[hdr("pack",1,5,packed_logical,packed,True)]+[packed[i:i+512] for i in range(0,len(packed),512)]
