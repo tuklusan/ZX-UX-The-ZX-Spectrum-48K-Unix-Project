@@ -1,0 +1,77 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "m48o-constant-table-exact",
+      "passed": true
+    },
+    {
+      "name": "m48o-core-header-size-agrees",
+      "passed": true
+    },
+    {
+      "name": "m48o-core-chunk-size-remains-512",
+      "passed": true
+    },
+    {
+      "name": "m48o-doc-header-offsets-and-crc-rule",
+      "passed": true
+    },
+    {
+      "name": "m48o-doc-placement-and-userhome-rule",
+      "passed": true
+    },
+    {
+      "name": "golden-raw-field-offsets-little-endian",
+      "passed": true
+    },
+    {
+      "name": "golden-header-crc-zero-field-rule",
+      "passed": true
+    },
+    {
+      "name": "ten-byte-non-nul-name-legal",
+      "passed": true
+    },
+    {
+      "name": "zero-length-raw-legal",
+      "passed": true
+    },
+    {
+      "name": "32768-raw-boundary-legal",
+      "passed": true
+    },
+    {
+      "name": "packed-strict-smaller-legal",
+      "passed": true
+    },
+    {
+      "name": "system-bootstrap-fnt-legal-internal-only",
+      "passed": true
+    },
+    {
+      "name": "userhome-resolves-current-session-with-stable-name-and-bytes",
+      "passed": true
+    }
+  ],
+  "commands": [],
+  "hashes": {
+    "v1/dist/certification/phase-4.json": "5a3427375e1cc49c6201106b0dee323a4eb595d3bfd81a4f31742607802165b1",
+    "v1/docs/tape-object.md": "8af518691d3477f5b9b5e0348e6b356781d935f0e0f9401e61fb8b2efe3572e2",
+    "v1/include/tapeobj.inc": "0b75575feb16c3b3a6d5bd2b544efa958ac208b235f5ae4605fedaa710a7a17b",
+    "v1/include/zx48ux.inc": "6260d9bfd4a5785e68c657601efa9113bfac8deaf56a67abd27f72c25c60bb5f",
+    "v1/tools-host/test-driver/phase5_m48o_header.py": "20aad9ac22add8cdcaf9b8ae6caf66b10b36e0e377a771d3bbd1dff7cf11f145",
+    "v1/tools-host/test-driver/run.py": "af8b855a53af5850c68f15576e52cbe4b8a63b07a2fd3b6a4efe459be3e485a9"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P4.33": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "14f6b93e3c76c741468dc12f5b8f3b26efb06fb1",
+  "status": "PASS",
+  "step": "P5.01",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
