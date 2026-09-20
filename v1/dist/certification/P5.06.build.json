@@ -1,0 +1,96 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "font-is-fast-required",
+      "passed": true
+    },
+    {
+      "name": "bincat-is-cold-pinned-system",
+      "passed": true
+    },
+    {
+      "name": "packed-decodes-into-final-raw-allocation",
+      "passed": true
+    },
+    {
+      "name": "raw-and-packed-logical-crc-before-publication",
+      "passed": true
+    },
+    {
+      "name": "font-f4x8-structure-frozen",
+      "passed": true
+    },
+    {
+      "name": "bincat-bcat-40-entry-structure-frozen",
+      "passed": true
+    },
+    {
+      "name": "crontab-zero-length-must-be-raw",
+      "passed": true
+    },
+    {
+      "name": "malformed-bootstrap-routes-to-panic",
+      "passed": true
+    },
+    {
+      "name": "failed-private-allocation-freed-before-publication",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13518 lines, work time: 0.034 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p506-bootstrap-resources.lst",
+        "--sym=p506-bootstrap-resources.sym",
+        "p506-bootstrap-resources.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 13,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 5461 lines, work time: 0.012 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/assets/bincat.bin": "130762f290dad7169ed9e55cc31da09449548ee9156b658a644487d3d611c939",
+    "v1/assets/font4x8-zxux.bin": "90f6818cf81cf3f13509cff32c091075691195d9638dbe801d12daceec1c9339",
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p506-bootstrap-resources.bin": "321a328b4a5fa15531f0db80c6353ee5f231300b5df37eb6d1030aca6b58e499",
+    "v1/dist/certification/P5.05.build.json": "fc4988c0042b08338fdc5758a9d9d0645828b4129c5ff6923116962e3bab7092",
+    "v1/dist/certification/P5.05.test.json": "399c6f45f5086f54307f3a988b43e782a35445d7c92320625de0b43fe3512951",
+    "v1/src/boot/entry.asm": "d7d72233e4f425049ae096b2aefa3dd466de9e19996454202e4bfd26ec6e4849",
+    "v1/src/kernel/tape.asm": "a01566534b7aa194db2b817f4503b32cbfb773b5ebb2a2b38b74bfc398e8d865",
+    "v1/tools-host/test-driver/phase5_bootstrap_resources.py": "8c276b820d0a73c500ffaec32a2f184e63013435ff8180d1f2dc2890000f67d4",
+    "v1/tools-host/test-driver/run.py": "1cbdbacf972e24dcf6a62eb51358e7fc6f15f5fe848b985b41da6e36430fe745"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P5.05": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "4169e9511b6abe0e2d4ac667f029311fb58950b0",
+  "status": "PASS",
+  "step": "P5.06",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
