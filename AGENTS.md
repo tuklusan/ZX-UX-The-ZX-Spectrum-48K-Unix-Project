@@ -94,15 +94,18 @@ For each finding, cite the exact file and line number. State the defect clearly,
 2. The dynamic review handshake is completed before the check-in is created.
 3. Direct check-in to `main` is the normal project workflow. Branching and later merging are discouraged because this is a single-developer project.
 4. Create a branch only when a concrete technical reason requires isolation and the project owner explicitly chooses that exception. Do not create branches merely to stage ordinary work before merging it back to `main`.
-5. Push-triggered GitHub Actions workflows run relevant non-document changes on `ubuntu-latest`; documentation-only pushes are excluded at trigger time and must not start runners or runner matrices.
+5. Push-triggered GitHub Actions workflows run relevant non-document changes on the active pinned `ubuntu-24.04` runner policy; documentation-only pushes are excluded at trigger time and must not start runners or runner matrices.
 6. Automated failure after check-in is a defect requiring correction through the complete process beginning again at Gate 1.
 7. No reviewer approval status is required or used as an automated blocking condition.
 
 ## GitHub Actions development environment
 
-- Project automation and CI use GitHub-hosted `ubuntu-latest` Linux runners.
+- Active long-lived project automation and CI use GitHub-hosted `ubuntu-24.04` Linux runners. The exact hosted image build is recorded in the runtime-cache identity because GitHub does not provide an immutable hosted-image selector.
+- Third-party GitHub Actions in active long-lived workflows are pinned to exact commit SHAs.
+- Heavyweight workflows restore the pinned `tools/runtime` cache first, verify it fully before use, and rebuild from the locked size-and-SHA-256-verified sources only on a cache miss or failed verification.
+- Runtime caches are performance artifacts, not certification evidence. Failed cache verification discards the restored runtime before rebuilding.
 - Runners are ephemeral. Do not depend on local runner state surviving a job.
-- Durable continuity is carried only through repository data and GitHub Actions artifacts.
+- Durable continuity is carried only through repository data, verified GitHub Actions caches, and GitHub Actions artifacts.
 - The canonical result identifier is `GARF-<run_id>-<run_attempt>-<commit_sha>`.
 - Each result bundle preserves a newest-first continuity list containing no more than 25 result identifiers, including the current result.
 - The result bundle records at least the result identifier, run ID, run attempt, commit SHA, ref, event, repository, UTC creation time, `project-policy` conclusion, `license-headers` conclusion, and `project-ci` conclusion.
@@ -110,6 +113,6 @@ For each finding, cite the exact file and line number. State the defect clearly,
 
 ## Canonical process
 
-`task -> develop disk copy -> quality scan x3 clean -> license-header gate -> prohibited-name gate -> dynamic adversarial review -> author decision -> direct check-in to main -> ubuntu-latest automated validation for non-document changes`
+`task -> develop disk copy -> quality scan x3 clean -> license-header gate -> prohibited-name gate -> dynamic adversarial review -> author decision -> direct check-in to main -> pinned ubuntu-24.04 automated validation for relevant non-document changes`
 
 The detailed procedure is in `docs/03-ZX-UX-DEVELOPMENT-WORKFLOW.md`.
