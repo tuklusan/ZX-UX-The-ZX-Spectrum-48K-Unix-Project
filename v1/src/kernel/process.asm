@@ -4882,7 +4882,7 @@ zx48_p514_reloc_order:
     ld hl,(p514_remaining)
     dec hl
     ld (p514_remaining),hl
-    jr zx48_p514_reloc_loop
+    jp zx48_p514_reloc_loop
 
 zx48_p514_validate_end:
     call zx48_p514_tape_stream_finish
