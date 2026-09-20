@@ -10,7 +10,7 @@
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
 
-name: P4.18 one-shot qualification and admission bridge v6
+name: P4.18 one-shot qualification and admission bridge v7
 
 on:
   push:
@@ -55,6 +55,7 @@ jobs:
           done
           test -n "$run_id"
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" -f state=pending -f context=p418-qualification -f description="qualification running" -f target_url="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${run_id}"
           gh run watch "$run_id" --repo "${GITHUB_REPOSITORY}" --exit-status
           gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" -f state=success -f context=p418-qualification -f description="qualification PASS"
 
@@ -148,4 +149,13 @@ jobs:
         if: ${{ failure() }}
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" -f state=failure -f context=p418-bridge -f description="qualification/admission bridge failed"
+        run: |
+          url=""
+          if test -n "${{ steps.dispatch.outputs.run_id }}"; then
+            url="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${{ steps.dispatch.outputs.run_id }}"
+          fi
+          if test -n "$url"; then
+            gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" -f state=failure -f context=p418-bridge -f description="qualification/admission bridge failed" -f target_url="$url"
+          else
+            gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" -f state=failure -f context=p418-bridge -f description="qualification/admission bridge failed"
+          fi
