@@ -3240,6 +3240,7 @@ zx48_p514_tape_stream_begin:
     ld (p514_tape_state_live),a
     ld (p514_tape_kind),a
     ld (p514_tape_pending),a
+    ld (p514_tape_hist_index),a
     ld (p514_tape_chunk_left),a
     ld (p514_tape_chunk_left+1),a
     call zx48_p507_lock_acquire
@@ -3395,14 +3396,23 @@ zx48_p514_tape_rle:
 zx48_p514_tape_backref:
     ld a,(p514_tape_param)
     inc a
-    jr nz,zx48_p514_tape_back8
-    ld l,0
-    jr zx48_p514_tape_back_ready
-zx48_p514_tape_back8:
-    ld l,a
-zx48_p514_tape_back_ready:
+    jr z,zx48_p514_tape_back256
+    ld e,a
+    ld d,0
+    ld hl,(p514_tape_logical_pos)
+    or a
+    sbc hl,de
+    jp c,zx48_p514_tape_format
     ld a,(p514_tape_hist_index)
-    sub l
+    sub e
+    jr zx48_p514_tape_back_index
+zx48_p514_tape_back256:
+    ld hl,(p514_tape_logical_pos)
+    ld a,h
+    or a
+    jp z,zx48_p514_tape_format
+    ld a,(p514_tape_hist_index)
+zx48_p514_tape_back_index:
     ld e,a
     ld d,0
     ld hl,(p514_tape_history)
