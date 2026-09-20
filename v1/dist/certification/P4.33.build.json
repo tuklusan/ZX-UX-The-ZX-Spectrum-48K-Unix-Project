@@ -1,0 +1,105 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "p4-33-rev07-contract-present",
+      "passed": true
+    },
+    {
+      "name": "p4-33-rev16-identity-exact",
+      "passed": true
+    },
+    {
+      "name": "p4-33-rev07-identity-exact",
+      "passed": true
+    },
+    {
+      "name": "phase4-aggregate-boundary-stops-before-phase5",
+      "passed": true
+    },
+    {
+      "name": "all-p4-01-through-p4-32-build-test-evidence-pass",
+      "passed": true,
+      "record_count": 64
+    },
+    {
+      "name": "32-entry-directory-boundary-and-object-crud-covered",
+      "passed": true
+    },
+    {
+      "name": "fragmentation-and-failed-append-rollback-covered",
+      "passed": true
+    },
+    {
+      "name": "atomic-rename-noop-case-move-replace-busy-rollback-covered",
+      "passed": true
+    },
+    {
+      "name": "caller-selected-object-types-and-open-semantics-covered",
+      "passed": true
+    },
+    {
+      "name": "raw-zxp1-roundtrip-all-ordinary-types-covered",
+      "passed": true
+    },
+    {
+      "name": "pack-unpack-allocation-failure-byte-identical-covered",
+      "passed": true
+    },
+    {
+      "name": "packed-seek-read-raw-equivalence-covered",
+      "passed": true
+    },
+    {
+      "name": "packed-bin-direct-spawn-exec-covered",
+      "passed": true
+    },
+    {
+      "name": "packed-write-atomic-materialization-covered",
+      "passed": true
+    },
+    {
+      "name": "noncompressible-remains-raw-covered",
+      "passed": true
+    },
+    {
+      "name": "compaction-never-packs-live-pinned-process-pipe-memory-covered",
+      "passed": true
+    },
+    {
+      "name": "fixed-pseudo-directory-and-working-directory-abi-covered",
+      "passed": true
+    },
+    {
+      "name": "negative-one-failed-rollback-blocks-phase",
+      "passed": true
+    },
+    {
+      "name": "negative-authority-mutation-blocks-phase",
+      "passed": true
+    }
+  ],
+  "commands": [],
+  "hashes": {
+    "docs/01-ZX-UX-ARCHITECTURE-REV16.md": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+    "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+    "v1/dist/certification/P4.32.test.json": "6a6dc680579fb8f023fbd717f170263680faebb94dd86cbc7ca6f629b41e192d",
+    "v1/tools-host/test-driver/phase4_acceptance.py": "65549801ce78b7955c9c2d19ef7b8fd1fb85e579dc9904daf761e4017a5d994a",
+    "v1/tools-host/test-driver/phase4_chdir.py": "0466650764d22225ef2789f4ea43cef3e978bcd4cfc3623a4793c7ddf2aea426",
+    "v1/tools-host/test-driver/phase4_compression_regression.py": "22c5e0c68b178e9d70c09f30a4351790be6031ce6b24fd52ec1ee1f8056528dd",
+    "v1/tools-host/test-driver/phase4_getcwd.py": "b7a8f3b054aed9b62f8a2403391e7597df3116d23f41585183443703546f08ce",
+    "v1/tools-host/test-driver/phase4_pseudo_dirs.py": "1ac810ef95e0db3aab4ce2a57e65ec92fc3088b0fff86847709cc9afd4e2a073",
+    "v1/tools-host/test-driver/run.py": "8e853b4ec21f915e1edd3ea1c8adf7c599603c1159c829598ab355f92aad7e7e"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P4.32": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "10820f470d95941f8e172f439134aea6826c64c8",
+  "status": "PASS",
+  "step": "P4.33",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

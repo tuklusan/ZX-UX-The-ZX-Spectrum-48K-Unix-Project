@@ -1,0 +1,458 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "p4-33-rev07-contract-present",
+      "passed": true
+    },
+    {
+      "name": "p4-33-rev16-identity-exact",
+      "passed": true
+    },
+    {
+      "name": "p4-33-rev07-identity-exact",
+      "passed": true
+    },
+    {
+      "name": "phase4-aggregate-boundary-stops-before-phase5",
+      "passed": true
+    },
+    {
+      "name": "all-p4-01-through-p4-32-build-test-evidence-pass",
+      "passed": true,
+      "record_count": 64
+    },
+    {
+      "name": "32-entry-directory-boundary-and-object-crud-covered",
+      "passed": true
+    },
+    {
+      "name": "fragmentation-and-failed-append-rollback-covered",
+      "passed": true
+    },
+    {
+      "name": "atomic-rename-noop-case-move-replace-busy-rollback-covered",
+      "passed": true
+    },
+    {
+      "name": "caller-selected-object-types-and-open-semantics-covered",
+      "passed": true
+    },
+    {
+      "name": "raw-zxp1-roundtrip-all-ordinary-types-covered",
+      "passed": true
+    },
+    {
+      "name": "pack-unpack-allocation-failure-byte-identical-covered",
+      "passed": true
+    },
+    {
+      "name": "packed-seek-read-raw-equivalence-covered",
+      "passed": true
+    },
+    {
+      "name": "packed-bin-direct-spawn-exec-covered",
+      "passed": true
+    },
+    {
+      "name": "packed-write-atomic-materialization-covered",
+      "passed": true
+    },
+    {
+      "name": "noncompressible-remains-raw-covered",
+      "passed": true
+    },
+    {
+      "name": "compaction-never-packs-live-pinned-process-pipe-memory-covered",
+      "passed": true
+    },
+    {
+      "name": "fixed-pseudo-directory-and-working-directory-abi-covered",
+      "passed": true
+    },
+    {
+      "name": "negative-one-failed-rollback-blocks-phase",
+      "passed": true
+    },
+    {
+      "name": "negative-authority-mutation-blocks-phase",
+      "passed": true
+    },
+    {
+      "name": "selected-current-head-phase4-acceptance-matrix-pass",
+      "passed": true
+    },
+    {
+      "name": "current-head-zxp1-regression-matrix-pass",
+      "passed": true
+    },
+    {
+      "name": "current-head-pseudo-chdir-getcwd-pass",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P4.03",
+        "--evidence-dir",
+        "/tmp/zxux-p433-current-head-nl9pmi93"
+      ],
+      "cwd": ".",
+      "duration_ms": 1226,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P4.03 TEST PASS\nevidence=/tmp/zxux-p433-current-head-nl9pmi93/P4.03.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P4.05",
+        "--evidence-dir",
+        "/tmp/zxux-p433-current-head-nl9pmi93"
+      ],
+      "cwd": ".",
+      "duration_ms": 2217,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P4.05 TEST PASS\nevidence=/tmp/zxux-p433-current-head-nl9pmi93/P4.05.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P4.08",
+        "--evidence-dir",
+        "/tmp/zxux-p433-current-head-nl9pmi93"
+      ],
+      "cwd": ".",
+      "duration_ms": 759,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P4.08 TEST PASS\nevidence=/tmp/zxux-p433-current-head-nl9pmi93/P4.08.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P4.09",
+        "--evidence-dir",
+        "/tmp/zxux-p433-current-head-nl9pmi93"
+      ],
+      "cwd": ".",
+      "duration_ms": 977,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P4.09 TEST PASS\nevidence=/tmp/zxux-p433-current-head-nl9pmi93/P4.09.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P4.10",
+        "--evidence-dir",
+        "/tmp/zxux-p433-current-head-nl9pmi93"
+      ],
+      "cwd": ".",
+      "duration_ms": 1082,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P4.10 TEST PASS\nevidence=/tmp/zxux-p433-current-head-nl9pmi93/P4.10.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P4.14",
+        "--evidence-dir",
+        "/tmp/zxux-p433-current-head-nl9pmi93"
+      ],
+      "cwd": ".",
+      "duration_ms": 772,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P4.14 TEST PASS\nevidence=/tmp/zxux-p433-current-head-nl9pmi93/P4.14.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P4.15",
+        "--evidence-dir",
+        "/tmp/zxux-p433-current-head-nl9pmi93"
+      ],
+      "cwd": ".",
+      "duration_ms": 722,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P4.15 TEST PASS\nevidence=/tmp/zxux-p433-current-head-nl9pmi93/P4.15.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P4.16",
+        "--evidence-dir",
+        "/tmp/zxux-p433-current-head-nl9pmi93"
+      ],
+      "cwd": ".",
+      "duration_ms": 5199,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P4.16 TEST PASS\nevidence=/tmp/zxux-p433-current-head-nl9pmi93/P4.16.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P4.20",
+        "--evidence-dir",
+        "/tmp/zxux-p433-current-head-nl9pmi93"
+      ],
+      "cwd": ".",
+      "duration_ms": 1294,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P4.20 TEST PASS\nevidence=/tmp/zxux-p433-current-head-nl9pmi93/P4.20.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P4.21",
+        "--evidence-dir",
+        "/tmp/zxux-p433-current-head-nl9pmi93"
+      ],
+      "cwd": ".",
+      "duration_ms": 630,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P4.21 TEST PASS\nevidence=/tmp/zxux-p433-current-head-nl9pmi93/P4.21.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P4.22",
+        "--evidence-dir",
+        "/tmp/zxux-p433-current-head-nl9pmi93"
+      ],
+      "cwd": ".",
+      "duration_ms": 1086,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P4.22 TEST PASS\nevidence=/tmp/zxux-p433-current-head-nl9pmi93/P4.22.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P4.23",
+        "--evidence-dir",
+        "/tmp/zxux-p433-current-head-nl9pmi93"
+      ],
+      "cwd": ".",
+      "duration_ms": 620,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P4.23 TEST PASS\nevidence=/tmp/zxux-p433-current-head-nl9pmi93/P4.23.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P4.24",
+        "--evidence-dir",
+        "/tmp/zxux-p433-current-head-nl9pmi93"
+      ],
+      "cwd": ".",
+      "duration_ms": 853,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P4.24 TEST PASS\nevidence=/tmp/zxux-p433-current-head-nl9pmi93/P4.24.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P4.25",
+        "--evidence-dir",
+        "/tmp/zxux-p433-current-head-nl9pmi93"
+      ],
+      "cwd": ".",
+      "duration_ms": 717,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P4.25 TEST PASS\nevidence=/tmp/zxux-p433-current-head-nl9pmi93/P4.25.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P4.26",
+        "--evidence-dir",
+        "/tmp/zxux-p433-current-head-nl9pmi93"
+      ],
+      "cwd": ".",
+      "duration_ms": 1426,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P4.26 TEST PASS\nevidence=/tmp/zxux-p433-current-head-nl9pmi93/P4.26.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P4.27",
+        "--evidence-dir",
+        "/tmp/zxux-p433-current-head-nl9pmi93"
+      ],
+      "cwd": ".",
+      "duration_ms": 522,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P4.27 TEST PASS\nevidence=/tmp/zxux-p433-current-head-nl9pmi93/P4.27.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P4.29",
+        "--evidence-dir",
+        "/tmp/zxux-p433-current-head-nl9pmi93"
+      ],
+      "cwd": ".",
+      "duration_ms": 16947,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P4.29 TEST PASS\nevidence=/tmp/zxux-p433-current-head-nl9pmi93/P4.29.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P4.30",
+        "--evidence-dir",
+        "/tmp/zxux-p433-current-head-nl9pmi93"
+      ],
+      "cwd": ".",
+      "duration_ms": 4383,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P4.30 TEST PASS\nevidence=/tmp/zxux-p433-current-head-nl9pmi93/P4.30.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P4.31",
+        "--evidence-dir",
+        "/tmp/zxux-p433-current-head-nl9pmi93"
+      ],
+      "cwd": ".",
+      "duration_ms": 882,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P4.31 TEST PASS\nevidence=/tmp/zxux-p433-current-head-nl9pmi93/P4.31.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P4.32",
+        "--evidence-dir",
+        "/tmp/zxux-p433-current-head-nl9pmi93"
+      ],
+      "cwd": ".",
+      "duration_ms": 1016,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P4.32 TEST PASS\nevidence=/tmp/zxux-p433-current-head-nl9pmi93/P4.32.test.json\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "docs/01-ZX-UX-ARCHITECTURE-REV16.md": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+    "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+    "v1/dist/certification/P4.32.test.json": "6a6dc680579fb8f023fbd717f170263680faebb94dd86cbc7ca6f629b41e192d",
+    "v1/tools-host/test-driver/phase4_acceptance.py": "65549801ce78b7955c9c2d19ef7b8fd1fb85e579dc9904daf761e4017a5d994a",
+    "v1/tools-host/test-driver/phase4_chdir.py": "0466650764d22225ef2789f4ea43cef3e978bcd4cfc3623a4793c7ddf2aea426",
+    "v1/tools-host/test-driver/phase4_compression_regression.py": "22c5e0c68b178e9d70c09f30a4351790be6031ce6b24fd52ec1ee1f8056528dd",
+    "v1/tools-host/test-driver/phase4_getcwd.py": "b7a8f3b054aed9b62f8a2403391e7597df3116d23f41585183443703546f08ce",
+    "v1/tools-host/test-driver/phase4_pseudo_dirs.py": "1ac810ef95e0db3aab4ce2a57e65ec92fc3088b0fff86847709cc9afd4e2a073",
+    "v1/tools-host/test-driver/run.py": "8e853b4ec21f915e1edd3ea1c8adf7c599603c1159c829598ab355f92aad7e7e"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P4.32": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "10820f470d95941f8e172f439134aea6826c64c8",
+  "status": "PASS",
+  "step": "P4.33",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
