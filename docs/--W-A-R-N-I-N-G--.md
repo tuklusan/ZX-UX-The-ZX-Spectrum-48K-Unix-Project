@@ -79,17 +79,16 @@ That is worse than an obvious failure. It is a silent provenance break.
 
 # CURRENT REVISION-EPOCH WARNING
 
-The project presently has a deliberate authority transition model:
+The project has completed its authority transition:
 
-- REV12 / REV03 are the immutable historical authorities for completed Phase 2.
+- REV12 / REV03 are immutable historical authorities for completed Phase 2.
 - REV13 / REV04, REV14 / REV05, and REV15 / REV06 are frozen, never-activated historical prospective revisions.
 - REV05 and REV06 remain frozen at their actual bytes despite their stale embedded authority defects; neither may be repaired in place.
-- REV16 / REV07 are the current dormant prospective authorities.
-- Their presence alone does not activate them.
-- The authority switch occurs only through the defined `R16.00` bridge after Phase 2, with the exact REV16/REV07 identities pinned by the master workflow.
+- REV16 / REV07 are the active authorities following the admitted and validated `R16.00` bridge.
+- Phase 3 and Phase 4 were certified under REV16 / REV07.
+- Phase 4 is complete; `v1/dist/certification/phase-4.json` records PASS and `PHASE-4-COMPLETE` is the durable checkpoint.
+- Phase 5 begins with `P5.01` only when explicitly instructed.
 - After check-in, **REV12, REV03, REV13, REV04, REV14, REV05, REV15, REV06, REV16, and REV07 must all remain byte-for-byte unchanged.**
-
-Do not "prepare" the transition by editing any of those files in place.
 
 Do not "synchronize" old revisions with new wording.
 
@@ -97,7 +96,7 @@ Do not "clean up" historical files after the fact.
 
 Do not update an old revision's embedded hash because a newer revision exists.
 
-Historical authority must remain historical authority.
+Historical authority and admitted evidence must remain historical, immutable records.
 
 ---
 

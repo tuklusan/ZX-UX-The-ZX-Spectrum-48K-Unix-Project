@@ -19,6 +19,13 @@ These rules apply to every change made to this repository.
 - `tuklusan/ZX-UX-The-ZX-Spectrum-48K-Unix-Project` is the only GitHub repository that may be modified.
 - All other GitHub repositories are read-only reference material.
 
+## Current authority and execution boundary
+
+- REV16 / REV07 are the active, immutable canonical authorities.
+- Phase 4 is durably certified and checkpointed by `phase-4.json` PASS and `PHASE-4-COMPLETE`.
+- Previously admitted evidence is immutable and must never be regenerated or recommitted by regression workflows.
+- Phase 5 has not begun. `P5.01` is next and begins only on explicit instruction.
+
 ## Mandatory order of work
 
 Every proposed check-in must pass these gates in this exact order.

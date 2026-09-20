@@ -88,6 +88,7 @@ expected_actions = {
 }
 active_workflows = [
     Path(".github/workflows/candidate-kernel.yml"),
+    Path(".github/workflows/phase0-certification.yml"),
     Path(".github/workflows/quality-and-ci.yml"),
     Path(".github/workflows/phase1-certification.yml"),
     Path(".github/workflows/phase2-validation.yml"),
@@ -118,6 +119,8 @@ for path in action_files:
             raise SystemExit(f"ERROR: action is not pinned to approved immutable SHA: {path}:{lineno}: {action}@{ref}")
 
 for path in (
+    Path(".github/workflows/candidate-kernel.yml"),
+    Path(".github/workflows/phase0-certification.yml"),
     Path(".github/workflows/quality-and-ci.yml"),
     Path(".github/workflows/phase1-certification.yml"),
     Path(".github/workflows/phase2-validation.yml"),
