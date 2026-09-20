@@ -1,0 +1,154 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "allow-tape-zero-before-tape-motion",
+      "passed": true
+    },
+    {
+      "name": "first-24-logical-bytes-same-stream",
+      "passed": true
+    },
+    {
+      "name": "m48-logical-equals-mex-total-stored",
+      "passed": true
+    },
+    {
+      "name": "final-image-direct-stream-write",
+      "passed": true
+    },
+    {
+      "name": "bss-zeroed-before-commit",
+      "passed": true
+    },
+    {
+      "name": "relocations-increasing-nonoverlap-and-private",
+      "passed": true
+    },
+    {
+      "name": "complete-m48-and-body-crc-before-commit",
+      "passed": true
+    },
+    {
+      "name": "failure-rolls-back-image-stack-bootstrap",
+      "passed": true
+    },
+    {
+      "name": "no-second-full-raw-executable",
+      "passed": true
+    },
+    {
+        "name": "tape-buffer-is-one-512-byte-chunk",
+      "passed": true
+    },
+    {
+      "name": "packed-uses-one-272-state",
+      "passed": true
+    },
+    {
+      "name": "packed-history-never-reset-at-mex-header",
+      "passed": true
+    },
+    {
+      "name": "packed-backref-distance-validated",
+      "passed": true
+    },
+    {
+      "name": "fast-stack-includes-bootstrap-reserve",
+      "passed": true
+    },
+    {
+      "name": "stream-validates-logical-crc-and-exact-end",
+      "passed": true
+    },
+    {
+      "name": "allow-tape-zero-no-motion-runtime",
+      "passed": true
+    },
+    {
+      "name": "allow-tape-one-enters-stream-runtime",
+      "passed": true
+    },
+    {
+      "name": "late-stream-failure-no-commit-runtime",
+      "passed": true
+    },
+    {
+      "name": "packed-history-continuity-reuses-p427-certified-invariant",
+      "passed": true
+    },
+    {
+      "name": "rollback-covers-all-private-process-allocations",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 37,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 14003 lines, work time: 0.035 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p514-direct-mex.lst",
+        "--sym=p514-direct-mex.sym",
+        "p514-direct-mex.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 17,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 9582 lines, work time: 0.015 seconds\n",
+      "stdout": "",
+       "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p514-tape-stream.lst",
+        "--sym=p514-tape-stream.sym",
+        "p514-tape-stream.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 17,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\ntape.asm(1955): warning: value 0xC3D8 is truncated to 8bit value: 0xD8\np514-tape-stream.asm(19): ^ emitted from here\ntape.asm(2101): warning: value 0xC3D8 is truncated to 8bit value: 0xD8\np514-tape-stream.asm(19): ^ emitted from here\ntape.asm(2726): warning: value 0xC85E is truncated to 8bit value: 0x5E\np514-tape-stream.asm(20): ^ emitted from here\nPass 3 complete\nErrors: 0, warnings: 3, compiled: 5615 lines, work time: 0.016 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p514-direct-mex.bin": "e7fb9ed5ccce269cd64e3a800707221457364389ae66c8c593bb431acfe7fd28",
+    "v1/build/p514-tape-stream.bin": "76faff131168a6ccd6946d723e0a40307b7a6795c68c667bed9c6569edf7145d",
+    "v1/dist/certification/P5.13.build.json": "54a36d095764db73968473fccfc73aa72db6cc4ba7463b3505bc338bef4d7f0e",
+    "v1/dist/certification/P5.13.test.json": "49eb994280089ce88d1a2a84a29600e38f6d5671393d47e94f75ba083033bc46",
+    "v1/src/kernel/process.asm": "17fa900e71e5147aeae0371260f15cf1b0288152e4c395ebd683cbb8a1e0093c",
+    "v1/src/kernel/tape.asm": "2a6c35204faba7121b9f4487e5159c4f5e2c9a09a227e280316caabe76b374e1",
+    "v1/tools-host/test-driver/phase5_direct_mex1.py": "69f6b6bcf55e251df63159c3cecfe9e3a1dcd0a4825cd2813caefe63c2ddeaca",
+    "v1/tools-host/test-driver/run.py": "e86e8ea43a6f54a27ee6a87cd7e1ee51a75ef18cf273f8bc961b848048eb9a27"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P5.13": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "1ec7164ab15334e47b5b52a25e0616bf6d84d48b",
+  "status": "PASS",
+  "step": "P5.14",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
