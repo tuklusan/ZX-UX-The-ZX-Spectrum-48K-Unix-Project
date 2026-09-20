@@ -1184,3 +1184,101 @@ p418_target: dw 0
 p418_logical_length: dw 0
 p418_byte: db 0
     ENDM
+
+;
+; P4.19 PACKED-to-RAW writable-open materialization. Decode into one private
+; replacement first; only a completely validated decode may publish RAW metadata.
+;
+    MACRO EMIT_P419_PACKED_WRITE_ROUTINES
+; IX=mutable PACKED object record. RAW is a no-op success.
+zx48_p419_materialize_private:
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    and OBJ_PACKED
+    ret z
+    ld (p419_object_ptr),ix
+
+    ld l,(ix+OBJ_LOGICAL_LENGTH)
+    ld h,(ix+OBJ_LOGICAL_LENGTH+1)
+    ld a,h
+    or l
+    jp z,zx48_p419_format
+    ld (p419_logical_length),hl
+
+    ld l,(ix+OBJ_ALLOCATION_PTR)
+    ld h,(ix+OBJ_ALLOCATION_PTR+1)
+    ld (p419_old_ptr),hl
+    ld c,(ix+OBJ_STORAGE_LENGTH)
+    ld b,(ix+OBJ_STORAGE_LENGTH+1)
+    ld (p419_old_storage),bc
+
+    ld bc,(p419_logical_length)
+    ld a,ALLOC_COLD_PREFERRED
+    call zx48_alloc
+    ret c
+    ld (p419_new_ptr),hl
+
+    ld ix,(p419_object_ptr)
+    ld l,(ix+OBJ_ALLOCATION_PTR)
+    ld h,(ix+OBJ_ALLOCATION_PTR+1)
+    ld c,(ix+OBJ_STORAGE_LENGTH)
+    ld b,(ix+OBJ_STORAGE_LENGTH+1)
+    ld de,(p419_logical_length)
+    ld iy,(p419_new_ptr)
+    ld ix,0
+    ld a,P416_SINK_FINAL_MEMORY
+    call zx48_p416_decode
+    jr c,zx48_p419_decode_fail
+
+    ; Publish the fully decoded private replacement atomically before old release.
+    ld ix,(p419_object_ptr)
+    ld hl,(p419_new_ptr)
+    ld (ix+OBJ_ALLOCATION_PTR),l
+    ld (ix+OBJ_ALLOCATION_PTR+1),h
+    ld hl,(p419_logical_length)
+    ld (ix+OBJ_STORAGE_LENGTH),l
+    ld (ix+OBJ_STORAGE_LENGTH+1),h
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    and $fe
+    ld (ix+OBJ_FLAGS_BYTE),a
+
+    ld hl,(p419_old_ptr)
+    ld bc,(p419_old_storage)
+    bit 0,c
+    jr z,zx48_p419_old_even
+    inc bc
+zx48_p419_old_even:
+    call zx48_free
+    ret nc
+    ld a,PANIC_SCHEDULER
+    jp zx48_panic
+
+zx48_p419_decode_fail:
+    ld (p419_error),a
+    ld hl,(p419_new_ptr)
+    ld bc,(p419_logical_length)
+    bit 0,c
+    jr z,zx48_p419_new_even
+    inc bc
+zx48_p419_new_even:
+    call zx48_free
+    jr c,zx48_p419_free_panic
+    ld a,(p419_error)
+    scf
+    ret
+zx48_p419_free_panic:
+    ld a,PANIC_SCHEDULER
+    jp zx48_panic
+
+zx48_p419_format:
+    ld a,E_FORMAT
+    scf
+    ret
+
+p419_object_ptr: dw 0
+p419_old_ptr: dw 0
+p419_old_storage: dw 0
+p419_new_ptr: dw 0
+p419_logical_length: dw 0
+p419_error: db 0
+    ENDM
+
