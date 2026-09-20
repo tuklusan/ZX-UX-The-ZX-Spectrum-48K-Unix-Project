@@ -2192,3 +2192,81 @@ p424_slot: db 0
 p424_mask_table:
     db 1,2,4,8,16,32,64,128
     ENDM
+
+;
+; P4.25 PID0 idle maintenance pack service. Exactly one set candidate bit may be
+; consumed per call. The selected bit is cleared before revalidation/attempt so
+; failure, no saving, or E_NOMEM cannot retry within the same idle cycle.
+;
+    MACRO EMIT_P425_IDLE_PACK_ROUTINES
+zx48_p425_pack_once:
+    xor a
+    ld (p425_attempted),a
+    ld (p425_slot),a
+zx48_p425_scan:
+    ld a,(p425_slot)
+    cp RAM_OBJECT_COUNT
+    jr nc,zx48_p425_done
+    call zx48_p424_candidate_test
+    jr nz,zx48_p425_selected
+    ld a,(p425_slot)
+    inc a
+    ld (p425_slot),a
+    jr zx48_p425_scan
+
+zx48_p425_selected:
+    ld a,(p425_slot)
+    call zx48_p424_candidate_clear
+    ld a,1
+    ld (p425_attempted),a
+
+    ld a,(p425_slot)
+    call zx48_p405_object_ptr_slot
+    jr c,zx48_p425_done
+
+    ; Revalidate the same slot immediately before any allocation or mutation.
+    ld a,(ix+OBJ_TYPE_ID)
+    or a
+    jr z,zx48_p425_done
+    cp OBJ_DIR
+    jr z,zx48_p425_done
+    cp OBJ_DEV
+    jr z,zx48_p425_done
+    cp OBJ_SYS
+    jr z,zx48_p425_done
+    ld a,(ix+OBJ_RESERVED_BYTE)
+    cp STATE_RAM
+    jr nz,zx48_p425_done
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    and OBJ_PACKED
+    jr nz,zx48_p425_done
+    ld l,(ix+OBJ_LOGICAL_LENGTH)
+    ld h,(ix+OBJ_LOGICAL_LENGTH+1)
+    ld a,h
+    or a
+    jr nz,zx48_p425_size_ok
+    ld a,l
+    cp 64
+    jr c,zx48_p425_done
+zx48_p425_size_ok:
+    ld a,(p425_slot)
+    ld d,a
+    call zx48_od_object_any_live
+    jr c,zx48_p425_done
+
+    ld a,(p425_slot)
+    ld d,a
+    call zx48_p422_pack_record
+    ; Background maintenance is best-effort. Atomic P4.22 guarantees any
+    ; carry-path failure leaves the committed RAW representation unchanged.
+    jr c,zx48_p425_done
+
+zx48_p425_done:
+    xor a
+    or a
+    ret
+
+p425_slot: db 0
+p425_attempted: db 0
+    ENDM
+
