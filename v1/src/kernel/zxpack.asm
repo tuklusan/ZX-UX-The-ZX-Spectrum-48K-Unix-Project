@@ -1735,6 +1735,9 @@ zx48_p421_nonempty:
     MACRO EMIT_P422_SYS_PACK_CODEC_ROUTINES
 ; IX=record,D=object slot. Returns HL=bytes saved, or HL=0 when unchanged.
 zx48_p422_pack_record:
+    ld hl,(p422_pack_attempts)
+    inc hl
+    ld (p422_pack_attempts),hl
     ld (p422_object_ptr),ix
     ld a,d
     ld (p422_slot),a
@@ -1861,6 +1864,9 @@ zx48_p422_size_ok:
     ld a,(ix+OBJ_FLAGS_BYTE)
     or OBJ_PACKED
     ld (ix+OBJ_FLAGS_BYTE),a
+    ld hl,(p422_pack_successes)
+    inc hl
+    ld (p422_pack_successes),hl
 
     ; Old RAW allocation becomes unreachable only after publication.
     ld hl,(p422_old_ptr)
@@ -1951,6 +1957,8 @@ p422_logical: dw 0
 p422_encoded: dw 0
 p422_slot: db 0
 p422_error: db 0
+p422_pack_attempts: dw 0
+p422_pack_successes: dw 0
     ENDM
 
 ;
@@ -2540,6 +2548,117 @@ p426_probe_dest: dw 0
 p426_probe_workspace: dw 0
 p426_error: db 0
     ENDM
+;
+; P4.28 exact SYS_ZXPACK_INFO / ZPINFO1 accounting.
+;
+    MACRO EMIT_P428_ZXPACK_INFO_ROUTINES
+; HL -> validated writable 20-byte ZPINFO1. Current-state totals concern only
+; mutable STATE_RAM object payloads. Packed-reader state counts live OD_AUX
+; allocations exactly once per shared open description.
+zx48_p428_zxpack_info:
+    ld (p428_info_ptr),hl
+    xor a
+    ld hl,p428_info_scratch
+    ld de,p428_info_scratch+1
+    ld bc,19
+    ld (hl),a
+    ldir
+
+    ld ix,p405_object_table
+    ld b,RAM_OBJECT_COUNT
+zx48_p428_object_loop:
+    push bc
+    ld a,(ix+OBJ_TYPE_ID)
+    or a
+    jr z,zx48_p428_object_next
+    ld a,(ix+OBJ_RESERVED_BYTE)
+    cp STATE_RAM
+    jr nz,zx48_p428_object_next
+    ld l,(ix+OBJ_LOGICAL_LENGTH)
+    ld h,(ix+OBJ_LOGICAL_LENGTH+1)
+    ld de,(p428_info_scratch+0)
+    add hl,de
+    ld (p428_info_scratch+0),hl
+    jr nc,zx48_p428_logical_no_carry
+    ld hl,(p428_info_scratch+2)
+    inc hl
+    ld (p428_info_scratch+2),hl
+zx48_p428_logical_no_carry:
+    ld l,(ix+OBJ_STORAGE_LENGTH)
+    ld h,(ix+OBJ_STORAGE_LENGTH+1)
+    ld de,(p428_info_scratch+4)
+    add hl,de
+    jp c,zx48_p428_accounting_invalid
+    ld (p428_info_scratch+4),hl
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    and OBJ_PACKED
+    jr z,zx48_p428_count_raw
+    ld hl,p428_info_scratch+10
+    inc (hl)
+    jr zx48_p428_object_next
+zx48_p428_count_raw:
+    ld hl,p428_info_scratch+11
+    inc (hl)
+zx48_p428_object_next:
+    ld de,OBJ_RECORD_SIZE
+    add ix,de
+    pop bc
+    djnz zx48_p428_object_loop
+
+    ld hl,(p428_info_scratch+0)
+    ld de,(p428_info_scratch+4)
+    or a
+    sbc hl,de
+    ld (p428_info_scratch+6),hl
+    ld hl,(p428_info_scratch+2)
+    ld de,0
+    sbc hl,de
+    jp c,zx48_p428_accounting_invalid
+    ld (p428_info_scratch+8),hl
+
+    ld ix,open_description_table
+    ld b,OPEN_DESCRIPTION_COUNT
+    ld hl,0
+zx48_p428_od_loop:
+    ld a,(ix+OD_KIND_O)
+    or a
+    jr z,zx48_p428_od_next
+    ld e,(ix+OD_AUX_O)
+    ld d,(ix+OD_AUX_O+1)
+    ld a,d
+    or e
+    jr z,zx48_p428_od_next
+    ld de,PACKED_READER_STATE_SIZE
+    add hl,de
+zx48_p428_od_next:
+    ld de,OD_COMPACT_SIZE
+    add ix,de
+    djnz zx48_p428_od_loop
+    ld (p428_info_scratch+12),hl
+
+    ld hl,(p422_pack_attempts)
+    ld (p428_info_scratch+14),hl
+    ld hl,(p422_pack_successes)
+    ld (p428_info_scratch+16),hl
+    xor a
+    ld (p428_info_scratch+18),a
+    ld (p428_info_scratch+19),a
+
+    ld hl,p428_info_scratch
+    ld de,(p428_info_ptr)
+    ld bc,20
+    ldir
+    xor a
+    or a
+    ret
+zx48_p428_accounting_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+p428_info_ptr: dw 0
+p428_info_scratch: defs 20,0
+    ENDM
+
 ;
 ; P4.27 resident PACKED spawn stream adapter. This deliberately exposes only
 ; one-byte continuation over the already-bound P4.18 state so header parsing,
