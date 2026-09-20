@@ -693,7 +693,7 @@ zx48_p505_header_crc:
     call zx48_alloc
     jr nc,zx48_p505_decoder_allocated
     ld (p505_error),a
-    jr zx48_p505_cleanup
+    jp zx48_p505_cleanup
 zx48_p505_decoder_allocated:
     ld (p505_decoder_ptr),hl
     ld a,1
