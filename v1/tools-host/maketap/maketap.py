@@ -32,6 +32,10 @@ CRC16_CCITT_FALSE_XOROUT = 0x0000
 CRC16_CCITT_FALSE_REFIN = False
 CRC16_CCITT_FALSE_REFOUT = False
 
+M48O_HEADER_SIZE = 32
+M48O_CHUNK_SIZE = 512
+M48O_DATA_FLAG = 0xFF
+
 M48O_TXT = 1
 M48O_BIN = 2
 M48O_FNT = 9
@@ -206,7 +210,7 @@ def m48o_header(obj: M48OObject) -> bytes:
     _require(obj.target_directory in allowed[obj.object_type], "invalid bootstrap object placement")
     _require(len(obj.payload) <= 32768, "M48O payload too large")
 
-    header = bytearray(32)
+    header = bytearray(M48O_HEADER_SIZE)
     header[0:4] = b"M48O"
     header[4] = 1
     header[5] = obj.object_type
@@ -224,9 +228,14 @@ def m48o_header(obj: M48OObject) -> bytes:
 
 
 def m48o_blocks(obj: M48OObject) -> bytes:
-    out = bytearray(tap_block(0xFF, m48o_header(obj)))
-    for offset in range(0, len(obj.payload), 512):
-        out.extend(tap_block(0xFF, obj.payload[offset:offset + 512]))
+    out = bytearray(tap_block(M48O_DATA_FLAG, m48o_header(obj)))
+    for offset in range(0, len(obj.payload), M48O_CHUNK_SIZE):
+        out.extend(
+            tap_block(
+                M48O_DATA_FLAG,
+                obj.payload[offset:offset + M48O_CHUNK_SIZE],
+            )
+        )
     return bytes(out)
 
 

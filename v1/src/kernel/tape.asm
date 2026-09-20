@@ -45,8 +45,38 @@ zx48_crc16_ccitt_false_no_poly:
     jr zx48_crc16_ccitt_false_byte
     ENDM
 
+    MACRO EMIT_P503_FRAMING_ROUTINES
+; BC=physical bytes remaining. A is always the M48O ROM data flag and
+; DE is zero for no payload or min(BC,512) for the next payload block.
+zx48_p503_prepare_header_block:
+    ld a,M48O_ROM_DATA_FLAG
+    ld de,M48O_HEADER_SIZE
+    ret
+zx48_p503_prepare_chunk:
+zx48_p503_next_chunk:
+    ld de,0
+    ld a,b
+    or c
+    jr z,zx48_p503_chunk_ready
+    ld de,M48O_CHUNK_SIZE
+    ld a,b
+    cp d
+    jr c,zx48_p503_use_remaining
+    jr nz,zx48_p503_chunk_ready
+    ld a,c
+    cp e
+    jr nc,zx48_p503_chunk_ready
+zx48_p503_use_remaining:
+    ld d,b
+    ld e,c
+zx48_p503_chunk_ready:
+    ld a,M48O_ROM_DATA_FLAG
+    ret
+    ENDM
+
     MACRO EMIT_TAPE_ROUTINES
     EMIT_P502_CRC16_ROUTINES
+    EMIT_P503_FRAMING_ROUTINES
 ; A=block type,DE=length,IX=source.
 zx48_tape_save_block:
     call zx48_rom_sa_bytes
@@ -104,8 +134,7 @@ zx48_tape_verify_path:
 zx48_tape_scan_next:
     push hl
     pop ix
-    ld a,$ff
-    ld de,M48O_HEADER_SIZE
+    call zx48_p503_prepare_header_block
     scf
     call zx48_tape_load_block
     ret c
