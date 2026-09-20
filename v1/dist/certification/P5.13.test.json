@@ -1,0 +1,105 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "play-prompt-explicitly-mentions-position-rewind-and-play",
+      "passed": true
+    },
+    {
+      "name": "record-prompt-explicitly-mentions-position-and-record",
+      "passed": true
+    },
+    {
+      "name": "prompt-requires-shell-foreground-hook",
+      "passed": true
+    },
+    {
+      "name": "consent-wait-precedes-tape-operation",
+      "passed": true
+    },
+    {
+      "name": "noninteractive-fails-before-prompt-callback",
+      "passed": true
+    },
+    {
+      "name": "save-routes-record-prompt",
+      "passed": true
+    },
+    {
+      "name": "load-verify-route-play-prompt",
+      "passed": true
+    },
+    {
+      "name": "scan-routes-play-prompt-before-lock",
+      "passed": true
+    },
+    {
+      "name": "background-never-reaches-tape-prompt-write",
+      "passed": true
+    },
+    {
+      "name": "background-prompt-suppressed-runtime",
+      "passed": true
+    },
+    {
+      "name": "foreground-play-record-prompt-state-runtime",
+      "passed": true
+    },
+    {
+      "name": "declined-consent-is-e-intr-runtime",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13526 lines, work time: 0.033 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p513-prompts.lst",
+        "--sym=p513-prompts.sym",
+        "p513-prompts.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 8,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 3708 lines, work time: 0.007 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p513-prompts.bin": "700ca9faf7d30202d4add5f7d46051d8aff45da6d983889637f14a177f80f5aa",
+    "v1/dist/certification/P5.12.build.json": "78bad038d0cde62e15212d4cab2548300810eb8a17a2d29dcaa5aa762a20897c",
+    "v1/dist/certification/P5.12.test.json": "a77f15103ba857e3a18fe1712dc78a5a4ea3d46aa63afaf4db7cdb1f81424ae8",
+    "v1/src/kernel/tape.asm": "5a97e3bff6f92de44550d63d842b72ece433a5d5ce36fabc452079cb1e2ccd4e",
+    "v1/tools-host/test-driver/phase5_tape_prompts.py": "415a87766c408602df04a7b122843b804608b68d6f5e66dfeecf4956341e543d",
+    "v1/tools-host/test-driver/run.py": "86a9e82ef689046aec63b43b982591b3d86b22c15565984f53f2f385302ea572"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P5.12": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "62fab55f969cd7d703c1c79be01cd8947a2afbd7",
+  "status": "PASS",
+  "step": "P5.13",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
