@@ -1791,7 +1791,7 @@ zx48_p422_size_ok:
     call zx48_p420_workspace_begin
     ret c
     call zx48_p420_run_pass
-    jr c,zx48_p422_pass1_fail
+    jp c,zx48_p422_pass1_fail
     ld hl,(p420_encoded_len)
     ld (p422_encoded),hl
     call zx48_p420_workspace_end
@@ -1817,14 +1817,14 @@ zx48_p422_size_ok:
     ld a,1
     ld (p420_mode),a
     call zx48_p420_workspace_begin
-    jr c,zx48_p422_dest_fail
+    jp c,zx48_p422_dest_fail
     call zx48_p420_run_pass
-    jr c,zx48_p422_pass2_fail
+    jp c,zx48_p422_pass2_fail
     ld hl,(p420_encoded_len)
     ld de,(p422_encoded)
     or a
     sbc hl,de
-    jr nz,zx48_p422_pass2_format
+    jp nz,zx48_p422_pass2_format
     call zx48_p420_workspace_end
     jp c,zx48_p422_free_panic
 
@@ -1832,7 +1832,7 @@ zx48_p422_size_ok:
     ld bc,256
     ld a,ALLOC_COLD_PREFERRED|ALLOC_NO_COMPACT
     call zx48_alloc
-    jr c,zx48_p422_dest_fail
+    jp c,zx48_p422_dest_fail
     ld (p422_history),hl
     push hl
     pop ix
@@ -1844,7 +1844,7 @@ zx48_p422_size_ok:
     ld de,(p422_logical)
     ld a,P416_SINK_DISCARD
     call zx48_p416_decode
-    jr c,zx48_p422_validate_fail
+    jp c,zx48_p422_validate_fail
     ld hl,(p422_history)
     ld bc,256
     call zx48_free
