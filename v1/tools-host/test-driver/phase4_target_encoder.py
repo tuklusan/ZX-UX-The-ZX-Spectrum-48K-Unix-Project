@@ -195,7 +195,7 @@ def _runtime(root: Path, s: dict[str, int], module: bytes) -> None:
     vectors = (
         ("rle-backref-equal-tie-prefers-rle", b"ababaaaa"),
         ("nearest-only-candidate", b"aaaabaaa"),
-        ("literal-run-splits-at-64", bytes(range(70))),
+        ("literal-run-splits-at-64", bytes(range(70)) + b"\\xff" * 100),
         ("rle-splits-at-66", b"A" * 70),
         ("backref-splits-at-130", bytes(range(65)) * 3),
         ("mixed", b"abcabcabcXYZXYZXYZ" + bytes(range(40)) + b"QQQQQQQ"),
