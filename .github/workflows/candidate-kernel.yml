@@ -80,45 +80,13 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Install native build prerequisite
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends build-essential cmake
-
-      - name: Build pinned assembler
-        run: |
-          python3 - <<'PY'
-          import hashlib
-          import json
-          import pathlib
-          import tarfile
-          import urllib.request
-
-          root = pathlib.Path('.')
-          lock = json.loads((root / 'tools/manifest/toolchain.lock.json').read_text())
-          item = next(x for x in lock['artifacts'] if x['id'] == 'sjasmplus')
-          archive = pathlib.Path('/tmp/sjasmplus.tar.xz')
-          with urllib.request.urlopen(item['url'], timeout=120) as response:
-              archive.write_bytes(response.read())
-          data = archive.read_bytes()
-          assert len(data) == item['size']
-          assert hashlib.sha256(data).hexdigest() == item['sha256']
-          source_root = pathlib.Path('/tmp/sjasmplus-source')
-          source_root.mkdir(exist_ok=True)
-          with tarfile.open(archive, 'r:xz') as tf:
-              tf.extractall(source_root, filter='data')
-          source = next(p for p in source_root.iterdir() if p.is_dir())
-          pathlib.Path('/tmp/sjasmplus-source-path').write_text(str(source))
-          PY
-          source="$(cat /tmp/sjasmplus-source-path)"
-          cmake -DENABLE_LUA=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/tmp/sjasmplus -S "$source" -B /tmp/sjasmplus-build
-          cmake --build /tmp/sjasmplus-build --parallel 2
-          cmake --install /tmp/sjasmplus-build
+      - name: Restore or build certified ZX-UX runtime
+        uses: ./.github/actions/setup-zxux-runtime
 
       - name: Assemble kernel
         run: |
           mkdir -p v1/build
-          (cd v1/src/kernel && /tmp/sjasmplus/bin/sjasmplus --nologo --lst=../../build/kernel.lst kernel.asm)
+          (cd v1/src/kernel && tools/runtime/sjasmplus/bin/sjasmplus --nologo --lst=../../build/kernel.lst kernel.asm)
           test "$(wc -c < v1/build/kernel.bin)" -eq 8192
           grep -E 'kernel_(ordinary_pool_start|ordinary_used_end|mod_)' v1/build/kernel.lst
           sha256sum v1/build/kernel.bin

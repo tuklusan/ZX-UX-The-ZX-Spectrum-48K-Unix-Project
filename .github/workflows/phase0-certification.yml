@@ -12,35 +12,24 @@
 
 name: ZX-UX Phase 0 Certification
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/phase0-certification.trigger'
-      - '.github/workflows/phase0-certification.yml'
   workflow_dispatch:
 permissions:
-  contents: write
+  contents: read
 concurrency:
   group: zxux-phase0-certification
   cancel-in-progress: false
 jobs:
   certify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-phase0-${{ github.sha }}-${{ github.run_id }}
     steps:
       - name: Checkout exact source
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with: {fetch-depth: 0}
-      - uses: actions/setup-python@v6
-        with: {python-version: '3.13.15', check-latest: false}
-      - name: Native prerequisites
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends build-essential cmake gettext libaudiofile-dev libfreetype6-dev libgcrypt20-dev libglib2.0-dev libpng-dev libsdl1.2-dev libtool libxml2-dev perl pkg-config
-      - run: python tools/scripts/bootstrap-environment.py
-      - run: tools/runtime/python/bin/python tools/scripts/verify-environment.py
+      - name: Restore or build certified ZX-UX runtime
+        uses: ./.github/actions/setup-zxux-runtime
       - name: Execute complete ordered E0 and Phase 0 set
         run: |
           set -euo pipefail
@@ -102,51 +91,13 @@ jobs:
             printf 'P1.%s revalidation test\n' "$n" > "$progress"
             run_one "P1.${n}.test" "$py" "$driver" test --step "P1.$n"
           done
-      - name: Assert source still clean and current
+      - name: Revalidate immutable admitted Phase 0 and Phase 1 evidence
         run: |
-          test -z "$(git status --porcelain=v1 --untracked-files=all)"
-          git fetch origin main
-          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
-      - name: Install durable Phase 0 evidence unchanged and preserve Phase 1
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import hashlib, os, shutil
-          src = Path(os.environ['ZXUX_EVIDENCE_DIR'])
-          dst = Path('v1/dist/certification')
-          expected = {f'E0.{n:02d}.{action}.json' for n in range(1, 7) for action in ('build', 'test')}
-          expected |= {f'P0.{n:02d}.{action}.json' for n in range(1, 35) for action in ('build', 'test')}
-          expected |= {'E0.04.result.json', 'P0.34.result.json', 'phase-0.json'}
-          staged = {p.name for p in src.glob('*.json') if p.name.startswith(('E0.', 'P0.')) or p.name == 'phase-0.json'}
-          assert staged == expected, (sorted(staged - expected), sorted(expected - staged))
-          current = {p.name for p in dst.glob('*.json') if p.name.startswith(('E0.', 'P0.')) or p.name == 'phase-0.json'}
-          assert current == expected, (sorted(current - expected), sorted(expected - current))
-          p1_expected = {f'P1.{n:02d}.{action}.json' for n in range(1, 42) for action in ('build', 'test')}
-          p1_expected |= {'P1.41.result.json', 'phase-1.json'}
-          p1_current = {p.name for p in dst.glob('*.json') if p.name.startswith('P1.') or p.name == 'phase-1.json'}
-          assert p1_current == p1_expected, (sorted(p1_current - p1_expected), sorted(p1_expected - p1_current))
-          p1_before = {name: hashlib.sha256((dst / name).read_bytes()).hexdigest() for name in sorted(p1_expected)}
-          for name in sorted(expected):
-              (dst / name).unlink()
-          for name in sorted(expected):
-              shutil.copyfile(src / name, dst / name)
-              assert hashlib.sha256((src / name).read_bytes()).digest() == hashlib.sha256((dst / name).read_bytes()).digest(), name
-          p1_after = {name: hashlib.sha256((dst / name).read_bytes()).hexdigest() for name in sorted(p1_expected)}
-          assert p1_after == p1_before
-          print('ZX-UX PHASE 0 EVIDENCE COPY IDENTITY PASS')
-          print('ZX-UX PHASE 1 HISTORICAL EVIDENCE PRESERVATION PASS')
-          PY
-      - name: Commit Phase 0 evidence only
-        run: |
-          git add -A v1/dist/certification
-          changed="$(git diff --cached --name-only)"
-          test -n "$changed"
-          bad="$(printf '%s\n' "$changed" | grep -Ev '^v1/dist/certification/(E0\.(0[1-6])\.(build|test)\.json|E0\.04\.result\.json|P0\.(0[1-9]|[12][0-9]|3[0-4])\.(build|test)\.json|P0\.34\.result\.json|phase-0\.json)$' || true)"
-          test -z "$bad"
-          git config user.name "github-actions[bot]"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "R&R-06 activate Phase-0 certification evidence for $GITHUB_SHA"
-          git push origin HEAD:main
-      - uses: actions/upload-artifact@v7
+          python3 tools/check_phase0_evidence.py --require-active
+          python3 tools/test_phase0_evidence_negative.py
+          python3 tools/check_phase1_evidence.py --require-active
+          python3 tools/test_phase1_evidence_negative.py
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: always()
         with:
           name: zxux-phase0-${{ github.sha }}
