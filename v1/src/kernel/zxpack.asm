@@ -1157,7 +1157,6 @@ zx48_p418_get_physical:
     ld (p418_byte),a
     pop hl
     inc hl
-    call zx48_p418_control_ptr
     ld (iy+P418_C_PHYSICAL_POS),l
     ld (iy+P418_C_PHYSICAL_POS+1),h
     ld a,(p418_byte)
