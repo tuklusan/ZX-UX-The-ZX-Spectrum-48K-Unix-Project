@@ -112,21 +112,26 @@ def _seek(s: dict[str, int], target: int, logical_len: int) -> bytes:
     return _ld_ix(STATE_BASE) + phase1._ld_hl(target) + phase1._ld_de(logical_len) + phase1._call(s["zx48_p418_seek"])
 
 
-def _run_sequence(root: Path, s: dict[str, int], module: bytes, encoded: bytes, logical: bytes, sequence: tuple[int, ...] | None = None) -> None:
+def _run_sequence(root: Path, s: dict[str, int], module: bytes, encoded: bytes, logical: bytes, sequence: tuple[int, ...] | None = None, final_mode: str = "full") -> None:
     if sequence is None:
         sequence = (0, 1, 17, 64, 129, 7, 200, 33, 255, 256, 257, 322, 356, 362, 492, len(logical) - 1, len(logical))
     code = bytearray(b"\xF3")
     code += phase1._ld_sp(STACK_TOP)
     code += _bind(s, len(encoded)) + phase1._jp_c(FAIL_PC)
     code += bytes((0x3E, s["OBJ_PACKED"])) + b"\x32" + phase1._word(SENTINEL)
-    for target in sequence:
+    for index, target in enumerate(sequence):
         code += _seek(s, target, len(logical)) + phase1._jp_c(FAIL_PC)
         code += _check_word(STATE_BASE + s["P417_CTRL_LOGICAL_POS_O"], target)
         code += _check_byte(SENTINEL, s["OBJ_PACKED"])
         if target < len(logical):
+            is_final = index == len(sequence) - 1
+            if is_final and final_mode == "seek-only":
+                continue
             code += phase1._call(s["zx48_p418_step"]) + phase1._jp_c(FAIL_PC)
-            code += _check_byte(s["p418_byte"], logical[target])
-            code += _check_word(STATE_BASE + s["P417_CTRL_LOGICAL_POS_O"], target + 1)
+            if not (is_final and final_mode == "step-no-byte"):
+                code += _check_byte(s["p418_byte"], logical[target])
+            if not (is_final and final_mode == "step-no-pos"):
+                code += _check_word(STATE_BASE + s["P417_CTRL_LOGICAL_POS_O"], target + 1)
     code += phase1._jp(PASS_PC)
 
     def patch(ram: bytearray) -> None:
@@ -195,7 +200,11 @@ def _runtime(root: Path, s: dict[str, int], module: bytes) -> None:
     encoded = z.encode(logical)
     require(z.decode(encoded, len(logical)) == logical, "P4.18 host oracle round-trip mismatch")
     sequence = (0, 1, 17, 64, 129, 7, 200, 33, len(logical) - 1, len(logical))
+    prefix_535 = sequence[:sequence.index(len(logical) - 1) + 1]
     cases = [
+        ("seek-535-seek-only", lambda: _run_sequence(root, s, module, encoded, logical, prefix_535, "seek-only")),
+        ("seek-535-step-no-byte", lambda: _run_sequence(root, s, module, encoded, logical, prefix_535, "step-no-byte")),
+        ("seek-535-step-no-pos", lambda: _run_sequence(root, s, module, encoded, logical, prefix_535, "step-no-pos")),
         *[(f"seek-sequence-through-{target}", lambda prefix=sequence[:index + 1]: _run_sequence(root, s, module, encoded, logical, prefix)) for index, target in enumerate(sequence)],
         ("pending-command", lambda: _run_pending(root, s, module)),
         ("seek-beyond-eof", lambda: _run_failure(root, s, module, b"\x00A", 1, 2, s["E_INVAL"])),
