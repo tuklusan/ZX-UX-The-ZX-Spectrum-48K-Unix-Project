@@ -49,7 +49,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
     return [
         {"name": "font-is-fast-required", "passed": "ALLOC_FAST_REQUIRED" in body and "p506_font_ptr" in body},
         {"name": "bincat-is-cold-pinned-system", "passed": "ALLOC_COLD_PREFERRED" in body and "p506_bincat_ptr" in body},
-        {"name": "packed-decodes-into-final-raw-allocation", "passed": "P416_SINK_FINAL_MEMORY" in body and "ld iy,(p506_alloc_ptr)" in body},
+        {"name": "packed-decodes-into-final-raw-allocation", "passed": "P416_SINK_CALLER_STREAM" in body and "ld iy,(p506_alloc_ptr)" in body and "P417_STATE_SIZE" in body},
         {"name": "raw-and-packed-logical-crc-before-publication", "passed": "p506_expected_crc" in body and body.find("zx48_p506_crc_check:") < body.find("zx48_p506_publish:")},
         {"name": "font-f4x8-structure-frozen", "passed": "ld de,392" in body and "cp 96" in body and "cp $20" in body},
         {"name": "bincat-bcat-40-entry-structure-frozen", "passed": "ld de,488" in body and "cp 40" in body and "ld b,40" in body},
@@ -103,12 +103,13 @@ zx48_alloc:
     inc a
     ld (p506_test_alloc_count),a
     cp 1
-    jr z,p506_test_font_or_first
-    ld hl,$B000
+    jr z,p506_test_final_alloc
+    ld hl,$8800
     xor a
     ret
-p506_test_font_or_first:
+p506_test_final_alloc:
     ld a,(p506_test_policy)
+    ld (p506_test_first_policy),a
     and $7f
     cp ALLOC_FAST_REQUIRED
     jr nz,p506_test_cold_first
@@ -138,6 +139,7 @@ zx48_panic:
     ret
 
 p506_test_policy: db 0
+p506_test_first_policy: db 0
 p506_test_alloc_count: db 0
 p506_test_free_count: db 0
 p506_test_panic: db 0
@@ -180,7 +182,7 @@ def _patch(module: bytes, symbols: dict[str, int], header: bytes, physical: byte
         ram[MODULE_BASE-0x4000:MODULE_BASE-0x4000+len(module)] = module
         ram[HEADER_BASE-0x4000:HEADER_BASE-0x4000+len(header)] = header
         ram[SOURCE_BASE-0x4000:SOURCE_BASE-0x4000+len(physical)] = physical
-        for name in ("p506_test_alloc_count", "p506_test_free_count", "p506_test_panic"):
+        for name in ("p506_test_first_policy", "p506_test_alloc_count", "p506_test_free_count", "p506_test_panic"):
             ram[symbols[name]-0x4000] = 0
         ram[symbols["p506_test_pinned_bytes"]-0x4000:symbols["p506_test_pinned_bytes"]-0x4000+2] = b"\0\0"
     return apply
@@ -204,7 +206,7 @@ def _runtime(root: Path, symbols: dict[str, int], module: bytes, font: bytes, bi
     code = _call_resource(symbols) + phase1._jp_c(FAIL_PC)
     code += _check_word(symbols["p506_font_ptr"], FONT_DEST)
     code += _check_byte(symbols["p506_font_ready"], 1)
-    code += _check_byte(symbols["p506_test_policy"], symbols["ALLOC_FAST_REQUIRED"])
+    code += _check_byte(symbols["p506_test_first_policy"], symbols["ALLOC_FAST_REQUIRED"])
     code += _check_word(symbols["p506_test_pinned_bytes"], len(font))
     for i, value in enumerate(font[:16] + font[-16:]):
         address = FONT_DEST + (i if i < 16 else len(font) - 32 + i)
@@ -217,7 +219,7 @@ def _runtime(root: Path, symbols: dict[str, int], module: bytes, font: bytes, bi
     code = _call_resource(symbols) + phase1._jp_c(FAIL_PC)
     code += _check_word(symbols["p506_bincat_ptr"], BINCAT_DEST)
     code += _check_byte(symbols["p506_bincat_ready"], 1)
-    code += _check_byte(symbols["p506_test_policy"], symbols["ALLOC_COLD_PREFERRED"])
+    code += _check_byte(symbols["p506_test_first_policy"], symbols["ALLOC_COLD_PREFERRED"])
     code += _check_word(symbols["p506_test_pinned_bytes"], len(bincat))
     execute("packed-bincat-final-cold-pinned-raw", bincat_header, packed_bincat, code)
 
@@ -248,7 +250,7 @@ def dispatch(root: Path, action: str, step: str, *, sha256_file, run_command, re
     names = (
         "zx48_p506_boot_resource", "zx48_p506_boot_resource_or_panic",
         "p506_font_ptr", "p506_bincat_ptr", "p506_font_ready", "p506_bincat_ready",
-        "p506_test_policy", "p506_test_alloc_count", "p506_test_free_count",
+        "p506_test_policy", "p506_test_first_policy", "p506_test_alloc_count", "p506_test_free_count",
         "p506_test_panic", "p506_test_pinned_bytes",
         "ALLOC_FAST_REQUIRED", "ALLOC_COLD_PREFERRED", "PANIC_ROM_CONTRACT",
     )
