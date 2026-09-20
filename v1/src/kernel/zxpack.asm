@@ -2540,3 +2540,18 @@ p426_probe_dest: dw 0
 p426_probe_workspace: dw 0
 p426_error: db 0
     ENDM
+;
+; P4.27 resident PACKED spawn stream adapter. This deliberately exposes only
+; one-byte continuation over the already-bound P4.18 state so header parsing,
+; image emission and relocation parsing share one uninterrupted 272-byte history.
+;
+    MACRO EMIT_P427_PACKED_SPAWN_STREAM_ROUTINES
+; IX=bound P4.18 state -> A=next logical byte.
+zx48_p427_stream_step:
+    call zx48_p418_step
+    ret c
+    ld a,(p418_byte)
+    or a
+    ret
+    ENDM
+
