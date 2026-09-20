@@ -10,7 +10,7 @@
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
 
-name: P4.19 one-shot qualification and admission bridge v2
+name: P4.19 exact admission validation recovery
 
 on:
   push:
@@ -24,105 +24,33 @@ permissions:
   statuses: write
 
 jobs:
-  qualify-and-admit:
+  validate-admission:
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    env:
+      ADMISSION_SHA: 5179ad4deeba9d2a38d0c413d62247e1dfdd1181
+      VALIDATION_REF: p419-admission-validation
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: Mark bridge pending
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" -f state=pending -f context=p419-bridge -f description="qualification and admission running"
-
-      - name: Dispatch exact P4.19 qualification
-        id: dispatch
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Verify immutable P4.19 admission target
         run: |
           set -euo pipefail
-          candidate="${GITHUB_SHA}"
-          gh workflow run p419-qualification.yml --repo "${GITHUB_REPOSITORY}" --ref main
-          run_id=""
-          for attempt in $(seq 1 60); do
-            run_id="$(gh run list --repo "${GITHUB_REPOSITORY}" --workflow p419-qualification.yml --event workflow_dispatch --limit 20 --json databaseId,headSha,status --jq '.[] | select(.headSha=="'${candidate}'") | .databaseId' | head -n1)"
-            if test -n "$run_id"; then break; fi
-            sleep 2
-          done
-          test -n "$run_id"
-          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
-          gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" -f state=pending -f context=p419-qualification -f description="qualification running" -f target_url="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${run_id}"
-          gh run watch "$run_id" --repo "${GITHUB_REPOSITORY}" --exit-status
-          gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" -f state=success -f context=p419-qualification -f description="qualification PASS"
+          git cat-file -e "$ADMISSION_SHA^{commit}"
+          test "$(git show "$ADMISSION_SHA:v1/dist/certification/P4.19.build.json" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d["status"],d["source_commit"])')" = "PASS 9c281d1fc98fc67767927cb69e4460ea85e30c9d"
+          test "$(git show "$ADMISSION_SHA:v1/dist/certification/P4.19.test.json" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d["status"],d["source_commit"])')" = "PASS 9c281d1fc98fc67767927cb69e4460ea85e30c9d"
+          test "$(git diff-tree --no-commit-id --name-only -r "$ADMISSION_SHA" | sort)" = "$(printf '%s\n' v1/dist/certification/P4.19.build.json v1/dist/certification/P4.19.test.json | sort)"
 
-      - name: Download and validate exact P4.19 evidence
+      - name: Mark exact-admission validation pending
         env:
           GH_TOKEN: ${{ github.token }}
-          RUN_ID: ${{ steps.dispatch.outputs.run_id }}
-        run: |
-          set -euo pipefail
-          rm -rf /tmp/p419-admit
-          mkdir -p /tmp/p419-admit
-          gh run download "$RUN_ID" --repo "${GITHUB_REPOSITORY}" --name "zxux-p419-qualification-${RUN_ID}-1" --dir /tmp/p419-admit
-          python3 - <<'PY'
-          import json, os
-          from pathlib import Path
-          root=Path("/tmp/p419-admit")
-          sha=os.environ["GITHUB_SHA"]
-          for name, action in (("P4.19.build.json","build"),("P4.19.test.json","test")):
-              p=root/name
-              if not p.is_file():
-                  raise SystemExit(f"missing {name}")
-              d=json.loads(p.read_text())
-              assert d["step"]=="P4.19"
-              assert d["action"]==action
-              assert d["status"]=="PASS"
-              assert d["source_commit"]==sha
-              assert d["worktree_clean"] is True
-              assert d["prerequisites"]=={"P4.18":"PASS"}
-          assert (root/"meta"/"candidate-commit.txt").read_text().strip()==sha
-          assert (root/"meta"/"worktree-status.txt").read_text()==""
-          PY
-          gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" -f state=success -f context=p419-evidence -f description="evidence validation PASS"
+        run: gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${ADMISSION_SHA}" -f state=pending -f context=p419-post-admission -f description="exact admission validations running"
 
-      - name: Admit P4.19 evidence only
-        id: admit
-        run: |
-          set -euo pipefail
-          cp /tmp/p419-admit/P4.19.build.json v1/dist/certification/P4.19.build.json
-          cp /tmp/p419-admit/P4.19.test.json v1/dist/certification/P4.19.test.json
-          ./tools/check_license_headers.sh
-          ./tools/check_project_policy.py
-          git diff --check
-          git add v1/dist/certification/P4.19.build.json v1/dist/certification/P4.19.test.json
-          test "$(git diff --cached --name-only | sort)" = "$(printf '%s\n' v1/dist/certification/P4.19.build.json v1/dist/certification/P4.19.test.json | sort)"
-          git config user.name github-actions
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git commit -m "P4.19: admit qualified packed write evidence"
-          admission_sha="$(git rev-parse HEAD)"
-          echo "admission_sha=$admission_sha" >> "$GITHUB_OUTPUT"
-          git push origin HEAD:main
-          gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" -f state=success -f context=p419-admission -f description="evidence admission pushed"
-
-      - name: Create exact-admission validation ref
-        id: validation
+      - name: Dispatch exact admission validators
         env:
           GH_TOKEN: ${{ github.token }}
-          ADMISSION_SHA: ${{ steps.admit.outputs.admission_sha }}
-        run: |
-          set -euo pipefail
-          ref="p419-admission-${GITHUB_RUN_ID}"
-          echo "ref=$ref" >> "$GITHUB_OUTPUT"
-          gh api -X POST "repos/${GITHUB_REPOSITORY}/git/refs" -f ref="refs/heads/$ref" -f sha="$ADMISSION_SHA"
-          gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/$ADMISSION_SHA" -f state=pending -f context=p419-post-admission -f description="exact admission validations running"
-
-      - name: Require exact admission-triggered validations PASS
-        env:
-          GH_TOKEN: ${{ github.token }}
-          ADMISSION_SHA: ${{ steps.admit.outputs.admission_sha }}
-          VALIDATION_REF: ${{ steps.validation.outputs.ref }}
         run: |
           set -euo pipefail
           : > /tmp/p419-validation-runs
@@ -137,34 +65,34 @@ jobs:
             test -n "$run_id"
             printf '%s %s\n' "$wf" "$run_id" >> /tmp/p419-validation-runs
           done
-          while read -r wf run_id; do
-            gh run watch "$run_id" --repo "${GITHUB_REPOSITORY}" --exit-status
-            gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/$ADMISSION_SHA" -f state=success -f context="p419-post-admission/${wf%.yml}" -f description="exact admission validator PASS" -f target_url="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${run_id}"
-          done < /tmp/p419-validation-runs
-          gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/$ADMISSION_SHA" -f state=success -f context=p419-post-admission -f description="exact admission validations PASS"
 
-      - name: Cleanup exact-admission validation ref
-        if: ${{ always() && steps.validation.outputs.ref != '' }}
+      - name: Require exact admission validators PASS
         env:
           GH_TOKEN: ${{ github.token }}
-          VALIDATION_REF: ${{ steps.validation.outputs.ref }}
+        run: |
+          set -euo pipefail
+          while read -r wf run_id; do
+            gh run watch "$run_id" --repo "${GITHUB_REPOSITORY}" --exit-status
+            gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${ADMISSION_SHA}"               -f state=success               -f context="p419-post-admission/${wf%.yml}"               -f description="exact admission validator PASS"               -f target_url="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${run_id}"
+          done < /tmp/p419-validation-runs
+          gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${ADMISSION_SHA}" -f state=success -f context=p419-post-admission -f description="exact admission validations PASS"
+
+      - name: Cleanup temporary validation ref
+        if: ${{ always() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: gh api -X DELETE "repos/${GITHUB_REPOSITORY}/git/refs/heads/${VALIDATION_REF}" || true
 
-      - name: Mark bridge PASS
+      - name: Mark recovery commit PASS
         if: ${{ success() }}
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" -f state=success -f context=p419-bridge -f description="qualification, admission, validations PASS"
+        run: gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" -f state=success -f context=p419-admission-recovery -f description="exact admission validation recovery PASS"
 
-      - name: Mark bridge FAIL
+      - name: Mark recovery commit FAIL
         if: ${{ failure() }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          url=""
-          if test -n "${{ steps.dispatch.outputs.run_id }}"; then url="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${{ steps.dispatch.outputs.run_id }}"; fi
-          if test -n "$url"; then
-            gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" -f state=failure -f context=p419-bridge -f description="qualification/admission bridge failed" -f target_url="$url"
-          else
-            gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" -f state=failure -f context=p419-bridge -f description="qualification/admission bridge failed"
-          fi
+          gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${ADMISSION_SHA}" -f state=failure -f context=p419-post-admission -f description="exact admission validation recovery failed"
+          gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" -f state=failure -f context=p419-admission-recovery -f description="exact admission validation recovery failed"
