@@ -87,7 +87,7 @@ def _assemble_fixture(root: Path, run_command: Callable[..., Any], require_proje
         """    DEVICE ZXSPECTRUM48
     INCLUDE "../include/zx48ux.inc"
     INCLUDE "../include/tapeobj.inc"
-    INCLUDE "../src/kernel/errors.asm"
+PANIC_ROM_CONTRACT EQU $05
     INCLUDE "../src/kernel/zxpack.asm"
     INCLUDE "../src/kernel/tape.asm"
     INCLUDE "../src/boot/entry.asm"
