@@ -1,0 +1,107 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "target-ccitt-false-parameters-exact",
+      "passed": true
+    },
+    {
+      "name": "target-zero-length-is-init-value",
+      "passed": true
+    },
+    {
+      "name": "target-crc-routine-emitted-in-kernel",
+      "passed": true
+    },
+    {
+      "name": "host-ccitt-false-parameters-exact",
+      "passed": true
+    },
+    {
+      "name": "host-known-vector-empty",
+      "passed": true
+    },
+    {
+      "name": "host-known-vector-check-123456789",
+      "passed": true
+    },
+    {
+      "name": "host-known-vector-single-zero",
+      "passed": true
+    },
+    {
+      "name": "host-known-vector-zxux",
+      "passed": true
+    },
+    {
+      "name": "host-known-vector-byte-ramp",
+      "passed": true
+    },
+    {
+      "name": "target-known-vectors-match-host",
+      "passed": true
+    },
+    {
+      "name": "one-bit-payload-corruption-rejected-host",
+      "passed": true
+    },
+    {
+      "name": "one-bit-payload-corruption-rejected-target",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13508 lines, work time: 0.034 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p502-crc16.lst",
+        "--sym=p502-crc16.sym",
+        "p502-crc16.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 229 lines, work time: 0.001 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p502-crc16.bin": "6452eed71bde94bb71574dcff20038db825598789dd89ebc824aaa5255d7c312",
+    "v1/dist/certification/P5.01.build.json": "c88765369267fa78c3872f3855ad8682ed6b598feeda9712eb87fb79dfeb8d9a",
+    "v1/dist/certification/P5.01.test.json": "b0b07adf3b33b9d65a9f2b6d34384b60f3c7dfe93037822a0deb85b94929ebb9",
+    "v1/include/tapeobj.inc": "d42c7daf2e60b0715e0aaead5b553df5574f363b74495a30862c9be64d3f13b6",
+    "v1/src/kernel/tape.asm": "c4e52c78d14f88f8717710816f6c9d9433a4678a93bd6ca598b9328e6573737c",
+    "v1/tools-host/maketap/maketap.py": "0b8d567a98264f14e11048d0f45eebdf449b99bb2629390ffdcde0014a6a46fe",
+    "v1/tools-host/test-driver/phase5_crc16.py": "11d6b4b3f0bcf62f48a2c1301599e6d035e44e44116b700bd61ec9d12e9b71ba",
+    "v1/tools-host/test-driver/run.py": "5bee572ddd220b2886ea1a9366304dc050c9e89a7e1653f86a302f022dba7db8"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P5.01": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "1de0a689c6150b5aa20e2569148b0beb90b9a1f5",
+  "status": "PASS",
+  "step": "P5.02",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
