@@ -4075,3 +4075,32 @@ zx48_p423_sys_unpack_perm:
     scf
     ret
     ENDM
+
+;
+; P4.24 object-side candidate transitions. These are the only close/reopen/write/
+; remove/slot-reuse interfaces permitted to mutate the four-byte candidate set.
+;
+    MACRO EMIT_P424_OBJECT_CANDIDATE_ROUTINES
+; D=OD kind,E=object slot. Call only on destruction of the final description.
+zx48_p424_object_final_close:
+    ld a,d
+    cp OD_KIND_OBJECT
+    ret nz
+    ld a,e
+    push de
+    call zx48_p405_object_ptr_slot
+    pop de
+    ret c
+    ld a,e
+    jp zx48_p424_candidate_mark_if_eligible
+
+; A=slot. Reopen/write/remove/slot reuse all invalidate stale candidacy.
+zx48_p424_object_reopen:
+    jp zx48_p424_candidate_clear
+zx48_p424_object_write:
+    jp zx48_p424_candidate_clear
+zx48_p424_object_remove:
+    jp zx48_p424_candidate_clear
+zx48_p424_object_slot_reuse:
+    jp zx48_p424_candidate_clear
+    ENDM
