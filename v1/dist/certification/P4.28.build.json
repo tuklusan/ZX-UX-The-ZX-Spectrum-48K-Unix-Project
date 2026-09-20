@@ -1,0 +1,105 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "exact-20-byte-zpinfo1",
+      "passed": true
+    },
+    {
+      "name": "exact-syscall-number",
+      "passed": true
+    },
+    {
+      "name": "complete-user-range-validation-before-write",
+      "passed": true
+    },
+    {
+      "name": "logical-total-u32",
+      "passed": true
+    },
+    {
+      "name": "physical-total-u16-checked",
+      "passed": true
+    },
+    {
+      "name": "bytes-saved-u32-no-underflow",
+      "passed": true
+    },
+    {
+      "name": "ram-only-object-accounting",
+      "passed": true
+    },
+    {
+      "name": "raw-packed-counts",
+      "passed": true
+    },
+    {
+      "name": "shared-reader-state-accounting",
+      "passed": true
+    },
+    {
+      "name": "attempt-counter-modulo-u16",
+      "passed": true
+    },
+    {
+      "name": "success-counter-on-publication",
+      "passed": true
+    },
+    {
+      "name": "reserved-zero",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 27,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13465 lines, work time: 0.026 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p428-zxpack-info.lst",
+        "--sym=p428-zxpack-info.sym",
+        "p428-zxpack-info.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 21,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 11934 lines, work time: 0.020 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p428-zxpack-info.bin": "b8bca62873c1b7c8e713fa26effb87106c54db70b5de14b698bccd83e83b793b",
+    "v1/dist/certification/P4.27.test.json": "cfd91ddf03321af3fcf915501e15d594174581c8b2c7f41db52e84082e05180f",
+    "v1/src/kernel/syscall.asm": "b340ce69a9039db73c6053e3f0ebdb27bb3e760eaf6769e054ddd5114ed7b5c4",
+    "v1/src/kernel/zxpack.asm": "70a501f0b030827e05dda25759aaf39362791793f9f60f3a52fcf3c7057f9705",
+    "v1/tools-host/test-driver/phase4_zxpack_info.py": "a04a0204371030bd26912b1b815e29771b9d8e4dd146b2d21841eb5fe8ad9586",
+    "v1/tools-host/test-driver/run.py": "baf28190dca68f265b810e9a4e290883cfff330fd37d0e2992d84457310e7d27"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P4.27": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "fe61831b6bda921488573ef464ec23f035c20c8e",
+  "status": "PASS",
+  "step": "P4.28",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
