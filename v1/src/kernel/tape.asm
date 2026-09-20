@@ -2510,6 +2510,645 @@ p510_byte: db 0
 p510_error: db 0
     ENDM
 
+    MACRO EMIT_P511_SCAN_ROUTINES
+P511_KIND_NONE          EQU 0
+P511_KIND_LITERAL       EQU 1
+P511_KIND_RLE_PARAM     EQU 2
+P511_KIND_BACKREF_PARAM EQU 3
+
+; HL -> writable 32-byte M48O header. Consume and completely validate exactly
+; one next object. Payload buffering is one 512-byte scratch allocation; PACKED
+; adds exactly one 272-byte decoder/history allocation.
+zx48_p511_scan_next:
+    ld (p511_header_dest),hl
+    xor a
+    ld (p511_scratch_live),a
+    ld (p511_decoder_live),a
+    call zx48_p507_lock_acquire
+    ret c
+
+    ld ix,(p511_header_dest)
+    ld de,M48O_HDR_SIZE
+    ld a,M48O_ROM_DATA_FLAG
+    scf
+    call zx48_tape_load_block
+    jp c,zx48_p511_transport_fail
+    call zx48_p511_validate_header
+    jp c,zx48_p511_fail_locked
+
+    ld hl,(p511_storage)
+    ld a,h
+    or l
+    jr z,zx48_p511_finish_payload
+
+    ld bc,M48O_CHUNK_SIZE
+    ld a,ALLOC_COLD_PREFERRED|ALLOC_NO_COMPACT
+    call zx48_alloc
+    jp c,zx48_p511_fail_locked
+    ld (p511_scratch),hl
+    ld a,1
+    ld (p511_scratch_live),a
+
+    ld a,(p511_flags)
+    and M48O_PACKED
+    jr z,zx48_p511_payload_ready
+    ld bc,P417_STATE_SIZE
+    ld a,ALLOC_COLD_PREFERRED|ALLOC_NO_COMPACT
+    call zx48_alloc
+    jp c,zx48_p511_fail_locked
+    ld (p511_decoder),hl
+    ld a,1
+    ld (p511_decoder_live),a
+    push hl
+    xor a
+    ld (hl),a
+    ld d,h
+    ld e,l
+    inc de
+    ld bc,P417_STATE_SIZE-1
+    ldir
+    pop hl
+    ld (p511_history_base),hl
+    xor a
+    ld (p511_hist_index),a
+    ld (p511_kind),a
+    ld (p511_pending),a
+    ld hl,0
+    ld (p511_logical_pos),hl
+
+zx48_p511_payload_ready:
+    ld hl,(p511_storage)
+    ld (p511_remaining),hl
+    ld hl,M48O_CRC16_INIT
+    ld (p511_crc),hl
+
+zx48_p511_chunk_loop:
+    ld bc,(p511_remaining)
+    ld a,b
+    or c
+    jr z,zx48_p511_finish_payload
+    call zx48_p503_prepare_chunk
+    ld (p511_chunk_len),de
+    ld ix,(p511_scratch)
+    ld a,M48O_ROM_DATA_FLAG
+    scf
+    call zx48_tape_load_block
+    jp c,zx48_p511_transport_fail
+
+    ld a,(p511_flags)
+    and M48O_PACKED
+    jr nz,zx48_p511_process_packed
+    ld hl,(p511_scratch)
+    ld bc,(p511_chunk_len)
+zx48_p511_raw_byte_loop:
+    ld a,b
+    or c
+    jr z,zx48_p511_chunk_done
+    ld a,(hl)
+    push hl
+    push bc
+    call zx48_p511_crc_byte
+    pop bc
+    pop hl
+    inc hl
+    ld de,(p511_logical_pos)
+    inc de
+    ld (p511_logical_pos),de
+    dec bc
+    jr zx48_p511_raw_byte_loop
+
+zx48_p511_process_packed:
+    ld hl,(p511_scratch)
+    ld bc,(p511_chunk_len)
+zx48_p511_packed_byte_loop:
+    ld a,b
+    or c
+    jr z,zx48_p511_chunk_done
+    ld a,(hl)
+    push hl
+    push bc
+    call zx48_p511_feed_packed_byte
+    pop bc
+    pop hl
+    jp c,zx48_p511_fail_locked
+    inc hl
+    dec bc
+    jr zx48_p511_packed_byte_loop
+
+zx48_p511_chunk_done:
+    ld hl,(p511_remaining)
+    ld de,(p511_chunk_len)
+    or a
+    sbc hl,de
+    ld (p511_remaining),hl
+    jr zx48_p511_chunk_loop
+
+zx48_p511_finish_payload:
+    ld a,(p511_flags)
+    and M48O_PACKED
+    jr z,zx48_p511_finish_lengths
+    ld a,(p511_kind)
+    or a
+    jp nz,zx48_p511_format_fail
+zx48_p511_finish_lengths:
+    ld hl,(p511_logical_pos)
+    ld de,(p511_logical)
+    or a
+    sbc hl,de
+    jp nz,zx48_p511_format_fail
+    ld hl,(p511_crc)
+    ld de,(p511_expected_crc)
+    or a
+    sbc hl,de
+    jr z,zx48_p511_success
+    ld a,E_IO
+    jp zx48_p511_fail_locked
+
+zx48_p511_success:
+    call zx48_p511_release_scratch
+    call zx48_p507_lock_release
+    ld hl,1
+    xor a
+    or a
+    ret
+
+zx48_p511_validate_header:
+    ld hl,(p511_header_dest)
+    ld a,(hl)
+    cp M48O_MAGIC_0
+    jp nz,zx48_p511_format
+    inc hl
+    ld a,(hl)
+    cp M48O_MAGIC_1
+    jp nz,zx48_p511_format
+    inc hl
+    ld a,(hl)
+    cp M48O_MAGIC_2
+    jp nz,zx48_p511_format
+    inc hl
+    ld a,(hl)
+    cp M48O_MAGIC_3
+    jp nz,zx48_p511_format
+    inc hl
+    ld a,(hl)
+    cp M48O_VERSION
+    jp nz,zx48_p511_format
+
+    ld hl,(p511_header_dest)
+    ld de,M48O_HDR_TYPE
+    add hl,de
+    ld a,(hl)
+    ld (p511_type),a
+    cp M48O_TYPE_TXT
+    jp c,zx48_p511_format
+    cp M48O_TYPE_SYS+1
+    jp nc,zx48_p511_format
+    inc hl
+    ld a,(hl)
+    ld (p511_flags),a
+    and $fe
+    jp nz,zx48_p511_format
+    inc hl
+    ld a,(hl)
+    ld (p511_target),a
+
+    ld b,(p511_type)
+    cp M48O_TARGET_SYSTEM
+    jr z,zx48_p511_system_placement
+    call zx48_object_public_type_allowed
+    jp c,zx48_p511_format
+    jr zx48_p511_placement_ok
+zx48_p511_system_placement:
+    ld a,b
+    cp M48O_TYPE_FNT
+    jr z,zx48_p511_placement_ok
+    cp M48O_TYPE_SYS
+    jp nz,zx48_p511_format
+zx48_p511_placement_ok:
+
+    ld hl,(p511_header_dest)
+    ld de,M48O_HDR_STORAGE_LEN
+    add hl,de
+    ld c,(hl)
+    inc hl
+    ld b,(hl)
+    ld (p511_storage),bc
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (p511_logical),de
+    call zx48_p511_len_bound_storage
+    ret c
+    ld hl,(p511_logical)
+    call zx48_p511_len_bound
+    ret c
+
+    ; Reserved bytes zero.
+    ld hl,(p511_header_dest)
+    ld de,M48O_HDR_RESERVED
+    add hl,de
+    ld b,M48O_RESERVED_SIZE
+zx48_p511_reserved_loop:
+    ld a,(hl)
+    or a
+    jp nz,zx48_p511_format
+    inc hl
+    djnz zx48_p511_reserved_loop
+
+    ; Exact 1..10 valid name, NUL padding only.
+    ld hl,(p511_header_dest)
+    ld de,M48O_HDR_NAME
+    add hl,de
+    ld b,M48O_NAME_SIZE
+    xor a
+    ld (p511_name_seen),a
+zx48_p511_name_loop:
+    ld a,(hl)
+    or a
+    jr z,zx48_p511_name_zero
+    ld a,(p511_name_seen)
+    cp 2
+    jp z,zx48_p511_format
+    ld a,(hl)
+    call zx48_p511_name_char
+    ret c
+    ld a,1
+    ld (p511_name_seen),a
+    jr zx48_p511_name_next
+zx48_p511_name_zero:
+    ld a,(p511_name_seen)
+    or a
+    jp z,zx48_p511_format
+    ld a,2
+    ld (p511_name_seen),a
+zx48_p511_name_next:
+    inc hl
+    djnz zx48_p511_name_loop
+    ld a,(p511_name_seen)
+    or a
+    jp z,zx48_p511_format
+
+    ; Header CRC with its field temporarily zeroed.
+    ld hl,(p511_header_dest)
+    ld de,M48O_HDR_HEADER_CRC
+    add hl,de
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (p511_header_crc),de
+    xor a
+    ld (hl),a
+    dec hl
+    ld (hl),a
+    ld hl,(p511_header_dest)
+    ld bc,M48O_HDR_SIZE
+    call zx48_crc16_ccitt_false
+    push de
+    ld hl,(p511_header_dest)
+    ld bc,M48O_HDR_HEADER_CRC
+    add hl,bc
+    ld de,(p511_header_crc)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    pop hl
+    ld de,(p511_header_crc)
+    or a
+    sbc hl,de
+    jp nz,zx48_p511_format
+
+    ld hl,(p511_header_dest)
+    ld de,M48O_HDR_PAYLOAD_CRC
+    add hl,de
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (p511_expected_crc),de
+
+    ld a,(p511_flags)
+    and M48O_PACKED
+    jr nz,zx48_p511_validate_packed
+    ; RAW: codec zero, physical == logical.
+    ld hl,(p511_header_dest)
+    ld de,M48O_HDR_CODEC
+    add hl,de
+    ld a,(hl)
+    inc hl
+    or (hl)
+    jp nz,zx48_p511_format
+    ld hl,(p511_storage)
+    ld de,(p511_logical)
+    or a
+    sbc hl,de
+    jp nz,zx48_p511_format
+    xor a
+    or a
+    ret
+
+zx48_p511_validate_packed:
+    ld hl,(p511_header_dest)
+    ld de,M48O_HDR_CODEC
+    add hl,de
+    ld a,(hl)
+    cp low M48O_CODEC_ZXP1
+    jp nz,zx48_p511_format
+    inc hl
+    ld a,(hl)
+    cp high M48O_CODEC_ZXP1
+    jp nz,zx48_p511_format
+    ld hl,(p511_storage)
+    ld a,h
+    or l
+    jp z,zx48_p511_format
+    ld de,(p511_logical)
+    ld a,d
+    or e
+    jp z,zx48_p511_format
+    or a
+    sbc hl,de
+    jp nc,zx48_p511_format
+    xor a
+    or a
+    ret
+
+zx48_p511_len_bound_storage:
+    ld h,b
+    ld l,c
+zx48_p511_len_bound:
+    ld a,h
+    cp $80
+    jr c,zx48_p511_len_ok
+    jr nz,zx48_p511_format
+    ld a,l
+    or a
+    jr nz,zx48_p511_format
+zx48_p511_len_ok:
+    xor a
+    or a
+    ret
+
+zx48_p511_name_char:
+    cp '0'
+    jr c,zx48_p511_name_punct
+    cp '9'+1
+    jr c,zx48_p511_name_ok
+    cp 'A'
+    jr c,zx48_p511_name_punct
+    cp 'Z'+1
+    jr c,zx48_p511_name_ok
+    cp 'a'
+    jr c,zx48_p511_name_punct
+    cp 'z'+1
+    jr c,zx48_p511_name_ok
+zx48_p511_name_punct:
+    cp '_'
+    jr z,zx48_p511_name_ok
+    cp '-'
+    jr z,zx48_p511_name_ok
+    cp '.'
+    jr z,zx48_p511_name_ok
+    jp zx48_p511_format
+zx48_p511_name_ok:
+    xor a
+    or a
+    ret
+
+; A = next physical ZXP1 byte. Parser state persists across 512-byte chunks.
+zx48_p511_feed_packed_byte:
+    ld (p511_input_byte),a
+    ld a,(p511_kind)
+    cp P511_KIND_LITERAL
+    jr z,zx48_p511_literal_byte
+    cp P511_KIND_RLE_PARAM
+    jr z,zx48_p511_rle_param
+    cp P511_KIND_BACKREF_PARAM
+    jr z,zx48_p511_backref_param
+
+    ld a,(p511_input_byte)
+    cp $40
+    jr c,zx48_p511_new_literal
+    cp $80
+    jr c,zx48_p511_new_rle
+    and $7f
+    add a,3
+    ld (p511_pending),a
+    ld a,P511_KIND_BACKREF_PARAM
+    ld (p511_kind),a
+    xor a
+    or a
+    ret
+zx48_p511_new_literal:
+    inc a
+    ld (p511_pending),a
+    ld a,P511_KIND_LITERAL
+    ld (p511_kind),a
+    xor a
+    or a
+    ret
+zx48_p511_new_rle:
+    and $3f
+    add a,3
+    ld (p511_pending),a
+    ld a,P511_KIND_RLE_PARAM
+    ld (p511_kind),a
+    xor a
+    or a
+    ret
+
+zx48_p511_literal_byte:
+    ld a,(p511_input_byte)
+    call zx48_p511_emit
+    ret c
+    ld a,(p511_pending)
+    dec a
+    ld (p511_pending),a
+    ret nz
+    xor a
+    ld (p511_kind),a
+    or a
+    ret
+
+zx48_p511_rle_param:
+    ld a,(p511_input_byte)
+    ld (p511_repeat),a
+zx48_p511_rle_loop:
+    ld a,(p511_repeat)
+    call zx48_p511_emit
+    ret c
+    ld a,(p511_pending)
+    dec a
+    ld (p511_pending),a
+    jr nz,zx48_p511_rle_loop
+    xor a
+    ld (p511_kind),a
+    or a
+    ret
+
+zx48_p511_backref_param:
+    ld a,(p511_input_byte)
+    ld (p511_distance_m1),a
+    inc a
+    jr nz,zx48_p511_back_dist8
+    ld de,256
+    jr zx48_p511_back_dist_ready
+zx48_p511_back_dist8:
+    ld e,a
+    ld d,0
+zx48_p511_back_dist_ready:
+    ld hl,(p511_logical_pos)
+    or a
+    sbc hl,de
+    jp c,zx48_p511_format
+    ld (p511_back_distance),de
+zx48_p511_back_loop:
+    ld a,(p511_hist_index)
+    ld e,a
+    ld d,0
+    ld hl,(p511_back_distance)
+    ld a,l
+    ld l,e
+    sub l
+    ; 8-bit wrap is the required circular-history index.
+    ld e,a
+    ld d,0
+    ld hl,(p511_history_base)
+    add hl,de
+    ld a,(hl)
+    call zx48_p511_emit
+    ret c
+    ld a,(p511_pending)
+    dec a
+    ld (p511_pending),a
+    jr nz,zx48_p511_back_loop
+    xor a
+    ld (p511_kind),a
+    or a
+    ret
+
+zx48_p511_emit:
+    ld (p511_emit_byte),a
+    ld hl,(p511_logical_pos)
+    ld de,(p511_logical)
+    or a
+    sbc hl,de
+    jp nc,zx48_p511_format
+    ld a,(p511_emit_byte)
+    call zx48_p511_crc_byte
+    ld a,(p511_hist_index)
+    ld e,a
+    ld d,0
+    ld hl,(p511_history_base)
+    add hl,de
+    ld a,(p511_emit_byte)
+    ld (hl),a
+    ld a,(p511_hist_index)
+    inc a
+    ld (p511_hist_index),a
+    ld hl,(p511_logical_pos)
+    inc hl
+    ld (p511_logical_pos),hl
+    xor a
+    or a
+    ret
+
+zx48_p511_crc_byte:
+    ld hl,(p511_crc)
+    xor h
+    ld h,a
+    ld b,8
+zx48_p511_crc_bit:
+    add hl,hl
+    jr nc,zx48_p511_crc_next
+    ld a,h
+    xor $10
+    ld h,a
+    ld a,l
+    xor $21
+    ld l,a
+zx48_p511_crc_next:
+    djnz zx48_p511_crc_bit
+    ld (p511_crc),hl
+    ret
+
+zx48_p511_transport_fail:
+    ; A transport failure is cancellation when the current process carries the
+    ; cooperative cancel flag; otherwise retain the ROM-wrapper E_IO result.
+    ld (p511_error),a
+    ld a,(current_pid)
+    call zx48_process_lookup
+    jr c,zx48_p511_transport_mapped
+    bit 0,(ix+PROC_FLAGS)
+    jr z,zx48_p511_transport_mapped
+    ld a,E_INTR
+    ld (p511_error),a
+zx48_p511_transport_mapped:
+    ld a,(p511_error)
+    jr zx48_p511_fail_locked
+
+zx48_p511_format_fail:
+    ld a,E_FORMAT
+zx48_p511_fail_locked:
+    ld (p511_error),a
+    call zx48_p511_release_scratch
+    call zx48_p507_lock_release
+    ld a,(p511_error)
+    scf
+    ret
+zx48_p511_format:
+    ld a,E_FORMAT
+    scf
+    ret
+
+zx48_p511_release_scratch:
+    ld a,(p511_decoder_live)
+    or a
+    jr z,zx48_p511_release_scratch_only
+    ld hl,(p511_decoder)
+    ld bc,P417_STATE_SIZE
+    call zx48_free
+    xor a
+    ld (p511_decoder_live),a
+zx48_p511_release_scratch_only:
+    ld a,(p511_scratch_live)
+    or a
+    ret z
+    ld hl,(p511_scratch)
+    ld bc,M48O_CHUNK_SIZE
+    call zx48_free
+    xor a
+    ld (p511_scratch_live),a
+    ret
+
+p511_header_dest: dw 0
+p511_storage: dw 0
+p511_logical: dw 0
+p511_expected_crc: dw 0
+p511_header_crc: dw 0
+p511_scratch: dw 0
+p511_decoder: dw 0
+p511_history_base: dw 0
+p511_remaining: dw 0
+p511_chunk_len: dw 0
+p511_logical_pos: dw 0
+p511_crc: dw 0
+p511_back_distance: dw 0
+p511_type: db 0
+p511_target: db 0
+p511_flags: db 0
+p511_name_seen: db 0
+p511_kind: db 0
+p511_pending: db 0
+p511_repeat: db 0
+p511_distance_m1: db 0
+p511_hist_index: db 0
+p511_input_byte: db 0
+p511_emit_byte: db 0
+p511_scratch_live: db 0
+p511_decoder_live: db 0
+p511_error: db 0
+    ENDM
+
     MACRO EMIT_TAPE_ROUTINES
     EMIT_P502_CRC16_ROUTINES
     EMIT_P503_FRAMING_ROUTINES
@@ -2519,6 +3158,7 @@ p510_error: db 0
     EMIT_P508_STREAM_SAVE_ROUTINES
     EMIT_P509_EXPLICIT_LOAD_ROUTINES
     EMIT_P510_VERIFY_ROUTINES
+    EMIT_P511_SCAN_ROUTINES
 ; A=block type,DE=length,IX=source.
 zx48_tape_save_block:
     call zx48_rom_sa_bytes
@@ -2558,16 +3198,7 @@ zx48_tape_verify_path:
 
 ; HL=32-byte header destination. Consumes exactly one next M48O header block.
 zx48_tape_scan_next:
-    push hl
-    pop ix
-    call zx48_p503_prepare_header_block
-    scf
-    call zx48_tape_load_block
-    ret c
-    ld hl,1
-    xor a
-    or a
-    ret
+    jp zx48_p511_scan_next
 zx48_tape_bad:
     ld a,E_INVAL
     scf
