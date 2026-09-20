@@ -52,11 +52,12 @@ OBJ_LOGICAL_LENGTH EQU 14
 OBJ_STORAGE_LENGTH EQU 16
 OBJ_ALLOCATION_PTR EQU 18
 PATH_KIND_BASE EQU 1
-STATE_RAM EQU 0
     INCLUDE "../src/kernel/zxpack.asm"
     INCLUDE "../src/kernel/tape.asm"
     ORG $C000
     EMIT_P416_ZXP1_DECODER
+    EMIT_P417_PACKED_READER_STATE_ROUTINES
+    EMIT_P505_PACKED_VALIDATOR_ROUTINES
     EMIT_P502_CRC16_ROUTINES
     EMIT_P503_FRAMING_ROUTINES
     EMIT_P504_RAW_LOADER_ROUTINES
@@ -72,6 +73,7 @@ zx48_object_public_type_allowed: xor a : ret
 zx48_od_object_any_live: xor a : ret
 zx48_p424_candidate_clear: xor a : ret
 zx48_tape_load_block: ld a,E_IO : scf : ret
+zx48_tape_save_block: ld a,E_IO : scf : ret
 path_dir: db 0
 path_name: defs 10,0
     SAVEBIN "p509-explicit-load.bin",$C000,$-$C000
