@@ -1,0 +1,253 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "complete-packed-header-validation-precedes-allocation",
+      "passed": true
+    },
+    {
+      "name": "packed-requires-strict-smaller-physical-length",
+      "passed": true
+    },
+    {
+      "name": "packed-codec-is-zxp1",
+      "passed": true
+    },
+    {
+      "name": "physical-final-allocation-precedes-exact-decoder-state",
+      "passed": true
+    },
+    {
+      "name": "decoder-state-is-exact-272-bytes",
+      "passed": true
+    },
+    {
+      "name": "physical-bytes-stream-direct-to-final-allocation",
+      "passed": true
+    },
+    {
+      "name": "discard-validation-after-complete-physical-stream",
+      "passed": true
+    },
+    {
+      "name": "logical-crc-validated-before-publication",
+      "passed": true
+    },
+    {
+      "name": "no-raw-logical-materialization",
+      "passed": true
+    },
+    {
+      "name": "decoder-state-freed-before-packed-publication",
+      "passed": true
+    },
+    {
+      "name": "failure-cleans-private-physical-and-decoder-state",
+      "passed": true
+    },
+    {
+      "name": "packed-resident-bytes-remain-exact-zxp1",
+      "passed": true
+    },
+    {
+      "name": "one-272-byte-decoder-state-high-water",
+      "passed": true
+    },
+    {
+      "name": "decoded-logical-length-and-crc-validated",
+      "passed": true
+    },
+    {
+      "name": "decoder-allocation-failure-before-tape-publication",
+      "passed": true
+    },
+    {
+      "name": "malformed-zxp1-no-publication",
+      "passed": true
+    },
+    {
+      "name": "logical-crc-mismatch-no-publication",
+      "passed": true
+    },
+    {
+      "name": "physical-trailing-byte-rejected",
+      "passed": true
+    },
+    {
+      "name": "physical-short-stream-rejected",
+      "passed": true
+    },
+    {
+      "name": "transport-failure-cleans-private-state",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 22,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13508 lines, work time: 0.021 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p505-packed-loader.lst",
+        "--sym=p505-packed-loader.sym",
+        "p505-packed-loader.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 8,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 4921 lines, work time: 0.007 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--tape",
+        "/tmp/zxux-p505-fuse-ehcrmlee/p505.tap",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-p505-fuse-ehcrmlee/p505.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 195,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--tape",
+        "/tmp/zxux-p505-fuse-8diby65x/p505.tap",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-p505-fuse-8diby65x/p505.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 170,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--tape",
+        "/tmp/zxux-p505-fuse-t624rv9p/p505.tap",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-p505-fuse-t624rv9p/p505.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 68,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--tape",
+        "/tmp/zxux-p505-fuse-5_thjyfa/p505.tap",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-p505-fuse-5_thjyfa/p505.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 182,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--tape",
+        "/tmp/zxux-p505-fuse-llvj5344/p505.tap",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-p505-fuse-llvj5344/p505.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 52,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p505-packed-loader.bin": "4bebfdff585a2f9721a9a748ab1f376f8d140781dc3ef9897bdef1ddba5299d1",
+    "v1/dist/certification/P5.04.build.json": "7505cbb28e7ba9842af364c8f288920672b896abfc560f10e88f9f3e4ebd704e",
+    "v1/dist/certification/P5.04.test.json": "1016c96be6695ff7761f904458568f0c01a982d25b18152401498187ac6b7961",
+    "v1/src/kernel/tape.asm": "3f8d440ec3a7a67d7765c60d4fcb7404bc742f93bae44370ddecdd974d1cc431",
+    "v1/src/kernel/zxpack.asm": "908fe5fdd651ac579e82c281e0539cf658a78b9f18d767fcd965fa0aa473fca6",
+    "v1/tools-host/test-driver/phase5_packed_loader.py": "46fedf76c5e119c11fbbbc6d2ac6b7905c4e96915aa1ca043004cb0d24effcda",
+    "v1/tools-host/test-driver/run.py": "b67681db5bd95fbb176927c26901804084aef3f245aaf6c5770fa486ed482d53"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P5.04": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "d0667a9f71f00d089535bbbb6c87491e61fec4c9",
+  "status": "PASS",
+  "step": "P5.05",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
