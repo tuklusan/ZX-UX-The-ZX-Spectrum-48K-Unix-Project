@@ -176,23 +176,10 @@ zx48_sleep_bad:
     scf
     ret
 
-; Cassette ROM calls are synchronous and may mask frame interrupts. This flag is
-; diagnostic scheduler state: while nonzero cooperative progress may pause and
-; frame-derived wall-clock precision is explicitly degraded per REV16 19.7.
-zx48_scheduler_tape_blocking_enter:
-    ld a,1
-    ld (scheduler_tape_blocking),a
-    ld hl,(scheduler_tape_intervals)
-    inc hl
-    ld (scheduler_tape_intervals),hl
-    xor a
-    ret
-
-zx48_scheduler_tape_blocking_leave:
-    xor a
-    ld (scheduler_tape_blocking),a
-    ret
-
+; Cassette ROM tape calls are synchronous and may mask frame interrupts.
+; While the tape layer owns its global lock, cooperative progress may pause and
+; frame-derived wall-clock precision may degrade. The scheduler deliberately
+; does not fabricate missed frame ticks; date/cron therefore inherit REV16 19.7.
 zx48_scheduler_wake_scan:
     ld ix,process_table+PROC_DESC_SIZE
     ld b,MAX_PROCESSES-1
@@ -215,8 +202,6 @@ scheduler_current: db 0
 scheduler_candidate: db 0
 scheduler_sleep_lo: dw 0
 scheduler_sleep_hi: dw 0
-scheduler_tape_blocking: db 0
-scheduler_tape_intervals: dw 0
     ENDM
 
 ;
