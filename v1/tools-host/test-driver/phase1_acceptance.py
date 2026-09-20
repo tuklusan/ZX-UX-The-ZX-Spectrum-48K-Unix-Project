@@ -293,10 +293,16 @@ def _static_acceptance(root: Path, state: SourceState) -> list[dict[str, object]
         "phase1-evidence:",
         "tools/check_phase1_evidence.py",
         "tools/test_phase1_evidence_negative.py",
-        "phase1-evidence]",
     )
     if any(marker not in quality_workflow_text for marker in quality_markers):
         raise Phase1AcceptanceError("Quality workflow does not enforce durable Phase-1 evidence")
+    project_ci_text = quality_workflow_text.split("  project-ci:", 1)[-1]
+    needs_line = next(
+        (line for line in project_ci_text.splitlines() if line.strip().startswith("needs:")),
+        "",
+    )
+    if "phase1-evidence" not in needs_line:
+        raise Phase1AcceptanceError("Quality project-ci does not depend on durable Phase-1 evidence")
     _negative_oracles(state)
     return [
         {"name": "phase1-acceptance-plan-contract-present", "passed": True},
