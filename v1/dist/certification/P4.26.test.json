@@ -1,0 +1,133 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "only-any-cold-failure-may-compact",
+      "passed": true
+    },
+    {
+      "name": "depth-guard-nonrecursive",
+      "passed": true
+    },
+    {
+      "name": "one-victim-call-and-one-retry",
+      "passed": true
+    },
+    {
+      "name": "independent-of-pack-candidate",
+      "passed": true
+    },
+    {
+      "name": "largest-logical-selection",
+      "passed": true
+    },
+    {
+      "name": "exact-path-name-tiebreak",
+      "passed": true
+    },
+    {
+      "name": "raw-mutable-closed-only",
+      "passed": true
+    },
+    {
+      "name": "direct-owner-exclusion",
+      "passed": true
+    },
+    {
+      "name": "exact-512-dry-run",
+      "passed": true
+    },
+    {
+      "name": "exact-destination-preflight",
+      "passed": true
+    },
+    {
+      "name": "guarded-probe-allocations",
+      "passed": true
+    },
+    {
+      "name": "single-pack-transaction",
+      "passed": true
+    },
+    {
+      "name": "largest-logical-victim-runtime",
+      "passed": true
+    },
+    {
+      "name": "exact-name-tiebreak-runtime",
+      "passed": true
+    },
+    {
+      "name": "open-and-direct-owner-exclusions-runtime",
+      "passed": true
+    },
+    {
+      "name": "one-victim-limit-runtime",
+      "passed": true
+    },
+    {
+      "name": "scratch-destination-preflight-runtime",
+      "passed": true
+    },
+    {
+      "name": "no-compact-depth-guard-runtime",
+      "passed": true
+    },
+    {
+      "name": "ordinary-pressure-one-attempt-runtime",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 23,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12996 lines, work time: 0.022 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p426-compaction.lst",
+        "--sym=p426-compaction.sym",
+        "p426-compaction.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 18,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 10932 lines, work time: 0.017 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p426-compaction.bin": "7e657a5d6642aaa6b015aff1cf6f5cc8994ef29771e3d32e666341f745603289",
+    "v1/dist/certification/P4.25.test.json": "52c7037690f51201966f757e417727a9d710545797f6cbc0c5259c03dfa75f3e",
+    "v1/src/kernel/memory.asm": "79fc65b02520e8c78d85db23d699e9d71604a0273d1f256e9e71acc6b879dcfe",
+    "v1/src/kernel/zxpack.asm": "45ec58aef781819ea8ec243229f34f4c1ce2001db510b9b7a34d2bee2ead4d84",
+    "v1/tools-host/test-driver/phase4_compaction.py": "ed9197eafe47aa36f511d34e4188398007cd174dd25dd0ac341bd1920c60b50b",
+    "v1/tools-host/test-driver/run.py": "5cfe4bcf434cbfa665eb5cf626f6002d048127b3ecba69478828c89beeef7845"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P4.25": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "33c591915cb77242f5d3b325f813430db17054e6",
+  "status": "PASS",
+  "step": "P4.26",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
