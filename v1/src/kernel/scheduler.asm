@@ -178,7 +178,7 @@ zx48_sleep_bad:
 
 ; Cassette ROM tape calls are synchronous and may mask frame interrupts.
 ; While the tape layer owns its global lock, cooperative progress may pause and
-; frame-derived wall-clock precision may degrade. The scheduler deliberately
+; frame-derived wall-clock precision is degraded. The scheduler deliberately
 ; does not fabricate missed frame ticks; date/cron therefore inherit REV16 19.7.
 zx48_scheduler_wake_scan:
     ld ix,process_table+PROC_DESC_SIZE
