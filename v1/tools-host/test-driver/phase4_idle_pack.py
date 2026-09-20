@@ -123,7 +123,7 @@ def _runtime(root:Path,s:dict[str,int],module:bytes)->None:
             ram[free-0x4000:free-0x4000+4]=_word(free_start)+_word(free_len)
             ram[live-0x4000:live-0x4000+2]=_word(live_count)
             if live_slot is not None:
-                ram[od-0x4000:od-0x4000+8]=bytes((s["OD_KIND_OBJECT"],1,live_slot,1,0,0,0,0))
+                ram[od-0x4000:od-0x4000+8]=bytes((s["OD_KIND_OBJECT"],1,1,live_slot,0,0,0,0))
         return apply
 
     def execute(label:str,code:bytes,patcher)->None:
