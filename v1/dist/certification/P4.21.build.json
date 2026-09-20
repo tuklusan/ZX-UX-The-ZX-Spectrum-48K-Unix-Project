@@ -1,0 +1,72 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "zero-length-short-circuit-raw",
+      "passed": true
+    },
+    {
+      "name": "nonempty-delegates-exact-target-encoder",
+      "passed": true
+    },
+    {
+      "name": "strict-smaller-guard-frozen-in-encoder",
+      "passed": true
+    },
+    {
+      "name": "raw-sentinel-zero-return",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12934 lines, work time: 0.034 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p421-pack-decision.lst",
+        "--sym=p421-pack-decision.sym",
+        "p421-pack-decision.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 11,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 3429 lines, work time: 0.010 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p421-pack-decision.bin": "4a0201eeacf385c564e3f57535c70646662eb8f6e4801ff78322ede3d4356499",
+    "v1/dist/certification/P4.20.test.json": "a6e7843ba74a29788d9020e10cc71f49928c5a0a4a172e09055e51c96f668138",
+    "v1/src/kernel/zxpack.asm": "34df6147fe8b7ef5051507b29e0e9441f9487de808b75fccef4a6c06c4d44cfc",
+    "v1/tools-host/test-driver/phase4_raw_retention.py": "aed6d274678fd67a2dd6ae9a73ce0bd74da464b586dec6d7ea0ab130596589a0",
+    "v1/tools-host/test-driver/run.py": "916be2c05134896472d237331e64d7f5622d952f5b488d533297a908e1d0f681"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P4.20": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "b3be584fc6f07322de8cf813d2a847a9b40c5f33",
+  "status": "PASS",
+  "step": "P4.21",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
