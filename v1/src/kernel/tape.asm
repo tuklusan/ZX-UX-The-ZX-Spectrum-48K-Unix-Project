@@ -1368,11 +1368,205 @@ p506_decoder_live: db 0
 p506_error: db 0
     ENDM
 
+    MACRO EMIT_P507_RAW_SAVE_ROUTINES
+; IX=validated mutable RAW object record. Build the complete M48O representation
+; before acquiring the global cassette critical section.
+zx48_p507_save_record:
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    and OBJ_PACKED
+    jp nz,zx48_p507_notsup
+    ld a,(ix+OBJ_RESERVED_BYTE)
+    or a
+    jp nz,zx48_p507_format
+    ld a,(ix+OBJ_DIR_ID)
+    ld (p507_target),a
+    ld b,(ix+OBJ_TYPE_ID)
+    ld (p507_type),b
+    call zx48_object_public_type_allowed
+    ret c
+
+    ld l,(ix+OBJ_LOGICAL_LENGTH)
+    ld h,(ix+OBJ_LOGICAL_LENGTH+1)
+    ld e,(ix+OBJ_STORAGE_LENGTH)
+    ld d,(ix+OBJ_STORAGE_LENGTH+1)
+    push hl
+    or a
+    sbc hl,de
+    pop hl
+    jp nz,zx48_p507_format
+    bit 7,h
+    jp nz,zx48_p507_format
+    ld (p507_length),hl
+    ld l,(ix+OBJ_ALLOCATION_PTR)
+    ld h,(ix+OBJ_ALLOCATION_PTR+1)
+    ld (p507_payload_ptr),hl
+    ld de,(p507_length)
+    ld a,d
+    or e
+    jr z,zx48_p507_payload_ptr_ok
+    ld a,h
+    or l
+    jp z,zx48_p507_format
+zx48_p507_payload_ptr_ok:
+
+    xor a
+    ld hl,p507_header
+    ld de,p507_header+1
+    ld bc,M48O_HDR_SIZE-1
+    ld (hl),a
+    ldir
+    ld hl,p507_header
+    ld (hl),M48O_MAGIC_0
+    inc hl
+    ld (hl),M48O_MAGIC_1
+    inc hl
+    ld (hl),M48O_MAGIC_2
+    inc hl
+    ld (hl),M48O_MAGIC_3
+    inc hl
+    ld (hl),M48O_VERSION
+    inc hl
+    ld a,(p507_type)
+    ld (hl),a
+    inc hl
+    xor a
+    ld (hl),a
+    inc hl
+    ld a,(p507_target)
+    ld (hl),a
+
+    ld hl,p507_header+M48O_HDR_STORAGE_LEN
+    ld de,(p507_length)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    inc hl
+    ld (hl),e
+    inc hl
+    ld (hl),d
+
+    ld hl,(p507_payload_ptr)
+    ld bc,(p507_length)
+    call zx48_crc16_ccitt_false
+    ld hl,p507_header+M48O_HDR_PAYLOAD_CRC
+    ld (hl),e
+    inc hl
+    ld (hl),d
+
+    push ix
+    pop hl
+    ld de,p507_header+M48O_HDR_NAME
+    ld bc,M48O_NAME_SIZE
+    ldir
+
+    ld hl,p507_header
+    ld bc,M48O_HDR_SIZE
+    call zx48_crc16_ccitt_false
+    ld hl,p507_header+M48O_HDR_HEADER_CRC
+    ld (hl),e
+    inc hl
+    ld (hl),d
+
+    ; Foreground RECORD consent is obtained before lock/tape motion.
+    call zx48_p507_prompt_record
+    ret c
+    call zx48_p507_lock_acquire
+    ret c
+
+    ld ix,p507_header
+    ld de,M48O_HDR_SIZE
+    ld a,M48O_ROM_DATA_FLAG
+    call zx48_tape_save_block
+    jp c,zx48_p507_release_error
+
+    ld hl,(p507_payload_ptr)
+    ld (p507_write_ptr),hl
+    ld hl,(p507_length)
+    ld (p507_remaining),hl
+zx48_p507_chunk_loop:
+    ld bc,(p507_remaining)
+    ld a,b
+    or c
+    jr z,zx48_p507_success
+    call zx48_p503_prepare_chunk
+    ld (p507_chunk_len),de
+    ld ix,(p507_write_ptr)
+    ld a,M48O_ROM_DATA_FLAG
+    call zx48_tape_save_block
+    jp c,zx48_p507_release_error
+    ld hl,(p507_write_ptr)
+    ld de,(p507_chunk_len)
+    add hl,de
+    ld (p507_write_ptr),hl
+    ld hl,(p507_remaining)
+    or a
+    sbc hl,de
+    ld (p507_remaining),hl
+    jr zx48_p507_chunk_loop
+
+zx48_p507_success:
+    call zx48_p507_lock_release
+    ld hl,0
+    xor a
+    or a
+    ret
+zx48_p507_release_error:
+    ld (p507_error),a
+    call zx48_p507_lock_release
+    ld a,(p507_error)
+    scf
+    ret
+zx48_p507_notsup:
+    ld a,E_NOTSUP
+    scf
+    ret
+zx48_p507_format:
+    ld a,E_FORMAT
+    scf
+    ret
+
+zx48_p507_lock_acquire:
+    ld a,(p507_tape_lock)
+    or a
+    jr nz,zx48_p507_busy
+    inc a
+    ld (p507_tape_lock),a
+    xor a
+    or a
+    ret
+zx48_p507_busy:
+    ld a,E_BUSY
+    scf
+    ret
+zx48_p507_lock_release:
+    xor a
+    ld (p507_tape_lock),a
+    ret
+
+; P5.13 replaces this foreground consent hook with visible prompt/input logic.
+zx48_p507_prompt_record:
+    xor a
+    or a
+    ret
+
+p507_header: defs M48O_HDR_SIZE,0
+p507_payload_ptr: dw 0
+p507_length: dw 0
+p507_write_ptr: dw 0
+p507_remaining: dw 0
+p507_chunk_len: dw 0
+p507_target: db 0
+p507_type: db 0
+p507_tape_lock: db 0
+p507_error: db 0
+    ENDM
+
     MACRO EMIT_TAPE_ROUTINES
     EMIT_P502_CRC16_ROUTINES
     EMIT_P503_FRAMING_ROUTINES
     EMIT_P504_RAW_LOADER_ROUTINES
     EMIT_P505_PACKED_LOADER_ROUTINES
+    EMIT_P507_RAW_SAVE_ROUTINES
 ; A=block type,DE=length,IX=source.
 zx48_tape_save_block:
     call zx48_rom_sa_bytes
@@ -1403,20 +1597,7 @@ zx48_tape_save_path:
     ld hl,path_name
     call zx48_object_lookup
     ret c
-    ; Save RAW logical payload as ROM data block after a transport header emitted
-    ; by the shell/host builder. PACKED RAM objects are materialized first.
-    ld a,(ix+OBJ_FLAGS_BYTE)
-    and OBJ_PACKED
-    call nz,zx48_zxpack_materialize
-    ret c
-    ld l,(ix+OBJ_ALLOCATION_PTR)
-    ld h,(ix+OBJ_ALLOCATION_PTR+1)
-    push hl
-    pop ix
-    ld e,(ix+OBJ_LOGICAL_LENGTH)  ; IX is payload now; metadata unavailable.
-    ld a,E_NOTSUP
-    scf
-    ret
+    jp zx48_p507_save_record
 
 zx48_tape_load_path:
     ; Loading requires the next physical M48O name to match requested path. The
