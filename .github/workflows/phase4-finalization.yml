@@ -1,0 +1,74 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: ZX-UX Phase 4 Aggregate Validation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/phase4-finalization.yml
+      - tools/finalize_phase4_evidence.py
+      - tools/check_phase4_evidence.py
+      - tools/test_phase4_evidence_negative.py
+      - v1/dist/certification/P4.*.json
+      - v1/dist/certification/phase-4.json
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zxux-phase4-aggregate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  phase4-aggregate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      ZXUX_EVIDENCE_DIR: /tmp/zxux-phase4-aggregate-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Mandatory policy gates
+        run: |
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+
+      - name: Generate missing Phase 4 aggregate
+        if: hashFiles('v1/dist/certification/phase-4.json') == ''
+        run: |
+          mkdir -p "$ZXUX_EVIDENCE_DIR"
+          python3 tools/finalize_phase4_evidence.py             --root "$GITHUB_WORKSPACE"             --output "$ZXUX_EVIDENCE_DIR/phase-4.json"
+          test -s "$ZXUX_EVIDENCE_DIR/phase-4.json"
+          grep -q '"status": "PASS"' "$ZXUX_EVIDENCE_DIR/phase-4.json"
+          grep -q 'ZX-UX PHASE 4 CERTIFICATION PASS' "$ZXUX_EVIDENCE_DIR/phase-4.json"
+
+      - name: Validate active Phase 4 aggregate
+        if: hashFiles('v1/dist/certification/phase-4.json') != ''
+        run: |
+          python3 tools/check_phase4_evidence.py --require-active
+          python3 tools/test_phase4_evidence_negative.py
+
+      - name: Upload exact aggregate evidence
+        if: hashFiles('v1/dist/certification/phase-4.json') == ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: zxux-phase4-aggregate-${{ github.run_id }}-${{ github.run_attempt }}
+          path: /tmp/zxux-phase4-aggregate-${{ github.run_id }}-${{ github.run_attempt }}/phase-4.json
+          retention-days: 90
+          if-no-files-found: error
