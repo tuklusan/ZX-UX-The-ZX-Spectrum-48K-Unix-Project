@@ -140,6 +140,7 @@ import phase4_pseudo_dirs
 import phase4_chdir
 import phase4_getcwd
 import phase4_acceptance
+import phase5_m48o_header
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
 from driver_core import (
     DriverError,
@@ -294,6 +295,10 @@ def dispatch(root: Path, action: str, step: str):
         return phase4_acceptance.dispatch(root, action, step, **kwargs)
     if step.startswith("P4."):
         raise DriverError(f"numbered Phase-4 step is not registered: {step}")
+    if step == "P5.01":
+        return phase5_m48o_header.dispatch(root, action, step, **kwargs)
+    if step.startswith("P5."):
+        raise DriverError(f"numbered Phase-5 step is not registered: {step}")
     module = E0_MODULE.get(step)
     if module is not None:
         return module.dispatch(root, action, step, **kwargs)
@@ -438,6 +443,10 @@ def prerequisite_statuses(step: str) -> dict[str, str]:
         number = int(step.split(".", 1)[1])
         if 1 <= number:
             return {"P3.21": "PASS"} if number == 1 else {f"P4.{number - 1:02d}": "PASS"}
+    if step.startswith("P5."):
+        number = int(step.split(".", 1)[1])
+        if 1 <= number:
+            return {"P4.33": "PASS"} if number == 1 else {f"P5.{number - 1:02d}": "PASS"}
     return {}
 
 
