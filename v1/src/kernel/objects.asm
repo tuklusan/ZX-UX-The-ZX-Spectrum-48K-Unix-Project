@@ -3947,7 +3947,8 @@ zx48_p419_open_existing:
     jr z,zx48_p419_open_invalid
 
     ; Reserve OD and process-handle capacity before any object representation change.
-    ld d,(p419_open_slot)
+    ld a,(p419_open_slot)
+    ld d,a
     ld b,OD_KIND_OBJECT
     ld a,(p419_open_flags)
     ld c,a
@@ -4026,4 +4027,3 @@ p419_open_od: db 0
 p419_open_handle: db 0
 p419_open_error: db 0
     ENDM
-
