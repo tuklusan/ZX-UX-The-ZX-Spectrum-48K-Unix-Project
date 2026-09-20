@@ -114,7 +114,7 @@ def _seek(s: dict[str, int], target: int, logical_len: int) -> bytes:
 
 def _run_sequence(root: Path, s: dict[str, int], module: bytes, encoded: bytes, logical: bytes, sequence: tuple[int, ...] | None = None) -> None:
     if sequence is None:
-        sequence = (0, 1, 17, 64, 129, 7, 200, 33, len(logical) - 1, len(logical))
+        sequence = (0, 1, 17, 64, 129, 7, 200, 33, 255, 256, 257, 322, 356, 362, 492, len(logical) - 1, len(logical))
     code = bytearray(b"\xF3")
     code += phase1._ld_sp(STACK_TOP)
     code += _bind(s, len(encoded)) + phase1._jp_c(FAIL_PC)
