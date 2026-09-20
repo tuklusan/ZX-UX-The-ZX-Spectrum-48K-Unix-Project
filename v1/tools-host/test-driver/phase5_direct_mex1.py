@@ -12,7 +12,9 @@
 # patent, trademark, and governing-law provisions.
 from pathlib import Path
 from driver_core import DriverError
+from fuse_harness import FAIL_PC, PASS_PC, run_sna
 import phase1
+import phase3_open_descriptions
 
 class P514Error(DriverError): pass
 def require(x,m):
@@ -30,13 +32,15 @@ def dispatch(root:Path,action:str,step:str,*,sha256_file,run_command,require_pro
       {"name":"m48-logical-equals-mex-total-stored","passed":"p514_m48_logical_length" in pm and "MEX_HDR_RELOC_OFFSET" in pm and "MEX_HDR_RELOC_COUNT" in pm},
       {"name":"final-image-direct-stream-write","passed":"ld (p514_write_ptr),hl" in pm and "ld (hl),a" in pm},
       {"name":"bss-zeroed-before-commit","passed":pm.find("zx48_p514_zero_bss:") < pm.find("call zx48_p514_commit_ready")},
-      {"name":"relocations-increasing-and-private","passed":"p514_previous_reloc" in pm and "jp nc,zx48_p514_format_rollback" in pm},
+      {"name":"relocations-increasing-nonoverlap-and-private","passed":"p514_previous_reloc" in pm and "inc hl\n    inc hl" in pm},
       {"name":"complete-m48-and-body-crc-before-commit","passed":pm.find("call zx48_p514_tape_stream_finish") < pm.find("call zx48_p514_commit_ready") and pm.find("p514_expected_body_crc") < pm.find("call zx48_p514_commit_ready")},
       {"name":"failure-rolls-back-image-stack-bootstrap","passed":all(x in pm for x in ("p514_bootstrap_base","p514_stack_base","p514_image_base","zx48_p514_rollback:"))},
       {"name":"no-second-full-raw-executable","passed":all(x not in pm for x in ("zx48_p419_materialize_private","P416_SINK_FINAL_MEMORY","p427_header:"))},
       {"name":"tape-buffer-is-one-512-byte-chunk","passed":"ld bc,M48O_CHUNK_SIZE" in tm and "p514_tape_scratch" in tm},
       {"name":"packed-uses-one-272-state","passed":tm.count("ld bc,P417_STATE_SIZE")>=2 and "p514_tape_state_live" in tm},
-      {"name":"packed-history-never-reset-at-mex-header","passed":"p514_tape_hist_index" in tm and "zx48_p418_reset" not in tm},
+      {"name":"packed-history-never-reset-at-mex-header","passed":"ld (p514_tape_hist_index),a" in tm and "zx48_p418_reset" not in tm},
+      {"name":"packed-backref-distance-validated","passed":"zx48_p514_tape_back256:" in tm and "p514_tape_logical_pos" in tm},
+      {"name":"fast-stack-includes-bootstrap-reserve","passed":"PROCESS_STACK_BOOTSTRAP_BYTES" in pm and "p514_stack_alloc_size" in pm},
       {"name":"stream-validates-logical-crc-and-exact-end","passed":"p514_tape_expected_crc" in tm and "p514_tape_phys_remaining" in tm and "p514_tape_chunk_left" in tm},
     ]
     require(all(a["passed"] for a in assertions),"P5.14 static contract failure")
@@ -155,13 +159,35 @@ path_name: defs 10,0
     require(not tr.timed_out and tr.exit_code==0,f"P5.14 tape fixture assembly failed: {tr.stderr or tr.stdout}")
 
     if action=="test":
-      # The strongest no-motion negative is structural: E_AGAIN is returned
-      # before the unique begin/motion callback. P4.27 already dynamically proves
-      # header-crossing backrefs with one continuous 272-byte state.
+      symbols=phase3_open_descriptions._symbols(b/"p514-direct-mex.sym",(
+        "zx48_p514_spawn_tape_backed","p514_test_proc1","p514_test_tape_moves",
+        "p514_test_commit","E_AGAIN","PROC1_FLAGS","PROC1_ALLOW_TAPE"))
+      def word(v): return bytes((v&255,(v>>8)&255))
+      module=(b/"p514-direct-mex.bin").read_bytes()
+      def patch(flags):
+        def apply(ram):
+          ram[0xC000-0x4000:0xC000-0x4000+len(module)]=module
+          ram[symbols["p514_test_proc1"]-0x4000+symbols["PROC1_FLAGS"]]=flags
+          ram[symbols["p514_test_tape_moves"]-0x4000]=0
+          ram[symbols["p514_test_commit"]-0x4000]=0
+        return apply
+      def check_byte(addr,value):
+        return b"\x3A"+word(addr)+bytes((0xFE,value&255))+phase1._jp_nz(FAIL_PC)
+
+      code=b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(symbols["p514_test_proc1"])+phase1._call(symbols["zx48_p514_spawn_tape_backed"])
+      code+=bytes((0xD2,FAIL_PC&255,FAIL_PC>>8,0xFE,symbols["E_AGAIN"]&255))+phase1._jp_nz(FAIL_PC)
+      code+=check_byte(symbols["p514_test_tape_moves"],0)+check_byte(symbols["p514_test_commit"],0)+phase1._jp(PASS_PC)
+      run_sna(root,code,patch=patch(0))
+
+      code=b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(symbols["p514_test_proc1"])+phase1._call(symbols["zx48_p514_spawn_tape_backed"])
+      code+=bytes((0xD2,FAIL_PC&255,FAIL_PC>>8))
+      code+=check_byte(symbols["p514_test_tape_moves"],1)+check_byte(symbols["p514_test_commit"],0)+phase1._jp(PASS_PC)
+      run_sna(root,code,patch=patch(symbols["PROC1_ALLOW_TAPE"]))
       assertions += [
-        {"name":"allow-tape-zero-no-motion-control-flow","passed":True},
+        {"name":"allow-tape-zero-no-motion-runtime","passed":True},
+        {"name":"allow-tape-one-enters-stream-runtime","passed":True},
+        {"name":"late-stream-failure-no-commit-runtime","passed":True},
         {"name":"packed-history-continuity-reuses-p427-certified-invariant","passed":True},
-        {"name":"late-validation-precedes-single-commit-hook","passed":True},
         {"name":"rollback-covers-all-private-process-allocations","passed":True},
       ]
     binary=b/"p514-direct-mex.bin"; tape_bin=b/"p514-tape-stream.bin"
