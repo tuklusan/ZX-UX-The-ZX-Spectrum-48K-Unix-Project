@@ -1,0 +1,161 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "target-header-is-separate-32-byte-data-block",
+      "passed": true
+    },
+    {
+      "name": "target-chunk-bound-is-canonical-512",
+      "passed": true
+    },
+    {
+      "name": "host-framing-constants-exact",
+      "passed": true
+    },
+    {
+      "name": "host-header-and-payload-are-separate-blocks",
+      "passed": true
+    },
+    {
+      "name": "host-payload-chunking-uses-512-bound",
+      "passed": true
+    },
+    {
+      "name": "boundary-0-separate-header-and-chunks",
+      "passed": true
+    },
+    {
+      "name": "boundary-1-separate-header-and-chunks",
+      "passed": true
+    },
+    {
+      "name": "boundary-511-separate-header-and-chunks",
+      "passed": true
+    },
+    {
+      "name": "boundary-512-separate-header-and-chunks",
+      "passed": true
+    },
+    {
+      "name": "boundary-513-separate-header-and-chunks",
+      "passed": true
+    },
+    {
+      "name": "boundary-1024-separate-header-and-chunks",
+      "passed": true
+    },
+    {
+      "name": "boundary-1025-separate-header-and-chunks",
+      "passed": true
+    },
+    {
+      "name": "reject-combined-header-payload-block",
+      "passed": true
+    },
+    {
+      "name": "reject-non-ff-data-flag",
+      "passed": true
+    },
+    {
+      "name": "reject-bad-rom-checksum",
+      "passed": true
+    },
+    {
+      "name": "reject-short-nonfinal-chunk",
+        "passed": true
+    },
+    {
+      "name": "reject-over-512-chunk",
+        "passed": true
+    },
+    {
+      "name": "reject-payload-block-for-zero-length",
+        "passed": true
+    },
+    {
+      "name": "target-chunk-boundaries-runtime",
+      "passed": true
+    },
+    {
+      "name": "fuse-consumes-separate-ff-header-512-and-final-1-blocks",
+        "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13508 lines, work time: 0.033 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p503-framing.lst",
+        "--sym=p503-framing.sym",
+        "p503-framing.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 510 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--tape",
+        "/tmp/zxux-p503-fuse-8jr56yr4/p503.tap",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-p503-fuse-8jr56yr4/p503.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 58,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p503-framing.bin": "47db0e8d98fffc6cb3e6dc270fe6eab93bbea1f086112872271349e122d65c84",
+    "v1/dist/certification/P5.02.build.json": "e9b700eac66497d835896115d711b1b3fef026473e0b38dc9a72c138a86f515b",
+    "v1/dist/certification/P5.02.test.json": "6c43214ff8c439a175f792d6cd6b4cf31a8d7ccc2fad48b2469c6d885ad1d957",
+    "v1/src/kernel/tape.asm": "9632e2b4c5479a9520b7145df23d5c2e61c9e7fb272e98e2a134ff0e68224671",
+    "v1/tools-host/maketap/maketap.py": "d9b614368209b44677c82de29bde75d49cb185a4b356797454593dfb7de54f61",
+    "v1/tools-host/test-driver/phase5_chunk_framing.py": "96da9e04e7f6a43dacc8e688cdeb12996c9ba3da13847d6dcd7c3f0a4664617d",
+    "v1/tools-host/test-driver/run.py": "d3bb8c67648e5cc04ba1e41b9e4360a2f3be6de5896c92b3a7abb6b282102dff"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P5.02": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "ae6f80ed2400b0d7d705538af89b0b4604de3282",
+  "status": "PASS",
+  "step": "P5.03",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
