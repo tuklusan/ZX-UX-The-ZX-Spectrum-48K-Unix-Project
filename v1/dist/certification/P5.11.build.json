@@ -1,0 +1,101 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "one-next-object-per-call",
+      "passed": true
+    },
+    {
+      "name": "header-written-to-caller-buffer",
+      "passed": true
+    },
+    {
+      "name": "scratch-exactly-512-cold",
+      "passed": true
+    },
+    {
+      "name": "packed-adds-exact-272-state",
+      "passed": true
+    },
+    {
+      "name": "packed-parser-persists-across-chunks",
+      "passed": true
+    },
+    {
+      "name": "raw-and-packed-logical-crc-verified",
+      "passed": true
+    },
+    {
+      "name": "both-scratch-allocations-released",
+      "passed": true
+    },
+    {
+      "name": "no-fabricated-physical-eof",
+      "passed": true
+    },
+    {
+      "name": "cancel-maps-to-e-intr",
+      "passed": true
+    },
+    {
+      "name": "scan-does-not-touch-namespace",
+      "passed": true
+    },
+    {
+      "name": "public-scan-routes-bounded-implementation",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13518 lines, work time: 0.034 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p511-scan.lst",
+        "--sym=p511-scan.sym",
+        "p511-scan.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 12,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\ntape.asm(2720): warning: value 0xC5F4 is truncated to 8bit value: 0xF4\np511-scan.asm(20): ^ emitted from here\nPass 3 complete\nErrors: 0, warnings: 1, compiled: 4506 lines, work time: 0.011 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p511-scan.bin": "a05cc12395d9c27d8246666480af2517a3b418034c01034ffead3682406463c5",
+    "v1/dist/certification/P5.10.build.json": "77a9c9895817443639de1bccf13170f349778454958c123855a9010329b0f740",
+    "v1/dist/certification/P5.10.test.json": "aedecda25dbc1dd6d6e562c4c5c86db21c6798abf35ec3a65b28bc5045dca7ad",
+    "v1/src/kernel/tape.asm": "5c68c2e2046fb45ec15d7528deed0ce737330433ade246cc7fa4efefbcd32429",
+    "v1/tools-host/test-driver/phase5_tape_scan.py": "6948508053267cfe8e997927c4b7b7be26368a394bc5c97ae91029ce265fd3e3",
+    "v1/tools-host/test-driver/run.py": "b06fc3f10dac3db91599b8bf367f852e21a2eba67e3395718dd8b4c3401db9a2"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P5.10": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "b33e9c6f92581197a7cff537b1e7a94a9e2c6970",
+  "status": "PASS",
+  "step": "P5.11",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
