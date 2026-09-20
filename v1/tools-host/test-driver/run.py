@@ -130,6 +130,7 @@ import phase4_target_encoder
 import phase4_raw_retention
 import phase4_sys_pack
 import phase4_sys_unpack
+import phase4_close_candidates
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
 from driver_core import (
     DriverError,
@@ -262,6 +263,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase4_sys_pack.dispatch(root, action, step, **kwargs)
     if step == "P4.23":
         return phase4_sys_unpack.dispatch(root, action, step, **kwargs)
+    if step == "P4.24":
+        return phase4_close_candidates.dispatch(root, action, step, **kwargs)
     if step.startswith("P4."):
         raise DriverError(f"numbered Phase-4 step is not registered: {step}")
     module = E0_MODULE.get(step)
