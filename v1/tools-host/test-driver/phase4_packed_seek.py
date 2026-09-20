@@ -203,15 +203,8 @@ def _runtime(root: Path, s: dict[str, int], module: bytes) -> None:
     logical = bytes(range(64)) * 4 + b"A" * 100 + b"abcdef" * 30
     encoded = z.encode(logical)
     require(z.decode(encoded, len(logical)) == logical, "P4.18 host oracle round-trip mismatch")
-    sequence = (0, 1, 17, 64, 129, 7, 200, 33, len(logical) - 1, len(logical))
-    prefix_535 = sequence[:sequence.index(len(logical) - 1) + 1]
+    sequence = (0, 1, 17, 64, 129, 7, 200, 33, 255, 256, 257, 322, 356, 362, 492, 500, 510, 520, 530, 534, len(logical) - 1, len(logical))
     cases = [
-        ("seek-535-ignore-sentinel", lambda: _run_sequence(root, s, module, encoded, logical, prefix_535, "ignore-sentinel")),
-        ("seek-535-ignore-logical", lambda: _run_sequence(root, s, module, encoded, logical, prefix_535, "ignore-logical")),
-        ("seek-535-ignore-carry", lambda: _run_sequence(root, s, module, encoded, logical, prefix_535, "ignore-carry")),
-        ("seek-535-seek-only", lambda: _run_sequence(root, s, module, encoded, logical, prefix_535, "seek-only")),
-        ("seek-535-step-no-byte", lambda: _run_sequence(root, s, module, encoded, logical, prefix_535, "step-no-byte")),
-        ("seek-535-step-no-pos", lambda: _run_sequence(root, s, module, encoded, logical, prefix_535, "step-no-pos")),
         *[(f"seek-sequence-through-{target}", lambda prefix=sequence[:index + 1]: _run_sequence(root, s, module, encoded, logical, prefix)) for index, target in enumerate(sequence)],
         ("pending-command", lambda: _run_pending(root, s, module)),
         ("seek-beyond-eof", lambda: _run_failure(root, s, module, b"\x00A", 1, 2, s["E_INVAL"])),
