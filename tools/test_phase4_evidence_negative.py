@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+from __future__ import annotations
+
+import json
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+
+def run(*args: str, cwd: Path = ROOT) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(args, cwd=cwd, text=True, capture_output=True)
+
+def mutate(path: Path, key: str, value) -> None:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data[key] = value
+    path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+
+def main() -> int:
+    current = run(sys.executable, "tools/check_phase4_evidence.py")
+    if "PRE-ACTIVATION PASS" in current.stdout:
+        required = run(sys.executable, "tools/check_phase4_evidence.py", "--require-active")
+        if required.returncode == 0:
+            return 1
+        print("ZX-UX PHASE 4 EVIDENCE NEGATIVE PRE-ACTIVATION PASS")
+        return 0
+    if current.returncode:
+        return 1
+
+    work = Path(tempfile.mkdtemp(prefix="zxux-phase4-evidence-negative-"))
+    try:
+        shutil.rmtree(work)
+        added = run("git", "worktree", "add", "--detach", str(work), "HEAD")
+        if added.returncode:
+            raise RuntimeError(added.stderr)
+        cases = [
+            ("missing", lambda p: p.unlink()),
+            ("wrong-source", lambda p: mutate(p, "source_commit", "0" * 40)),
+            ("failed", lambda p: mutate(p, "status", "FAIL")),
+        ]
+        target = work / "v1/dist/certification/P4.33.result.json"
+        for name, change in cases:
+            run("git", "reset", "--hard", "HEAD", cwd=work)
+            run("git", "clean", "-fd", cwd=work)
+            change(target)
+            check = run(sys.executable, "tools/check_phase4_evidence.py", "--require-active", cwd=work)
+            if check.returncode == 0:
+                raise RuntimeError(f"negative case passed: {name}")
+        print("ZX-UX PHASE 4 EVIDENCE NEGATIVE PASS")
+        return 0
+    finally:
+        run("git", "worktree", "remove", "--force", str(work))
+        shutil.rmtree(work, ignore_errors=True)
+
+if __name__ == "__main__":
+    raise SystemExit(main())
