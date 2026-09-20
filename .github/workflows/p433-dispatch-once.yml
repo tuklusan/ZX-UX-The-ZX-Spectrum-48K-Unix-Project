@@ -10,7 +10,7 @@
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
 
-name: P4.33 Phase 4 qualification admission and activation bridge retry 1
+name: P4.33 Phase 4 qualification admission and activation bridge retry 2
 
 on:
   push:
@@ -137,8 +137,7 @@ jobs:
               sleep 2
             done
             test -n "$run_id"
-            printf '%s %s
-' "$wf" "$run_id" >> /tmp/p433-validation-runs
+            printf '%s %s\\n' "$wf" "$run_id" >> /tmp/p433-validation-runs
           done
           while read -r wf run_id; do
             gh run watch "$run_id" --repo "${GITHUB_REPOSITORY}" --exit-status
@@ -191,8 +190,7 @@ jobs:
               sleep 2
             done
             test -n "$run_id"
-            printf '%s %s
-' "$wf" "$run_id" >> /tmp/p433-activation-runs
+            printf '%s %s\\n' "$wf" "$run_id" >> /tmp/p433-activation-runs
           done
           while read -r wf run_id; do
             gh run watch "$run_id" --repo "${GITHUB_REPOSITORY}" --exit-status
