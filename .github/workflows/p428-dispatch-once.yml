@@ -10,7 +10,7 @@
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
 
-name: P4.28 one-shot qualification and admission bridge retry 1
+name: P4.28 one-shot qualification and admission bridge retry 2
 
 on:
   push:
