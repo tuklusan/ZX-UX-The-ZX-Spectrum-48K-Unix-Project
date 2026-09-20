@@ -2274,3 +2274,272 @@ zx48_p425_done:
 p425_slot: db 0
 p425_attempted: db 0
     ENDM
+
+;
+; P4.26 synchronous allocation-pressure victim service. The scan is independent
+; of the close-time candidate bitset and selects at most one mutable closed RAW
+; object: greatest logical length, then exact record path/name byte order.
+;
+    MACRO EMIT_P426_COMPACTION_ROUTINES
+zx48_p426_try_one_victim:
+    xor a
+    ld (p426_scan_slot),a
+    ld (p426_victim_attempted),a
+    ld (p426_victim_succeeded),a
+    ld hl,0
+    ld (p426_best_length),hl
+    ld a,$ff
+    ld (p426_best_slot),a
+
+zx48_p426_scan:
+    ld a,(p426_scan_slot)
+    cp RAM_OBJECT_COUNT
+    jp nc,zx48_p426_scan_done
+    call zx48_p405_object_ptr_slot
+    jp c,zx48_p426_next
+    ld (p426_candidate_ptr),ix
+
+    ; Mutable resident RAW object only.
+    ld a,(ix+OBJ_TYPE_ID)
+    or a
+    jp z,zx48_p426_next
+    cp OBJ_DIR
+    jp z,zx48_p426_next
+    cp OBJ_DEV
+    jp z,zx48_p426_next
+    cp OBJ_SYS
+    jp z,zx48_p426_next
+    ld a,(ix+OBJ_RESERVED_BYTE)
+    cp STATE_RAM
+    jp nz,zx48_p426_next
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    and OBJ_PACKED
+    jp nz,zx48_p426_next
+
+    ; Direct-memory ownership is an explicit per-slot exclusion.
+    ld a,(p426_scan_slot)
+    call zx48_p426_direct_owner_test
+    jp nz,zx48_p426_next
+
+    ; Any live OD excludes this object. The OD scan clobbers IX.
+    ld a,(p426_scan_slot)
+    ld d,a
+    call zx48_od_object_any_live
+    jp c,zx48_p426_next
+    ld a,(p426_scan_slot)
+    call zx48_p405_object_ptr_slot
+    jp c,zx48_p426_next
+    ld (p426_candidate_ptr),ix
+
+    ld l,(ix+OBJ_LOGICAL_LENGTH)
+    ld h,(ix+OBJ_LOGICAL_LENGTH+1)
+    ld a,h
+    or l
+    jp z,zx48_p426_next
+    ld (p426_candidate_length),hl
+
+    ld a,(p426_best_slot)
+    cp $ff
+    jr z,zx48_p426_choose_candidate
+
+    ; Larger logical object wins.
+    ld de,(p426_best_length)
+    or a
+    sbc hl,de
+    jr c,zx48_p426_next
+    jr nz,zx48_p426_choose_candidate
+
+    ; Equal logical length: exact path/name byte order. Directory IDs are
+    ; frozen in canonical pathname byte order; then compare all 10 name bytes.
+    ld ix,(p426_candidate_ptr)
+    ld a,(ix+OBJ_DIR_ID)
+    ld b,a
+    ld ix,(p426_best_ptr)
+    ld a,(ix+OBJ_DIR_ID)
+    cp b
+    jr c,zx48_p426_next
+    jr nz,zx48_p426_choose_candidate
+
+    ld ix,(p426_candidate_ptr)
+    ld hl,0
+zx48_p426_name_compare:
+    ld a,l
+    cp 10
+    jr nc,zx48_p426_next
+    push hl
+    push ix
+    pop de
+    add hl,de
+    ld a,(hl)
+    ld b,a
+    pop hl
+    push hl
+    ld ix,(p426_best_ptr)
+    push ix
+    pop de
+    add hl,de
+    ld a,(hl)
+    cp b
+    pop hl
+    jr c,zx48_p426_next
+    jr nz,zx48_p426_choose_candidate
+    inc l
+    jr zx48_p426_name_compare
+
+zx48_p426_choose_candidate:
+    ld a,(p426_scan_slot)
+    ld (p426_best_slot),a
+    ld hl,(p426_candidate_length)
+    ld (p426_best_length),hl
+    ld ix,(p426_candidate_ptr)
+    ld (p426_best_ptr),ix
+
+zx48_p426_next:
+    ld a,(p426_scan_slot)
+    inc a
+    ld (p426_scan_slot),a
+    jp zx48_p426_scan
+
+zx48_p426_scan_done:
+    ld a,(p426_best_slot)
+    cp $ff
+    jp z,zx48_p426_done
+
+    ; Exactly one selected victim may be attempted per allocator request.
+    ld a,1
+    ld (p426_victim_attempted),a
+    ld a,(p426_best_slot)
+    call zx48_p405_object_ptr_slot
+    jp c,zx48_p426_done
+    ld (p426_best_ptr),ix
+
+    ; Dry-run under exact 512-byte guarded workspace.
+    ld l,(ix+OBJ_ALLOCATION_PTR)
+    ld h,(ix+OBJ_ALLOCATION_PTR+1)
+    ld (p420_input_base),hl
+    ld hl,(p426_best_length)
+    ld (p420_input_len),hl
+    ld hl,0
+    ld (p420_output_base),hl
+    xor a
+    ld (p420_mode),a
+    ld a,1
+    ld (p420_background),a
+    xor a
+    ld (p420_workspace_allocs),a
+    call zx48_p420_workspace_begin
+    jp c,zx48_p426_done
+    call zx48_p420_run_pass
+    jr c,zx48_p426_measure_fail
+    ld hl,(p420_encoded_len)
+    ld (p426_encoded_length),hl
+    call zx48_p420_workspace_end
+    jp c,zx48_p426_free_panic
+
+    ; Non-smaller streams cannot recover allocation space.
+    ld hl,(p426_encoded_length)
+    ld de,(p426_best_length)
+    or a
+    sbc hl,de
+    jp nc,zx48_p426_done
+
+    ; Preflight the exact destination plus the largest later scratch (512).
+    ; Both probes are guarded and private, and are freed before the real pack.
+    ld bc,(p426_encoded_length)
+    ld a,ALLOC_COLD_PREFERRED|ALLOC_NO_COMPACT
+    call zx48_alloc
+    jp c,zx48_p426_done
+    ld (p426_probe_dest),hl
+    ld bc,512
+    ld a,ALLOC_COLD_PREFERRED|ALLOC_NO_COMPACT
+    call zx48_alloc
+    jr c,zx48_p426_probe_workspace_fail
+    ld (p426_probe_workspace),hl
+
+    ld hl,(p426_probe_workspace)
+    ld bc,512
+    call zx48_free
+    jp c,zx48_p426_free_panic
+    call zx48_p426_free_probe_dest
+    jp c,zx48_p426_free_panic
+
+    ; Restore the chosen record after allocator/free routines clobber IX.
+    ld a,(p426_best_slot)
+    call zx48_p405_object_ptr_slot
+    jp c,zx48_p426_done
+    ld d,a
+    call zx48_p422_pack_record
+    jp c,zx48_p426_done
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    and OBJ_PACKED
+    jp z,zx48_p426_done
+    ld a,1
+    ld (p426_victim_succeeded),a
+    jr zx48_p426_done
+
+zx48_p426_measure_fail:
+    ld (p426_error),a
+    call zx48_p420_workspace_end
+    jp c,zx48_p426_free_panic
+    jr zx48_p426_done
+
+zx48_p426_probe_workspace_fail:
+    call zx48_p426_free_probe_dest
+    jp c,zx48_p426_free_panic
+    jr zx48_p426_done
+
+zx48_p426_free_probe_dest:
+    ld hl,(p426_probe_dest)
+    ld bc,(p426_encoded_length)
+    bit 0,c
+    jr z,zx48_p426_probe_even
+    inc bc
+zx48_p426_probe_even:
+    jp zx48_free
+
+zx48_p426_free_panic:
+    ld a,PANIC_SCHEDULER
+    jp zx48_panic
+
+zx48_p426_done:
+    xor a
+    or a
+    ret
+
+; A=slot -> Z when not directly owned, NZ when direct ownership excludes packing.
+zx48_p426_direct_owner_test:
+    ld (p426_owner_slot),a
+    and 7
+    ld e,a
+    ld d,0
+    ld hl,p424_mask_table
+    add hl,de
+    ld b,(hl)
+    ld a,(p426_owner_slot)
+    srl a
+    srl a
+    srl a
+    ld e,a
+    ld d,0
+    ld hl,p426_direct_owner_bits
+    add hl,de
+    ld a,(hl)
+    and b
+    ret
+
+p426_direct_owner_bits: defs 4,0
+p426_scan_slot: db 0
+p426_best_slot: db $ff
+p426_owner_slot: db 0
+p426_victim_attempted: db 0
+p426_victim_succeeded: db 0
+p426_candidate_ptr: dw 0
+p426_best_ptr: dw 0
+p426_candidate_length: dw 0
+p426_best_length: dw 0
+p426_encoded_length: dw 0
+p426_probe_dest: dw 0
+p426_probe_workspace: dw 0
+p426_error: db 0
+    ENDM
+
