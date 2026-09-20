@@ -1381,7 +1381,8 @@ zx48_p507_save_record:
     ld a,(ix+OBJ_DIR_ID)
     ld (p507_target),a
     ld b,(ix+OBJ_TYPE_ID)
-    ld (p507_type),b
+    ld a,b
+    ld (p507_type),a
     call zx48_object_public_type_allowed
     ret c
 
