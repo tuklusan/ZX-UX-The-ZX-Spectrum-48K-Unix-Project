@@ -122,6 +122,7 @@ def _assemble_fixture(
         """    DEVICE ZXSPECTRUM48
     INCLUDE "../include/zx48ux.inc"
     INCLUDE "../include/tapeobj.inc"
+    INCLUDE "../src/kernel/rom_services.asm"
     INCLUDE "../src/kernel/zxpack.asm"
     INCLUDE "../src/kernel/tape.asm"
     ORG $C000
