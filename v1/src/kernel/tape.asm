@@ -2204,6 +2204,312 @@ p509_skip_chunk: dw 0
 p509_error: db 0
     ENDM
 
+    MACRO EMIT_P510_VERIFY_ROUTINES
+; HL=NUL-terminated requested path. Sequentially locate exact case/target, fully
+; validate the incoming private representation, then compare logical bytes
+; without changing the resident object or namespace.
+zx48_p510_verify_path:
+    call zx48_path_resolve
+    ret c
+    ld a,c
+    cp PATH_KIND_BASE
+    jp nz,zx48_p510_inval
+    ld a,(path_dir)
+    ld (p510_requested_dir),a
+    ld hl,path_name
+    ld de,p510_requested_name
+    ld bc,M48O_NAME_SIZE
+    ldir
+
+    ld a,(p510_requested_dir)
+    ld hl,p510_requested_name
+    call zx48_object_lookup
+    ret c
+    ld (p510_target_ptr),ix
+    ld a,(ix+OBJ_TYPE_ID)
+    ld (p510_target_type),a
+    ld l,(ix+OBJ_LOGICAL_LENGTH)
+    ld h,(ix+OBJ_LOGICAL_LENGTH+1)
+    ld (p510_logical),hl
+
+    call zx48_p509_prompt_play
+    ret c
+    call zx48_p507_lock_acquire
+    ret c
+
+zx48_p510_scan:
+    ld ix,p509_header
+    ld de,M48O_HDR_SIZE
+    ld a,M48O_ROM_DATA_FLAG
+    scf
+    call zx48_tape_load_block
+    jp c,zx48_p510_locked_error
+    call zx48_p509_header_basic
+    jp c,zx48_p510_locked_error
+
+    ld a,(p509_header+M48O_HDR_DIRECTORY)
+    ld b,a
+    ld a,(p510_requested_dir)
+    cp b
+    jr nz,zx48_p510_skip
+    ld hl,p509_header+M48O_HDR_NAME
+    ld de,p510_requested_name
+    ld b,M48O_NAME_SIZE
+zx48_p510_name_loop:
+    ld a,(de)
+    cp (hl)
+    jr nz,zx48_p510_skip
+    inc de
+    inc hl
+    djnz zx48_p510_name_loop
+    jr zx48_p510_match
+
+zx48_p510_skip:
+    call zx48_p509_skip_payload
+    jp c,zx48_p510_locked_error
+    jr zx48_p510_scan
+
+zx48_p510_match:
+    ld a,(p509_header+M48O_HDR_TYPE)
+    ld b,a
+    ld a,(p510_target_type)
+    cp b
+    jp nz,zx48_p510_locked_format
+    ld hl,(p509_header+M48O_HDR_LOGICAL_LEN)
+    ld de,(p510_logical)
+    or a
+    sbc hl,de
+    jp nz,zx48_p510_locked_format
+
+    ld a,(p509_header+M48O_HDR_FLAGS)
+    ld (p510_incoming_flags),a
+    or a
+    jr z,zx48_p510_load_raw
+    cp M48O_PACKED
+    jp nz,zx48_p510_locked_format
+    ld hl,p509_header
+    call zx48_p505_packed_load
+    jr zx48_p510_loaded
+zx48_p510_load_raw:
+    ld hl,p509_header
+    call zx48_p504_raw_load
+zx48_p510_loaded:
+    jp c,zx48_p510_locked_error
+    ld (p510_incoming_ptr),hl
+    ld (p510_incoming_storage),bc
+    call zx48_p507_lock_release
+
+    call zx48_p510_prepare_states
+    jp c,zx48_p510_drop_incoming
+    xor a
+    ld (p510_pos),a
+    ld (p510_pos+1),a
+
+zx48_p510_compare_loop:
+    ld hl,(p510_pos)
+    ld de,(p510_logical)
+    or a
+    sbc hl,de
+    jr z,zx48_p510_compare_success
+    call zx48_p510_target_byte
+    jp c,zx48_p510_compare_fail
+    ld (p510_byte),a
+    call zx48_p510_incoming_byte
+    jp c,zx48_p510_compare_fail
+    ld b,a
+    ld a,(p510_byte)
+    cp b
+    jr nz,zx48_p510_mismatch
+    ld hl,(p510_pos)
+    inc hl
+    ld (p510_pos),hl
+    jr zx48_p510_compare_loop
+
+zx48_p510_compare_success:
+    call zx48_p510_release_states
+    call zx48_p510_free_incoming
+    ld hl,0
+    xor a
+    or a
+    ret
+zx48_p510_mismatch:
+    ld a,E_IO
+zx48_p510_compare_fail:
+    ld (p510_error),a
+    call zx48_p510_release_states
+zx48_p510_drop_incoming:
+    ld (p510_error),a
+    call zx48_p510_free_incoming
+    ld a,(p510_error)
+    scf
+    ret
+
+zx48_p510_prepare_states:
+    xor a
+    ld (p510_target_state),a
+    ld (p510_target_state+1),a
+    ld (p510_incoming_state),a
+    ld (p510_incoming_state+1),a
+
+    ld ix,(p510_target_ptr)
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    and OBJ_PACKED
+    jr z,zx48_p510_prepare_incoming
+    ld bc,P417_STATE_SIZE
+    ld a,ALLOC_COLD_PREFERRED|ALLOC_NO_COMPACT
+    call zx48_alloc
+    ret c
+    ld (p510_target_state),hl
+    call zx48_p417_state_init
+    push hl
+    pop ix
+    ld hl,(p510_target_ptr)
+    push hl
+    pop iy
+    ld l,(iy+OBJ_ALLOCATION_PTR)
+    ld h,(iy+OBJ_ALLOCATION_PTR+1)
+    ld c,(iy+OBJ_STORAGE_LENGTH)
+    ld b,(iy+OBJ_STORAGE_LENGTH+1)
+    call zx48_p418_state_bind
+    jr nc,zx48_p510_prepare_incoming
+    ld (p510_error),a
+    call zx48_p510_release_states
+    ld a,(p510_error)
+    scf
+    ret
+
+zx48_p510_prepare_incoming:
+    ld a,(p510_incoming_flags)
+    and M48O_PACKED
+    jr z,zx48_p510_states_ready
+    ld bc,P417_STATE_SIZE
+    ld a,ALLOC_COLD_PREFERRED|ALLOC_NO_COMPACT
+    call zx48_alloc
+    jr nc,zx48_p510_incoming_state_alloc
+    ld (p510_error),a
+    call zx48_p510_release_states
+    ld a,(p510_error)
+    scf
+    ret
+zx48_p510_incoming_state_alloc:
+    ld (p510_incoming_state),hl
+    call zx48_p417_state_init
+    push hl
+    pop ix
+    ld hl,(p510_incoming_ptr)
+    ld bc,(p510_incoming_storage)
+    call zx48_p418_state_bind
+    jr nc,zx48_p510_states_ready
+    ld (p510_error),a
+    call zx48_p510_release_states
+    ld a,(p510_error)
+    scf
+    ret
+zx48_p510_states_ready:
+    xor a
+    or a
+    ret
+
+zx48_p510_target_byte:
+    ld ix,(p510_target_ptr)
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    and OBJ_PACKED
+    jr nz,zx48_p510_target_packed
+    ld l,(ix+OBJ_ALLOCATION_PTR)
+    ld h,(ix+OBJ_ALLOCATION_PTR+1)
+    ld de,(p510_pos)
+    add hl,de
+    ld a,(hl)
+    or a
+    ret
+zx48_p510_target_packed:
+    ld ix,(p510_target_state)
+    call zx48_p418_step
+    ret c
+    ld a,(p418_byte)
+    or a
+    ret
+
+zx48_p510_incoming_byte:
+    ld a,(p510_incoming_flags)
+    and M48O_PACKED
+    jr nz,zx48_p510_incoming_packed
+    ld hl,(p510_incoming_ptr)
+    ld de,(p510_pos)
+    add hl,de
+    ld a,(hl)
+    or a
+    ret
+zx48_p510_incoming_packed:
+    ld ix,(p510_incoming_state)
+    call zx48_p418_step
+    ret c
+    ld a,(p418_byte)
+    or a
+    ret
+
+zx48_p510_release_states:
+    ld hl,(p510_target_state)
+    ld a,h
+    or l
+    jr z,zx48_p510_release_incoming
+    ld bc,P417_STATE_SIZE
+    call zx48_free
+    xor a
+    ld (p510_target_state),a
+    ld (p510_target_state+1),a
+zx48_p510_release_incoming:
+    ld hl,(p510_incoming_state)
+    ld a,h
+    or l
+    ret z
+    ld bc,P417_STATE_SIZE
+    call zx48_free
+    xor a
+    ld (p510_incoming_state),a
+    ld (p510_incoming_state+1),a
+    ret
+
+zx48_p510_free_incoming:
+    ld hl,(p510_incoming_ptr)
+    ld bc,(p510_incoming_storage)
+    ld a,b
+    or c
+    ret z
+    bit 0,c
+    jr z,zx48_p510_free_even
+    inc bc
+zx48_p510_free_even:
+    jp zx48_free
+
+zx48_p510_locked_format:
+    ld a,E_FORMAT
+zx48_p510_locked_error:
+    ld (p510_error),a
+    call zx48_p507_lock_release
+    ld a,(p510_error)
+    scf
+    ret
+zx48_p510_inval:
+    ld a,E_INVAL
+    scf
+    ret
+
+p510_requested_name: defs M48O_NAME_SIZE,0
+p510_requested_dir: db 0
+p510_target_type: db 0
+p510_target_ptr: dw 0
+p510_logical: dw 0
+p510_incoming_flags: db 0
+p510_incoming_ptr: dw 0
+p510_incoming_storage: dw 0
+p510_target_state: dw 0
+p510_incoming_state: dw 0
+p510_pos: dw 0
+p510_byte: db 0
+p510_error: db 0
+    ENDM
+
     MACRO EMIT_TAPE_ROUTINES
     EMIT_P502_CRC16_ROUTINES
     EMIT_P503_FRAMING_ROUTINES
@@ -2212,6 +2518,7 @@ p509_error: db 0
     EMIT_P507_RAW_SAVE_ROUTINES
     EMIT_P508_STREAM_SAVE_ROUTINES
     EMIT_P509_EXPLICIT_LOAD_ROUTINES
+    EMIT_P510_VERIFY_ROUTINES
 ; A=block type,DE=length,IX=source.
 zx48_tape_save_block:
     call zx48_rom_sa_bytes
@@ -2247,9 +2554,7 @@ zx48_tape_save_path:
 zx48_tape_load_path:
     jp zx48_p509_load_path
 zx48_tape_verify_path:
-    ld a,E_AGAIN
-    scf
-    ret
+    jp zx48_p510_verify_path
 
 ; HL=32-byte header destination. Consumes exactly one next M48O header block.
 zx48_tape_scan_next:
