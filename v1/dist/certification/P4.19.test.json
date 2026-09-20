@@ -1,0 +1,121 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "reserve-before-representation-change",
+      "passed": true
+    },
+    {
+      "name": "writer-return-after-materialization",
+      "passed": true
+    },
+    {
+      "name": "trunc-direct-empty-raw-path",
+      "passed": true
+    },
+    {
+      "name": "private-exact-logical-allocation",
+      "passed": true
+    },
+    {
+      "name": "p416-final-memory-validation",
+      "passed": true
+    },
+    {
+      "name": "publish-only-after-complete-decode",
+      "passed": true
+    },
+    {
+      "name": "release-old-only-after-publication",
+      "passed": true
+    },
+    {
+      "name": "decode-failure-frees-private-only",
+      "passed": true
+    },
+    {
+      "name": "failed-materialization-rolls-back-handle",
+      "passed": true
+    },
+    {
+      "name": "packed-empty-is-format-error",
+      "passed": true
+    },
+    {
+      "name": "packed-write-materializes-before-return-runtime",
+      "passed": true
+    },
+    {
+      "name": "forced-allocation-error-preserves-packed-runtime",
+      "passed": true
+    },
+    {
+      "name": "forced-codec-error-preserves-packed-runtime",
+      "passed": true
+    },
+    {
+      "name": "failed-materialization-hides-writer-runtime",
+      "passed": true
+    },
+    {
+      "name": "trunc-packed-direct-empty-raw-runtime",
+      "passed": true
+    },
+    {
+      "name": "reservation-failure-precedes-object-mutation-runtime",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12934 lines, work time: 0.033 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p419-packed-write.lst",
+        "--sym=p419-packed-write.sym",
+        "p419-packed-write.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 20,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8673 lines, work time: 0.020 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p419-packed-write.bin": "0bb3ac58d3bdf0209889cfc5a049e7cef781d6ca6dd5d111f0276dda77c4dfff",
+    "v1/dist/certification/P4.18.test.json": "6fd0ba05d36de3872c194d6a0426dcda6545a26501b309937f99152be7d2c0bd",
+    "v1/src/kernel/objects.asm": "df33adb722ac1171da07af0c45a957038ec9f00915be993709477c85cea46b81",
+    "v1/src/kernel/zxpack.asm": "b6d699876d428368f301dbd1707698a8492be1b16c616cf5a3f26488d5d57676",
+    "v1/tools-host/test-driver/phase4_packed_write.py": "77c21b33eed02f1090b8a3af79f04a2ff816cf467892c782a1ba0a93f6248279",
+    "v1/tools-host/test-driver/run.py": "f115fb5adfc75c310e5855072c3ea8cc8a3999765f436d3c5e44afb1e4af2b03"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P4.18": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "9c281d1fc98fc67767927cb69e4460ea85e30c9d",
+  "status": "PASS",
+  "step": "P4.19",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
