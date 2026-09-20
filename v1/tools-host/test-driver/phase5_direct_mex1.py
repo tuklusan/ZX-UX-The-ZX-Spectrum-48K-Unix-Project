@@ -47,6 +47,7 @@ def dispatch(root:Path,action:str,step:str,*,sha256_file,run_command,require_pro
     INCLUDE "../include/zx48ux.inc"
     INCLUDE "../include/mex1.inc"
     INCLUDE "../include/tapeobj.inc"
+PROC1_PATH_PTR EQU 0
 PROC1_ARG1_PTR EQU 2
 PROC1_ARG1_LEN EQU 4
 PROC1_ENV1_PTR EQU 6
@@ -61,7 +62,6 @@ OBJ_RESERVED_BYTE EQU 13
 OBJ_LOGICAL_LENGTH EQU 14
 OBJ_STORAGE_LENGTH EQU 16
 OBJ_ALLOCATION_PTR EQU 18
-PROC_FLAGS EQU 3
 P417_STATE_SIZE EQU 272
     INCLUDE "../src/kernel/tape.asm"
     INCLUDE "../src/kernel/process.asm"
