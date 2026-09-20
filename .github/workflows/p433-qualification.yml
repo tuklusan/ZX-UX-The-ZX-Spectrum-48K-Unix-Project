@@ -36,8 +36,7 @@ jobs:
         run: |
           set -euo pipefail
           git diff --name-only "$P433_BASE" HEAD | sort > /tmp/p433-changed
-          printf '%s
-'             .github/workflows/p433-dispatch-once.yml             .github/workflows/p433-qualification.yml             .github/workflows/phase4-finalization.yml             tools/check_phase4_evidence.py             tools/finalize_phase4_evidence.py             tools/test_phase4_evidence_negative.py             v1/tools-host/test-driver/phase4_acceptance.py             v1/tools-host/test-driver/run.py | sort > /tmp/p433-expected
+          printf '%s\\n'             .github/workflows/p433-dispatch-once.yml             .github/workflows/p433-qualification.yml             .github/workflows/phase4-finalization.yml             tools/check_phase4_evidence.py             tools/finalize_phase4_evidence.py             tools/test_phase4_evidence_negative.py             v1/tools-host/test-driver/phase4_acceptance.py             v1/tools-host/test-driver/run.py | sort > /tmp/p433-expected
           diff -u /tmp/p433-expected /tmp/p433-changed
           git diff --check "$P433_BASE" HEAD
           test -z "$(git status --porcelain)"
