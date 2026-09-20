@@ -10,7 +10,7 @@
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
 
-name: P4.29 one-shot qualification and admission bridge retry 2
+name: P4.29 one-shot qualification and admission bridge retry 3
 
 on:
   push:
@@ -75,7 +75,7 @@ jobs:
               assert d["status"]=="PASS"
               assert d["source_commit"]==sha
               assert d["worktree_clean"] is True
-              assert d["prerequisites"]=={"P4.27":"PASS"}
+              assert d["prerequisites"]=={"P4.28":"PASS"}
           assert (root/"meta"/"candidate-commit.txt").read_text().strip()==sha
           assert (root/"meta"/"worktree-status.txt").read_text()==""
           PY
