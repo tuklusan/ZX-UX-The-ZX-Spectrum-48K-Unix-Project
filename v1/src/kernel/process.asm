@@ -4085,3 +4085,455 @@ process_wait_any_status_tmp: dw 0
 process_wait_any_parent_generation: dw 0
 process_wait_any_reaped_pid: db 0
     ENDM
+;
+; P4.27 direct resident PACKED BIN preparation. The packed stream is decoded
+; from logical offset zero with one continuous 272-byte state/history. Only the
+; 24-byte header is staged; image bytes go directly into the final uncommitted
+; process allocation and relocation bytes are consumed from the same stream.
+;
+    MACRO EMIT_P427_PACKED_SPAWN_ROUTINES
+; IX=resident object record. Success: HL=final image base, BC=rounded image+BSS.
+zx48_p427_prepare_packed_bin:
+    ld (p427_object_ptr),ix
+    xor a
+    ld (p427_image_base),a
+    ld (p427_image_base+1),a
+
+    ld a,(ix+OBJ_TYPE_ID)
+    cp OBJ_BIN
+    jp nz,zx48_p427_format
+    ld a,(ix+OBJ_RESERVED_BYTE)
+    cp STATE_RAM
+    jp nz,zx48_p427_format
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    cp OBJ_PACKED
+    jp nz,zx48_p427_format
+
+    ld l,(ix+OBJ_LOGICAL_LENGTH)
+    ld h,(ix+OBJ_LOGICAL_LENGTH+1)
+    ld (p427_logical_length),hl
+    ld de,MEX_HEADER_SIZE
+    or a
+    sbc hl,de
+    jp c,zx48_p427_format
+
+    ld l,(ix+OBJ_ALLOCATION_PTR)
+    ld h,(ix+OBJ_ALLOCATION_PTR+1)
+    ld a,h
+    or l
+    jp z,zx48_p427_format
+    ld (p427_source_ptr),hl
+    ld c,(ix+OBJ_STORAGE_LENGTH)
+    ld b,(ix+OBJ_STORAGE_LENGTH+1)
+    ld a,b
+    or c
+    jp z,zx48_p427_format
+    ld (p427_source_length),bc
+
+    ; One exact streaming decoder state. NO_COMPACT prevents codec recursion.
+    ld bc,P417_STATE_SIZE
+    ld a,ALLOC_COLD_PREFERRED|ALLOC_NO_COMPACT
+    call zx48_alloc
+    ret c
+    ld (p427_state_ptr),hl
+
+    push hl
+    pop ix
+    ld hl,(p427_source_ptr)
+    ld bc,(p427_source_length)
+    call zx48_p418_state_bind
+    jp c,zx48_p427_fail_state
+
+    ; Parse exactly 24 header bytes without resetting the packed history.
+    ld hl,p427_header
+    ld (p427_write_ptr),hl
+    ld a,MEX_HEADER_SIZE
+    ld (p427_remaining8),a
+zx48_p427_header_loop:
+    ld ix,(p427_state_ptr)
+    call zx48_p427_stream_step
+    jp c,zx48_p427_fail_state
+    ld hl,(p427_write_ptr)
+    ld (hl),a
+    inc hl
+    ld (p427_write_ptr),hl
+    ld a,(p427_remaining8)
+    dec a
+    ld (p427_remaining8),a
+    jr nz,zx48_p427_header_loop
+
+    ; Header shape and CRC are validated before final process allocation.
+    ld ix,p427_header
+    ld a,(ix+MEX_HDR_MAGIC+0)
+    cp MEX_MAGIC0
+    jp nz,zx48_p427_fail_format_state
+    ld a,(ix+MEX_HDR_MAGIC+1)
+    cp MEX_MAGIC1
+    jp nz,zx48_p427_fail_format_state
+    ld a,(ix+MEX_HDR_MAGIC+2)
+    cp MEX_MAGIC2
+    jp nz,zx48_p427_fail_format_state
+    ld a,(ix+MEX_HDR_MAGIC+3)
+    cp MEX_MAGIC3
+    jp nz,zx48_p427_fail_format_state
+    ld a,(ix+MEX_HDR_VERSION)
+    cp MEX_VERSION
+    jp nz,zx48_p427_fail_format_state
+    ld a,(ix+MEX_HDR_FLAGS)
+    or a
+    jp nz,zx48_p427_fail_format_state
+    ld l,(ix+MEX_HDR_SIZE)
+    ld h,(ix+MEX_HDR_SIZE+1)
+    ld de,MEX_HEADER_SIZE
+    or a
+    sbc hl,de
+    jp nz,zx48_p427_fail_format_state
+
+    ld hl,p427_header
+    ld bc,MEX_HDR_HEADER_CRC
+    call zx48_p427_crc16
+    xor a
+    call zx48_p427_crc16_update
+    xor a
+    call zx48_p427_crc16_update
+    ld ix,p427_header
+    ld a,(ix+MEX_HDR_HEADER_CRC)
+    cp e
+    jp nz,zx48_p427_fail_format_state
+    ld a,(ix+MEX_HDR_HEADER_CRC+1)
+    cp d
+    jp nz,zx48_p427_fail_format_state
+
+    ld l,(ix+MEX_HDR_IMAGE_SIZE)
+    ld h,(ix+MEX_HDR_IMAGE_SIZE+1)
+    ld a,h
+    or l
+    jp z,zx48_p427_fail_format_state
+    ld (p427_image_size),hl
+
+    ld e,(ix+MEX_HDR_BSS_SIZE)
+    ld d,(ix+MEX_HDR_BSS_SIZE+1)
+    ld (p427_bss_size),de
+    add hl,de
+    jp c,zx48_p427_fail_format_state
+    ld (p427_image_exact),hl
+    ld de,MEX_MAX_STORED
+    or a
+    sbc hl,de
+    jr c,zx48_p427_image_bound_ok
+    jp nz,zx48_p427_fail_format_state
+zx48_p427_image_bound_ok:
+    ld hl,(p427_image_exact)
+    ld b,h
+    ld c,l
+    bit 0,c
+    jr z,zx48_p427_image_rounded
+    inc bc
+zx48_p427_image_rounded:
+    ld (p427_image_rounded),bc
+
+    ld e,(ix+MEX_HDR_ENTRY)
+    ld d,(ix+MEX_HDR_ENTRY+1)
+    ld hl,(p427_image_size)
+    or a
+    sbc hl,de
+    jp c,zx48_p427_fail_format_state
+    jp z,zx48_p427_fail_format_state
+
+    ld c,(ix+MEX_HDR_STACK)
+    ld b,(ix+MEX_HDR_STACK+1)
+    bit 0,c
+    jp nz,zx48_p427_fail_format_state
+    ld h,b
+    ld l,c
+    ld de,MEX_MIN_STACK
+    or a
+    sbc hl,de
+    jp c,zx48_p427_fail_format_state
+    ld hl,MEX_MAX_STACK
+    or a
+    sbc hl,bc
+    jp c,zx48_p427_fail_format_state
+
+    ld hl,(p427_image_size)
+    ld de,MEX_HEADER_SIZE
+    add hl,de
+    jp c,zx48_p427_fail_format_state
+    ld e,(ix+MEX_HDR_RELOC_OFFSET)
+    ld d,(ix+MEX_HDR_RELOC_OFFSET+1)
+    or a
+    sbc hl,de
+    jp nz,zx48_p427_fail_format_state
+
+    ld l,(ix+MEX_HDR_RELOC_COUNT)
+    ld h,(ix+MEX_HDR_RELOC_COUNT+1)
+    ld (p427_reloc_count),hl
+    add hl,hl
+    jp c,zx48_p427_fail_format_state
+    add hl,de
+    jp c,zx48_p427_fail_format_state
+    ld de,(p427_logical_length)
+    or a
+    sbc hl,de
+    jp nz,zx48_p427_fail_format_state
+
+    ; The only full-size copy is the final uncommitted process image allocation.
+    ld bc,(p427_image_rounded)
+    ld a,ALLOC_ANY
+    call zx48_alloc
+    jp c,zx48_p427_fail_state
+    ld (p427_image_base),hl
+
+    ld de,P417_STATE_SIZE
+    add hl,de
+    ld (p427_peak_bytes),hl
+    ld hl,(p427_image_rounded)
+    ld de,P417_STATE_SIZE
+    add hl,de
+    ld (p427_peak_bytes),hl
+
+    ld de,MEX_CRC16_INIT
+    ld (p427_body_crc),de
+    ld hl,(p427_image_base)
+    ld (p427_write_ptr),hl
+    ld hl,(p427_image_size)
+    ld (p427_remaining16),hl
+
+zx48_p427_image_loop:
+    ld hl,(p427_remaining16)
+    ld a,h
+    or l
+    jr z,zx48_p427_zero_bss
+    ld ix,(p427_state_ptr)
+    call zx48_p427_stream_step
+    jp c,zx48_p427_fail_image
+    ld de,(p427_body_crc)
+    call zx48_p427_crc16_update
+    ld (p427_body_crc),de
+    ld a,(p418_byte)
+    ld hl,(p427_write_ptr)
+    ld (hl),a
+    inc hl
+    ld (p427_write_ptr),hl
+    ld hl,(p427_remaining16)
+    dec hl
+    ld (p427_remaining16),hl
+    jr zx48_p427_image_loop
+
+zx48_p427_zero_bss:
+    ld bc,(p427_bss_size)
+    ld a,b
+    or c
+    jr z,zx48_p427_reloc_begin
+    ld hl,(p427_write_ptr)
+    xor a
+    ld (hl),a
+    dec bc
+    ld a,b
+    or c
+    jr z,zx48_p427_reloc_begin
+    ld d,h
+    ld e,l
+    inc de
+    ldir
+
+zx48_p427_reloc_begin:
+    xor a
+    ld (p427_have_previous),a
+    ld hl,(p427_reloc_count)
+    ld (p427_remaining16),hl
+
+zx48_p427_reloc_loop:
+    ld hl,(p427_remaining16)
+    ld a,h
+    or l
+    jr z,zx48_p427_finish_stream
+
+    ld ix,(p427_state_ptr)
+    call zx48_p427_stream_step
+    jp c,zx48_p427_fail_image
+    ld de,(p427_body_crc)
+    call zx48_p427_crc16_update
+    ld (p427_body_crc),de
+    ld a,(p418_byte)
+    ld (p427_reloc_low),a
+
+    ld ix,(p427_state_ptr)
+    call zx48_p427_stream_step
+    jp c,zx48_p427_fail_image
+    ld de,(p427_body_crc)
+    call zx48_p427_crc16_update
+    ld (p427_body_crc),de
+    ld a,(p418_byte)
+    ld h,a
+    ld a,(p427_reloc_low)
+    ld l,a
+    ld (p427_reloc_offset),hl
+
+    ; Relocation must address a complete u16 strictly inside image bytes.
+    inc hl
+    ld de,(p427_image_size)
+    or a
+    sbc hl,de
+    jp nc,zx48_p427_fail_format_image
+
+    ld a,(p427_have_previous)
+    or a
+    jr z,zx48_p427_reloc_order_ok
+    ld hl,(p427_previous_reloc)
+    ld de,(p427_reloc_offset)
+    or a
+    sbc hl,de
+    jp nc,zx48_p427_fail_format_image
+zx48_p427_reloc_order_ok:
+    ld hl,(p427_reloc_offset)
+    ld (p427_previous_reloc),hl
+    ld a,1
+    ld (p427_have_previous),a
+
+    ld de,(p427_image_base)
+    add hl,de
+    jp c,zx48_p427_fail_format_image
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ex de,hl
+    ld de,(p427_image_base)
+    add hl,de
+    jp c,zx48_p427_fail_format_image
+    ex de,hl
+    ld hl,(p427_image_base)
+    ld bc,(p427_reloc_offset)
+    add hl,bc
+    ld (hl),e
+    inc hl
+    ld (hl),d
+
+    ld hl,(p427_remaining16)
+    dec hl
+    ld (p427_remaining16),hl
+    jr zx48_p427_reloc_loop
+
+zx48_p427_finish_stream:
+    ; Seek-to-EOF on the same state proves no pending token/trailing physical data.
+    ld ix,(p427_state_ptr)
+    ld hl,(p427_logical_length)
+    ld de,(p427_logical_length)
+    call zx48_p418_seek
+    jp c,zx48_p427_fail_image
+
+    ld de,(p427_body_crc)
+    ld ix,p427_header
+    ld a,(ix+MEX_HDR_BODY_CRC)
+    cp e
+    jp nz,zx48_p427_fail_format_image
+    ld a,(ix+MEX_HDR_BODY_CRC+1)
+    cp d
+    jp nz,zx48_p427_fail_format_image
+
+    ld hl,(p427_state_ptr)
+    ld bc,P417_STATE_SIZE
+    call zx48_free
+    jp c,zx48_p427_free_panic
+
+    ld hl,(p427_image_base)
+    ld bc,(p427_image_rounded)
+    xor a
+    or a
+    ret
+
+zx48_p427_fail_format_image:
+    ld a,E_FORMAT
+    jr zx48_p427_fail_image
+zx48_p427_fail_image:
+    ld (p427_error),a
+    ld hl,(p427_image_base)
+    ld bc,(p427_image_rounded)
+    call zx48_free
+    jp c,zx48_p427_free_panic
+    jr zx48_p427_fail_state_saved
+
+zx48_p427_fail_format_state:
+    ld a,E_FORMAT
+zx48_p427_fail_state:
+    ld (p427_error),a
+zx48_p427_fail_state_saved:
+    ld hl,(p427_state_ptr)
+    ld bc,P417_STATE_SIZE
+    call zx48_free
+    jp c,zx48_p427_free_panic
+    ld a,(p427_error)
+    scf
+    ret
+
+zx48_p427_format:
+    ld a,E_FORMAT
+    scf
+    ret
+zx48_p427_free_panic:
+    ld a,PANIC_SCHEDULER
+    jp zx48_panic
+
+; HL=bytes, BC=count -> DE=CRC-16/CCITT-FALSE.
+zx48_p427_crc16:
+    ld de,MEX_CRC16_INIT
+zx48_p427_crc16_loop:
+    ld a,b
+    or c
+    ret z
+    ld a,(hl)
+    inc hl
+    push bc
+    call zx48_p427_crc16_update
+    pop bc
+    dec bc
+    jr zx48_p427_crc16_loop
+
+; A=byte, DE=current CRC -> DE=updated CRC.
+zx48_p427_crc16_update:
+    xor d
+    ld d,a
+    ld b,8
+zx48_p427_crc16_bit:
+    bit 7,d
+    jr z,zx48_p427_crc16_shift
+    sla e
+    rl d
+    ld a,e
+    xor MEX_CRC16_POLY&$ff
+    ld e,a
+    ld a,d
+    xor MEX_CRC16_POLY/256
+    ld d,a
+    djnz zx48_p427_crc16_bit
+    ret
+zx48_p427_crc16_shift:
+    sla e
+    rl d
+    djnz zx48_p427_crc16_shift
+    ret
+
+p427_object_ptr: dw 0
+p427_source_ptr: dw 0
+p427_source_length: dw 0
+p427_logical_length: dw 0
+p427_state_ptr: dw 0
+p427_image_base: dw 0
+p427_image_size: dw 0
+p427_bss_size: dw 0
+p427_image_exact: dw 0
+p427_image_rounded: dw 0
+p427_reloc_count: dw 0
+p427_write_ptr: dw 0
+p427_remaining16: dw 0
+p427_body_crc: dw 0
+p427_peak_bytes: dw 0
+p427_reloc_offset: dw 0
+p427_previous_reloc: dw 0
+p427_remaining8: db 0
+p427_reloc_low: db 0
+p427_have_previous: db 0
+p427_error: db 0
+p427_header: defs MEX_HEADER_SIZE,0
+    ENDM
+
