@@ -154,6 +154,14 @@ After Sections 2 through 5 pass:
 6. Canonical authority files and previously admitted evidence remain immutable; ordinary workflow or documentation maintenance must never rewrite them.
 7. Treat any automated failure as a defect. Correct it through a fresh full cycle beginning at `SCAN-1`.
 
+### 6.1 Qualification auto-dispatch
+
+Numbered qualification workflows remain `workflow_dispatch` only. The sole generic push-triggered controller is `.github/workflows/qualification-auto-dispatch.yml`; it runs on each push to `main` with only `actions: write` and `contents: read`.
+
+The controller scans `.github/workflows/*-qualification.yml` and dispatches at most one unadmitted step. A step is eligible only when its build/test evidence is absent, its workflow is dispatch-only, it declares exactly one immutable `*_BASE` commit, and the exact `BASE..HEAD` changed-file set equals the workflow's own guarded expected-file list. Partial/non-PASS admitted evidence, an unexpected changed path, multiple simultaneously due steps, a moving `main` head, or a malformed qualification contract fails closed. An existing `workflow_dispatch` run for the exact candidate SHA suppresses duplicate dispatch.
+
+Dispatch uses the repository `GITHUB_TOKEN` through the GitHub Actions REST endpoint and always targets `main`; after dispatch the controller requires the created run to report the exact candidate SHA. The controller never admits evidence, rewrites historical evidence, or weakens any qualification/admission/activation gate. Future qualification workflows must retain this base/diff guard shape so the generic controller can prove a qualification is actually due before dispatching it.
+
 ## 7. GitHub Linux runner
 
 Active long-lived ZX-UX automation uses GitHub-hosted `ubuntu-24.04` runners rather than the moving `ubuntu-latest` label. GitHub-hosted runners do not expose an immutable image-build selector, so the major runner image is pinned to Ubuntu 24.04 and the actual hosted image identity (`ImageOS` / `ImageVersion`) is included in runtime-cache identity. Third-party GitHub Actions used by active long-lived workflows are pinned to exact commit SHAs; movable major-version tags are comments only, not executable references.

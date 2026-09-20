@@ -1,0 +1,193 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: ZX-UX Qualification Auto-Dispatch
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: {fetch-depth: 0}
+
+      - name: Detect exactly one due qualification
+        id: detect
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' > /tmp/zxux-qualification-detect.json
+          import json
+          from pathlib import Path
+          import re
+          import shlex
+          import subprocess
+
+          root=Path('.').resolve()
+          evidence=root/'v1/dist/certification'
+          step_re=re.compile(r'\b--step\s+([A-Z][A-Z0-9]*\.\d+)\b')
+          file_re=re.compile(r'^p(\d+)(\d{2})(?:-[a-z0-9-]+)?-qualification\.yml$')
+          base_re=re.compile(r'(?m)^\s+([A-Z0-9]+_BASE):\s*([0-9a-f]{40})\s*$')
+
+          def fail(message):
+              raise SystemExit(f'ZX-UX QUALIFICATION AUTO-DISPATCH FAIL: {message}')
+
+          def git(*args):
+              p=subprocess.run(['git',*args],check=False,text=True,capture_output=True)
+              if p.returncode:
+                  fail(f"git {' '.join(args)}: {p.stderr.strip()}")
+              return p.stdout.strip()
+
+          def step_for(path,text):
+              values=sorted(set(step_re.findall(text)))
+              if len(values)==1:
+                  return values[0]
+              m=file_re.fullmatch(path.name)
+              if m:
+                  value=f'P{int(m.group(1))}.{m.group(2)}'
+                  if not values or values==[value]:
+                      return value
+              fail(f'cannot infer one step from {path}')
+
+          def admitted(step):
+              files={a:evidence/f'{step}.{a}.json' for a in ('build','test')}
+              present={a:p.is_file() for a,p in files.items()}
+              if not any(present.values()):
+                  return False
+              if not all(present.values()):
+                  fail(f'partial admitted evidence for {step}')
+              for action,path in files.items():
+                  d=json.loads(path.read_text(encoding='utf-8'))
+                  if d.get('step')!=step or d.get('action')!=action or d.get('status')!='PASS' or d.get('worktree_clean') is not True:
+                      fail(f'invalid admitted evidence {path}')
+              return True
+
+          def dispatch_only(text):
+              lines=text.splitlines()
+              try:
+                  start=lines.index('on:')+1
+              except ValueError:
+                  return False
+              keys=[]
+              for line in lines[start:]:
+                  if not line.strip() or line.lstrip().startswith('#'):
+                      continue
+                  if not line[0].isspace():
+                      break
+                  m=re.match(r'^  ([A-Za-z0-9_-]+):(?:\s.*)?$',line)
+                  if m:
+                      keys.append(m.group(1))
+              return keys==['workflow_dispatch']
+
+          def expected_paths(text,path):
+              lines=text.splitlines()
+              blocks=[]
+              for i,line in enumerate(lines):
+                  if "printf '%s\\n'" not in line:
+                      continue
+                  items=[]
+                  for following in lines[i+1:]:
+                      s=following.strip()
+                      if not s:
+                          continue
+                      terminal='| sort >' in s and 'expected' in s
+                      data=s.split('| sort >',1)[0].strip() if terminal else s
+                      if data.endswith('\\'):
+                          data=data[:-1].rstrip()
+                      if data:
+                          tokens=shlex.split(data)
+                          if len(tokens)!=1:
+                              fail(f'ambiguous expected path in {path}: {data}')
+                          items.append(tokens[0])
+                      if terminal:
+                          blocks.append(items)
+                          break
+              if len(blocks)!=1 or not blocks[0] or len(blocks[0])!=len(set(blocks[0])):
+                  fail(f'invalid guarded expected-file list in {path}')
+              return sorted(blocks[0])
+
+          head=git('rev-parse','HEAD')
+          due=[]
+          for workflow in sorted((root/'.github/workflows').glob('*-qualification.yml')):
+              rel=workflow.relative_to(root)
+              text=workflow.read_text(encoding='utf-8')
+              step=step_for(rel,text)
+              if admitted(step):
+                  continue
+              if not dispatch_only(text):
+                  fail(f'unadmitted {rel} is not workflow_dispatch-only')
+              bases=base_re.findall(text)
+              if len(bases)!=1:
+                  fail(f'{rel} must declare exactly one *_BASE commit')
+              base=bases[0][1]
+              git('cat-file','-e',f'{base}^{{commit}}')
+              expected=expected_paths(text,rel)
+              if rel.as_posix() not in expected:
+                  fail(f'{rel} guard omits its own workflow')
+              actual=sorted(x for x in git('diff','--name-only',base,head).splitlines() if x)
+              if actual!=expected:
+                  fail(f'unadmitted {step} candidate diff mismatch: expected={expected!r} actual={actual!r}')
+              due.append({'step':step,'workflow':rel.name,'head':head})
+
+          if len(due)>1:
+              fail(f'multiple qualifications due: {due!r}')
+          print(json.dumps({'due':bool(due),**(due[0] if due else {'head':head})},sort_keys=True))
+          PY
+          cat /tmp/zxux-qualification-detect.json
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+          d=json.loads(Path('/tmp/zxux-qualification-detect.json').read_text(encoding='utf-8'))
+          print(f"due={'true' if d['due'] else 'false'}")
+          print(f"step={d.get('step','')}")
+          print(f"workflow={d.get('workflow','')}")
+          print(f"head={d['head']}")
+          PY
+
+      - name: Dispatch exact candidate qualification
+        if: steps.detect.outputs.due == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          QUALIFICATION_STEP: ${{ steps.detect.outputs.step }}
+          QUALIFICATION_WORKFLOW: ${{ steps.detect.outputs.workflow }}
+          QUALIFICATION_HEAD: ${{ steps.detect.outputs.head }}
+        run: |
+          set -euo pipefail
+          test "$QUALIFICATION_HEAD" = "$GITHUB_SHA"
+          git fetch --quiet origin main
+          test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
+
+          existing="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${QUALIFICATION_WORKFLOW}/runs?event=workflow_dispatch&branch=main&per_page=50" | python3 -c 'import json,os,sys; d=json.load(sys.stdin); print(next((str(r["id"]) for r in d["workflow_runs"] if r["head_sha"]==os.environ["GITHUB_SHA"]), ""))')"
+          if test -n "$existing"; then
+            echo "ZX-UX QUALIFICATION AUTO-DISPATCH SKIP existing_run=$existing step=$QUALIFICATION_STEP"
+            exit 0
+          fi
+
+          gh api -X POST "repos/${GITHUB_REPOSITORY}/actions/workflows/${QUALIFICATION_WORKFLOW}/dispatches" -f ref=main
+
+          for attempt in $(seq 1 30); do
+            run_id="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${QUALIFICATION_WORKFLOW}/runs?event=workflow_dispatch&branch=main&per_page=50" | python3 -c 'import json,os,sys; d=json.load(sys.stdin); print(next((str(r["id"]) for r in d["workflow_runs"] if r["head_sha"]==os.environ["GITHUB_SHA"]), ""))')"
+            if test -n "$run_id"; then
+              echo "ZX-UX QUALIFICATION AUTO-DISPATCH PASS step=$QUALIFICATION_STEP run_id=$run_id"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "exact dispatched run not observed for $QUALIFICATION_STEP at $GITHUB_SHA" >&2
+          exit 1
