@@ -4303,7 +4303,7 @@ zx48_p427_image_loop:
     ld hl,(p427_remaining16)
     ld a,h
     or l
-    jr z,zx48_p427_zero_bss
+    jp z,zx48_p427_zero_bss
     ld ix,(p427_state_ptr)
     call zx48_p427_stream_step
     jp c,zx48_p427_fail_image
@@ -4412,7 +4412,7 @@ zx48_p427_reloc_order_ok:
     ld hl,(p427_remaining16)
     dec hl
     ld (p427_remaining16),hl
-    jr zx48_p427_reloc_loop
+    jp zx48_p427_reloc_loop
 
 zx48_p427_finish_stream:
     ; Seek-to-EOF on the same state proves no pending token/trailing physical data.
