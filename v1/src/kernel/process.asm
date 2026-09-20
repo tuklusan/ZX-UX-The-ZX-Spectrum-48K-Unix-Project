@@ -4827,7 +4827,7 @@ zx48_p514_reloc_loop:
     ld hl,(p514_remaining)
     ld a,h
     or l
-    jr z,zx48_p514_validate_end
+    jp z,zx48_p514_validate_end
     call zx48_p514_tape_stream_byte
     jp c,zx48_p514_rollback
     ld (p514_reloc_low),a
