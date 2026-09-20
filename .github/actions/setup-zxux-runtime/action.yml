@@ -1,0 +1,100 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: ZX-UX certified runtime
+description: Restore a verified pinned ZX-UX runtime, rebuilding only on cache miss or failed verification.
+
+runs:
+  using: composite
+  steps:
+    - name: Install native runtime prerequisites
+      shell: bash
+      run: |
+        set -euo pipefail
+        mapfile -t packages < <(python3 - <<'PY'
+        import json
+        from pathlib import Path
+        data = json.loads(Path("tools/manifest/toolchain.lock.json").read_text(encoding="utf-8"))
+        for package in data["bootstrap"]["native_build_prerequisites"]:
+            print(package)
+        PY
+        )
+        test "${#packages[@]}" -gt 0
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends "${packages[@]}"
+
+    - name: Compute exact runtime cache identity
+      id: identity
+      shell: bash
+      run: |
+        set -euo pipefail
+        lock_sha="$(sha256sum tools/manifest/toolchain.lock.json | awk '{print $1}')"
+        bootstrap_sha="$(sha256sum tools/scripts/bootstrap-environment.py | awk '{print $1}')"
+        verify_sha="$(sha256sum tools/scripts/verify-environment.py | awk '{print $1}')"
+        image_os="${ImageOS:-ubuntu24}"
+        image_version="${ImageVersion:-unknown}"
+        image_token="$(printf '%s-%s' "$image_os" "$image_version" | tr -c 'A-Za-z0-9_.-' '-')"
+        base="zxux-runtime-v1-${RUNNER_OS:-Linux}-${RUNNER_ARCH:-unknown}-${image_token}-${lock_sha}-${bootstrap_sha}-${verify_sha}"
+        primary="${base}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+        printf 'base_key=%s\n' "$base" >> "$GITHUB_OUTPUT"
+        printf 'primary_key=%s\n' "$primary" >> "$GITHUB_OUTPUT"
+
+    - name: Restore newest matching certified runtime
+      id: runtime_cache
+      uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      with:
+        path: tools/runtime
+        key: ${{ steps.identity.outputs.primary_key }}
+        restore-keys: |
+          ${{ steps.identity.outputs.base_key }}-
+
+    - name: Verify restored runtime before use
+      id: restored
+      shell: bash
+      run: |
+        set -euo pipefail
+        matched='${{ steps.runtime_cache.outputs.cache-matched-key }}'
+        if test -n "$matched" && test -x tools/runtime/python/bin/python; then
+          if tools/runtime/python/bin/python tools/scripts/verify-environment.py; then
+            echo "valid=true" >> "$GITHUB_OUTPUT"
+            echo "ZX-UX VERIFIED RUNTIME CACHE HIT"
+            exit 0
+          fi
+        fi
+        rm -rf tools/runtime
+        echo "valid=false" >> "$GITHUB_OUTPUT"
+        echo "ZX-UX RUNTIME CACHE MISS OR INVALID"
+
+    - name: Select pinned bootstrap Python
+      if: steps.restored.outputs.valid != 'true'
+      uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+      with:
+        python-version: '3.13.15'
+        check-latest: false
+
+    - name: Build pinned runtime on cache miss
+      if: steps.restored.outputs.valid != 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
+        python tools/scripts/bootstrap-environment.py
+
+    - name: Certify runtime
+      shell: bash
+      run: tools/runtime/python/bin/python tools/scripts/verify-environment.py
+
+    - name: Save rebuilt certified runtime
+      if: steps.restored.outputs.valid != 'true'
+      uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      with:
+        path: tools/runtime
+        key: ${{ steps.identity.outputs.primary_key }}
