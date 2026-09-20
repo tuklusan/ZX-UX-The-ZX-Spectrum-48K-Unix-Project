@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 import tempfile
 from typing import Any, Callable
 
@@ -59,7 +60,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
         {"name": "packed-requires-strict-smaller-physical-length", "passed": "zx48_p505_compare_lengths:" in body and "jp z,zx48_p505_format" in body},
         {"name": "packed-codec-is-zxp1", "passed": "M48O_CODEC_ZXP1" in body},
         {"name": "physical-final-allocation-precedes-exact-decoder-state", "passed": 0 < first_alloc < decoder_alloc < stream},
-        {"name": "decoder-state-is-exact-272-bytes", "passed": body.count("P417_STATE_SIZE") >= 3 and "P417_STATE_SIZE             EQU 272" in zxpack},
+        {"name": "decoder-state-is-exact-272-bytes", "passed": body.count("P417_STATE_SIZE") >= 3 and re.search(r"^P417_STATE_SIZE\\s+EQU\\s+272$", zxpack, re.MULTILINE) is not None},
         {"name": "physical-bytes-stream-direct-to-final-allocation", "passed": "ld ix,(p505_write_ptr)" in body and "call zx48_tape_load_block" in body and "ldir" not in body},
         {"name": "discard-validation-after-complete-physical-stream", "passed": stream < validate < publish and "P416_SINK_DISCARD" in helper},
         {"name": "logical-crc-validated-before-publication", "passed": "ld hl,(p416_crc)" in body and body.find("ld hl,(p416_crc)") < publish},
