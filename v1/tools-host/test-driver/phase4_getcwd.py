@@ -37,6 +37,9 @@ def _word(v: int) -> bytes:
 def _jp_nc(addr: int) -> bytes:
     return b"\xD2" + _word(addr)
 
+def _ld_bc(v: int) -> bytes:
+    return b"\x01" + _word(v)
+
 def _ld_a_mem(addr: int) -> bytes:
     return b"\x3A" + _word(addr)
 
@@ -127,7 +130,7 @@ def _target(root: Path, s: dict[str, int], module: bytes) -> None:
     for label, cwd, expected in fixed:
         path_len = len(expected) - 1
         code = bytearray(b"\xF3" + phase1._ld_sp(STACK_TOP))
-        code += phase1._ld_hl(OUT_BASE) + phase1._ld_bc(len(expected))
+        code += phase1._ld_hl(OUT_BASE) + _ld_bc(len(expected))
         code += phase1._call(s["zx48_p432_sys_getcwd"]) + phase1._jp_c(FAIL_PC)
         code += bytes((0x7C, 0xB7)) + phase1._jp_nz(FAIL_PC)
         code += bytes((0x7D, 0xFE, path_len)) + phase1._jp_nz(FAIL_PC)
@@ -141,7 +144,7 @@ def _target(root: Path, s: dict[str, int], module: bytes) -> None:
     # Exact short capacity: path_len rather than path_len+1. No byte may change.
     expected = b"/home/alice\0"
     code = bytearray(b"\xF3" + phase1._ld_sp(STACK_TOP))
-    code += phase1._ld_hl(OUT_BASE) + phase1._ld_bc(len(expected) - 1)
+    code += phase1._ld_hl(OUT_BASE) + _ld_bc(len(expected) - 1)
     code += phase1._call(s["zx48_p432_sys_getcwd"]) + _jp_nc(FAIL_PC)
     code += bytes((0xFE, s["E_NOSPC"])) + phase1._jp_nz(FAIL_PC)
     code += _mem_eq(OUT_BASE, bytes((0xA5,)) * 16) + phase1._jp(PASS_PC)
@@ -149,7 +152,7 @@ def _target(root: Path, s: dict[str, int], module: bytes) -> None:
 
     # Zero capacity also reports E_NOSPC without dereferencing or writing.
     code = bytearray(b"\xF3" + phase1._ld_sp(STACK_TOP))
-    code += phase1._ld_hl(OUT_BASE) + phase1._ld_bc(0)
+    code += phase1._ld_hl(OUT_BASE) + _ld_bc(0)
     code += phase1._call(s["zx48_p432_sys_getcwd"]) + _jp_nc(FAIL_PC)
     code += bytes((0xFE, s["E_NOSPC"])) + phase1._jp_nz(FAIL_PC)
     code += _mem_eq(OUT_BASE, bytes((0xA5,)) * 16) + phase1._jp(PASS_PC)
@@ -158,7 +161,7 @@ def _target(root: Path, s: dict[str, int], module: bytes) -> None:
     # Declared writable range crosses the protected 0x5B00 boundary.
     cross = 0x5AF8
     code = bytearray(b"\xF3" + phase1._ld_sp(STACK_TOP))
-    code += phase1._ld_hl(cross) + phase1._ld_bc(16)
+    code += phase1._ld_hl(cross) + _ld_bc(16)
     code += phase1._call(s["zx48_p432_sys_getcwd"]) + _jp_nc(FAIL_PC)
     code += bytes((0xFE, s["E_INVAL"])) + phase1._jp_nz(FAIL_PC)
     code += _mem_eq(cross, bytes((0xA5,)) * 8) + phase1._jp(PASS_PC)
@@ -167,7 +170,7 @@ def _target(root: Path, s: dict[str, int], module: bytes) -> None:
     # 16-bit wrapped declared range must fail before publication.
     wrap = 0xDFF0
     code = bytearray(b"\xF3" + phase1._ld_sp(STACK_TOP))
-    code += phase1._ld_hl(wrap) + phase1._ld_bc(0x3000)
+    code += phase1._ld_hl(wrap) + _ld_bc(0x3000)
     code += phase1._call(s["zx48_p432_sys_getcwd"]) + _jp_nc(FAIL_PC)
     code += bytes((0xFE, s["E_INVAL"])) + phase1._jp_nz(FAIL_PC)
     code += _mem_eq(wrap, bytes((0xA5,)) * 16) + phase1._jp(PASS_PC)
@@ -175,7 +178,7 @@ def _target(root: Path, s: dict[str, int], module: bytes) -> None:
 
     # Impossible cwd metadata is rejected without output mutation.
     code = bytearray(b"\xF3" + phase1._ld_sp(STACK_TOP))
-    code += phase1._ld_hl(OUT_BASE) + phase1._ld_bc(16)
+    code += phase1._ld_hl(OUT_BASE) + _ld_bc(16)
     code += phase1._call(s["zx48_p432_sys_getcwd"]) + _jp_nc(FAIL_PC)
     code += bytes((0xFE, s["E_INVAL"])) + phase1._jp_nz(FAIL_PC)
     code += _mem_eq(OUT_BASE, bytes((0xA5,)) * 16) + phase1._jp(PASS_PC)
