@@ -2467,12 +2467,10 @@ zx48_p426_scan_done:
     ld a,(p426_best_slot)
     call zx48_p405_object_ptr_slot
     jp c,zx48_p426_done
+    ld a,(p426_best_slot)
     ld d,a
     call zx48_p422_pack_record
     jp c,zx48_p426_done
-    ld a,(ix+OBJ_FLAGS_BYTE)
-    and OBJ_PACKED
-    jp z,zx48_p426_done
     ld a,1
     ld (p426_victim_succeeded),a
     jr zx48_p426_done
