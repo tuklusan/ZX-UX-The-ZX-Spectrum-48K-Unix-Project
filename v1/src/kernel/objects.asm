@@ -4027,3 +4027,26 @@ p419_open_od: db 0
 p419_open_handle: db 0
 p419_open_error: db 0
     ENDM
+
+;
+; P4.22 SYS_PACK exact path contract. HL points to a NUL-terminated path.
+;
+    MACRO EMIT_P422_SYS_PACK_OBJECT_ROUTINES
+zx48_p422_sys_pack:
+    call zx48_path_resolve
+    ret c
+    ld a,c
+    cp PATH_KIND_BASE
+    jr nz,zx48_p422_sys_pack_perm
+    ld a,(path_dir)
+    ld hl,path_name
+    call zx48_p405_object_lookup
+    ret c
+    ld a,c
+    ld d,a
+    jp zx48_p422_pack_record
+zx48_p422_sys_pack_perm:
+    ld a,E_PERM
+    scf
+    ret
+    ENDM
