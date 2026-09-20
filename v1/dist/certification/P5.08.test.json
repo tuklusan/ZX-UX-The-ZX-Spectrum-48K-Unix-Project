@@ -1,0 +1,110 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "raw-pass1-exact-greedy-measure",
+      "passed": true
+    },
+    {
+      "name": "raw-pass2-streams-without-full-packed-copy",
+      "passed": true
+    },
+    {
+      "name": "separate-512-output-chunk",
+      "passed": true
+    },
+    {
+      "name": "equal-or-larger-falls-back-raw",
+      "passed": true
+    },
+    {
+      "name": "optional-workspace-failure-falls-back-raw",
+      "passed": true
+    },
+    {
+      "name": "packed-one-272-state-before-output",
+      "passed": true
+    },
+    {
+      "name": "packed-decoder-discard-recomputes-crc",
+      "passed": true
+    },
+    {
+      "name": "packed-resident-bytes-written-unchanged",
+      "passed": true
+    },
+    {
+      "name": "streaming-mode-retains-deterministic-p420-parser",
+      "passed": true
+    },
+    {
+      "name": "all-output-after-preflight",
+      "passed": true
+    },
+    {
+      "name": "raw-and-packed-save-composition-assembles",
+      "passed": true
+    },
+    {
+      "name": "resident-representation-has-no-mutation-in-save-path",
+      "passed": true
+    },
+    {
+      "name": "preoutput-failures-write-zero-blocks-by-control-flow",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13518 lines, work time: 0.033 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p508-stream-save.lst",
+        "--sym=p508-stream-save.sym",
+        "p508-stream-save.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 16,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 6484 lines, work time: 0.015 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p508-stream-save.bin": "efb9b7fb292c2760b885736fd21c8d60753a08abf78f5985ec28cfbea0cc6fa9",
+    "v1/dist/certification/P5.07.build.json": "51433ddc273390e95260accd9862abc928fd1099951eece0f5c4d61ae329d750",
+    "v1/dist/certification/P5.07.test.json": "13356ab9af24add41a108770dff0842ebc09caa477b54c6578daf7472ad083e5",
+    "v1/src/kernel/tape.asm": "6596803a881959d6aee0ec6d760c94d48ac9190f48f03f87acccd59f1d413095",
+    "v1/src/kernel/zxpack.asm": "e9dd36daaf9453f1a56a30185d25f85670a5f121ce4628f5081318faea00db7d",
+    "v1/tools-host/test-driver/phase5_streaming_save.py": "2e563eb320cf496f8094e88367f4ab7ef5de29ab4b1fe9aec7d8e49280ef3d5e",
+    "v1/tools-host/test-driver/run.py": "3bc57d2857c4e55f54e9e0c30f0582d10e56d3b3ce810a752ee1c23597e0c895"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P5.07": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "920b2e6178b2c3efec12e92685e50309d8d8264f",
+  "status": "PASS",
+  "step": "P5.08",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
