@@ -2254,6 +2254,11 @@ zx48_p425_size_ok:
     call zx48_od_object_any_live
     jr c,zx48_p425_done
 
+    ; The bounded OD scan clobbers IX. Restore the selected object record
+    ; before entering the P4.22 record transaction.
+    ld a,(p425_slot)
+    call zx48_p405_object_ptr_slot
+    jr c,zx48_p425_done
     ld a,(p425_slot)
     ld d,a
     call zx48_p422_pack_record
