@@ -112,8 +112,9 @@ def _seek(s: dict[str, int], target: int, logical_len: int) -> bytes:
     return _ld_ix(STATE_BASE) + phase1._ld_hl(target) + phase1._ld_de(logical_len) + phase1._call(s["zx48_p418_seek"])
 
 
-def _run_sequence(root: Path, s: dict[str, int], module: bytes, encoded: bytes, logical: bytes) -> None:
-    sequence = (0, 1, 17, 64, 129, 7, 200, 33, len(logical) - 1, len(logical))
+def _run_sequence(root: Path, s: dict[str, int], module: bytes, encoded: bytes, logical: bytes, sequence: tuple[int, ...] | None = None) -> None:
+    if sequence is None:
+        sequence = (0, 1, 17, 64, 129, 7, 200, 33, len(logical) - 1, len(logical))
     code = bytearray(b"\xF3")
     code += phase1._ld_sp(STACK_TOP)
     code += _bind(s, len(encoded)) + phase1._jp_c(FAIL_PC)
@@ -193,8 +194,9 @@ def _runtime(root: Path, s: dict[str, int], module: bytes) -> None:
     logical = bytes(range(64)) * 4 + b"A" * 100 + b"abcdef" * 30
     encoded = z.encode(logical)
     require(z.decode(encoded, len(logical)) == logical, "P4.18 host oracle round-trip mismatch")
+    sequence = (0, 1, 17, 64, 129, 7, 200, 33, len(logical) - 1, len(logical))
     cases = [
-        ("seek-sequence", lambda: _run_sequence(root, s, module, encoded, logical)),
+        *[(f"seek-sequence-through-{target}", lambda prefix=sequence[:index + 1]: _run_sequence(root, s, module, encoded, logical, prefix)) for index, target in enumerate(sequence)],
         ("pending-command", lambda: _run_pending(root, s, module)),
         ("seek-beyond-eof", lambda: _run_failure(root, s, module, b"\x00A", 1, 2, s["E_INVAL"])),
         ("trailing-physical-data", lambda: _run_failure(root, s, module, b"\x00A\x00B", 1, 1, s["E_FORMAT"])),
