@@ -4677,6 +4677,10 @@ zx48_p514_image_round_ok:
     or a
     sbc hl,bc
     jp c,zx48_p514_format_abort
+    ld hl,PROCESS_STACK_BOOTSTRAP_BYTES
+    add hl,bc
+    jp c,zx48_p514_format_abort
+    ld (p514_stack_alloc_size),hl
 
     ld l,(ix+MEX_HDR_RELOC_COUNT)
     ld h,(ix+MEX_HDR_RELOC_COUNT+1)
@@ -4736,7 +4740,7 @@ zx48_p514_image_round_ok:
     jp c,zx48_p514_abort
     ld (p514_image_base),hl
 
-    ld bc,(p514_stack_size)
+    ld bc,(p514_stack_alloc_size)
     ld a,ALLOC_FAST_REQUIRED
     call zx48_alloc
     jp c,zx48_p514_rollback
@@ -4853,10 +4857,14 @@ zx48_p514_reloc_loop:
     or a
     jr z,zx48_p514_reloc_order
     ld hl,(p514_previous_reloc)
+    inc hl
+    inc hl
     ld de,(p514_reloc_offset)
     or a
     sbc hl,de
-    jp nc,zx48_p514_format_rollback
+    jr c,zx48_p514_reloc_order
+    jr z,zx48_p514_reloc_order
+    jp zx48_p514_format_rollback
 zx48_p514_reloc_order:
     ld hl,(p514_reloc_offset)
     ld (p514_previous_reloc),hl
@@ -4928,7 +4936,7 @@ zx48_p514_free_stack:
     ld a,h
     or l
     jr z,zx48_p514_free_image
-    ld bc,(p514_stack_size)
+    ld bc,(p514_stack_alloc_size)
     call zx48_free
 zx48_p514_free_image:
     ld hl,(p514_image_base)
@@ -4987,6 +4995,7 @@ p514_image_exact: dw 0
 p514_image_rounded: dw 0
 p514_stack_base: dw 0
 p514_stack_size: dw 0
+p514_stack_alloc_size: dw 0
 p514_bootstrap_base: dw 0
 p514_bootstrap_size: dw 0
 p514_env_ptr: dw 0
