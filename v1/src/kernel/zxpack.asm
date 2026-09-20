@@ -1551,6 +1551,8 @@ zx48_p420_emit_rle:
     ld (p420_selected_len),a
     call zx48_p420_add_two_encoded
     ld a,(p420_mode)
+    cp 2
+    jr z,zx48_p420_rle_stream
     or a
     jr z,zx48_p420_rle_update
     ld hl,(p420_emit_ptr)
@@ -1563,6 +1565,16 @@ zx48_p420_emit_rle:
     ld (hl),a
     inc hl
     ld (p420_emit_ptr),hl
+    jr zx48_p420_rle_update
+zx48_p420_rle_stream:
+    ld a,(p420_selected_len)
+    sub 3
+    or $40
+    call zx48_p420_stream_emit_byte
+    ret c
+    ld a,(p420_current_byte)
+    call zx48_p420_stream_emit_byte
+    ret c
 zx48_p420_rle_update:
     ld a,(p420_selected_len)
     call zx48_p420_update_positions
@@ -1574,6 +1586,8 @@ zx48_p420_emit_back:
     ld (p420_selected_len),a
     call zx48_p420_add_two_encoded
     ld a,(p420_mode)
+    cp 2
+    jr z,zx48_p420_back_stream
     or a
     jr z,zx48_p420_back_update
     ld hl,(p420_emit_ptr)
@@ -1587,6 +1601,17 @@ zx48_p420_emit_back:
     ld (hl),a
     inc hl
     ld (p420_emit_ptr),hl
+    jr zx48_p420_back_update
+zx48_p420_back_stream:
+    ld a,(p420_selected_len)
+    sub 3
+    or $80
+    call zx48_p420_stream_emit_byte
+    ret c
+    ld a,(p420_back_distance)
+    dec a
+    call zx48_p420_stream_emit_byte
+    ret c
 zx48_p420_back_update:
     ld a,(p420_selected_len)
     call zx48_p420_update_positions
@@ -1654,6 +1679,8 @@ zx48_p420_flush_literal:
     ld (p420_encoded_len),hl
 
     ld a,(p420_mode)
+    cp 2
+    jr z,zx48_p420_flush_stream
     or a
     jr z,zx48_p420_flush_done
     ld hl,(p420_emit_ptr)
@@ -1672,9 +1699,43 @@ zx48_p420_flush_literal:
     ldir
     ex de,hl
     ld (p420_emit_ptr),hl
+    jr zx48_p420_flush_done
+zx48_p420_flush_stream:
+    ld a,b
+    dec a
+    call zx48_p420_stream_emit_byte
+    ret c
+    ld hl,(p420_literal_start)
+    ld de,(p420_input_base)
+    add hl,de
+    ld a,(p420_literal_len)
+    ld b,a
+zx48_p420_flush_stream_loop:
+    ld a,(hl)
+    push hl
+    push bc
+    call zx48_p420_stream_emit_byte
+    pop bc
+    pop hl
+    ret c
+    inc hl
+    djnz zx48_p420_flush_stream_loop
 zx48_p420_flush_done:
     xor a
     ld (p420_literal_len),a
+    ret
+
+zx48_p420_stream_emit_byte:
+    ld (p420_stream_byte),a
+    ld hl,(p420_stream_callback)
+    ld a,h
+    or l
+    jr z,zx48_p420_format
+    ld de,zx48_p420_stream_return
+    push de
+    ld a,(p420_stream_byte)
+    jp (hl)
+zx48_p420_stream_return:
     ret
 
 zx48_p420_format:
@@ -1706,6 +1767,8 @@ p420_update_remaining: db 0
 p420_mode: db 0
 p420_background: db 0
 p420_workspace_allocs: db 0
+p420_stream_callback: dw 0
+p420_stream_byte: db 0
     ENDM
 
 ;

@@ -1562,12 +1562,355 @@ p507_tape_lock: db 0
 p507_error: db 0
     ENDM
 
+    MACRO EMIT_P508_STREAM_SAVE_ROUTINES
+; IX=resident object. PACKED objects are validated with one 272-byte state before
+; any tape motion. RAW objects attempt the exact deterministic P4.20 pass 1 and
+; stream pass 2 through one separate 512-byte tape chunk buffer.
+zx48_p508_save_record:
+    ld (p508_object_ptr),ix
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    and OBJ_PACKED
+    jp nz,zx48_p508_save_packed
+    jp zx48_p508_try_raw
+
+zx48_p508_try_raw:
+    ld ix,(p508_object_ptr)
+    ld l,(ix+OBJ_LOGICAL_LENGTH)
+    ld h,(ix+OBJ_LOGICAL_LENGTH+1)
+    ld (p508_logical),hl
+    ld a,h
+    or l
+    jp z,zx48_p507_save_record
+    ld l,(ix+OBJ_ALLOCATION_PTR)
+    ld h,(ix+OBJ_ALLOCATION_PTR+1)
+    ld (p508_source),hl
+
+    ; Deterministic measure pass using exactly one 512-byte table.
+    ld (p420_input_base),hl
+    ld hl,(p508_logical)
+    ld (p420_input_len),hl
+    xor a
+    ld (p420_mode),a
+    ld (p420_background),a
+    call zx48_p420_workspace_begin
+    jp c,zx48_p507_save_record
+    call zx48_p420_run_pass
+    jp c,zx48_p508_measure_error
+    ld hl,(p420_encoded_len)
+    ld (p508_physical),hl
+    call zx48_p420_workspace_end
+    jp c,zx48_p508_free_error
+    ld hl,(p508_physical)
+    ld de,(p508_logical)
+    or a
+    sbc hl,de
+    jp nc,zx48_p507_save_record
+
+    ; Logical CRC comes from the unchanged RAW source.
+    ld hl,(p508_source)
+    ld bc,(p508_logical)
+    call zx48_crc16_ccitt_false
+    ld (p508_crc),de
+
+    ; Output chunk plus pass-2 table must both exist before first tape block.
+    ld bc,512
+    ld a,ALLOC_COLD_PREFERRED|ALLOC_NO_COMPACT
+    call zx48_alloc
+    jp c,zx48_p507_save_record
+    ld (p508_chunk_ptr),hl
+    call zx48_p420_workspace_begin
+    jr nc,zx48_p508_raw_ready
+    ld hl,(p508_chunk_ptr)
+    ld bc,512
+    call zx48_free
+    jp zx48_p507_save_record
+
+zx48_p508_raw_ready:
+    call zx48_p508_build_packed_header
+    call zx48_p507_prompt_record
+    jp c,zx48_p508_raw_preoutput_error
+    call zx48_p507_lock_acquire
+    jp c,zx48_p508_raw_preoutput_error
+    ld ix,p507_header
+    ld de,M48O_HDR_SIZE
+    ld a,M48O_ROM_DATA_FLAG
+    call zx48_tape_save_block
+    jp c,zx48_p508_raw_tape_error
+
+    xor a
+    ld (p508_chunk_fill),a
+    ld (p508_chunk_fill+1),a
+    ld hl,zx48_p508_stream_byte
+    ld (p420_stream_callback),hl
+    ld hl,(p508_source)
+    ld (p420_input_base),hl
+    ld hl,(p508_logical)
+    ld (p420_input_len),hl
+    ld a,2
+    ld (p420_mode),a
+    call zx48_p420_run_pass
+    jp c,zx48_p508_raw_tape_error
+    ld hl,(p420_encoded_len)
+    ld de,(p508_physical)
+    or a
+    sbc hl,de
+    jp nz,zx48_p508_raw_format_error
+    call zx48_p508_flush_partial
+    jp c,zx48_p508_raw_tape_error
+    call zx48_p507_lock_release
+    call zx48_p508_raw_free
+    ld hl,0
+    xor a
+    or a
+    ret
+
+zx48_p508_stream_byte:
+    ld (p508_stream_byte),a
+    ld hl,(p508_chunk_ptr)
+    ld de,(p508_chunk_fill)
+    add hl,de
+    ld a,(p508_stream_byte)
+    ld (hl),a
+    ld hl,(p508_chunk_fill)
+    inc hl
+    ld (p508_chunk_fill),hl
+    ld de,512
+    or a
+    sbc hl,de
+    jr nz,zx48_p508_stream_ok
+    ld ix,(p508_chunk_ptr)
+    ld de,512
+    ld a,M48O_ROM_DATA_FLAG
+    call zx48_tape_save_block
+    ret c
+    xor a
+    ld (p508_chunk_fill),a
+    ld (p508_chunk_fill+1),a
+zx48_p508_stream_ok:
+    xor a
+    or a
+    ret
+
+zx48_p508_flush_partial:
+    ld de,(p508_chunk_fill)
+    ld a,d
+    or e
+    ret z
+    ld ix,(p508_chunk_ptr)
+    ld a,M48O_ROM_DATA_FLAG
+    call zx48_tape_save_block
+    ret
+
+zx48_p508_measure_error:
+    ld (p508_error),a
+    call zx48_p420_workspace_end
+    ld a,(p508_error)
+    scf
+    ret
+zx48_p508_raw_format_error:
+    ld a,E_FORMAT
+    ld (p508_error),a
+    jr zx48_p508_raw_tape_cleanup
+zx48_p508_raw_tape_error:
+    ld (p508_error),a
+zx48_p508_raw_tape_cleanup:
+    call zx48_p507_lock_release
+zx48_p508_raw_preoutput_error:
+    ld (p508_error),a
+    call zx48_p508_raw_free
+    ld a,(p508_error)
+    scf
+    ret
+zx48_p508_raw_free:
+    call zx48_p420_workspace_end
+    ld hl,(p508_chunk_ptr)
+    ld bc,512
+    jp zx48_free
+
+zx48_p508_save_packed:
+    ld ix,(p508_object_ptr)
+    ld l,(ix+OBJ_LOGICAL_LENGTH)
+    ld h,(ix+OBJ_LOGICAL_LENGTH+1)
+    ld (p508_logical),hl
+    ld c,(ix+OBJ_STORAGE_LENGTH)
+    ld b,(ix+OBJ_STORAGE_LENGTH+1)
+    ld (p508_physical),bc
+    ld l,(ix+OBJ_ALLOCATION_PTR)
+    ld h,(ix+OBJ_ALLOCATION_PTR+1)
+    ld (p508_source),hl
+
+    ; Exact one-state validation before any output.
+    ld bc,P417_STATE_SIZE
+    ld a,ALLOC_COLD_PREFERRED|ALLOC_NO_COMPACT
+    call zx48_alloc
+    ret c
+    ld (p508_decoder),hl
+    push hl
+    xor a
+    ld (hl),a
+    ld d,h
+    ld e,l
+    inc de
+    ld bc,P417_STATE_SIZE-1
+    ldir
+    pop ix
+    ld hl,(p508_source)
+    ld bc,(p508_physical)
+    ld de,(p508_logical)
+    ld iy,0
+    ld a,1
+    ld (p416_crc_enable),a
+    ld a,P416_SINK_DISCARD
+    call zx48_p416_decode
+    jr c,zx48_p508_packed_decode_fail
+    ld hl,(p416_crc)
+    ld (p508_crc),hl
+    ld hl,(p508_decoder)
+    ld bc,P417_STATE_SIZE
+    call zx48_free
+    jp c,zx48_p508_free_error
+
+    call zx48_p508_build_packed_header
+    call zx48_p507_prompt_record
+    ret c
+    call zx48_p507_lock_acquire
+    ret c
+    ld ix,p507_header
+    ld de,M48O_HDR_SIZE
+    ld a,M48O_ROM_DATA_FLAG
+    call zx48_tape_save_block
+    jp c,zx48_p508_packed_tape_error
+    ld hl,(p508_source)
+    ld (p508_read_ptr),hl
+    ld hl,(p508_physical)
+    ld (p508_remaining),hl
+zx48_p508_packed_loop:
+    ld bc,(p508_remaining)
+    ld a,b
+    or c
+    jr z,zx48_p508_packed_success
+    call zx48_p503_prepare_chunk
+    ld (p508_chunk_len),de
+    ld ix,(p508_read_ptr)
+    ld a,M48O_ROM_DATA_FLAG
+    call zx48_tape_save_block
+    jp c,zx48_p508_packed_tape_error
+    ld hl,(p508_read_ptr)
+    ld de,(p508_chunk_len)
+    add hl,de
+    ld (p508_read_ptr),hl
+    ld hl,(p508_remaining)
+    or a
+    sbc hl,de
+    ld (p508_remaining),hl
+    jr zx48_p508_packed_loop
+zx48_p508_packed_success:
+    call zx48_p507_lock_release
+    ld hl,0
+    xor a
+    or a
+    ret
+zx48_p508_packed_tape_error:
+    ld (p508_error),a
+    call zx48_p507_lock_release
+    ld a,(p508_error)
+    scf
+    ret
+zx48_p508_packed_decode_fail:
+    ld (p508_error),a
+    ld hl,(p508_decoder)
+    ld bc,P417_STATE_SIZE
+    call zx48_free
+    ld a,(p508_error)
+    scf
+    ret
+zx48_p508_free_error:
+    ld a,E_IO
+    scf
+    ret
+
+; Build PACKED M48O header from the resident record and measured/validated fields.
+zx48_p508_build_packed_header:
+    xor a
+    ld hl,p507_header
+    ld de,p507_header+1
+    ld bc,M48O_HDR_SIZE-1
+    ld (hl),a
+    ldir
+    ld hl,p507_header
+    ld (hl),M48O_MAGIC_0
+    inc hl
+    ld (hl),M48O_MAGIC_1
+    inc hl
+    ld (hl),M48O_MAGIC_2
+    inc hl
+    ld (hl),M48O_MAGIC_3
+    inc hl
+    ld (hl),M48O_VERSION
+    inc hl
+    ld ix,(p508_object_ptr)
+    ld a,(ix+OBJ_TYPE_ID)
+    ld (hl),a
+    inc hl
+    ld (hl),M48O_PACKED
+    inc hl
+    ld a,(ix+OBJ_DIR_ID)
+    ld (hl),a
+    ld hl,p507_header+M48O_HDR_STORAGE_LEN
+    ld de,(p508_physical)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    inc hl
+    ld de,(p508_logical)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    inc hl
+    ld (hl),low M48O_CODEC_ZXP1
+    inc hl
+    ld (hl),high M48O_CODEC_ZXP1
+    inc hl
+    ld de,(p508_crc)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    push ix
+    pop hl
+    ld de,p507_header+M48O_HDR_NAME
+    ld bc,M48O_NAME_SIZE
+    ldir
+    ld hl,p507_header
+    ld bc,M48O_HDR_SIZE
+    call zx48_crc16_ccitt_false
+    ld hl,p507_header+M48O_HDR_HEADER_CRC
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    ret
+
+p508_object_ptr: dw 0
+p508_source: dw 0
+p508_logical: dw 0
+p508_physical: dw 0
+p508_crc: dw 0
+p508_chunk_ptr: dw 0
+p508_chunk_fill: dw 0
+p508_decoder: dw 0
+p508_read_ptr: dw 0
+p508_remaining: dw 0
+p508_chunk_len: dw 0
+p508_stream_byte: db 0
+p508_error: db 0
+    ENDM
+
     MACRO EMIT_TAPE_ROUTINES
     EMIT_P502_CRC16_ROUTINES
     EMIT_P503_FRAMING_ROUTINES
     EMIT_P504_RAW_LOADER_ROUTINES
     EMIT_P505_PACKED_LOADER_ROUTINES
     EMIT_P507_RAW_SAVE_ROUTINES
+    EMIT_P508_STREAM_SAVE_ROUTINES
 ; A=block type,DE=length,IX=source.
 zx48_tape_save_block:
     call zx48_rom_sa_bytes
@@ -1598,7 +1941,7 @@ zx48_tape_save_path:
     ld hl,path_name
     call zx48_object_lookup
     ret c
-    jp zx48_p507_save_record
+    jp zx48_p508_save_record
 
 zx48_tape_load_path:
     ; Loading requires the next physical M48O name to match requested path. The
