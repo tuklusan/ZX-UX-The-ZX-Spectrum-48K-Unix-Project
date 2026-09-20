@@ -4051,3 +4051,27 @@ zx48_p422_sys_pack_perm:
     scf
     ret
     ENDM
+
+;
+; P4.23 SYS_UNPACK exact path contract. HL points to a NUL-terminated path.
+;
+    MACRO EMIT_P423_SYS_UNPACK_OBJECT_ROUTINES
+zx48_p423_sys_unpack:
+    call zx48_path_resolve
+    ret c
+    ld d,a
+    ld a,c
+    cp PATH_KIND_BASE
+    jr nz,zx48_p423_sys_unpack_perm
+    ld a,d
+    ld hl,path_name
+    call zx48_p405_object_lookup
+    ret c
+    ld a,c
+    ld d,a
+    jp zx48_p423_unpack_record
+zx48_p423_sys_unpack_perm:
+    ld a,E_PERM
+    scf
+    ret
+    ENDM
