@@ -1952,3 +1952,117 @@ p422_encoded: dw 0
 p422_slot: db 0
 p422_error: db 0
     ENDM
+
+;
+; P4.23 atomic SYS_UNPACK record transaction. Whole-stream contiguous decode uses
+; the P4.16 FINAL_MEMORY sink, whose BACKREF source is already-emitted destination
+; memory; no separate 256-byte history allocation is permitted here.
+;
+    MACRO EMIT_P423_SYS_UNPACK_CODEC_ROUTINES
+; IX=record,D=object slot. RAW is no-op success returning logical length.
+zx48_p423_unpack_record:
+    ld (p423_object_ptr),ix
+    ld a,d
+    ld (p423_slot),a
+    ld l,(ix+OBJ_LOGICAL_LENGTH)
+    ld h,(ix+OBJ_LOGICAL_LENGTH+1)
+    ld (p423_logical),hl
+
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    and OBJ_PACKED
+    jr nz,zx48_p423_packed
+    ld hl,(p423_logical)
+    xor a
+    or a
+    ret
+
+zx48_p423_packed:
+    ; Any live description blocks the representation swap.
+    ld a,(p423_slot)
+    ld d,a
+    call zx48_od_object_any_live
+    ret c
+
+    ld ix,(p423_object_ptr)
+    ld l,(ix+OBJ_ALLOCATION_PTR)
+    ld h,(ix+OBJ_ALLOCATION_PTR+1)
+    ld (p423_old_ptr),hl
+    ld c,(ix+OBJ_STORAGE_LENGTH)
+    ld b,(ix+OBJ_STORAGE_LENGTH+1)
+    ld (p423_old_storage),bc
+
+    ; Exact private RAW destination.
+    ld bc,(p423_logical)
+    ld a,ALLOC_COLD_PREFERRED
+    call zx48_alloc
+    ret c
+    ld (p423_new_ptr),hl
+
+    ; Whole stream from offset zero into one contiguous final destination.
+    ld ix,(p423_object_ptr)
+    ld l,(ix+OBJ_ALLOCATION_PTR)
+    ld h,(ix+OBJ_ALLOCATION_PTR+1)
+    ld c,(ix+OBJ_STORAGE_LENGTH)
+    ld b,(ix+OBJ_STORAGE_LENGTH+1)
+    ld de,(p423_logical)
+    ld iy,(p423_new_ptr)
+    ld ix,0
+    xor a
+    ld (p416_crc_enable),a
+    ld a,P416_SINK_FINAL_MEMORY
+    call zx48_p416_decode
+    jr c,zx48_p423_decode_fail
+
+    ; Publish only after exact validated decode.
+    ld ix,(p423_object_ptr)
+    ld hl,(p423_new_ptr)
+    ld (ix+OBJ_ALLOCATION_PTR),l
+    ld (ix+OBJ_ALLOCATION_PTR+1),h
+    ld hl,(p423_logical)
+    ld (ix+OBJ_STORAGE_LENGTH),l
+    ld (ix+OBJ_STORAGE_LENGTH+1),h
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    and $fe
+    ld (ix+OBJ_FLAGS_BYTE),a
+
+    ; Old packed storage becomes unreachable only after publication.
+    ld hl,(p423_old_ptr)
+    ld bc,(p423_old_storage)
+    bit 0,c
+    jr z,zx48_p423_old_even
+    inc bc
+zx48_p423_old_even:
+    call zx48_free
+    jp c,zx48_p423_free_panic
+
+    ld hl,(p423_logical)
+    xor a
+    or a
+    ret
+
+zx48_p423_decode_fail:
+    ld (p423_error),a
+    ld hl,(p423_new_ptr)
+    ld bc,(p423_logical)
+    bit 0,c
+    jr z,zx48_p423_new_even
+    inc bc
+zx48_p423_new_even:
+    call zx48_free
+    jp c,zx48_p423_free_panic
+    ld a,(p423_error)
+    scf
+    ret
+
+zx48_p423_free_panic:
+    ld a,PANIC_SCHEDULER
+    jp zx48_panic
+
+p423_object_ptr: dw 0
+p423_old_ptr: dw 0
+p423_old_storage: dw 0
+p423_new_ptr: dw 0
+p423_logical: dw 0
+p423_slot: db 0
+p423_error: db 0
+    ENDM
