@@ -803,6 +803,24 @@ zx48_sys_spawn_preflight_invalid:
 
 
 ;
+; P4.32 exact SYS_GETCWD syscall surface.
+;
+    MACRO EMIT_P432_GETCWD_SYSCALL_ROUTINES
+; HL=destination, BC=capacity. Validate the complete declared writable range
+; before inspecting cwd state or publishing any output byte.
+zx48_p432_sys_getcwd:
+    ld (p432_sys_out),hl
+    ld (p432_sys_capacity),bc
+    call zx48_user_range_validate
+    ret c
+    ld hl,(p432_sys_out)
+    ld bc,(p432_sys_capacity)
+    jp zx48_p432_getcwd
+p432_sys_out: dw 0
+p432_sys_capacity: dw 0
+    ENDM
+
+;
 ; P4.31 exact SYS_CHDIR syscall surface.
 ;
     MACRO EMIT_P431_CHDIR_SYSCALL_ROUTINES
