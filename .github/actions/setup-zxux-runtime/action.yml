@@ -114,10 +114,17 @@ runs:
         runner = data["runner"]
         print(f"runner_image={runner.get('image_os')} {runner.get('image_version')}")
         for item in data["bootstrap"]["requested_native_build_prerequisites"]:
-            print(
-                f"apt={item['requested']}={item['version']} "
-                f"package={item['package']} arch={item['architecture']}"
-            )
+            if item["directly_installed"]:
+                print(
+                    f"apt={item['requested']}={item['version']} "
+                    f"package={item['package']} arch={item['architecture']}"
+                )
+            else:
+                print(
+                    f"apt={item['requested']} provider/transaction detail retained "
+                    "in bootstrap-provenance.json"
+                )
+
         PY
         if test -n "${ZXUX_EVIDENCE_DIR:-}"; then
           mkdir -p "$ZXUX_EVIDENCE_DIR"

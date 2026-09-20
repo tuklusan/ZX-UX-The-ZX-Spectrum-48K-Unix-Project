@@ -85,27 +85,53 @@ def installed_packages() -> list[dict[str, str]]:
     return records
 
 
-def requested_packages(names: list[str]) -> list[dict[str, str]]:
-    records: list[dict[str, str]] = []
+def run_optional(argv: list[str], *, timeout: int = 30) -> tuple[int, str, str]:
+    result = subprocess.run(
+        argv,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+    )
+    return result.returncode, result.stdout, result.stderr
+
+
+def requested_packages(names: list[str]) -> list[dict[str, object]]:
+    records: list[dict[str, object]] = []
     for requested in names:
-        output = run([
+        rc, stdout, stderr = run_optional([
             "dpkg-query",
             "-W",
             "-f=${binary:Package}\t${Version}\t${Architecture}\t${db:Status-Abbrev}\n",
             requested,
-        ]).strip()
-        package, version, architecture, status = output.split("\t", 3)
-        if not status.startswith("ii"):
-            raise ProvenanceError(f"requested bootstrap package is not installed: {requested}")
-        records.append({
+        ])
+        record: dict[str, object] = {
             "requested": requested,
-            "package": package,
-            "version": version,
-            "architecture": architecture,
-            "apt_policy": run(["apt-cache", "policy", requested]).strip(),
-        })
+            "directly_installed": False,
+            "apt_policy": run_optional(["apt-cache", "policy", requested])[1].strip(),
+            "apt_showpkg": run_optional(["apt-cache", "showpkg", requested])[1].strip(),
+        }
+        if rc == 0 and stdout.strip():
+            package, version, architecture, status = stdout.strip().split("\t", 3)
+            if status.startswith("ii"):
+                record.update({
+                    "directly_installed": True,
+                    "package": package,
+                    "version": version,
+                    "architecture": architecture,
+                })
+        else:
+            record["dpkg_query_note"] = (stderr or stdout).strip()
+        records.append(record)
     return records
 
+
+def apt_history_tail() -> str:
+    path = Path("/var/log/apt/history.log")
+    if not path.is_file():
+        return ""
+    text = path.read_text(encoding="utf-8", errors="replace")
+    return text[-50000:]
 
 def first_nonempty(argv: list[str]) -> str:
     for line in run(argv).splitlines():
@@ -187,6 +213,7 @@ def main() -> int:
             "python_version": platform.python_version(),
             "requested_native_build_prerequisites": requested_packages(requested),
             "installed_dpkg_packages": installed_packages(),
+            "apt_history_tail": apt_history_tail(),
             "tool_versions": {
                 "gcc": first_nonempty(["gcc", "--version"]),
                 "g++": first_nonempty(["g++", "--version"]),
@@ -226,11 +253,19 @@ def main() -> int:
     print(f"provenance_sha256={sha256(output)}")
     print(f"runner_image={payload['runner']['image_os']} {payload['runner']['image_version']}")
     for item in payload["bootstrap"]["requested_native_build_prerequisites"]:
-        print(
-            "apt="
-            f"{item['requested']}={item['version']} "
-            f"package={item['package']} arch={item['architecture']}"
-        )
+        if item["directly_installed"]:
+            print(
+                "apt="
+                f"{item['requested']}={item['version']} "
+                f"package={item['package']} arch={item['architecture']}"
+            )
+        else:
+            print(
+                "apt="
+                f"{item['requested']} resolved without a same-name installed package; "
+                "provider/transaction detail retained in provenance"
+            )
+
     return 0
 
 
