@@ -1,0 +1,108 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "exact-512-byte-workspace",
+      "passed": true
+    },
+    {
+      "name": "workspace-cold-no-compact",
+      "passed": true
+    },
+    {
+      "name": "table-init-ffff",
+      "passed": true
+    },
+    {
+      "name": "nearest-only-u16-table",
+      "passed": true
+    },
+    {
+      "name": "backref-limit-130",
+      "passed": true
+    },
+    {
+      "name": "rle-limit-66",
+      "passed": true
+    },
+    {
+      "name": "literal-limit-64",
+      "passed": true
+    },
+    {
+      "name": "rle-wins-equal-tie",
+      "passed": true
+    },
+    {
+      "name": "every-consumed-position-updates-table",
+      "passed": true
+    },
+    {
+      "name": "two-distinct-workspace-passes",
+      "passed": true
+    },
+    {
+      "name": "non-smaller-rejected-before-pass2",
+      "passed": true
+    },
+    {
+      "name": "explicit-enomem-background-skip",
+      "passed": true
+    },
+    {
+      "name": "pass2-length-matches-pass1",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12934 lines, work time: 0.034 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p420-target-encoder.lst",
+        "--sym=p420-target-encoder.sym",
+        "p420-target-encoder.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 10,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 3396 lines, work time: 0.009 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p420-target-encoder.bin": "471347c0ab5105418fbdeebf6ef0ce2197602e04a21da48de4b746c00d4bd781",
+    "v1/dist/certification/P4.19.test.json": "1e342e5fbef8882847194f8ec22616b51754f6a9cae06d1150b9f41eaa989eca",
+    "v1/src/kernel/zxpack.asm": "e98d1dfcf5cc25448f3c28239476b303140eb29366f1e2f41c45dcd929864893",
+    "v1/tools-host/test-driver/phase4_target_encoder.py": "d8afd26c830f9acd028d863030f724a9ee09befaf25cbad7c077d28047935c81",
+    "v1/tools-host/test-driver/run.py": "d35d766761d726f0ff07dc610d004a084641a7a9fe4965bc56203731f45daed3"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P4.19": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "7f8adfb5b31f6ada8f2f0cf34a0ad7ee0f75d800",
+  "status": "PASS",
+  "step": "P4.20",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
