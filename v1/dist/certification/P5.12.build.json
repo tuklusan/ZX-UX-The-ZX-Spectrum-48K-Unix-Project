@@ -1,0 +1,90 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "one-global-lock-owned-by-tape-layer",
+      "passed": true
+    },
+    {
+      "name": "second-request-returns-e-busy",
+      "passed": true
+    },
+    {
+      "name": "acquire-marks-global-blocking-state",
+      "passed": true
+    },
+    {
+      "name": "release-clears-global-blocking-state",
+      "passed": true
+    },
+    {
+      "name": "scheduler-documents-cooperative-pause",
+      "passed": true
+    },
+    {
+      "name": "scheduler-documents-clock-degradation",
+      "passed": true
+    },
+    {
+      "name": "blocking-interval-counted",
+      "passed": true
+    },
+    {
+      "name": "all-public-tape-paths-use-lock",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13526 lines, work time: 0.034 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p512-tape-lock.lst",
+        "--sym=p512-tape-lock.sym",
+        "p512-tape-lock.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 9,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 3826 lines, work time: 0.007 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p512-tape-lock.bin": "3a2ddbf5b6af4837102b473c8f7319be525e2b0eda02abce056c48866d22e561",
+    "v1/dist/certification/P5.11.build.json": "160a0b572705065ce7b05d48de3d24bbc94c52459529549da06d911d4fd49494",
+    "v1/dist/certification/P5.11.test.json": "3472933b724e7301845083881e2647b871dd03bd22eb2124f7a2ecb8d128880f",
+    "v1/src/kernel/scheduler.asm": "0cfdacef6db788ca90b48a0aa95039877939fe43b9121d8bf4db9a40fc5cc5e1",
+    "v1/src/kernel/tape.asm": "fcdb6b37f3e20507c28a700b5eb10a948fcfc02a48ee0c242351de721ce01385",
+    "v1/tools-host/test-driver/phase5_tape_lock.py": "1db997b6f161ef265d8841859a8926af00489319f815f3aa34d0a60231a92eac",
+    "v1/tools-host/test-driver/run.py": "db6b6619d33e93b9bc5de33f74d852c765da20288e8781e8b0ab3649285e088b"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P5.11": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "59483c8491c96ad0bb8ff021af6954a208335aac",
+  "status": "PASS",
+  "step": "P5.12",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
