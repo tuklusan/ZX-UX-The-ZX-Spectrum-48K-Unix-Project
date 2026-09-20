@@ -35,7 +35,7 @@ zx48_p431_chdir:
     ld a,c
     cp PATH_KIND_DIR
     jr nz,zx48_p431_chdir_noent
-    ld a,(path_dir)
+    ld a,(ns_dir)
     ld (p431_target_dir),a
     ld a,(current_pid)
     call zx48_process_lookup
