@@ -38,6 +38,7 @@ jobs:
           printf '%s\n' \
             .github/workflows/p422-dispatch-once.yml \
             .github/workflows/p422-qualification.yml \
+            v1/src/kernel/objects.asm \
             v1/src/kernel/zxpack.asm \
             v1/tools-host/test-driver/phase4_sys_pack.py \
             v1/tools-host/test-driver/run.py | sort > /tmp/p422-expected
