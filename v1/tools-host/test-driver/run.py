@@ -136,6 +136,7 @@ import phase4_compaction
 import phase4_packed_spawn
 import phase4_zxpack_info
 import phase4_compression_regression
+import phase4_pseudo_dirs
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
 from driver_core import (
     DriverError,
@@ -280,6 +281,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase4_zxpack_info.dispatch(root, action, step, **kwargs)
     if step == "P4.29":
         return phase4_compression_regression.dispatch(root, action, step, **kwargs)
+    if step == "P4.30":
+        return phase4_pseudo_dirs.dispatch(root, action, step, **kwargs)
     if step.startswith("P4."):
         raise DriverError(f"numbered Phase-4 step is not registered: {step}")
     module = E0_MODULE.get(step)
