@@ -4035,10 +4035,11 @@ p419_open_error: db 0
 zx48_p422_sys_pack:
     call zx48_path_resolve
     ret c
+    ld d,a
     ld a,c
     cp PATH_KIND_BASE
     jr nz,zx48_p422_sys_pack_perm
-    ld a,(path_dir)
+    ld a,d
     ld hl,path_name
     call zx48_p405_object_lookup
     ret c
