@@ -52,6 +52,9 @@ on:
       - 'AUTHORS.*'
       - 'docs/**'
       - 'scratch/**'
+      - '.github/workflows/p*-qualification.yml'
+      - '.github/workflows/p*-dispatch-*.yml'
+      - '.github/workflows/p*-activation-*.yml'
   workflow_dispatch:
 permissions:
   contents: read

@@ -27,7 +27,13 @@ on:
       - v1/src/kernel/**
       - v1/tools-host/inspect-mex/**
       - v1/tools-host/test-driver/**
-      - v1/dist/certification/**
+      - v1/dist/certification/P0.*.json
+      - v1/dist/certification/phase-0.json
+      - v1/dist/certification/P1.*.json
+      - v1/dist/certification/phase-1.json
+      - v1/dist/certification/P2.*.json
+      - v1/dist/certification/phase-2.json
+      - v1/dist/certification/R16.00.*.json
       - '!**/*.md'
       - '!**/*.markdown'
       - '!**/*.mdown'

@@ -16,7 +16,7 @@
 
 This document defines the mandatory development, quality, license, project-policy, review, check-in, CI, and runner-continuity workflow for ZX-UX.
 
-The order is deliberate. Disk-copy inspection comes first. License and prohibited-name enforcement follow. The programmer/author and adversarial reviewer then complete a dynamic handshake immediately before check-in. Direct check-in to `main` is the normal path; routine branch-and-merge staging is discouraged for this single-developer project. Automated runner validation follows every normal non-document-only check-in to `main`; documentation-only pushes are excluded at trigger time.
+The order is deliberate. Disk-copy inspection comes first. License and prohibited-name enforcement follow. The programmer/author and adversarial reviewer then complete a dynamic handshake immediately before check-in. Direct check-in to `main` is the normal path; routine branch-and-merge staging is discouraged for this single-developer project. Automated runner validation follows non-document check-ins whose changed paths can affect that runner's scope; documentation-only pushes and control-plane-only workflow changes are excluded from heavyweight runners at trigger time.
 
 ### 1.1 Revision authority epochs and the Phase-2/Phase-3 transition
 
@@ -159,7 +159,9 @@ After Sections 2 through 5 pass:
 
 ZX-UX uses GitHub-hosted `ubuntu-latest` runners for project automation and CI.
 
-Push-triggered workflows exclude documentation-only changes repository-wide through documentation path and file-type filters. A mixed push containing any otherwise-matching non-document change still runs normally. A documentation-only REV16/REV07 publication is therefore runner-silent by design regardless of whether it occurs during Phase 2 or after `P2.24`; the bridge itself is not established by that publication and remains subject to the explicit `R16.00` certification transaction after the complete Phase-2 PASS.
+Push-triggered workflows exclude documentation-only changes repository-wide through documentation path and file-type filters. Heavyweight workflows additionally scope their push triggers to files capable of affecting the workflow's certified subject. Control-plane-only qualification, dispatch, recovery, and one-shot orchestration workflow edits do not by themselves justify a full Quality-and-CI rebuild. A mixed push containing any otherwise-matching executable or certification-input change still runs normally. A documentation-only REV16/REV07 publication is therefore runner-silent by design regardless of whether it occurs during Phase 2 or after `P2.24`; the bridge itself is not established by that publication and remains subject to the explicit `R16.00` certification transaction after the complete Phase-2 PASS.
+
+Completed historical-phase validators must not be triggered solely because evidence for a later phase is added or activated. Their automatic push filters must be limited to their own admitted evidence and executable inputs that can invalidate that phase. Later-phase gates should use lightweight immutable-evidence integrity checks for earlier completed phases, except where the controlling canonical step explicitly requires a full historical-phase rerun.
 
 The runner is disposable. A job may use its local filesystem while it runs, but no later job may assume that filesystem still exists. Required continuity is reconstructed from repository content and GitHub Actions artifacts.
 
