@@ -66,7 +66,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
     return [
         {
             "name": "target-ccitt-false-parameters-exact",
-            "passed": all(token in body for token in ("ld de,$ffff", "xor $21", "xor $10", "sla e", "rl d")),
+            "passed": all(token in body for token in ("ld de,M48O_CRC16_INIT", "xor $21", "xor $10", "sla e", "rl d")),
         },
         {
             "name": "target-zero-length-is-init-value",
@@ -103,6 +103,7 @@ def _assemble_crc(
     fixture = build / "p502-crc16.asm"
     fixture.write_text(
         """    DEVICE ZXSPECTRUM48
+    INCLUDE "../include/tapeobj.inc"
     INCLUDE "../src/kernel/tape.asm"
     ORG $C000
     EMIT_P502_CRC16_ROUTINES
@@ -224,6 +225,7 @@ def dispatch(
         "v1/build/kernel.bin": sha256_file(kernel),
         "v1/build/p502-crc16.bin": sha256_file(binary),
         "v1/src/kernel/tape.asm": sha256_file(root / "v1/src/kernel/tape.asm"),
+        "v1/include/tapeobj.inc": sha256_file(root / "v1/include/tapeobj.inc"),
         "v1/tools-host/maketap/maketap.py": sha256_file(root / MAKETAP),
         "v1/tools-host/test-driver/phase5_crc16.py": sha256_file(root / "v1/tools-host/test-driver/phase5_crc16.py"),
         "v1/tools-host/test-driver/run.py": sha256_file(root / "v1/tools-host/test-driver/run.py"),

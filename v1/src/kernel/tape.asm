@@ -17,7 +17,7 @@
 ; Polynomial=$1021, init=$FFFF, refin=false, refout=false, xorout=$0000.
 ; Consumes HL/BC and clobbers AF. Zero length returns $FFFF.
 zx48_crc16_ccitt_false:
-    ld de,$ffff
+    ld de,M48O_CRC16_INIT
 zx48_crc16_ccitt_false_byte:
     ld a,b
     or c

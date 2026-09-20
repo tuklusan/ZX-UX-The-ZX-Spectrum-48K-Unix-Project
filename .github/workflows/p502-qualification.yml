@@ -39,6 +39,7 @@ jobs:
           printf '%s\n' \
             .github/workflows/p502-qualification.yml \
             v1/src/kernel/tape.asm \
+            v1/include/tapeobj.inc \
             v1/tools-host/maketap/maketap.py \
             v1/tools-host/test-driver/phase5_crc16.py \
             v1/tools-host/test-driver/run.py | sort > /tmp/p502-expected
@@ -55,7 +56,7 @@ jobs:
             find v1/tools-host -type d -name __pycache__ -prune -exec rm -rf {} +
             test -z "$(git status --porcelain)"
             test "$(git rev-parse 'HEAD^{tree}')" = "$tree"
-            digest="$(sha256sum v1/src/kernel/tape.asm v1/tools-host/maketap/maketap.py v1/tools-host/test-driver/phase5_crc16.py v1/tools-host/test-driver/run.py .github/workflows/p502-qualification.yml v1/dist/certification/P5.01.build.json v1/dist/certification/P5.01.test.json | sha256sum | awk '{print $1}')"
+            digest="$(sha256sum v1/src/kernel/tape.asm v1/include/tapeobj.inc v1/tools-host/maketap/maketap.py v1/tools-host/test-driver/phase5_crc16.py v1/tools-host/test-driver/run.py .github/workflows/p502-qualification.yml v1/dist/certification/P5.01.build.json v1/dist/certification/P5.01.test.json | sha256sum | awk '{print $1}')"
             if test -z "$baseline"; then baseline="$digest"; else test "$baseline" = "$digest"; fi
             echo "SCAN-$scan: CLEAN"
           done
