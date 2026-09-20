@@ -1,0 +1,171 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "complete-header-validation-precedes-allocation",
+      "passed": true
+    },
+    {
+      "name": "raw-length-equality-and-32768-bound",
+      "passed": true
+    },
+    {
+      "name": "raw-codec-and-flags-required",
+      "passed": true
+    },
+    {
+      "name": "public-placement-and-name-validated-before-allocation",
+      "passed": true
+    },
+    {
+      "name": "final-allocation-only-no-payload-staging-copy",
+      "passed": true
+    },
+    {
+      "name": "stream-direct-to-allocation-in-512-blocks",
+      "passed": true
+    },
+    {
+      "name": "incremental-logical-crc-over-final-bytes",
+      "passed": true
+    },
+    {
+      "name": "publication-after-length-and-crc-only",
+      "passed": true
+    },
+    {
+      "name": "failure-frees-private-allocation-and-clears-publication",
+      "passed": true
+    },
+    {
+      "name": "truncation-rejected-before-publication",
+      "passed": true
+    },
+    {
+      "name": "extra-chunk-bytes-rejected-before-publication",
+      "passed": true
+    },
+    {
+      "name": "rom-checksum-failure-rejected-before-publication",
+      "passed": true
+    },
+    {
+      "name": "raw-load-final-allocation-bytes-and-equal-lengths-runtime",
+      "passed": true
+    },
+    {
+      "name": "logical-crc-mismatch-frees-private-state-no-publication",
+      "passed": true
+    },
+    {
+      "name": "allocation-failure-no-publication",
+      "passed": true
+    },
+    {
+      "name": "header-rejected-before-allocation",
+      "passed": true
+    },
+    {
+      "name": "transport-failure-frees-private-state-no-publication",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 28,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13508 lines, work time: 0.027 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p504-raw-loader.lst",
+        "--sym=p504-raw-loader.sym",
+        "p504-raw-loader.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 6,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 1448 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--tape",
+        "/tmp/zxux-p504-fuse-c2z7impy/p504.tap",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-p504-fuse-c2z7impy/p504.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 148,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--tape",
+        "/tmp/zxux-p504-fuse-spo0dzxq/p504.tap",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-p504-fuse-spo0dzxq/p504.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 131,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p504-raw-loader.bin": "62f75b200a1c4043caa4431941c79fb7a60518dab40090eeedd291eacb8c4a5a",
+    "v1/dist/certification/P5.03.build.json": "a84a38dcdcfa7e41f45e0053c26e9ea356a30713de43c70d7de598d485781ba3",
+    "v1/dist/certification/P5.03.test.json": "15a81d999be86ea4085aab7b38becdc1439f97005a92c4797d6dfd10bb6ca042",
+    "v1/src/kernel/tape.asm": "a69ac88a92dc5b5bbd3f4a0a94932bd1a9b999ebfbc2d648b528ebde335a8a9f",
+    "v1/tools-host/test-driver/phase5_raw_loader.py": "cb124b50bd4be87df657ef81011ef4b0a986ce592bfdd7a9e70869fd9f6284c1",
+    "v1/tools-host/test-driver/run.py": "66cc84c070cc193b32de83d0f11e36e95c179e6413b42fe8f95914e99c74d4f2"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P5.03": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "79dc8412013c9084713e19bf7b245d033cf5b5c8",
+  "status": "PASS",
+  "step": "P5.04",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
