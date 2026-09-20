@@ -1124,6 +1124,8 @@ zx48_p418_history_count_done:
     ld l,(iy+P418_C_LOGICAL_POS)
     ld h,(iy+P418_C_LOGICAL_POS+1)
     inc hl
+    ld a,h
+    or l
     jp z,zx48_p418_format
     ld (iy+P418_C_LOGICAL_POS),l
     ld (iy+P418_C_LOGICAL_POS+1),h
