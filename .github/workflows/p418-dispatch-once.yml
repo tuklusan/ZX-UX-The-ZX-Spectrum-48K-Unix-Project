@@ -10,7 +10,7 @@
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
 
-name: P4.18 one-shot qualification and admission bridge v5
+name: P4.18 one-shot qualification and admission bridge v6
 
 on:
   push:
@@ -56,6 +56,7 @@ jobs:
           test -n "$run_id"
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
           gh run watch "$run_id" --repo "${GITHUB_REPOSITORY}" --exit-status
+          gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" -f state=success -f context=p418-qualification -f description="qualification PASS"
 
       - name: Download and validate exact P4.18 evidence
         env:
@@ -87,6 +88,7 @@ jobs:
           assert meta==sha
           assert status==""
           PY
+          gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" -f state=success -f context=p418-evidence -f description="evidence validation PASS"
 
       - name: Admit P4.18 evidence only
         id: admit
@@ -105,6 +107,7 @@ jobs:
           admission_sha="$(git rev-parse HEAD)"
           echo "admission_sha=$admission_sha" >> "$GITHUB_OUTPUT"
           git push origin HEAD:main
+          gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" -f state=success -f context=p418-admission -f description="evidence admission pushed"
 
       - name: Require admission-triggered validations PASS
         env:
@@ -126,6 +129,7 @@ jobs:
               fi
               if test "$active" -eq 0; then
                 jq . <<<"$data"
+                gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" -f state=success -f context=p418-post-admission -f description="admission validations PASS"
                 exit 0
               fi
             fi
