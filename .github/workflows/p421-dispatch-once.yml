@@ -10,7 +10,7 @@
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
 
-name: P4.21 one-shot qualification and admission bridge v2
+name: P4.21 one-shot qualification and admission bridge v2 v2
 
 on:
   push:
