@@ -24,6 +24,35 @@ PATH_KIND_DIR             EQU 0
 PATH_KIND_BASE            EQU 1
 
 ;
+; P4.31 exact SYS_CHDIR fixed-directory transaction.
+;
+    MACRO EMIT_P431_CHDIR_OBJECT_ROUTINES
+; HL=NUL path already proven user-readable by syscall wrapper. Commit cwd only
+; after complete normalized fixed-directory resolution succeeds.
+zx48_p431_chdir:
+    call zx48_path_resolve
+    ret c
+    ld a,c
+    cp PATH_KIND_DIR
+    jr nz,zx48_p431_chdir_noent
+    ld a,(path_dir)
+    ld (p431_target_dir),a
+    ld a,(current_pid)
+    call zx48_process_lookup
+    ret c
+    ld a,(p431_target_dir)
+    ld (ix+PROC_CWD),a
+    ld hl,0
+    xor a
+    ret
+zx48_p431_chdir_noent:
+    ld a,E_NOENT
+    scf
+    ret
+p431_target_dir: db 0
+    ENDM
+
+;
 ; P4.03 mutable-record footprint. Later Phase-4 steps attach namespace and I/O
 ; semantics; this macro freezes the record bytes, capacity and representation
 ; invariants without pulling the full object-store implementation into the kernel.
