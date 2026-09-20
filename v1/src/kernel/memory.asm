@@ -505,3 +505,54 @@ memory_cold_total: dw 0
 memory_cold_largest: dw 0
 memory_free_extents: defs FREE_EXTENT_COUNT*4,0
     ENDM
+
+;
+; P4.26 bounded allocation-pressure compaction. This wrapper leaves the frozen
+; base allocator unchanged: one ordinary ANY/COLD failure may trigger exactly
+; one zxpack victim attempt, then exactly one guarded retry.
+;
+    MACRO EMIT_P426_COMPACT_ALLOC_ROUTINES
+; A=allocation policy, BC=request -> HL=base.
+zx48_p426_alloc:
+    ld (p426_request_policy),a
+    ld (p426_request_size),bc
+    call zx48_alloc
+    ret nc
+    cp E_NOMEM
+    ret nz
+
+    ; FAST_REQUIRED and explicitly guarded allocations never compact.
+    ld a,(p426_request_policy)
+    bit 7,a
+    jr nz,zx48_p426_nomem
+    and $7f
+    cp ALLOC_FAST_REQUIRED
+    jr z,zx48_p426_nomem
+
+    ; Compression is non-recursive even if a future internal caller reaches
+    ; this wrapper without the public NO_COMPACT bit.
+    ld a,(p426_compact_depth)
+    or a
+    jr nz,zx48_p426_nomem
+    inc a
+    ld (p426_compact_depth),a
+    call zx48_p426_try_one_victim
+    xor a
+    ld (p426_compact_depth),a
+
+    ; One retry only. Mark it guarded so the retry can never recurse.
+    ld a,(p426_request_policy)
+    or ALLOC_NO_COMPACT
+    ld bc,(p426_request_size)
+    jp zx48_alloc
+
+zx48_p426_nomem:
+    ld a,E_NOMEM
+    scf
+    ret
+
+p426_request_policy: db 0
+p426_request_size: dw 0
+p426_compact_depth: db 0
+    ENDM
+
