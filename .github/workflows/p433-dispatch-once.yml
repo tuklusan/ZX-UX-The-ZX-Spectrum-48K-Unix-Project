@@ -10,7 +10,7 @@
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
 
-name: P4.33 Phase 4 qualification admission and activation bridge
+name: P4.33 Phase 4 qualification admission and activation bridge retry 1
 
 on:
   push:
@@ -101,8 +101,7 @@ jobs:
           ./tools/check_project_policy.py
           git diff --check
           git add v1/dist/certification/P4.33.build.json v1/dist/certification/P4.33.test.json v1/dist/certification/P4.33.result.json
-          test "$(git diff --cached --name-only | sort)" = "$(printf '%s
-' v1/dist/certification/P4.33.build.json v1/dist/certification/P4.33.result.json v1/dist/certification/P4.33.test.json | sort)"
+          test "$(git diff --cached --name-only | sort)" = "$(printf '%s\\n' v1/dist/certification/P4.33.build.json v1/dist/certification/P4.33.result.json v1/dist/certification/P4.33.test.json | sort)"
           git config user.name github-actions
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git commit -m "P4.33: admit qualified Phase-4 acceptance evidence"
