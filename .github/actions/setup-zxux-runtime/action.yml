@@ -40,10 +40,12 @@ runs:
         lock_sha="$(sha256sum tools/manifest/toolchain.lock.json | awk '{print $1}')"
         bootstrap_sha="$(sha256sum tools/scripts/bootstrap-environment.py | awk '{print $1}')"
         verify_sha="$(sha256sum tools/scripts/verify-environment.py | awk '{print $1}')"
+        provenance_sha="$(sha256sum tools/scripts/record-bootstrap-provenance.py | awk '{print $1}')"
+        action_sha="$(sha256sum .github/actions/setup-zxux-runtime/action.yml | awk '{print $1}')"
         image_os="${ImageOS:-ubuntu24}"
         image_version="${ImageVersion:-unknown}"
         image_token="$(printf '%s-%s' "$image_os" "$image_version" | tr -c 'A-Za-z0-9_.-' '-')"
-        base="zxux-runtime-v1-${RUNNER_OS:-Linux}-${RUNNER_ARCH:-unknown}-${image_token}-${lock_sha}-${bootstrap_sha}-${verify_sha}"
+        base="zxux-runtime-v2-${RUNNER_OS:-Linux}-${RUNNER_ARCH:-unknown}-${image_token}-${lock_sha}-${bootstrap_sha}-${verify_sha}-${provenance_sha}-${action_sha}"
         primary="${base}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
         printf 'base_key=%s\n' "$base" >> "$GITHUB_OUTPUT"
         printf 'primary_key=%s\n' "$primary" >> "$GITHUB_OUTPUT"
@@ -63,7 +65,9 @@ runs:
       run: |
         set -euo pipefail
         matched='${{ steps.runtime_cache.outputs.cache-matched-key }}'
-        if test -n "$matched" && test -x tools/runtime/python/bin/python; then
+        if test -n "$matched" \
+          && test -x tools/runtime/python/bin/python \
+          && test -f tools/runtime/bootstrap-provenance.json; then
           if tools/runtime/python/bin/python tools/scripts/verify-environment.py; then
             echo "valid=true" >> "$GITHUB_OUTPUT"
             echo "ZX-UX VERIFIED RUNTIME CACHE HIT"
@@ -87,10 +91,38 @@ runs:
       run: |
         set -euo pipefail
         python tools/scripts/bootstrap-environment.py
+        tools/runtime/python/bin/python tools/scripts/record-bootstrap-provenance.py \
+          --output tools/runtime/bootstrap-provenance.json
 
     - name: Certify runtime
       shell: bash
       run: tools/runtime/python/bin/python tools/scripts/verify-environment.py
+
+    - name: Publish non-normative bootstrap provenance
+      shell: bash
+      run: |
+        set -euo pipefail
+        provenance=tools/runtime/bootstrap-provenance.json
+        test -f "$provenance"
+        echo "ZX-UX BOOTSTRAP PROVENANCE (informational; not certification input)"
+        sha256sum "$provenance"
+        tools/runtime/python/bin/python - "$provenance" <<'PY'
+        import json
+        import sys
+        from pathlib import Path
+        data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+        runner = data["runner"]
+        print(f"runner_image={runner.get('image_os')} {runner.get('image_version')}")
+        for item in data["bootstrap"]["requested_native_build_prerequisites"]:
+            print(
+                f"apt={item['requested']}={item['version']} "
+                f"package={item['package']} arch={item['architecture']}"
+            )
+        PY
+        if test -n "${ZXUX_EVIDENCE_DIR:-}"; then
+          mkdir -p "$ZXUX_EVIDENCE_DIR"
+          cp "$provenance" "$ZXUX_EVIDENCE_DIR/bootstrap-provenance.json"
+        fi
 
     - name: Save rebuilt certified runtime
       if: steps.restored.outputs.valid != 'true'

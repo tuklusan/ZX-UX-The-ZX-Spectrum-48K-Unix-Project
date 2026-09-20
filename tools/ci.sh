@@ -27,6 +27,7 @@ required_files=(
   "tools/check_project_policy.py"
   "tools/check_license_headers.sh"
   "tools/check_reference_tree.py"
+  "tools/scripts/record-bootstrap-provenance.py"
 )
 
 for file in "${required_files[@]}"; do
@@ -127,6 +128,21 @@ for path in (
 ):
     if "uses: ./.github/actions/setup-zxux-runtime" not in path.read_text(encoding="utf-8"):
         raise SystemExit(f"ERROR: heavyweight runtime workflow does not use certified runtime cache action: {path}")
+
+runtime_action = Path(".github/actions/setup-zxux-runtime/action.yml").read_text(encoding="utf-8")
+for marker in (
+    "tools/scripts/record-bootstrap-provenance.py",
+    "tools/runtime/bootstrap-provenance.json",
+    "ZX-UX BOOTSTRAP PROVENANCE (informational; not certification input)",
+    "provenance_sha=",
+    "action_sha=",
+):
+    if marker not in runtime_action:
+        raise SystemExit(f"ERROR: bootstrap provenance wiring missing: {marker}")
+
+verify_text = Path("tools/scripts/verify-environment.py").read_text(encoding="utf-8")
+if "bootstrap-provenance.json" in verify_text or "record-bootstrap-provenance" in verify_text:
+    raise SystemExit("ERROR: bootstrap provenance must remain outside certification requirements")
 PY_ACTIVE_WORKFLOW_POLICY
 then
   fail=1
