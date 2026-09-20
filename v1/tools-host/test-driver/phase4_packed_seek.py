@@ -206,9 +206,9 @@ def _runtime(root: Path, s: dict[str, int], module: bytes) -> None:
     sequence = (0, 1, 17, 64, 129, 7, 200, 33, len(logical) - 1, len(logical))
     prefix_535 = sequence[:sequence.index(len(logical) - 1) + 1]
     cases = [
-        ("seek-535-ignore-carry", lambda: _run_sequence(root, s, module, encoded, logical, prefix_535, "ignore-carry")),
         ("seek-535-ignore-logical", lambda: _run_sequence(root, s, module, encoded, logical, prefix_535, "ignore-logical")),
         ("seek-535-ignore-sentinel", lambda: _run_sequence(root, s, module, encoded, logical, prefix_535, "ignore-sentinel")),
+        ("seek-535-ignore-carry", lambda: _run_sequence(root, s, module, encoded, logical, prefix_535, "ignore-carry")),
         ("seek-535-seek-only", lambda: _run_sequence(root, s, module, encoded, logical, prefix_535, "seek-only")),
         ("seek-535-step-no-byte", lambda: _run_sequence(root, s, module, encoded, logical, prefix_535, "step-no-byte")),
         ("seek-535-step-no-pos", lambda: _run_sequence(root, s, module, encoded, logical, prefix_535, "step-no-pos")),
