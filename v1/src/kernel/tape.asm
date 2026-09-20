@@ -2069,7 +2069,8 @@ zx48_p509_commit:
     ld hl,p509_requested_name
     call zx48_object_lookup
     jr c,zx48_p509_commit_new
-    ld (p509_existing_slot),c
+    ld a,c
+    ld (p509_existing_slot),a
     ld (p509_existing_ptr),ix
     ld a,(ix+OBJ_RESERVED_BYTE)
     cp STATE_RAM
