@@ -1,0 +1,113 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "exact-path-register-contract",
+      "passed": true
+    },
+    {
+      "name": "raw-noop-returns-logical-length",
+      "passed": true
+    },
+    {
+      "name": "packed-live-handle-ebusy",
+      "passed": true
+    },
+    {
+      "name": "exact-logical-destination-allocation",
+      "passed": true
+    },
+    {
+      "name": "whole-stream-final-memory-sink",
+      "passed": true
+    },
+    {
+      "name": "no-separate-history-allocation",
+      "passed": true
+    },
+    {
+      "name": "validate-before-publish",
+      "passed": true
+    },
+    {
+      "name": "publish-before-packed-free",
+      "passed": true
+    },
+    {
+      "name": "decode-failure-private-cleanup",
+      "passed": true
+    },
+    {
+      "name": "raw-noop-logical-length-runtime",
+      "passed": true
+    },
+    {
+      "name": "packed-busy-gate-runtime",
+      "passed": true
+    },
+    {
+      "name": "whole-stream-direct-memory-backref-runtime",
+      "passed": true
+    },
+    {
+      "name": "failure-preserves-packed-runtime",
+      "passed": true
+    },
+    {
+      "name": "atomic-packed-to-raw-swap-runtime",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12934 lines, work time: 0.033 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p423-sys-unpack.lst",
+        "--sym=p423-sys-unpack.sym",
+        "p423-sys-unpack.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 21,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 9446 lines, work time: 0.020 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p423-sys-unpack.bin": "f2c6937b1554c0890ab31255052aaed1d321b551711aa8d38612affe592b7822",
+    "v1/dist/certification/P4.22.test.json": "863b7195ac0d6561873be600eeac7660c3a43ab5f1a2c0ea308d1e0cec7080a4",
+    "v1/src/kernel/objects.asm": "905880893696cc576f6dfcf6b94ff3ec0b434bd65d9a7f21102e07341c0a939d",
+    "v1/src/kernel/zxpack.asm": "0143f34d607b56ef04065ac525e2674fb6bf7323390aba38763fc0181e0f5baf",
+    "v1/tools-host/test-driver/phase4_sys_unpack.py": "a4e4afe1eac9f9763b8bb24674ffbd71878500571f9ca58f5b1fe76e51e217a7",
+    "v1/tools-host/test-driver/run.py": "4c42cfd802b2d01edfc060fd014c94410d1e3cc6fc5247cabf49efc62fecb3c0"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P4.22": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "e2725ae72ac495b02ab549f8c2ed93b24e8f5b6b",
+  "status": "PASS",
+  "step": "P4.23",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
