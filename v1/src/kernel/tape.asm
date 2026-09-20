@@ -12,7 +12,41 @@
 ;
 ; Synchronous cassette transport. Physical positioning is never inferred.
 
+    MACRO EMIT_P502_CRC16_ROUTINES
+; HL=source, BC=length. Returns DE=CRC-16/CCITT-FALSE.
+; Polynomial=$1021, init=$FFFF, refin=false, refout=false, xorout=$0000.
+; Consumes HL/BC and clobbers AF. Zero length returns $FFFF.
+zx48_crc16_ccitt_false:
+    ld de,$ffff
+zx48_crc16_ccitt_false_byte:
+    ld a,b
+    or c
+    ret z
+    ld a,(hl)
+    inc hl
+    xor d
+    ld d,a
+    dec bc
+    push bc
+    ld b,8
+zx48_crc16_ccitt_false_bit:
+    sla e
+    rl d
+    jr nc,zx48_crc16_ccitt_false_no_poly
+    ld a,e
+    xor $21
+    ld e,a
+    ld a,d
+    xor $10
+    ld d,a
+zx48_crc16_ccitt_false_no_poly:
+    djnz zx48_crc16_ccitt_false_bit
+    pop bc
+    jr zx48_crc16_ccitt_false_byte
+    ENDM
+
     MACRO EMIT_TAPE_ROUTINES
+    EMIT_P502_CRC16_ROUTINES
 ; A=block type,DE=length,IX=source.
 zx48_tape_save_block:
     call zx48_rom_sa_bytes

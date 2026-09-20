@@ -26,6 +26,12 @@ KERNEL_SIZE = 8192
 BOOT_GATEWAY = 0xE003
 BOOT_GATEWAY_DECIMAL = 57347
 
+CRC16_CCITT_FALSE_POLY = 0x1021
+CRC16_CCITT_FALSE_INIT = 0xFFFF
+CRC16_CCITT_FALSE_XOROUT = 0x0000
+CRC16_CCITT_FALSE_REFIN = False
+CRC16_CCITT_FALSE_REFOUT = False
+
 M48O_TXT = 1
 M48O_BIN = 2
 M48O_FNT = 9
@@ -79,12 +85,16 @@ def _u16(value: int) -> bytes:
 
 
 def crc16_ccitt_false(data: bytes) -> int:
-    crc = 0xFFFF
+    crc = CRC16_CCITT_FALSE_INIT
     for byte in data:
         crc ^= byte << 8
         for _ in range(8):
-            crc = ((crc << 1) ^ 0x1021) & 0xFFFF if crc & 0x8000 else (crc << 1) & 0xFFFF
-    return crc
+            crc = (
+                ((crc << 1) ^ CRC16_CCITT_FALSE_POLY) & 0xFFFF
+                if crc & 0x8000
+                else (crc << 1) & 0xFFFF
+            )
+    return crc ^ CRC16_CCITT_FALSE_XOROUT
 
 
 def _integer_number(value: int) -> bytes:
