@@ -803,6 +803,31 @@ zx48_sys_spawn_preflight_invalid:
 
 
 ;
+; P4.31 exact SYS_CHDIR syscall surface.
+;
+    MACRO EMIT_P431_CHDIR_SYSCALL_ROUTINES
+; HL=NUL-terminated directory path. Prove the complete user C string before
+; resolution; no cwd byte is changed until zx48_p431_chdir commits.
+zx48_p431_sys_chdir:
+    ld (p431_chdir_path),hl
+zx48_p431_chdir_validate_loop:
+    push hl
+    ld bc,1
+    call zx48_user_range_validate
+    pop hl
+    ret c
+    ld a,(hl)
+    or a
+    jr z,zx48_p431_chdir_validated
+    inc hl
+    jr zx48_p431_chdir_validate_loop
+zx48_p431_chdir_validated:
+    ld hl,(p431_chdir_path)
+    jp zx48_p431_chdir
+p431_chdir_path: dw 0
+    ENDM
+
+;
 ; P4.28 exact SYS_ZXPACK_INFO syscall surface.
 ;
     MACRO EMIT_P428_ZXPACK_INFO_SYSCALL_ROUTINES
