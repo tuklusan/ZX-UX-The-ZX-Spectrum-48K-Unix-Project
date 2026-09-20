@@ -4510,7 +4510,7 @@ zx48_p427_crc16_bit:
 zx48_p427_crc16_shift:
     sla e
     rl d
-    djnz zx48_p427_crc16_shift
+    djnz zx48_p427_crc16_bit
     ret
 
 p427_object_ptr: dw 0
