@@ -1,0 +1,101 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "path-resolve-precedes-tape-motion",
+      "passed": true
+    },
+    {
+      "name": "complete-header-before-lock",
+      "passed": true
+    },
+    {
+      "name": "exact-raw-codec-and-flags",
+      "passed": true
+    },
+    {
+      "name": "public-placement-validated",
+      "passed": true
+    },
+    {
+      "name": "header-then-512-byte-chunks",
+      "passed": true
+    },
+    {
+      "name": "record-prompt-before-global-lock",
+      "passed": true
+    },
+    {
+      "name": "all-tape-errors-release-lock",
+      "passed": true
+    },
+    {
+      "name": "packed-source-deferred-to-p508",
+      "passed": true
+    },
+    {
+      "name": "raw-txt-header-and-chunk-count-runtime",
+      "passed": true
+    },
+    {
+      "name": "raw-txt-logical-crc-runtime",
+      "passed": true
+    },
+    {
+      "name": "global-lock-released-after-success-runtime",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13518 lines, work time: 0.033 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p507-raw-save.lst",
+        "--sym=p507-raw-save.sym",
+        "p507-raw-save.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 7,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2266 lines, work time: 0.006 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p507-raw-save.bin": "c69214d440c19b53aff471b6cd4cff1533ee9dfeb3eeb040ff961b223f702060",
+    "v1/dist/certification/P5.06.build.json": "1665927d969e0bb7660a339971fe7f87823d10a8dbf9eac1acd0217f801e0c64",
+    "v1/dist/certification/P5.06.test.json": "1ed949dce65ff4a95255aa47b94c6c554d112da8008ac39652184a0c812d0495",
+    "v1/src/kernel/tape.asm": "e47a59bec4f8f24b39a6e7999879b5db32acf33b6caaaa7f1d468f2767e9ffb8",
+    "v1/tools-host/test-driver/phase5_raw_save.py": "1b1896b9f7af6b3ae2240acdad23c8664e909307cb41685ce76cde9f79baa73c",
+    "v1/tools-host/test-driver/run.py": "cf5e5169cfb945a2c9f890ec5b154ec54422c5c2d3ad035b6fad73c84482b01b"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P5.06": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "03061c22058a75ba55b861cb8f03152f513a2234",
+  "status": "PASS",
+  "step": "P5.07",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
