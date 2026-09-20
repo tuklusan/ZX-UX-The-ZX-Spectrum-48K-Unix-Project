@@ -849,6 +849,478 @@ p505_decoder_free: db 0
 p505_error: db 0
     ENDM
 
+    MACRO EMIT_P506_PINNED_SYSTEM_ROUTINES
+; HL -> validated candidate M48O header, IX -> complete physical source bytes.
+; font4x8 and bincat may arrive RAW or PACKED; their final published form is
+; always one pinned RAW allocation. The zero-length crontab bootstrap object is
+; accepted only as RAW and never allocates payload storage.
+zx48_p506_boot_resource:
+    ld (p506_header_ptr),hl
+    ld (p506_physical_ptr),ix
+    xor a
+    ld (p506_alloc_ptr),a
+    ld (p506_alloc_ptr+1),a
+    ld (p506_alloc_live),a
+    ld (p506_kind),a
+
+    ; Exact M48O magic/version.
+    ld hl,(p506_header_ptr)
+    ld a,(hl)
+    cp M48O_MAGIC_0
+    jp nz,zx48_p506_format
+    inc hl
+    ld a,(hl)
+    cp M48O_MAGIC_1
+    jp nz,zx48_p506_format
+    inc hl
+    ld a,(hl)
+    cp M48O_MAGIC_2
+    jp nz,zx48_p506_format
+    inc hl
+    ld a,(hl)
+    cp M48O_MAGIC_3
+    jp nz,zx48_p506_format
+    inc hl
+    ld a,(hl)
+    cp M48O_VERSION
+    jp nz,zx48_p506_format
+
+    ; Classify exact bootstrap resource by type/target/name.
+    inc hl
+    ld a,(hl)
+    ld (p506_type),a
+    inc hl
+    ld a,(hl)
+    ld (p506_flags),a
+    inc hl
+    ld a,(hl)
+    ld (p506_target),a
+
+    ld a,(p506_type)
+    cp M48O_TYPE_FNT
+    jr z,zx48_p506_maybe_font
+    cp M48O_TYPE_SYS
+    jr z,zx48_p506_maybe_bincat
+    cp M48O_TYPE_CFG
+    jr z,zx48_p506_maybe_crontab
+    jp zx48_p506_format
+
+zx48_p506_maybe_font:
+    ld a,(p506_target)
+    cp M48O_TARGET_SYSTEM
+    jp nz,zx48_p506_format
+    ld hl,p506_name_font4x8
+    ld a,1
+    jr zx48_p506_match_name
+zx48_p506_maybe_bincat:
+    ld a,(p506_target)
+    cp M48O_TARGET_SYSTEM
+    jp nz,zx48_p506_format
+    ld hl,p506_name_bincat
+    ld a,2
+    jr zx48_p506_match_name
+zx48_p506_maybe_crontab:
+    ld a,(p506_target)
+    cp M48O_TARGET_ETC
+    jp nz,zx48_p506_format
+    ld hl,p506_name_crontab
+    ld a,3
+zx48_p506_match_name:
+    ld (p506_kind),a
+    ld de,(p506_header_ptr)
+    ld bc,M48O_HDR_NAME
+    ex de,hl
+    add hl,bc
+    ex de,hl
+    ld b,M48O_NAME_SIZE
+zx48_p506_name_loop:
+    ld a,(de)
+    cp (hl)
+    jp nz,zx48_p506_format
+    inc de
+    inc hl
+    djnz zx48_p506_name_loop
+
+    ; Capture physical/logical lengths.
+    ld hl,(p506_header_ptr)
+    ld bc,M48O_HDR_STORAGE_LEN
+    add hl,bc
+    ld c,(hl)
+    inc hl
+    ld b,(hl)
+    ld (p506_storage_length),bc
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (p506_logical_length),de
+
+    ; Reserved bytes must be zero.
+    ld hl,(p506_header_ptr)
+    ld bc,M48O_HDR_RESERVED
+    add hl,bc
+    ld b,M48O_RESERVED_SIZE
+zx48_p506_reserved:
+    ld a,(hl)
+    or a
+    jp nz,zx48_p506_format
+    inc hl
+    djnz zx48_p506_reserved
+
+    ; Header CRC is computed with its own field zeroed, then restored.
+    ld hl,(p506_header_ptr)
+    ld bc,M48O_HDR_HEADER_CRC
+    add hl,bc
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (p506_header_crc),de
+    xor a
+    ld (hl),a
+    dec hl
+    ld (hl),a
+    ld hl,(p506_header_ptr)
+    ld bc,M48O_HDR_SIZE
+    call zx48_crc16_ccitt_false
+    push de
+    ld hl,(p506_header_ptr)
+    ld bc,M48O_HDR_HEADER_CRC
+    add hl,bc
+    ld de,(p506_header_crc)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    pop hl
+    ld de,(p506_header_crc)
+    or a
+    sbc hl,de
+    jp nz,zx48_p506_format
+
+    ld hl,(p506_header_ptr)
+    ld bc,M48O_HDR_PAYLOAD_CRC
+    add hl,bc
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (p506_expected_crc),de
+
+    ld a,(p506_kind)
+    cp 3
+    jr z,zx48_p506_crontab
+
+    ; System resources require exact logical sizes.
+    cp 1
+    jr nz,zx48_p506_bincat_size
+    ld hl,(p506_logical_length)
+    ld de,392
+    or a
+    sbc hl,de
+    jp nz,zx48_p506_format
+    jr zx48_p506_representation
+zx48_p506_bincat_size:
+    ld hl,(p506_logical_length)
+    ld de,488
+    or a
+    sbc hl,de
+    jp nz,zx48_p506_format
+
+zx48_p506_representation:
+    ld a,(p506_flags)
+    or a
+    jr z,zx48_p506_raw
+    cp M48O_PACKED
+    jp nz,zx48_p506_format
+
+    ; PACKED: codec ZXP1 and 0 < physical < logical.
+    ld hl,(p506_header_ptr)
+    ld bc,M48O_HDR_CODEC
+    add hl,bc
+    ld a,(hl)
+    cp low M48O_CODEC_ZXP1
+    jp nz,zx48_p506_format
+    inc hl
+    ld a,(hl)
+    cp high M48O_CODEC_ZXP1
+    jp nz,zx48_p506_format
+    ld hl,(p506_storage_length)
+    ld a,h
+    or l
+    jp z,zx48_p506_format
+    ld de,(p506_logical_length)
+    or a
+    sbc hl,de
+    jp nc,zx48_p506_format
+    jr zx48_p506_allocate
+
+zx48_p506_raw:
+    ; RAW: codec zero and physical length equals logical length.
+    ld hl,(p506_header_ptr)
+    ld bc,M48O_HDR_CODEC
+    add hl,bc
+    ld a,(hl)
+    inc hl
+    or (hl)
+    jp nz,zx48_p506_format
+    ld hl,(p506_storage_length)
+    ld de,(p506_logical_length)
+    or a
+    sbc hl,de
+    jp nz,zx48_p506_format
+
+zx48_p506_allocate:
+    ld bc,(p506_logical_length)
+    ld a,(p506_kind)
+    cp 1
+    ld a,ALLOC_FAST_REQUIRED
+    jr z,zx48_p506_do_alloc
+    ld a,ALLOC_COLD_PREFERRED
+zx48_p506_do_alloc:
+    call zx48_alloc
+    ret c
+    ld (p506_alloc_ptr),hl
+    ld a,1
+    ld (p506_alloc_live),a
+
+    ld a,(p506_flags)
+    or a
+    jr nz,zx48_p506_decode_packed
+
+    ; RAW bytes copy directly into final pinned allocation.
+    push ix
+    pop hl
+    ld de,(p506_alloc_ptr)
+    ld bc,(p506_logical_length)
+    ldir
+    ld hl,(p506_alloc_ptr)
+    ld bc,(p506_logical_length)
+    call zx48_crc16_ccitt_false
+    ld (p506_actual_crc),de
+    jr zx48_p506_crc_check
+
+zx48_p506_decode_packed:
+    ld a,1
+    ld (p416_crc_enable),a
+    ld hl,(p506_physical_ptr)
+    ld bc,(p506_storage_length)
+    ld de,(p506_logical_length)
+    ld ix,0
+    ld iy,(p506_alloc_ptr)
+    ld a,P416_SINK_FINAL_MEMORY
+    call zx48_p416_decode
+    jr c,zx48_p506_decode_fail
+    ld hl,(p416_crc)
+    ld (p506_actual_crc),hl
+
+zx48_p506_crc_check:
+    ld hl,(p506_actual_crc)
+    ld de,(p506_expected_crc)
+    or a
+    sbc hl,de
+    jr nz,zx48_p506_io_fail
+
+    ld a,(p506_kind)
+    cp 1
+    jr z,zx48_p506_validate_font
+    jr zx48_p506_validate_bincat
+
+zx48_p506_validate_font:
+    ld hl,(p506_alloc_ptr)
+    ld a,(hl)
+    cp 'F'
+    jp nz,zx48_p506_format_cleanup
+    inc hl
+    ld a,(hl)
+    cp '4'
+    jp nz,zx48_p506_format_cleanup
+    inc hl
+    ld a,(hl)
+    cp 'X'
+    jp nz,zx48_p506_format_cleanup
+    inc hl
+    ld a,(hl)
+    cp '8'
+    jp nz,zx48_p506_format_cleanup
+    inc hl
+    ld a,(hl)
+    cp 1
+    jp nz,zx48_p506_format_cleanup
+    inc hl
+    ld a,(hl)
+    cp $20
+    jp nz,zx48_p506_format_cleanup
+    inc hl
+    ld a,(hl)
+    cp 96
+    jp nz,zx48_p506_format_cleanup
+    inc hl
+    ld a,(hl)
+    or a
+    jp nz,zx48_p506_format_cleanup
+    jr zx48_p506_publish
+
+zx48_p506_validate_bincat:
+    ld hl,(p506_alloc_ptr)
+    ld a,(hl)
+    cp 'B'
+    jp nz,zx48_p506_format_cleanup
+    inc hl
+    ld a,(hl)
+    cp 'C'
+    jp nz,zx48_p506_format_cleanup
+    inc hl
+    ld a,(hl)
+    cp 'A'
+    jp nz,zx48_p506_format_cleanup
+    inc hl
+    ld a,(hl)
+    cp 'T'
+    jp nz,zx48_p506_format_cleanup
+    inc hl
+    ld a,(hl)
+    cp 1
+    jp nz,zx48_p506_format_cleanup
+    inc hl
+    ld a,(hl)
+    cp 40
+    jp nz,zx48_p506_format_cleanup
+    inc hl
+    ld a,(hl)
+    or a
+    jp nz,zx48_p506_format_cleanup
+    inc hl
+    ld a,(hl)
+    or a
+    jp nz,zx48_p506_format_cleanup
+
+    ; Every BCAT v1 entry has BIN type and tape-backed flag=1.
+    ld hl,(p506_alloc_ptr)
+    ld de,18
+    add hl,de
+    ld b,40
+zx48_p506_bincat_entry:
+    ld a,(hl)
+    cp M48O_TYPE_BIN
+    jp nz,zx48_p506_format_cleanup
+    inc hl
+    ld a,(hl)
+    cp 1
+    jp nz,zx48_p506_format_cleanup
+    ld de,11
+    add hl,de
+    djnz zx48_p506_bincat_entry
+
+zx48_p506_publish:
+    ld bc,(p506_logical_length)
+    call zx48_memory_pin_bytes
+    ld a,(p506_kind)
+    cp 1
+    jr nz,zx48_p506_publish_bincat
+    ld hl,(p506_alloc_ptr)
+    ld (p506_font_ptr),hl
+    ld a,1
+    ld (p506_font_ready),a
+    jr zx48_p506_publish_done
+zx48_p506_publish_bincat:
+    ld hl,(p506_alloc_ptr)
+    ld (p506_bincat_ptr),hl
+    ld a,1
+    ld (p506_bincat_ready),a
+zx48_p506_publish_done:
+    xor a
+    ld (p506_alloc_live),a
+    ld hl,(p506_alloc_ptr)
+    ld bc,(p506_logical_length)
+    xor a
+    or a
+    ret
+
+zx48_p506_crontab:
+    ; The official zero-length crontab is always RAW.
+    ld a,(p506_flags)
+    or a
+    jp nz,zx48_p506_format
+    ld hl,(p506_storage_length)
+    ld a,h
+    or l
+    jp nz,zx48_p506_format
+    ld hl,(p506_logical_length)
+    ld a,h
+    or l
+    jp nz,zx48_p506_format
+    ld hl,(p506_header_ptr)
+    ld bc,M48O_HDR_CODEC
+    add hl,bc
+    ld a,(hl)
+    inc hl
+    or (hl)
+    jp nz,zx48_p506_format
+    ld hl,(p506_expected_crc)
+    ld de,M48O_CRC16_INIT
+    or a
+    sbc hl,de
+    jp nz,zx48_p506_format
+    xor a
+    or a
+    ret
+
+zx48_p506_decode_fail:
+    ld (p506_error),a
+    jr zx48_p506_cleanup
+zx48_p506_io_fail:
+    ld a,E_IO
+    ld (p506_error),a
+    jr zx48_p506_cleanup
+zx48_p506_format_cleanup:
+    ld a,E_FORMAT
+    ld (p506_error),a
+zx48_p506_cleanup:
+    ld a,(p506_alloc_live)
+    or a
+    jr z,zx48_p506_cleanup_done
+    ld hl,(p506_alloc_ptr)
+    ld bc,(p506_logical_length)
+    bit 0,c
+    jr z,zx48_p506_free
+    inc bc
+zx48_p506_free:
+    call zx48_free
+zx48_p506_cleanup_done:
+    xor a
+    ld (p506_alloc_live),a
+    ld (p506_alloc_ptr),a
+    ld (p506_alloc_ptr+1),a
+    ld a,(p506_error)
+    scf
+    ret
+
+zx48_p506_format:
+    ld a,E_FORMAT
+    scf
+    ret
+
+p506_name_font4x8: db "font4x8",0,0,0
+p506_name_bincat:  db "bincat",0,0,0,0
+p506_name_crontab: db "crontab",0,0,0
+p506_header_ptr: dw 0
+p506_physical_ptr: dw 0
+p506_header_crc: dw 0
+p506_expected_crc: dw 0
+p506_actual_crc: dw 0
+p506_storage_length: dw 0
+p506_logical_length: dw 0
+p506_alloc_ptr: dw 0
+p506_font_ptr: dw 0
+p506_bincat_ptr: dw 0
+p506_type: db 0
+p506_flags: db 0
+p506_target: db 0
+p506_kind: db 0
+p506_font_ready: db 0
+p506_bincat_ready: db 0
+p506_alloc_live: db 0
+p506_error: db 0
+    ENDM
+
     MACRO EMIT_TAPE_ROUTINES
     EMIT_P502_CRC16_ROUTINES
     EMIT_P503_FRAMING_ROUTINES

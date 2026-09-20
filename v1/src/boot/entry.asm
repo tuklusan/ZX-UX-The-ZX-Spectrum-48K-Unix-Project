@@ -22,6 +22,16 @@ zx48_boot_main:
     jp zx48_boot_main_impl
     ENDM
 
+    MACRO EMIT_P506_BOOT_INIT_ROUTINES
+; HL=bootstrap M48O header, IX=physical payload. A malformed required bootstrap
+; resource is fatal: official-tape boot never publishes a partial system resource.
+zx48_p506_boot_resource_or_panic:
+    call zx48_p506_boot_resource
+    ret nc
+    ld a,PANIC_ROM_CONTRACT
+    jp zx48_panic
+    ENDM
+
     MACRO EMIT_BOOT_IMPL
 zx48_boot_main_impl:
     di
