@@ -1,0 +1,290 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "root-list-fixed-order-bin-dev-etc-home-tmp",
+      "passed": true
+    },
+    {
+      "name": "dev-list-fixed-order-null-tape-tty",
+      "passed": true
+    },
+    {
+      "name": "home-prelogin-empty-postlogin-single-user",
+      "passed": true
+    },
+    {
+      "name": "dot-dotdot-never-fixed-list-entries",
+      "passed": true
+    },
+    {
+      "name": "fixed-list-types-state-zero-lengths",
+      "passed": true
+    },
+    {
+      "name": "stat-directory-parent-root-userhome-home",
+      "passed": true
+    },
+    {
+      "name": "stat-device-parent-dev",
+      "passed": true
+    },
+    {
+      "name": "remove-fixed-pseudo-and-catalog-protected",
+      "passed": true
+    },
+    {
+      "name": "rename-fixed-pseudo-and-catalog-protected",
+      "passed": true
+    },
+    {
+      "name": "p430-runtime-regression-P4.11",
+      "passed": true
+    },
+    {
+      "name": "p430-runtime-regression-P4.12",
+      "passed": true
+    },
+    {
+      "name": "p430-runtime-regression-P4.13",
+      "passed": true
+    },
+    {
+      "name": "p430-runtime-regression-P4.14",
+      "passed": true
+    },
+    {
+      "name": "p430-runtime-regression-P4.15",
+      "passed": true
+    },
+    {
+      "name": "root-list-exact-five-runtime",
+      "passed": true
+    },
+    {
+      "name": "dev-list-exact-three-runtime",
+      "passed": true
+    },
+    {
+      "name": "home-session-cardinality-runtime",
+      "passed": true
+    },
+    {
+      "name": "fixed-stat-type-state-zero-length-runtime",
+      "passed": true
+    },
+    {
+      "name": "fixed-stat-parent-id-runtime",
+      "passed": true
+    },
+    {
+      "name": "protected-remove-rename-runtime",
+      "passed": true
+    },
+    {
+      "name": "wrong-order-extra-dot-nonzero-length-wrong-parent-negative-covered",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 36,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13465 lines, work time: 0.034 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p411-stat.lst",
+        "--sym=p411-stat.sym",
+        "p411-stat.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 14,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 6463 lines, work time: 0.012 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 36,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13465 lines, work time: 0.034 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p412-list.lst",
+        "--sym=p412-list.sym",
+        "p412-list.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 16,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 6879 lines, work time: 0.014 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 36,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13465 lines, work time: 0.034 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p413-remove.lst",
+        "--sym=p413-remove.sym",
+        "p413-remove.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 17,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 7562 lines, work time: 0.016 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13465 lines, work time: 0.033 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p414-rename.lst",
+        "--sym=p414-rename.sym",
+        "p414-rename.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 13,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 6489 lines, work time: 0.012 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13465 lines, work time: 0.033 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p415-rename-replace.lst",
+        "--sym=p415-rename-replace.sym",
+        "p415-rename-replace.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 15,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 7224 lines, work time: 0.015 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "P4.11:v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "P4.11:v1/build/p411-stat.bin": "88d0f712dba8ddc92ef79d749c851af59e03bbee170b7ad599d80701e376ef4f",
+    "P4.11:v1/dist/certification/P4.10.test.json": "eb570d3736bac01b380767f92831fcd34425d0b5e7cd6cbe0d97856e8d623e68",
+    "P4.11:v1/src/kernel/objects.asm": "13cb17ddb2f7411009ad949fda4087ce6fa40ff0c5211f350311c7442e992192",
+    "P4.11:v1/src/kernel/syscall.asm": "b340ce69a9039db73c6053e3f0ebdb27bb3e760eaf6769e054ddd5114ed7b5c4",
+    "P4.11:v1/tools-host/test-driver/phase4_stat.py": "98a4bbafc0b1ca6dbc629068f6c11318aba0293e6731147c3cc23b7d33752573",
+    "P4.11:v1/tools-host/test-driver/run.py": "2b0d232bb2f031c4af4d99334cdcba84454c2c9ac5c44b9aa70a8b898db32e7a",
+    "P4.12:v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "P4.12:v1/build/p412-list.bin": "1fe7e2091c06db9f2962a34a1ce64092f7e51ffc5bbd9d3b48b36ceeff4b4aef",
+    "P4.12:v1/dist/certification/P4.11.requalification.test.json": "8d1ea3a8dfff87393b83c1347dfb36acbfe86aee1a23191e8b1bb8a9c91f3e25",
+    "P4.12:v1/dist/certification/P4.11.test.json": "bfd52541f4c0d56b4085bfe8776dd565a73957fce81f29d300dccfc288174220",
+    "P4.12:v1/src/kernel/objects.asm": "13cb17ddb2f7411009ad949fda4087ce6fa40ff0c5211f350311c7442e992192",
+    "P4.12:v1/tools-host/test-driver/phase4_list.py": "07cbadeff2c37c452b366f06aea3e9df30175ff78a793c4fb7d93dfb81a38e0c",
+    "P4.12:v1/tools-host/test-driver/run.py": "2b0d232bb2f031c4af4d99334cdcba84454c2c9ac5c44b9aa70a8b898db32e7a",
+    "P4.13:v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "P4.13:v1/build/p413-remove.bin": "08b8769506c2ee211252af608b0c3a9618b3ce74f61482d4918552831ad61a12",
+    "P4.13:v1/dist/certification/P4.12.test.json": "dc080fc94366be16020eb8c076a636d75e279be30835d92cfab3929eb1fc0494",
+    "P4.13:v1/src/kernel/objects.asm": "13cb17ddb2f7411009ad949fda4087ce6fa40ff0c5211f350311c7442e992192",
+    "P4.13:v1/tools-host/test-driver/phase4_remove.py": "0cfbc5c28c2ffe9a9a7f6b74d9ee54876dd885580e6ddf38e966bbb069f7eb8e",
+    "P4.13:v1/tools-host/test-driver/run.py": "2b0d232bb2f031c4af4d99334cdcba84454c2c9ac5c44b9aa70a8b898db32e7a",
+    "P4.14:v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "P4.14:v1/build/p414-rename.bin": "023bca2e44ae5546f23dca53509a0d2d00b4d46ba0e1cdd30df7eaf3616940e3",
+    "P4.14:v1/dist/certification/P4.13.test.json": "4430b63cc9f6dda2ad8cfc19f74a8655669badf535c223b5136fe1ee6c22f771",
+    "P4.14:v1/src/kernel/objects.asm": "13cb17ddb2f7411009ad949fda4087ce6fa40ff0c5211f350311c7442e992192",
+    "P4.14:v1/tools-host/test-driver/phase4_rename.py": "9b74f06dd7648f713f90f3a6121a50100aef33f8f53f5c0f72a536ac26e8ae2c",
+    "P4.14:v1/tools-host/test-driver/run.py": "2b0d232bb2f031c4af4d99334cdcba84454c2c9ac5c44b9aa70a8b898db32e7a",
+    "P4.15:v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "P4.15:v1/build/p415-rename-replace.bin": "ba28e36e74d662de5886986c779cd3dc2c8cceb23f82aff3f8ab8fab135f953c",
+    "P4.15:v1/dist/certification/P4.14.test.json": "ac3a8115cc4043c8f234881d527c2f4ebb00d84c4659570b14808b9508ca99a1",
+    "P4.15:v1/src/kernel/objects.asm": "13cb17ddb2f7411009ad949fda4087ce6fa40ff0c5211f350311c7442e992192",
+    "P4.15:v1/tools-host/test-driver/phase4_rename_replace.py": "d0543d1c4809f7e13a002966c82cd4bb9ae8ed0a18782f910a7a7d9c0a308ea1",
+    "P4.15:v1/tools-host/test-driver/run.py": "2b0d232bb2f031c4af4d99334cdcba84454c2c9ac5c44b9aa70a8b898db32e7a",
+    "v1/dist/certification/P4.29.test.json": "4660a0f381e5624a1653c1338eb6df609d67542c8ca0b854035ee60328aa289b",
+    "v1/src/kernel/objects.asm": "13cb17ddb2f7411009ad949fda4087ce6fa40ff0c5211f350311c7442e992192",
+    "v1/tools-host/test-driver/phase4_pseudo_dirs.py": "1ac810ef95e0db3aab4ce2a57e65ec92fc3088b0fff86847709cc9afd4e2a073",
+    "v1/tools-host/test-driver/phase4_stat.py": "98a4bbafc0b1ca6dbc629068f6c11318aba0293e6731147c3cc23b7d33752573"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P4.29": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "4ee6fc85409d7bec8ea5caad1d2b97254c49eeb5",
+  "status": "PASS",
+  "step": "P4.30",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
