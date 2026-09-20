@@ -53,6 +53,137 @@ p431_target_dir: db 0
     ENDM
 
 ;
+; P4.32 exact SYS_GETCWD canonical-path transaction.
+;
+    MACRO EMIT_P432_GETCWD_OBJECT_ROUTINES
+; HL=validated writable destination, BC=caller capacity. Build the entire
+; canonical path privately, prove capacity including NUL, then publish once.
+zx48_p432_getcwd:
+    ld (p432_out_ptr),hl
+    ld (p432_capacity),bc
+    ld a,(current_pid)
+    call zx48_process_lookup
+    ret c
+    ld a,(ix+PROC_CWD)
+    ld (p432_dir),a
+    cp DIR_ROOT
+    jr z,zx48_p432_root
+    cp DIR_BIN
+    jr z,zx48_p432_bin
+    cp DIR_DEV
+    jr z,zx48_p432_dev
+    cp DIR_ETC
+    jr z,zx48_p432_etc
+    cp DIR_HOME
+    jr z,zx48_p432_home
+    cp DIR_USERHOME
+    jr z,zx48_p432_userhome
+    cp DIR_TMP
+    jr z,zx48_p432_tmp
+    jp zx48_p432_invalid
+
+zx48_p432_root:
+    ld hl,p432_root_text
+    ld a,1
+    jr zx48_p432_stage_fixed
+zx48_p432_bin:
+    ld hl,p432_bin_text
+    ld a,4
+    jr zx48_p432_stage_fixed
+zx48_p432_dev:
+    ld hl,p432_dev_text
+    ld a,4
+    jr zx48_p432_stage_fixed
+zx48_p432_etc:
+    ld hl,p432_etc_text
+    ld a,4
+    jr zx48_p432_stage_fixed
+zx48_p432_home:
+    ld hl,p432_home_text
+    ld a,5
+    jr zx48_p432_stage_fixed
+zx48_p432_tmp:
+    ld hl,p432_tmp_text
+    ld a,4
+zx48_p432_stage_fixed:
+    ld (p432_length),a
+    ld c,a
+    ld b,0
+    ld de,p432_path
+    ldir
+    xor a
+    ld (de),a
+    jr zx48_p432_capacity_check
+
+zx48_p432_userhome:
+    ld a,(session_user_len)
+    or a
+    jp z,zx48_p432_invalid
+    cp 9
+    jp nc,zx48_p432_invalid
+    ld c,a
+    ld b,0
+    ld hl,p432_home_prefix
+    ld de,p432_path
+    push bc
+    ld bc,6
+    ldir
+    pop bc
+    ld hl,session_user
+    ldir
+    xor a
+    ld (de),a
+    ld a,(session_user_len)
+    add a,6
+    ld (p432_length),a
+
+zx48_p432_capacity_check:
+    ld a,(p432_length)
+    ld l,a
+    ld h,0
+    inc hl
+    ld de,(p432_capacity)
+    or a
+    sbc hl,de
+    jr c,zx48_p432_capacity_ok
+    jr z,zx48_p432_capacity_ok
+    ld a,E_NOSPC
+    scf
+    ret
+zx48_p432_capacity_ok:
+    ld a,(p432_length)
+    ld c,a
+    ld b,0
+    inc bc
+    ld hl,p432_path
+    ld de,(p432_out_ptr)
+    ldir
+    ld a,(p432_length)
+    ld l,a
+    ld h,0
+    xor a
+    ret
+
+zx48_p432_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+
+p432_root_text: db '/'
+p432_bin_text: db '/','b','i','n'
+p432_dev_text: db '/','d','e','v'
+p432_etc_text: db '/','e','t','c'
+p432_home_text: db '/','h','o','m','e'
+p432_tmp_text: db '/','t','m','p'
+p432_home_prefix: db '/','h','o','m','e','/'
+p432_path: defs 15,0
+p432_out_ptr: dw 0
+p432_capacity: dw 0
+p432_dir: db 0
+p432_length: db 0
+    ENDM
+
+;
 ; P4.03 mutable-record footprint. Later Phase-4 steps attach namespace and I/O
 ; semantics; this macro freezes the record bytes, capacity and representation
 ; invariants without pulling the full object-store implementation into the kernel.
