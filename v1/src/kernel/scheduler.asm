@@ -199,3 +199,16 @@ scheduler_candidate: db 0
 scheduler_sleep_lo: dw 0
 scheduler_sleep_hi: dw 0
     ENDM
+
+;
+; P4.25 staged PID0 idle-maintenance hook. One idle maintenance cycle invokes the
+; bounded pack service exactly once and returns immediately to the scheduler.
+;
+    MACRO EMIT_P425_IDLE_MAINTENANCE_ROUTINES
+zx48_p425_idle_maintenance:
+    call zx48_p425_pack_once
+    xor a
+    or a
+    ret
+    ENDM
+
