@@ -123,6 +123,7 @@ zx48_tape_load_block:
     ret
 p504_test_rom_load:
     ld a,M48O_ROM_DATA_FLAG
+    scf
     call ROM_LD_BYTES
     ret nc
     ld a,E_IO
