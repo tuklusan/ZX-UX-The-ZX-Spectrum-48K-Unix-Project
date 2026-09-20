@@ -2066,3 +2066,129 @@ p423_logical: dw 0
 p423_slot: db 0
 p423_error: db 0
     ENDM
+
+;
+; P4.24 close-time opportunistic pack-candidate manager. The queue is exactly
+; one bit per mutable RAM object slot and never performs compression itself.
+;
+    MACRO EMIT_P424_PACK_CANDIDATE_ROUTINES
+zx48_p424_candidates_init:
+    xor a
+    ld hl,p424_candidate_bits
+    ld (hl),a
+    inc hl
+    ld (hl),a
+    inc hl
+    ld (hl),a
+    inc hl
+    ld (hl),a
+    ret
+
+; A=slot. Clear stale candidacy on reopen/write/remove/slot reuse.
+zx48_p424_candidate_clear:
+    cp RAM_OBJECT_COUNT
+    ret nc
+    ld (p424_slot),a
+    and 7
+    ld e,a
+    ld d,0
+    ld hl,p424_mask_table
+    add hl,de
+    ld a,(hl)
+    cpl
+    ld b,a
+    ld a,(p424_slot)
+    srl a
+    srl a
+    srl a
+    ld e,a
+    ld d,0
+    ld hl,p424_candidate_bits
+    add hl,de
+    ld a,(hl)
+    and b
+    ld (hl),a
+    xor a
+    ret
+
+; A=slot, IX=object record. Mark only eligible mutable resident RAW >=64.
+zx48_p424_candidate_mark_if_eligible:
+    cp RAM_OBJECT_COUNT
+    ret nc
+    ld (p424_slot),a
+    ld a,(ix+OBJ_TYPE_ID)
+    or a
+    ret z
+    cp OBJ_DIR
+    ret z
+    cp OBJ_DEV
+    ret z
+    cp OBJ_SYS
+    ret z
+    ld a,(ix+OBJ_RESERVED_BYTE)
+    cp STATE_RAM
+    ret nz
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    and OBJ_PACKED
+    ret nz
+    ld l,(ix+OBJ_LOGICAL_LENGTH)
+    ld h,(ix+OBJ_LOGICAL_LENGTH+1)
+    ld a,h
+    or a
+    jr nz,zx48_p424_mark
+    ld a,l
+    cp 64
+    ret c
+zx48_p424_mark:
+    ld a,(p424_slot)
+    and 7
+    ld e,a
+    ld d,0
+    ld hl,p424_mask_table
+    add hl,de
+    ld b,(hl)
+    ld a,(p424_slot)
+    srl a
+    srl a
+    srl a
+    ld e,a
+    ld d,0
+    ld hl,p424_candidate_bits
+    add hl,de
+    ld a,(hl)
+    or b
+    ld (hl),a
+    xor a
+    ret
+
+; A=slot -> Z clear, NZ set.
+zx48_p424_candidate_test:
+    cp RAM_OBJECT_COUNT
+    jr nc,zx48_p424_candidate_test_clear
+    ld (p424_slot),a
+    and 7
+    ld e,a
+    ld d,0
+    ld hl,p424_mask_table
+    add hl,de
+    ld b,(hl)
+    ld a,(p424_slot)
+    srl a
+    srl a
+    srl a
+    ld e,a
+    ld d,0
+    ld hl,p424_candidate_bits
+    add hl,de
+    ld a,(hl)
+    and b
+    ret
+zx48_p424_candidate_test_clear:
+    xor a
+    ret
+
+p424_candidate_bits: defs 4,0
+p424_slot: db 0
+p424_mask_table:
+    db 1,2,4,8,16,32,64,128
+    ENDM
