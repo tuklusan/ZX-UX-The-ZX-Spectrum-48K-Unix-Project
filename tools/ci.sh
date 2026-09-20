@@ -83,8 +83,8 @@ expected_actions = {
     "actions/checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",
     "actions/setup-python": "ece7cb06caefa5fff74198d8649806c4678c61a1",
     "actions/upload-artifact": "043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
-    "actions/cache/restore": "0057852bfaa89a56745cba8c7296529d2fc39830",
-    "actions/cache/save": "0057852bfaa89a56745cba8c7296529d2fc39830",
+    "actions/cache/restore": "8b402f58fbc84540c8b491a91e594a4576fec3d7",
+    "actions/cache/save": "8b402f58fbc84540c8b491a91e594a4576fec3d7",
 }
 active_workflows = [
     Path(".github/workflows/candidate-kernel.yml"),
