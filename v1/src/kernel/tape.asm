@@ -860,7 +860,10 @@ zx48_p506_boot_resource:
     xor a
     ld (p506_alloc_ptr),a
     ld (p506_alloc_ptr+1),a
+    ld (p506_decoder_ptr),a
+    ld (p506_decoder_ptr+1),a
     ld (p506_alloc_live),a
+    ld (p506_decoder_live),a
     ld (p506_kind),a
 
     ; Exact M48O magic/version.
@@ -1098,14 +1101,36 @@ zx48_p506_do_alloc:
     jr zx48_p506_crc_check
 
 zx48_p506_decode_packed:
+    ; One exact 272-byte streaming decoder state. Logical bytes are emitted
+    ; straight into the final pinned RAW allocation; no second RAW copy exists.
+    ld bc,P417_STATE_SIZE
+    ld a,ALLOC_COLD_PREFERRED
+    call zx48_alloc
+    jr nc,zx48_p506_decoder_allocated
+    ld (p506_error),a
+    jp zx48_p506_cleanup
+zx48_p506_decoder_allocated:
+    ld (p506_decoder_ptr),hl
+    ld a,1
+    ld (p506_decoder_live),a
+    push hl
+    xor a
+    ld (hl),a
+    ld d,h
+    ld e,l
+    inc de
+    ld bc,P417_STATE_SIZE-1
+    ldir
+    pop hl
+
     ld a,1
     ld (p416_crc_enable),a
     ld hl,(p506_physical_ptr)
     ld bc,(p506_storage_length)
     ld de,(p506_logical_length)
-    ld ix,0
+    ld ix,(p506_decoder_ptr)
     ld iy,(p506_alloc_ptr)
-    ld a,P416_SINK_FINAL_MEMORY
+    ld a,P416_SINK_CALLER_STREAM
     call zx48_p416_decode
     jp c,zx48_p506_decode_fail
     ld hl,(p416_crc)
@@ -1210,6 +1235,8 @@ zx48_p506_bincat_entry:
     djnz zx48_p506_bincat_entry
 
 zx48_p506_publish:
+    call zx48_p506_release_decoder
+    jp c,zx48_p506_decode_fail
     ld bc,(p506_logical_length)
     call zx48_memory_pin_bytes
     ld a,(p506_kind)
@@ -1274,6 +1301,7 @@ zx48_p506_format_cleanup:
     ld a,E_FORMAT
     ld (p506_error),a
 zx48_p506_cleanup:
+    call zx48_p506_release_decoder
     ld a,(p506_alloc_live)
     or a
     jr z,zx48_p506_cleanup_done
@@ -1289,8 +1317,25 @@ zx48_p506_cleanup_done:
     ld (p506_alloc_live),a
     ld (p506_alloc_ptr),a
     ld (p506_alloc_ptr+1),a
+    ld (p506_decoder_ptr),a
+    ld (p506_decoder_ptr+1),a
+    ld (p506_decoder_live),a
     ld a,(p506_error)
     scf
+    ret
+
+zx48_p506_release_decoder:
+    ld a,(p506_decoder_live)
+    or a
+    ret z
+    ld hl,(p506_decoder_ptr)
+    ld bc,P417_STATE_SIZE
+    call zx48_free
+    ret c
+    xor a
+    ld (p506_decoder_live),a
+    ld (p506_decoder_ptr),a
+    ld (p506_decoder_ptr+1),a
     ret
 
 zx48_p506_format:
@@ -1309,6 +1354,7 @@ p506_actual_crc: dw 0
 p506_storage_length: dw 0
 p506_logical_length: dw 0
 p506_alloc_ptr: dw 0
+p506_decoder_ptr: dw 0
 p506_font_ptr: dw 0
 p506_bincat_ptr: dw 0
 p506_type: db 0
@@ -1318,6 +1364,7 @@ p506_kind: db 0
 p506_font_ready: db 0
 p506_bincat_ready: db 0
 p506_alloc_live: db 0
+p506_decoder_live: db 0
 p506_error: db 0
     ENDM
 
