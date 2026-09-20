@@ -23,7 +23,7 @@ import phase1
 import phase3_open_descriptions
 
 MODULE_BASE = 0xC000
-OUT = 0x9000
+OUT = 0xA800
 STACK_TOP = 0xBFC0
 
 
