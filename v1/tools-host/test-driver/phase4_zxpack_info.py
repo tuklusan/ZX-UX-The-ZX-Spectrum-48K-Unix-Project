@@ -147,6 +147,12 @@ def _zpinfo(logical: int, physical: int, packed: int, raw: int, reader_bytes: in
 
 
 def _runtime(root: Path, s: dict[str, int], module: bytes) -> None:
+    def execute(label: str, code: bytes, patcher) -> None:
+        try:
+            run_sna(root, code, patch=patcher)
+        except DriverError as exc:
+            raise P428Error(f"P4.28 runtime case failed: {label}: {exc}") from exc
+
     table = s["p405_object_table"]
     od = s["open_description_table"]
     attempts = s["p422_pack_attempts"]
@@ -178,14 +184,14 @@ def _runtime(root: Path, s: dict[str, int], module: bytes) -> None:
     code = bytearray(b"\xF3" + phase1._ld_sp(STACK_TOP))
     code += bytes((0x3E, s["SYS_ZXPACK_INFO"])) + phase1._ld_hl(OUT) + phase1._call(s["zx48_p428_sys_zxpack_info"])
     code += phase1._jp_c(FAIL_PC) + _check_bytes(OUT, expected) + phase1._jp(PASS_PC)
-    run_sna(root, bytes(code), patch=base_patch(records, attempt_value=0xFFFF, success_value=0x1234, readers=2))
+    execute("wide-zpinfo-reader-accounting", bytes(code), base_patch(records, attempt_value=0xFFFF, success_value=0x1234, readers=2))
 
     # Invalid 20-byte destination must fail before any output write.
     code = bytearray(b"\xF3" + phase1._ld_sp(STACK_TOP))
     code += bytes((0x3E, s["SYS_ZXPACK_INFO"])) + phase1._ld_hl(0xDFF8) + phase1._call(s["zx48_p428_sys_zxpack_info"])
     code += b"\xD2" + _word(FAIL_PC) + bytes((0xFE, s["E_INVAL"])) + phase1._jp_nz(FAIL_PC)
     code += _check_bytes(OUT, b"\xA5" * 20) + phase1._jp(PASS_PC)
-    run_sna(root, bytes(code), patch=base_patch(records, attempt_value=1, success_value=1))
+    execute("invalid-output-range", bytes(code), base_patch(records, attempt_value=1, success_value=1))
 
     # Attempt counter wraps modulo 65536 even when already PACKED is a no-op.
     one = [_record(b"x", s["DIR_TMP"], s["OBJ_DAT"], flags=s["OBJ_PACKED"], logical=66, storage=2, ptr=s["ARENA_START"])]
@@ -194,7 +200,7 @@ def _runtime(root: Path, s: dict[str, int], module: bytes) -> None:
     code += phase1._jp_c(FAIL_PC)
     code += bytes((0x3E, s["SYS_ZXPACK_INFO"])) + phase1._ld_hl(OUT) + phase1._call(s["zx48_p428_sys_zxpack_info"])
     code += phase1._jp_c(FAIL_PC) + _check_byte(OUT+14, 0) + _check_byte(OUT+15, 0) + phase1._jp(PASS_PC)
-    run_sna(root, bytes(code), patch=base_patch(one, attempt_value=0xFFFF, success_value=7))
+    execute("attempt-counter-wrap", bytes(code), base_patch(one, attempt_value=0xFFFF, success_value=7))
 
 
 def dispatch(root: Path, action: str, step: str, *, sha256_file, run_command, require_project_tool):
