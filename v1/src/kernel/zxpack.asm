@@ -1726,3 +1726,229 @@ zx48_p421_encode_if_smaller:
 zx48_p421_nonempty:
     jp zx48_p420_two_pass
     ENDM
+
+;
+; P4.22 atomic SYS_PACK record transaction. P4.20 supplies the deterministic
+; target-greedy passes; this layer owns exact-destination allocation,
+; self-validation, publication, and rollback.
+;
+    MACRO EMIT_P422_SYS_PACK_CODEC_ROUTINES
+; IX=record,D=object slot. Returns HL=bytes saved, or HL=0 when unchanged.
+zx48_p422_pack_record:
+    ld (p422_object_ptr),ix
+    ld a,d
+    ld (p422_slot),a
+
+    ; Only mutable resident RAM payload objects may be packed.
+    ld a,(ix+OBJ_RESERVED_BYTE)
+    cp STATE_RAM
+    jp nz,zx48_p422_perm
+    ld a,(ix+OBJ_TYPE_ID)
+    cp OBJ_DIR
+    jp z,zx48_p422_perm
+    cp OBJ_DEV
+    jp z,zx48_p422_perm
+    cp OBJ_SYS
+    jp z,zx48_p422_perm
+
+    ; Already PACKED is an unconditional no-op success.
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    and OBJ_PACKED
+    jp nz,zx48_p422_zero
+
+    ; Any live description blocks a RAW representation swap.
+    ld a,(p422_slot)
+    ld d,a
+    call zx48_od_object_any_live
+    ret c
+
+    ld ix,(p422_object_ptr)
+    ld l,(ix+OBJ_LOGICAL_LENGTH)
+    ld h,(ix+OBJ_LOGICAL_LENGTH+1)
+    ld (p422_logical),hl
+    ld a,h
+    or a
+    jr nz,zx48_p422_size_ok
+    ld a,l
+    cp 64
+    jp c,zx48_p422_zero
+zx48_p422_size_ok:
+    ld l,(ix+OBJ_ALLOCATION_PTR)
+    ld h,(ix+OBJ_ALLOCATION_PTR+1)
+    ld (p422_old_ptr),hl
+
+    ; Pass 1: exact encoded-size measurement under one 512-byte NO_COMPACT table.
+    ld hl,(p422_old_ptr)
+    ld (p420_input_base),hl
+    ld hl,(p422_logical)
+    ld (p420_input_len),hl
+    ld hl,0
+    ld (p420_output_base),hl
+    xor a
+    ld (p420_mode),a
+    ld (p420_background),a
+    ld (p420_workspace_allocs),a
+    call zx48_p420_workspace_begin
+    ret c
+    call zx48_p420_run_pass
+    jr c,zx48_p422_pass1_fail
+    ld hl,(p420_encoded_len)
+    ld (p422_encoded),hl
+    call zx48_p420_workspace_end
+    jp c,zx48_p422_free_panic
+
+    ; Equal/larger encodings leave committed RAW bytes exactly unchanged.
+    ld hl,(p422_encoded)
+    ld de,(p422_logical)
+    or a
+    sbc hl,de
+    jp nc,zx48_p422_zero
+
+    ; Allocate exactly the measured compressed destination.
+    ld bc,(p422_encoded)
+    ld a,ALLOC_COLD_PREFERRED|ALLOC_NO_COMPACT
+    call zx48_alloc
+    ret c
+    ld (p422_new_ptr),hl
+
+    ; Pass 2: reinitialized exact 512-byte table emits exactly the measured stream.
+    ld hl,(p422_new_ptr)
+    ld (p420_output_base),hl
+    ld a,1
+    ld (p420_mode),a
+    call zx48_p420_workspace_begin
+    jr c,zx48_p422_dest_fail
+    call zx48_p420_run_pass
+    jr c,zx48_p422_pass2_fail
+    ld hl,(p420_encoded_len)
+    ld de,(p422_encoded)
+    or a
+    sbc hl,de
+    jr nz,zx48_p422_pass2_format
+    call zx48_p420_workspace_end
+    jp c,zx48_p422_free_panic
+
+    ; Self-validate the private stream with the frozen P4.16 DISCARD decoder.
+    ld bc,256
+    ld a,ALLOC_COLD_PREFERRED|ALLOC_NO_COMPACT
+    call zx48_alloc
+    jr c,zx48_p422_dest_fail
+    ld (p422_history),hl
+    push hl
+    pop ix
+    ld iy,0
+    xor a
+    ld (p416_crc_enable),a
+    ld hl,(p422_new_ptr)
+    ld bc,(p422_encoded)
+    ld de,(p422_logical)
+    ld a,P416_SINK_DISCARD
+    call zx48_p416_decode
+    jr c,zx48_p422_validate_fail
+    ld hl,(p422_history)
+    ld bc,256
+    call zx48_free
+    jp c,zx48_p422_free_panic
+
+    ; Publish only after complete private validation.
+    ld ix,(p422_object_ptr)
+    ld hl,(p422_new_ptr)
+    ld (ix+OBJ_ALLOCATION_PTR),l
+    ld (ix+OBJ_ALLOCATION_PTR+1),h
+    ld hl,(p422_encoded)
+    ld (ix+OBJ_STORAGE_LENGTH),l
+    ld (ix+OBJ_STORAGE_LENGTH+1),h
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    or OBJ_PACKED
+    ld (ix+OBJ_FLAGS_BYTE),a
+
+    ; Old RAW allocation becomes unreachable only after publication.
+    ld hl,(p422_old_ptr)
+    ld bc,(p422_logical)
+    bit 0,c
+    jr z,zx48_p422_old_even
+    inc bc
+zx48_p422_old_even:
+    call zx48_free
+    jp c,zx48_p422_free_panic
+
+    ld hl,(p422_logical)
+    ld de,(p422_encoded)
+    or a
+    sbc hl,de
+    xor a
+    or a
+    ret
+
+zx48_p422_pass1_fail:
+    ld (p422_error),a
+    call zx48_p420_workspace_end
+    jp c,zx48_p422_free_panic
+    ld a,(p422_error)
+    scf
+    ret
+
+zx48_p422_pass2_format:
+    ld a,E_FORMAT
+    ld (p422_error),a
+    call zx48_p420_workspace_end
+    jp c,zx48_p422_free_panic
+    jr zx48_p422_dest_fail_saved
+zx48_p422_pass2_fail:
+    ld (p422_error),a
+    call zx48_p420_workspace_end
+    jp c,zx48_p422_free_panic
+zx48_p422_dest_fail_saved:
+    ld a,(p422_error)
+    jr zx48_p422_dest_fail_with_a
+
+zx48_p422_validate_fail:
+    ld (p422_error),a
+    ld hl,(p422_history)
+    ld bc,256
+    call zx48_free
+    jp c,zx48_p422_free_panic
+    ld a,(p422_error)
+zx48_p422_dest_fail_with_a:
+    ld (p422_error),a
+zx48_p422_dest_fail:
+    ld a,(p422_error)
+    or a
+    jr nz,zx48_p422_dest_have_error
+    ld a,E_NOMEM
+    ld (p422_error),a
+zx48_p422_dest_have_error:
+    ld hl,(p422_new_ptr)
+    ld bc,(p422_encoded)
+    bit 0,c
+    jr z,zx48_p422_dest_even
+    inc bc
+zx48_p422_dest_even:
+    call zx48_free
+    jp c,zx48_p422_free_panic
+    ld a,(p422_error)
+    scf
+    ret
+
+zx48_p422_zero:
+    ld hl,0
+    xor a
+    or a
+    ret
+zx48_p422_perm:
+    ld a,E_PERM
+    scf
+    ret
+zx48_p422_free_panic:
+    ld a,PANIC_SCHEDULER
+    jp zx48_panic
+
+p422_object_ptr: dw 0
+p422_old_ptr: dw 0
+p422_new_ptr: dw 0
+p422_history: dw 0
+p422_logical: dw 0
+p422_encoded: dw 0
+p422_slot: db 0
+p422_error: db 0
+    ENDM
