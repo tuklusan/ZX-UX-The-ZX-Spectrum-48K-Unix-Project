@@ -2535,11 +2535,18 @@ zx48_p511_scan_next:
     jp c,zx48_p511_transport_fail
     call zx48_p511_validate_header
     jp c,zx48_p511_fail_locked
+    ld hl,0
+    ld (p511_logical_pos),hl
+    ld hl,M48O_CRC16_INIT
+    ld (p511_crc),hl
+    xor a
+    ld (p511_kind),a
+    ld (p511_pending),a
 
     ld hl,(p511_storage)
     ld a,h
     or l
-    jr z,zx48_p511_finish_payload
+    jp z,zx48_p511_finish_payload
 
     ld bc,M48O_CHUNK_SIZE
     ld a,ALLOC_COLD_PREFERRED|ALLOC_NO_COMPACT
@@ -2579,8 +2586,6 @@ zx48_p511_scan_next:
 zx48_p511_payload_ready:
     ld hl,(p511_storage)
     ld (p511_remaining),hl
-    ld hl,M48O_CRC16_INIT
-    ld (p511_crc),hl
 
 zx48_p511_chunk_loop:
     ld bc,(p511_remaining)
@@ -2879,10 +2884,10 @@ zx48_p511_len_bound:
     ld a,h
     cp $80
     jr c,zx48_p511_len_ok
-    jr nz,zx48_p511_format
+    jp nz,zx48_p511_format
     ld a,l
     or a
-    jr nz,zx48_p511_format
+    jp nz,zx48_p511_format
 zx48_p511_len_ok:
     xor a
     or a
@@ -3003,11 +3008,7 @@ zx48_p511_back_dist_ready:
     ld (p511_back_distance),de
 zx48_p511_back_loop:
     ld a,(p511_hist_index)
-    ld e,a
-    ld d,0
     ld hl,(p511_back_distance)
-    ld a,l
-    ld l,e
     sub l
     ; 8-bit wrap is the required circular-history index.
     ld e,a
