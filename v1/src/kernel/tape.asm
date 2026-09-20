@@ -3224,6 +3224,371 @@ p513_interactive: db 0
 p513_prompt_kind: db P513_PROMPT_NONE
     ENDM
 
+    MACRO EMIT_P514_DIRECT_TAPE_STREAM_ROUTINES
+P514_STREAM_NONE    EQU 0
+P514_STREAM_LITERAL EQU 1
+P514_STREAM_RLE     EQU 2
+P514_STREAM_BACKREF EQU 3
+
+; HL -> exact 10-byte BCAT command name. Caller has already proved ALLOW_TAPE.
+; The entire physical stream is consumed through one 512-byte chunk and, only
+; for PACKED, one exact 272-byte continuous history/state allocation.
+zx48_p514_tape_stream_begin:
+    ld (p514_tape_name),hl
+    xor a
+    ld (p514_tape_scratch_live),a
+    ld (p514_tape_state_live),a
+    ld (p514_tape_kind),a
+    ld (p514_tape_pending),a
+    ld (p514_tape_chunk_left),a
+    ld (p514_tape_chunk_left+1),a
+    call zx48_p507_lock_acquire
+    ret c
+
+zx48_p514_tape_find:
+    ld ix,p514_tape_header
+    ld de,M48O_HDR_SIZE
+    ld a,M48O_ROM_DATA_FLAG
+    scf
+    call zx48_tape_load_block
+    jp c,zx48_p514_tape_fail
+    ld hl,p514_tape_header
+    ld (p511_header_dest),hl
+    call zx48_p511_validate_header
+    jp c,zx48_p514_tape_fail
+    ld a,(p511_target)
+    cp DIR_BIN
+    jr nz,zx48_p514_tape_skip
+    ld a,(p511_type)
+    cp OBJ_BIN
+    jr nz,zx48_p514_tape_skip
+    ld hl,p514_tape_header+M48O_HDR_NAME
+    ld de,(p514_tape_name)
+    ld b,M48O_NAME_SIZE
+zx48_p514_tape_name_loop:
+    ld a,(de)
+    cp (hl)
+    jr nz,zx48_p514_tape_skip
+    inc de
+    inc hl
+    djnz zx48_p514_tape_name_loop
+    jr zx48_p514_tape_match
+
+zx48_p514_tape_skip:
+    call zx48_p509_skip_payload
+    jp c,zx48_p514_tape_fail
+    jr zx48_p514_tape_find
+
+zx48_p514_tape_match:
+    ld hl,(p511_storage)
+    ld (p514_tape_phys_remaining),hl
+    ld hl,(p511_logical)
+    ld (p514_m48_logical_length),hl
+    ld hl,(p511_expected_crc)
+    ld (p514_tape_expected_crc),hl
+    ld a,(p511_flags)
+    ld (p514_tape_flags),a
+    ld hl,M48O_CRC16_INIT
+    ld (p514_tape_crc),hl
+    ld hl,0
+    ld (p514_tape_logical_pos),hl
+
+    ld bc,M48O_CHUNK_SIZE
+    ld a,ALLOC_COLD_PREFERRED|ALLOC_NO_COMPACT
+    call zx48_alloc
+    jp c,zx48_p514_tape_fail
+    ld (p514_tape_scratch),hl
+    ld a,1
+    ld (p514_tape_scratch_live),a
+
+    ld a,(p514_tape_flags)
+    and M48O_PACKED
+    jr z,zx48_p514_tape_ready
+    ld bc,P417_STATE_SIZE
+    ld a,ALLOC_COLD_PREFERRED|ALLOC_NO_COMPACT
+    call zx48_alloc
+    jp c,zx48_p514_tape_fail
+    ld (p514_tape_state),hl
+    ld (p514_tape_history),hl
+    ld a,1
+    ld (p514_tape_state_live),a
+    xor a
+    ld (hl),a
+    ld d,h
+    ld e,l
+    inc de
+    ld bc,P417_STATE_SIZE-1
+    ldir
+zx48_p514_tape_ready:
+    xor a
+    or a
+    ret
+
+; Return one next logical byte in A. PACKED parser history is never reset.
+zx48_p514_tape_stream_byte:
+    ld hl,(p514_tape_logical_pos)
+    ld de,(p514_m48_logical_length)
+    or a
+    sbc hl,de
+    jp nc,zx48_p514_tape_format
+    ld a,(p514_tape_flags)
+    and M48O_PACKED
+    jr nz,zx48_p514_tape_packed_step
+    call zx48_p514_tape_physical_byte
+    ret c
+    jp zx48_p514_tape_emit
+
+zx48_p514_tape_packed_step:
+    ld a,(p514_tape_pending)
+    or a
+    jr nz,zx48_p514_tape_pending
+    call zx48_p514_tape_physical_byte
+    ret c
+    cp $40
+    jr c,zx48_p514_tape_new_literal
+    cp $80
+    jr c,zx48_p514_tape_new_rle
+    and $7f
+    add a,3
+    ld (p514_tape_pending),a
+    ld a,P514_STREAM_BACKREF
+    ld (p514_tape_kind),a
+    call zx48_p514_tape_physical_byte
+    ret c
+    ld (p514_tape_param),a
+    jr zx48_p514_tape_backref
+
+zx48_p514_tape_new_literal:
+    inc a
+    ld (p514_tape_pending),a
+    ld a,P514_STREAM_LITERAL
+    ld (p514_tape_kind),a
+    jr zx48_p514_tape_literal
+zx48_p514_tape_new_rle:
+    and $3f
+    add a,3
+    ld (p514_tape_pending),a
+    ld a,P514_STREAM_RLE
+    ld (p514_tape_kind),a
+    call zx48_p514_tape_physical_byte
+    ret c
+    ld (p514_tape_param),a
+    jr zx48_p514_tape_rle
+
+zx48_p514_tape_pending:
+    ld a,(p514_tape_kind)
+    cp P514_STREAM_LITERAL
+    jr z,zx48_p514_tape_literal
+    cp P514_STREAM_RLE
+    jr z,zx48_p514_tape_rle
+    cp P514_STREAM_BACKREF
+    jr z,zx48_p514_tape_backref
+    jp zx48_p514_tape_format
+
+zx48_p514_tape_literal:
+    call zx48_p514_tape_physical_byte
+    ret c
+    jr zx48_p514_tape_packed_emit
+zx48_p514_tape_rle:
+    ld a,(p514_tape_param)
+    jr zx48_p514_tape_packed_emit
+zx48_p514_tape_backref:
+    ld a,(p514_tape_param)
+    inc a
+    jr nz,zx48_p514_tape_back8
+    ld l,0
+    jr zx48_p514_tape_back_ready
+zx48_p514_tape_back8:
+    ld l,a
+zx48_p514_tape_back_ready:
+    ld a,(p514_tape_hist_index)
+    sub l
+    ld e,a
+    ld d,0
+    ld hl,(p514_tape_history)
+    add hl,de
+    ld a,(hl)
+zx48_p514_tape_packed_emit:
+    ld (p514_tape_byte),a
+    ld a,(p514_tape_hist_index)
+    ld e,a
+    ld d,0
+    ld hl,(p514_tape_history)
+    add hl,de
+    ld a,(p514_tape_byte)
+    ld (hl),a
+    ld a,(p514_tape_hist_index)
+    inc a
+    ld (p514_tape_hist_index),a
+    ld a,(p514_tape_pending)
+    dec a
+    ld (p514_tape_pending),a
+    jr nz,zx48_p514_tape_emit_saved
+    xor a
+    ld (p514_tape_kind),a
+zx48_p514_tape_emit_saved:
+    ld a,(p514_tape_byte)
+
+zx48_p514_tape_emit:
+    ld (p514_tape_byte),a
+    ld hl,(p514_tape_crc)
+    xor h
+    ld h,a
+    ld b,8
+zx48_p514_tape_crc_bit:
+    add hl,hl
+    jr nc,zx48_p514_tape_crc_next
+    ld a,h
+    xor $10
+    ld h,a
+    ld a,l
+    xor $21
+    ld l,a
+zx48_p514_tape_crc_next:
+    djnz zx48_p514_tape_crc_bit
+    ld (p514_tape_crc),hl
+    ld hl,(p514_tape_logical_pos)
+    inc hl
+    ld (p514_tape_logical_pos),hl
+    ld a,(p514_tape_byte)
+    or a
+    ret
+
+; Read one physical byte, refilling a bounded <=512 byte ROM data block.
+zx48_p514_tape_physical_byte:
+    ld hl,(p514_tape_chunk_left)
+    ld a,h
+    or l
+    jr nz,zx48_p514_tape_have_chunk
+    ld bc,(p514_tape_phys_remaining)
+    ld a,b
+    or c
+    jp z,zx48_p514_tape_format
+    call zx48_p503_prepare_chunk
+    ld (p514_tape_chunk_left),de
+    ld ix,(p514_tape_scratch)
+    ld a,M48O_ROM_DATA_FLAG
+    scf
+    call zx48_tape_load_block
+    jp c,zx48_p514_tape_fail
+    ld hl,(p514_tape_scratch)
+    ld (p514_tape_read_ptr),hl
+    ld hl,(p514_tape_phys_remaining)
+    or a
+    sbc hl,de
+    ld (p514_tape_phys_remaining),hl
+zx48_p514_tape_have_chunk:
+    ld hl,(p514_tape_read_ptr)
+    ld a,(hl)
+    inc hl
+    ld (p514_tape_read_ptr),hl
+    ld hl,(p514_tape_chunk_left)
+    dec hl
+    ld (p514_tape_chunk_left),hl
+    or a
+    ret
+
+zx48_p514_tape_stream_finish:
+    ld hl,(p514_tape_logical_pos)
+    ld de,(p514_m48_logical_length)
+    or a
+    sbc hl,de
+    jp nz,zx48_p514_tape_format
+    ld hl,(p514_tape_phys_remaining)
+    ld a,h
+    or l
+    jp nz,zx48_p514_tape_format
+    ld hl,(p514_tape_chunk_left)
+    ld a,h
+    or l
+    jp nz,zx48_p514_tape_format
+    ld a,(p514_tape_flags)
+    and M48O_PACKED
+    jr z,zx48_p514_tape_crc_check
+    ld a,(p514_tape_pending)
+    or a
+    jp nz,zx48_p514_tape_format
+zx48_p514_tape_crc_check:
+    ld hl,(p514_tape_crc)
+    ld de,(p514_tape_expected_crc)
+    or a
+    sbc hl,de
+    jr z,zx48_p514_tape_finish_ok
+    ld a,E_IO
+    scf
+    jr zx48_p514_tape_finish_release
+zx48_p514_tape_finish_ok:
+    xor a
+    or a
+zx48_p514_tape_finish_release:
+    push af
+    call zx48_p514_tape_release
+    call zx48_p507_lock_release
+    pop af
+    ret
+
+zx48_p514_tape_stream_abort:
+    call zx48_p514_tape_release
+    ld a,(p507_tape_lock)
+    or a
+    ret z
+    call zx48_p507_lock_release
+    ret
+
+zx48_p514_tape_release:
+    ld a,(p514_tape_state_live)
+    or a
+    jr z,zx48_p514_tape_release_scratch
+    ld hl,(p514_tape_state)
+    ld bc,P417_STATE_SIZE
+    call zx48_free
+    xor a
+    ld (p514_tape_state_live),a
+zx48_p514_tape_release_scratch:
+    ld a,(p514_tape_scratch_live)
+    or a
+    ret z
+    ld hl,(p514_tape_scratch)
+    ld bc,M48O_CHUNK_SIZE
+    call zx48_free
+    xor a
+    ld (p514_tape_scratch_live),a
+    ret
+
+zx48_p514_tape_fail:
+    ld (p514_tape_error),a
+    call zx48_p514_tape_stream_abort
+    ld a,(p514_tape_error)
+    scf
+    ret
+zx48_p514_tape_format:
+    ld a,E_FORMAT
+    scf
+    ret
+
+p514_tape_header: defs M48O_HDR_SIZE,0
+p514_tape_name: dw 0
+p514_m48_logical_length: dw 0
+p514_tape_phys_remaining: dw 0
+p514_tape_expected_crc: dw 0
+p514_tape_crc: dw 0
+p514_tape_logical_pos: dw 0
+p514_tape_scratch: dw 0
+p514_tape_state: dw 0
+p514_tape_history: dw 0
+p514_tape_read_ptr: dw 0
+p514_tape_chunk_left: dw 0
+p514_tape_flags: db 0
+p514_tape_kind: db 0
+p514_tape_pending: db 0
+p514_tape_param: db 0
+p514_tape_hist_index: db 0
+p514_tape_byte: db 0
+p514_tape_scratch_live: db 0
+p514_tape_state_live: db 0
+p514_tape_error: db 0
+    ENDM
+
     MACRO EMIT_TAPE_ROUTINES
     EMIT_P502_CRC16_ROUTINES
     EMIT_P503_FRAMING_ROUTINES
@@ -3235,6 +3600,7 @@ p513_prompt_kind: db P513_PROMPT_NONE
     EMIT_P510_VERIFY_ROUTINES
     EMIT_P511_SCAN_ROUTINES
     EMIT_P513_TAPE_PROMPT_ROUTINES
+    EMIT_P514_DIRECT_TAPE_STREAM_ROUTINES
 ; A=block type,DE=length,IX=source.
 zx48_tape_save_block:
     call zx48_rom_sa_bytes

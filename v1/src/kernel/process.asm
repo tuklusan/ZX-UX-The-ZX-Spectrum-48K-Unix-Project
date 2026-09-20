@@ -4536,3 +4536,471 @@ p427_have_previous: db 0
 p427_error: db 0
 p427_header: defs MEX_HEADER_SIZE,0
     ENDM
+
+
+; P5.14 direct tape-backed MEX1 process preparation. The cassette layer supplies
+; one logical byte at a time from RAW or a single continuous 272-byte ZXP1 state.
+; No full executable staging allocation or relocation table exists.
+    MACRO EMIT_P514_DIRECT_TAPE_MEX1_ROUTINES
+zx48_p514_spawn_tape_backed:
+    ld (p514_proc1),hl
+    xor a
+    ld (p514_image_base),a
+    ld (p514_image_base+1),a
+    ld (p514_stack_base),a
+    ld (p514_stack_base+1),a
+    ld (p514_bootstrap_base),a
+    ld (p514_bootstrap_base+1),a
+    ld (p514_committed),a
+
+    ; BCAT/path resolution is metadata-only and must not move tape.
+    call zx48_p514_resolve_tape_name
+    ret c
+    ld (p514_name_ptr),hl
+
+    ld ix,(p514_proc1)
+    ld a,(ix+PROC1_FLAGS)
+    and PROC1_ALLOW_TAPE
+    jr nz,zx48_p514_allowed
+    ld a,E_AGAIN
+    scf
+    ret
+zx48_p514_allowed:
+    ld hl,(p514_name_ptr)
+    call zx48_p514_tape_stream_begin
+    ret c
+
+    ; First 24 logical bytes are the MEX1 header from the same continuous stream.
+    ld hl,p514_mex_header
+    ld b,MEX_HEADER_SIZE
+zx48_p514_header_loop:
+    push bc
+    push hl
+    call zx48_p514_tape_stream_byte
+    pop hl
+    pop bc
+    jp c,zx48_p514_abort
+    ld (hl),a
+    inc hl
+    djnz zx48_p514_header_loop
+
+    ld ix,p514_mex_header
+    ld a,(ix+MEX_HDR_MAGIC+0)
+    cp MEX_MAGIC0
+    jp nz,zx48_p514_format_abort
+    ld a,(ix+MEX_HDR_MAGIC+1)
+    cp MEX_MAGIC1
+    jp nz,zx48_p514_format_abort
+    ld a,(ix+MEX_HDR_MAGIC+2)
+    cp MEX_MAGIC2
+    jp nz,zx48_p514_format_abort
+    ld a,(ix+MEX_HDR_MAGIC+3)
+    cp MEX_MAGIC3
+    jp nz,zx48_p514_format_abort
+    ld a,(ix+MEX_HDR_VERSION)
+    cp MEX_VERSION
+    jp nz,zx48_p514_format_abort
+    ld a,(ix+MEX_HDR_FLAGS)
+    or a
+    jp nz,zx48_p514_format_abort
+    ld l,(ix+MEX_HDR_SIZE)
+    ld h,(ix+MEX_HDR_SIZE+1)
+    ld de,MEX_HEADER_SIZE
+    or a
+    sbc hl,de
+    jp nz,zx48_p514_format_abort
+
+    ; Header CRC is over bytes 0..21 plus two zero CRC bytes.
+    ld hl,p514_mex_header
+    ld bc,MEX_HDR_HEADER_CRC
+    call zx48_p514_crc16
+    xor a
+    call zx48_p514_crc16_update
+    xor a
+    call zx48_p514_crc16_update
+    ld ix,p514_mex_header
+    ld a,(ix+MEX_HDR_HEADER_CRC)
+    cp e
+    jp nz,zx48_p514_format_abort
+    ld a,(ix+MEX_HDR_HEADER_CRC+1)
+    cp d
+    jp nz,zx48_p514_format_abort
+
+    ld l,(ix+MEX_HDR_IMAGE_SIZE)
+    ld h,(ix+MEX_HDR_IMAGE_SIZE+1)
+    ld a,h
+    or l
+    jp z,zx48_p514_format_abort
+    ld (p514_image_size),hl
+    ld e,(ix+MEX_HDR_BSS_SIZE)
+    ld d,(ix+MEX_HDR_BSS_SIZE+1)
+    ld (p514_bss_size),de
+    add hl,de
+    jp c,zx48_p514_format_abort
+    ld (p514_image_exact),hl
+    ld de,MEX_MAX_STORED
+    or a
+    sbc hl,de
+    jr c,zx48_p514_image_bound_ok
+    jp nz,zx48_p514_format_abort
+zx48_p514_image_bound_ok:
+    ld hl,(p514_image_exact)
+    ld b,h
+    ld c,l
+    bit 0,c
+    jr z,zx48_p514_image_round_ok
+    inc bc
+zx48_p514_image_round_ok:
+    ld (p514_image_rounded),bc
+
+    ld e,(ix+MEX_HDR_ENTRY)
+    ld d,(ix+MEX_HDR_ENTRY+1)
+    ld (p514_entry),de
+    ld hl,(p514_image_size)
+    or a
+    sbc hl,de
+    jp c,zx48_p514_format_abort
+    jp z,zx48_p514_format_abort
+
+    ld c,(ix+MEX_HDR_STACK)
+    ld b,(ix+MEX_HDR_STACK+1)
+    bit 0,c
+    jp nz,zx48_p514_format_abort
+    ld (p514_stack_size),bc
+    ld h,b
+    ld l,c
+    ld de,MEX_MIN_STACK
+    or a
+    sbc hl,de
+    jp c,zx48_p514_format_abort
+    ld hl,MEX_MAX_STACK
+    or a
+    sbc hl,bc
+    jp c,zx48_p514_format_abort
+
+    ld l,(ix+MEX_HDR_RELOC_COUNT)
+    ld h,(ix+MEX_HDR_RELOC_COUNT+1)
+    ld (p514_reloc_count),hl
+    add hl,hl
+    jp c,zx48_p514_format_abort
+    ld e,(ix+MEX_HDR_RELOC_OFFSET)
+    ld d,(ix+MEX_HDR_RELOC_OFFSET+1)
+    add hl,de
+    jp c,zx48_p514_format_abort
+    ld de,(p514_m48_logical_length)
+    or a
+    sbc hl,de
+    jp nz,zx48_p514_format_abort
+    ld hl,(p514_image_size)
+    ld de,MEX_HEADER_SIZE
+    add hl,de
+    ld e,(ix+MEX_HDR_RELOC_OFFSET)
+    ld d,(ix+MEX_HDR_RELOC_OFFSET+1)
+    or a
+    sbc hl,de
+    jp nz,zx48_p514_format_abort
+
+    ld e,(ix+MEX_HDR_BODY_CRC)
+    ld d,(ix+MEX_HDR_BODY_CRC+1)
+    ld (p514_expected_body_crc),de
+
+    ; Validate caller ARG1/ENV1 before any process-owned allocation.
+    ld ix,(p514_proc1)
+    ld l,(ix+PROC1_ARG1_PTR)
+    ld h,(ix+PROC1_ARG1_PTR+1)
+    push hl
+    pop ix
+    ld hl,(p514_proc1)
+    push hl
+    pop iy
+    ld c,(iy+PROC1_ARG1_LEN)
+    ld b,(iy+PROC1_ARG1_LEN+1)
+    ld hl,(iy+PROC1_PATH_PTR)
+    call zx48_arg1_validate
+    jp c,zx48_p514_abort
+    ld ix,(p514_proc1)
+    ld l,(ix+PROC1_ENV1_PTR)
+    ld h,(ix+PROC1_ENV1_PTR+1)
+    push hl
+    pop ix
+    ld iy,(p514_proc1)
+    ld c,(iy+PROC1_ENV1_LEN)
+    ld b,(iy+PROC1_ENV1_LEN+1)
+    call zx48_env1_validate
+    jp c,zx48_p514_abort
+
+    ; Reserve final image+BSS, FAST stack, and exact ARG1/ENV1 storage atomically.
+    ld bc,(p514_image_rounded)
+    ld a,ALLOC_ANY
+    call zx48_alloc
+    jp c,zx48_p514_abort
+    ld (p514_image_base),hl
+
+    ld bc,(p514_stack_size)
+    ld a,ALLOC_FAST_REQUIRED
+    call zx48_alloc
+    jp c,zx48_p514_rollback
+    ld (p514_stack_base),hl
+
+    ld ix,(p514_proc1)
+    ld l,(ix+PROC1_ARG1_LEN)
+    ld h,(ix+PROC1_ARG1_LEN+1)
+    ld e,(ix+PROC1_ENV1_LEN)
+    ld d,(ix+PROC1_ENV1_LEN+1)
+    add hl,de
+    jp c,zx48_p514_format_rollback
+    bit 0,l
+    jr z,zx48_p514_boot_even
+    inc hl
+zx48_p514_boot_even:
+    ld (p514_bootstrap_size),hl
+    ld b,h
+    ld c,l
+    ld a,ALLOC_ANY
+    call zx48_alloc
+    jp c,zx48_p514_rollback
+    ld (p514_bootstrap_base),hl
+
+    ; Copy only caller bootstrap blocks. Executable bytes are never staged.
+    ex de,hl
+    ld ix,(p514_proc1)
+    ld l,(ix+PROC1_ARG1_PTR)
+    ld h,(ix+PROC1_ARG1_PTR+1)
+    ld c,(ix+PROC1_ARG1_LEN)
+    ld b,(ix+PROC1_ARG1_LEN+1)
+    ldir
+    ld (p514_env_ptr),de
+    ld l,(ix+PROC1_ENV1_PTR)
+    ld h,(ix+PROC1_ENV1_PTR+1)
+    ld c,(ix+PROC1_ENV1_LEN)
+    ld b,(ix+PROC1_ENV1_LEN+1)
+    ldir
+
+    ld de,MEX_CRC16_INIT
+    ld (p514_body_crc),de
+    ld hl,(p514_image_base)
+    ld (p514_write_ptr),hl
+    ld hl,(p514_image_size)
+    ld (p514_remaining),hl
+zx48_p514_image_loop:
+    ld hl,(p514_remaining)
+    ld a,h
+    or l
+    jr z,zx48_p514_zero_bss
+    call zx48_p514_tape_stream_byte
+    jp c,zx48_p514_rollback
+    ld de,(p514_body_crc)
+    call zx48_p514_crc16_update
+    ld (p514_body_crc),de
+    ld hl,(p514_write_ptr)
+    ld (hl),a
+    inc hl
+    ld (p514_write_ptr),hl
+    ld hl,(p514_remaining)
+    dec hl
+    ld (p514_remaining),hl
+    jr zx48_p514_image_loop
+
+zx48_p514_zero_bss:
+    ld bc,(p514_bss_size)
+    ld a,b
+    or c
+    jr z,zx48_p514_reloc_begin
+    ld hl,(p514_write_ptr)
+    xor a
+    ld (hl),a
+    dec bc
+    ld a,b
+    or c
+    jr z,zx48_p514_reloc_begin
+    ld d,h
+    ld e,l
+    inc de
+    ldir
+
+zx48_p514_reloc_begin:
+    xor a
+    ld (p514_have_previous),a
+    ld hl,(p514_reloc_count)
+    ld (p514_remaining),hl
+zx48_p514_reloc_loop:
+    ld hl,(p514_remaining)
+    ld a,h
+    or l
+    jr z,zx48_p514_validate_end
+    call zx48_p514_tape_stream_byte
+    jp c,zx48_p514_rollback
+    ld (p514_reloc_low),a
+    ld de,(p514_body_crc)
+    call zx48_p514_crc16_update
+    ld (p514_body_crc),de
+    call zx48_p514_tape_stream_byte
+    jp c,zx48_p514_rollback
+    ld h,a
+    ld de,(p514_body_crc)
+    call zx48_p514_crc16_update
+    ld (p514_body_crc),de
+    ld a,(p514_reloc_low)
+    ld l,a
+    ld (p514_reloc_offset),hl
+
+    inc hl
+    ld de,(p514_image_size)
+    or a
+    sbc hl,de
+    jp nc,zx48_p514_format_rollback
+    ld a,(p514_have_previous)
+    or a
+    jr z,zx48_p514_reloc_order
+    ld hl,(p514_previous_reloc)
+    ld de,(p514_reloc_offset)
+    or a
+    sbc hl,de
+    jp nc,zx48_p514_format_rollback
+zx48_p514_reloc_order:
+    ld hl,(p514_reloc_offset)
+    ld (p514_previous_reloc),hl
+    ld a,1
+    ld (p514_have_previous),a
+    ld de,(p514_image_base)
+    add hl,de
+    jp c,zx48_p514_format_rollback
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ex de,hl
+    ld de,(p514_image_base)
+    add hl,de
+    jp c,zx48_p514_format_rollback
+    ex de,hl
+    ld hl,(p514_image_base)
+    ld bc,(p514_reloc_offset)
+    add hl,bc
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    ld hl,(p514_remaining)
+    dec hl
+    ld (p514_remaining),hl
+    jr zx48_p514_reloc_loop
+
+zx48_p514_validate_end:
+    call zx48_p514_tape_stream_finish
+    jp c,zx48_p514_rollback
+    ld hl,(p514_body_crc)
+    ld de,(p514_expected_body_crc)
+    or a
+    sbc hl,de
+    jp nz,zx48_p514_format_rollback
+
+    ; Single externally visible commit happens only after all tape/MEX proofs.
+    call zx48_p514_commit_ready
+    jp c,zx48_p514_rollback
+    ld a,1
+    ld (p514_committed),a
+    ld hl,(p514_image_base)
+    ld bc,(p514_image_rounded)
+    xor a
+    or a
+    ret
+
+zx48_p514_format_abort:
+    ld a,E_FORMAT
+zx48_p514_abort:
+    ld (p514_error),a
+    call zx48_p514_tape_stream_abort
+    ld a,(p514_error)
+    scf
+    ret
+zx48_p514_format_rollback:
+    ld a,E_FORMAT
+zx48_p514_rollback:
+    ld (p514_error),a
+    call zx48_p514_tape_stream_abort
+    ld hl,(p514_bootstrap_base)
+    ld a,h
+    or l
+    jr z,zx48_p514_free_stack
+    ld bc,(p514_bootstrap_size)
+    call zx48_free
+zx48_p514_free_stack:
+    ld hl,(p514_stack_base)
+    ld a,h
+    or l
+    jr z,zx48_p514_free_image
+    ld bc,(p514_stack_size)
+    call zx48_free
+zx48_p514_free_image:
+    ld hl,(p514_image_base)
+    ld a,h
+    or l
+    jr z,zx48_p514_rollback_done
+    ld bc,(p514_image_rounded)
+    call zx48_free
+zx48_p514_rollback_done:
+    ld a,(p514_error)
+    scf
+    ret
+
+zx48_p514_crc16:
+    ld de,MEX_CRC16_INIT
+zx48_p514_crc16_loop:
+    ld a,b
+    or c
+    ret z
+    ld a,(hl)
+    inc hl
+    push bc
+    call zx48_p514_crc16_update
+    pop bc
+    dec bc
+    jr zx48_p514_crc16_loop
+zx48_p514_crc16_update:
+    xor d
+    ld d,a
+    ld b,8
+zx48_p514_crc16_bit:
+    bit 7,d
+    jr z,zx48_p514_crc16_shift
+    sla e
+    rl d
+    ld a,e
+    xor MEX_CRC16_POLY&$ff
+    ld e,a
+    ld a,d
+    xor MEX_CRC16_POLY/256
+    ld d,a
+    djnz zx48_p514_crc16_bit
+    ret
+zx48_p514_crc16_shift:
+    sla e
+    rl d
+    djnz zx48_p514_crc16_bit
+    ret
+
+p514_proc1: dw 0
+p514_name_ptr: dw 0
+p514_image_base: dw 0
+p514_image_size: dw 0
+p514_bss_size: dw 0
+p514_image_exact: dw 0
+p514_image_rounded: dw 0
+p514_stack_base: dw 0
+p514_stack_size: dw 0
+p514_bootstrap_base: dw 0
+p514_bootstrap_size: dw 0
+p514_env_ptr: dw 0
+p514_entry: dw 0
+p514_reloc_count: dw 0
+p514_reloc_offset: dw 0
+p514_previous_reloc: dw 0
+p514_expected_body_crc: dw 0
+p514_body_crc: dw 0
+p514_write_ptr: dw 0
+p514_remaining: dw 0
+p514_reloc_low: db 0
+p514_have_previous: db 0
+p514_committed: db 0
+p514_error: db 0
+p514_mex_header: defs MEX_HEADER_SIZE,0
+    ENDM
