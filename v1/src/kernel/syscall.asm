@@ -803,6 +803,24 @@ zx48_sys_spawn_preflight_invalid:
 
 
 ;
+; P4.28 exact SYS_ZXPACK_INFO syscall surface.
+;
+    MACRO EMIT_P428_ZXPACK_INFO_SYSCALL_ROUTINES
+; A=SYS_ZXPACK_INFO, HL=writable exact 20-byte ZPINFO1.
+zx48_p428_sys_zxpack_info:
+    cp SYS_ZXPACK_INFO
+    jr nz,zx48_p428_sys_zxpack_info_notsup
+    ld bc,20
+    call zx48_user_range_validate
+    ret c
+    jp zx48_p428_zxpack_info
+zx48_p428_sys_zxpack_info_notsup:
+    ld a,E_NOTSUP
+    scf
+    ret
+    ENDM
+
+;
 ; P4.05 compact SYS_OPEN transaction. This is emitted by the exact P4.05
 ; qualification fixture; later Phase-4 steps add writer exclusivity/read/write.
 ;
