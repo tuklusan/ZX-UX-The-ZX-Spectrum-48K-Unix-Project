@@ -1,0 +1,97 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "verify-resolves-exact-path-and-resident-target",
+      "passed": true
+    },
+    {
+      "name": "sequential-exact-case-forward-scan",
+      "passed": true
+    },
+    {
+      "name": "metadata-type-and-logical-length-match",
+      "passed": true
+    },
+    {
+      "name": "incoming-raw-packed-fully-validated-before-compare",
+      "passed": true
+    },
+    {
+      "name": "packed-comparison-uses-streaming-272-state",
+      "passed": true
+    },
+    {
+      "name": "representation-may-differ",
+      "passed": true
+    },
+    {
+      "name": "byte-difference-is-e-io",
+      "passed": true
+    },
+    {
+      "name": "metadata-mismatch-is-e-format",
+      "passed": true
+    },
+    {
+      "name": "resident-record-never-written",
+      "passed": true
+    },
+    {
+      "name": "public-verify-routes-implementation",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13518 lines, work time: 0.034 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p510-verify.lst",
+        "--sym=p510-verify.sym",
+        "p510-verify.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 22,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\ntape.asm(1948): warning: value 0xCD54 is truncated to 8bit value: 0x54\np510-verify.asm(26): ^ emitted from here\ntape.asm(2094): warning: value 0xCD54 is truncated to 8bit value: 0x54\np510-verify.asm(26): ^ emitted from here\nPass 3 complete\nErrors: 0, warnings: 2, compiled: 7990 lines, work time: 0.020 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p510-verify.bin": "3f87451ae74a31e43a533521b8239cf5901ddcb81e92db70ee1eea20dac6d150",
+    "v1/dist/certification/P5.09.build.json": "fe9e41181c0df9b77bb1ce68ab92f28ce04153ceb5933001b47399e5ea0685dc",
+    "v1/dist/certification/P5.09.test.json": "036c6b679b3386f02dcf53a7c77b06d88b777af69f5e07675e0a1d5f9ad2ff10",
+    "v1/src/kernel/tape.asm": "7a26fdb368d1ebe04ce2c358ca8c7b34b11020645e4715536397e2325a311fdc",
+    "v1/tools-host/test-driver/phase5_verify.py": "314fc570c43e594cbd3d63714b867b0a73bd548c0948fd3239a510cada5d95fb",
+    "v1/tools-host/test-driver/run.py": "baa272e8155f898377c5ac070c30e60f6a5be2cade4fb70c14b34463c0dce846"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P5.09": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "44e339356bf7a4404660aecdbce92ee11a11f430",
+  "status": "PASS",
+  "step": "P5.10",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
