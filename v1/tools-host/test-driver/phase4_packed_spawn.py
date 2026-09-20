@@ -148,8 +148,6 @@ def _assemble(root: Path, run_command: Callable[..., Any], require_project_tool:
     INCLUDE "../include/zx48ux.inc"
     INCLUDE "../include/mex1.inc"
 PANIC_SCHEDULER EQU $03
-PROC_HANDLES EQU 16
-PROC_CWD EQU 28
     ORG $C000
     INCLUDE "../src/kernel/memory.asm"
     INCLUDE "../src/kernel/objects.asm"
