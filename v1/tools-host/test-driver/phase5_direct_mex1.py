@@ -130,6 +130,7 @@ P417_STATE_SIZE EQU 272
     EMIT_P509_EXPLICIT_LOAD_ROUTINES
     EMIT_P511_SCAN_ROUTINES
     EMIT_P514_DIRECT_TAPE_STREAM_ROUTINES
+PATH_KIND_BASE EQU 1
 zx48_alloc: ld a,E_NOMEM : scf : ret
 zx48_free: xor a : ret
 zx48_object_public_type_allowed: xor a : ret
@@ -140,7 +141,14 @@ zx48_object_lookup: ld a,E_NOENT : scf : ret
 zx48_object_create: ld a,E_NOSPC : scf : ret
 zx48_od_object_any_live: xor a : ret
 zx48_p424_candidate_clear: xor a : ret
+zx48_p513_prompt_play: xor a : ret
+zx48_p513_prompt_record: xor a : ret
+zx48_path_resolve: ld a,E_NOENT : scf : ret
+zx48_p505_packed_load: ld a,E_IO : scf : ret
+zx48_p504_raw_load: ld a,E_IO : scf : ret
 current_pid: db 1
+path_dir: db 0
+path_name: defs 10,0
     SAVEBIN "p514-tape-stream.bin",$C000,$-$C000
 """,encoding="utf-8",newline="\n")
     tr=run_command([asm,"--nologo","--lst=p514-tape-stream.lst","--sym=p514-tape-stream.sym","p514-tape-stream.asm"],cwd=b,timeout_seconds=30)
