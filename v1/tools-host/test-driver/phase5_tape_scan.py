@@ -132,25 +132,32 @@ test_frees: db 0
       s=phase3_open_descriptions._symbols(b/"p511-scan.sym",names)
       raw=b"scan-raw-"+b"R"*520; packed_logical=b"P"*700; packed=_target_encode(packed_logical)
       require(len(packed)<len(packed_logical),"packed fixture did not compress")
-      blocks=[hdr("raw",1,5,raw,raw,False)]
-      blocks += [raw[i:i+512] for i in range(0,len(raw),512)]
-      blocks += [hdr("pack",1,5,packed_logical,packed,True)]
-      blocks += [packed[i:i+512] for i in range(0,len(packed),512)]
-      stream=b"".join(blocks); lens=b"".join(len(x).to_bytes(2,"little") for x in blocks)
-      def patch(ram):
-        ram[MODULE-0x4000:MODULE-0x4000+len(binary.read_bytes())]=binary.read_bytes()
-        ram[STREAM-0x4000:STREAM-0x4000+len(stream)]=stream
-        ram[LENGTHS-0x4000:LENGTHS-0x4000+len(lens)]=lens
-        ram[s["test_stream_ptr"]-0x4000:s["test_stream_ptr"]-0x4000+2]=w(STREAM)
-        ram[s["test_lengths_ptr"]-0x4000:s["test_lengths_ptr"]-0x4000+2]=w(LENGTHS)
-        ram[s["test_blocks"]-0x4000]=len(blocks)
-      code=b"\xF3"+phase1._ld_sp(STACK)+phase1._ld_hl(HDR1)+phase1._call(s["zx48_p511_scan_next"])+phase1._jp_c(FAIL_PC)
-      code+=phase1._ld_de(1)+b"\xB7\xED\x52"+phase1._jp_nz(FAIL_PC)+checkb(HDR1,ord("M"))+checkb(HDR1+16,ord("r"))
-      code+=phase1._ld_hl(HDR2)+phase1._call(s["zx48_p511_scan_next"])+phase1._jp_c(FAIL_PC)
-      code+=phase1._ld_de(1)+b"\xB7\xED\x52"+phase1._jp_nz(FAIL_PC)+checkb(HDR2+16,ord("p"))
-      code+=checkb(s["test_allocs"],3)+checkb(s["test_frees"],3)+checkb(s["p507_tape_lock"],0)+phase1._jp(PASS_PC)
-      try: run_sna(root,code,patch=patch)
-      except DriverError as e: raise P511Error(f"P5.11 runtime failed: {e}") from e
+
+      def run_case(label, blocks, header_addr, expected_name, expected_allocs):
+        stream=b"".join(blocks)
+        lens=b"".join(len(x).to_bytes(2,"little") for x in blocks)
+        def patch(ram):
+          module=binary.read_bytes()
+          ram[MODULE-0x4000:MODULE-0x4000+len(module)]=module
+          ram[STREAM-0x4000:STREAM-0x4000+len(stream)]=stream
+          ram[LENGTHS-0x4000:LENGTHS-0x4000+len(lens)]=lens
+          ram[s["test_stream_ptr"]-0x4000:s["test_stream_ptr"]-0x4000+2]=w(STREAM)
+          ram[s["test_lengths_ptr"]-0x4000:s["test_lengths_ptr"]-0x4000+2]=w(LENGTHS)
+          ram[s["test_blocks"]-0x4000]=len(blocks)
+          ram[s["test_allocs"]-0x4000]=0
+          ram[s["test_frees"]-0x4000]=0
+          ram[s["p507_tape_lock"]-0x4000]=0
+        code=b"\xF3"+phase1._ld_sp(STACK)+phase1._ld_hl(header_addr)+phase1._call(s["zx48_p511_scan_next"])+phase1._jp_c(FAIL_PC)
+        code+=phase1._ld_de(1)+b"\xB7\xED\x52"+phase1._jp_nz(FAIL_PC)
+        code+=checkb(header_addr,ord("M"))+checkb(header_addr+16,ord(expected_name))
+        code+=checkb(s["test_allocs"],expected_allocs)+checkb(s["test_frees"],expected_allocs)+checkb(s["p507_tape_lock"],0)+phase1._jp(PASS_PC)
+        try: run_sna(root,code,patch=patch)
+        except DriverError as e: raise P511Error(f"P5.11 runtime {label} failed: {e}") from e
+
+      raw_blocks=[hdr("raw",1,5,raw,raw,False)]+[raw[i:i+512] for i in range(0,len(raw),512)]
+      packed_blocks=[hdr("pack",1,5,packed_logical,packed,True)]+[packed[i:i+512] for i in range(0,len(packed),512)]
+      run_case("RAW",raw_blocks,HDR1,"r",1)
+      run_case("PACKED",packed_blocks,HDR2,"p",2)
       assertions += [
         {"name":"mixed-raw-packed-stream-runtime","passed":True},
         {"name":"scratch-released-between-objects-runtime","passed":True},
