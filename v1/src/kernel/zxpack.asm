@@ -1707,3 +1707,22 @@ p420_mode: db 0
 p420_background: db 0
 p420_workspace_allocs: db 0
     ENDM
+
+;
+; P4.21 representation decision: zero-length objects and non-smaller encodings stay
+; RAW. Only a strictly smaller target-greedy stream is eligible for publication.
+;
+    MACRO EMIT_P421_PACK_DECISION_ROUTINES
+; A=background flag, HL=RAW source, BC=logical length, DE=private destination.
+; Returns HL=encoded length only when strictly smaller; HL=0 means remain RAW.
+zx48_p421_encode_if_smaller:
+    ld a,b
+    or c
+    jr nz,zx48_p421_nonempty
+    ld hl,0
+    xor a
+    or a
+    ret
+zx48_p421_nonempty:
+    jp zx48_p420_two_pass
+    ENDM
