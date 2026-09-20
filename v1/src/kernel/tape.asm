@@ -1006,7 +1006,7 @@ zx48_p506_reserved:
 
     ld a,(p506_kind)
     cp 3
-    jr z,zx48_p506_crontab
+    jp z,zx48_p506_crontab
 
     ; System resources require exact logical sizes.
     cp 1
@@ -1107,7 +1107,7 @@ zx48_p506_decode_packed:
     ld iy,(p506_alloc_ptr)
     ld a,P416_SINK_FINAL_MEMORY
     call zx48_p416_decode
-    jr c,zx48_p506_decode_fail
+    jp c,zx48_p506_decode_fail
     ld hl,(p416_crc)
     ld (p506_actual_crc),hl
 
@@ -1116,7 +1116,7 @@ zx48_p506_crc_check:
     ld de,(p506_expected_crc)
     or a
     sbc hl,de
-    jr nz,zx48_p506_io_fail
+    jp nz,zx48_p506_io_fail
 
     ld a,(p506_kind)
     cp 1
