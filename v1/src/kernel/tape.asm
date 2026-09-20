@@ -463,7 +463,10 @@ zx48_tape_save_block:
 ; A=block type,DE=length,IX=destination; carry selects load/verify.
 zx48_tape_load_block:
     call zx48_rom_ld_bytes
-    ret nc
+    jr nc,zx48_tape_load_error
+    or a
+    ret
+zx48_tape_load_error:
     ld a,E_IO
     scf
     ret

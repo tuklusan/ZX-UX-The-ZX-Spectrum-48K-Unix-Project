@@ -125,7 +125,10 @@ p504_test_rom_load:
     ld a,M48O_ROM_DATA_FLAG
     scf
     call ROM_LD_BYTES
-    ret nc
+    jr nc,p504_test_rom_error
+    or a
+    ret
+p504_test_rom_error:
     ld a,E_IO
     scf
     ret
