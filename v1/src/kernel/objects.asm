@@ -2795,7 +2795,18 @@ zx48_p411_stat_dir:
     call zx48_p411_stat_clear
     ld a,OBJ_DIR
     ld (p411_stat_record+0),a
+    ; STATOUT1 directory_id is the parent directory. Root is its own sentinel;
+    ; USERHOME is parented by HOME; every other fixed directory is parented by ROOT.
     ld a,(p411_stat_dir)
+    cp DIR_ROOT
+    jr z,zx48_p411_stat_dir_parent_ready
+    cp DIR_USERHOME
+    jr nz,zx48_p411_stat_dir_parent_root
+    ld a,DIR_HOME
+    jr zx48_p411_stat_dir_parent_ready
+zx48_p411_stat_dir_parent_root:
+    ld a,DIR_ROOT
+zx48_p411_stat_dir_parent_ready:
     ld (p411_stat_record+6),a
     ld a,STATE_PSEUDO
     ld (p411_stat_record+7),a
