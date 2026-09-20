@@ -10,7 +10,7 @@
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
 
-name: P4.29 ZXPACK info qualification
+name: P4.29 object-store regression qualification
 
 on:
   workflow_dispatch:
@@ -67,7 +67,7 @@ jobs:
           test "$(sha256sum tools/manifest/toolchain.lock.json | awk '{print $1}')" = "$ZXUX_TOOLCHAIN_LOCK_SHA256"
           test -s v1/dist/certification/P4.28.test.json
           grep -q '"status": "PASS"' v1/dist/certification/P4.28.test.json
-          grep -q '"source_commit": "6cff667b5421b1822fcb057282787199fcfb89f8"' v1/dist/certification/P4.28.test.json
+          grep -q '"source_commit": "fe61831b6bda921488573ef464ec23f035c20c8e"' v1/dist/certification/P4.28.test.json
       - uses: actions/setup-python@v6
         with: {python-version: '3.13.15', check-latest: false}
       - name: Install native build prerequisites
@@ -80,10 +80,10 @@ jobs:
         run: |
           tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step E0.05 --evidence-dir /tmp/zxux-p429-e005
           tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step E0.05 --evidence-dir /tmp/zxux-p429-e005
-      - name: Recheck P4.27 prerequisite
+      - name: Recheck P4.28 prerequisite
         run: |
-          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P4.28 --evidence-dir /tmp/zxux-p429-p427
-          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P4.28 --evidence-dir /tmp/zxux-p429-p427
+          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P4.28 --evidence-dir /tmp/zxux-p429-p428
+          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P4.28 --evidence-dir /tmp/zxux-p429-p428
       - name: Execute P4.29 build
         run: tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P4.29
       - name: Execute P4.29 test
