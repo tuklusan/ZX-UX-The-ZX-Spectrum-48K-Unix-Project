@@ -4347,7 +4347,7 @@ zx48_p427_reloc_loop:
     ld hl,(p427_remaining16)
     ld a,h
     or l
-    jr z,zx48_p427_finish_stream
+    jp z,zx48_p427_finish_stream
 
     ld ix,(p427_state_ptr)
     call zx48_p427_stream_step
