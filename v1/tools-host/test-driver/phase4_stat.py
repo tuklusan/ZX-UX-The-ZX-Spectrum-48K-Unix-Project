@@ -79,6 +79,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
         {"name": "packed-physical-length-is-record-storage-length", "passed": "OBJ_STORAGE_LENGTH" in omacro and "p411_stat_record+4" in omacro},
         {"name": "tape-backed-lengths-are-ffff", "passed": "ld hl,0-1" in omacro and "STATE_TAPE_BACKED" in omacro},
         {"name": "pseudo-dir-dev-lengths-are-zero", "passed": "OBJ_DIR" in omacro and "OBJ_DEV" in omacro and omacro.count("STATE_PSEUDO") >= 2},
+        {"name": "pseudo-directory-reports-parent-id", "passed": "zx48_p411_stat_dir_parent_root:" in omacro and "cp DIR_USERHOME" in omacro and "ld a,DIR_HOME" in omacro},
         {"name": "resident-exact-name-precedes-bcat", "passed": omacro.index("call zx48_p405_object_lookup") < omacro.index("call zx48_p405_is_bcat")},
     ]
 
@@ -185,7 +186,7 @@ def _target(root: Path, s: dict[str, int], module: bytes) -> None:
 
     success("raw-record-exact", "/tmp/raw", _statout(s["OBJ_DAT"], 0, 5, 5, s["DIR_TMP"], s["STATE_RAM"]))
     success("packed-record-exact", "/tmp/pak", _statout(s["OBJ_TXT"], s["OBJ_PACKED"], 11, 7, s["DIR_TMP"], s["STATE_RAM"]))
-    success("pseudo-directory-zero-lengths", "/tmp", _statout(s["OBJ_DIR"], 0, 0, 0, s["DIR_TMP"], s["STATE_PSEUDO"]))
+    success("pseudo-directory-zero-lengths", "/tmp", _statout(s["OBJ_DIR"], 0, 0, 0, s["DIR_ROOT"], s["STATE_PSEUDO"]))
     success("pseudo-device-zero-lengths", "/dev/tty", _statout(s["OBJ_DEV"], 0, 0, 0, s["DIR_DEV"], s["STATE_PSEUDO"]))
     success("tape-backed-unknown-lengths", "/bin/sh", _statout(s["OBJ_BIN"], 0, 0xFFFF, 0xFFFF, s["DIR_BIN"], s["STATE_TAPE_BACKED"]))
 
