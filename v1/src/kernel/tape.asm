@@ -1955,11 +1955,11 @@ zx48_p509_match:
     cp M48O_PACKED
     jp nz,zx48_p509_locked_format
     ld hl,p509_header
-    call zx48_p505_load_packed
+    call zx48_p505_packed_load
     jr zx48_p509_loaded
 zx48_p509_load_raw:
     ld hl,p509_header
-    call zx48_p504_load_raw
+    call zx48_p504_raw_load
 zx48_p509_loaded:
     jp c,zx48_p509_locked_error
     ld (p509_new_ptr),hl
@@ -2095,7 +2095,8 @@ zx48_p509_commit_new:
     ld hl,p509_requested_name
     call zx48_object_create
     jp c,zx48_p509_commit_drop_new
-    ld (p509_existing_slot),c
+    ld a,c
+    ld (p509_existing_slot),a
     ld (p509_existing_ptr),ix
     xor a
     ld (p509_old_ptr),a
