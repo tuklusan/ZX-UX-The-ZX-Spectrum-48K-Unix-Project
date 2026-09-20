@@ -1,0 +1,85 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "one-pack-call-per-idle-cycle",
+      "passed": true
+    },
+    {
+      "name": "one-selected-candidate-per-service",
+      "passed": true
+    },
+    {
+      "name": "attempt-bit-cleared-before-revalidation",
+      "passed": true
+    },
+    {
+      "name": "same-slot-revalidated",
+      "passed": true
+    },
+    {
+      "name": "open-handle-revalidation",
+      "passed": true
+    },
+    {
+      "name": "background-failure-is-best-effort",
+      "passed": true
+    },
+    {
+      "name": "scheduler-hook-returns",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12946 lines, work time: 0.033 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p425-idle-pack.lst",
+        "--sym=p425-idle-pack.sym",
+        "p425-idle-pack.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 25,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 10610 lines, work time: 0.024 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p425-idle-pack.bin": "744c1bbb832731ceb0f309a0ec99f2d2151a0121810011ca7e9fa03c76c16174",
+    "v1/dist/certification/P4.24.test.json": "51084f9f53c74c6d8192f5c163942effa7d26370e1f7a30ceda26bb88577f6f8",
+    "v1/src/kernel/scheduler.asm": "d22df7983a3234b93f9fdc50fcaadf967001892a16d515d688bb7d3e6c880eaf",
+    "v1/src/kernel/zxpack.asm": "ec9296163be41bd5bcb6d25cdc97086e45849c22b24be67b8cef6f75b035a117",
+    "v1/tools-host/test-driver/phase4_idle_pack.py": "9fa8d5c186eb0bc9fe46ad0f1ca22bad643cba32ea664e2ecec6fb6672769b04",
+    "v1/tools-host/test-driver/run.py": "7a659c403b8fa41f2176c616318e87ca231de1888457809358f5bfa468120e8a"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P4.24": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "70a020a078c360aeb57de9b772576c381a9194f9",
+  "status": "PASS",
+  "step": "P4.25",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
