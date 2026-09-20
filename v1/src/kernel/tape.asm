@@ -449,10 +449,411 @@ p504_free_needed: db 0
 p504_error: db 0
     ENDM
 
+    MACRO EMIT_P505_PACKED_LOADER_ROUTINES
+; HL -> private 32-byte M48O header already read from its separate ROM block.
+; Validate the complete public PACKED contract before allocating. The physical
+; ZXP1 stream lands directly in its final resident allocation. One exact
+; 272-byte decoder state validates logical length and CRC to a discard sink.
+zx48_p505_packed_load:
+    ld (p505_header_ptr),hl
+    xor a
+    ld (p505_published),a
+    ld (p505_alloc_ptr),a
+    ld (p505_alloc_ptr+1),a
+    ld (p505_decoder_ptr),a
+    ld (p505_decoder_ptr+1),a
+    ld (p505_physical_free),a
+    ld (p505_decoder_free),a
+
+    ; Magic/version/PACKED flag.
+    ld hl,(p505_header_ptr)
+    ld a,(hl)
+    cp M48O_MAGIC_0
+    jp nz,zx48_p505_format
+    inc hl
+    ld a,(hl)
+    cp M48O_MAGIC_1
+    jp nz,zx48_p505_format
+    inc hl
+    ld a,(hl)
+    cp M48O_MAGIC_2
+    jp nz,zx48_p505_format
+    inc hl
+    ld a,(hl)
+    cp M48O_MAGIC_3
+    jp nz,zx48_p505_format
+    inc hl
+    ld a,(hl)
+    cp M48O_VERSION
+    jp nz,zx48_p505_format
+    inc hl
+    ld a,(hl)
+    ld (p505_type),a
+    cp M48O_TYPE_TXT
+    jp c,zx48_p505_format
+    cp M48O_TYPE_SYS+1
+    jp nc,zx48_p505_format
+    inc hl
+    ld a,(hl)
+    cp M48O_PACKED
+    jp nz,zx48_p505_format
+    inc hl
+    ld a,(hl)
+    ld (p505_target),a
+
+    ; Public mutable placement mirrors the RAW loader contract.
+    cp M48O_TARGET_BIN
+    jr z,zx48_p505_place_bin
+    cp M48O_TARGET_ETC
+    jr z,zx48_p505_place_etc
+    cp M48O_TARGET_USERHOME
+    jr z,zx48_p505_place_ordinary
+    cp M48O_TARGET_TMP
+    jr z,zx48_p505_place_ordinary
+    jp zx48_p505_format
+zx48_p505_place_bin:
+    ld a,(p505_type)
+    cp M48O_TYPE_BIN
+    jp nz,zx48_p505_format
+    jr zx48_p505_lengths
+zx48_p505_place_etc:
+    ld a,(p505_type)
+    cp M48O_TYPE_TXT
+    jr z,zx48_p505_lengths
+    cp M48O_TYPE_CFG
+    jp nz,zx48_p505_format
+    jr zx48_p505_lengths
+zx48_p505_place_ordinary:
+    ld a,(p505_type)
+    cp M48O_TYPE_CFG+1
+    jp nc,zx48_p505_format
+
+zx48_p505_lengths:
+    ld hl,(p505_header_ptr)
+    ld bc,M48O_HDR_STORAGE_LEN
+    add hl,bc
+    ld c,(hl)
+    inc hl
+    ld b,(hl)
+    ld (p505_storage_length),bc
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (p505_logical_length),de
+
+    ; PACKED requires 0 < physical < logical and both lengths <=32768.
+    ld a,b
+    or c
+    jp z,zx48_p505_format
+    ld a,b
+    cp $80
+    jr c,zx48_p505_check_logical_bound
+    jp nz,zx48_p505_format
+    ld a,c
+    or a
+    jp nz,zx48_p505_format
+zx48_p505_check_logical_bound:
+    ld a,d
+    cp $80
+    jr c,zx48_p505_compare_lengths
+    jp nz,zx48_p505_format
+    ld a,e
+    or a
+    jp nz,zx48_p505_format
+zx48_p505_compare_lengths:
+    ld h,d
+    ld l,e
+    ld de,(p505_storage_length)
+    or a
+    sbc hl,de
+    jp c,zx48_p505_format
+    jp z,zx48_p505_format
+
+    ; Codec is exactly ZXP1.
+    ld hl,(p505_header_ptr)
+    ld bc,M48O_HDR_CODEC
+    add hl,bc
+    ld a,(hl)
+    cp low M48O_CODEC_ZXP1
+    jp nz,zx48_p505_format
+    inc hl
+    ld a,(hl)
+    cp high M48O_CODEC_ZXP1
+    jp nz,zx48_p505_format
+
+    ; Reserved bytes are zero.
+    ld hl,(p505_header_ptr)
+    ld bc,M48O_HDR_RESERVED
+    add hl,bc
+    ld b,M48O_RESERVED_SIZE
+zx48_p505_reserved:
+    ld a,(hl)
+    or a
+    jp nz,zx48_p505_format
+    inc hl
+    djnz zx48_p505_reserved
+
+    ; Validate name[10], NUL padding, and reject . / ...
+    ld hl,(p505_header_ptr)
+    ld bc,M48O_HDR_NAME
+    add hl,bc
+    ld (p505_name_ptr),hl
+    ld b,M48O_NAME_SIZE
+    ld c,0
+zx48_p505_name_loop:
+    ld a,(hl)
+    or a
+    jr z,zx48_p505_name_padding
+    call zx48_p505_name_char
+    jp c,zx48_p505_format
+    inc c
+    inc hl
+    djnz zx48_p505_name_loop
+    jr zx48_p505_name_special
+zx48_p505_name_padding:
+    ld a,c
+    or a
+    jp z,zx48_p505_format
+zx48_p505_name_pad_loop:
+    ld a,(hl)
+    or a
+    jp nz,zx48_p505_format
+    inc hl
+    djnz zx48_p505_name_pad_loop
+zx48_p505_name_special:
+    ld a,c
+    cp 1
+    jr nz,zx48_p505_name_two
+    ld hl,(p505_name_ptr)
+    ld a,(hl)
+    cp '.'
+    jp z,zx48_p505_format
+    jr zx48_p505_header_crc
+zx48_p505_name_two:
+    cp 2
+    jr nz,zx48_p505_header_crc
+    ld hl,(p505_name_ptr)
+    ld a,(hl)
+    cp '.'
+    jr nz,zx48_p505_header_crc
+    inc hl
+    ld a,(hl)
+    cp '.'
+    jp z,zx48_p505_format
+
+zx48_p505_header_crc:
+    ld hl,(p505_header_ptr)
+    ld bc,M48O_HDR_HEADER_CRC
+    add hl,bc
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (p505_header_crc),de
+    xor a
+    ld (hl),a
+    dec hl
+    ld (hl),a
+    ld hl,(p505_header_ptr)
+    ld bc,M48O_HDR_SIZE
+    call zx48_crc16_ccitt_false
+    push de
+    ld hl,(p505_header_ptr)
+    ld bc,M48O_HDR_HEADER_CRC
+    add hl,bc
+    ld de,(p505_header_crc)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    pop hl
+    ld de,(p505_header_crc)
+    or a
+    sbc hl,de
+    jp nz,zx48_p505_format
+
+    ld hl,(p505_header_ptr)
+    ld bc,M48O_HDR_PAYLOAD_CRC
+    add hl,bc
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (p505_expected_crc),de
+
+    ; Final packed allocation first, then one exact 272-byte decoder state.
+    ld bc,(p505_storage_length)
+    ld a,ALLOC_COLD_PREFERRED
+    call zx48_alloc
+    ret c
+    ld (p505_alloc_ptr),hl
+    ld a,1
+    ld (p505_physical_free),a
+
+    ld bc,P417_STATE_SIZE
+    ld a,ALLOC_COLD_PREFERRED
+    call zx48_alloc
+    jr nc,zx48_p505_decoder_allocated
+    ld (p505_error),a
+    jr zx48_p505_cleanup
+zx48_p505_decoder_allocated:
+    ld (p505_decoder_ptr),hl
+    ld a,1
+    ld (p505_decoder_free),a
+    call zx48_p417_state_init
+
+    ld hl,(p505_alloc_ptr)
+    ld (p505_write_ptr),hl
+    ld hl,(p505_storage_length)
+    ld (p505_remaining),hl
+
+zx48_p505_chunk_loop:
+    ld bc,(p505_remaining)
+    ld a,b
+    or c
+    jr z,zx48_p505_validate
+    call zx48_p503_prepare_chunk
+    ld (p505_chunk_len),de
+    ld ix,(p505_write_ptr)
+    scf
+    call zx48_tape_load_block
+    jr c,zx48_p505_transport_fail
+    ld hl,(p505_write_ptr)
+    ld de,(p505_chunk_len)
+    add hl,de
+    ld (p505_write_ptr),hl
+    ld hl,(p505_remaining)
+    or a
+    sbc hl,de
+    ld (p505_remaining),hl
+    jr zx48_p505_chunk_loop
+
+zx48_p505_validate:
+    ld hl,(p505_alloc_ptr)
+    ld bc,(p505_storage_length)
+    ld de,(p505_logical_length)
+    ld ix,(p505_decoder_ptr)
+    call zx48_p505_validate_zxp1
+    jr c,zx48_p505_decoder_fail
+    ld hl,(p416_crc)
+    ld de,(p505_expected_crc)
+    or a
+    sbc hl,de
+    jr nz,zx48_p505_crc_fail
+
+    ; Decoder state is temporary and must not survive publication.
+    ld hl,(p505_decoder_ptr)
+    ld bc,P417_STATE_SIZE
+    call zx48_free
+    xor a
+    ld (p505_decoder_free),a
+    ld (p505_decoder_ptr),a
+    ld (p505_decoder_ptr+1),a
+    ld a,1
+    ld (p505_published),a
+    xor a
+    ld (p505_physical_free),a
+    ld hl,(p505_alloc_ptr)
+    ld bc,(p505_storage_length)
+    ld de,(p505_logical_length)
+    xor a
+    or a
+    ret
+
+zx48_p505_transport_fail:
+    ld (p505_error),a
+    jr zx48_p505_cleanup
+zx48_p505_decoder_fail:
+    ld (p505_error),a
+    jr zx48_p505_cleanup
+zx48_p505_crc_fail:
+    ld a,E_IO
+    ld (p505_error),a
+
+zx48_p505_cleanup:
+    ld a,(p505_decoder_free)
+    or a
+    jr z,zx48_p505_cleanup_physical
+    ld hl,(p505_decoder_ptr)
+    ld bc,P417_STATE_SIZE
+    call zx48_free
+zx48_p505_cleanup_physical:
+    ld a,(p505_physical_free)
+    or a
+    jr z,zx48_p505_cleanup_done
+    ld hl,(p505_alloc_ptr)
+    ld bc,(p505_storage_length)
+    bit 0,c
+    jr z,zx48_p505_free_physical
+    inc bc
+zx48_p505_free_physical:
+    call zx48_free
+zx48_p505_cleanup_done:
+    xor a
+    ld (p505_published),a
+    ld (p505_alloc_ptr),a
+    ld (p505_alloc_ptr+1),a
+    ld (p505_decoder_ptr),a
+    ld (p505_decoder_ptr+1),a
+    ld (p505_physical_free),a
+    ld (p505_decoder_free),a
+    ld a,(p505_error)
+    scf
+    ret
+
+zx48_p505_format:
+    ld a,E_FORMAT
+    scf
+    ret
+
+zx48_p505_name_char:
+    cp '0'
+    jr c,zx48_p505_name_punct
+    cp '9'+1
+    jr c,zx48_p505_name_ok
+    cp 'A'
+    jr c,zx48_p505_name_punct
+    cp 'Z'+1
+    jr c,zx48_p505_name_ok
+    cp 'a'
+    jr c,zx48_p505_name_punct
+    cp 'z'+1
+    jr c,zx48_p505_name_ok
+zx48_p505_name_punct:
+    cp '_'
+    jr z,zx48_p505_name_ok
+    cp '-'
+    jr z,zx48_p505_name_ok
+    cp '.'
+    jr z,zx48_p505_name_ok
+    scf
+    ret
+zx48_p505_name_ok:
+    or a
+    ret
+
+p505_header_ptr: dw 0
+p505_name_ptr: dw 0
+p505_header_crc: dw 0
+p505_expected_crc: dw 0
+p505_storage_length: dw 0
+p505_logical_length: dw 0
+p505_alloc_ptr: dw 0
+p505_decoder_ptr: dw 0
+p505_write_ptr: dw 0
+p505_remaining: dw 0
+p505_chunk_len: dw 0
+p505_type: db 0
+p505_target: db 0
+p505_published: db 0
+p505_physical_free: db 0
+p505_decoder_free: db 0
+p505_error: db 0
+    ENDM
+
     MACRO EMIT_TAPE_ROUTINES
     EMIT_P502_CRC16_ROUTINES
     EMIT_P503_FRAMING_ROUTINES
     EMIT_P504_RAW_LOADER_ROUTINES
+    EMIT_P505_PACKED_LOADER_ROUTINES
 ; A=block type,DE=length,IX=source.
 zx48_tape_save_block:
     call zx48_rom_sa_bytes

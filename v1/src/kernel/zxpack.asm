@@ -2673,3 +2673,20 @@ zx48_p427_stream_step:
     or a
     ret
     ENDM
+
+
+;
+; P5.05 one-state PACKED tape validation. IX points at the exact 272-byte
+; temporary decoder state; the first 256 bytes are the bounded ZXP1 history.
+; HL=resident physical ZXP1, BC=physical length, DE=declared logical length.
+; Success leaves the computed logical CRC in p416_crc and materializes no RAW copy.
+;
+    MACRO EMIT_P505_PACKED_VALIDATOR_ROUTINES
+zx48_p505_validate_zxp1:
+    ld a,1
+    ld (p416_crc_enable),a
+    ld iy,0
+    ld a,P416_SINK_DISCARD
+    call zx48_p416_decode
+    ret
+    ENDM
