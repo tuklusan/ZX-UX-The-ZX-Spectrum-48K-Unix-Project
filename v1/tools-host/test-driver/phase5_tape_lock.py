@@ -29,11 +29,11 @@ def dispatch(root:Path,action:str,step:str,*,sha256_file,run_command,require_pro
     assertions=[
       {"name":"one-global-lock-owned-by-tape-layer","passed":"p507_tape_lock: db 0" in tape},
       {"name":"second-request-returns-e-busy","passed":"zx48_p507_busy:" in tape and "ld a,E_BUSY" in tape},
-      {"name":"acquire-marks-scheduler-blocking","passed":"call zx48_scheduler_tape_blocking_enter" in tape},
-      {"name":"release-clears-scheduler-blocking","passed":"call zx48_scheduler_tape_blocking_leave" in tape},
+      {"name":"acquire-marks-global-blocking-state","passed":"p507_tape_blocking" in tape},
+      {"name":"release-clears-global-blocking-state","passed":"ld (p507_tape_blocking),a" in tape},
       {"name":"scheduler-documents-cooperative-pause","passed":"cooperative progress may pause" in sched},
       {"name":"scheduler-documents-clock-degradation","passed":"wall-clock precision" in sched and "degraded" in sched},
-      {"name":"blocking-interval-counted","passed":"scheduler_tape_intervals" in sched and "inc hl" in sched},
+      {"name":"blocking-interval-counted","passed":"p507_tape_intervals" in tape and "inc hl" in tape},
       {"name":"all-public-tape-paths-use-lock","passed":all(x in tape for x in ("zx48_p507_lock_acquire","zx48_p509_load_path","zx48_p510_verify_path","zx48_p511_scan_next"))},
     ]; require(all(a["passed"] for a in assertions),"P5.12 static failure")
     kr,kernel,_=phase1._assemble_kernel(root,run_command,require_project_tool)
@@ -54,38 +54,24 @@ OBJ_ALLOCATION_PTR EQU 18
     EMIT_P502_CRC16_ROUTINES
     EMIT_P503_FRAMING_ROUTINES
     EMIT_P507_RAW_SAVE_ROUTINES
-zx48_scheduler_tape_blocking_enter:
-    ld a,1
-    ld (test_sched_blocking),a
-    ld hl,(test_intervals)
-    inc hl
-    ld (test_intervals),hl
-    xor a
-    ret
-zx48_scheduler_tape_blocking_leave:
-    xor a
-    ld (test_sched_blocking),a
-    ret
 zx48_object_public_type_allowed: xor a : ret
 zx48_tape_save_block: ld a,E_IO : scf : ret
-test_sched_blocking: db 0
-test_intervals: dw 0
     SAVEBIN "p512-tape-lock.bin",$C000,$-$C000
 """,encoding="utf-8",newline="\n")
     fr=run_command([asm,"--nologo","--lst=p512-tape-lock.lst","--sym=p512-tape-lock.sym","p512-tape-lock.asm"],cwd=b,timeout_seconds=30)
     require(not fr.timed_out and fr.exit_code==0,f"P5.12 fixture assembly failed: {fr.stderr or fr.stdout}")
     binary=b/"p512-tape-lock.bin"
     if action=="test":
-      s=phase3_open_descriptions._symbols(b/"p512-tape-lock.sym",("zx48_p507_lock_acquire","zx48_p507_lock_release","p507_tape_lock","test_sched_blocking","test_intervals","E_BUSY"))
+      s=phase3_open_descriptions._symbols(b/"p512-tape-lock.sym",("zx48_p507_lock_acquire","zx48_p507_lock_release","p507_tape_lock","p507_tape_blocking","p507_tape_intervals","E_BUSY"))
       def patch(ram):
         m=binary.read_bytes(); ram[MODULE-0x4000:MODULE-0x4000+len(m)]=m
       code=b"\xF3"+phase1._ld_sp(STACK)+phase1._call(s["zx48_p507_lock_acquire"])+phase1._jp_c(FAIL_PC)
-      code+=checkb(s["p507_tape_lock"],1)+checkb(s["test_sched_blocking"],1)
+      code+=checkb(s["p507_tape_lock"],1)+checkb(s["p507_tape_blocking"],1)
       code+=phase1._call(s["zx48_p507_lock_acquire"])+bytes((0xD2,FAIL_PC&255,FAIL_PC>>8))
       code+=bytes((0xFE,s["E_BUSY"]&255))+phase1._jp_nz(FAIL_PC)
-      code+=checkb(s["p507_tape_lock"],1)+checkb(s["test_sched_blocking"],1)
-      code+=phase1._call(s["zx48_p507_lock_release"])+checkb(s["p507_tape_lock"],0)+checkb(s["test_sched_blocking"],0)
-      code+=phase1._ld_hl(s["test_intervals"])+b"\x5E\x23\x56"+phase1._ld_hl(1)+b"\xB7\xED\x52"+phase1._jp_nz(FAIL_PC)+phase1._jp(PASS_PC)
+      code+=checkb(s["p507_tape_lock"],1)+checkb(s["p507_tape_blocking"],1)
+      code+=phase1._call(s["zx48_p507_lock_release"])+checkb(s["p507_tape_lock"],0)+checkb(s["p507_tape_blocking"],0)
+      code+=phase1._ld_hl(s["p507_tape_intervals"])+b"\x5E\x23\x56"+phase1._ld_hl(1)+b"\xB7\xED\x52"+phase1._jp_nz(FAIL_PC)+phase1._jp(PASS_PC)
       run_sna(root,code,patch=patch)
       assertions += [
         {"name":"first-request-acquires-runtime","passed":True},
