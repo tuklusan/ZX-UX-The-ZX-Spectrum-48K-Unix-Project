@@ -1,0 +1,101 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "exact-hl-cstr-contract",
+      "passed": true
+    },
+    {
+      "name": "complete-cstr-range-validation",
+      "passed": true
+    },
+    {
+      "name": "fixed-directory-only",
+      "passed": true
+    },
+    {
+      "name": "atomic-commit-after-resolution",
+      "passed": true
+    },
+    {
+      "name": "non-directory-noent",
+      "passed": true
+    },
+    {
+      "name": "zero-result-success",
+      "passed": true
+    },
+    {
+      "name": "absolute-relative-dot-dotdot-runtime",
+      "passed": true
+    },
+    {
+      "name": "current-session-home-runtime",
+      "passed": true
+    },
+    {
+      "name": "wrong-case-nondir-overlength-runtime",
+      "passed": true
+    },
+    {
+      "name": "all-failures-cwd-byte-identical",
+      "passed": true
+    },
+    {
+      "name": "invalid-user-range-before-mutation",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13490 lines, work time: 0.034 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p431-chdir.lst",
+        "--sym=p431-chdir.sym",
+        "p431-chdir.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 11,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 5986 lines, work time: 0.010 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p431-chdir.bin": "fe66baffab2a1919b4720c853ddad3f523dfc923efe0053e1ecaabd47cecf04c",
+    "v1/dist/certification/P4.30.test.json": "1863e3ea4653acf6abd3d4981d122ec80c4d9567e52892ba1837578bc7333837",
+    "v1/src/kernel/objects.asm": "1a330d42bcaf5e1c0d3c379bedcf3ba2c558e6ef6f1e1a96980c12fda0b6350c",
+    "v1/src/kernel/syscall.asm": "9e4ec36ee9fa3ac28443b3fbca4dbf5aeaf533f0e00f0adf2412c7082c133325",
+    "v1/tools-host/test-driver/phase4_chdir.py": "0466650764d22225ef2789f4ea43cef3e978bcd4cfc3623a4793c7ddf2aea426",
+    "v1/tools-host/test-driver/run.py": "9576b63f9a03cbbdeb7c11126e586be9f62d9532c8b2914018c1da980d1e5128"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P4.30": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "11fdc5187f67ece684cd6ba91f3f1d22c7755142",
+  "status": "PASS",
+  "step": "P4.31",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
