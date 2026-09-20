@@ -1904,6 +1904,304 @@ p508_stream_byte: db 0
 p508_error: db 0
     ENDM
 
+    MACRO EMIT_P509_EXPLICIT_LOAD_ROUTINES
+; HL=NUL-terminated requested path. Resolve exact case first; then serialize one
+; forward tape search. The old namespace entry is untouched until the complete
+; incoming representation has passed header/payload/codec/logical-CRC validation.
+zx48_p509_load_path:
+    call zx48_path_resolve
+    ret c
+    ld a,c
+    cp PATH_KIND_BASE
+    jp nz,zx48_p509_inval
+    ld a,(path_dir)
+    ld (p509_requested_dir),a
+    ld hl,path_name
+    ld de,p509_requested_name
+    ld bc,M48O_NAME_SIZE
+    ldir
+
+    call zx48_p509_prompt_play
+    ret c
+    call zx48_p507_lock_acquire
+    ret c
+
+zx48_p509_scan:
+    ld ix,p509_header
+    ld de,M48O_HDR_SIZE
+    ld a,M48O_ROM_DATA_FLAG
+    scf
+    call zx48_tape_load_block
+    jp c,zx48_p509_locked_error
+    call zx48_p509_header_basic
+    jp c,zx48_p509_locked_error
+    call zx48_p509_match_requested
+    jr z,zx48_p509_match
+
+    call zx48_p509_skip_payload
+    jp c,zx48_p509_locked_error
+    jr zx48_p509_scan
+
+zx48_p509_match:
+    ; Matching placement/type must be public mutable and exact.
+    ld a,(p509_header+M48O_HDR_DIRECTORY)
+    ld b,(p509_header+M48O_HDR_TYPE)
+    call zx48_object_public_type_allowed
+    jp c,zx48_p509_locked_error
+
+    ld a,(p509_header+M48O_HDR_FLAGS)
+    or a
+    jr z,zx48_p509_load_raw
+    cp M48O_PACKED
+    jp nz,zx48_p509_locked_format
+    ld hl,p509_header
+    call zx48_p505_load_packed
+    jr zx48_p509_loaded
+zx48_p509_load_raw:
+    ld hl,p509_header
+    call zx48_p504_load_raw
+zx48_p509_loaded:
+    jp c,zx48_p509_locked_error
+    ld (p509_new_ptr),hl
+    ld (p509_new_storage),bc
+    ld (p509_new_logical),de
+    call zx48_p507_lock_release
+    jp zx48_p509_commit
+
+zx48_p509_header_basic:
+    ld hl,p509_header
+    ld a,(hl)
+    cp M48O_MAGIC_0
+    jp nz,zx48_p509_format
+    inc hl
+    ld a,(hl)
+    cp M48O_MAGIC_1
+    jp nz,zx48_p509_format
+    inc hl
+    ld a,(hl)
+    cp M48O_MAGIC_2
+    jp nz,zx48_p509_format
+    inc hl
+    ld a,(hl)
+    cp M48O_MAGIC_3
+    jp nz,zx48_p509_format
+    inc hl
+    ld a,(hl)
+    cp M48O_VERSION
+    jp nz,zx48_p509_format
+    ld a,(p509_header+M48O_HDR_FLAGS)
+    and $fe
+    jp nz,zx48_p509_format
+    ld hl,(p509_header+M48O_HDR_STORAGE_LEN)
+    bit 7,h
+    jp nz,zx48_p509_format
+    xor a
+    or a
+    ret
+
+zx48_p509_match_requested:
+    ld a,(p509_header+M48O_HDR_DIRECTORY)
+    ld b,a
+    ld a,(p509_requested_dir)
+    cp b
+    ret nz
+    ld hl,p509_header+M48O_HDR_NAME
+    ld de,p509_requested_name
+    ld b,M48O_NAME_SIZE
+zx48_p509_name_loop:
+    ld a,(de)
+    cp (hl)
+    ret nz
+    inc de
+    inc hl
+    djnz zx48_p509_name_loop
+    xor a
+    ret
+
+; Consume a nonmatching object's exact physical block count through one private
+; <=512-byte COLD scratch allocation; namespace remains untouched.
+zx48_p509_skip_payload:
+    ld hl,(p509_header+M48O_HDR_STORAGE_LEN)
+    ld (p509_skip_remaining),hl
+    ld a,h
+    or l
+    ret z
+    ld bc,M48O_CHUNK_SIZE
+    ld a,ALLOC_COLD_PREFERRED|ALLOC_NO_COMPACT
+    call zx48_alloc
+    ret c
+    ld (p509_skip_ptr),hl
+zx48_p509_skip_loop:
+    ld bc,(p509_skip_remaining)
+    ld a,b
+    or c
+    jr z,zx48_p509_skip_done
+    call zx48_p503_prepare_chunk
+    ld (p509_skip_chunk),de
+    ld ix,(p509_skip_ptr)
+    ld a,M48O_ROM_DATA_FLAG
+    scf
+    call zx48_tape_load_block
+    jr c,zx48_p509_skip_fail
+    ld hl,(p509_skip_remaining)
+    ld de,(p509_skip_chunk)
+    or a
+    sbc hl,de
+    ld (p509_skip_remaining),hl
+    jr zx48_p509_skip_loop
+zx48_p509_skip_done:
+    ld hl,(p509_skip_ptr)
+    ld bc,M48O_CHUNK_SIZE
+    call zx48_free
+    ret
+zx48_p509_skip_fail:
+    ld (p509_error),a
+    ld hl,(p509_skip_ptr)
+    ld bc,M48O_CHUNK_SIZE
+    call zx48_free
+    ld a,(p509_error)
+    scf
+    ret
+
+; Commit the fully validated private incoming object atomically.
+zx48_p509_commit:
+    ld a,(p509_requested_dir)
+    ld hl,p509_requested_name
+    call zx48_object_lookup
+    jr c,zx48_p509_commit_new
+    ld (p509_existing_slot),c
+    ld (p509_existing_ptr),ix
+    ld a,(ix+OBJ_RESERVED_BYTE)
+    cp STATE_RAM
+    jp nz,zx48_p509_commit_perm
+    ld d,c
+    call zx48_od_object_any_live
+    jp c,zx48_p509_commit_drop_new
+    ld ix,(p509_existing_ptr)
+    ld l,(ix+OBJ_ALLOCATION_PTR)
+    ld h,(ix+OBJ_ALLOCATION_PTR+1)
+    ld (p509_old_ptr),hl
+    ld c,(ix+OBJ_STORAGE_LENGTH)
+    ld b,(ix+OBJ_STORAGE_LENGTH+1)
+    ld (p509_old_storage),bc
+    jr zx48_p509_publish
+
+zx48_p509_commit_new:
+    cp E_NOENT
+    jp nz,zx48_p509_commit_drop_new
+    ld a,(p509_requested_dir)
+    ld b,(p509_header+M48O_HDR_TYPE)
+    ld hl,p509_requested_name
+    call zx48_object_create
+    jp c,zx48_p509_commit_drop_new
+    ld (p509_existing_slot),c
+    ld (p509_existing_ptr),ix
+    xor a
+    ld (p509_old_ptr),a
+    ld (p509_old_ptr+1),a
+    ld (p509_old_storage),a
+    ld (p509_old_storage+1),a
+
+zx48_p509_publish:
+    ld ix,(p509_existing_ptr)
+    ld a,(p509_header+M48O_HDR_TYPE)
+    ld (ix+OBJ_TYPE_ID),a
+    ld a,(p509_header+M48O_HDR_FLAGS)
+    ld (ix+OBJ_FLAGS_BYTE),a
+    xor a
+    ld (ix+OBJ_RESERVED_BYTE),a
+    ld hl,(p509_new_logical)
+    ld (ix+OBJ_LOGICAL_LENGTH),l
+    ld (ix+OBJ_LOGICAL_LENGTH+1),h
+    ld hl,(p509_new_storage)
+    ld (ix+OBJ_STORAGE_LENGTH),l
+    ld (ix+OBJ_STORAGE_LENGTH+1),h
+    ld hl,(p509_new_ptr)
+    ld (ix+OBJ_ALLOCATION_PTR),l
+    ld (ix+OBJ_ALLOCATION_PTR+1),h
+    ld a,(p509_existing_slot)
+    call zx48_p424_candidate_clear
+
+    ; Old payload becomes unreachable only after the new record is complete.
+    ld hl,(p509_old_ptr)
+    ld a,h
+    or l
+    jr z,zx48_p509_commit_success
+    ld bc,(p509_old_storage)
+    bit 0,c
+    jr z,zx48_p509_old_even
+    inc bc
+zx48_p509_old_even:
+    call zx48_free
+    jp c,zx48_p509_free_error
+zx48_p509_commit_success:
+    ld hl,0
+    xor a
+    or a
+    ret
+
+zx48_p509_commit_perm:
+    ld a,E_PERM
+zx48_p509_commit_drop_new:
+    ld (p509_error),a
+    ld hl,(p509_new_ptr)
+    ld bc,(p509_new_storage)
+    ld a,b
+    or c
+    jr z,zx48_p509_drop_done
+    bit 0,c
+    jr z,zx48_p509_drop_even
+    inc bc
+zx48_p509_drop_even:
+    call zx48_free
+zx48_p509_drop_done:
+    ld a,(p509_error)
+    scf
+    ret
+zx48_p509_free_error:
+    ld a,E_IO
+    scf
+    ret
+
+zx48_p509_locked_format:
+    ld a,E_FORMAT
+zx48_p509_locked_error:
+    ld (p509_error),a
+    call zx48_p507_lock_release
+    ld a,(p509_error)
+    scf
+    ret
+zx48_p509_format:
+    ld a,E_FORMAT
+    scf
+    ret
+zx48_p509_inval:
+    ld a,E_INVAL
+    scf
+    ret
+
+; P5.13 replaces this foreground hook with the visible PLAY/rewind prompt.
+zx48_p509_prompt_play:
+    xor a
+    or a
+    ret
+
+p509_header: defs M48O_HDR_SIZE,0
+p509_requested_name: defs M48O_NAME_SIZE,0
+p509_requested_dir: db 0
+p509_new_ptr: dw 0
+p509_new_storage: dw 0
+p509_new_logical: dw 0
+p509_existing_ptr: dw 0
+p509_existing_slot: db 0
+p509_old_ptr: dw 0
+p509_old_storage: dw 0
+p509_skip_ptr: dw 0
+p509_skip_remaining: dw 0
+p509_skip_chunk: dw 0
+p509_error: db 0
+    ENDM
+
     MACRO EMIT_TAPE_ROUTINES
     EMIT_P502_CRC16_ROUTINES
     EMIT_P503_FRAMING_ROUTINES
@@ -1911,6 +2209,7 @@ p508_error: db 0
     EMIT_P505_PACKED_LOADER_ROUTINES
     EMIT_P507_RAW_SAVE_ROUTINES
     EMIT_P508_STREAM_SAVE_ROUTINES
+    EMIT_P509_EXPLICIT_LOAD_ROUTINES
 ; A=block type,DE=length,IX=source.
 zx48_tape_save_block:
     call zx48_rom_sa_bytes
@@ -1944,11 +2243,7 @@ zx48_tape_save_path:
     jp zx48_p508_save_record
 
 zx48_tape_load_path:
-    ; Loading requires the next physical M48O name to match requested path. The
-    ; full sequential transaction is exposed through SYS_TAPE_SCAN + shell copy.
-    ld a,E_AGAIN
-    scf
-    ret
+    jp zx48_p509_load_path
 zx48_tape_verify_path:
     ld a,E_AGAIN
     scf

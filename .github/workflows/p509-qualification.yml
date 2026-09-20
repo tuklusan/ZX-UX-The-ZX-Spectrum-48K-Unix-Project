@@ -1,0 +1,101 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: P5.09 SYS_TAPE_LOAD explicit destination qualification
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      ZXUX_EVIDENCE_DIR: /tmp/zxux-p509-qualification
+      P509_BASE: b78a0c7d738cf01592032fb76fb9573600bf2a38
+      P508_SOURCE: 920b2e6178b2c3efec12e92685e50309d8d8264f
+      ZXUX_REV16_SHA256: 24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c
+      ZXUX_REV07_SHA256: 840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc
+      ZXUX_TOOLCHAIN_LOCK_SHA256: 1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: {fetch-depth: 0}
+      - name: Guard exact P5.09 candidate diff
+        run: |
+          set -euo pipefail
+          git diff --name-only "$P509_BASE" HEAD | sort > /tmp/p509-changed
+          printf '%s\n' \
+            .github/workflows/p509-qualification.yml \
+            v1/src/kernel/tape.asm \
+            v1/tools-host/test-driver/phase5_explicit_load.py \
+            v1/tools-host/test-driver/run.py | sort > /tmp/p509-expected
+          diff -u /tmp/p509-expected /tmp/p509-changed
+          git diff --check "$P509_BASE" HEAD
+          test -z "$(git status --porcelain)"
+      - name: Three unchanged candidate scans
+        run: |
+          set -euo pipefail
+          baseline=""
+          tree="$(git rev-parse 'HEAD^{tree}')"
+          for scan in 1 2 3; do
+            python3 -m py_compile v1/tools-host/test-driver/phase5_explicit_load.py v1/tools-host/test-driver/run.py
+            find v1/tools-host/test-driver -type d -name __pycache__ -prune -exec rm -rf {} +
+            test -z "$(git status --porcelain)"
+            test "$(git rev-parse 'HEAD^{tree}')" = "$tree"
+            digest="$(sha256sum v1/src/kernel/tape.asm v1/tools-host/test-driver/phase5_explicit_load.py v1/tools-host/test-driver/run.py .github/workflows/p509-qualification.yml v1/dist/certification/P5.08.build.json v1/dist/certification/P5.08.test.json | sha256sum | awk '{print $1}')"
+            if test -z "$baseline"; then baseline="$digest"; else test "$baseline" = "$digest"; fi
+            echo "SCAN-$scan: CLEAN"
+          done
+      - name: Mandatory gates
+        run: |
+          set -euo pipefail
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+          test "$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV16.md | awk '{print $1}')" = "$ZXUX_REV16_SHA256"
+          test "$(sha256sum docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md | awk '{print $1}')" = "$ZXUX_REV07_SHA256"
+          test "$(sha256sum tools/manifest/toolchain.lock.json | awk '{print $1}')" = "$ZXUX_TOOLCHAIN_LOCK_SHA256"
+          python3 tools/check_phase4_evidence.py --require-active
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          for action in ("build", "test"):
+              path = Path(f"v1/dist/certification/P5.08.{action}.json")
+              record = json.loads(path.read_text(encoding="utf-8"))
+              assert record["step"] == "P5.08"
+              assert record["action"] == action
+              assert record["status"] == "PASS"
+              assert record["source_commit"] == "920b2e6178b2c3efec12e92685e50309d8d8264f"
+          PY
+      - name: Restore or build certified ZX-UX runtime
+        uses: ./.github/actions/setup-zxux-runtime
+      - name: Execute P5.09 build
+        run: tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P5.09
+      - name: Execute P5.09 test
+        run: tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P5.09
+      - name: Collect exact evidence
+        if: always()
+        run: |
+          mkdir -p "$ZXUX_EVIDENCE_DIR/meta"
+          git rev-parse HEAD > "$ZXUX_EVIDENCE_DIR/meta/candidate-commit.txt"
+          git rev-parse 'HEAD^{tree}' > "$ZXUX_EVIDENCE_DIR/meta/candidate-tree.txt"
+          git status --porcelain > "$ZXUX_EVIDENCE_DIR/meta/worktree-status.txt"
+      - name: Upload exact evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: zxux-p509-qualification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: /tmp/zxux-p509-qualification/
+          retention-days: 90
+          if-no-files-found: error
