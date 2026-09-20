@@ -1281,3 +1281,430 @@ p419_new_ptr: dw 0
 p419_logical_length: dw 0
 p419_error: db 0
     ENDM
+
+;
+; P4.20 exact deterministic two-pass target-greedy ZXP1 encoder. The transient
+; nearest-occurrence table is exactly 256 little-endian u16 entries (512 bytes).
+; A=0 requests explicit failure semantics; A!=0 is background best-effort.
+; HL=RAW source, BC=logical length, DE=private destination. On success HL is
+; exact encoded length, or zero when the encoding is not strictly smaller.
+;
+    MACRO EMIT_P420_TARGET_ENCODER_ROUTINES
+zx48_p420_two_pass:
+    ld (p420_background),a
+    ld (p420_input_base),hl
+    ld (p420_input_len),bc
+    ld (p420_output_base),de
+    xor a
+    ld (p420_workspace_allocs),a
+
+    call zx48_p420_workspace_begin
+    jp c,zx48_p420_workspace_fail
+    xor a
+    ld (p420_mode),a
+    call zx48_p420_run_pass
+    call zx48_p420_workspace_end
+    jp c,zx48_p420_free_panic
+
+    ld hl,(p420_encoded_len)
+    ld (p420_measured_len),hl
+    ld de,(p420_input_len)
+    or a
+    sbc hl,de
+    jp nc,zx48_p420_no_saving
+
+    call zx48_p420_workspace_begin
+    jp c,zx48_p420_workspace_fail
+    ld a,1
+    ld (p420_mode),a
+    call zx48_p420_run_pass
+    call zx48_p420_workspace_end
+    jp c,zx48_p420_free_panic
+
+    ld hl,(p420_encoded_len)
+    ld de,(p420_measured_len)
+    or a
+    sbc hl,de
+    jp nz,zx48_p420_format
+    ld hl,(p420_encoded_len)
+    xor a
+    or a
+    ret
+
+zx48_p420_no_saving:
+    ld hl,0
+    xor a
+    or a
+    ret
+
+zx48_p420_workspace_fail:
+    ld a,(p420_background)
+    or a
+    jr nz,zx48_p420_background_skip
+    ld a,E_NOMEM
+    scf
+    ret
+zx48_p420_background_skip:
+    ld hl,0
+    xor a
+    or a
+    ret
+
+; Allocate and initialize exactly one 512-byte nearest-occurrence table.
+zx48_p420_workspace_begin:
+    ld bc,512
+    ld a,ALLOC_COLD_PREFERRED|ALLOC_NO_COMPACT
+    call zx48_alloc
+    ret c
+    ld (p420_table_ptr),hl
+    ld (hl),$ff
+    ld d,h
+    ld e,l
+    inc de
+    ld bc,511
+    ldir
+    ld a,(p420_workspace_allocs)
+    inc a
+    ld (p420_workspace_allocs),a
+    ld hl,512
+    ld (p420_workspace_bytes),hl
+    xor a
+    or a
+    ret
+
+zx48_p420_workspace_end:
+    ld hl,(p420_table_ptr)
+    ld bc,512
+    jp zx48_free
+
+zx48_p420_free_panic:
+    ld a,PANIC_SCHEDULER
+    jp zx48_panic
+
+; One deterministic pass. Mode 0 measures; mode 1 emits to p420_output_base.
+zx48_p420_run_pass:
+    ld hl,0
+    ld (p420_pos),hl
+    ld (p420_encoded_len),hl
+    ld (p420_literal_start),hl
+    xor a
+    ld (p420_literal_len),a
+    ld hl,(p420_output_base)
+    ld (p420_emit_ptr),hl
+
+zx48_p420_pass_loop:
+    ld hl,(p420_pos)
+    ld de,(p420_input_len)
+    or a
+    sbc hl,de
+    jp z,zx48_p420_pass_finish
+    jp nc,zx48_p420_format
+
+    ; Capture current source byte.
+    ld hl,(p420_pos)
+    ld de,(p420_input_base)
+    add hl,de
+    ld a,(hl)
+    ld (p420_current_byte),a
+
+    ; Find the sole legal BACKREF candidate: nearest prior same-first-byte q.
+    call zx48_p420_table_entry
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (p420_q),de
+    xor a
+    ld (p420_back_len),a
+    ld a,d
+    cp $ff
+    jr nz,zx48_p420_back_distance
+    ld a,e
+    cp $ff
+    jr z,zx48_p420_back_done
+zx48_p420_back_distance:
+    ld hl,(p420_pos)
+    or a
+    sbc hl,de
+    ld (p420_back_distance),hl
+    ld a,h
+    or l
+    jr z,zx48_p420_back_done
+    ld a,h
+    or a
+    jr z,zx48_p420_back_extend_init
+    cp 1
+    jr nz,zx48_p420_back_done
+    ld a,l
+    or a
+    jr nz,zx48_p420_back_done
+zx48_p420_back_extend_init:
+    xor a
+    ld (p420_match_len),a
+zx48_p420_back_extend:
+    ld a,(p420_match_len)
+    cp 130
+    jr nc,zx48_p420_back_extend_done
+
+    ; Stop at logical EOF.
+    ld e,a
+    ld d,0
+    ld hl,(p420_pos)
+    add hl,de
+    push hl
+    ld de,(p420_input_len)
+    or a
+    sbc hl,de
+    pop hl
+    jr nc,zx48_p420_back_extend_done
+
+    ; Probe source[p+len].
+    ld de,(p420_input_base)
+    add hl,de
+    ld a,(hl)
+    ld (p420_probe_byte),a
+
+    ; Compare source[q+len].
+    ld a,(p420_match_len)
+    ld e,a
+    ld d,0
+    ld hl,(p420_q)
+    add hl,de
+    ld de,(p420_input_base)
+    add hl,de
+    ld a,(hl)
+    ld e,a
+    ld a,(p420_probe_byte)
+    cp e
+    jr nz,zx48_p420_back_extend_done
+    ld a,(p420_match_len)
+    inc a
+    ld (p420_match_len),a
+    jr zx48_p420_back_extend
+zx48_p420_back_extend_done:
+    ld a,(p420_match_len)
+    ld (p420_back_len),a
+zx48_p420_back_done:
+
+    ; Independently extend RLE to at most 66 bytes.
+    ld a,1
+    ld (p420_rle_len),a
+zx48_p420_rle_extend:
+    ld a,(p420_rle_len)
+    cp 66
+    jr nc,zx48_p420_choose
+    ld e,a
+    ld d,0
+    ld hl,(p420_pos)
+    add hl,de
+    push hl
+    ld de,(p420_input_len)
+    or a
+    sbc hl,de
+    pop hl
+    jr nc,zx48_p420_choose
+    ld de,(p420_input_base)
+    add hl,de
+    ld a,(hl)
+    ld e,a
+    ld a,(p420_current_byte)
+    cp e
+    jr nz,zx48_p420_choose
+    ld a,(p420_rle_len)
+    inc a
+    ld (p420_rle_len),a
+    jr zx48_p420_rle_extend
+
+zx48_p420_choose:
+    ; Ignore matches shorter than 3. Longer wins; RLE wins equal-length ties.
+    ld a,(p420_rle_len)
+    cp 3
+    jr c,zx48_p420_choose_back
+    ld b,a
+    ld a,(p420_back_len)
+    cp b
+    jr c,zx48_p420_emit_rle
+    jr z,zx48_p420_emit_rle
+zx48_p420_choose_back:
+    ld a,(p420_back_len)
+    cp 3
+    jr nc,zx48_p420_emit_back
+
+    ; Unmatched byte joins the current literal run.
+    ld a,(p420_literal_len)
+    or a
+    jr nz,zx48_p420_literal_have_start
+    ld hl,(p420_pos)
+    ld (p420_literal_start),hl
+zx48_p420_literal_have_start:
+    ld a,1
+    call zx48_p420_update_positions
+    ld a,(p420_literal_len)
+    inc a
+    ld (p420_literal_len),a
+    cp 64
+    call z,zx48_p420_flush_literal
+    jp zx48_p420_pass_loop
+
+zx48_p420_emit_rle:
+    call zx48_p420_flush_literal
+    ld a,(p420_rle_len)
+    ld (p420_selected_len),a
+    call zx48_p420_add_two_encoded
+    ld a,(p420_mode)
+    or a
+    jr z,zx48_p420_rle_update
+    ld hl,(p420_emit_ptr)
+    ld a,(p420_selected_len)
+    sub 3
+    or $40
+    ld (hl),a
+    inc hl
+    ld a,(p420_current_byte)
+    ld (hl),a
+    inc hl
+    ld (p420_emit_ptr),hl
+zx48_p420_rle_update:
+    ld a,(p420_selected_len)
+    call zx48_p420_update_positions
+    jp zx48_p420_pass_loop
+
+zx48_p420_emit_back:
+    call zx48_p420_flush_literal
+    ld a,(p420_back_len)
+    ld (p420_selected_len),a
+    call zx48_p420_add_two_encoded
+    ld a,(p420_mode)
+    or a
+    jr z,zx48_p420_back_update
+    ld hl,(p420_emit_ptr)
+    ld a,(p420_selected_len)
+    sub 3
+    or $80
+    ld (hl),a
+    inc hl
+    ld a,(p420_back_distance)
+    dec a
+    ld (hl),a
+    inc hl
+    ld (p420_emit_ptr),hl
+zx48_p420_back_update:
+    ld a,(p420_selected_len)
+    call zx48_p420_update_positions
+    jp zx48_p420_pass_loop
+
+zx48_p420_pass_finish:
+    call zx48_p420_flush_literal
+    xor a
+    or a
+    ret
+
+; A=count. Update nearest-occurrence table for every consumed logical position.
+zx48_p420_update_positions:
+    ld (p420_update_remaining),a
+    ld hl,(p420_pos)
+    ld (p420_update_pos),hl
+zx48_p420_update_loop:
+    ld hl,(p420_update_pos)
+    ld de,(p420_input_base)
+    add hl,de
+    ld a,(hl)
+    call zx48_p420_table_entry
+    ld de,(p420_update_pos)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    ld hl,(p420_update_pos)
+    inc hl
+    ld (p420_update_pos),hl
+    ld a,(p420_update_remaining)
+    dec a
+    ld (p420_update_remaining),a
+    jr nz,zx48_p420_update_loop
+    ld hl,(p420_update_pos)
+    ld (p420_pos),hl
+    ret
+
+; A=current byte -> HL=&table[A].
+zx48_p420_table_entry:
+    ld e,a
+    ld d,0
+    sla e
+    rl d
+    ld hl,(p420_table_ptr)
+    add hl,de
+    ret
+
+zx48_p420_add_two_encoded:
+    ld hl,(p420_encoded_len)
+    inc hl
+    inc hl
+    ld (p420_encoded_len),hl
+    ret
+
+zx48_p420_flush_literal:
+    ld a,(p420_literal_len)
+    or a
+    ret z
+    ld b,a
+    ld e,a
+    ld d,0
+    inc de
+    ld hl,(p420_encoded_len)
+    add hl,de
+    ld (p420_encoded_len),hl
+
+    ld a,(p420_mode)
+    or a
+    jr z,zx48_p420_flush_done
+    ld hl,(p420_emit_ptr)
+    ld a,b
+    dec a
+    ld (hl),a
+    inc hl
+    ex de,hl
+    ld hl,(p420_literal_start)
+    ld bc,(p420_input_base)
+    add hl,bc
+    ld c,b
+    ld b,0
+    ld a,(p420_literal_len)
+    ld c,a
+    ldir
+    ex de,hl
+    ld (p420_emit_ptr),hl
+zx48_p420_flush_done:
+    xor a
+    ld (p420_literal_len),a
+    ret
+
+zx48_p420_format:
+    ld a,E_FORMAT
+    scf
+    ret
+
+p420_input_base: dw 0
+p420_input_len: dw 0
+p420_output_base: dw 0
+p420_emit_ptr: dw 0
+p420_table_ptr: dw 0
+p420_pos: dw 0
+p420_encoded_len: dw 0
+p420_measured_len: dw 0
+p420_literal_start: dw 0
+p420_q: dw 0
+p420_back_distance: dw 0
+p420_update_pos: dw 0
+p420_workspace_bytes: dw 0
+p420_literal_len: db 0
+p420_back_len: db 0
+p420_rle_len: db 0
+p420_match_len: db 0
+p420_selected_len: db 0
+p420_current_byte: db 0
+p420_probe_byte: db 0
+p420_update_remaining: db 0
+p420_mode: db 0
+p420_background: db 0
+p420_workspace_allocs: db 0
+    ENDM
+
