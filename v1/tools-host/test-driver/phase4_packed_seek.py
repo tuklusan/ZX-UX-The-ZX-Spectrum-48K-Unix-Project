@@ -193,14 +193,20 @@ def _runtime(root: Path, s: dict[str, int], module: bytes) -> None:
     logical = bytes(range(64)) * 4 + b"A" * 100 + b"abcdef" * 30
     encoded = z.encode(logical)
     require(z.decode(encoded, len(logical)) == logical, "P4.18 host oracle round-trip mismatch")
-    _run_sequence(root, s, module, encoded, logical)
-    _run_pending(root, s, module)
-
-    _run_failure(root, s, module, b"\x00A", 1, 2, s["E_INVAL"])
-    _run_failure(root, s, module, b"\x00A\x00B", 1, 1, s["E_FORMAT"])
-    _run_failure(root, s, module, b"\x40", 3, 3, s["E_FORMAT"])
-    _run_failure(root, s, module, b"\x80\x00", 3, 3, s["E_FORMAT"])
-    _run_failure(root, s, module, b"XY", 1, 0, s["E_FORMAT"], src=0xFFFF)
+    cases = [
+        ("seek-sequence", lambda: _run_sequence(root, s, module, encoded, logical)),
+        ("pending-command", lambda: _run_pending(root, s, module)),
+        ("seek-beyond-eof", lambda: _run_failure(root, s, module, b"\x00A", 1, 2, s["E_INVAL"])),
+        ("trailing-physical-data", lambda: _run_failure(root, s, module, b"\x00A\x00B", 1, 1, s["E_FORMAT"])),
+        ("truncated-rle", lambda: _run_failure(root, s, module, b"\x40", 3, 3, s["E_FORMAT"])),
+        ("truncated-backref", lambda: _run_failure(root, s, module, b"\x80\x00", 3, 3, s["E_FORMAT"])),
+        ("source-span-wrap", lambda: _run_failure(root, s, module, b"XY", 1, 0, s["E_FORMAT"], src=0xFFFF)),
+    ]
+    for name, case in cases:
+        try:
+            case()
+        except DriverError as exc:
+            raise P418Error(f"P4.18 runtime case {name} failed: {exc}") from exc
 
 
 def dispatch(root: Path, action: str, step: str, *, sha256_file, run_command, require_project_tool):
