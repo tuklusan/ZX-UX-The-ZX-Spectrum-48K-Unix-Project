@@ -3925,3 +3925,105 @@ p415_destination_slot: db 0
 p415_replacement_record: defs OBJ_RECORD_SIZE,0
 p415_zero_record: defs OBJ_RECORD_SIZE,0
     ENDM
+
+;
+; P4.19 existing-object writable-open transaction. Resource reservation may
+; happen first, but the handle is not returned to the caller until a PACKED
+; object has become a completely decoded RAW replacement. O_TRUNC bypasses decode.
+;
+    MACRO EMIT_P419_WRITABLE_OPEN_ROUTINES
+; A=open flags,C=object slot -> HL=handle. P4.06 exclusivity remains prerequisite.
+zx48_p419_open_existing:
+    ld (p419_open_flags),a
+    ld a,c
+    ld (p419_open_slot),a
+
+    call zx48_p405_object_ptr_slot
+    ret c
+
+    ; This helper is specifically the writable-existing-object transaction.
+    ld a,(p419_open_flags)
+    and O_WRITE
+    jr z,zx48_p419_open_invalid
+
+    ; Reserve OD and process-handle capacity before any object representation change.
+    ld d,(p419_open_slot)
+    ld b,OD_KIND_OBJECT
+    ld a,(p419_open_flags)
+    ld c,a
+    call zx48_p406_od_create
+    ret c
+    ld (p419_open_od),a
+    ld c,a
+    ld a,HANDLE_FREE
+    call zx48_handle_install
+    jr c,zx48_p419_open_handle_fail
+    ld (p419_open_handle),a
+
+    ld a,(p419_open_slot)
+    call zx48_p405_object_ptr_slot
+    jr c,zx48_p419_open_internal_fail
+
+    ld a,(p419_open_flags)
+    and O_TRUNC
+    jr nz,zx48_p419_open_truncate
+
+    ; Non-truncating writer cannot be returned while the object remains PACKED.
+    call zx48_p419_materialize_private
+    jr c,zx48_p419_open_materialize_fail
+    jr zx48_p419_open_success
+
+zx48_p419_open_truncate:
+    call zx48_p405_object_truncate
+    jr c,zx48_p419_open_internal_fail
+
+zx48_p419_open_success:
+    ld a,(p419_open_handle)
+    ld l,a
+    ld h,0
+    xor a
+    or a
+    ret
+
+zx48_p419_open_materialize_fail:
+    ld (p419_open_error),a
+    ld a,(p419_open_handle)
+    call zx48_handle_close
+    jr c,zx48_p419_open_panic
+    ld a,(p419_open_error)
+    scf
+    ret
+
+zx48_p419_open_handle_fail:
+    ld (p419_open_error),a
+    ld a,(p419_open_od)
+    call zx48_od_release
+    jr c,zx48_p419_open_panic
+    ld a,(p419_open_error)
+    scf
+    ret
+
+zx48_p419_open_internal_fail:
+    ld (p419_open_error),a
+    ld a,(p419_open_handle)
+    call zx48_handle_close
+    jr c,zx48_p419_open_panic
+    ld a,(p419_open_error)
+    scf
+    ret
+
+zx48_p419_open_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+zx48_p419_open_panic:
+    ld a,PANIC_SCHEDULER
+    jp zx48_panic
+
+p419_open_flags: db 0
+p419_open_slot: db 0
+p419_open_od: db 0
+p419_open_handle: db 0
+p419_open_error: db 0
+    ENDM
+
