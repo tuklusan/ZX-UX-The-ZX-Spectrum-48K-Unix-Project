@@ -231,7 +231,7 @@ def dispatch(
     names = (
         "zx48_p411_sys_stat", "p405_object_table", "p411_stat_record",
         "OBJ_TXT", "OBJ_BIN", "OBJ_DAT", "OBJ_DIR", "OBJ_DEV", "OBJ_PACKED",
-        "DIR_BIN", "DIR_DEV", "DIR_TMP", "STATE_RAM", "STATE_TAPE_BACKED", "STATE_PSEUDO",
+        "DIR_ROOT", "DIR_BIN", "DIR_DEV", "DIR_TMP", "STATE_RAM", "STATE_TAPE_BACKED", "STATE_PSEUDO",
         "ARENA_START", "E_INVAL", "E_NOENT",
     )
     symbols = phase3_open_descriptions._symbols(listing.with_suffix(".sym"), names)
