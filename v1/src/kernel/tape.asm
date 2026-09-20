@@ -1527,11 +1527,15 @@ zx48_p507_format:
     ret
 
 zx48_p507_lock_acquire:
+    ; Cassette is a single global synchronous resource. Cooperative execution
+    ; does not switch tasks inside this test/set invariant; a competing request
+    ; observes E_BUSY and cannot disturb the current transport.
     ld a,(p507_tape_lock)
     or a
     jr nz,zx48_p507_busy
     inc a
     ld (p507_tape_lock),a
+    call zx48_scheduler_tape_blocking_enter
     xor a
     or a
     ret
@@ -1542,6 +1546,7 @@ zx48_p507_busy:
 zx48_p507_lock_release:
     xor a
     ld (p507_tape_lock),a
+    call zx48_scheduler_tape_blocking_leave
     ret
 
 ; P5.13 replaces this foreground consent hook with visible prompt/input logic.

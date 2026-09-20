@@ -151,6 +151,7 @@ import phase5_streaming_save
 import phase5_explicit_load
 import phase5_verify
 import phase5_tape_scan
+import phase5_tape_lock
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
 from driver_core import (
     DriverError,
@@ -327,6 +328,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase5_verify.dispatch(root, action, step, **kwargs)
     if step == "P5.11":
         return phase5_tape_scan.dispatch(root, action, step, **kwargs)
+    if step == "P5.12":
+        return phase5_tape_lock.dispatch(root, action, step, **kwargs)
     if step.startswith("P5."):
         raise DriverError(f"numbered Phase-5 step is not registered: {step}")
     module = E0_MODULE.get(step)
