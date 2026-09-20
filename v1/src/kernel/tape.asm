@@ -1552,11 +1552,8 @@ zx48_p507_lock_release:
     ld (p507_tape_blocking),a
     ret
 
-; P5.13 replaces this foreground consent hook with visible prompt/input logic.
 zx48_p507_prompt_record:
-    xor a
-    or a
-    ret
+    jp zx48_p513_prompt_record
 
 p507_header: defs M48O_HDR_SIZE,0
 p507_payload_ptr: dw 0
@@ -2192,11 +2189,8 @@ zx48_p509_inval:
     scf
     ret
 
-; P5.13 replaces this foreground hook with the visible PLAY/rewind prompt.
 zx48_p509_prompt_play:
-    xor a
-    or a
-    ret
+    jp zx48_p513_prompt_play
 
 p509_header: defs M48O_HDR_SIZE,0
 p509_requested_name: defs M48O_NAME_SIZE,0
@@ -2531,6 +2525,8 @@ P511_KIND_BACKREF_PARAM EQU 3
 ; adds exactly one 272-byte decoder/history allocation.
 zx48_p511_scan_next:
     ld (p511_header_dest),hl
+    call zx48_p513_prompt_play
+    ret c
     xor a
     ld (p511_scratch_live),a
     ld (p511_decoder_live),a
@@ -3160,6 +3156,74 @@ p511_decoder_live: db 0
 p511_error: db 0
     ENDM
 
+    MACRO EMIT_P513_TAPE_PROMPT_ROUTINES
+P513_PROMPT_NONE   EQU 0
+P513_PROMPT_PLAY   EQU 1
+P513_PROMPT_RECORD EQU 2
+
+; Shell-owned foreground hook. Only an interactive parent-shell builtin or an
+; explicitly interactive helper (for example crontab -e) enables prompts.
+zx48_p513_foreground_enter:
+    ld a,1
+    ld (p513_interactive),a
+    xor a
+    or a
+    ret
+
+zx48_p513_foreground_leave:
+    xor a
+    ld (p513_interactive),a
+    ld (p513_prompt_kind),a
+    ret
+
+zx48_p513_prompt_play:
+    ld a,(p513_interactive)
+    or a
+    jr z,zx48_p513_noninteractive
+    ld a,P513_PROMPT_PLAY
+    ld (p513_prompt_kind),a
+    ld hl,p513_play_text
+    ld bc,p513_play_text_end-p513_play_text
+    call zx48_shell_tape_prompt_write
+    ret c
+    call zx48_shell_tape_prompt_wait
+    ret c
+    xor a
+    or a
+    ret
+
+zx48_p513_prompt_record:
+    ld a,(p513_interactive)
+    or a
+    jr z,zx48_p513_noninteractive
+    ld a,P513_PROMPT_RECORD
+    ld (p513_prompt_kind),a
+    ld hl,p513_record_text
+    ld bc,p513_record_text_end-p513_record_text
+    call zx48_shell_tape_prompt_write
+    ret c
+    call zx48_shell_tape_prompt_wait
+    ret c
+    xor a
+    or a
+    ret
+
+zx48_p513_noninteractive:
+    ; cron/background code never prompts and never reaches cassette motion.
+    ld a,E_AGAIN
+    scf
+    ret
+
+p513_play_text:
+    db "Position or rewind cassette, press PLAY, then any key.",10
+p513_play_text_end:
+p513_record_text:
+    db "Position cassette, press RECORD, then any key.",10
+p513_record_text_end:
+p513_interactive: db 0
+p513_prompt_kind: db P513_PROMPT_NONE
+    ENDM
+
     MACRO EMIT_TAPE_ROUTINES
     EMIT_P502_CRC16_ROUTINES
     EMIT_P503_FRAMING_ROUTINES
@@ -3170,6 +3234,7 @@ p511_error: db 0
     EMIT_P509_EXPLICIT_LOAD_ROUTINES
     EMIT_P510_VERIFY_ROUTINES
     EMIT_P511_SCAN_ROUTINES
+    EMIT_P513_TAPE_PROMPT_ROUTINES
 ; A=block type,DE=length,IX=source.
 zx48_tape_save_block:
     call zx48_rom_sa_bytes
