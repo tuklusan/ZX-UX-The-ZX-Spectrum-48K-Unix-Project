@@ -1,0 +1,673 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-matrix-P4.16",
+      "passed": true
+    },
+    {
+      "name": "canonical-matrix-P4.17",
+      "passed": true
+    },
+    {
+      "name": "canonical-matrix-P4.18",
+      "passed": true
+    },
+    {
+      "name": "canonical-matrix-P4.19",
+      "passed": true
+    },
+    {
+      "name": "canonical-matrix-P4.20",
+      "passed": true
+    },
+    {
+      "name": "canonical-matrix-P4.21",
+      "passed": true
+    },
+    {
+      "name": "canonical-matrix-P4.22",
+      "passed": true
+    },
+    {
+      "name": "canonical-matrix-P4.23",
+      "passed": true
+    },
+    {
+      "name": "canonical-matrix-P4.24",
+      "passed": true
+    },
+    {
+      "name": "canonical-matrix-P4.25",
+      "passed": true
+    },
+    {
+      "name": "canonical-matrix-P4.26",
+      "passed": true
+    },
+    {
+      "name": "canonical-matrix-P4.27",
+      "passed": true
+    },
+    {
+      "name": "canonical-matrix-P4.28",
+      "passed": true
+    },
+    {
+      "name": "zxp1-literal-lengths-1-64",
+      "passed": true
+    },
+    {
+      "name": "zxp1-rle-lengths-3-66",
+      "passed": true
+    },
+    {
+      "name": "zxp1-backref-lengths-3-130",
+      "passed": true
+    },
+    {
+      "name": "zxp1-backref-distances-1-256",
+      "passed": true
+    },
+    {
+      "name": "zxp1-overlap-copy",
+      "passed": true
+    },
+    {
+      "name": "zxp1-truncation-format-errors",
+      "passed": true
+    },
+    {
+      "name": "zxp1-backref-before-start-format-error",
+      "passed": true
+    },
+    {
+      "name": "zxp1-output-over-under-format-error",
+      "passed": true
+    },
+    {
+      "name": "zxp1-trailing-physical-bytes-format-error",
+      "passed": true
+    },
+    {
+      "name": "raw-pack-unpack-byte-identity",
+      "passed": true
+    },
+    {
+      "name": "target-greedy-512-workspace-and-ties",
+      "passed": true
+    },
+    {
+      "name": "host-optimized-stream-target-decode",
+      "passed": true
+    },
+    {
+      "name": "noncompressible-stays-raw",
+      "passed": true
+    },
+    {
+      "name": "packed-read-seek-raw-equivalence",
+      "passed": true
+    },
+    {
+      "name": "independent-packed-readers",
+      "passed": true
+    },
+    {
+      "name": "packed-write-materialization-atomicity",
+      "passed": true
+    },
+    {
+      "name": "existing-create-preserves-type",
+      "passed": true
+    },
+    {
+      "name": "append-after-seek-at-logical-eof",
+      "passed": true
+    },
+    {
+      "name": "pack-unpack-open-object-ebusy",
+      "passed": true
+    },
+    {
+      "name": "read-read-coexist-writer-conflict",
+      "passed": true
+    },
+    {
+      "name": "final-close-candidate-only",
+      "passed": true
+    },
+    {
+      "name": "pid0-one-candidate-per-idle-cycle",
+      "passed": true
+    },
+    {
+      "name": "candidate-clear-reopen-write-remove-reuse",
+      "passed": true
+    },
+    {
+      "name": "background-compaction-failure-preserves-data",
+      "passed": true
+    },
+    {
+      "name": "zxpack-info-arithmetic",
+      "passed": true
+    },
+    {
+      "name": "mem-c-accounting-contract",
+      "passed": true
+    },
+    {
+      "name": "packed-bin-direct-spawn-exec",
+      "passed": true
+    },
+    {
+      "name": "packed-bootstrap-final-raw-contract",
+      "passed": true
+    },
+    {
+      "name": "nonobject-ranges-never-packed",
+      "passed": true
+    },
+    {
+      "name": "section-41.3A-canonical-order-complete",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13465 lines, work time: 0.034 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p416-zxpack-decoder.lst",
+        "--sym=p416-zxpack-decoder.sym",
+        "p416-zxpack-decoder.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 8,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 3258 lines, work time: 0.007 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13465 lines, work time: 0.034 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p417-packed-state.lst",
+        "--sym=p417-packed-state.sym",
+        "p417-packed-state.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 9,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 3829 lines, work time: 0.008 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13465 lines, work time: 0.034 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p418-packed-seek.lst",
+        "--sym=p418-packed-seek.sym",
+        "p418-packed-seek.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 8,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 3247 lines, work time: 0.007 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 37,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13465 lines, work time: 0.036 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p419-packed-write.lst",
+        "--sym=p419-packed-write.sym",
+        "p419-packed-write.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 22,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 10192 lines, work time: 0.020 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13465 lines, work time: 0.033 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p420-target-encoder.lst",
+        "--sym=p420-target-encoder.sym",
+        "p420-target-encoder.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 11,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 4412 lines, work time: 0.010 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 36,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13465 lines, work time: 0.035 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p421-pack-decision.lst",
+        "--sym=p421-pack-decision.sym",
+        "p421-pack-decision.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 11,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 4426 lines, work time: 0.011 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13465 lines, work time: 0.033 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p422-sys-pack.lst",
+        "--sym=p422-sys-pack.sym",
+        "p422-sys-pack.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 26,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 10670 lines, work time: 0.025 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13465 lines, work time: 0.034 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p423-sys-unpack.lst",
+        "--sym=p423-sys-unpack.sym",
+        "p423-sys-unpack.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 21,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 10132 lines, work time: 0.020 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13465 lines, work time: 0.033 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p424-close-candidates.lst",
+        "--sym=p424-close-candidates.sym",
+        "p424-close-candidates.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 21,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 9752 lines, work time: 0.020 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13465 lines, work time: 0.033 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p425-idle-pack.lst",
+        "--sym=p425-idle-pack.sym",
+        "p425-idle-pack.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 25,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 11067 lines, work time: 0.024 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 38,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13465 lines, work time: 0.036 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p426-compaction.lst",
+        "--sym=p426-compaction.sym",
+        "p426-compaction.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 26,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 11073 lines, work time: 0.025 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13465 lines, work time: 0.033 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p427-packed-spawn.lst",
+        "--sym=p427-packed-spawn.sym",
+        "p427-packed-spawn.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 26,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13454 lines, work time: 0.025 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13465 lines, work time: 0.033 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p428-zxpack-info.lst",
+        "--sym=p428-zxpack-info.sym",
+        "p428-zxpack-info.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 27,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 11934 lines, work time: 0.025 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "P4.16:v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "P4.16:v1/build/p416-zxpack-decoder.bin": "218a5bb9be003dcff52af1b6fff9d2c1a60dda19f90bf590ba9feeba37689e13",
+    "P4.16:v1/dist/certification/P4.15.test.json": "224bc88616e6f94b3d9d7d183da3a62688847e57b6f0a34c53767e697aef2af5",
+    "P4.16:v1/src/kernel/zxpack.asm": "70a501f0b030827e05dda25759aaf39362791793f9f60f3a52fcf3c7057f9705",
+    "P4.16:v1/tools-host/test-driver/phase4_zxpack_decoder.py": "4bcff6bce02ca06769f7ccafe8b39e6caa1ba7aae5833631700484ff122c860a",
+    "P4.16:v1/tools-host/test-driver/run.py": "8f25bcf9fd332116d0a18b94db2acf65f546a179e413af94926f2f59398f611b",
+    "P4.16:v1/tools-host/zxpack/zxpack.py": "6683dd91f6cd214393881baf1f50621f4f7cca36543468ea84783d0dd75c09c8",
+    "P4.17:v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "P4.17:v1/build/p417-packed-state.bin": "8c572cb608d75eb63ca45d8ab88251a319b1d40f40310de46c5db133e58fea65",
+    "P4.17:v1/dist/certification/P4.16.test.json": "de44081dc7e9fb81858152cf47d48b63df143517a13905cbff6143d1d790288e",
+    "P4.17:v1/src/kernel/handles.asm": "0c4051d934a502d96d3cb95501dc12e0e922aa99a14007dd62b7a096e1bfb9ac",
+    "P4.17:v1/src/kernel/zxpack.asm": "70a501f0b030827e05dda25759aaf39362791793f9f60f3a52fcf3c7057f9705",
+    "P4.17:v1/tools-host/test-driver/phase4_packed_state.py": "1a290f009e66b4196a02b5f4de7cad4e08ff9bb4c37aac1933da276e9d2044fb",
+    "P4.17:v1/tools-host/test-driver/run.py": "8f25bcf9fd332116d0a18b94db2acf65f546a179e413af94926f2f59398f611b",
+    "P4.18:v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "P4.18:v1/build/p418-packed-seek.bin": "ab1985cb7a5f684b7637fc501a8aaf718730c8437725cbfe63366e36830c035d",
+    "P4.18:v1/dist/certification/P4.17.test.json": "2002ecec012907983d07b27b7a43d664aa58ab25133548e21e1c414cc2ab932a",
+    "P4.18:v1/src/kernel/zxpack.asm": "70a501f0b030827e05dda25759aaf39362791793f9f60f3a52fcf3c7057f9705",
+    "P4.18:v1/tools-host/test-driver/phase4_packed_seek.py": "5503c213f594f66d21a2b0cf8f86183cecd2aaa99ea140268de2b6cc6e969851",
+    "P4.18:v1/tools-host/test-driver/run.py": "8f25bcf9fd332116d0a18b94db2acf65f546a179e413af94926f2f59398f611b",
+    "P4.18:v1/tools-host/zxpack/zxpack.py": "6683dd91f6cd214393881baf1f50621f4f7cca36543468ea84783d0dd75c09c8",
+    "P4.19:v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "P4.19:v1/build/p419-packed-write.bin": "0bb3ac58d3bdf0209889cfc5a049e7cef781d6ca6dd5d111f0276dda77c4dfff",
+    "P4.19:v1/dist/certification/P4.18.test.json": "6fd0ba05d36de3872c194d6a0426dcda6545a26501b309937f99152be7d2c0bd",
+    "P4.19:v1/src/kernel/objects.asm": "42b450784fff53bbb5eedaa603ed5b53ba44606652cd54b47a488cc93d4a9a78",
+    "P4.19:v1/src/kernel/zxpack.asm": "70a501f0b030827e05dda25759aaf39362791793f9f60f3a52fcf3c7057f9705",
+    "P4.19:v1/tools-host/test-driver/phase4_packed_write.py": "77c21b33eed02f1090b8a3af79f04a2ff816cf467892c782a1ba0a93f6248279",
+    "P4.19:v1/tools-host/test-driver/run.py": "8f25bcf9fd332116d0a18b94db2acf65f546a179e413af94926f2f59398f611b",
+    "P4.20:v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "P4.20:v1/build/p420-target-encoder.bin": "471347c0ab5105418fbdeebf6ef0ce2197602e04a21da48de4b746c00d4bd781",
+    "P4.20:v1/dist/certification/P4.19.test.json": "1e342e5fbef8882847194f8ec22616b51754f6a9cae06d1150b9f41eaa989eca",
+    "P4.20:v1/src/kernel/zxpack.asm": "70a501f0b030827e05dda25759aaf39362791793f9f60f3a52fcf3c7057f9705",
+    "P4.20:v1/tools-host/test-driver/phase4_target_encoder.py": "d8afd26c830f9acd028d863030f724a9ee09befaf25cbad7c077d28047935c81",
+    "P4.20:v1/tools-host/test-driver/run.py": "8f25bcf9fd332116d0a18b94db2acf65f546a179e413af94926f2f59398f611b",
+    "P4.21:v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "P4.21:v1/build/p421-pack-decision.bin": "4a0201eeacf385c564e3f57535c70646662eb8f6e4801ff78322ede3d4356499",
+    "P4.21:v1/dist/certification/P4.20.test.json": "a6e7843ba74a29788d9020e10cc71f49928c5a0a4a172e09055e51c96f668138",
+    "P4.21:v1/src/kernel/zxpack.asm": "70a501f0b030827e05dda25759aaf39362791793f9f60f3a52fcf3c7057f9705",
+    "P4.21:v1/tools-host/test-driver/phase4_raw_retention.py": "aed6d274678fd67a2dd6ae9a73ce0bd74da464b586dec6d7ea0ab130596589a0",
+    "P4.21:v1/tools-host/test-driver/run.py": "8f25bcf9fd332116d0a18b94db2acf65f546a179e413af94926f2f59398f611b",
+    "P4.22:v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "P4.22:v1/build/p422-sys-pack.bin": "914aec76eb0d0157daeff44498d68a5101ef518c07f67a2d10c7941ebeafae27",
+    "P4.22:v1/dist/certification/P4.21.test.json": "d79750e907f60f6f32e3b77346d072c01b28f79343e8f2fa558ac3f738190ff9",
+    "P4.22:v1/src/kernel/objects.asm": "42b450784fff53bbb5eedaa603ed5b53ba44606652cd54b47a488cc93d4a9a78",
+    "P4.22:v1/src/kernel/zxpack.asm": "70a501f0b030827e05dda25759aaf39362791793f9f60f3a52fcf3c7057f9705",
+    "P4.22:v1/tools-host/test-driver/phase4_sys_pack.py": "5e06833c522df679d569ff548909f975b65496babf2b92325a622ea1c591f10e",
+    "P4.22:v1/tools-host/test-driver/run.py": "8f25bcf9fd332116d0a18b94db2acf65f546a179e413af94926f2f59398f611b",
+    "P4.23:v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "P4.23:v1/build/p423-sys-unpack.bin": "f2c6937b1554c0890ab31255052aaed1d321b551711aa8d38612affe592b7822",
+    "P4.23:v1/dist/certification/P4.22.test.json": "863b7195ac0d6561873be600eeac7660c3a43ab5f1a2c0ea308d1e0cec7080a4",
+    "P4.23:v1/src/kernel/objects.asm": "42b450784fff53bbb5eedaa603ed5b53ba44606652cd54b47a488cc93d4a9a78",
+    "P4.23:v1/src/kernel/zxpack.asm": "70a501f0b030827e05dda25759aaf39362791793f9f60f3a52fcf3c7057f9705",
+    "P4.23:v1/tools-host/test-driver/phase4_sys_unpack.py": "a4e4afe1eac9f9763b8bb24674ffbd71878500571f9ca58f5b1fe76e51e217a7",
+    "P4.23:v1/tools-host/test-driver/run.py": "8f25bcf9fd332116d0a18b94db2acf65f546a179e413af94926f2f59398f611b",
+    "P4.24:v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "P4.24:v1/build/p424-close-candidates.bin": "22113fbdb7fd141ef790bae80b9bff1f8d7bdf805d703165429e89c1ea7d0b0a",
+    "P4.24:v1/dist/certification/P4.23.test.json": "85b6f8f9b40faa0b94286b6c01c048ff40d5ebb5b49b936afbae670853a63c5e",
+    "P4.24:v1/src/kernel/objects.asm": "42b450784fff53bbb5eedaa603ed5b53ba44606652cd54b47a488cc93d4a9a78",
+    "P4.24:v1/src/kernel/zxpack.asm": "70a501f0b030827e05dda25759aaf39362791793f9f60f3a52fcf3c7057f9705",
+    "P4.24:v1/tools-host/test-driver/phase4_close_candidates.py": "0babdf0d3a9026805dd807ca82867c9ca7c3df6a67958112ff00cf6cfc58fb35",
+    "P4.24:v1/tools-host/test-driver/run.py": "8f25bcf9fd332116d0a18b94db2acf65f546a179e413af94926f2f59398f611b",
+    "P4.25:v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "P4.25:v1/build/p425-idle-pack.bin": "b8f4595b3d236611a7910892f609a2f3f9613e0d74ce713e23d2908c28ebe8f3",
+    "P4.25:v1/dist/certification/P4.24.test.json": "51084f9f53c74c6d8192f5c163942effa7d26370e1f7a30ceda26bb88577f6f8",
+    "P4.25:v1/src/kernel/scheduler.asm": "d22df7983a3234b93f9fdc50fcaadf967001892a16d515d688bb7d3e6c880eaf",
+    "P4.25:v1/src/kernel/zxpack.asm": "70a501f0b030827e05dda25759aaf39362791793f9f60f3a52fcf3c7057f9705",
+    "P4.25:v1/tools-host/test-driver/phase4_idle_pack.py": "9fa8d5c186eb0bc9fe46ad0f1ca22bad643cba32ea664e2ecec6fb6672769b04",
+    "P4.25:v1/tools-host/test-driver/run.py": "8f25bcf9fd332116d0a18b94db2acf65f546a179e413af94926f2f59398f611b",
+    "P4.26:v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "P4.26:v1/build/p426-compaction.bin": "22b963fd82ade913e469fc86a6853ae00ac391ad93d727765f6a2ecca869d0b8",
+    "P4.26:v1/dist/certification/P4.25.test.json": "52c7037690f51201966f757e417727a9d710545797f6cbc0c5259c03dfa75f3e",
+    "P4.26:v1/src/kernel/memory.asm": "79fc65b02520e8c78d85db23d699e9d71604a0273d1f256e9e71acc6b879dcfe",
+    "P4.26:v1/src/kernel/zxpack.asm": "70a501f0b030827e05dda25759aaf39362791793f9f60f3a52fcf3c7057f9705",
+    "P4.26:v1/tools-host/test-driver/phase4_compaction.py": "ed9197eafe47aa36f511d34e4188398007cd174dd25dd0ac341bd1920c60b50b",
+    "P4.26:v1/tools-host/test-driver/run.py": "8f25bcf9fd332116d0a18b94db2acf65f546a179e413af94926f2f59398f611b",
+    "P4.27:v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "P4.27:v1/build/p427-packed-spawn.bin": "133b902e6fcff0c64bf4da858912d6303352a5abaa86f728c6350a666a17ec1e",
+    "P4.27:v1/dist/certification/P4.26.test.json": "2215a8b3af3679126b7a79828e6f0c2a30e0ae066abd06111a0f1730d8d4ee6d",
+    "P4.27:v1/src/kernel/process.asm": "fb96e060ea860754fb319ccc26699ffad8c4b4dbb117b31f929e2f17f72033f2",
+    "P4.27:v1/src/kernel/zxpack.asm": "70a501f0b030827e05dda25759aaf39362791793f9f60f3a52fcf3c7057f9705",
+    "P4.27:v1/tools-host/test-driver/phase4_packed_spawn.py": "b47feb2de932062ca4fa8bc132fde099d2b6d486a6bfa105a47118279e7db5f1",
+    "P4.27:v1/tools-host/test-driver/run.py": "8f25bcf9fd332116d0a18b94db2acf65f546a179e413af94926f2f59398f611b",
+    "P4.28:v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "P4.28:v1/build/p428-zxpack-info.bin": "b8bca62873c1b7c8e713fa26effb87106c54db70b5de14b698bccd83e83b793b",
+    "P4.28:v1/dist/certification/P4.27.test.json": "cfd91ddf03321af3fcf915501e15d594174581c8b2c7f41db52e84082e05180f",
+    "P4.28:v1/src/kernel/syscall.asm": "b340ce69a9039db73c6053e3f0ebdb27bb3e760eaf6769e054ddd5114ed7b5c4",
+    "P4.28:v1/src/kernel/zxpack.asm": "70a501f0b030827e05dda25759aaf39362791793f9f60f3a52fcf3c7057f9705",
+    "P4.28:v1/tools-host/test-driver/phase4_zxpack_info.py": "a04a0204371030bd26912b1b815e29771b9d8e4dd146b2d21841eb5fe8ad9586",
+    "P4.28:v1/tools-host/test-driver/run.py": "8f25bcf9fd332116d0a18b94db2acf65f546a179e413af94926f2f59398f611b",
+    "v1/dist/certification/P4.28.test.json": "a75894b209fcab3afaf3409b68e8591bde89b627e4fd9bca1f495a4b516e1cda",
+    "v1/tools-host/test-driver/phase4_compression_regression.py": "22c5e0c68b178e9d70c09f30a4351790be6031ce6b24fd52ec1ee1f8056528dd"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P4.28": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "f08a58f5c71b52628c4a1082ab1d24a99fa42836",
+  "status": "PASS",
+  "step": "P4.29",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
