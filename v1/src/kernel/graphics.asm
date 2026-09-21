@@ -81,7 +81,7 @@ zx48_gfx_attr_address_from_de:
     add hl,bc
     ret
 
-; H=x,L=y -> H=0,L=0/1.
+; P7.06: H=x,L=y -> H=0,L=0/1 with no visible/cursor/attribute mutation.
 zx48_gfx_point:
     ld a,l
     cp 192

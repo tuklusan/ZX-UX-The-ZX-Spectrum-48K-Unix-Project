@@ -194,6 +194,7 @@ import phase7_pixel_helper
 import phase7_plot
 import phase7_draw
 import phase7_circle
+import phase7_point
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
 from media_retention import (
     capture_project_media,
@@ -465,6 +466,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase7_draw.dispatch(root, action, step, **kwargs)
     if step == "P7.05":
         return phase7_circle.dispatch(root, action, step, **kwargs)
+    if step == "P7.06":
+        return phase7_point.dispatch(root, action, step, **kwargs)
     if step.startswith("P7."):
         raise DriverError(f"numbered Phase-7 step is not registered: {step}")
     module = E0_MODULE.get(step)
