@@ -1,0 +1,163 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "im2-remains-producer-only",
+      "passed": true
+    },
+    {
+      "name": "syscall-entry-services-break-before-dispatch",
+      "passed": true
+    },
+    {
+      "name": "shell-owner-break-is-line-eintr-only",
+      "passed": true
+    },
+    {
+      "name": "child-break-targets-tty-owner-only",
+      "passed": true
+    },
+    {
+      "name": "no-break-scheduler-preemption",
+      "passed": true
+    },
+    {
+      "name": "current-owner-cancel-consumed-before-syscall-side-effects",
+      "passed": true
+    },
+    {
+      "name": "kill-exact-one-decimal-operand",
+      "passed": true
+    },
+    {
+      "name": "kernel-forbids-pid0-pid1",
+      "passed": true
+    },
+    {
+      "name": "fuse-pid1-break-line-only",
+      "passed": true
+    },
+    {
+      "name": "fuse-break-nonowner-stage-untouched",
+      "passed": true
+    },
+    {
+      "name": "fuse-tty-owner-one-shot-eintr",
+      "passed": true
+    },
+    {
+      "name": "phase2-never-started-kill-oracle-still-pass",
+      "passed": true
+    },
+    {
+      "name": "phase2-started-cooperative-kill-oracle-still-pass",
+      "passed": true
+    },
+    {
+      "basis": "P2.18/P2.19 cancellation ABI",
+      "name": "c48-safe-point-status-130-contract",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 32,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nkernel.asm(87): warning[shortblock]: init data for block truncated to length: 0\nPass 3 complete\nErrors: 0, warnings: 1, compiled: 14201 lines, work time: 0.031 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p626-shell-fixture.lst",
+        "--sym=p626-shell-fixture.sym",
+        "p626-shell-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 6,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 3444 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p218.lst",
+        "--sym=../../build/kernel-p218.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 32,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nkernel.asm(87): warning[shortblock]: init data for block truncated to length: 0\nPass 3 complete\nErrors: 0, warnings: 1, compiled: 14201 lines, work time: 0.031 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p218-kill-never-started.lst",
+        "--sym=p218-kill-never-started.sym",
+        "p218-kill-never-started.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 16,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 7786 lines, work time: 0.015 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 32,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nkernel.asm(87): warning[shortblock]: init data for block truncated to length: 0\nPass 3 complete\nErrors: 0, warnings: 1, compiled: 14201 lines, work time: 0.032 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "0a8a30a40016f9de6e333795a42b73c1475cbe66e8782a3837d3c6aa3c395188",
+    "v1/dist/certification/P6.25.build.json": "1036461c78bb36e3bec8e446a0cb65620aa3d5e0af832a113c49a4f8b9d75efc",
+    "v1/dist/certification/P6.25.test.json": "8752ad3922f52e0acb6d7e8251a120aa654593baff0c9c71872ac7e1ae77e067",
+    "v1/dist/media/P6.25/manifest.json": "7a1b1ebef6dfc8ca49bf7e3a21b3cfa6e1b53f1f8b66f426996fe83df0a116e9",
+    "v1/src/kernel/interrupt.asm": "cf70af177c18f323ac368f45468dbe907aef3d76488f92d844570b6875d5c9de",
+    "v1/src/kernel/keyboard.asm": "461798d5f1afb7bb21477be258aa88cdd0dccdd443efd156404e218e77d2d1b2",
+    "v1/src/kernel/process.asm": "79bd2a24434d37506679493d7b93c10b2ad491a0aa0bb07bb581d7be6eec7af0",
+    "v1/src/kernel/syscall.asm": "86caa7172baf78b4fc4a855fd3ec68be5b2f3389329e5f5767c2bd33c29f5566",
+    "v1/src/shell/sh.asm": "19b09c6f21f800b3e4a0e0d733024ca3813baa99412e166fe9a07654adada202",
+    "v1/tools-host/test-driver/phase6_kill_break.py": "c8addf944d15585c93878bf10bd03f04c55e24b4a3a795e23a815e1a9b28be1c",
+    "v1/tools-host/test-driver/run.py": "93b527a49a1ec6669eaf9b3351f33b7e433231205e8a94cd3d5176c561eeb8fe"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P6.25": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "2cf23f8e5ee25b27985f977607ac9f4dd9224d80",
+  "status": "PASS",
+  "step": "P6.26",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

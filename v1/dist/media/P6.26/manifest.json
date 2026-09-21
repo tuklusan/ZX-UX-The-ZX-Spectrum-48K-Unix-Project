@@ -1,0 +1,55 @@
+{
+  "files": [
+    {
+      "action": "test",
+      "path": "test/fixture-0f527964a3ac6d67fe87b99b0a73471109b082b1353eb554d6c335f560bb748c.sna",
+      "sha256": "0f527964a3ac6d67fe87b99b0a73471109b082b1353eb554d6c335f560bb748c",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-231b750955c72f773abe5fc1e1d72dc22c748b075a464c722ad4de4dcd4fc201.sna",
+      "sha256": "231b750955c72f773abe5fc1e1d72dc22c748b075a464c722ad4de4dcd4fc201",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-23319bf286473c157699558c976db337607afdad348fb4a433c17643aa898a15.sna",
+      "sha256": "23319bf286473c157699558c976db337607afdad348fb4a433c17643aa898a15",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-41fe1290f98b44ddf106ce44ae5db65afaeafe178905def8d9251f06c2b8d9c3.sna",
+      "sha256": "41fe1290f98b44ddf106ce44ae5db65afaeafe178905def8d9251f06c2b8d9c3",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-7e182b404b8a836067382295a507eaed22409b1234cfda71e8e75c1222de0ff0.sna",
+      "sha256": "7e182b404b8a836067382295a507eaed22409b1234cfda71e8e75c1222de0ff0",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-817fdc23daa16abe2a985c6ae8bc6f947f70cee7676c406df5fab55eda40d72d.sna",
+      "sha256": "817fdc23daa16abe2a985c6ae8bc6f947f70cee7676c406df5fab55eda40d72d",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-e789acf85cc52dd1ffe8298a3ac4e5a1ec553016c0a496fc6cd113ecb4530664.sna",
+      "sha256": "e789acf85cc52dd1ffe8298a3ac4e5a1ec553016c0a496fc6cd113ecb4530664",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-e8cec6c6f0efa7908d132ce82333b4b258e5397595ba7c3fc39a7a5d22308789.sna",
+      "sha256": "e8cec6c6f0efa7908d132ce82333b4b258e5397595ba7c3fc39a7a5d22308789",
+      "size": 49179
+    }
+  ],
+  "schema": 1,
+  "source_commit": "2cf23f8e5ee25b27985f977607ac9f4dd9224d80",
+  "step": "P6.26"
+}
