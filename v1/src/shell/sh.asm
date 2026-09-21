@@ -2112,3 +2112,160 @@ p615_prompt:
     db ',',' ','t','h','e','n',' ','p','r','e','s','s',' ','y',':',' '
 p615_reply: db 0
     ENDM
+
+; P6.17 transactional parent-shell builtin redirections.
+; Spare handles 5/6/7 preserve the original 0/1/2 open descriptions.
+    MACRO EMIT_P617_BUILTIN_REDIR_ROUTINES
+P617_SAVE_STDIN         EQU 5
+P617_SAVE_STDOUT        EQU 6
+P617_SAVE_STDERR        EQU 7
+
+; IX -> three source-handle bytes for replacement of 0/1/2.
+; HANDLE_FREE means leave that standard handle unchanged.
+; Success leaves 5/6/7 holding exact original references until restore.
+; Any setup failure rolls all 0/1/2 back and closes every spare.
+sh_p617_prepare:
+    ld (p617_replacements),ix
+    call sh_p617_preserve_all
+    ret c
+    xor a
+    ld (p617_index),a
+sh_p617_apply_loop:
+    ld a,(p617_index)
+    cp 3
+    jr nc,sh_p617_prepare_ok
+    ld e,a
+    ld d,0
+    ld hl,(p617_replacements)
+    add hl,de
+    ld a,(hl)
+    cp HANDLE_FREE
+    jr z,sh_p617_apply_next
+    ld (p617_source),a
+
+    ld a,(p617_index)
+    call sh_p617_close_handle_ignore
+
+    ld a,(p617_source)
+    ld (p617_dup_req),a
+    ld a,(p617_index)
+    ld (p617_dup_req+1),a
+    ld hl,p617_dup_req
+    ld a,SYS_DUP
+    call SYSCALL_GATEWAY
+    jr c,sh_p617_prepare_fail
+sh_p617_apply_next:
+    ld a,(p617_index)
+    inc a
+    ld (p617_index),a
+    jr sh_p617_apply_loop
+
+sh_p617_prepare_ok:
+    xor a
+    ret
+
+sh_p617_prepare_fail:
+    ld (p617_error),a
+    call sh_p617_restore
+    ld a,(p617_error)
+    scf
+    ret
+
+; Restore exact saved references to 0/1/2 and release spare references.
+; This is required after both builtin success and builtin error.
+sh_p617_restore:
+    ld a,0
+    call sh_p617_close_handle_ignore
+    ld a,1
+    call sh_p617_close_handle_ignore
+    ld a,2
+    call sh_p617_close_handle_ignore
+
+    ld a,P617_SAVE_STDIN
+    ld (p617_dup_req),a
+    xor a
+    ld (p617_dup_req+1),a
+    call sh_p617_dup_req_call
+    ret c
+
+    ld a,P617_SAVE_STDOUT
+    ld (p617_dup_req),a
+    ld a,1
+    ld (p617_dup_req+1),a
+    call sh_p617_dup_req_call
+    ret c
+
+    ld a,P617_SAVE_STDERR
+    ld (p617_dup_req),a
+    ld a,2
+    ld (p617_dup_req+1),a
+    call sh_p617_dup_req_call
+    ret c
+
+    ld a,P617_SAVE_STDIN
+    call sh_p617_close_handle_ignore
+    ld a,P617_SAVE_STDOUT
+    call sh_p617_close_handle_ignore
+    ld a,P617_SAVE_STDERR
+    call sh_p617_close_handle_ignore
+    xor a
+    ret
+
+sh_p617_preserve_all:
+    ld a,0
+    ld (p617_dup_req),a
+    ld a,P617_SAVE_STDIN
+    ld (p617_dup_req+1),a
+    call sh_p617_dup_req_call
+    ret c
+
+    ld a,1
+    ld (p617_dup_req),a
+    ld a,P617_SAVE_STDOUT
+    ld (p617_dup_req+1),a
+    call sh_p617_dup_req_call
+    jr c,sh_p617_preserve_fail_one
+
+    ld a,2
+    ld (p617_dup_req),a
+    ld a,P617_SAVE_STDERR
+    ld (p617_dup_req+1),a
+    call sh_p617_dup_req_call
+    jr c,sh_p617_preserve_fail_two
+    xor a
+    ret
+
+sh_p617_preserve_fail_two:
+    ld (p617_error),a
+    ld a,P617_SAVE_STDOUT
+    call sh_p617_close_handle_ignore
+    jr sh_p617_preserve_fail_common
+sh_p617_preserve_fail_one:
+    ld (p617_error),a
+sh_p617_preserve_fail_common:
+    ld a,P617_SAVE_STDIN
+    call sh_p617_close_handle_ignore
+    ld a,(p617_error)
+    scf
+    ret
+
+sh_p617_dup_req_call:
+    ld hl,p617_dup_req
+    ld a,SYS_DUP
+    jp SYSCALL_GATEWAY
+
+; A=handle. Close errors are intentionally ignored during rollback/restore.
+sh_p617_close_handle_ignore:
+    ld l,a
+    ld h,0
+    ld a,SYS_CLOSE
+    call SYSCALL_GATEWAY
+    xor a
+    ret
+
+p617_replacements: dw 0
+p617_dup_req: db HANDLE_FREE,HANDLE_FREE
+p617_source: db HANDLE_FREE
+p617_index: db 0
+p617_error: db 0
+    ENDM
