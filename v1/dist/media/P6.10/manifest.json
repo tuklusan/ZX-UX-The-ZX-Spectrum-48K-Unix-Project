@@ -1,0 +1,19 @@
+{
+  "files": [
+    {
+      "action": "build",
+      "path": "build/build-p610-operators-6d8ea74b3255c6f3927e0c42a29183afaf1ba36e4bd9300a853773d9cbf81016.tap",
+      "sha256": "6d8ea74b3255c6f3927e0c42a29183afaf1ba36e4bd9300a853773d9cbf81016",
+      "size": 176
+    },
+    {
+      "action": "test",
+      "path": "test/build-p610-operators-6d8ea74b3255c6f3927e0c42a29183afaf1ba36e4bd9300a853773d9cbf81016.tap",
+      "sha256": "6d8ea74b3255c6f3927e0c42a29183afaf1ba36e4bd9300a853773d9cbf81016",
+      "size": 176
+    }
+  ],
+  "schema": 1,
+  "source_commit": "0dee21fcc5fa814c31ffef852b9400a56542dd4e",
+  "step": "P6.10"
+}

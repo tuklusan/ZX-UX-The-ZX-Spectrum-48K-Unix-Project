@@ -1,0 +1,71 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "all-eight-operators-enumerated",
+      "passed": true
+    },
+    {
+      "name": "recognition-gated-unquoted-unescaped",
+      "passed": true
+    },
+    {
+      "name": "maximal-double-operators",
+      "passed": true
+    },
+    {
+      "name": "grouping-explicit-invalid",
+      "passed": true
+    },
+    {
+      "name": "golden-operator-corpus",
+      "operators": 8,
+      "passed": true
+    },
+    {
+      "name": "quoted-escaped-operators-literal",
+      "passed": true
+    },
+    {
+      "name": "unsupported-parentheses-rejected",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p610-operators.lst",
+        "--sym=p610-operators.sym",
+        "p610-operators.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 6,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 1946 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p610-operators.tap": "6d8ea74b3255c6f3927e0c42a29183afaf1ba36e4bd9300a853773d9cbf81016",
+    "v1/dist/certification/P6.09.build.json": "021c11348c947a889d10d4e2d7a4aea948c8b2086225ba74da1f5f8ebbf9a162",
+    "v1/dist/certification/P6.09.test.json": "2f2c0cfa9616aa6d0e8209cbc8837692741a7d86384c4cf7c23345db0af337bd",
+    "v1/dist/media/P6.09/manifest.json": "11e9018c7f29fe9eb94c03b9a9299c65165c4eaac0017fa14d79a8ae9a768501",
+    "v1/src/shell/sh.asm": "d516b71e95b15196aed5a2b3d9c1669c4ec50b2fe4d26ef4ef7f100e6d1d3dde",
+    "v1/tools-host/test-driver/phase6_operators.py": "e3e5ea57cf8fd2c62e1585ffddcc25bdc45cfa4b9776ceb11539aa55700e5184",
+    "v1/tools-host/test-driver/run.py": "001270e1bba27e676b0e7f7e891f15c4c99fb6dcff5be38b55b8f2567a81e201"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P6.09": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "0dee21fcc5fa814c31ffef852b9400a56542dd4e",
+  "status": "PASS",
+  "step": "P6.10",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
