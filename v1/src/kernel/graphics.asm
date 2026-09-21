@@ -18,7 +18,7 @@
 zx48_gfx_plot:
     ld a,l
     cp 192
-    jr nc,zx48_gfx_bad
+    jp nc,zx48_gfx_bad
     call zx48_cursor_hide
     call zx48_gfx_pixel_addr
     ld a,(gfx_mask)
@@ -52,7 +52,7 @@ zx48_gfx_plot_store:
 zx48_gfx_point:
     ld a,l
     cp 192
-    jr nc,zx48_gfx_bad
+    jp nc,zx48_gfx_bad
     call zx48_gfx_pixel_addr
     ld a,(gfx_mask)
     and (hl)
@@ -104,7 +104,7 @@ zx48_gfx_draw:
     inc hl
     ld a,(hl)
     cp 192
-    jr nc,zx48_gfx_bad
+    jp nc,zx48_gfx_bad
     ld (gfx_y),a
     inc hl
     ld a,(hl)
@@ -112,7 +112,7 @@ zx48_gfx_draw:
     inc hl
     ld a,(hl)
     cp 192
-    jr nc,zx48_gfx_bad
+    jp nc,zx48_gfx_bad
     ld (gfx_y2),a
     ; dx=abs(x2-x), sx=+/-1
     ld a,(gfx_x2)
@@ -252,7 +252,7 @@ zx48_gfx_circle:
     inc hl
     ld a,(hl)
     cp 192
-    jr nc,zx48_gfx_bad
+    jp nc,zx48_gfx_bad
     ld (gfx_cy),a
     inc hl
     ld a,(hl)
@@ -369,7 +369,7 @@ zx48_gfx_circle_pair_xy:
 zx48_gfx_attr:
     ld a,h
     cp 6
-    jr nc,zx48_gfx_bad
+    jp nc,zx48_gfx_bad
     ld (gfx_selector),a
     ld a,l
     ld (gfx_value),a
@@ -378,12 +378,12 @@ zx48_gfx_attr:
     jr nc,zx48_gfx_attr_bool
     ld a,(gfx_value)
     cp 8
-    jr nc,zx48_gfx_bad
+    jp nc,zx48_gfx_bad
     jr zx48_gfx_attr_store
 zx48_gfx_attr_bool:
     ld a,(gfx_value)
     cp 2
-    jr nc,zx48_gfx_bad
+    jp nc,zx48_gfx_bad
 zx48_gfx_attr_store:
     ld a,(gfx_selector)
     ld e,a
@@ -426,10 +426,10 @@ zx48_gfx_attr_no_flash:
 zx48_gfx_border:
     ld a,h
     or a
-    jr nz,zx48_gfx_bad
+    jp nz,zx48_gfx_bad
     ld a,l
     cp 8
-    jr nc,zx48_gfx_bad
+    jp nc,zx48_gfx_bad
     jp zx48_ula_set_border
 zx48_gfx_bad:
     ld a,E_INVAL
