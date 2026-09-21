@@ -91,6 +91,8 @@ p601_sh_image:
     INCLUDE "../include/mex1.inc"
     INCLUDE "../src/kernel/process.asm"
     INCLUDE "../src/kernel/handles.asm"
+PANIC_SCHEDULER EQU $03
+PANIC_ROM_CONTRACT EQU $05
     ORG $C000
 p601_fixture_start:
     EMIT_PROCESS_ROUTINES
@@ -100,9 +102,9 @@ p601_fixture_start:
     EMIT_P601_PID1_BOOTSTRAP_ROUTINES
 tty_input_owner: db 0
 p601_test_panic: db 0
-zx48_handles_close_all_current: xor a : ret
 zx48_schedule: ret
 zx48_pipe_endpoint_closed: xor a : ret
+zx48_alloc: ld a,E_NOMEM : scf : ret
 zx48_free: xor a : ret
 zx48_panic: ld (p601_test_panic),a : ret
 p601_fixture_end:
