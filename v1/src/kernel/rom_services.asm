@@ -90,6 +90,31 @@ zx48_rom_draw_line:
     call ROM_DRAW_LINE
     jr zx48_rom_checked_return
 
+; These ROM services drive ULA port 0xFE. Mirror only the kernel border bits
+; into BORDCR before entry, then re-emit the authoritative shadow on return.
+zx48_rom_beeper:
+    call zx48_ula_rom_prepare
+    call ROM_BEEPER
+    jr zx48_rom_ula_done
+zx48_rom_sa_bytes:
+    call zx48_ula_rom_prepare
+    call ROM_SA_BYTES
+    jr zx48_rom_ula_done
+zx48_rom_ld_bytes:
+    call zx48_ula_rom_prepare
+    call ROM_LD_BYTES
+zx48_rom_ula_done:
+    push af
+    xor a
+    ld (altreg_busy),a
+    ld a,(ula_shadow)
+    call zx48_ula_commit
+    jr zx48_rom_checked_return_af_saved
+    ENDM
+
+; P7.09 staged ROM BEEP gateway. Kept out of the resident Phase-6 ROM macro
+; until the Phase-7 integration/packing boundary owns the final kernel layout.
+    MACRO EMIT_P709_ROM_BEEP_ROUTINES
 ; P7.09 isolated BASIC-compatible BEEP gateway.
 ; HL -> five-byte duration, DE -> five-byte pitch. The two exact values are
 ; copied into a private calculator stack in protected ROM-compatibility RAM.
@@ -173,24 +198,4 @@ rom_beep_saved_stkend: dw 0
 rom_beep_saved_mem: dw 0
 rom_beep_saved_sp: dw 0
 
-; These ROM services drive ULA port 0xFE. Mirror only the kernel border bits
-; into BORDCR before entry, then re-emit the authoritative shadow on return.
-zx48_rom_beeper:
-    call zx48_ula_rom_prepare
-    call ROM_BEEPER
-    jr zx48_rom_ula_done
-zx48_rom_sa_bytes:
-    call zx48_ula_rom_prepare
-    call ROM_SA_BYTES
-    jr zx48_rom_ula_done
-zx48_rom_ld_bytes:
-    call zx48_ula_rom_prepare
-    call ROM_LD_BYTES
-zx48_rom_ula_done:
-    push af
-    xor a
-    ld (altreg_busy),a
-    ld a,(ula_shadow)
-    call zx48_ula_commit
-    jr zx48_rom_checked_return_af_saved
     ENDM
