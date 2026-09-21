@@ -2912,3 +2912,132 @@ p624_name: dw 0
 p624_info: dw 0
 p624_jobs: defs P624_JOB_MAX*P624_JOB_SIZE,0
     ENDM
+
+; P6.25 wait builtin: exact arity/decimal parsing and shell-job draining.
+    MACRO EMIT_P625_WAIT_ROUTINES
+; B=operand count after "wait"; HL=NUL decimal PID iff B=1; IX=shell $? byte.
+sh_p625_wait:
+    ld (p625_status_ptr),ix
+    ld a,b
+    or a
+    jp z,sh_p625_wait_all
+    cp 1
+    jp nz,sh_p625_invalid
+    call sh_p625_parse_pid
+    ret c
+    ld (p625_pid),a
+    call sh_p625_wait_specific
+    ret c
+    ld a,(p625_pid)
+    call sh_p624_job_remove
+    ; A direct/adopted child need not be in the shell background table.
+    ld hl,(p625_status_ptr)
+    ld a,(p625_child_status)
+    ld (hl),a
+    xor a
+    ret
+
+; No-argument wait drains exactly the launch-set represented by p624_jobs.
+sh_p625_wait_all:
+    xor a
+    ld (p625_slot),a
+    ld hl,(p625_status_ptr)
+    ld (hl),a
+sh_p625_wait_all_next:
+    ld a,(p625_slot)
+    cp P624_JOB_MAX
+    jp nc,sh_p625_ok
+    ld e,a
+    ld d,0
+    ld hl,p624_jobs
+sh_p625_slot_seek:
+    ld a,e
+    or a
+    jr z,sh_p625_slot_ready
+    ld bc,P624_JOB_SIZE
+    add hl,bc
+    dec e
+    jr sh_p625_slot_seek
+sh_p625_slot_ready:
+    ld a,(hl)
+    or a
+    jr z,sh_p625_wait_all_advance
+    ld (p625_pid),a
+    call sh_p625_wait_specific
+    ret c
+    ld a,(p625_pid)
+    call sh_p624_job_remove
+    ret c
+    ld hl,(p625_status_ptr)
+    ld a,(p625_child_status)
+    ld (hl),a
+sh_p625_wait_all_advance:
+    ld a,(p625_slot)
+    inc a
+    ld (p625_slot),a
+    jp sh_p625_wait_all_next
+
+; Decimal parser. Leading zeroes are accepted; values outside PID2..7 are
+; decimal but are nonexistent/nonchild and therefore return E_CHILD.
+sh_p625_parse_pid:
+    ld c,0
+    ld a,(hl)
+    or a
+    jp z,sh_p625_invalid
+sh_p625_parse_loop:
+    ld a,(hl)
+    or a
+    jr z,sh_p625_parse_done
+    cp '0'
+    jp c,sh_p625_invalid
+    cp '9'+1
+    jp nc,sh_p625_invalid
+    sub '0'
+    ld d,a
+    ld a,c
+    or a
+    jp nz,sh_p625_child
+    ld a,d
+    ld c,a
+    inc hl
+    jp sh_p625_parse_loop
+sh_p625_parse_done:
+    ld a,c
+    cp 2
+    jp c,sh_p625_child
+    cp MAX_PROCESSES
+    jp nc,sh_p625_child
+    or a
+    ret
+
+; p625_pid must already contain PID2..7. WAIT1 is generation-qualified by the
+; kernel and writes one exact child exit status byte.
+sh_p625_wait_specific:
+    ld a,(p625_pid)
+    ld (p625_wait_req),a
+    xor a
+    ld (p625_wait_req+1),a
+    ld hl,p625_wait_req
+    ld a,SYS_WAIT
+    call SYSCALL_GATEWAY
+    ret
+
+sh_p625_ok:
+    xor a
+    ret
+sh_p625_child:
+    ld a,E_CHILD
+    scf
+    ret
+sh_p625_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+
+p625_status_ptr: dw 0
+p625_pid: db 0
+p625_slot: db 0
+p625_child_status: db 0
+p625_wait_req: db 0,0
+               dw p625_child_status
+    ENDM
