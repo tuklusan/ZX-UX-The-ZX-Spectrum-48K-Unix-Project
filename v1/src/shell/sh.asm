@@ -3263,7 +3263,7 @@ sh_p629_reap:
 sh_p629_reap_next:
     ld a,(p629_pid)
     cp MAX_PROCESSES
-    jr nc,sh_p629_ok
+    jp nc,sh_p629_ok
 
     ld (p629_info_req),a
     xor a
