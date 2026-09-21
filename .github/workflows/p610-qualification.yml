@@ -33,7 +33,11 @@ jobs:
         run: |
           set -euo pipefail
           git diff --name-only "$P610_BASE" HEAD | sort > /tmp/p610-changed
-          printf '%s\n' .github/workflows/p610-qualification.yml v1/src/shell/sh.asm v1/tools-host/test-driver/phase6_operators.py v1/tools-host/test-driver/run.py | sort > /tmp/p610-expected
+          printf '%s\n' \
+            .github/workflows/p610-qualification.yml \
+            v1/src/shell/sh.asm \
+            v1/tools-host/test-driver/phase6_operators.py \
+            v1/tools-host/test-driver/run.py | sort > /tmp/p610-expected
           diff -u /tmp/p610-expected /tmp/p610-changed
           git diff --check "$P610_BASE" HEAD
           test -z "$(git status --porcelain)"
