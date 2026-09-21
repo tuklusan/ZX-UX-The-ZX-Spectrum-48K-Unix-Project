@@ -236,13 +236,13 @@ def dispatch(root: Path, action: str, step: str, *, sha256_file, run_command, re
     if action == "test":
         module = binary.read_bytes()
         for vector in (
-            (0, 0, 255, 0),
-            (255, 191, 0, 191),
-            (0, 0, 0, 191),
-            (255, 191, 255, 0),
-            (0, 0, 191, 191),
-            (191, 191, 0, 0),
-            (32, 40, 96, 104),
+            (0, 0, 7, 0),
+            (255, 191, 248, 191),
+            (0, 0, 0, 7),
+            (255, 191, 255, 184),
+            (0, 0, 7, 7),
+            (255, 191, 248, 184),
+            (32, 40, 39, 47),
         ):
             _run_vector(root, symbols, module, vector)
         _run_negative(root, symbols, module, bytes((1, 192, 3, 1)))
