@@ -16,6 +16,11 @@
 
     MACRO EMIT_GRAPHICS_ROUTINES
 ; H=x,L=y. Exact 0..255/0..191 coordinate domain.
+; P7.03 uses a native PLOT-SUB-visible replacement because the 48K ROM
+; PIXEL-ADD/PLOT-SUB contract rejects y>175 and uses BASIC's 175-y origin,
+; which cannot satisfy ZX-UX's P7.02-frozen full top-origin 0..191 bitmap ABI.
+; The pixel modes and attribute publication below remain byte-equivalent to
+; PLOT-SUB after applying the ZX-UX coordinate mapping.
 zx48_gfx_plot:
     ld a,l
     cp 192
@@ -26,27 +31,54 @@ zx48_gfx_plot:
     ld b,a
     ld a,(gfx_attr_state+5)       ; OVER
     or a
+    jr z,zx48_gfx_plot_over0
+    ld a,(gfx_attr_state+4)       ; INVERSE
+    or a
     ld a,(hl)
-    jr nz,zx48_gfx_plot_xor
+    jr nz,zx48_gfx_plot_store     ; OVER 1 + INVERSE 1 leaves pixel unchanged.
+    xor b                         ; OVER 1 + INVERSE 0 toggles the pixel.
+    jr zx48_gfx_plot_store
+zx48_gfx_plot_over0:
+    ld a,(hl)
     ld c,a
     ld a,(gfx_attr_state+4)       ; INVERSE
     or a
     ld a,c
     jr nz,zx48_gfx_plot_clear
-    or b
+    or b                          ; OVER 0 + INVERSE 0 sets the pixel.
     jr zx48_gfx_plot_store
 zx48_gfx_plot_clear:
     ld a,b
     cpl
-    and c
-    jr zx48_gfx_plot_store
-zx48_gfx_plot_xor:
-    xor b
+    and c                         ; OVER 0 + INVERSE 1 clears the pixel.
 zx48_gfx_plot_store:
+    ld (hl),a
+    call zx48_gfx_attr_address_from_de
+    ld a,(tty_current_attr)
     ld (hl),a
     call zx48_cursor_show
     xor a
     or a
+    ret
+
+; DE retains the public x/y pair from zx48_gfx_pixel_addr.
+; Return HL = hardware attribute cell for that exact pixel.
+zx48_gfx_attr_address_from_de:
+    ld a,e
+    and $f8
+    ld l,a
+    ld h,0
+    add hl,hl
+    add hl,hl
+    ld a,d
+    srl a
+    srl a
+    srl a
+    ld c,a
+    ld b,0
+    add hl,bc
+    ld bc,ATTR_START
+    add hl,bc
     ret
 
 ; H=x,L=y -> H=0,L=0/1.
