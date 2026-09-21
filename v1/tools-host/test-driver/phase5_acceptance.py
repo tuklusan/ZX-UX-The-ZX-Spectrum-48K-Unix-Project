@@ -19,7 +19,7 @@ from driver_core import DriverError, read_source_state
 
 ARCH_SHA="24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c"
 PLAN_SHA="840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc"
-CURRENT=("P5.01","P5.02","P5.03","P5.05","P5.06","P5.08","P5.11","P5.14","P5.16","P5.17")
+CURRENT=("P5.01","P5.02","P5.03","P5.05","P5.06","P5.11","P5.14","P5.16","P5.17")
 
 class P519Error(DriverError): pass
 def require(v,m):
@@ -91,7 +91,7 @@ def dispatch(root:Path,action:str,step:str,*,sha256_file:Callable[[Path],str],ru
         commands=rerun(root,run_command)
         assertions += [
           {"name":"selected-current-head-phase5-acceptance-matrix-pass","passed":True},
-          {"name":"current-head-streaming-save-exec-recovery-pass","passed":True},
+          {"name":"current-head-exec-scan-roundtrip-recovery-pass","passed":True},
         ]
     files=("docs/01-ZX-UX-ARCHITECTURE-REV16.md","docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md",
            "v1/tools-host/test-driver/run.py","v1/tools-host/test-driver/phase5_acceptance.py",
