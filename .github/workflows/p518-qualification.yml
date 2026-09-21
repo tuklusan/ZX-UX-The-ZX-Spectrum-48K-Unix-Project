@@ -71,7 +71,7 @@ jobs:
           import json
           from pathlib import Path
           for action in ("build", "test"):
-              path = Path(f"v1/dist/certification/P5.16.{action}.json")
+              path = Path(f"v1/dist/certification/P5.17.{action}.json")
               record = json.loads(path.read_text(encoding="utf-8"))
               assert record["step"] == "P5.17"
               assert record["action"] == action
