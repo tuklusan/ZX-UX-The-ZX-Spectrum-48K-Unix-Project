@@ -1,0 +1,84 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p708-present",
+      "passed": true
+    },
+    {
+      "name": "border-validates-reserved-h-and-color-before-commit",
+      "passed": true
+    },
+    {
+      "name": "border-delegates-only-to-central-ula-owner",
+      "passed": true
+    },
+    {
+      "name": "central-border-update-preserves-nonborder-shadow-bits",
+      "passed": true
+    },
+    {
+      "name": "single-production-ula-output-owner",
+      "passed": true
+    },
+    {
+      "name": "ula-shadow-and-port-committed-together",
+      "passed": true
+    },
+    {
+      "name": "p708-contract-comment-present",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 37,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nkernel.asm(87): warning[shortblock]: init data for block truncated to length: 0\nPass 3 complete\nErrors: 0, warnings: 1, compiled: 14900 lines, work time: 0.036 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p708-border.lst",
+        "--sym=p708-border.sym",
+        "p708-border.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 9,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2955 lines, work time: 0.008 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "1bcb1862955372e15814296fd248795b3de41baac5596baecd5d5f155ed92a67",
+    "v1/build/p708-border.bin": "fb94a99c2e27c503d585455aeb782736c0075407ebcbdb5adfa1a7bba557d33e",
+    "v1/src/kernel/graphics.asm": "ba3a38a8846f1aac961f712ea00d7adf5d2aa584a943828593eb2c9fa4df9f65",
+    "v1/src/kernel/ula_io.asm": "58b8ca7498acc6f4f9b9aea168f5493ab64ece916ea10d9a4b23e2f14b5f0fef",
+    "v1/tools-host/test-driver/phase7_border.py": "c0eea364716a98d89b3b719beb90d7fae7cf8514e647b29eab55f64aefcd82fc",
+    "v1/tools-host/test-driver/run.py": "0d814c989330fdddc06b0460cb22709896898976836e6ef0f8f7569fb7775e6c"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P7.07": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "a8d8ccb5c727f8c3be8d7ba031d33d0268d683b7",
+  "status": "PASS",
+  "step": "P7.08",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
