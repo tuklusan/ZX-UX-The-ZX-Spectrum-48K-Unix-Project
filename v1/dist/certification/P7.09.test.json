@@ -1,0 +1,121 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p709-present",
+      "passed": true
+    },
+    {
+      "name": "sound-delegates-to-isolated-rom-beep-gateway",
+      "passed": true
+    },
+    {
+      "name": "rom-beep-command-address-frozen",
+      "passed": true
+    },
+    {
+      "name": "complete-duration-and-pitch-ranges-validated",
+      "passed": true
+    },
+    {
+      "name": "both-ranges-validated-before-sound-entry",
+      "passed": true
+    },
+    {
+      "name": "calculator-stack-is-private-protected-workspace",
+      "passed": true
+    },
+    {
+      "name": "rom-errors-return-einval-not-basic",
+      "passed": true
+    },
+    {
+      "name": "error-gateway-restores-rom-system-pointers",
+      "passed": true
+    },
+    {
+      "name": "synchronous-ula-critical-section-is-serialized",
+      "passed": true
+    },
+    {
+      "name": "no-tick-backfill-path-in-beep",
+      "passed": true
+    },
+    {
+      "name": "fuse-beep-1-0-completes-synchronously",
+      "passed": true
+    },
+    {
+      "name": "fuse-beep-half-9-completes-synchronously",
+      "passed": true
+    },
+    {
+      "name": "fuse-beep-quarter-minus12-completes-synchronously",
+      "passed": true
+    },
+    {
+      "name": "fuse-beep-half-halfpitch-completes-synchronously",
+      "passed": true
+    },
+    {
+      "name": "fuse-invalid-complete-pointer-range-rejected-before-rom",
+      "passed": true
+    },
+    {
+      "name": "accepted-frame-tick-backfill-absent-by-construction",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 77,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nkernel.asm(87): warning[shortblock]: init data for block truncated to length: 0\nPass 3 complete\nErrors: 0, warnings: 1, compiled: 15017 lines, work time: 0.076 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p709-beep.lst",
+        "--sym=p709-beep.sym",
+        "p709-beep.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2613 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "1bcb1862955372e15814296fd248795b3de41baac5596baecd5d5f155ed92a67",
+    "v1/build/p709-beep.bin": "0a18a84aba19d996780fbdf6e33c2358eac56ca1ccb2777f5ec8df7cb7f2240a",
+    "v1/src/kernel/rom_services.asm": "56ed9b7bf220b1597b0568c6b1a373c42c2880fc5cc844b3431afaadbb8c9893",
+    "v1/src/kernel/sound.asm": "355f6daa329e182d7f6b17f4f12feb577cc57c70fabf156e98f59cb4cdc447f4",
+    "v1/src/kernel/syscall.asm": "8fc7e5a75c08f31af45e25c2e0fae09357c52fb67bbd165f2178d6e358dea07f",
+    "v1/tools-host/test-driver/phase7_beep.py": "8ccd285a63e0598d257662cdda92f14e09b0f7df867fbc3836872234bed45901",
+    "v1/tools-host/test-driver/run.py": "7848d9f298a200fd16f0d6698ec50ec3048c005f225810d0fa69873b57169292"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P7.08": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "393f56911ce19f4dd1ff0601fa38bf60872b4818",
+  "status": "PASS",
+  "step": "P7.09",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
