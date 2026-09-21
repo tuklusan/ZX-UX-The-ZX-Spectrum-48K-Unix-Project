@@ -30,9 +30,10 @@ def patch(shell,gate,desc,fail_output=False):
         ram[SHELL-0x4000:SHELL-0x4000+len(shell)]=shell
         ram[GATE-0x4000:GATE-0x4000+len(gate)]=gate
         ram[DESC-0x4000:DESC-0x4000+len(desc)]=desc
-        ram[INP-0x4000:INP-0x4000+10]=b"/tmp/in\0"
-        ram[OUT-0x4000:OUT-0x4000+11]=b"/tmp/out\0"
-        ram[TAPE-0x4000:TAPE-0x4000+10]=b"/dev/tape\0"
+        inp=b"/tmp/in\0"; out=b"/tmp/out\0"; tape=b"/dev/tape\0"
+        ram[INP-0x4000:INP-0x4000+len(inp)]=inp
+        ram[OUT-0x4000:OUT-0x4000+len(out)]=out
+        ram[TAPE-0x4000:TAPE-0x4000+len(tape)]=tape
         ram[0xE180-0x4000]=3
         ram[0xE181-0x4000]=1 if fail_output else 0
         ram[0xE182-0x4000]=0
