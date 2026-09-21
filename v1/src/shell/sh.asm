@@ -1208,3 +1208,276 @@ p608_in_token: db 0
 p608_count: db 0
 p608_length: db 0
     ENDM
+
+; P6.09 variable expansion contract. This scanner is consumed by the later
+; integrated parser: only $NAME, ${NAME}, and $? are expansion forms.
+    MACRO EMIT_P609_EXPANSION_ROUTINES
+P609_NAME_MAX            EQU 15
+P609_VALUE_MAX           EQU 63
+P609_EXPAND_UNQUOTED     EQU 0
+P609_EXPAND_SINGLE       EQU 1
+P609_EXPAND_DOUBLE       EQU 2
+
+; A=first candidate byte. Carry set means no valid NAME may start here.
+sh_p609_name_first:
+    cp 'A'
+    jr c,sh_p609_name_first_lower
+    cp 'Z'+1
+    jr c,sh_p609_name_ok
+sh_p609_name_first_lower:
+    cp 'a'
+    jr c,sh_p609_name_first_us
+    cp 'z'+1
+    jr c,sh_p609_name_ok
+sh_p609_name_first_us:
+    cp '_'
+    jr z,sh_p609_name_ok
+    scf
+    ret
+
+; A=subsequent NAME byte.
+sh_p609_name_tail:
+    cp 'A'
+    jr c,sh_p609_name_tail_lower
+    cp 'Z'+1
+    jr c,sh_p609_name_ok
+sh_p609_name_tail_lower:
+    cp 'a'
+    jr c,sh_p609_name_tail_digit
+    cp 'z'+1
+    jr c,sh_p609_name_ok
+sh_p609_name_tail_digit:
+    cp '0'
+    jr c,sh_p609_name_tail_us
+    cp '9'+1
+    jr c,sh_p609_name_ok
+sh_p609_name_tail_us:
+    cp '_'
+    jr z,sh_p609_name_ok
+    scf
+    ret
+sh_p609_name_ok:
+    or a
+    ret
+
+; HL points at '$', A is quote mode. Return:
+; carry => malformed braced expansion; otherwise DE points one byte after the
+; consumed expansion reference and B=name length. C=form:
+; 0 literal '$', 1 NAME, 2 braced NAME, 3 status.
+sh_p609_scan_reference:
+    cp P609_EXPAND_SINGLE
+    jr z,sh_p609_ref_literal
+    inc hl
+    ld a,(hl)
+    cp '?'
+    jr z,sh_p609_ref_status
+    cp '{'
+    jr z,sh_p609_ref_braced
+    call sh_p609_name_first
+    jr c,sh_p609_ref_literal_after
+    ld b,1
+    inc hl
+sh_p609_ref_name_loop:
+    ld a,b
+    cp P609_NAME_MAX
+    jr nc,sh_p609_ref_name_done
+    ld a,(hl)
+    call sh_p609_name_tail
+    jr c,sh_p609_ref_name_done
+    inc b
+    inc hl
+    jr sh_p609_ref_name_loop
+sh_p609_ref_name_done:
+    ex de,hl
+    ld c,1
+    xor a
+    ret
+
+sh_p609_ref_braced:
+    inc hl
+    ld a,(hl)
+    call sh_p609_name_first
+    jr c,sh_p609_ref_invalid
+    ld b,1
+    inc hl
+sh_p609_ref_braced_loop:
+    ld a,(hl)
+    cp '}'
+    jr z,sh_p609_ref_braced_done
+    ld a,b
+    cp P609_NAME_MAX
+    jr nc,sh_p609_ref_invalid
+    ld a,(hl)
+    call sh_p609_name_tail
+    jr c,sh_p609_ref_invalid
+    inc b
+    inc hl
+    jr sh_p609_ref_braced_loop
+sh_p609_ref_braced_done:
+    inc hl
+    ex de,hl
+    ld c,2
+    xor a
+    ret
+
+sh_p609_ref_status:
+    inc hl
+    ex de,hl
+    ld b,0
+    ld c,3
+    xor a
+    ret
+
+sh_p609_ref_literal_after:
+    dec hl
+sh_p609_ref_literal:
+    inc hl
+    ex de,hl
+    ld b,0
+    ld c,0
+    xor a
+    ret
+
+sh_p609_ref_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+
+; IX=canonical ENV1, HL=name bytes, B=name length.
+; Success: carry clear, DE=value bytes, C=value length. Missing => C=0 and DE=0.
+sh_p609_env_lookup:
+    ld a,b
+    or a
+    jr z,sh_p609_env_missing
+    ld (p609_name_ptr),hl
+    ld a,b
+    ld (p609_name_len),a
+    ld a,(ix+4)
+    ld (p609_env_left),a
+    push ix
+    pop hl
+    ld de,8
+    add hl,de
+sh_p609_env_entry:
+    ld a,(p609_env_left)
+    or a
+    jr z,sh_p609_env_missing
+    ld (p609_entry_ptr),hl
+    ld de,(p609_name_ptr)
+    ld a,(p609_name_len)
+    ld b,a
+sh_p609_env_compare:
+    ld a,b
+    or a
+    jr z,sh_p609_env_name_end
+    ld a,(de)
+    cp (hl)
+    jr nz,sh_p609_env_next
+    inc de
+    inc hl
+    dec b
+    jr sh_p609_env_compare
+sh_p609_env_name_end:
+    ld a,(hl)
+    cp '='
+    jr nz,sh_p609_env_next
+    inc hl
+    ex de,hl
+    ld c,0
+sh_p609_env_value_len:
+    ld a,(de)
+    or a
+    jr z,sh_p609_env_found
+    inc de
+    inc c
+    jr sh_p609_env_value_len
+sh_p609_env_found:
+    ld hl,(p609_entry_ptr)
+sh_p609_env_seek_eq:
+    ld a,(hl)
+    inc hl
+    cp '='
+    jr nz,sh_p609_env_seek_eq
+    ex de,hl
+    xor a
+    ret
+sh_p609_env_next:
+    ld hl,(p609_entry_ptr)
+sh_p609_env_skip:
+    ld a,(hl)
+    inc hl
+    or a
+    jr nz,sh_p609_env_skip
+    ld a,(p609_env_left)
+    dec a
+    ld (p609_env_left),a
+    jr sh_p609_env_entry
+sh_p609_env_missing:
+    ld de,0
+    ld c,0
+    xor a
+    ret
+
+; A=shell status, DE=destination >=4 bytes. Returns C=ASCII byte count.
+sh_p609_status_decimal:
+    ld c,0
+    cp 100
+    jr c,sh_p609_status_tens
+    ld b,0
+sh_p609_status_hundreds_loop:
+    cp 100
+    jr c,sh_p609_status_hundreds_done
+    sub 100
+    inc b
+    jr sh_p609_status_hundreds_loop
+sh_p609_status_hundreds_done:
+    push af
+    ld a,b
+    add a,'0'
+    ld (de),a
+    inc de
+    inc c
+    pop af
+    ld b,1
+    jr sh_p609_status_tens_forced
+sh_p609_status_tens:
+    ld b,0
+sh_p609_status_tens_forced:
+    cp 10
+    jr c,sh_p609_status_ones
+    ld h,0
+sh_p609_status_tens_loop:
+    cp 10
+    jr c,sh_p609_status_tens_done
+    sub 10
+    inc h
+    jr sh_p609_status_tens_loop
+sh_p609_status_tens_done:
+    push af
+    ld a,h
+    add a,'0'
+    ld (de),a
+    inc de
+    inc c
+    pop af
+    ld b,1
+sh_p609_status_ones:
+    push af
+    ld a,b
+    or a
+    jr nz,sh_p609_status_emit_one
+    pop af
+    push af
+sh_p609_status_emit_one:
+    pop af
+    add a,'0'
+    ld (de),a
+    inc c
+    xor a
+    ret
+
+p609_name_ptr: dw 0
+p609_entry_ptr: dw 0
+p609_name_len: db 0
+p609_env_left: db 0
+    ENDM
