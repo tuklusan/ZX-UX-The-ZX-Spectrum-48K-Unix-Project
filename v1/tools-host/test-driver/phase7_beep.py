@@ -81,6 +81,7 @@ def _assemble(root:Path,run_command:Callable[...,Any],require_project_tool:Calla
       "    INCLUDE \"../src/kernel/sound.asm\"\n"
       "    EMIT_USER_RANGE_VALIDATION_ROUTINE\n"
       "    EMIT_ROM_SERVICE_ROUTINES\n"
+      "    EMIT_P709_ROM_BEEP_ROUTINES\n"
       "    EMIT_SOUND_ROUTINES\n"
       "    EMIT_P709_BEEP_SYSCALL_ROUTINES\n"
       "p709_end:\n"
