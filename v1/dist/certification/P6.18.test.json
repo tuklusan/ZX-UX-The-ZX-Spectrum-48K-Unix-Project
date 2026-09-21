@@ -1,0 +1,96 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "one-in-one-out-bound",
+      "passed": true
+    },
+    {
+      "name": "input-open-read-only",
+      "passed": true
+    },
+    {
+      "name": "truncate-flags-dat",
+      "passed": true
+    },
+    {
+      "name": "append-flags-dat",
+      "passed": true
+    },
+    {
+      "name": "tape-random-redirection-rejected",
+      "passed": true
+    },
+    {
+      "name": "allocation-failure-closes-prior-input",
+      "passed": true
+    },
+    {
+      "name": "fuse-golden-input-output-redirection",
+      "passed": true
+    },
+    {
+      "name": "fuse-output-allocation-failure-rolls-back-input",
+      "passed": true
+    },
+    {
+      "name": "fuse-dev-tape-redirection-rejected-before-open",
+      "passed": true
+    },
+    {
+      "name": "fuse-duplicate-redirection-rejected-before-open",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p618-shell-fixture.lst",
+        "--sym=p618-shell-fixture.sym",
+        "p618-shell-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2763 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p618-gateway.lst",
+        "--sym=p618-gateway.sym",
+        "p618-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 2,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 302 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/dist/certification/P6.17.build.json": "9ea2a4731fd679fed4052deb9d88e81420442562440d3923944db299a393c3ee",
+    "v1/dist/certification/P6.17.test.json": "767aefdcdcd0c072712c0d3346cfb3cfccecfe44398347f49ffb0fa4d0705c2e",
+    "v1/dist/media/P6.17/manifest.json": "d7ff374c5cb4c975d49d9cb52556e7747353e9a8100c034bfac6437d2c109f46",
+    "v1/src/shell/sh.asm": "ebc83ecc8ddb91676ce7611df7ea820013f31ab09aafd1bfdb0031cfea24f140",
+    "v1/tools-host/test-driver/phase6_external_redir.py": "9ccf916f0df4a1b9b2f963da759751bb44ab18d02cc4df5d3396639965083f03",
+    "v1/tools-host/test-driver/run.py": "01000bb44e4ebacac6f2d9a5494c1b7be2387efa75dcd08aafc0865d9b34a84d"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P6.17": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "f5ae858e12637f9cba92cc873bea5bdfcb28f493",
+  "status": "PASS",
+  "step": "P6.18",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
