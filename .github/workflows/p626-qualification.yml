@@ -35,7 +35,6 @@ jobs:
           git diff --name-only "$P626_BASE" HEAD | sort > /tmp/p626-changed
           printf '%s\n' \
             .github/workflows/p626-qualification.yml \
-            v1/src/kernel/process.asm \
             v1/src/kernel/syscall.asm \
             v1/src/shell/sh.asm \
             v1/tools-host/test-driver/phase6_kill_break.py \
