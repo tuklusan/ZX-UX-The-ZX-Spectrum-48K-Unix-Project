@@ -1,0 +1,78 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "single-canonical-bitmap-helper-definition",
+      "passed": true
+    },
+    {
+      "name": "graphics-delegates-to-canonical-helper",
+      "passed": true
+    },
+    {
+      "name": "tty32-delegates-to-canonical-helper",
+      "passed": true
+    },
+    {
+      "name": "tty64-delegates-to-canonical-helper",
+      "passed": true
+    },
+    {
+      "name": "udg-delegates-to-canonical-helper",
+      "passed": true
+    },
+    {
+      "name": "host-oracle-covers-full-display",
+      "passed": true
+    },
+    {
+      "name": "display-address-domain-exact",
+      "passed": true
+    },
+    {
+      "name": "fuse-all-6144-bitmap-byte-addresses-match-host-oracle",
+      "passed": true,
+      "pixel_equivalent_vectors": 49152
+    },
+    {
+      "name": "no-divergent-helper-runtime-observed",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 36,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nkernel.asm(87): warning[shortblock]: init data for block truncated to length: 0\nPass 3 complete\nErrors: 0, warnings: 1, compiled: 14743 lines, work time: 0.034 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "1bcb1862955372e15814296fd248795b3de41baac5596baecd5d5f155ed92a67",
+    "v1/src/kernel/graphics.asm": "8fcd51b54f359a2fc41d2b1ef377fa84c3e06638311d5e342575b3501c33f7c2",
+    "v1/src/kernel/tty32.asm": "1c1b7fac888afbee7ed7413ae3962682be300d0cbade2fedeb98ab6c010c64e5",
+    "v1/src/kernel/tty64.asm": "7890a23ed2625ce7dda4d0629bf85240e748bf5a27a30dac53279c0f0b108344",
+    "v1/src/kernel/udg.asm": "c6d90ab779c7e86dd40848d4fb49236f37502525ef401e50173aae8e3dc3f954",
+    "v1/tools-host/test-driver/phase7_pixel_helper.py": "01fafaa4cca5541031381b017a9d4a6cf0b753e073f6f9accb3692b94b39cd7f"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P7.01": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "99ee98176ffac48bdec0e1f38d23d5141235c3a4",
+  "status": "PASS",
+  "step": "P7.02",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
