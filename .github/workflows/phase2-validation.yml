@@ -27,6 +27,7 @@ on:
       - v1/src/kernel/**
       - v1/tools-host/inspect-mex/**
       - v1/tools-host/test-driver/**
+      - v1/tests/multiprocessing/**
       - v1/dist/certification/P0.*.json
       - v1/dist/certification/phase-0.json
       - v1/dist/certification/P1.*.json

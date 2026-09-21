@@ -95,7 +95,6 @@ zx48_panic:
     scf
     ret
 
-syscall_arg_hl: dw 0
 current_pid: db 0
 process_table: defs MAX_PROCESSES*PROC_DESC_SIZE,0
 p223_panic_code: db 0
