@@ -11,6 +11,7 @@
 ; patent, trademark, and governing-law provisions.
 ;
 ; Bounded native Spectrum graphics primitives. Pixel writes touch bitmap only.
+; P7.01 exposes these routines only through the validated public syscall ABI.
 
     MACRO EMIT_GRAPHICS_ROUTINES
 ; H=x,L=y. Exact 0..255/0..191 coordinate domain.
