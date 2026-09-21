@@ -187,6 +187,7 @@ import phase6_wait
 import phase6_kill_break
 import phase6_cursor_restore
 import phase6_shell_golden
+import phase6_pid1_exit
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
 from media_retention import (
     capture_project_media,
@@ -442,6 +443,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase6_cursor_restore.dispatch(root, action, step, **kwargs)
     if step == "P6.28":
         return phase6_shell_golden.dispatch(root, action, step, **kwargs)
+    if step == "P6.29":
+        return phase6_pid1_exit.dispatch(root, action, step, **kwargs)
     if step.startswith("P6."):
         raise DriverError(f"numbered Phase-6 step is not registered: {step}")
     module = E0_MODULE.get(step)
