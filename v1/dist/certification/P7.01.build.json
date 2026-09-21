@@ -1,0 +1,94 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p701-present",
+      "passed": true
+    },
+    {
+      "name": "six-public-gfx-selectors-present",
+      "passed": true
+    },
+    {
+      "name": "graphics-source-included-once",
+      "passed": true
+    },
+    {
+      "name": "bounded-p701-dispatch-range",
+      "passed": true
+    },
+    {
+      "name": "record-pointers-validated-before-draw-circle",
+      "passed": true
+    },
+    {
+      "name": "six-native-entrypoints-present",
+      "passed": true
+    },
+    {
+      "name": "bad-parameter-path-before-plot-mutation",
+      "passed": true
+    },
+    {
+      "name": "public-gateway-retains-canonical-iy-contract",
+      "passed": true
+    },
+    {
+      "name": "phase6-resident-dispatch-left-byte-identical-in-shape",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 37,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nkernel.asm(87): warning[shortblock]: init data for block truncated to length: 0\nPass 3 complete\nErrors: 0, warnings: 1, compiled: 14742 lines, work time: 0.035 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p701-gfx-abi.lst",
+        "--sym=p701-gfx-abi.sym",
+        "p701-gfx-abi.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 8,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2537 lines, work time: 0.007 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "docs/01-ZX-UX-ARCHITECTURE-REV16.md": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+    "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+    "v1/build/kernel.bin": "1bcb1862955372e15814296fd248795b3de41baac5596baecd5d5f155ed92a67",
+    "v1/build/p701-gfx-abi.bin": "fb4e74fe752a7966a27a0931d97b85a46950d5c11a9749868a49b034e76dcda9",
+    "v1/src/kernel/graphics.asm": "5ffe6fb5623b36a5237818d11f7dd98cfe7bb4f0e6d44ce6b394d6245b7dec7f",
+    "v1/src/kernel/syscall.asm": "1310c1750724a262c4d3171a9eacc8b4f734054dbb55ebe2223d4121d27ba25a",
+    "v1/tools-host/test-driver/phase7_graphics_abi.py": "3eb892d30928b60a3ef0ac5efd01073771e08f6bebbd87931c316f895c9892dc",
+    "v1/tools-host/test-driver/run.py": "40167a1989341e87938df27fbdd6b995ee324179775321c03c5b77d176c1de4b"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P6.30": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "384b9defc15fafda7d6d894530c37ee210426ee7",
+  "status": "PASS",
+  "step": "P7.01",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
