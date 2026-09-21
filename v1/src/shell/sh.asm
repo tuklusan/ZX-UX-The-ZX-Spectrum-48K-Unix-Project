@@ -1000,3 +1000,210 @@ p607_len: db 0
 p607_key: db 0
 p607_scratch: defs P607_LINE_MAX,0
     ENDM
+
+; P6.08 byte tokenizer. Quotes are removed here; '$' bytes remain data for P6.09.
+    MACRO EMIT_P608_TOKENIZER_ROUTINES
+P608_Q_NONE              EQU 0
+P608_Q_SINGLE            EQU 1
+P608_Q_DOUBLE            EQU 2
+
+; HL=NUL command line, IX=writable token buffer >=248 bytes.
+; Success: B=token count, output is NUL-separated dequoted token bytes.
+; Empty quoted strings produce empty tokens. C is the current output length.
+sh_p608_tokenize:
+    ld (p608_src),hl
+    ld (p608_dst),ix
+    xor a
+    ld (p608_quote),a
+    ld (p608_in_token),a
+    ld (p608_count),a
+    ld (p608_length),a
+
+sh_p608_loop:
+    ld hl,(p608_src)
+    ld a,(hl)
+    or a
+    jp z,sh_p608_eol
+    ld d,a
+    ld a,(p608_quote)
+    cp P608_Q_SINGLE
+    jp z,sh_p608_single
+    cp P608_Q_DOUBLE
+    jp z,sh_p608_double
+
+    ld a,d
+    cp ' '
+    jp z,sh_p608_separator
+    cp $09
+    jp z,sh_p608_separator
+    cp $5c
+    jp z,sh_p608_escape_plain
+    cp $27
+    jp z,sh_p608_open_single
+    cp $22
+    jp z,sh_p608_open_double
+    call sh_p608_begin_token
+    ld a,d
+    call sh_p608_emit
+    jp c,sh_p608_return
+    call sh_p608_advance
+    jp sh_p608_loop
+
+sh_p608_escape_plain:
+    call sh_p608_begin_token
+    call sh_p608_advance
+    ld hl,(p608_src)
+    ld a,(hl)
+    or a
+    jp z,sh_p608_invalid
+    call sh_p608_emit
+    jp c,sh_p608_return
+    call sh_p608_advance
+    jp sh_p608_loop
+
+sh_p608_open_single:
+    call sh_p608_begin_token
+    ld a,P608_Q_SINGLE
+    ld (p608_quote),a
+    call sh_p608_advance
+    jp sh_p608_loop
+
+sh_p608_single:
+    ld a,d
+    cp $27
+    jp z,sh_p608_close_quote
+    call sh_p608_emit
+    jp c,sh_p608_return
+    call sh_p608_advance
+    jp sh_p608_loop
+
+sh_p608_open_double:
+    call sh_p608_begin_token
+    ld a,P608_Q_DOUBLE
+    ld (p608_quote),a
+    call sh_p608_advance
+    jp sh_p608_loop
+
+sh_p608_double:
+    ld a,d
+    cp $22
+    jp z,sh_p608_close_quote
+    cp $5c
+    jp nz,sh_p608_double_plain
+    call sh_p608_advance
+    ld hl,(p608_src)
+    ld a,(hl)
+    or a
+    jp z,sh_p608_invalid
+    cp $22
+    jp z,sh_p608_double_escaped
+    cp $5c
+    jp z,sh_p608_double_escaped
+    cp '$'
+    jp z,sh_p608_double_escaped
+    ld a,$5c
+    call sh_p608_emit
+    jp c,sh_p608_return
+    jp sh_p608_loop
+sh_p608_double_escaped:
+    call sh_p608_emit
+    jp c,sh_p608_return
+    call sh_p608_advance
+    jp sh_p608_loop
+sh_p608_double_plain:
+    ld a,d
+    call sh_p608_emit
+    jp c,sh_p608_return
+    call sh_p608_advance
+    jp sh_p608_loop
+
+sh_p608_close_quote:
+    xor a
+    ld (p608_quote),a
+    call sh_p608_advance
+    jp sh_p608_loop
+
+sh_p608_separator:
+    ld a,(p608_in_token)
+    or a
+    call nz,sh_p608_end_token
+    jp c,sh_p608_return
+    call sh_p608_advance
+    jp sh_p608_loop
+
+sh_p608_eol:
+    ld a,(p608_quote)
+    or a
+    jp nz,sh_p608_invalid
+    ld a,(p608_in_token)
+    or a
+    call nz,sh_p608_end_token
+    jp c,sh_p608_return
+    ld a,(p608_count)
+    ld b,a
+    ld a,(p608_length)
+    ld c,a
+    xor a
+    ret
+
+sh_p608_begin_token:
+    ld a,(p608_in_token)
+    or a
+    ret nz
+    ld a,1
+    ld (p608_in_token),a
+    ret
+
+sh_p608_end_token:
+    xor a
+    call sh_p608_emit
+    ret c
+    xor a
+    ld (p608_in_token),a
+    ld a,(p608_count)
+    inc a
+    ld (p608_count),a
+    xor a
+    ret
+
+sh_p608_emit:
+    push af
+    ld a,(p608_length)
+    cp P607_LINE_MAX+1
+    jp nc,sh_p608_emit_overflow
+    ld e,a
+    ld d,0
+    ld hl,(p608_dst)
+    add hl,de
+    pop af
+    ld (hl),a
+    ld a,(p608_length)
+    inc a
+    ld (p608_length),a
+    xor a
+    ret
+sh_p608_emit_overflow:
+    pop af
+    ld a,E_TOOLONG
+    scf
+    ret
+
+sh_p608_advance:
+    ld hl,(p608_src)
+    inc hl
+    ld (p608_src),hl
+    ret
+
+sh_p608_invalid:
+    ld a,E_INVAL
+    scf
+sh_p608_return:
+    ret
+
+p608_src: dw 0
+p608_dst: dw 0
+p608_quote: db 0
+p608_in_token: db 0
+p608_count: db 0
+p608_length: db 0
+    ENDM
