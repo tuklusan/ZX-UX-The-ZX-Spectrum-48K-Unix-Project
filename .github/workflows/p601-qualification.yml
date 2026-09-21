@@ -10,7 +10,7 @@
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
 
-name: P6.01 PID1 shell entry qualification
+name: P6.01 qualification
 
 on:
   workflow_dispatch:
@@ -38,6 +38,7 @@ jobs:
           git diff --name-only "$P601_BASE" HEAD | sort > /tmp/p601-changed
           printf '%s\n' \
             .github/workflows/p601-qualification.yml \
+            .github/workflows/phase6-step-admission.yml \
             v1/src/kernel/process.asm \
             v1/src/shell/sh.asm \
             v1/tools-host/test-driver/phase6_pid1.py \
