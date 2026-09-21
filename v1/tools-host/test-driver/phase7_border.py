@@ -47,8 +47,8 @@ def _source(root:Path):
     start=gfx.index("zx48_gfx_border:"); end=gfx.index("zx48_gfx_bad:",start); b=gfx[start:end]
     return [
       {"name":"canonical-p708-present","passed":"## P7.08 - SYS_GFX_BORDER via central ULA shadow" in plan},
-      {"name":"border-validates-reserved-h-and-color-before-commit","passed":b.index("or a")<b.index("jp zx48_ula_set_border") and b.index("cp 8")<b.index("jp zx48_ula_set_border")},
-      {"name":"border-delegates-only-to-central-ula-owner","passed":"jp zx48_ula_set_border" in b and "out " not in b.lower()},
+      {"name":"border-validates-reserved-h-and-color-before-commit","passed":b.index("or a")<b.index("call zx48_ula_set_border") and b.index("cp 8")<b.index("jp zx48_ula_set_border")},
+      {"name":"border-delegates-only-to-central-ula-owner","passed":"call zx48_ula_set_border" in b and "out " not in b.lower()},
       {"name":"central-border-update-preserves-nonborder-shadow-bits","passed":"and $f8" in ula and "or b" in ula and "jr zx48_ula_commit" in ula},
       {"name":"single-production-ula-output-owner","passed":len(direct)==1 and direct[0][0]=="ula_io.asm"},
       {"name":"ula-shadow-and-port-committed-together","passed":"ld (ula_shadow),a\n    out (ULA_PORT),a" in ula},
