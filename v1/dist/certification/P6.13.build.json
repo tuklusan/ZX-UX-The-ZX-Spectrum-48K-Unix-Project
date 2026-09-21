@@ -1,0 +1,63 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "all-core-builtins-present",
+      "passed": true
+    },
+    {
+      "name": "exact-bytewise-no-casefold",
+      "passed": true
+    },
+    {
+      "name": "rom-hook-table-explicit",
+      "passed": true
+    },
+    {
+      "name": "rom-hooks-not-in-core-table",
+      "passed": true
+    },
+    {
+      "name": "unknown-is-enoent",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p613-fixture.lst",
+        "--sym=p613-fixture.sym",
+        "p613-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2182 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p613-builtins.mex1": "d022ab6f56acf8f3be66d3101e3fbdf1483be11c0f64348a8b2311e6269780ba",
+    "v1/build/p613-builtins.tap": "35c3edea0a47def550b24e4446ba9ecda16b027dc00a567cd2fc1dab53a02383",
+    "v1/dist/certification/P6.12.build.json": "ed5ffb8928a9fa44038b3a1d261817f2bcc3148f8b22832e414c87cdcb19c8ec",
+    "v1/dist/certification/P6.12.test.json": "5290d69b2867a498e67ee79d859b6b93f6b6d22913293a3615ebd794503e9ad4",
+    "v1/dist/media/P6.12/manifest.json": "578ed94039b6e14a90d810aa6dabcc020cea3a05126f1b65809af1121872c73c",
+    "v1/src/shell/sh.asm": "984fbbdcc6030b0505a31208eafd28f57ed2f94f3457a8602b017129506ed278",
+    "v1/tools-host/test-driver/phase6_builtins.py": "a5dc39ff3460c9e4e44481e22681751df20582199aec5ee4d37ae28c0c038527",
+    "v1/tools-host/test-driver/run.py": "2ead203f0981ce47fef5b82fce9706acdf15542117e041218744d52a16265136"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P6.12": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "46ec3edcea5fa1da3fd11e2022c471271213e6cc",
+  "status": "PASS",
+  "step": "P6.13",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
