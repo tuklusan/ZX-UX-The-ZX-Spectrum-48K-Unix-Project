@@ -1,0 +1,53 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "left-to-right-callback-table",
+      "passed": true
+    },
+    {
+      "name": "status-updated-each-unit",
+      "passed": true
+    },
+    {
+      "name": "failure-does-not-short-circuit",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p619-fixture.lst",
+        "--sym=p619-fixture.sym",
+        "p619-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 6,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2740 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/dist/certification/P6.18.build.json": "acf60a20464bc668b1e9610e8493f8113eaa4d5388348a194e22c36baf00073c",
+    "v1/dist/certification/P6.18.test.json": "afa305099e0c948b778f86f4ebbb7456ee53a544999eb6c4f31e00f933226d56",
+    "v1/dist/media/P6.18/manifest.json": "bedaa9e3373ddf7d9f9a9d710933224a0abeb17a671e88017063d72fa300f302",
+    "v1/src/shell/sh.asm": "08525147c96e480bc6a0da310eec2992c640db7afacdb4843071f408c989bceb",
+    "v1/tools-host/test-driver/phase6_sequence.py": "bf408e037be228c8d0503a7de21d19532027d8750661e604f97e0960ff1493d8",
+    "v1/tools-host/test-driver/run.py": "c7c4c68bf30a8c5f898895b48b59c7d5dab7888b0574206f00e143bf0f38f381"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P6.18": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "1f1f6f408827d3daf6effc174437d6b2856b2a37",
+  "status": "PASS",
+  "step": "P6.19",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
