@@ -140,6 +140,8 @@ p621_log_index: db 0
 p621_spawn_count: db 0
     ORG $E080
 p621_fail_spawn: db 0
+p621_gate_end:
+    SAVEBIN "p621-gateway.bin",p621_gate,p621_gate_end-p621_gate
 """,encoding="utf-8",newline="\n")
     gr=run_command([asm,"--nologo","--lst=p621-gateway.lst","--sym=p621-gateway.sym","p621-gateway.asm"],cwd=build,timeout_seconds=30)
     require(not gr.timed_out and gr.exit_code==0,f"P6.21 gateway assembly failed: {gr.stderr or gr.stdout}")
