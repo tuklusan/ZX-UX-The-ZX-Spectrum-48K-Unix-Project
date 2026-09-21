@@ -1,0 +1,100 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p707-present",
+      "passed": true
+    },
+    {
+      "name": "selectors-zero-through-five-only",
+      "passed": true
+    },
+    {
+      "name": "ink-paper-native-domain-zero-through-seven",
+      "passed": true
+    },
+    {
+      "name": "bright-flash-inverse-over-domain-zero-one",
+      "passed": true
+    },
+    {
+      "name": "validation-precedes-state-commit",
+      "passed": true
+    },
+    {
+      "name": "hardware-attribute-pack-is-ink-paper-bright-flash",
+      "passed": true
+    },
+    {
+      "name": "tty64-adjacent-columns-share-one-hardware-cell",
+      "passed": true
+    },
+    {
+      "name": "shared-console-graphics-contract-recorded",
+      "passed": true
+    },
+    {
+      "name": "fuse-all-native-attr-values-publish-exact-shared-state",
+      "passed": true
+    },
+    {
+      "name": "fuse-invalid-selector-values-fail-before-state-mutation",
+      "passed": true
+    },
+    {
+      "name": "fuse-tty64-logical-column-pair-shares-exact-one-hardware-attribute-cell",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 37,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nkernel.asm(87): warning[shortblock]: init data for block truncated to length: 0\nPass 3 complete\nErrors: 0, warnings: 1, compiled: 14897 lines, work time: 0.036 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p707-attr.lst",
+        "--sym=p707-attr.sym",
+        "p707-attr.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 10,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 3214 lines, work time: 0.009 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "1bcb1862955372e15814296fd248795b3de41baac5596baecd5d5f155ed92a67",
+    "v1/build/p707-attr.bin": "6c0cfc379c38d50fbab91569975f9a5b345ce44cd235fe5f427dbda9225bd859",
+    "v1/src/kernel/graphics.asm": "89796133c0230aa21b20defaa8746ffbab79ecd42ac9583c666273a72216fda3",
+    "v1/src/kernel/tty64.asm": "7890a23ed2625ce7dda4d0629bf85240e748bf5a27a30dac53279c0f0b108344",
+    "v1/tools-host/test-driver/phase7_attr.py": "0145754d8134eeb327677879b5fd2ce16fce58ac5e498f3862b6b52ffb374357",
+    "v1/tools-host/test-driver/run.py": "4ed03d33e1f9f0f3cfcc6d5c4ee4d5858f0cf1617e896cf03ee9642fab7066c4"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P7.06": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "d3233971375e544c72cbc1e2af3519eed0344d94",
+  "status": "PASS",
+  "step": "P7.07",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
