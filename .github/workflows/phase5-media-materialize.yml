@@ -70,25 +70,25 @@ jobs:
 
           tzx_sha="$(sha256sum v1/dist/cassette/phase-5/phase5-fixture.tzx | awk '{print $1}')"
           cat > v1/dist/cassette/phase-5/README.md <<EOF
-# ZX-UX Phase-5 cassette media
+          # ZX-UX Phase-5 cassette media
 
-These files preserve the cassette media exercised by the certified Phase-5 implementation.
+          These files preserve the cassette media exercised by the certified Phase-5 implementation.
 
-They are certification/test media, not a final ZX-UX release image. P5.15 explicitly
-certified the fixture as non-final.
+          They are certification/test media, not a final ZX-UX release image. P5.15 explicitly
+          certified the fixture as non-final.
 
-| File | SHA-256 | Provenance |
-| --- | --- | --- |
-| `phase5-fixture.tap` | `$ZXUX_P515_TAP_SHA256` | P5.15/P5.18 deterministic Phase-5 fixture |
-| `phase5-fixture.tzx` | `$tzx_sha` | P5.15 fixture converted by the pinned FUSE `tapeconv` tool |
-| `phase5-fixture-roundtrip.tap` | `$ZXUX_P515_TAP_SHA256` | P5.15 TZX-to-TAP roundtrip; byte-identical to the fixture TAP |
-| `p516-roundtrip.tap` | `$ZXUX_P516_TAP_SHA256` | P5.16 RAW TXT/BIN/UDG roundtrip cassette |
+          | File | SHA-256 | Provenance |
+          | --- | --- | --- |
+          | `phase5-fixture.tap` | `$ZXUX_P515_TAP_SHA256` | P5.15/P5.18 deterministic Phase-5 fixture |
+          | `phase5-fixture.tzx` | `$tzx_sha` | P5.15 fixture converted by the pinned FUSE `tapeconv` tool |
+          | `phase5-fixture-roundtrip.tap` | `$ZXUX_P515_TAP_SHA256` | P5.15 TZX-to-TAP roundtrip; byte-identical to the fixture TAP |
+          | `p516-roundtrip.tap` | `$ZXUX_P516_TAP_SHA256` | P5.16 RAW TXT/BIN/UDG roundtrip cassette |
 
-The admitted Phase-5 certification evidence remains unchanged. These files were
-materialized after certification from the already-certified implementation and
-verified against the SHA-256 identities recorded by P5.15/P5.16 where those
-identities exist.
-EOF
+          The admitted Phase-5 certification evidence remains unchanged. These files were
+          materialized after certification from the already-certified implementation and
+          verified against the SHA-256 identities recorded by P5.15/P5.16 where those
+          identities exist.
+          EOF
 
       - name: Three unchanged media scans
         run: |
