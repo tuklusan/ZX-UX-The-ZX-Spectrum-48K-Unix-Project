@@ -35,6 +35,7 @@ jobs:
           printf '%s\n' \
             .github/workflows/p708-qualification.yml \
             v1/src/kernel/graphics.asm \
+            v1/tools-host/test-driver/phase1_ula.py \
             v1/tools-host/test-driver/phase7_border.py \
             v1/tools-host/test-driver/run.py | sort > /tmp/expected
           diff -u /tmp/expected /tmp/changed
@@ -51,7 +52,7 @@ jobs:
             ./tools/check_project_policy.py
             test -z "$(git status --porcelain)"
             test "$(git rev-parse 'HEAD^{tree}')" = "$tree"
-            d="$(sha256sum v1/src/kernel/graphics.asm v1/src/kernel/ula_io.asm v1/tools-host/test-driver/phase7_border.py v1/tools-host/test-driver/run.py .github/workflows/p708-qualification.yml | sha256sum | awk '{print $1}')"
+            d="$(sha256sum v1/src/kernel/graphics.asm v1/src/kernel/ula_io.asm v1/tools-host/test-driver/phase1_ula.py v1/tools-host/test-driver/phase7_border.py v1/tools-host/test-driver/run.py .github/workflows/p708-qualification.yml | sha256sum | awk '{print $1}')"
             if test -z "$baseline"; then baseline="$d"; else test "$baseline" = "$d"; fi
           done
       - name: Mandatory prerequisite gates
