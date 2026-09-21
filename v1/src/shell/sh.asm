@@ -1802,3 +1802,252 @@ p613_rom_hook_table:
 p613_query_ptr: dw 0
 p613_query_len: db 0
     ENDM
+
+; P6.14 exact external PATH lookup. PATH search skips unusable components and
+; wrong-type candidates; direct slash paths bypass builtin/PATH policy.
+    MACRO EMIT_P614_PATH_ROUTINES
+P614_PATH_MAX            EQU 31
+P614_STAT_TYPE           EQU 0
+P614_STAT_STATE          EQU 7
+
+; HL=NUL command token, IX=NUL PATH value (IX=0 means unset), DE=output >=32.
+; Success writes resolved candidate to DE and returns C=namespace state.
+sh_p614_lookup_external:
+    ld (p614_cmd_ptr),hl
+    ld (p614_path_ptr),ix
+    ld (p614_out_ptr),de
+    xor a
+    ld (p614_cmd_len),a
+    ld (p614_has_slash),a
+
+    ld hl,(p614_cmd_ptr)
+sh_p614_count_cmd:
+    ld a,(hl)
+    or a
+    jr z,sh_p614_cmd_count_done
+    cp '/'
+    jr nz,sh_p614_cmd_no_slash
+    ld a,1
+    ld (p614_has_slash),a
+sh_p614_cmd_no_slash:
+    ld a,(p614_cmd_len)
+    cp P614_PATH_MAX
+    jp nc,sh_p614_cmd_too_long
+    inc a
+    ld (p614_cmd_len),a
+    inc hl
+    jr sh_p614_count_cmd
+
+sh_p614_cmd_count_done:
+    ld a,(p614_cmd_len)
+    or a
+    jp z,sh_p614_noent
+    ld a,(p614_has_slash)
+    or a
+    jp nz,sh_p614_direct
+
+    ld hl,(p614_path_ptr)
+    ld a,h
+    or l
+    jp z,sh_p614_noent
+    ld a,(hl)
+    or a
+    jp z,sh_p614_noent
+
+sh_p614_component_start:
+    ld hl,(p614_path_ptr)
+    xor a
+    ld (p614_comp_len),a
+    ld (p614_comp_over),a
+    ld de,p614_component
+
+sh_p614_component_scan:
+    ld a,(hl)
+    cp ':'
+    jr z,sh_p614_component_end_colon
+    or a
+    jr z,sh_p614_component_end_nul
+    ld b,a
+    ld a,(p614_comp_len)
+    cp P614_PATH_MAX
+    jr nc,sh_p614_component_mark_over
+    ld a,b
+    ld (de),a
+    inc de
+    ld a,(p614_comp_len)
+    inc a
+    ld (p614_comp_len),a
+    jr sh_p614_component_advance
+sh_p614_component_mark_over:
+    ld a,1
+    ld (p614_comp_over),a
+sh_p614_component_advance:
+    inc hl
+    jr sh_p614_component_scan
+
+sh_p614_component_end_colon:
+    ld a,1
+    ld (p614_more),a
+    inc hl
+    ld (p614_next_path),hl
+    jr sh_p614_component_finish
+sh_p614_component_end_nul:
+    xor a
+    ld (p614_more),a
+    ld (p614_next_path),hl
+
+sh_p614_component_finish:
+    xor a
+    ld (de),a
+    ld a,(p614_comp_over)
+    or a
+    jr nz,sh_p614_component_skip
+
+    ld a,(p614_comp_len)
+    or a
+    jr nz,sh_p614_component_nonempty
+    ld hl,p614_component
+    ld (hl),'.'
+    inc hl
+    xor a
+    ld (hl),a
+    ld a,1
+    ld (p614_comp_len),a
+sh_p614_component_nonempty:
+    ; Combined raw candidate must fit the 31-byte resolved-path limit.
+    ld a,(p614_comp_len)
+    ld b,a
+    ld a,(p614_cmd_len)
+    add a,b
+    inc a
+    cp P614_PATH_MAX+1
+    jr nc,sh_p614_component_skip
+
+    ld hl,p614_component
+    call sh_p614_stat
+    jr c,sh_p614_component_skip
+    ld a,(p614_statout+P614_STAT_TYPE)
+    cp OBJ_DIR
+    jr nz,sh_p614_component_skip
+
+    call sh_p614_build_candidate
+    ld hl,p614_candidate
+    call sh_p614_stat
+    jr c,sh_p614_component_skip
+    ld a,(p614_statout+P614_STAT_TYPE)
+    cp OBJ_BIN
+    jr nz,sh_p614_component_skip
+    ld a,(p614_statout+P614_STAT_STATE)
+    ld c,a
+    ld hl,p614_candidate
+    jp sh_p614_commit_path
+
+sh_p614_component_skip:
+    ld a,(p614_more)
+    or a
+    jp z,sh_p614_noent
+    ld hl,(p614_next_path)
+    ld (p614_path_ptr),hl
+    jp sh_p614_component_start
+
+; Direct slash path: validate existence/normalized-length through SYS_STAT, but
+; deliberately do not reject non-BIN here; SYS_SPAWN owns the E_FORMAT result.
+sh_p614_direct:
+    ld hl,(p614_cmd_ptr)
+    ld de,p614_candidate
+    ld b,0
+sh_p614_direct_copy:
+    ld a,(hl)
+    ld (de),a
+    inc de
+    inc hl
+    or a
+    jr z,sh_p614_direct_stat
+    inc b
+    ld a,b
+    cp P614_PATH_MAX+1
+    jp nc,sh_p614_toolong
+    jr sh_p614_direct_copy
+sh_p614_direct_stat:
+    ld hl,p614_candidate
+    call sh_p614_stat
+    ret c
+    ld a,(p614_statout+P614_STAT_STATE)
+    ld c,a
+    ld hl,p614_candidate
+    jp sh_p614_commit_path
+
+sh_p614_build_candidate:
+    ld hl,p614_component
+    ld de,p614_candidate
+sh_p614_build_component:
+    ld a,(hl)
+    or a
+    jr z,sh_p614_build_slash
+    ld (de),a
+    inc hl
+    inc de
+    jr sh_p614_build_component
+sh_p614_build_slash:
+    ld a,'/'
+    ld (de),a
+    inc de
+    ld hl,(p614_cmd_ptr)
+sh_p614_build_cmd:
+    ld a,(hl)
+    ld (de),a
+    inc hl
+    inc de
+    or a
+    jr nz,sh_p614_build_cmd
+    ret
+
+sh_p614_stat:
+    ld (p614_stat_req+0),hl
+    ld de,p614_statout
+    ld (p614_stat_req+2),de
+    ld hl,p614_stat_req
+    ld a,SYS_STAT
+    jp SYSCALL_GATEWAY
+
+sh_p614_commit_path:
+    ld de,(p614_out_ptr)
+sh_p614_commit_loop:
+    ld a,(hl)
+    ld (de),a
+    inc hl
+    inc de
+    or a
+    jr nz,sh_p614_commit_loop
+    xor a
+    ret
+
+sh_p614_cmd_too_long:
+    ld a,(p614_has_slash)
+    or a
+    jr nz,sh_p614_toolong
+    ; No slash: every PATH candidate is necessarily overlong, so search fails.
+    jr sh_p614_noent
+sh_p614_toolong:
+    ld a,E_TOOLONG
+    scf
+    ret
+sh_p614_noent:
+    ld a,E_NOENT
+    scf
+    ret
+
+p614_cmd_ptr: dw 0
+p614_path_ptr: dw 0
+p614_next_path: dw 0
+p614_out_ptr: dw 0
+p614_cmd_len: db 0
+p614_comp_len: db 0
+p614_has_slash: db 0
+p614_comp_over: db 0
+p614_more: db 0
+p614_component: defs 32,0
+p614_candidate: defs 32,0
+p614_stat_req: defs 4,0
+p614_statout: defs 10,0
+    ENDM
