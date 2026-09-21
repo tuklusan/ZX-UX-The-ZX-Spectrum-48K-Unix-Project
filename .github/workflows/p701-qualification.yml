@@ -37,6 +37,7 @@ jobs:
             .github/workflows/p701-qualification.yml \
             .github/workflows/phase7-admission-validation.yml \
             .github/workflows/phase7-step-admission.yml \
+            tools/check_media_retention.py \
             v1/src/kernel/graphics.asm \
             v1/src/kernel/syscall.asm \
             v1/tools-host/test-driver/phase7_graphics_abi.py \
@@ -61,6 +62,7 @@ jobs:
               .github/workflows/p701-qualification.yml \
               .github/workflows/phase7-admission-validation.yml \
               .github/workflows/phase7-step-admission.yml \
+              tools/check_media_retention.py \
               v1/dist/certification/phase-6.json | sha256sum | awk '{print $1}')"
             if test -z "$baseline"; then baseline="$digest"; else test "$baseline" = "$digest"; fi
           done
