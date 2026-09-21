@@ -18,17 +18,16 @@ This document defines the mandatory development, quality, license, project-polic
 
 The order is deliberate. Disk-copy inspection comes first. License and prohibited-name enforcement follow. The programmer/author and adversarial reviewer then complete a dynamic handshake immediately before check-in. Direct check-in to `main` is the normal path; routine branch-and-merge staging is discouraged for this single-developer project. Automated runner validation follows non-document check-ins whose changed paths can affect that runner's scope; documentation-only pushes and control-plane-only workflow changes are excluded from heavyweight runners at trigger time.
 
-### 1.1 Revision authority epochs and current execution boundary
+### 1.1 Revision authority epochs and certification state
 
 ZX-UX preserves authority and certification history across revision epochs.
 
 1. REV12 / REV03 remain the immutable historical authorities for completed Phase 2. Admitted E0/P0/P1/P2 evidence remains historical read-only evidence under that epoch.
 2. REV13 / REV04, REV14 / REV05, and REV15 / REV06 are frozen, never-activated historical prospective pairs and MUST NOT be edited or activated.
 3. `docs/01-ZX-UX-ARCHITECTURE-REV16.md` and `docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md` are the active authorities. Their frozen identities remain REV16 SHA-256 `24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c` and REV07 SHA-256 `840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc`. They became active only after admitted `R16.00` bridge evidence and its mandatory validations PASSed. Their bytes remain immutable.
-4. Phase 3 and Phase 4 were executed under REV16 / REV07. Phase 4 is durably complete: `v1/dist/certification/phase-4.json` records PASS and the repository has the immutable `PHASE-4-COMPLETE` checkpoint tag.
-5. Phase 5 is the next canonical phase. `P5.01` is the first Phase-5 step. No Phase-5 implementation work begins until explicitly instructed; once begun, execute REV07 Phase 5 in exact canonical step order and remain fail-closed on qualification, evidence admission, and mandatory admission-triggered validation gates.
-6. Previously admitted certification evidence is immutable. Historical certification workflows may re-run regression logic, but they must not regenerate, rewrite, relabel, or recommit admitted historical evidence.
-7. Updating this workflow document is procedural only. It never changes canonical architecture/implementation requirements or reinterprets earlier certification.
+4. Current phase and step position are determined from the durable certification/admission records together with the canonical REV07 sequence. This workflow does not duplicate or predict the next phase or step.
+5. Previously admitted certification evidence is immutable. Historical certification workflows may re-run regression logic, but they must not regenerate, rewrite, relabel, or recommit admitted historical evidence.
+6. Updating this workflow document is procedural only. It never changes canonical architecture/implementation requirements or reinterprets earlier certification.
 
 
 ## 2. Standard project quality procedure — SoP Scan
