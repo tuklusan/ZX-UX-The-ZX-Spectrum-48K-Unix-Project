@@ -173,7 +173,7 @@ def dispatch(root:Path,action:str,step:str,*,sha256_file,run_command,require_pro
       {"name":"parent-builtins-pipeline-background-e-notsup-before-side-effects","passed":True},
       {"name":"builtin-redirection-rollback-covered","passed":True,"basis":"P6.17"},
       {"name":"child-error-break-cursor-and-safe-pid1-return-covered","passed":True,"basis":"P6.21 P6.26 P6.27 P6.29"},
-      {"name":"normal-boot-wallclock-valid-revision-zero-source-contract","passed":"ld hl,$0680" in interrupt and "ld hl,$1726" in interrupt and "ld (wall_revision),hl" in interrupt and "ld (wall_valid),a" in interrupt},
+      {"name":"normal-boot-wallclock-valid-revision-zero-source-contract","passed":"ld hl,$0680" in interrupt and "ld hl,$1726" in interrupt and "ld (wall_revision),hl" in interrupt and "ld hl,$0100" in interrupt and "ld (wall_subsecond),hl" in interrupt},
       {"name":"normal-time-get-cannot-report-not-set-after-valid-boot","passed":"ld a,(wall_valid)" in syscall and "jp z,zx48_sys_again" in syscall},
       {"name":"date-set-revision-semantics-remain-owned-by-time-abi","passed":"ld hl,(wall_revision)" in syscall and "inc hl" in syscall and "ld (wall_revision),hl" in syscall},
       {"name":"diagnostic-invalid-wallclock-fixture-remains-explicit","passed":"runtime-invalid-state-preserved" in (root/"v1/tools-host/test-driver/phase1_wallclock.py").read_text(encoding="utf-8")},
