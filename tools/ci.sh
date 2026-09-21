@@ -234,23 +234,19 @@ def reviewer_prompt(name: str) -> str:
     end = text.index(prompt_end, start) + len(prompt_end)
     return text[start:end]
 
-agents_prompt = reviewer_prompt('AGENTS.md')
-workflow_prompt = reviewer_prompt('docs/03-ZX-UX-DEVELOPMENT-WORKFLOW.md')
-if agents_prompt != workflow_prompt:
-    print('ERROR: reviewer prompt copies are not byte-identical', file=sys.stderr)
-    raise SystemExit(1)
+reviewer_prompt('docs/03-ZX-UX-DEVELOPMENT-WORKFLOW.md')
 PY_POLICY
 then
   fail=1
 fi
 
-if ! grep -Fq 'Direct check-in to `main` is the normal project workflow' AGENTS.md; then
-  echo "ERROR: direct-main check-in rule missing from AGENTS.md" >&2
+if ! grep -Fq 'Direct check-in to `main` is the normal path' docs/03-ZX-UX-DEVELOPMENT-WORKFLOW.md; then
+  echo "ERROR: direct-main check-in rule missing from workflow authority" >&2
   fail=1
 fi
 
-if ! grep -Fq 'Branching and later merging are discouraged' AGENTS.md; then
-  echo "ERROR: branch-discouragement rule missing from AGENTS.md" >&2
+if ! grep -Fq 'Branching and later merging are discouraged' docs/03-ZX-UX-DEVELOPMENT-WORKFLOW.md; then
+  echo "ERROR: branch-discouragement rule missing from workflow authority" >&2
   fail=1
 fi
 

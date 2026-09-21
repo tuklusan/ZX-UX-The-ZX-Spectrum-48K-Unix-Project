@@ -160,7 +160,6 @@ def _assemble_fixture(
         "    ld a,E_NOTSUP\n"
         "    scf\n"
         "    ret\n"
-        "syscall_arg_hl: dw 0\n"
         "p209_allocator_state: defs 16,$A5\n"
         "p209_open_state: defs 16,$5A\n"
         "process_table: defs MAX_PROCESSES*PROC_DESC_SIZE,0\n"

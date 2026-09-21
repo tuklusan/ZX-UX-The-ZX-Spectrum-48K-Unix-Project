@@ -191,7 +191,7 @@ def _contracts(root: Path) -> list[dict[str, object]]:
     abi = " ".join((root / "v1/docs/abi.md").read_text(encoding="utf-8").lower().replace("`", "").split())
     time_get = _time_get_ok(syscall)
     time_set = _time_set_ok(syscall)
-    info_table = _block(syscall, "zx48_sys_info_table:", "syscall_user_sp:")
+    info_table = _block(syscall, "zx48_sys_info_table:", "emit_spawn_preflight_routines")
     assertions = [
         {"name": "canonical-time-syscall-numbers", "passed": "sys_time_get             equ $63" in include and "sys_time_set             equ $64" in include},
         {"name": "canonical-time-error-numbers", "passed": "e_inval                  equ $01" in include and "e_perm                   equ $07" in include and "e_again                  equ $0d" in include},
