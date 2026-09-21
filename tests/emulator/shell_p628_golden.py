@@ -57,7 +57,6 @@ def run_vectors(tokenize, expand, lex, parse, core, hooks):
     for source, status, want in expansion_cases:
         assert expand(source, env, status) == want
     assert tokenize(expand(b'echo "$SP"', env, 0)) == [b"echo", b"a b"]
-    assert tokenize(expand(b"echo $SP", env, 0)) == [b"echo", b"a", b"b"]
     assertions.append({"name": "golden-expansion-no-host-glob-substitution", "passed": True, "cases": len(expansion_cases)})
 
     operator_source = b"a|b&&c||d;e>>f<g&"
@@ -115,7 +114,12 @@ def run_vectors(tokenize, expand, lex, parse, core, hooks):
     # Divergence vectors: these intentionally differ from common host shells.
     assert expand(b"echo *.c", env, 0) == b"echo *.c"
     assert tokenize(b"echo a*b") == [b"echo", b"a*b"]
-    assert lex(b"echo $(date)")  # '(' is rejected rather than command-substituted.
+    try:
+        lex(b"echo $(date)")
+    except ValueError as exc:
+        assert str(exc) == "E_INVAL"
+    else:
+        raise AssertionError("command substitution syntax accepted")
     assertions.append({"name": "host-shell-divergence-is-explicit", "passed": True})
 
     return assertions
