@@ -50,7 +50,7 @@ def dispatch(root:Path,action:str,step:str,*,sha256_file,run_command,require_pro
     syscall=(root/"v1/src/kernel/syscall.asm").read_text()
     shell=(root/"v1/src/shell/sh.asm").read_text()
     interrupt=(root/"v1/src/kernel/interrupt.asm").read_text()
-    boundary=process.split("zx48_p626_boundary:",1)[1].split("zx48_process_wait:",1)[0]
+    boundary=syscall.split("zx48_p626_boundary:",1)[1].split("zx48_syscall_impl:",1)[0]
     kill=shell.split("MACRO EMIT_P626_KILL_ROUTINES",1)[1].split("ENDM",1)[0]
     assertions=[
       {"name":"im2-remains-producer-only","passed":"ld (break_pending),a" in interrupt and "zx48_process_kill" not in interrupt and "zx48_schedule" not in interrupt.split("zx48_interrupt_break:",1)[1].split("zx48_interrupt_done:",1)[0]},
