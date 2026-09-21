@@ -1582,3 +1582,77 @@ sh_p610_grouping:
     scf
     ret
     ENDM
+
+; P6.11 precedence/binding helpers for the integrated parser.
+    MACRO EMIT_P611_BINDING_ROUTINES
+P611_PREC_BG            EQU 0
+P611_PREC_SEMI          EQU 1
+P611_PREC_LOGIC         EQU 2
+P611_PREC_PIPE          EQU 3
+P611_PREC_REDIR         EQU 4
+
+; A=P610 operator token. Carry set means not a parser operator.
+; C=precedence where larger binds more tightly.
+sh_p611_precedence:
+    cp P610_OP_OUT
+    jr z,sh_p611_redir
+    cp P610_OP_APPEND
+    jr z,sh_p611_redir
+    cp P610_OP_IN
+    jr z,sh_p611_redir
+    cp P610_OP_PIPE
+    jr z,sh_p611_pipe
+    cp P610_OP_AND
+    jr z,sh_p611_logic
+    cp P610_OP_OR
+    jr z,sh_p611_logic
+    cp P610_OP_SEMI
+    jr z,sh_p611_semi
+    cp P610_OP_BG
+    jr z,sh_p611_bg
+    ld a,E_INVAL
+    scf
+    ret
+sh_p611_redir:
+    ld c,P611_PREC_REDIR
+    xor a
+    ret
+sh_p611_pipe:
+    ld c,P611_PREC_PIPE
+    xor a
+    ret
+sh_p611_logic:
+    ld c,P611_PREC_LOGIC
+    xor a
+    ret
+sh_p611_semi:
+    ld c,P611_PREC_SEMI
+    xor a
+    ret
+sh_p611_bg:
+    ld c,P611_PREC_BG
+    xor a
+    ret
+
+; A=nonzero if ';', '&&', or '||' already occurred on this command line.
+; B=nonzero iff '&' is the final token. Version-1 backgrounding is valid only
+; for one final complete pipeline and cannot coexist with those controls.
+sh_p611_validate_background:
+    or a
+    jr nz,sh_p611_invalid
+    ld a,b
+    or a
+    jr z,sh_p611_invalid
+    xor a
+    ret
+sh_p611_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+
+; Parenthesized grouping/subshells do not exist in version 1.
+sh_p611_reject_grouping:
+    ld a,E_INVAL
+    scf
+    ret
+    ENDM
