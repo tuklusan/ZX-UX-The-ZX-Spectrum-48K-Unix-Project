@@ -51,3 +51,68 @@ sh_p602_issue_format:
     scf
     ret
     ENDM
+
+; P6.03 exact session username validator and invalid-input reprompt.
+    MACRO EMIT_P603_LOGIN_ROUTINES
+; HL=input bytes, BC=length. Accept exactly [a-z][a-z0-9_-]{0,7}.
+sh_p603_validate_username:
+    ld a,b
+    or a
+    jr nz,sh_p603_invalid
+    ld a,c
+    or a
+    jr z,sh_p603_invalid
+    cp 9
+    jr nc,sh_p603_invalid
+    ld a,(hl)
+    cp 'a'
+    jr c,sh_p603_invalid
+    cp 'z'+1
+    jr nc,sh_p603_invalid
+    inc hl
+    dec c
+sh_p603_tail:
+    ld a,c
+    or a
+    jr z,sh_p603_valid
+    ld a,(hl)
+    cp 'a'
+    jr c,sh_p603_tail_digit
+    cp 'z'+1
+    jr c,sh_p603_tail_next
+sh_p603_tail_digit:
+    cp '0'
+    jr c,sh_p603_tail_punct
+    cp '9'+1
+    jr c,sh_p603_tail_next
+sh_p603_tail_punct:
+    cp '_'
+    jr z,sh_p603_tail_next
+    cp '-'
+    jr nz,sh_p603_invalid
+sh_p603_tail_next:
+    inc hl
+    dec c
+    jr sh_p603_tail
+sh_p603_valid:
+    xor a
+    ret
+sh_p603_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+
+; IX points at exact "login: " prompt. Invalid usernames are visibly reprompted.
+sh_p603_validate_or_reprompt:
+    call sh_p603_validate_username
+    ret nc
+    push ix
+    pop hl
+    ld bc,P602_LOGIN_LENGTH
+    ld a,SYS_CON_WRITE
+    call SYSCALL_GATEWAY
+    ret c
+    ld a,E_INVAL
+    scf
+    ret
+    ENDM
