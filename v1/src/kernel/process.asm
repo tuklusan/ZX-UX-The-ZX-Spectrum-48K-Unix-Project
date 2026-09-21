@@ -331,11 +331,8 @@ zx48_process_wake_parent:
 zx48_process_kill:
     cp 2
     jr c,zx48_process_perm
-    call zx48_process_lookup
+    call zx48_process_live_lookup
     ret c
-    ld a,(ix+PROC_STATE)
-    cp PROC_ZOMBIE
-    jp z,zx48_process_noent
     ld a,(current_pid)
     cp 1
     jr z,zx48_process_kill_ok
