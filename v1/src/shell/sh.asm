@@ -2385,3 +2385,41 @@ p618_output_handle: db HANDLE_FREE
 p618_error: db 0
 p618_tape_path: db '/dev/tape',0
     ENDM
+
+; P6.19 semicolon sequencing: all complete foreground units execute left-to-right.
+    MACRO EMIT_P619_SEQUENCE_ROUTINES
+; HL=table of u16 callback addresses, B=count, IX=status byte. Callback A=status.
+sh_p619_sequence:
+    ld a,b
+    or a
+    jr z,sh_p619_invalid
+    ld (p619_table),hl
+    ld a,b
+    ld (p619_left),a
+sh_p619_next:
+    ld hl,(p619_table)
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    inc hl
+    ld (p619_table),hl
+    push de
+    ld hl,sh_p619_return
+    ex (sp),hl
+    jp (hl)
+sh_p619_return:
+    ld (ix+0),a
+    ld a,(p619_left)
+    dec a
+    ld (p619_left),a
+    jr nz,sh_p619_next
+    ld a,(ix+0)
+    or a
+    ret
+sh_p619_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+p619_table: dw 0
+p619_left: db 0
+    ENDM
