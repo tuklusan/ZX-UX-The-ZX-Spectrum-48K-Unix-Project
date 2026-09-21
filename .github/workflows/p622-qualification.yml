@@ -25,7 +25,12 @@ jobs:
         run: |
           set -euo pipefail
           git diff --name-only "$P622_BASE" HEAD | sort > /tmp/p622-changed
-          printf '%s\n' .github/workflows/p622-qualification.yml v1/src/kernel/console.asm v1/src/shell/sh.asm v1/tools-host/test-driver/phase6_tty_owner.py v1/tools-host/test-driver/run.py | sort > /tmp/p622-expected
+          printf '%s\n' \
+            .github/workflows/p622-qualification.yml \
+            v1/src/kernel/console.asm \
+            v1/src/shell/sh.asm \
+            v1/tools-host/test-driver/phase6_tty_owner.py \
+            v1/tools-host/test-driver/run.py | sort > /tmp/p622-expected
           diff -u /tmp/p622-expected /tmp/p622-changed
           git diff --check "$P622_BASE" HEAD
           test -z "$(git status --porcelain)"
