@@ -14,6 +14,7 @@
 from __future__ import annotations
 from pathlib import Path
 from driver_core import DriverError
+import phase6_issue
 
 class P608Error(DriverError): pass
 def require(v,m):
@@ -83,6 +84,13 @@ p608_end:
 """,encoding="utf-8",newline="\n")
     sr=run_command([asm,"--nologo","--lst=p608-tokenizer.lst","--sym=p608-tokenizer.sym","p608-tokenizer.asm"],cwd=build,timeout_seconds=30)
     require(not sr.timed_out and sr.exit_code==0,f"P6.08 tokenizer assembly failed: {sr.stderr or sr.stdout}")
+    image=(build/"p608-tokenizer.bin").read_bytes()
+    mex=phase6_issue.mex1(image)
+    maketap=phase6_issue.load_module(root/"v1/tools-host/maketap/maketap.py","zxux_p608_maketap")
+    tap=maketap.m48o_blocks(maketap.M48OObject("sh",maketap.M48O_BIN,maketap.DIR_BIN,mex))
+    tp=build/"p608-tokenizer.tap"
+    tp.write_bytes(tap)
+    require(tap==maketap.m48o_blocks(maketap.M48OObject("sh",maketap.M48O_BIN,maketap.DIR_BIN,mex)),"P6.08 TAP rebuild mismatch")
     if action=="test":
         corpus=[
           (b"echo alpha beta",[b"echo",b"alpha",b"beta"]),
@@ -113,6 +121,7 @@ p608_end:
     hashes={
       "v1/src/shell/sh.asm":sha256_file(sp),
       "v1/docs/shell.md":sha256_file(doc),
+      "v1/build/p608-tokenizer.tap":sha256_file(tp),
       "v1/tools-host/test-driver/phase6_tokenizer.py":sha256_file(root/"v1/tools-host/test-driver/phase6_tokenizer.py"),
       "v1/tools-host/test-driver/run.py":sha256_file(root/"v1/tools-host/test-driver/run.py"),
       "v1/dist/certification/P6.07.build.json":sha256_file(root/"v1/dist/certification/P6.07.build.json"),
