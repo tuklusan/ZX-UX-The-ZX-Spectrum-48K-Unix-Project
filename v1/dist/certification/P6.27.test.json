@@ -1,0 +1,83 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "foreground-wrapper-hides-before-launch",
+      "passed": true
+    },
+    {
+      "name": "foreground-wrapper-restores-after-all-launch-returns",
+      "passed": true
+    },
+    {
+      "name": "snapshot-public-mode-and-shape",
+      "passed": true
+    },
+    {
+      "name": "hide-uses-public-shape-off",
+      "passed": true
+    },
+    {
+      "name": "restore-mode-only-if-changed",
+      "passed": true
+    },
+    {
+      "name": "cleanup-restores-shape-even-after-mode-error",
+      "passed": true
+    },
+    {
+      "name": "cursor-phase-is-not-reset-by-shell-hide",
+      "passed": true
+    },
+    {
+      "name": "fuse-hide-removes-drawn-xor",
+      "passed": true
+    },
+    {
+      "name": "fuse-restore-reconciles-saved-shape",
+      "passed": true
+    },
+    {
+      "name": "fuse-restore-preserves-logical-blink-phase",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 36,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nkernel.asm(87): warning[shortblock]: init data for block truncated to length: 0\nPass 3 complete\nErrors: 0, warnings: 1, compiled: 14208 lines, work time: 0.035 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "0a8a30a40016f9de6e333795a42b73c1475cbe66e8782a3837d3c6aa3c395188",
+    "v1/dist/certification/P6.26.build.json": "7e43b1dfc923a7b9d5a7d1a821140c3b84036997edf528e5f876fdb7d21d3dcf",
+    "v1/dist/certification/P6.26.test.json": "f54f6b9b09e8d81bb3924cf2a3db63944e81749cfbdcaa38029e7e6129ec48fc",
+    "v1/dist/media/P6.26/manifest.json": "7cdcc85716185ead35adece179d099fe00f72cc165f2ff03253fc61be5495c32",
+    "v1/src/kernel/cursor.asm": "5cee47256ce95bbb9fdf79ddd60b33aaf7497ed39163cf41d56d61c52ea96546",
+    "v1/src/shell/sh.asm": "bd48d39e83bb2fa27f0590667d3f11b573b7932de2f0b02c30f99a22846389e7",
+    "v1/tools-host/test-driver/phase6_cursor_restore.py": "001d73c33fcbe86904e8c7520f19cf4b13cad7ad836c074172a804f66155bc08",
+    "v1/tools-host/test-driver/run.py": "c63a7438d308b968fbbf3560a1f9b080780b91fae1716c4349799e670ceb14dd"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P6.26": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "51b0b897e7d829d7e7d9d099a2e218afd51d1508",
+  "status": "PASS",
+  "step": "P6.27",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
