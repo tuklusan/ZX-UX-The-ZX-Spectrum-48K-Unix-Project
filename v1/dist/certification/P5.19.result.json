@@ -1,0 +1,106 @@
+{
+  "action": "result",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "all-p5-01-through-p5-18-build-test-evidence-pass",
+      "passed": true,
+      "record_count": 36
+    },
+    {
+      "name": "exact-m48o-prefix-header-chunk-crc-contracts-covered",
+      "passed": true
+    },
+    {
+      "name": "raw-packed-load-save-verify-scan-roundtrips-covered",
+      "passed": true
+    },
+    {
+      "name": "streaming-save-and-direct-tape-mex1-covered",
+      "passed": true
+    },
+    {
+      "name": "global-lock-prompts-and-break-error-recovery-covered",
+      "passed": true
+    },
+    {
+      "name": "second-emulator-compatibility-gate-covered",
+      "passed": true
+    },
+    {
+      "name": "fixture-explicitly-non-final",
+      "passed": true
+    },
+    {
+      "name": "negative-byte-order-authority-or-failed-record-blocks-phase",
+      "passed": true
+    },
+    {
+      "name": "phase5-gate-stops-before-phase6",
+      "passed": true
+    },
+    {
+      "name": "selected-current-head-phase5-acceptance-matrix-pass",
+      "passed": true
+    },
+    {
+      "name": "current-head-roundtrip-recovery-pass",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P5.16",
+        "--evidence-dir",
+        "/tmp/zxux-p519-ane0xwag"
+      ],
+      "cwd": ".",
+      "duration_ms": 592,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P5.16 TEST PASS\nevidence=/tmp/zxux-p519-ane0xwag/P5.16.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P5.17",
+        "--evidence-dir",
+        "/tmp/zxux-p519-ane0xwag"
+      ],
+      "cwd": ".",
+      "duration_ms": 513,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P5.17 TEST PASS\nevidence=/tmp/zxux-p519-ane0xwag/P5.17.test.json\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "docs/01-ZX-UX-ARCHITECTURE-REV16.md": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+    "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+    "v1/dist/certification/P5.18.build.json": "b846e03e77b32ef9d7dbf7b25d1b52bb49a4133cdccb26f7dae8726c3e1e6ed7",
+    "v1/dist/certification/P5.18.test.json": "559fa0ac47e95ea9faa8ca79977e33dc80feeeeb4bbcf5bde3422bc84997c7f9",
+    "v1/tools-host/test-driver/phase5_acceptance.py": "e9bee91204063ec6dd41f11c78437de4b1f05f8426790b0a2520c67b6327b6d3",
+    "v1/tools-host/test-driver/run.py": "0061c4439b62531862c6b5529a8f32c53bb7d50b9604ded1d084d893129d10ff"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P5.18": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "53882f5d72726444f709fc65e8dcb69207c271e9",
+  "status": "PASS",
+  "step": "P5.19",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true,
+  "pass_marker": "ZX-UX PHASE 5 ACCEPTANCE PASS"
+}
