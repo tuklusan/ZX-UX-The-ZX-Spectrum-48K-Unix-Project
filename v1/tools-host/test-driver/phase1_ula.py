@@ -177,7 +177,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
         {"name": "rom-return-reemits-authoritative-shadow", "passed": _return_reconcile_contract_ok(rom)},
         {"name": "rom-return-clears-altreg-busy", "passed": "xor a\n    ld (altreg_busy),a" in done},
         {"name": "rom-result-contract-still-checked", "passed": "zx48_rom_checked_return_af_saved:" in rom and "call zx48_kernel_stack_check" in rom and "zx48_rom_restore_iy:" in rom},
-        {"name": "graphics-border-routes-through-owner", "passed": "jp zx48_ula_set_border" in graphics},
+        {"name": "graphics-border-routes-through-owner", "passed": ("jp zx48_ula_set_border" in graphics or "call zx48_ula_set_border" in graphics)},
         {"name": "sound-stub-has-no-direct-out", "passed": "out (ula_port)" not in sound and "out ($fe)" not in sound},
         {"name": "tape-stub-routes-through-rom-wrappers", "passed": "call zx48_rom_sa_bytes" in tape and "call zx48_rom_ld_bytes" in tape and "out (ula_port)" not in tape},
     ]
