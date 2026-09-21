@@ -22,7 +22,7 @@ jobs:
     timeout-minutes: 45
     env:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-p612-qualification
-      P612_BASE: c731a52d15d308cf5174c525fa4f432eaeff99e5
+      P612_BASE: 1da3a317f949ba0f9d39fa6842ba23ac4a76450b
       ZXUX_REV16_SHA256: 24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c
       ZXUX_REV07_SHA256: 840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc
       ZXUX_TOOLCHAIN_LOCK_SHA256: 1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244
@@ -48,8 +48,9 @@ jobs:
           for scan in 1 2 3; do
             python3 -m py_compile v1/tools-host/test-driver/phase6_bounds.py v1/tools-host/test-driver/run.py
             find v1/tools-host/test-driver -type d -name __pycache__ -prune -exec rm -rf {} +
-            test -z "$(git status --porcelain)"; test "$(git rev-parse 'HEAD^{tree}')" = "$tree"
-            digest="$(sha256sum v1/src/shell/sh.asm v1/tools-host/test-driver/phase6_bounds.py v1/tools-host/test-driver/run.py .github/workflows/p612-qualification.yml v1/dist/certification/P6.11.build.json v1/dist/certification/P6.11.test.json v1/dist/media/P6.10/manifest.json | sha256sum | awk '{print $1}')"
+            test -z "$(git status --porcelain)"
+            test "$(git rev-parse 'HEAD^{tree}')" = "$tree"
+            digest="$(sha256sum v1/src/shell/sh.asm v1/tools-host/test-driver/phase6_bounds.py v1/tools-host/test-driver/run.py .github/workflows/p612-qualification.yml v1/dist/certification/P6.11.build.json v1/dist/certification/P6.11.test.json v1/dist/media/P6.11/manifest.json | sha256sum | awk '{print $1}')"
             if test -z "$baseline"; then baseline="$digest"; else test "$baseline" = "$digest"; fi
           done
       - name: Mandatory gates

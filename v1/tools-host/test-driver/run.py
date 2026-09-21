@@ -171,6 +171,7 @@ import phase6_expansion
 import phase6_operators
 import phase6_binding
 import phase6_bounds
+import phase6_bounds
 import phase6_builtins
 import phase6_path
 import phase6_tape_discovery
