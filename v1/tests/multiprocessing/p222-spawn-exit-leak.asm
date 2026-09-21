@@ -277,7 +277,6 @@ p222_fail:
     scf
     ret
 
-syscall_arg_hl: dw 0
 current_pid: db 0
 process_table: defs MAX_PROCESSES*PROC_DESC_SIZE,0
 tty_input_owner: db 1
