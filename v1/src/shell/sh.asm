@@ -2801,7 +2801,9 @@ sh_p624_add_scan:
     ld a,(ix+0)
     or a
     jr z,sh_p624_add_here
-    cp (p624_pid)
+    ld c,a
+    ld a,(p624_pid)
+    cp c
     jr z,sh_p624_add_here
     ld de,P624_JOB_SIZE
     add ix,de
@@ -2837,8 +2839,6 @@ sh_p624_job_refresh:
     ld (ix+1),a
     inc hl
     inc hl
-    ld de,2
-    add hl,de
     push ix
     pop de
     ld bc,2
@@ -2858,6 +2858,11 @@ sh_p624_name_cmp:
 sh_p624_stale:
     call sh_p624_clear_ix
     ld a,E_NOENT
+    scf
+    ret
+
+sh_p624_invalid:
+    ld a,E_INVAL
     scf
     ret
 
