@@ -1,0 +1,62 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "compat-product-version-recorded",
+      "passed": true
+    },
+    {
+      "name": "compat-binary-sha256-pinned",
+      "passed": true
+    },
+    {
+      "name": "same-core-phase5-tap-fixture",
+      "passed": true
+    },
+    {
+      "name": "fuse-oracle-prerequisite-admitted",
+      "passed": true
+    },
+    {
+      "name": "disagreement-is-fail-closed",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 32,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 14018 lines, work time: 0.031 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/phase5-fixture.tap": "81620fbb57ad352c3df590b08835df68bf61d72627aa0ae9ea82918c24c7d80d",
+    "v1/dist/certification/P5.17.build.json": "3263664b489096daad9edce4ecaf3df978e1e02431e52964a67d72daada04eb0",
+    "v1/dist/certification/P5.17.test.json": "759e6dec9baea65bcc64609cbc456d5d55b7848b0cbcd9a0610c4d1bf58603e0",
+    "v1/tests/cassette/compat/zesarux-13.0.json": "99c8da5c8c0c6a751235720bd21038f29018de553d035a6808f42428e8a8bab2",
+    "v1/tools-host/test-driver/phase5_second_emulator.py": "4c6cedaf498a09a3f0b8f791a7cd38c1a7949588ae8fd7a272b32fb0e194585c",
+    "v1/tools-host/test-driver/run.py": "8fd03147670b9b75803447d50e67993b0d517cca5ff3f8ad7243cc14b2787eda"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P5.17": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "5eda2bf70a4766ce3088ee9f1a04f7ae474cc4e1",
+  "status": "PASS",
+  "step": "P5.18",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
