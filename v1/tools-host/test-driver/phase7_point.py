@@ -69,6 +69,7 @@ def _assemble(root:Path,run_command:Callable[...,Any],require_project_tool:Calla
       "    ld a,b\n    and $c0\n    rrca\n    rrca\n    rrca\n    or h\n    ld h,a\n"
       "    ld a,b\n    and $38\n    rlca\n    rlca\n    or c\n    ld l,a\n    ret\n"
       "    INCLUDE \"../src/kernel/syscall.asm\"\n"
+      "    EMIT_USER_RANGE_VALIDATION_ROUTINE\n"
       "    EMIT_GRAPHICS_ROUTINES\n"
       "    EMIT_P701_GRAPHICS_SYSCALL_ROUTINES\n"
       "p706_end:\n"
