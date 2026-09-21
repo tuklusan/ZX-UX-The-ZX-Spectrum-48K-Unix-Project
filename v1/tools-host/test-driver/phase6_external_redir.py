@@ -56,7 +56,6 @@ def dispatch(root:Path,action:str,step:str,*,sha256_file,run_command,require_pro
     sf=build/"p618-shell-fixture.asm"
     sf.write_text("""    DEVICE ZXSPECTRUM48
     INCLUDE "../include/zx48ux.inc"
-OBJ_DAT EQU $07
     INCLUDE "../src/shell/sh.asm"
     ORG $C000
 p618_start:
