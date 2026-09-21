@@ -159,6 +159,8 @@ def _assemble_fixture(
         "wall_subsecond: db 0\n"
         "wall_valid: db 0\n"
         "p216_panic_code: db 0\n"
+        "tty_input_owner: db 0\n"
+        "break_pending: db 0\n"
         "current_pid: db 0\n"
         "process_table: defs MAX_PROCESSES*PROC_DESC_SIZE,0\n"
         "p216_end:\n"
