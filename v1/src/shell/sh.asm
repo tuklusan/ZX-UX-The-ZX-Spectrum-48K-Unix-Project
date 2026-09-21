@@ -457,7 +457,7 @@ sh_p606_set:
     jr nz,sh_p606_set_replace_count
     ld a,(p606_old_count)
     cp 8
-    jr nc,sh_p606_nospc
+    jp nc,sh_p606_nospc
     inc a
     jr sh_p606_set_count_ready
 sh_p606_set_replace_count:
@@ -469,20 +469,22 @@ sh_p606_set_count_ready:
     ld a,(p606_found)
     or a
     jr z,sh_p606_set_add_new
-    ld e,(p606_found_len)
+    ld a,(p606_found_len)
+    ld e,a
     ld d,0
     or a
     sbc hl,de
 sh_p606_set_add_new:
-    ld e,(p606_new_len)
+    ld a,(p606_new_len)
+    ld e,a
     ld d,0
     add hl,de
     ld a,h
     or a
-    jr nz,sh_p606_nospc
+    jp nz,sh_p606_nospc
     ld a,l
     or a
-    jr z,sh_p606_nospc
+    jp z,sh_p606_nospc
     ld (p606_new_total),hl
 
     call sh_p606_scratch_header
@@ -514,6 +516,11 @@ sh_p606_set_old_before:
     call sh_p606_copy_old
     jr sh_p606_set_rebuild_next
 sh_p606_set_skip_replaced:
+    ld a,(p606_inserted)
+    or a
+    call z,sh_p606_copy_new
+    ld a,1
+    ld (p606_inserted),a
     call sh_p606_skip_old
 sh_p606_set_rebuild_next:
     ld a,(p606_remaining)
@@ -539,13 +546,14 @@ sh_p606_unset:
     ret c
     ld a,(p606_found)
     or a
-    jr z,sh_p606_ok
+    jp z,sh_p606_ok
 
     ld a,(p606_old_count)
     dec a
     ld (p606_new_count),a
     ld hl,(p606_old_total)
-    ld e,(p606_found_len)
+    ld a,(p606_found_len)
+    ld e,a
     ld d,0
     or a
     sbc hl,de
@@ -561,7 +569,7 @@ sh_p606_unset:
 sh_p606_unset_loop:
     ld a,(p606_remaining)
     or a
-    jr z,sh_p606_commit_scratch
+    jp z,sh_p606_commit_scratch
     ld hl,(p606_old_ptr)
     ld de,(p606_new_ptr)
     call sh_p606_compare_names
@@ -589,10 +597,10 @@ sh_p606_parse_set_name:
     cp '='
     jr z,sh_p606_parse_set_value
     or a
-    jr z,sh_p606_invalid
+    jp z,sh_p606_invalid
     ld a,b
     cp 15
-    jr nc,sh_p606_invalid
+    jp nc,sh_p606_invalid
     ld a,(hl)
     call sh_p606_name_tail
     ret c
@@ -603,7 +611,7 @@ sh_p606_parse_set_name:
 sh_p606_parse_set_value:
     ld a,b
     or a
-    jr z,sh_p606_invalid
+    jp z,sh_p606_invalid
     inc hl
     ld c,0
 sh_p606_parse_set_value_loop:
@@ -611,12 +619,12 @@ sh_p606_parse_set_value_loop:
     or a
     jr z,sh_p606_parse_set_done
     cp $20
-    jr c,sh_p606_invalid
+    jp c,sh_p606_invalid
     cp $7f
-    jr nc,sh_p606_invalid
+    jp nc,sh_p606_invalid
     ld a,c
     cp 63
-    jr nc,sh_p606_invalid
+    jp nc,sh_p606_invalid
     inc c
     inc hl
     jr sh_p606_parse_set_value_loop
@@ -640,10 +648,10 @@ sh_p606_parse_unset_loop:
     or a
     jr z,sh_p606_parse_unset_done
     cp '='
-    jr z,sh_p606_invalid
+    jp z,sh_p606_invalid
     ld a,b
     cp 15
-    jr nc,sh_p606_invalid
+    jp nc,sh_p606_invalid
     ld a,(hl)
     call sh_p606_name_tail
     ret c
@@ -653,7 +661,7 @@ sh_p606_parse_unset_loop:
 sh_p606_parse_unset_done:
     ld a,b
     or a
-    jr z,sh_p606_invalid
+    jp z,sh_p606_invalid
     inc a
     ld (p606_new_len),a
     xor a
@@ -673,7 +681,7 @@ sh_p606_name_first_lower:
 sh_p606_name_first_us:
     cp '_'
     jr z,sh_p606_char_ok
-    jr sh_p606_invalid
+    jp sh_p606_invalid
 ; A=subsequent NAME byte.
 sh_p606_name_tail:
     cp 'A'
@@ -693,7 +701,7 @@ sh_p606_name_tail_digit:
 sh_p606_name_tail_us:
     cp '_'
     jr z,sh_p606_char_ok
-    jr sh_p606_invalid
+    jp sh_p606_invalid
 sh_p606_char_ok:
     xor a
     ret
@@ -782,6 +790,7 @@ sh_p606_cmp_old_end:
     jr z,sh_p606_cmp_equal
 sh_p606_cmp_old_less:
     ld a,1
+    or a
     scf
     ret
 sh_p606_cmp_old_greater:
