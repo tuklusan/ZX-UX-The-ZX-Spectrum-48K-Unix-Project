@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "emulator": "ZEsarUX",
+  "version": "13.0",
+  "release": "ZEsarUX-13.0",
+  "platform_asset": "ZEsarUX_linux-13.0-ubuntu24_x86_64.tar.gz",
+  "sha256": "596388df21388fd6c485dab23f7d157ef5b1753f872e63ed77574c9e8c642d55",
+  "protocol": "ZRCP",
+  "machine": "ZX Spectrum 48K",
+  "fixture": "v1/build/phase5-fixture.tap",
+  "oracle": "P5.16 FUSE plus exact kernel/screen bytes",
+  "result_policy": "Any ZEsarUX/FUSE-state disagreement is FAIL-CLOSED"
+}
