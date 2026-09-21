@@ -1656,3 +1656,32 @@ sh_p611_reject_grouping:
     scf
     ret
     ENDM
+
+; P6.12 parser execution bounds. Call after expansion and before any spawn/redirection.
+    MACRO EMIT_P612_BOUND_ROUTINES
+P612_ARG_MAX             EQU 16
+P612_PIPE_MAX            EQU 6
+
+; A=argc including argv[0], B=pipeline stage count.
+; Carry set E_TOOLONG on either bound violation. No side effect occurs here.
+sh_p612_validate_bounds:
+    or a
+    jr z,sh_p612_invalid
+    cp P612_ARG_MAX+1
+    jr nc,sh_p612_toolong
+    ld a,b
+    or a
+    jr z,sh_p612_invalid
+    cp P612_PIPE_MAX+1
+    jr nc,sh_p612_toolong
+    xor a
+    ret
+sh_p612_toolong:
+    ld a,E_TOOLONG
+    scf
+    ret
+sh_p612_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+    ENDM
