@@ -80,6 +80,7 @@ p621_end:
     INCLUDE "../include/zx48ux.inc"
     ORG $E000
 p621_gate:
+    push ix
     ld (p621_call),a
     ld a,(p621_log_index)
     ld e,a
@@ -91,6 +92,7 @@ p621_gate:
     ld a,(p621_log_index)
     inc a
     ld (p621_log_index),a
+    pop ix
     ld a,(p621_call)
     cp SYS_PIPE
     jr z,p621_pipe
