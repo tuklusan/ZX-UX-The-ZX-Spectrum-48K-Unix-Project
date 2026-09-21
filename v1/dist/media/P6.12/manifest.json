@@ -1,0 +1,19 @@
+{
+  "files": [
+    {
+      "action": "build",
+      "path": "build/build-p612-bounds-d71da778d053cbd8d6e88fe05786c00da67d02e3e3cb28953c281d1ef656e80f.tap",
+      "sha256": "d71da778d053cbd8d6e88fe05786c00da67d02e3e3cb28953c281d1ef656e80f",
+      "size": 89
+    },
+    {
+      "action": "test",
+      "path": "test/build-p612-bounds-d71da778d053cbd8d6e88fe05786c00da67d02e3e3cb28953c281d1ef656e80f.tap",
+      "sha256": "d71da778d053cbd8d6e88fe05786c00da67d02e3e3cb28953c281d1ef656e80f",
+      "size": 89
+    }
+  ],
+  "schema": 1,
+  "source_commit": "4d87da0b9cdbc342cfef24cd2666b4af7830c282",
+  "step": "P6.12"
+}
