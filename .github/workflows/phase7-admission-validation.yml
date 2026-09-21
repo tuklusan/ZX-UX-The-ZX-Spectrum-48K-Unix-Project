@@ -1,0 +1,120 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: Phase-7 admission validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/phase7-admission-validation.yml'
+  workflow_dispatch:
+    inputs:
+      admitted_commit:
+        required: false
+        type: string
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      ZXUX_REV16_SHA256: 24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c
+      ZXUX_REV07_SHA256: 840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc
+      ZXUX_TOOLCHAIN_LOCK_SHA256: 1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244
+      ADMITTED_COMMIT: ${{ inputs.admitted_commit || github.sha }}
+      ZXUX_EVIDENCE_DIR: /tmp/zxux-phase7-admission-validation
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: {fetch-depth: 0}
+      - name: Validate durable admission chain
+        id: chain
+        run: |
+          set -euo pipefail
+          git cat-file -e "$ADMITTED_COMMIT^{commit}"
+          git merge-base --is-ancestor "$ADMITTED_COMMIT" HEAD || test "$ADMITTED_COMMIT" = "$(git rev-parse HEAD)"
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+          test "$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV16.md | awk '{print $1}')" = "$ZXUX_REV16_SHA256"
+          test "$(sha256sum docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md | awk '{print $1}')" = "$ZXUX_REV07_SHA256"
+          test "$(sha256sum tools/manifest/toolchain.lock.json | awk '{print $1}')" = "$ZXUX_TOOLCHAIN_LOCK_SHA256"
+          python3 tools/check_phase6_evidence.py --require-active
+          python3 tools/check_media_retention.py
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+          cert=Path("v1/dist/certification"); media=Path("v1/dist/media")
+          latest=None
+          for n in range(1,22):
+              step=f"P7.{n:02d}"
+              pair=[cert/f"{step}.{a}.json" for a in ("build","test")]
+              present=[p.is_file() for p in pair]
+              if any(present) and not all(present): raise SystemExit(f"partial admitted evidence: {step}")
+              if not any(present):
+                  for m in range(n+1,22):
+                      if (cert/f"P7.{m:02d}.build.json").exists() or (cert/f"P7.{m:02d}.test.json").exists():
+                          raise SystemExit("non-contiguous Phase-7 admission")
+                  break
+              records=[json.loads(p.read_text()) for p in pair]
+              source=records[0]["source_commit"]
+              expected={"P6.30":"PASS"} if n==1 else {f"P7.{n-1:02d}":"PASS"}
+              for action,r in zip(("build","test"),records):
+                  assert r["schema"]==2 and r["step"]==step and r["action"]==action
+                  assert r["status"]=="PASS" and r["worktree_clean"] is True
+                  assert r["source_commit"]==source and r["prerequisites"]==expected
+                  assert r["architecture_sha256"]=="24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c"
+                  assert r["implementation_plan_sha256"]=="840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc"
+              mp=media/step/"manifest.json"
+              if not mp.is_file(): raise SystemExit(f"missing retained media: {step}")
+              md=json.loads(mp.read_text())
+              assert md["step"]==step and md["source_commit"]==source and md["files"]
+              latest=step
+          if latest is None: raise SystemExit("no admitted Phase-7 evidence")
+          if latest=="P7.21":
+              rp=cert/"P7.21.result.json"
+              if not rp.is_file(): raise SystemExit("missing P7.21 acceptance result")
+              rr=json.loads(rp.read_text())
+              assert rr["schema"]==2 and rr["step"]=="P7.21" and rr["action"]=="result"
+              assert rr["status"]=="PASS" and rr["worktree_clean"] is True and rr["source_commit"]==source
+              assert rr["architecture_sha256"]=="24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c"
+              assert rr["implementation_plan_sha256"]=="840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc"
+              assert rr["pass_marker"]=="ZX-UX PHASE 7 ACCEPTANCE PASS" and rr["prerequisites"]=={"P7.20":"PASS"}
+          print(f"latest={latest}")
+          PY
+      - name: Restore or build certified ZX-UX runtime
+        uses: ./.github/actions/setup-zxux-runtime
+      - name: Revalidate latest admitted Phase-7 step
+        run: |
+          set -euo pipefail
+          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step "${{ steps.chain.outputs.latest }}"
+          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step "${{ steps.chain.outputs.latest }}"
+      - name: Dispatch Phase-7 aggregate activation
+        if: steps.chain.outputs.latest == 'P7.21'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test ! -e v1/dist/certification/phase-7.json
+          python3 - <<'PY'
+          import json, os, urllib.request
+          payload=json.dumps({"ref":"main","inputs":{"admitted_commit":os.environ["ADMITTED_COMMIT"]}}).encode()
+          req=urllib.request.Request(
+              f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}/actions/workflows/phase7-activation.yml/dispatches",
+              data=payload,method="POST",
+              headers={"Authorization":f"Bearer {os.environ['GH_TOKEN']}","Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","Content-Type":"application/json"})
+          with urllib.request.urlopen(req,timeout=30) as r:
+              if r.status!=204: raise SystemExit(f"activation dispatch failed: {r.status}")
+          PY
