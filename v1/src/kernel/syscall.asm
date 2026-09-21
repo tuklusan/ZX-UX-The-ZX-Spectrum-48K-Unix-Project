@@ -12,6 +12,8 @@
 ;
 ; Bounded version-1 syscall dispatcher. IX is preserved and IY is canonicalized.
 
+    INCLUDE "graphics.asm"
+
 SYSCALL_FRAME_PC_O       EQU 10
 syscall_frame_sp          EQU FAST_RESERVE_END-1
 
@@ -205,6 +207,10 @@ zx48_p626_break_restore_selector:
     jp c,zx48_sys_notsup
     cp SYS_CON_SETPOS+1
     jr c,zx48_sys_dispatch_console
+    cp SYS_GFX_PLOT
+    jp c,zx48_sys_notsup
+    cp SYS_GFX_POINT+1
+    jr c,zx48_sys_dispatch_gfx
     cp SYS_MEM_INFO
     jp c,zx48_sys_notsup
     cp SYS_TIME_SET+1
@@ -224,6 +230,10 @@ zx48_sys_dispatch_handle:
 zx48_sys_dispatch_console:
     sub SYS_CON_GETKEY
     ld hl,zx48_sys_console_table
+    jr zx48_sys_dispatch_index
+zx48_sys_dispatch_gfx:
+    sub SYS_GFX_PLOT
+    ld hl,zx48_sys_gfx_table
     jr zx48_sys_dispatch_index
 zx48_sys_dispatch_proc:
     ld hl,zx48_sys_process_table
@@ -569,6 +579,36 @@ zx48_sys_con_setpos:
     ret c
     jp zx48_sys_zero_result
 
+; Phase-7 graphics syscall ABI. Register-only calls reload the saved user HL
+; exactly; record calls validate the complete readable record before any
+; graphics routine can mutate display or ULA state.
+zx48_sys_gfx_plot:
+    ld hl,(syscall_arg_hl)
+    jp zx48_gfx_plot
+zx48_sys_gfx_draw:
+    ld hl,(syscall_arg_hl)
+    ld bc,4
+    call zx48_user_range_validate
+    ret c
+    ld hl,(syscall_arg_hl)
+    jp zx48_gfx_draw
+zx48_sys_gfx_circle:
+    ld hl,(syscall_arg_hl)
+    ld bc,3
+    call zx48_user_range_validate
+    ret c
+    ld hl,(syscall_arg_hl)
+    jp zx48_gfx_circle
+zx48_sys_gfx_attr:
+    ld hl,(syscall_arg_hl)
+    jp zx48_gfx_attr
+zx48_sys_gfx_border:
+    ld hl,(syscall_arg_hl)
+    jp zx48_gfx_border
+zx48_sys_gfx_point:
+    ld hl,(syscall_arg_hl)
+    jp zx48_gfx_point
+
 zx48_sys_mem_info:
     ld hl,(syscall_arg_hl)
     ld bc,MINFO1_SIZE
@@ -732,9 +772,13 @@ zx48_sys_pipe_table:
 zx48_sys_console_table:
     dw zx48_sys_con_getkey,zx48_sys_con_putchar,zx48_sys_con_write
     dw zx48_sys_con_clear,zx48_sys_con_getpos,zx48_sys_con_setpos
+zx48_sys_gfx_table:
+    dw zx48_sys_gfx_plot,zx48_sys_gfx_draw,zx48_sys_gfx_circle
+    dw zx48_sys_gfx_attr,zx48_sys_gfx_border,zx48_sys_gfx_point
 zx48_sys_info_table:
     dw zx48_sys_mem_info,zx48_sys_proc_info,zx48_sys_ticks,zx48_sys_time_get,zx48_sys_time_set
 
+    EMIT_GRAPHICS_ROUTINES
     ENDM
 
 ; P2.09/P2.10 staged production spawn entry and preflight. The resident kernel
