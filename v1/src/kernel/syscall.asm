@@ -155,6 +155,48 @@ zx48_user_range_bad:
 
 
     MACRO EMIT_SYSCALL_IMPL
+; P6.26 cooperative BREAK/cancellation boundary. IM2 is producer-only.
+zx48_p626_boundary:
+    ld a,(break_pending)
+    or a
+    jr z,zx48_p626_current
+    ld a,(tty_input_owner)
+    cp 1
+    jr z,zx48_p626_shell
+    cp 2
+    jr c,zx48_p626_drop
+    cp MAX_PROCESSES
+    jr nc,zx48_p626_drop
+    call zx48_process_live_lookup
+    jr c,zx48_p626_drop
+    call zx48_process_kill_started
+zx48_p626_drop:
+    xor a
+    ld (break_pending),a
+zx48_p626_current:
+    ld a,(current_pid)
+    cp 2
+    jr c,zx48_p626_ok
+    call zx48_process_ptr
+    bit 0,(ix+PROC_FLAGS)
+    jr z,zx48_p626_ok
+    res 0,(ix+PROC_FLAGS)
+    ld a,E_INTR
+    scf
+    ret
+zx48_p626_shell:
+    ld a,(current_pid)
+    cp 1
+    jr nz,zx48_p626_current
+    xor a
+    ld (break_pending),a
+    ld a,E_INTR
+    scf
+    ret
+zx48_p626_ok:
+    xor a
+    ret
+
 zx48_syscall_impl:
     ld (syscall_arg_hl),hl
     ld (syscall_arg_de),de
