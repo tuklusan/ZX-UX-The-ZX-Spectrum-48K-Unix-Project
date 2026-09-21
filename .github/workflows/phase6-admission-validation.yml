@@ -24,6 +24,7 @@ on:
         type: string
 
 permissions:
+  actions: write
   contents: read
 
 jobs:
@@ -84,6 +85,17 @@ jobs:
               assert md["step"]==step and md["source_commit"]==source and md["files"]
               latest=step
           if latest is None: raise SystemExit("no admitted Phase-6 evidence")
+          if latest=="P6.30":
+              rp=cert/"P6.30.result.json"
+              if not rp.is_file(): raise SystemExit("missing P6.30 acceptance result")
+              rr=json.loads(rp.read_text())
+              assert rr["schema"]==2 and rr["step"]=="P6.30" and rr["action"]=="result"
+              assert rr["status"]=="PASS" and rr["worktree_clean"] is True
+              assert rr["source_commit"]==source
+              assert rr["architecture_sha256"]=="24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c"
+              assert rr["implementation_plan_sha256"]=="840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc"
+              assert rr["pass_marker"]=="ZX-UX PHASE 6 ACCEPTANCE PASS"
+              assert rr["prerequisites"]=={"P6.29":"PASS"}
           print(f"latest={latest}")
           PY
       - name: Restore or build certified ZX-UX runtime
@@ -93,3 +105,20 @@ jobs:
           set -euo pipefail
           tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step "${{ steps.chain.outputs.latest }}"
           tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step "${{ steps.chain.outputs.latest }}"
+      - name: Dispatch Phase-6 aggregate activation
+        if: steps.chain.outputs.latest == 'P6.30'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test ! -e v1/dist/certification/phase-6.json
+          python3 - <<'PY'
+          import json, os, urllib.request
+          payload=json.dumps({"ref":"main","inputs":{"admitted_commit":os.environ["ADMITTED_COMMIT"]}}).encode()
+          req=urllib.request.Request(
+              f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}/actions/workflows/phase6-activation.yml/dispatches",
+              data=payload,method="POST",
+              headers={"Authorization":f"Bearer {os.environ['GH_TOKEN']}","Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","Content-Type":"application/json"})
+          with urllib.request.urlopen(req,timeout=30) as r:
+              if r.status!=204: raise SystemExit(f"activation dispatch failed: {r.status}")
+          PY
