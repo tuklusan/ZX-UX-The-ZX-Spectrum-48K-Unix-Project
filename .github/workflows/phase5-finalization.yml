@@ -1,0 +1,53 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: ZX-UX Phase 5 Aggregate Validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/phase5-finalization.yml
+      - tools/finalize_phase5_evidence.py
+      - tools/check_phase5_evidence.py
+      - tools/test_phase5_evidence_negative.py
+      - v1/dist/certification/P5.*.json
+      - v1/dist/certification/phase-5.json
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zxux-phase5-aggregate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  phase5-aggregate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: {fetch-depth: 0}
+      - name: Mandatory policy gates
+        run: |
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+          python3 tools/check_phase4_evidence.py --require-active
+      - name: Validate Phase 5 aggregate state
+        run: |
+          if test -f v1/dist/certification/phase-5.json; then
+            python3 tools/check_phase5_evidence.py --require-active
+            python3 tools/test_phase5_evidence_negative.py
+          else
+            python3 tools/check_phase5_evidence.py
+          fi
