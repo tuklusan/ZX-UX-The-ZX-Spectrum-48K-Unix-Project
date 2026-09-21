@@ -1,0 +1,108 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "echo-is-external-only",
+      "passed": true
+    },
+    {
+      "name": "stdout-handle-one",
+      "passed": true
+    },
+    {
+      "name": "single-space-separator",
+      "passed": true
+    },
+    {
+      "name": "single-lf-terminator",
+      "passed": true
+    },
+    {
+      "name": "status-zero",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p616-echo-image.lst",
+        "--sym=p616-echo-image.sym",
+        "p616-echo-image.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 443 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p616-echo.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 39654, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 8982, \"image_size\": 123, \"magic\": \"MEX1\", \"minimum_stack_size\": 128, \"relocation_count\": 0, \"relocation_table_offset\": 147, \"relocations\": [], \"stored_length\": 147, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p616-echo-fixture.lst",
+        "--sym=p616-echo-fixture.sym",
+        "p616-echo-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 443 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p616-gateway.lst",
+        "--sym=p616-gateway.sym",
+        "p616-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 293 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p616-echo.mex1": "f5093b8910dc10b45ab782d4c2eedd9a1697525060a944a65b7e9ad84bbf3646",
+    "v1/build/p616-echo.tap": "6c25e8135a595fddd35a161c534b24115dcbfd30468d7d9b8c9474f4f925c040",
+    "v1/dist/certification/P6.15.build.json": "8136de24e1a1bf0a1b2a7e7646cad530f31a40f5cb0cb132d090825989aeee16",
+    "v1/dist/certification/P6.15.test.json": "91b27b2853b180907b8d20d61490d46e11b93704024fbac99477702e9132833b",
+    "v1/dist/media/P6.15/manifest.json": "efa3aff059be7ac00c70c59366640884b9dcea57783a4e6562492473852cd529",
+    "v1/src/utils/echo.asm": "f864a4cf179a1826476f280bf0581ae663dadfaa768d133e3051840431ea8689",
+    "v1/tools-host/test-driver/phase6_echo.py": "7ba4ca3669f49f69d8db464f4add32ffc47d8e2ad2fba944f75cc61c4754c542",
+    "v1/tools-host/test-driver/run.py": "438d64ab3d27093e8941710091c2f6ab4c2cc773d8cc85dda8f36f4867099c79"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P6.15": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "f6b2f54bb777c8ab62607128f3aa86ecdecbd656",
+  "status": "PASS",
+  "step": "P6.16",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
