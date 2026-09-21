@@ -141,4 +141,3 @@ jobs:
           with urllib.request.urlopen(req,timeout=30) as r:
               if r.status not in (204,): raise SystemExit(f"admission dispatch failed: {r.status}")
           PY
-
