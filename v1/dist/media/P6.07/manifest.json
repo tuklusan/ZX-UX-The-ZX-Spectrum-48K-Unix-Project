@@ -1,0 +1,25 @@
+{
+  "files": [
+    {
+      "action": "test",
+      "path": "test/fixture-4cf7a900e4e177fea6b4018a48bf4c208f79833c63eb16f100b5a9599bdb70a6.sna",
+      "sha256": "4cf7a900e4e177fea6b4018a48bf4c208f79833c63eb16f100b5a9599bdb70a6",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-76c469120a82aafcaf9c31160bad1590ebd01282f69e598ab6586d3ff8378b1a.sna",
+      "sha256": "76c469120a82aafcaf9c31160bad1590ebd01282f69e598ab6586d3ff8378b1a",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-c3babbe669e9b7130a84f77d72493eb8a1978741d5aaee8265bfb6fce7796b73.sna",
+      "sha256": "c3babbe669e9b7130a84f77d72493eb8a1978741d5aaee8265bfb6fce7796b73",
+      "size": 49179
+    }
+  ],
+  "schema": 1,
+  "source_commit": "b57b9fc7484ef0e10bb9bf15a81ab7ba1d7f1fad",
+  "step": "P6.07"
+}

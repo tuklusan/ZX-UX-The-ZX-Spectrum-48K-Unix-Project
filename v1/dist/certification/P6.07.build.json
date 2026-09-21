@@ -1,0 +1,76 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "line-bound-exact-247",
+      "passed": true
+    },
+    {
+      "name": "input-through-sys-read-handle-zero",
+      "passed": true
+    },
+    {
+      "name": "transactional-destination",
+      "passed": true
+    },
+    {
+      "name": "editing-backspace-owned-in-line-path",
+      "passed": true
+    },
+    {
+      "name": "overlength-e-toolong",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p607-shell-fixture.lst",
+        "--sym=p607-shell-fixture.sym",
+        "p607-shell-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 1363 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p607-gateway.lst",
+        "--sym=p607-gateway.sym",
+        "p607-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 2,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 295 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/dist/certification/P6.06.build.json": "e42ca9a3b364ec1429223dfdf09e12acadd7d77bcb0896c95be19e62e07333ac",
+    "v1/dist/certification/P6.06.test.json": "a16e4a21b3005076d2cc944f5c30c6eff2736a87ef6e132b1f7ef11120549921",
+    "v1/dist/media/P6.06/manifest.json": "32e19766459383ab814c441ab708a2b64ccdaea8430cdf3ddeed6ad011dd7cc6",
+    "v1/src/shell/sh.asm": "0f8f93223ee2a8e048297653d46b352a2209d5678b8587a68006ba227b8fe03e",
+    "v1/tools-host/test-driver/phase6_line.py": "d51a27d18d305a11a34e1f06493d94c82f8d7cc9121d40c94cadc895c60fb07e",
+    "v1/tools-host/test-driver/run.py": "3891e2db2b96112345eda483969cc9803c6adbba1b89cc5dbd05c26b1ea883bf"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P6.06": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "b57b9fc7484ef0e10bb9bf15a81ab7ba1d7f1fad",
+  "status": "PASS",
+  "step": "P6.07",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
