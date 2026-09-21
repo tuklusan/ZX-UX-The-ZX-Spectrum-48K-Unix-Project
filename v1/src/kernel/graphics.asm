@@ -131,21 +131,32 @@ zx48_gfx_mask_done:
     ret
 
 ; HL -> x1,y1,x2,y2. Bresenham with 16-bit signed error scratch.
+; P7.04 keeps the verified ROM 24BA contract documented but uses the native
+; replacement because that lower ROM path ultimately reaches PLOT-SUB and the
+; BASIC y<=175/origin contract cannot satisfy the ZX-UX 0..191 coordinate ABI.
 zx48_gfx_draw:
+    ; Validate both endpoints before any graphics scratch or display mutation.
+    push hl
+    inc hl
+    ld a,(hl)
+    cp 192
+    jr nc,zx48_gfx_draw_bad
+    inc hl
+    inc hl
+    ld a,(hl)
+    cp 192
+    jr nc,zx48_gfx_draw_bad
+    pop hl
     ld a,(hl)
     ld (gfx_x),a
     inc hl
     ld a,(hl)
-    cp 192
-    jp nc,zx48_gfx_bad
     ld (gfx_y),a
     inc hl
     ld a,(hl)
     ld (gfx_x2),a
     inc hl
     ld a,(hl)
-    cp 192
-    jp nc,zx48_gfx_bad
     ld (gfx_y2),a
     ; dx=abs(x2-x), sx=+/-1
     ld a,(gfx_x2)
@@ -201,6 +212,9 @@ zx48_gfx_dy_zero:
     xor a
     ld (gfx_dy),a
     ld (gfx_sy),a
+zx48_gfx_draw_bad:
+    pop hl
+    jp zx48_gfx_bad
 zx48_gfx_line_start:
     ; signed err = dx-dy in 16 bits.
     ld a,(gfx_dx)
