@@ -64,7 +64,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
         {"name":"bounded-p701-dispatch-range","passed":all(x in syscall for x in ("zx48_p701_gfx_dispatch:","cp SYS_GFX_PLOT","cp SYS_GFX_POINT+1","sub SYS_GFX_PLOT"))},
         {"name":"record-pointers-validated-before-draw-circle","passed":"ld bc,4\n    call zx48_user_range_validate" in syscall and "ld bc,3\n    call zx48_user_range_validate" in syscall},
         {"name":"six-native-entrypoints-present","passed":all(x in gfx for x in labels)},
-        {"name":"bad-parameter-path-before-plot-mutation","passed":"cp 192\n    jr nc,zx48_gfx_bad\n    call zx48_cursor_hide" in gfx},
+        {"name":"bad-parameter-path-before-plot-mutation","passed":("cp 192\n    jp nc,zx48_gfx_bad\n    call zx48_cursor_hide" in gfx or "cp 192\n    jr nc,zx48_gfx_bad\n    call zx48_cursor_hide" in gfx)},
         {"name":"public-gateway-retains-canonical-iy-contract","passed":"ld iy,ROM_IY_ANCHOR" in syscall},
         {"name":"phase6-resident-dispatch-left-byte-identical-in-shape","passed":"cp SYS_CON_SETPOS+1\n    jr c,zx48_sys_dispatch_console\n    cp SYS_MEM_INFO" in syscall},
     ]
