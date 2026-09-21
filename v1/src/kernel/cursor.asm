@@ -147,3 +147,10 @@ zx48_cursor_blink:
     ret nz
     jr zx48_cursor_service_core
     ENDM
+
+
+; P6.27 contract marker. Shell-level hiding is represented by cursor shape OFF,
+; so normal shape reconciliation removes any currently drawn XOR without
+; resetting cursor_phase; restoring the saved nonzero shape reconciles to the
+; current logical blink phase rather than inventing a new clock edge.
+P627_CURSOR_HIDDEN_SHAPE EQU TTY_CURSOR_OFF
