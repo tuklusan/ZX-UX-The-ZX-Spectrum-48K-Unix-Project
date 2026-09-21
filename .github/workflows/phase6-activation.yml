@@ -1,0 +1,65 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: Phase-6 aggregate activation
+
+on:
+  workflow_dispatch:
+    inputs:
+      admitted_commit:
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  activate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      ADMITTED_COMMIT: ${{ inputs.admitted_commit }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          ref: main
+      - name: Guard exact preactivation state
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$ADMITTED_COMMIT"
+          test ! -e v1/dist/certification/phase-6.json
+          test -f v1/dist/certification/P6.30.result.json
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+          python3 tools/check_phase5_evidence.py --require-active
+          python3 tools/check_media_retention.py
+          python3 tools/check_phase6_evidence.py
+          python3 tools/test_phase6_evidence_negative.py
+      - name: Finalize exact Phase-6 aggregate
+        run: |
+          set -euo pipefail
+          python3 tools/finalize_phase6_evidence.py --root . --output /tmp/phase-6.json
+          cp /tmp/phase-6.json v1/dist/certification/phase-6.json
+          source_commit="$(python3 - <<'PY'
+          import json
+          print(json.load(open("v1/dist/certification/P6.30.result.json"))["source_commit"])
+          PY
+          )"
+          git add v1/dist/certification/phase-6.json
+          test "$(git diff --cached --name-only)" = "v1/dist/certification/phase-6.json"
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "phase6: activate Phase-6 aggregate evidence for $source_commit"
+          git push origin HEAD:main
