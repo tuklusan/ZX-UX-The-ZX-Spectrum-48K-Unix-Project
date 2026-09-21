@@ -116,3 +116,97 @@ sh_p603_validate_or_reprompt:
     scf
     ret
     ENDM
+
+; P6.04 fixed session-home construction and cwd initialization.
+    MACRO EMIT_P604_HOME_ROUTINES
+; HL=username, BC=length, DE=writable >=15-byte path buffer.
+; Revalidate username, construct only /home/<user>, and chdir there.
+sh_p604_session_home:
+    ld a,b
+    or a
+    jr nz,sh_p604_invalid
+    ld a,c
+    or a
+    jr z,sh_p604_invalid
+    cp 9
+    jr nc,sh_p604_invalid
+    push hl
+    push bc
+    ld a,(hl)
+    cp 'a'
+    jr c,sh_p604_invalid_restore
+    cp 'z'+1
+    jr nc,sh_p604_invalid_restore
+    inc hl
+    dec c
+sh_p604_validate_tail:
+    ld a,c
+    or a
+    jr z,sh_p604_build
+    ld a,(hl)
+    cp 'a'
+    jr c,sh_p604_validate_digit
+    cp 'z'+1
+    jr c,sh_p604_validate_next
+sh_p604_validate_digit:
+    cp '0'
+    jr c,sh_p604_validate_punct
+    cp '9'+1
+    jr c,sh_p604_validate_next
+sh_p604_validate_punct:
+    cp '_'
+    jr z,sh_p604_validate_next
+    cp '-'
+    jr nz,sh_p604_invalid_restore
+sh_p604_validate_next:
+    inc hl
+    dec c
+    jr sh_p604_validate_tail
+
+sh_p604_build:
+    pop bc
+    pop hl
+    push de
+    ex de,hl
+    ld (hl),'/'
+    inc hl
+    ld (hl),'h'
+    inc hl
+    ld (hl),'o'
+    inc hl
+    ld (hl),'m'
+    inc hl
+    ld (hl),'e'
+    inc hl
+    ld (hl),'/'
+    inc hl
+sh_p604_copy_user:
+    ld a,b
+    or c
+    jr z,sh_p604_terminate
+    ld a,(de)
+    ld (hl),a
+    inc de
+    inc hl
+    dec bc
+    jr sh_p604_copy_user
+sh_p604_terminate:
+    xor a
+    ld (hl),a
+    pop hl
+    ld a,SYS_CHDIR
+    jp SYSCALL_GATEWAY
+
+sh_p604_invalid_restore:
+    pop bc
+    pop hl
+sh_p604_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+
+; HL=writable buffer, BC=capacity. pwd uses the kernel descriptor cwd.
+sh_p604_getcwd:
+    ld a,SYS_GETCWD
+    jp SYSCALL_GATEWAY
+    ENDM
