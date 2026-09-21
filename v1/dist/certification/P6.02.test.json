@@ -1,0 +1,123 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "length": 144,
+      "name": "canonical-issue-bytes-exact",
+      "passed": true
+    },
+    {
+      "name": "issue-length-frozen-144",
+      "passed": true
+    },
+    {
+      "name": "exact-login-prompt-length-seven",
+      "passed": true
+    },
+    {
+      "name": "issue-written-before-login-prompt",
+      "passed": true
+    },
+    {
+      "name": "no-duplicate-heading-literal-in-shell",
+      "passed": true
+    },
+    {
+      "name": "noncanonical-issue-length-rejected-pre-output",
+      "passed": true
+    },
+    {
+      "bytes": 151,
+      "name": "fuse-exact-issue-once-then-login-prompt",
+      "passed": true
+    },
+    {
+      "name": "fuse-duplicate-heading-attempt-rejected-before-output",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p602-sh.lst",
+        "--sym=p602-sh.sym",
+        "p602-sh.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 338 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p602-sh.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 30,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 57019, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 60965, \"image_size\": 30, \"magic\": \"MEX1\", \"minimum_stack_size\": 128, \"relocation_count\": 0, \"relocation_table_offset\": 54, \"relocations\": [], \"stored_length\": 54, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p602-shell-fixture.lst",
+        "--sym=p602-shell-fixture.sym",
+        "p602-shell-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 338 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p602-gateway.lst",
+        "--sym=p602-gateway.sym",
+        "p602-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 278 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/assets/issue.txt": "8d57d17f25ef895909a56a3195e29b8f9b83ff2cc31b2537a23d1d02429e3d31",
+    "v1/build/p602-issue-login.tap": "b8b3914af29e12ad9f567be68e510ed4c403b51119d5843e8cc5d75eec577930",
+    "v1/build/p602-sh.mex1": "f151495e12559fe0fe4e1c39c49cb206cf0bcf3bfe13742ef52af47d63aac83a",
+    "v1/dist/certification/P6.01.build.json": "ccc6cfb0521b609867de0c26403f74736499fe2f5b05a3cd4bf5b993a7d19c06",
+    "v1/dist/certification/P6.01.test.json": "785849d327153a0dd56def8e4c36fee526f37ef0cc4117a9c209725969f14bad",
+    "v1/dist/media/P6.01/manifest.json": "53171f2530eb3480a2a347e38514bd5431f36f5b6f7ca7519b6c21af7addf972",
+    "v1/src/shell/sh.asm": "734d2bce00985b5786717c1b388d3e2862586e29bc20e3dc5612bbcd4f362e19",
+    "v1/tools-host/test-driver/phase6_issue.py": "b77712279a02029edb8e0b86a96c7dc5b69ee7b3aafe18d85ea46d89fe04388c",
+    "v1/tools-host/test-driver/run.py": "f155e548953727db99690adf83e9697b2cd8e37961143a3fc22f34843b3bf75c"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P6.01": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "1ec0f444c5adcaa8fd2b5def0bf373fc8f7a6985",
+  "status": "PASS",
+  "step": "P6.02",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
