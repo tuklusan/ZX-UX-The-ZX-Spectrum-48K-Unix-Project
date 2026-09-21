@@ -1,0 +1,80 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "default-stdin-dev-null",
+      "passed": true
+    },
+    {
+      "name": "no-tty-owner-change",
+      "passed": true
+    },
+    {
+      "name": "successful-launch-status-zero",
+      "passed": true
+    },
+    {
+      "name": "failure-status-actual-no-phantom",
+      "passed": true
+    },
+    {
+      "name": "fuse-background-null-stdin-and-prompt-status",
+      "passed": true
+    },
+    {
+      "name": "fuse-launch-failure-no-phantom-job",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p623-fixture.lst",
+        "--sym=p623-fixture.sym",
+        "p623-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 6,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 3107 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p623-gate.lst",
+        "--sym=p623-gate.sym",
+        "p623-gate.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 297 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/dist/certification/P6.22.build.json": "f78e951c885140ed8b46d005d74db07a0c90b69d1e4027b07cb0319613daff9e",
+    "v1/dist/certification/P6.22.test.json": "6c2510449d1d4aaebdad61f9bf0cd0ab811b4b9d21e4bd2e3e30a005ba5489fc",
+    "v1/dist/media/P6.22/manifest.json": "e08dfa1aef42d4f7fdf3c0e39ed6963601a9d5805c4ac22f95c0fea87040ba1c",
+    "v1/src/shell/sh.asm": "da534a6d7d318600dee10c93cd37352bc7603c3b631f1c3397271dbde8d0dadf",
+    "v1/tools-host/test-driver/phase6_background.py": "6ba95a4c0201b5fbba5fb802ba250da5abf5224b49aae35ad68eda738a27d37f",
+    "v1/tools-host/test-driver/run.py": "5946eb6e8d7c2e72a01a7cc7b35ee6cf5e64f048a02a472d4d758a4bdb798a4a"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P6.22": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "9a6a798472f061ab4508a6f6eea065f97b41ccc0",
+  "status": "PASS",
+  "step": "P6.23",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
