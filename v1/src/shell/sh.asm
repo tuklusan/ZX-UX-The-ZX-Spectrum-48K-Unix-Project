@@ -2459,3 +2459,223 @@ sh_p620_skip:
     xor a
     ret
     ENDM
+
+; P6.21 foreground pipeline launch transaction.
+    MACRO EMIT_P621_PIPELINE_ROUTINES
+P621_STAGE_SIZE          EQU 6
+P621_MAX_STAGES          EQU 6
+
+; IX -> stage descriptors:
+;   +0 request pointer
+;   +2 pointer to request ENV1 pointer field
+;   +4 pointer to request ENV1 length field
+; B=stage count 1..6, HL=current shell ENV1, DE=exact ENV1 length.
+; The environment is copied once before any spawn; every child request is then
+; patched to the immutable launch snapshot. No yield/wait occurs until all pipes
+; and all children have been created.
+sh_p621_launch_foreground:
+    ld a,b
+    or a
+    jp z,sh_p621_invalid
+    cp P621_MAX_STAGES+1
+    jp nc,sh_p621_invalid
+    ld (p621_stage_table),ix
+    ld a,b
+    ld (p621_stage_count),a
+    ld (p621_env_source),hl
+    ld (p621_env_len),de
+
+    ld a,d
+    or a
+    jp nz,sh_p621_toolong
+    ld a,e
+    cp 8
+    jp c,sh_p621_invalid
+    or a
+    jp z,sh_p621_invalid
+
+    ld hl,(p621_env_source)
+    ld de,p621_env_snapshot
+    ld bc,(p621_env_len)
+    ldir
+
+    ; Create N-1 pipes first.
+    ld a,(p621_stage_count)
+    dec a
+    ld (p621_pipe_left),a
+sh_p621_pipe_loop:
+    ld a,(p621_pipe_left)
+    or a
+    jr z,sh_p621_patch_loop_start
+    ld hl,p621_pipe_handles
+    ld a,SYS_PIPE
+    call SYSCALL_GATEWAY
+    jp c,sh_p621_rollback
+    call sh_p621_close_pipe_pair
+    ld a,(p621_pipe_left)
+    dec a
+    ld (p621_pipe_left),a
+    jr sh_p621_pipe_loop
+
+sh_p621_patch_loop_start:
+    ld ix,(p621_stage_table)
+    ld a,(p621_stage_count)
+    ld (p621_spawn_left),a
+    xor a
+    ld (p621_spawned),a
+
+sh_p621_spawn_loop:
+    ld l,(ix+2)
+    ld h,(ix+3)
+    ld de,p621_env_snapshot
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    ld l,(ix+4)
+    ld h,(ix+5)
+    ld de,(p621_env_len)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+
+    ld l,(ix+0)
+    ld h,(ix+1)
+    ld a,SYS_SPAWN
+    call SYSCALL_GATEWAY
+    jp c,sh_p621_spawn_fail
+    ld a,(p621_spawned)
+    ld e,a
+    ld d,0
+    push hl
+    ld hl,p621_child_pids
+    add hl,de
+    pop de
+    ld (hl),e
+    ld a,(p621_spawned)
+    inc a
+    ld (p621_spawned),a
+    ld de,P621_STAGE_SIZE
+    add ix,de
+    ld a,(p621_spawn_left)
+    dec a
+    ld (p621_spawn_left),a
+    jr nz,sh_p621_spawn_loop
+
+    ; Parent references are closed before waiting. No scheduling syscall has
+    ; occurred before this point.
+    call sh_p621_close_pipe_pair
+
+    xor a
+    ld (p621_wait_index),a
+sh_p621_wait_loop:
+    ld a,(p621_wait_index)
+    ld b,a
+    ld a,(p621_stage_count)
+    cp b
+    jr z,sh_p621_done
+    ld e,b
+    ld d,0
+    ld hl,p621_child_pids
+    add hl,de
+    ld a,(hl)
+    ld (p621_wait_req),a
+    xor a
+    ld (p621_wait_req+1),a
+    ld hl,p621_wait_status
+    ld (p621_wait_req+2),hl
+    ld hl,p621_wait_req
+    ld a,SYS_WAIT
+    call SYSCALL_GATEWAY
+    jp c,sh_p621_rollback
+    ld a,(p621_wait_index)
+    inc a
+    ld (p621_wait_index),a
+    jr sh_p621_wait_loop
+
+sh_p621_done:
+    ld a,(p621_wait_status)
+    or a
+    ret
+
+sh_p621_spawn_fail:
+    ld (p621_error),a
+    call sh_p621_kill_spawned
+    call sh_p621_close_pipe_pair
+    ld a,(p621_error)
+    scf
+    ret
+
+sh_p621_rollback:
+    ld (p621_error),a
+    call sh_p621_kill_spawned
+    call sh_p621_close_pipe_pair
+    ld a,(p621_error)
+    scf
+    ret
+
+sh_p621_kill_spawned:
+    ld a,(p621_spawned)
+    ld (p621_kill_left),a
+sh_p621_kill_loop:
+    ld a,(p621_kill_left)
+    or a
+    ret z
+    dec a
+    ld (p621_kill_left),a
+    ld e,a
+    ld d,0
+    ld hl,p621_child_pids
+    add hl,de
+    ld l,(hl)
+    ld h,0
+    ld a,SYS_KILL
+    call SYSCALL_GATEWAY
+    jr sh_p621_kill_loop
+
+sh_p621_close_pipe_pair:
+    ld a,(p621_pipe_handles)
+    cp HANDLE_FREE
+    jr z,sh_p621_close_pipe_write
+    ld l,a
+    ld h,0
+    ld a,SYS_CLOSE
+    call SYSCALL_GATEWAY
+    ld a,HANDLE_FREE
+    ld (p621_pipe_handles),a
+sh_p621_close_pipe_write:
+    ld a,(p621_pipe_handles+1)
+    cp HANDLE_FREE
+    ret z
+    ld l,a
+    ld h,0
+    ld a,SYS_CLOSE
+    call SYSCALL_GATEWAY
+    ld a,HANDLE_FREE
+    ld (p621_pipe_handles+1),a
+    ret
+
+sh_p621_toolong:
+    ld a,E_TOOLONG
+    scf
+    ret
+sh_p621_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+
+p621_stage_table: dw 0
+p621_env_source: dw 0
+p621_env_len: dw 0
+p621_pipe_handles: db HANDLE_FREE,HANDLE_FREE
+p621_child_pids: defs P621_MAX_STAGES,0
+p621_wait_req: db 0,0,0,0
+p621_wait_status: db 0
+p621_stage_count: db 0
+p621_pipe_left: db 0
+p621_spawn_left: db 0
+p621_spawned: db 0
+p621_wait_index: db 0
+p621_kill_left: db 0
+p621_error: db 0
+p621_env_snapshot: defs 256,0
+    ENDM
