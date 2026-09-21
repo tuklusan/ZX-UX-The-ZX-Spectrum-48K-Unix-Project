@@ -1,0 +1,19 @@
+{
+  "files": [
+    {
+      "action": "build",
+      "path": "build/build-p611-binding-7e9a134771148cc3aabd71ae21ddfbef26f2a1a5ffec98301568a229df7307cc.tap",
+      "sha256": "7e9a134771148cc3aabd71ae21ddfbef26f2a1a5ffec98301568a229df7307cc",
+      "size": 249
+    },
+    {
+      "action": "test",
+      "path": "test/build-p611-binding-7e9a134771148cc3aabd71ae21ddfbef26f2a1a5ffec98301568a229df7307cc.tap",
+      "sha256": "7e9a134771148cc3aabd71ae21ddfbef26f2a1a5ffec98301568a229df7307cc",
+      "size": 249
+    }
+  ],
+  "schema": 1,
+  "source_commit": "3166ba22005d4caf1bfe41dec69e39d983e978b4",
+  "step": "P6.11"
+}
