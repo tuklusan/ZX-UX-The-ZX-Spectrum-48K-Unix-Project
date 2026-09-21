@@ -362,68 +362,51 @@ zx48_process_perm:
     scf
     ret
 
-; P6.26 cooperative BREAK/cancellation boundary. IM2 only publishes
-; break_pending. This routine is called at syscall entry before any side effect.
-; Carry means the current caller consumes E_INTR and the syscall must not run.
+; P6.26 cooperative BREAK/cancellation boundary. IM2 is producer-only.
 zx48_p626_boundary:
     ld a,(break_pending)
     or a
-    jr z,zx48_p626_check_current
-
+    jr z,zx48_p626_current
     ld a,(tty_input_owner)
     cp 1
-    jr nz,zx48_p626_break_child
-    ; Shell-owned BREAK belongs to PID1's current input line. If another task
-    ; reaches a boundary first, leave the event pending for PID1.
+    jr z,zx48_p626_shell_break
+    cp 2
+    jr c,zx48_p626_drop
+    cp MAX_PROCESSES
+    jr nc,zx48_p626_drop
+    ld b,a
+    ld a,(current_pid)
+    cp b
+    jr z,zx48_p626_owner_current
+    ld a,b
+    call zx48_process_live_lookup
+    jr c,zx48_p626_drop
+    call zx48_process_kill_started
+    jr zx48_p626_drop
+zx48_p626_owner_current:
+    call zx48_process_ptr
+    ld a,(ix+PROC_FLAGS)
+    or PROC_FLAG_CANCEL
+    ld (ix+PROC_FLAGS),a
+    jr zx48_p626_drop
+zx48_p626_shell_break:
     ld a,(current_pid)
     cp 1
-    jr nz,zx48_p626_check_current
+    jr nz,zx48_p626_current
     xor a
     ld (break_pending),a
     ld a,E_INTR
     scf
     ret
-
-zx48_p626_break_child:
-    cp 2
-    jr c,zx48_p626_clear_break
-    cp MAX_PROCESSES
-    jr nc,zx48_p626_clear_break
-    ld b,a
-    call zx48_process_live_lookup
-    jr c,zx48_p626_clear_break
-    ld a,(ix+PROC_FLAGS)
-    or PROC_FLAG_CANCEL
-    ld (ix+PROC_FLAGS),a
-    ; Wake only a blocked owner. READY/RUNNING remain cooperative and are never
-    ; asynchronously switched here.
-    ld a,(ix+PROC_STATE)
-    cp PROC_SLEEPING
-    jr z,zx48_p626_wake_owner
-    cp PROC_WAIT_CHILD
-    jr z,zx48_p626_wake_owner
-    cp PROC_WAIT_INPUT
-    jr z,zx48_p626_wake_owner
-    cp PROC_WAIT_PIPE_READ
-    jr z,zx48_p626_wake_owner
-    cp PROC_WAIT_PIPE_WRITE
-    jr nz,zx48_p626_clear_break
-zx48_p626_wake_owner:
-    xor a
-    ld (ix+PROC_WAIT_OBJECT),a
-    ld (ix+PROC_STATE),PROC_READY
-zx48_p626_clear_break:
+zx48_p626_drop:
     xor a
     ld (break_pending),a
-
-zx48_p626_check_current:
+zx48_p626_current:
     ld a,(current_pid)
     cp 2
     jr c,zx48_p626_ok
-    call zx48_process_live_lookup
-    jr c,zx48_p626_ok
-    ld a,(ix+PROC_FLAGS)
-    and PROC_FLAG_CANCEL
+    call zx48_process_ptr
+    bit 0,(ix+PROC_FLAGS)
     jr z,zx48_p626_ok
     res 0,(ix+PROC_FLAGS)
     ld a,E_INTR
