@@ -1,0 +1,19 @@
+{
+  "files": [
+    {
+      "action": "build",
+      "path": "build/build-p628-shell-golden-230e5c38e7e12715543d6f30011298d25a049fc1d2ffcb08a88de44f5f4d3f3b.tap",
+      "sha256": "230e5c38e7e12715543d6f30011298d25a049fc1d2ffcb08a88de44f5f4d3f3b",
+      "size": 27
+    },
+    {
+      "action": "test",
+      "path": "test/build-p628-shell-golden-230e5c38e7e12715543d6f30011298d25a049fc1d2ffcb08a88de44f5f4d3f3b.tap",
+      "sha256": "230e5c38e7e12715543d6f30011298d25a049fc1d2ffcb08a88de44f5f4d3f3b",
+      "size": 27
+    }
+  ],
+  "schema": 1,
+  "source_commit": "b45da6f8506eb8e1994a95f936d3092e0da9126c",
+  "step": "P6.28"
+}

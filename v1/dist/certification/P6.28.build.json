@@ -1,0 +1,43 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "host-only-no-emulator-dependency",
+      "passed": true
+    },
+    {
+      "name": "no-host-shell-execution",
+      "passed": true
+    },
+    {
+      "name": "rev16-vector-domains-covered",
+      "passed": true
+    }
+  ],
+  "commands": [],
+  "hashes": {
+    "tests/emulator/shell_p628_golden.py": "e664698b1c26deb5aefb5d1b5a3faf2e155cf7873a387fdb6c1712042f9ef470",
+    "v1/build/p628-shell-golden.tap": "230e5c38e7e12715543d6f30011298d25a049fc1d2ffcb08a88de44f5f4d3f3b",
+    "v1/dist/certification/P6.27.build.json": "8cd26d627cde0801bd581f0dcbefaeb95bf73875105d0e480052ca4224055621",
+    "v1/dist/certification/P6.27.test.json": "c3cfec7862cb0da79b37b631bbae5f7ea3c6ba1daec0002599f22aeae3c92021",
+    "v1/dist/media/P6.27/manifest.json": "70d6591b7028b144af7690ab23eddc4557eab8f2a1d6abae576fbc55ad733287",
+    "v1/tools-host/test-driver/phase6_binding.py": "bc5d31c183cf2329df18a9a9dd7f09ff731f42c904cb6d76edc4fa77683f2310",
+    "v1/tools-host/test-driver/phase6_builtins.py": "a5dc39ff3460c9e4e44481e22681751df20582199aec5ee4d37ae28c0c038527",
+    "v1/tools-host/test-driver/phase6_expansion.py": "899fa6d1f9e4328a92661dd6c5ffcbbbe7e0ecfe574fe04c119897ec461ca763",
+    "v1/tools-host/test-driver/phase6_operators.py": "e3e5ea57cf8fd2c62e1585ffddcc25bdc45cfa4b9776ceb11539aa55700e5184",
+    "v1/tools-host/test-driver/phase6_shell_golden.py": "a880de408a0b5596db395c4fc76ac9862f446f311a6395c7c9f8cf4be25213a8",
+    "v1/tools-host/test-driver/phase6_tokenizer.py": "7b63037f82f9f581b3c6e21373648b236d3ad2b05ad5a8db85eabf5a059fe563",
+    "v1/tools-host/test-driver/run.py": "d70dba4015bdf7618f693b4b9877cc158b240385ca9f1c4aaf6ab90ac154d992"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P6.27": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "b45da6f8506eb8e1994a95f936d3092e0da9126c",
+  "status": "PASS",
+  "step": "P6.28",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
