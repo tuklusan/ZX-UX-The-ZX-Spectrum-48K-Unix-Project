@@ -210,3 +210,230 @@ sh_p604_getcwd:
     ld a,SYS_GETCWD
     jp SYSCALL_GATEWAY
     ENDM
+
+; P6.05 initial mutable environment. The shell table uses canonical ENV1 bytes.
+    MACRO EMIT_P605_ENV_ROUTINES
+; HL=username, BC=length (accepted P6.03 identity), DE=writable ENV1 buffer.
+; Emits exact sorted HOME,PATH,SHELL,USER entries. $? is not in this table.
+sh_p605_init_env:
+    ld a,b
+    or a
+    jr nz,sh_p605_invalid
+    ld a,c
+    or a
+    jr z,sh_p605_invalid
+    cp 9
+    jr nc,sh_p605_invalid
+    push hl
+    pop ix
+    ld a,c
+    add a,a
+    add a,52
+    ld h,a
+    push bc
+
+    ld a,'E'
+    ld (de),a
+    inc de
+    ld a,'N'
+    ld (de),a
+    inc de
+    ld a,'V'
+    ld (de),a
+    inc de
+    ld a,'1'
+    ld (de),a
+    inc de
+    ld a,4
+    ld (de),a
+    inc de
+    xor a
+    ld (de),a
+    inc de
+    ld a,h
+    ld (de),a
+    inc de
+    xor a
+    ld (de),a
+    inc de
+
+    ; HOME=/home/<user>
+    ld a,'H'
+    ld (de),a
+    inc de
+    ld a,'O'
+    ld (de),a
+    inc de
+    ld a,'M'
+    ld (de),a
+    inc de
+    ld a,'E'
+    ld (de),a
+    inc de
+    ld a,'='
+    ld (de),a
+    inc de
+    ld a,'/'
+    ld (de),a
+    inc de
+    ld a,'h'
+    ld (de),a
+    inc de
+    ld a,'o'
+    ld (de),a
+    inc de
+    ld a,'m'
+    ld (de),a
+    inc de
+    ld a,'e'
+    ld (de),a
+    inc de
+    ld a,'/'
+    ld (de),a
+    inc de
+    pop bc
+    push bc
+    push ix
+    pop hl
+sh_p605_home_user:
+    ld a,b
+    or c
+    jr z,sh_p605_home_done
+    ld a,(hl)
+    ld (de),a
+    inc hl
+    inc de
+    dec bc
+    jr sh_p605_home_user
+sh_p605_home_done:
+    xor a
+    ld (de),a
+    inc de
+
+    ; PATH=/bin:.
+    ld a,'P'
+    ld (de),a
+    inc de
+    ld a,'A'
+    ld (de),a
+    inc de
+    ld a,'T'
+    ld (de),a
+    inc de
+    ld a,'H'
+    ld (de),a
+    inc de
+    ld a,'='
+    ld (de),a
+    inc de
+    ld a,'/'
+    ld (de),a
+    inc de
+    ld a,'b'
+    ld (de),a
+    inc de
+    ld a,'i'
+    ld (de),a
+    inc de
+    ld a,'n'
+    ld (de),a
+    inc de
+    ld a,':'
+    ld (de),a
+    inc de
+    ld a,'.'
+    ld (de),a
+    inc de
+    xor a
+    ld (de),a
+    inc de
+
+    ; SHELL=/bin/sh
+    ld a,'S'
+    ld (de),a
+    inc de
+    ld a,'H'
+    ld (de),a
+    inc de
+    ld a,'E'
+    ld (de),a
+    inc de
+    ld a,'L'
+    ld (de),a
+    inc de
+    ld a,'L'
+    ld (de),a
+    inc de
+    ld a,'='
+    ld (de),a
+    inc de
+    ld a,'/'
+    ld (de),a
+    inc de
+    ld a,'b'
+    ld (de),a
+    inc de
+    ld a,'i'
+    ld (de),a
+    inc de
+    ld a,'n'
+    ld (de),a
+    inc de
+    ld a,'/'
+    ld (de),a
+    inc de
+    ld a,'s'
+    ld (de),a
+    inc de
+    ld a,'h'
+    ld (de),a
+    inc de
+    xor a
+    ld (de),a
+    inc de
+
+    ; USER=<user>
+    ld a,'U'
+    ld (de),a
+    inc de
+    ld a,'S'
+    ld (de),a
+    inc de
+    ld a,'E'
+    ld (de),a
+    inc de
+    ld a,'R'
+    ld (de),a
+    inc de
+    ld a,'='
+    ld (de),a
+    inc de
+    pop bc
+    push ix
+    pop hl
+sh_p605_user_copy:
+    ld a,b
+    or c
+    jr z,sh_p605_user_done
+    ld a,(hl)
+    ld (de),a
+    inc hl
+    inc de
+    dec bc
+    jr sh_p605_user_copy
+sh_p605_user_done:
+    xor a
+    ld (de),a
+    ret
+
+sh_p605_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+
+; HL points at the separate one-byte shell status used by $? expansion.
+sh_p605_status_init:
+    xor a
+    ld (hl),a
+    ret
+    ENDM
