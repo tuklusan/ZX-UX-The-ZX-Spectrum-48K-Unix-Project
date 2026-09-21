@@ -285,7 +285,6 @@ def _assemble_fixture(root: Path, run_command: Callable[..., Any], require_proje
         "    jp zx48_panic\n"
         "zx48_panic:\n"
         "    jp $0000\n"
-        "syscall_arg_hl: dw 0\n"
         "current_pid: db 0\n"
         "process_table: defs MAX_PROCESSES*PROC_DESC_SIZE,0\n"
         "p210_path_good: db '/bin/good',0\n"

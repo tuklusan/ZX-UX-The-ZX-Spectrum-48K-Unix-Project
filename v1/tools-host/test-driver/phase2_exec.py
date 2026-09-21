@@ -80,7 +80,6 @@ def _assemble(root: Path, run_command: Callable[..., Any], require_project_tool:
         "zx48_spawn_resolve_ram_object: ld ix,$A000 : xor a : ret\n"
         "zx48_pipe_endpoint_closed: xor a : ret\n"
         "zx48_panic: jp $0000\n"
-        "syscall_arg_hl: dw 0\n"
         "current_pid: db 1\n"
         "process_table: defs MAX_PROCESSES*PROC_DESC_SIZE,0\n",
         encoding="utf-8", newline="\n")

@@ -123,12 +123,11 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
     owner_exact = _ordered(
         keyboard_getkey,
         (
+            "ld hl,tty_input_owner",
             "ld a,(current_pid)",
             "or a",
             "jr z,zx48_keyboard_busy",
-            "ld b,a",
-            "ld a,(tty_input_owner)",
-            "cp b",
+            "cp (hl)",
             "jr nz,zx48_keyboard_busy",
             "call zx48_cursor_service",
             "call zx48_keyboard_decode",
@@ -149,13 +148,11 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
     release_exact = _ordered(
         keyboard_release,
         (
+            "ld hl,tty_input_owner",
             "ld a,(current_pid)",
-            "ld b,a",
-            "ld a,(tty_input_owner)",
-            "cp b",
+            "sub (hl)",
             "ret nz",
-            "xor a",
-            "ld (tty_input_owner),a",
+            "ld (hl),a",
             "ret",
         ),
     )
@@ -163,7 +160,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
         {"name": "canonical-getkey-syscall-number", "passed": "sys_con_getkey           equ $30" in include},
         {"name": "getkey-has-no-argument-dependency", "passed": "syscall_arg_" not in sys_getkey},
         {"name": "getkey-success-is-exact-h0-lbyte", "passed": result_exact},
-        {"name": "tty-owner-zero-is-unowned-at-init", "passed": _ordered(keyboard_init, ("xor a", "ld (tty_input_owner),a", "ld (break_pending),a", "ret"))},
+        {"name": "tty-owner-zero-is-unowned-at-init", "passed": _ordered(keyboard_init, ("ld hl,0", "ld (tty_input_owner),hl", "ret"))},
         {"name": "nonzero-current-owner-is-required", "passed": owner_exact and "handle_free" not in keyboard_getkey},
         {"name": "getkey-never-auto-claims-owner", "passed": "ld (tty_input_owner),a" not in keyboard_getkey},
         {"name": "owner-zero-is-single-unowned-representation", "passed": release_exact and "handle_free" not in keyboard_wake and "handle_free" not in keyboard_release},

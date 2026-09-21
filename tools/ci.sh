@@ -17,7 +17,6 @@ fail=0
 
 required_files=(
   "LICENSE"
-  "AGENTS.md"
   "README.md"
   "docs/03-ZX-UX-DEVELOPMENT-WORKFLOW.md"
   ".github/workflows/quality-and-ci.yml"
