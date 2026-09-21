@@ -2781,3 +2781,129 @@ p623_job_pid: db 0
 p623_error: db 0
 p623_dev_null: db '/dev/null',0
     ENDM
+
+; P6.24 bounded shell-managed background job table.
+    MACRO EMIT_P624_JOBS_ROUTINES
+P624_JOB_MAX            EQU 6
+P624_JOB_SIZE           EQU 12
+
+; A=pid, HL=exact 10-byte process name. Add/replace a shell-managed background job.
+sh_p624_job_add:
+    cp 2
+    jp c,sh_p624_invalid
+    cp MAX_PROCESSES
+    jp nc,sh_p624_invalid
+    ld (p624_pid),a
+    ld (p624_name),hl
+    ld ix,p624_jobs
+    ld b,P624_JOB_MAX
+sh_p624_add_scan:
+    ld a,(ix+0)
+    or a
+    jr z,sh_p624_add_here
+    cp (p624_pid)
+    jr z,sh_p624_add_here
+    ld de,P624_JOB_SIZE
+    add ix,de
+    djnz sh_p624_add_scan
+    ld a,E_AGAIN
+    scf
+    ret
+sh_p624_add_here:
+    ld a,(p624_pid)
+    ld (ix+0),a
+    ld (ix+1),PROC_READY
+    push ix
+    pop de
+    inc de
+    inc de
+    ld hl,(p624_name)
+    ld bc,10
+    ldir
+    xor a
+    ret
+
+; A=pid, HL=16-byte PINFO output. Remove stale PID reuse by exact name mismatch;
+; otherwise update state from PINFO+2.
+sh_p624_job_refresh:
+    ld (p624_pid),a
+    ld (p624_info),hl
+    call sh_p624_find
+    ret c
+    ld hl,(p624_info)
+    inc hl
+    inc hl
+    ld a,(hl)
+    ld (ix+1),a
+    inc hl
+    inc hl
+    ld de,2
+    add hl,de
+    push ix
+    pop de
+    ld bc,2
+    ex de,hl
+    add hl,bc
+    ex de,hl
+    ld b,10
+sh_p624_name_cmp:
+    ld a,(de)
+    cp (hl)
+    jr nz,sh_p624_stale
+    inc de
+    inc hl
+    djnz sh_p624_name_cmp
+    xor a
+    ret
+sh_p624_stale:
+    call sh_p624_clear_ix
+    ld a,E_NOENT
+    scf
+    ret
+
+; A=pid. Remove after reap.
+sh_p624_job_remove:
+    ld (p624_pid),a
+    call sh_p624_find
+    ret c
+    call sh_p624_clear_ix
+    xor a
+    ret
+
+sh_p624_find:
+    ld ix,p624_jobs
+    ld b,P624_JOB_MAX
+sh_p624_find_loop:
+    ld a,(ix+0)
+    ld c,a
+    ld a,(p624_pid)
+    cp c
+    ret z
+    ld de,P624_JOB_SIZE
+    add ix,de
+    djnz sh_p624_find_loop
+    ld a,E_NOENT
+    scf
+    ret
+
+sh_p624_clear_ix:
+    xor a
+    ld (ix+0),a
+    ld (ix+1),a
+    push ix
+    pop hl
+    inc hl
+    inc hl
+    ld e,l
+    ld d,h
+    inc de
+    ld bc,9
+    ld (hl),a
+    ldir
+    ret
+
+p624_pid: db 0
+p624_name: dw 0
+p624_info: dw 0
+p624_jobs: defs P624_JOB_MAX*P624_JOB_SIZE,0
+    ENDM
