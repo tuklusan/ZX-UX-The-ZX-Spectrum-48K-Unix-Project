@@ -1,0 +1,95 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "prompt-and-jobs-share-reaper",
+      "passed": true
+    },
+    {
+      "name": "reaper-scans-exact-pid2-through-pid7",
+      "passed": true
+    },
+    {
+      "name": "zombie-is-waited-immediately",
+      "passed": true
+    },
+    {
+      "name": "job-table-remove-does-not-create-adopted-jobs",
+      "passed": true
+    },
+    {
+      "name": "unexpected-proc-info-error-fails-closed",
+      "passed": true
+    },
+    {
+      "name": "exit-reaps-before-live-scan",
+      "passed": true
+    },
+    {
+      "name": "exit-live-child-is-busy",
+      "passed": true
+    },
+    {
+      "name": "exit-prints-exact-system-halted-before-sys-exit",
+      "passed": true
+    },
+    {
+      "name": "kernel-pid1-exit-is-di-halt-loop-not-zombie",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p629-shell-fixture.lst",
+        "--sym=p629-shell-fixture.sym",
+        "p629-shell-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 8,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 3866 lines, work time: 0.007 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 36,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nkernel.asm(87): warning[shortblock]: init data for block truncated to length: 0\nPass 3 complete\nErrors: 0, warnings: 1, compiled: 14222 lines, work time: 0.035 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "1bcb1862955372e15814296fd248795b3de41baac5596baecd5d5f155ed92a67",
+    "v1/build/p629-shell-fixture.bin": "c083bab798da141997b5f516a6d724ed39390aa45620746ed57532eeaa28442a",
+    "v1/dist/certification/P6.28.build.json": "7165a2e03ff14440e4041b644df6bb4f600a82aacc73f7690e38792039516426",
+    "v1/dist/certification/P6.28.test.json": "dfa222e2f1a04bc318514c6a25df30762f385ab389cd7591a79b4f76db8bff28",
+    "v1/dist/media/P6.28/manifest.json": "80f17de960087cfed038292a7e5888e491cae61754de4d517e3ffce1138648bb",
+    "v1/src/kernel/process.asm": "819b77622b90abc4386897a3544ba78b16ab045ffab16b8bad5dfe2f12ec338c",
+    "v1/src/shell/sh.asm": "d35b50b2bc276e839cd0755c116c525e1517201ddd791e0fd8166ff5d985d72c",
+    "v1/tools-host/test-driver/phase6_pid1_exit.py": "3dbb8eba333a243e4a6525408a492b1194660e55a8dd065d7d8567cf848b949b",
+    "v1/tools-host/test-driver/run.py": "4ce2535018355b6be9eac90854e3fd4f4015f10be9c93b8bbe119c731d494072"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P6.28": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "d4f7040b3f573ccab57860dbc8f48f90d33da384",
+  "status": "PASS",
+  "step": "P6.29",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
