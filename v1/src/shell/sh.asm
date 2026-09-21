@@ -3111,3 +3111,140 @@ sh_p626_invalid:
 
 p626_status_ptr: dw 0
     ENDM
+
+
+; P6.27 foreground cursor transaction. The shell snapshots the public TTY mode
+; and cursor shape, hides the cursor before any foreground pipeline setup, and
+; restores the prior mode/shape on every success, error, or cancellation unwind.
+    MACRO EMIT_P627_CURSOR_ROUTINES
+P627_TTY_HANDLE          EQU 0
+P627_GET_MODE            EQU 1
+P627_SET_MODE            EQU 2
+P627_SET_CURSOR          EQU 4
+P627_GET_CURSOR          EQU 5
+
+; Same launch ABI as sh_p621_launch_foreground.
+sh_p627_launch_foreground:
+    push ix
+    push bc
+    push de
+    push hl
+    call sh_p627_cursor_begin
+    pop hl
+    pop de
+    pop bc
+    pop ix
+    ret c
+    call sh_p621_launch_foreground
+    push af
+    call sh_p627_cursor_end
+    jr c,sh_p627_cleanup_failed
+    pop af
+    ret
+sh_p627_cleanup_failed:
+    inc sp
+    inc sp
+    ret
+
+sh_p627_cursor_begin:
+    ld a,(p627_active)
+    or a
+    jr nz,sh_p627_busy
+
+    ld de,p627_saved_mode
+    ld a,P627_GET_MODE
+    call sh_p627_ioctl
+    ret c
+
+    ld de,p627_saved_shape
+    ld a,P627_GET_CURSOR
+    call sh_p627_ioctl
+    ret c
+
+    xor a
+    ld (p627_arg),a
+    ld de,p627_arg
+    ld a,P627_SET_CURSOR
+    call sh_p627_ioctl
+    ret c
+
+    ld a,1
+    ld (p627_active),a
+    xor a
+    ret
+
+; Cleanup is deliberately best-effort: a mode-restore error does not skip cursor
+; restoration. The first cleanup errno wins and active state is always cleared.
+sh_p627_cursor_end:
+    ld a,(p627_active)
+    or a
+    ret z
+    xor a
+    ld (p627_error),a
+
+    ld de,p627_current_mode
+    ld a,P627_GET_MODE
+    call sh_p627_ioctl
+    jr c,sh_p627_record_error
+    ld a,(p627_current_mode)
+    ld b,a
+    ld a,(p627_saved_mode)
+    cp b
+    jr z,sh_p627_restore_shape
+    ld (p627_arg),a
+    ld de,p627_arg
+    ld a,P627_SET_MODE
+    call sh_p627_ioctl
+    jr nc,sh_p627_restore_shape
+sh_p627_record_error:
+    ld b,a
+    ld a,(p627_error)
+    or a
+    jr nz,sh_p627_restore_shape
+    ld a,b
+    ld (p627_error),a
+
+sh_p627_restore_shape:
+    ld a,(p627_saved_shape)
+    ld (p627_arg),a
+    ld de,p627_arg
+    ld a,P627_SET_CURSOR
+    call sh_p627_ioctl
+    jr nc,sh_p627_restore_done
+    ld b,a
+    ld a,(p627_error)
+    or a
+    jr nz,sh_p627_restore_done
+    ld a,b
+    ld (p627_error),a
+
+sh_p627_restore_done:
+    xor a
+    ld (p627_active),a
+    ld a,(p627_error)
+    or a
+    ret z
+    scf
+    ret
+
+; A=request, DE=argument byte.
+sh_p627_ioctl:
+    ld (p627_req+1),a
+    ld (p627_req+2),de
+    ld hl,p627_req
+    ld a,SYS_IOCTL
+    jp SYSCALL_GATEWAY
+
+sh_p627_busy:
+    ld a,E_BUSY
+    scf
+    ret
+
+p627_req: db P627_TTY_HANDLE,0,0,0
+p627_saved_mode: db 0
+p627_current_mode: db 0
+p627_saved_shape: db 0
+p627_arg: db 0
+p627_active: db 0
+p627_error: db 0
+    ENDM
