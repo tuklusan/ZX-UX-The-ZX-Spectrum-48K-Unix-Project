@@ -62,6 +62,7 @@ def dispatch(root:Path,action:str,step:str,*,sha256_file,run_command,require_pro
     INCLUDE "../src/shell/sh.asm"
 PANIC_SCHEDULER EQU $03
 PANIC_ROM_CONTRACT EQU $05
+zx48_alloc: ld a,E_NOMEM : scf : ret
     ORG $C000
 p605_start:
     EMIT_ENV1_ROUTINES

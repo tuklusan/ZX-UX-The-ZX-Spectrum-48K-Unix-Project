@@ -218,12 +218,12 @@ sh_p604_getcwd:
 sh_p605_init_env:
     ld a,b
     or a
-    jr nz,sh_p605_invalid
+    jp nz,sh_p605_invalid
     ld a,c
     or a
-    jr z,sh_p605_invalid
+    jp z,sh_p605_invalid
     cp 9
-    jr nc,sh_p605_invalid
+    jp nc,sh_p605_invalid
     push hl
     pop ix
     ld a,c
