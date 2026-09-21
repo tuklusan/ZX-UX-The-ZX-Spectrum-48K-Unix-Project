@@ -172,8 +172,32 @@ zx48_syscall_impl:
     ld (syscall_arg_hl),hl
     ld (syscall_arg_de),de
     ld (syscall_arg_bc),bc
-    call zx48_p626_break_boundary
-    ret c
+
+    ; P6.26 cooperative BREAK boundary. AF preserves the syscall selector while
+    ; all user argument registers are already snapshotted above. tty_input_owner
+    ; is invariantly 0 or a live PID; an owner other than PID1 can therefore use
+    ; the existing started-kill primitive without a second liveness search.
+    push af
+    ld a,(break_pending)
+    or a
+    jr z,zx48_p626_break_restore_selector
+    ld a,(tty_input_owner)
+    or a
+    jr z,zx48_p626_break_drop
+    ld b,a
+    ld a,(current_pid)
+    cp b
+    jr z,zx48_p626_break_current
+    ld a,b
+    dec a
+    jr z,zx48_p626_break_restore_selector
+    inc a
+    call zx48_process_ptr
+    call zx48_process_kill_started
+zx48_p626_break_drop:
+    ld (break_pending),a
+zx48_p626_break_restore_selector:
+    pop af
     cp SYS_KILL+1
     jr c,zx48_sys_dispatch_proc
     cp SYS_OPEN
@@ -195,6 +219,14 @@ zx48_syscall_impl:
     sub SYS_MEM_INFO
     ld hl,zx48_sys_info_table
     jr zx48_sys_dispatch_index
+
+zx48_p626_break_current:
+    xor a
+    ld (break_pending),a
+    pop bc
+    ld a,E_INTR
+    scf
+    ret
 
 zx48_sys_dispatch_pipe:
     sub SYS_PIPE

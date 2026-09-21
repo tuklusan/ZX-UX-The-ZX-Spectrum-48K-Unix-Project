@@ -19,47 +19,9 @@ KEYBOARD_STATE_END       EQU KEYBOARD_STATE_BASE+2
     ASSERT KEYBOARD_STATE_END <= EMERGENCY_END+1
 
     MACRO EMIT_KEYBOARD_ROUTINES
-; P6.26 BREAK consumer at syscall/yield/input boundaries. IM2 only publishes
-; break_pending; this routine cancels exactly the current tty owner.
-zx48_p626_break_boundary:
-    ld a,(break_pending)
-    or a
-    ret z
-    ld a,(tty_input_owner)
-    cp 1
-    jr z,zx48_p626_break_shell
-    cp 2
-    jr c,zx48_p626_break_drop
-    cp MAX_PROCESSES
-    jr nc,zx48_p626_break_drop
-    ld b,a
-    ld a,(current_pid)
-    cp b
-    jr z,zx48_p626_break_current
-    ld a,b
-    call zx48_process_live_lookup
-    jr c,zx48_p626_break_drop
-    call zx48_process_kill_started
-zx48_p626_break_drop:
-    xor a
-    ld (break_pending),a
-    ret
-zx48_p626_break_current:
-    xor a
-    ld (break_pending),a
-    ld a,E_INTR
-    scf
-    ret
-zx48_p626_break_shell:
-    ld a,(current_pid)
-    cp 1
-    ret nz
-    jr zx48_p626_break_current
-
 zx48_keyboard_init:
-    xor a
-    ld (tty_input_owner),a
-    ld (break_pending),a
+    ld hl,0
+    ld (tty_input_owner),hl
     ret
 
 ; Decode one supported foreground key without using the BASIC line editor.
