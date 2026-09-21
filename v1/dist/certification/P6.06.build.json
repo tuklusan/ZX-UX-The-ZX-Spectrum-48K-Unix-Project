@@ -1,0 +1,69 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "transactional-private-scratch",
+      "passed": true
+    },
+    {
+      "name": "eight-entry-limit",
+      "passed": true
+    },
+    {
+      "name": "first-equals-delimiter",
+      "passed": true
+    },
+    {
+      "name": "name-lexical-upper-lower-digit-underscore",
+      "passed": true
+    },
+    {
+      "name": "value-printable-63",
+      "passed": true
+    },
+    {
+      "name": "sorted-rebuild-uses-name-comparison",
+      "passed": true
+    },
+    {
+      "name": "magic-vars-not-protected",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p606-fixture.lst",
+        "--sym=p606-fixture.sym",
+        "p606-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 9,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 7145 lines, work time: 0.009 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/dist/certification/P6.05.build.json": "17c8ae3e5c8110c75e03220b5e44660f8aa97677201087f4877d2ecf94fd1dcd",
+    "v1/dist/certification/P6.05.test.json": "2508a091950952c360e0f2f89e6c6d4d5ce006c7369d6a7e5c2045226d7b0248",
+    "v1/dist/media/P6.05/manifest.json": "311f0270f5ea4186c5c736701c04de4c3ed8307e7a8b3f78dda611c40db9d30a",
+    "v1/src/shell/sh.asm": "b9e8cdf380605fe6049813cae29bd0599056db979703f9a69ecf113c25ed4eca",
+    "v1/tools-host/test-driver/phase6_set_unset.py": "bb7e992dae05620d959943da2840d622fa916210ceebd6ab3ff405d93f252125",
+    "v1/tools-host/test-driver/run.py": "5c695d6d19af67a86bb8ee983837c14020906c268950934f2211fa653fabd07a"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P6.05": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "bb6f0e0ccc108965eb0a91ddf18b81d33ff4c83c",
+  "status": "PASS",
+  "step": "P6.06",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
