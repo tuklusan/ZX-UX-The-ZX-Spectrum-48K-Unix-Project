@@ -1481,3 +1481,104 @@ p609_entry_ptr: dw 0
 p609_name_len: db 0
 p609_env_left: db 0
     ENDM
+
+; P6.10 operator lexer over raw command bytes. Operator recognition is permitted
+; only when the byte is unquoted and unescaped.
+    MACRO EMIT_P610_OPERATOR_ROUTINES
+P610_OP_NONE             EQU 0
+P610_OP_SEMI             EQU 1
+P610_OP_AND              EQU 2
+P610_OP_OR               EQU 3
+P610_OP_OUT              EQU 4
+P610_OP_APPEND           EQU 5
+P610_OP_IN               EQU 6
+P610_OP_PIPE             EQU 7
+P610_OP_BG               EQU 8
+
+; HL=current raw byte, A=quote mode (0 unquoted), B=1 when current byte escaped.
+; Success C=operator token or NONE, B=consumed width 1/2.
+; '(' and ')' are explicitly unsupported grouping syntax and return E_INVAL.
+sh_p610_lex_operator:
+    ld c,P610_OP_NONE
+    or a
+    jr nz,sh_p610_literal
+    ld a,b
+    or a
+    jr nz,sh_p610_literal
+    ld a,(hl)
+    cp '('
+    jr z,sh_p610_grouping
+    cp ')'
+    jr z,sh_p610_grouping
+    cp ';'
+    jr z,sh_p610_semi
+    cp '&'
+    jr z,sh_p610_amp
+    cp '|'
+    jr z,sh_p610_bar
+    cp '>'
+    jr z,sh_p610_gt
+    cp '<'
+    jr z,sh_p610_in
+sh_p610_literal:
+    ld b,1
+    xor a
+    ret
+
+sh_p610_semi:
+    ld c,P610_OP_SEMI
+    ld b,1
+    xor a
+    ret
+sh_p610_amp:
+    inc hl
+    ld a,(hl)
+    cp '&'
+    jr z,sh_p610_and
+    ld c,P610_OP_BG
+    ld b,1
+    xor a
+    ret
+sh_p610_and:
+    ld c,P610_OP_AND
+    ld b,2
+    xor a
+    ret
+sh_p610_bar:
+    inc hl
+    ld a,(hl)
+    cp '|'
+    jr z,sh_p610_or
+    ld c,P610_OP_PIPE
+    ld b,1
+    xor a
+    ret
+sh_p610_or:
+    ld c,P610_OP_OR
+    ld b,2
+    xor a
+    ret
+sh_p610_gt:
+    inc hl
+    ld a,(hl)
+    cp '>'
+    jr z,sh_p610_append
+    ld c,P610_OP_OUT
+    ld b,1
+    xor a
+    ret
+sh_p610_append:
+    ld c,P610_OP_APPEND
+    ld b,2
+    xor a
+    ret
+sh_p610_in:
+    ld c,P610_OP_IN
+    ld b,1
+    xor a
+    ret
+sh_p610_grouping:
+    ld a,E_INVAL
+    scf
+    ret
+    ENDM
