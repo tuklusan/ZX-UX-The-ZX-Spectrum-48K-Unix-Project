@@ -80,17 +80,18 @@ p621_end:
     INCLUDE "../include/zx48ux.inc"
     ORG $E000
 p621_gate:
-    push af
+    ld (p621_call),a
     ld a,(p621_log_index)
     ld e,a
     ld d,0
     ld ix,$A500
     add ix,de
-    pop af
+    ld a,(p621_call)
     ld (ix+0),a
     ld a,(p621_log_index)
     inc a
     ld (p621_log_index),a
+    ld a,(p621_call)
     cp SYS_PIPE
     jr z,p621_pipe
     cp SYS_SPAWN
@@ -138,6 +139,7 @@ p621_ok:
     ret
 p621_log_index: db 0
 p621_spawn_count: db 0
+p621_call: db 0
     ORG $E080
 p621_fail_spawn: db 0
 p621_gate_end:
