@@ -2269,3 +2269,119 @@ p617_source: db HANDLE_FREE
 p617_index: db 0
 p617_error: db 0
     ENDM
+
+; P6.18 external simple-command redirection open transaction.
+; IX -> {in_count,out_count,in_path_lo,in_path_hi,out_path_lo,out_path_hi,out_mode}
+; out_mode: 0 none, 1 '>', 2 '>>'. At most one input and one output are legal.
+    MACRO EMIT_P618_EXTERNAL_REDIR_ROUTINES
+P618_OUT_NONE           EQU 0
+P618_OUT_TRUNC          EQU 1
+P618_OUT_APPEND         EQU 2
+
+sh_p618_open_redirections:
+    ld a,HANDLE_FREE
+    ld (p618_input_handle),a
+    ld (p618_output_handle),a
+    ld a,(ix+0)
+    cp 2
+    jp nc,sh_p618_invalid
+    ld a,(ix+1)
+    cp 2
+    jp nc,sh_p618_invalid
+
+    ld a,(ix+0)
+    or a
+    jr z,sh_p618_output
+    ld l,(ix+2)
+    ld h,(ix+3)
+    call sh_p618_reject_tape
+    ret c
+    ld c,O_READ
+    ld b,0
+    ld a,SYS_OPEN
+    call SYSCALL_GATEWAY
+    ret c
+    ld a,l
+    ld (p618_input_handle),a
+
+sh_p618_output:
+    ld a,(ix+1)
+    or a
+    jr z,sh_p618_success
+    ld l,(ix+4)
+    ld h,(ix+5)
+    call sh_p618_reject_tape
+    jr c,sh_p618_rollback
+    ld a,(ix+6)
+    cp P618_OUT_TRUNC
+    jr z,sh_p618_open_trunc
+    cp P618_OUT_APPEND
+    jr z,sh_p618_open_append
+    ld a,E_INVAL
+    scf
+    jr sh_p618_rollback
+sh_p618_open_trunc:
+    ld c,O_WRITE+O_CREATE+O_TRUNC
+    jr sh_p618_open_output
+sh_p618_open_append:
+    ld c,O_WRITE+O_CREATE+O_APPEND
+sh_p618_open_output:
+    ld b,OBJ_DAT
+    ld a,SYS_OPEN
+    call SYSCALL_GATEWAY
+    jr c,sh_p618_rollback
+    ld a,l
+    ld (p618_output_handle),a
+sh_p618_success:
+    xor a
+    ret
+
+sh_p618_rollback:
+    ld (p618_error),a
+    ld a,(p618_input_handle)
+    cp HANDLE_FREE
+    jr z,sh_p618_rollback_done
+    ld l,a
+    ld h,0
+    ld a,SYS_CLOSE
+    call SYSCALL_GATEWAY
+    ld a,HANDLE_FREE
+    ld (p618_input_handle),a
+sh_p618_rollback_done:
+    ld a,(p618_error)
+    scf
+    ret
+
+; HL=NUL path. /dev/tape is control-only and is never a shell byte redirection.
+sh_p618_reject_tape:
+    push hl
+    ld de,p618_tape_path
+sh_p618_tape_cmp:
+    ld a,(de)
+    cp (hl)
+    jr nz,sh_p618_tape_ok
+    or a
+    jr z,sh_p618_tape_bad
+    inc de
+    inc hl
+    jr sh_p618_tape_cmp
+sh_p618_tape_ok:
+    pop hl
+    xor a
+    ret
+sh_p618_tape_bad:
+    pop hl
+    ld a,E_NOTSUP
+    scf
+    ret
+
+sh_p618_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+
+p618_input_handle: db HANDLE_FREE
+p618_output_handle: db HANDLE_FREE
+p618_error: db 0
+p618_tape_path: db '/dev/tape',0
+    ENDM
