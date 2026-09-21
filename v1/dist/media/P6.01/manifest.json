@@ -1,0 +1,31 @@
+{
+  "files": [
+    {
+      "action": "build",
+      "path": "build/build-p601-pid1-cf7a89059be38e6fa928e799d99df584edcb39716292cba95fe36892f6eb4367.tap",
+      "sha256": "cf7a89059be38e6fa928e799d99df584edcb39716292cba95fe36892f6eb4367",
+      "size": 71
+    },
+    {
+      "action": "test",
+      "path": "test/build-p601-pid1-cf7a89059be38e6fa928e799d99df584edcb39716292cba95fe36892f6eb4367.tap",
+      "sha256": "cf7a89059be38e6fa928e799d99df584edcb39716292cba95fe36892f6eb4367",
+      "size": 71
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-935eaa28574b73603edb82887ca78e92d8eb3be6e55377cb66d4d6a330e8729c.sna",
+      "sha256": "935eaa28574b73603edb82887ca78e92d8eb3be6e55377cb66d4d6a330e8729c",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-a879ee204abf2da5ca2df7cffe3d6efa8426949ebb87a38dc90f18bb9d97a815.sna",
+      "sha256": "a879ee204abf2da5ca2df7cffe3d6efa8426949ebb87a38dc90f18bb9d97a815",
+      "size": 49179
+    }
+  ],
+  "schema": 1,
+  "source_commit": "da7de3c38c8610ec8bdd26fe6b61af30f3aa0a2b",
+  "step": "P6.01"
+}

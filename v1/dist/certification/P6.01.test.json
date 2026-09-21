@@ -1,0 +1,107 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "shell-entry-uses-fixed-syscall-gateway",
+      "passed": true
+    },
+    {
+      "name": "pid1-ready-published-last",
+      "passed": true
+    },
+    {
+      "name": "pid1-root-and-canonical-name",
+      "passed": true
+    },
+    {
+      "name": "stdin-read-stdout-stderr-shared-write",
+      "passed": true
+    },
+    {
+      "name": "malformed-bootstrap-panics-before-schedule",
+      "passed": true
+    },
+    {
+      "name": "canonical-cold-boot-arg-env-bounds",
+      "passed": true
+    },
+    {
+      "name": "fuse-pid1-resources-before-first-dispatch",
+      "passed": true
+    },
+    {
+      "name": "fuse-malformed-boot-contract-panics-before-ready",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p601-sh.lst",
+        "--sym=p601-sh.sym",
+        "p601-sh.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 2,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 300 lines, work time: 0.001 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p601-sh.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 23,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 22420, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 20239, \"image_size\": 7, \"magic\": \"MEX1\", \"minimum_stack_size\": 128, \"relocation_count\": 0, \"relocation_table_offset\": 31, \"relocations\": [], \"stored_length\": 31, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p601-pid1-fixture.lst",
+        "--sym=p601-pid1-fixture.sym",
+        "p601-pid1-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 10,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 7280 lines, work time: 0.009 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p601-pid1.tap": "cf7a89059be38e6fa928e799d99df584edcb39716292cba95fe36892f6eb4367",
+    "v1/build/p601-sh.mex1": "7fd2ae5195ead7bf978df86d530469540b283de3990c48aa4679f29202d89674",
+    "v1/dist/certification/P5.19.build.json": "5d3107de766f9c1b63aba9df1a25992f3c690df9945af68965ae087f4faac6b2",
+    "v1/dist/certification/P5.19.result.json": "19e80624c4a7d7f89c5f930dd9571e336be0326a881f6f09381f51f7bbc4d1ec",
+    "v1/dist/certification/P5.19.test.json": "6428355c311ed47e5fca9105f240b4e7d929492ec5191e46912dc97acdd8e0a8",
+    "v1/dist/certification/phase-5.json": "088198193b08a97c97353b6abeac8a366ce4cc3dbaef5ab4fb3c00f11d3d6e9b",
+    "v1/src/kernel/process.asm": "79bd2a24434d37506679493d7b93c10b2ad491a0aa0bb07bb581d7be6eec7af0",
+    "v1/src/shell/sh.asm": "4f0a29fc95d5769590b31ee758c64725bf4965ad7a33ec0a0f1aa1304dc46061",
+    "v1/tools-host/test-driver/phase6_pid1.py": "3a6c5d0b473072491f4a72d750abcee1a2777dc2f203e18a7ee17709c5c38749",
+    "v1/tools-host/test-driver/run.py": "bc043868c313b9e5e56fbd6a571e2f00e7c16d32ce91c3fcb253d4d50139659c"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P5.19": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "da7de3c38c8610ec8bdd26fe6b61af30f3aa0a2b",
+  "status": "PASS",
+  "step": "P6.01",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
