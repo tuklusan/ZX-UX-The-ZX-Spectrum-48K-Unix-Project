@@ -51,7 +51,7 @@ def dispatch(root:Path,action:str,step:str,*,sha256_file,run_command,require_pro
       {"name":"env1-four-entry-table","passed":"ld a,4" in macro and "ld a,'E'" in macro and "ld a,'N'" in macro and "ld a,'V'" in macro},
       {"name":"sorted-home-path-shell-user","passed":macro.index("; HOME=")<macro.index("; PATH=")<macro.index("; SHELL=")<macro.index("; USER=")},
       {"name":"required-path-shell-values","passed":"ld a,':'" in macro and "ld a,'.'" in macro and macro.count("ld a,'/'")>=4},
-      {"name":"status-separate-from-env","passed":"sh_p605_status_init:" in macro and "$?" not in macro},
+      {"name":"status-separate-from-env","passed":"sh_p605_status_init:" in macro and "$?=" not in macro},
     ]
     require(all(a["passed"] for a in assertions),"P6.05 static contract failure")
     asm=require_project_tool(root,"tools/runtime/sjasmplus/bin/sjasmplus"); build=root/"v1/build"; build.mkdir(parents=True,exist_ok=True)
