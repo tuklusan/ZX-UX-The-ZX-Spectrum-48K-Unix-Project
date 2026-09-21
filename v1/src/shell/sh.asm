@@ -3248,3 +3248,111 @@ p627_arg: db 0
 p627_active: db 0
 p627_error: db 0
     ENDM
+
+
+; P6.29 PID1 zombie reaping and safe exit.
+    MACRO EMIT_P629_REAP_EXIT_ROUTINES
+P629_PROC_ZOMBIE         EQU 8
+P629_PROC_INFO_LEN       EQU 16
+P629_HALT_TEXT_LEN       EQU 13
+
+; Run before every prompt and whenever jobs is entered.
+sh_p629_reap:
+    ld a,2
+    ld (p629_pid),a
+sh_p629_reap_next:
+    ld a,(p629_pid)
+    cp MAX_PROCESSES
+    jr nc,sh_p629_ok
+
+    ld (p629_info_req),a
+    xor a
+    ld (p629_info_req+1),a
+    ld hl,p629_info
+    ld (p629_info_req+2),hl
+    ld hl,p629_info_req
+    ld a,SYS_PROC_INFO
+    call SYSCALL_GATEWAY
+    jr c,sh_p629_reap_miss
+
+    ld a,(p629_info+2)
+    cp P629_PROC_ZOMBIE
+    jr nz,sh_p629_reap_advance
+
+    ld a,(p629_pid)
+    ld (p629_wait_req),a
+    xor a
+    ld (p629_wait_req+1),a
+    ld hl,p629_wait_status
+    ld (p629_wait_req+2),hl
+    ld hl,p629_wait_req
+    ld a,SYS_WAIT
+    call SYSCALL_GATEWAY
+    ret c
+
+    ; Shell-managed background jobs disappear from the bounded table. Adopted
+    ; services are deliberately not inserted there, so E_NOENT is ignored.
+    ld a,(p629_pid)
+    call sh_p624_job_remove
+
+sh_p629_reap_advance:
+sh_p629_reap_miss:
+    ld a,(p629_pid)
+    inc a
+    ld (p629_pid),a
+    jr sh_p629_reap_next
+
+sh_p629_before_prompt:
+sh_p629_jobs_refresh:
+    jp sh_p629_reap
+
+; Refuse while any PID2..7 remains after the mandatory reap pass.
+sh_p629_exit:
+    call sh_p629_reap
+    ret c
+    ld a,2
+    ld (p629_pid),a
+sh_p629_exit_scan:
+    ld a,(p629_pid)
+    cp MAX_PROCESSES
+    jr nc,sh_p629_exit_commit
+    ld (p629_info_req),a
+    xor a
+    ld (p629_info_req+1),a
+    ld hl,p629_info
+    ld (p629_info_req+2),hl
+    ld hl,p629_info_req
+    ld a,SYS_PROC_INFO
+    call SYSCALL_GATEWAY
+    jr nc,sh_p629_busy
+    ld a,(p629_pid)
+    inc a
+    ld (p629_pid),a
+    jr sh_p629_exit_scan
+
+sh_p629_busy:
+    ld a,E_BUSY
+    scf
+    ret
+
+sh_p629_exit_commit:
+    ld hl,p629_halt_text
+    ld bc,P629_HALT_TEXT_LEN
+    ld a,SYS_CON_WRITE
+    call SYSCALL_GATEWAY
+    ret c
+    ld hl,0
+    ld a,SYS_EXIT
+    jp SYSCALL_GATEWAY
+
+sh_p629_ok:
+    xor a
+    ret
+
+p629_info_req: db 0,0,0,0
+p629_info: defs P629_PROC_INFO_LEN,0
+p629_wait_req: db 0,0,0,0
+p629_wait_status: db 0
+p629_pid: db 0
+p629_halt_text: db 's','y','s','t','e','m',' ','h','a','l','t','e','d'
+    ENDM
