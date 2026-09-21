@@ -58,7 +58,7 @@ def dispatch(root:Path,action:str,step:str,*,sha256_file,run_command,require_pro
     assertions=[
       {"name":"only-tape-backed-prompts","passed":"cp STATE_TAPE_BACKED" in macro},
       {"name":"allow-tape-bit-set-after-read","passed":macro.index("ld a,SYS_READ") < macro.index("or P615_ALLOW_TAPE")},
-      {"name":"kernel-does-not-own-prompt","passed":"SYS_CON_WRITE" in macro and "cassette" in macro},
+      {"name":"shell-owns-visible-prompt","passed":"SYS_CON_WRITE" in macro and "p615_prompt:" in macro},
       {"name":"decline-e-again","passed":"ld a,E_AGAIN" in macro},
       {"name":"no-tape-motion-syscall-before-consent","passed":all(x not in macro for x in ("SYS_TAPE_LOAD","SYS_TAPE_SCAN","SYS_TAPE_SAVE","SYS_TAPE_VERIFY"))},
     ]
