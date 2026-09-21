@@ -1,0 +1,78 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "only-tape-backed-prompts",
+      "passed": true
+    },
+    {
+      "name": "allow-tape-bit-set-after-read",
+      "passed": true
+    },
+    {
+      "name": "shell-owns-visible-prompt",
+      "passed": true
+    },
+    {
+      "name": "decline-e-again",
+      "passed": true
+    },
+    {
+      "name": "no-tape-motion-syscall-before-consent",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p615-shell-fixture.lst",
+        "--sym=p615-shell-fixture.sym",
+        "p615-shell-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 7,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2437 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p615-gateway.lst",
+        "--sym=p615-gateway.sym",
+        "p615-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 287 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p615-tape-discovery.mex1": "1c037782a4ee747a94e5afff851738781c1ebd59ecd318f44ed25315ab6acfc1",
+    "v1/build/p615-tape-discovery.tap": "ab698847ca992e17aa4727c9b0c7d1e5c2768199a6646100be5f24d04fcc4316",
+    "v1/dist/certification/P6.14.build.json": "17ce2e834454e008868fb74194cd31e249fa521d9db23d80ca4a0f00b2e692c2",
+    "v1/dist/certification/P6.14.test.json": "df899d0776c33b58b6a79016d81e91b6bfef38f38a5d7930c064e1c67559854b",
+    "v1/dist/media/P6.14/manifest.json": "0ded662b07eddb784831e3bc84f5ef1c52c1437dc5c782f4f4f17819f06af56c",
+    "v1/src/shell/sh.asm": "f0f671b3995aafa3d5b9eee81598b6ed2e9cf7598c41be09c165ff2dc9d9ecde",
+    "v1/tools-host/test-driver/phase6_tape_discovery.py": "ab407c5c976d7cb2ab78ed2d1f8c5d9c5697f403b44f97fba920cd910473fa73",
+    "v1/tools-host/test-driver/run.py": "bbf5c4d24d43f553a44ea9173b9e0355dbd52174cb7543e1fa082e80c03512bb"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P6.14": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "1f3fb9ee03236e2f4cb0c01b91575ffa19c83e68",
+  "status": "PASS",
+  "step": "P6.15",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
