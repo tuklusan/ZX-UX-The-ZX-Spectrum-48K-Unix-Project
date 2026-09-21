@@ -1,0 +1,101 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "fixed-home-prefix-only",
+      "passed": true
+    },
+    {
+      "name": "no-dynamic-mkdir-surface",
+      "passed": true
+    },
+    {
+      "name": "chdir-after-full-path-termination",
+      "passed": true
+    },
+    {
+      "name": "pwd-reads-kernel-cwd",
+      "passed": true
+    },
+    {
+      "name": "username-revalidated-before-path-write",
+      "passed": true
+    },
+    {
+      "name": "fuse-pwd-exact-home-user",
+      "passed": true
+    },
+    {
+      "name": "fuse-invalid-topology-cannot-escape-home",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p604-shell-fixture.lst",
+        "--sym=p604-shell-fixture.sym",
+        "p604-shell-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 568 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p604-home.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 33,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 63196, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 56103, \"image_size\": 110, \"magic\": \"MEX1\", \"minimum_stack_size\": 128, \"relocation_count\": 0, \"relocation_table_offset\": 134, \"relocations\": [], \"stored_length\": 134, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p604-gateway.lst",
+        "--sym=p604-gateway.sym",
+        "p604-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 299 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p604-home.mex1": "04ae171e37508885ba27e41429b5983f529cf45c6dd2d65e8d4c72c923c32bc3",
+    "v1/build/p604-home.tap": "450f7c141e2a355306afa6907c753db03bda77788ae5b157fdcba89f847fe10f",
+    "v1/dist/certification/P6.03.build.json": "050500ef4e7fe8ab35ed11dc7eadee8f966a8884a27ce5b44073f0548badbc46",
+    "v1/dist/certification/P6.03.test.json": "dcb967618dfc43facfc0ed4ffd4a228ad08252d2bf822f386622ffdb82426a42",
+    "v1/dist/media/P6.03/manifest.json": "a8223fd91a82beec279bbd1184f4ab760e14fe72063111e7f4798c390847fc29",
+    "v1/src/shell/sh.asm": "c41f3bfd3724be40a3d4c6be1fad294d958358faf147b3976cec07b8c8427426",
+    "v1/tools-host/test-driver/phase6_home.py": "6e47227272e8adaa31a0916a76bb8fbe387cf4b283787e4874e3b01d64621e28",
+    "v1/tools-host/test-driver/run.py": "bd211104eb635cdcedc9c54542a4efd1ba68d08efcdecfa0617cd85f42a61a66"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P6.03": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "e16fab1adf81d28f8989924bf2888d054bafc024",
+  "status": "PASS",
+  "step": "P6.04",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
