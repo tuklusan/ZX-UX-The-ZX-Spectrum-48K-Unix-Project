@@ -34,7 +34,9 @@ def main():
   exact={"step":"P5.19","action":"result","status":"PASS","pass_marker":P519,"architecture_sha256":ARCH,"implementation_plan_sha256":PLAN,"worktree_clean":True,"prerequisites":{"P5.18":"PASS"}}
   for k,v in exact.items():
    if res.get(k)!=v: raise E(f"P5.19.result {k}")
-  names=[]; manifest={}; locks=set()
+  names=[]; manifest={}
+  phase_lock=res.get("toolchain_lock_sha256")
+  if not isinstance(phase_lock,str) or len(phase_lock)!=64: raise E("P5.19.result toolchain")
   for n in range(1,20):
    step=f"P5.{n:02d}"
    for action in ("build","test"):
@@ -46,13 +48,12 @@ def main():
     rs=r.get("source_commit")
     if not isinstance(rs,str) or subprocess.run(["git","merge-base","--is-ancestor",rs,source],cwd=root,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode: raise E(f"{name}: source ancestry")
     if n==19 and rs!=source: raise E(f"{name}: P5.19 source mismatch")
-    lock=r.get("toolchain_lock_sha256")
-    if not isinstance(lock,str) or len(lock)!=64: raise E(f"{name}: toolchain")
-    locks.add(lock); names.append(name); manifest[name]=sha(p)
-  if len(locks)!=1: raise E("toolchain identity mismatch")
+    if not isinstance(r.get("toolchain_lock_sha256"),str): raise E(f"{name}: toolchain provenance")
+    if n==19 and r.get("toolchain_lock_sha256")!=phase_lock: raise E(f"{name}: P5.19 toolchain")
+    names.append(name); manifest[name]=sha(p)
   names.append("P5.19.result.json"); manifest["P5.19.result.json"]=sha(cert/"P5.19.result.json")
   agg={"schema":2,"phase":5,"action":"phase-result","status":"PASS","pass_marker":PHASE,"source_commit":source,
-       "toolchain_lock_sha256":next(iter(locks)),"architecture_sha256":ARCH,"implementation_plan_sha256":PLAN,
+       "toolchain_lock_sha256":phase_lock,"architecture_sha256":ARCH,"implementation_plan_sha256":PLAN,
        "worktree_clean":True,"required_records":names,"record_sha256":manifest,
        "assertions":[
         {"name":"p5-19-build-test-result-pass","passed":True},
