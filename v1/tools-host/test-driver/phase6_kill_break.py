@@ -55,10 +55,10 @@ def dispatch(root:Path,action:str,step:str,*,sha256_file,run_command,require_pro
     assertions=[
       {"name":"im2-remains-producer-only","passed":"ld (break_pending),a" in interrupt and "zx48_process_kill" not in interrupt and "zx48_schedule" not in interrupt.split("zx48_interrupt_break:",1)[1].split("zx48_interrupt_done:",1)[0]},
       {"name":"syscall-entry-services-break-before-dispatch","passed":syscall.index("; P6.26 cooperative BREAK boundary.") < syscall.index("cp SYS_KILL+1")},
-      {"name":"shell-owner-break-is-line-eintr-only","passed":"dec a" in boundary and "zx48_p626_break_current:" in boundary and "ld a,E_INTR" in boundary},
-      {"name":"child-break-targets-tty-owner-only","passed":"ld a,(tty_input_owner)" in boundary and "call zx48_process_kill_started" in boundary},
+      {"name":"shell-owner-break-is-line-eintr-only","passed":"ld a,(tty_input_owner)" in boundary and "ld a,E_INTR" in boundary},
+      {"name":"child-break-targets-tty-owner-only","passed":"ld a,(current_pid)" in boundary and "cp b" in boundary and "jr nz,zx48_p626_break_restore_selector" in boundary},
       {"name":"no-break-scheduler-preemption","passed":"zx48_schedule" not in boundary},
-      {"name":"current-cancel-consumed-before-syscall-side-effects","passed":"zx48_p626_break_current:" in boundary and "ld a,E_INTR" in boundary},
+      {"name":"current-owner-cancel-consumed-before-syscall-side-effects","passed":"ld (break_pending),a" in boundary and "ld a,E_INTR" in boundary},
       {"name":"kill-exact-one-decimal-operand","passed":"cp 1" in kill and "ld a,SYS_KILL" in kill},
       {"name":"kernel-forbids-pid0-pid1","passed":"zx48_process_kill:" in process and "cp 2" in process.split("zx48_process_kill:",1)[1].split("zx48_process_wait:",1)[0]},
     ]
@@ -95,20 +95,24 @@ p626_end:
         code+=expectb(labels["break_pending"],0)+expectb(pid1+PROC_FLAGS,0)+phase1._jp(PASS_PC)
         run_sna(root,bytes(code),patch=patch_kernel(kernel_bytes))
 
-        # BREAK with PID2 owner while PID3 reaches a boundary: PID2 alone receives cancel.
+        # A non-owner pipeline stage cannot consume or receive the BREAK.
         code=bytearray(b"\xF3"+phase1._ld_sp(0xFD00)+phase1._call(labels["zx48_process_init"]))
-        code+=setb(pid2+PROC_STATE,PROC_WAIT_PIPE_READ)+setb(pid2+PROC_PRIVATE_FLAGS,PROC_PRIVATE_STARTED)
+        code+=setb(pid2+PROC_STATE,PROC_READY)+setb(pid2+PROC_PRIVATE_FLAGS,PROC_PRIVATE_STARTED)
         code+=setb(pid3+PROC_STATE,PROC_RUNNING)+setb(pid3+PROC_PRIVATE_FLAGS,PROC_PRIVATE_STARTED)
         code+=setb(labels["current_pid"],3)+setb(labels["tty_input_owner"],2)+setb(labels["break_pending"],1)
-        code+=phase1._call(labels["zx48_syscall_impl"])+phase1._jp_c(FAIL_PC)
-        code+=expectb(labels["break_pending"],0)+expectb(pid2+PROC_FLAGS,PROC_FLAG_CANCEL)+expectb(pid2+PROC_STATE,PROC_READY)+expectb(pid3+PROC_FLAGS,0)+phase1._jp(PASS_PC)
+        code+=b"\x3E\x00"+phase1._call(labels["zx48_syscall_impl"])+phase1._jp_c(FAIL_PC)
+        code+=expectb(labels["break_pending"],1)+expectb(pid2+PROC_FLAGS,0)+expectb(pid3+PROC_FLAGS,0)+phase1._jp(PASS_PC)
         run_sna(root,bytes(code),patch=patch_kernel(kernel_bytes))
 
-        # A pending cancel on the current started owner is consumed exactly once.
+        # When the tty owner next crosses the syscall boundary, only that owner
+        # receives E_INTR and the pending request is consumed exactly once.
         code=bytearray(b"\xF3"+phase1._ld_sp(0xFD00)+phase1._call(labels["zx48_process_init"]))
-        code+=setb(pid2+PROC_STATE,PROC_RUNNING)+setb(pid2+PROC_PRIVATE_FLAGS,PROC_PRIVATE_STARTED)+setb(pid2+PROC_FLAGS,PROC_FLAG_CANCEL)+setb(labels["current_pid"],2)
-        code+=phase1._call(labels["zx48_syscall_impl"])+b"\xD2"+word(FAIL_PC)+bytes((0xFE,labels["E_INTR"]&255))+phase1._jp_nz(FAIL_PC)
-        code+=expectb(pid2+PROC_FLAGS,0)+phase1._call(labels["zx48_syscall_impl"])+phase1._jp_c(FAIL_PC)+phase1._jp(PASS_PC)
+        code+=setb(pid2+PROC_STATE,PROC_RUNNING)+setb(pid2+PROC_PRIVATE_FLAGS,PROC_PRIVATE_STARTED)
+        code+=setb(pid3+PROC_STATE,PROC_READY)+setb(pid3+PROC_PRIVATE_FLAGS,PROC_PRIVATE_STARTED)
+        code+=setb(labels["current_pid"],2)+setb(labels["tty_input_owner"],2)+setb(labels["break_pending"],1)
+        code+=b"\x3E\x00"+phase1._call(labels["zx48_syscall_impl"])+b"\xD2"+word(FAIL_PC)+bytes((0xFE,labels["E_INTR"]&255))+phase1._jp_nz(FAIL_PC)
+        code+=expectb(labels["break_pending"],0)+expectb(pid2+PROC_FLAGS,0)+expectb(pid3+PROC_FLAGS,0)
+        code+=b"\x3E\x00"+phase1._call(labels["zx48_syscall_impl"])+phase1._jp_c(FAIL_PC)+phase1._jp(PASS_PC)
         run_sna(root,bytes(code),patch=patch_kernel(kernel_bytes))
 
         # Existing Phase-2 kill oracles remain authoritative for never-started discard,
@@ -118,8 +122,8 @@ p626_end:
         commands += list(d18[0])+list(d19[0])
         assertions += [
           {"name":"fuse-pid1-break-line-only","passed":True},
-          {"name":"fuse-break-only-tty-owner-cancelled","passed":True},
-          {"name":"fuse-current-cancel-one-shot-eintr","passed":True},
+          {"name":"fuse-break-nonowner-stage-untouched","passed":True},
+          {"name":"fuse-tty-owner-one-shot-eintr","passed":True},
           {"name":"phase2-never-started-kill-oracle-still-pass","passed":True},
           {"name":"phase2-started-cooperative-kill-oracle-still-pass","passed":True},
           {"name":"c48-safe-point-status-130-contract","passed":True,"basis":"P2.18/P2.19 cancellation ABI"},

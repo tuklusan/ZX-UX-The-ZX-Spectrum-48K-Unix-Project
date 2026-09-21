@@ -68,12 +68,11 @@ zx48_keyboard_none:
 ; Service deferred cursor parity at the first safe input point before either
 ; delivering a key or putting the owner back to sleep.
 zx48_keyboard_getkey:
+    ld hl,tty_input_owner
     ld a,(current_pid)
     or a
     jr z,zx48_keyboard_busy
-    ld b,a
-    ld a,(tty_input_owner)
-    cp b
+    cp (hl)
     jr nz,zx48_keyboard_busy
     call zx48_cursor_service
     call zx48_keyboard_decode
@@ -109,12 +108,10 @@ zx48_keyboard_busy:
 
 ; Inputs none. Release only the current owner; PID 0 is the sole unowned value.
 zx48_keyboard_release:
+    ld hl,tty_input_owner
     ld a,(current_pid)
-    ld b,a
-    ld a,(tty_input_owner)
-    cp b
+    cp (hl)
     ret nz
-    xor a
-    ld (tty_input_owner),a
+    ld (hl),0
     ret
     ENDM

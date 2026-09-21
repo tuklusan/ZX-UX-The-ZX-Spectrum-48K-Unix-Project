@@ -173,31 +173,25 @@ zx48_syscall_impl:
     ld (syscall_arg_de),de
     ld (syscall_arg_bc),bc
 
-    ; P6.26 cooperative BREAK boundary. AF preserves the syscall selector while
-    ; all user argument registers are already snapshotted above. tty_input_owner
-    ; is invariantly 0 or a live PID; an owner other than PID1 can therefore use
-    ; the existing started-kill primitive without a second liveness search.
-    push af
+    ; P6.26 cooperative BREAK boundary. User DE is already snapshotted, so E
+    ; temporarily preserves the selector. BREAK is consumed only when the current
+    ; cooperative task is the tty owner; non-owner stages leave it pending.
+    ld e,a
     ld a,(break_pending)
     or a
     jr z,zx48_p626_break_restore_selector
-    ld a,(tty_input_owner)
-    or a
-    jr z,zx48_p626_break_drop
-    ld b,a
     ld a,(current_pid)
+    ld b,a
+    ld a,(tty_input_owner)
     cp b
-    jr z,zx48_p626_break_current
-    ld a,b
-    dec a
-    jr z,zx48_p626_break_restore_selector
-    inc a
-    call zx48_process_ptr
-    call zx48_process_kill_started
-zx48_p626_break_drop:
+    jr nz,zx48_p626_break_restore_selector
+    xor a
     ld (break_pending),a
+    ld a,E_INTR
+    scf
+    ret
 zx48_p626_break_restore_selector:
-    pop af
+    ld a,e
     cp SYS_KILL+1
     jr c,zx48_sys_dispatch_proc
     cp SYS_OPEN
@@ -219,14 +213,6 @@ zx48_p626_break_restore_selector:
     sub SYS_MEM_INFO
     ld hl,zx48_sys_info_table
     jr zx48_sys_dispatch_index
-
-zx48_p626_break_current:
-    xor a
-    ld (break_pending),a
-    pop bc
-    ld a,E_INTR
-    scf
-    ret
 
 zx48_sys_dispatch_pipe:
     sub SYS_PIPE
