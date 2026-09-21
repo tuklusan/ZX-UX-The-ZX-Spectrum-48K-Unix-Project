@@ -156,6 +156,7 @@ import phase5_tape_prompts
 import phase5_direct_mex1
 import phase5_fixture_tape
 import phase5_roundtrip
+import phase5_tape_recovery
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
 from driver_core import (
     DriverError,
@@ -342,6 +343,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase5_fixture_tape.dispatch(root, action, step, **kwargs)
     if step == "P5.16":
         return phase5_roundtrip.dispatch(root, action, step, **kwargs)
+    if step == "P5.17":
+        return phase5_tape_recovery.dispatch(root, action, step, **kwargs)
     if step.startswith("P5."):
         raise DriverError(f"numbered Phase-5 step is not registered: {step}")
     module = E0_MODULE.get(step)

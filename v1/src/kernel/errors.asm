@@ -88,3 +88,18 @@ zx48_panic_unknown:
     ld (kernel_panic_code),a
     jr zx48_panic_halt
     ENDM
+
+; P5.17 post-cassette handoff canonicalizer. ROM wrappers already restore ULA
+; shadow/IY on ordinary returns; abort paths invoke this after private cleanup.
+    MACRO EMIT_P517_TAPE_RECOVERY_ROUTINES
+zx48_p517_restore_platform:
+    xor a
+    ld (altreg_busy),a
+    ld a,(ula_shadow)
+    call zx48_ula_commit
+    ld iy,ROM_IY_ANCHOR
+    call zx48_kernel_stack_sample
+    call zx48_kernel_stack_check
+    xor a
+    ret
+    ENDM

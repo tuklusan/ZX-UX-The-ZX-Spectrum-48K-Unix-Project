@@ -3599,6 +3599,19 @@ p514_tape_state_live: db 0
 p514_tape_error: db 0
     ENDM
 
+    MACRO EMIT_P517_TAPE_ABORT_ROUTINES
+; Final abort handoff: no cassette owner may survive an error/BREAK boundary.
+zx48_p517_abort_handoff:
+    ld a,(p507_tape_lock)
+    or a
+    jr z,zx48_p517_abort_platform
+    call zx48_p507_lock_release
+zx48_p517_abort_platform:
+    call zx48_p517_restore_platform
+    xor a
+    ret
+    ENDM
+
     MACRO EMIT_TAPE_ROUTINES
     EMIT_P502_CRC16_ROUTINES
     EMIT_P503_FRAMING_ROUTINES
@@ -3611,6 +3624,7 @@ p514_tape_error: db 0
     EMIT_P511_SCAN_ROUTINES
     EMIT_P513_TAPE_PROMPT_ROUTINES
     EMIT_P514_DIRECT_TAPE_STREAM_ROUTINES
+    EMIT_P517_TAPE_ABORT_ROUTINES
 ; A=block type,DE=length,IX=source.
 zx48_tape_save_block:
     call zx48_rom_sa_bytes
