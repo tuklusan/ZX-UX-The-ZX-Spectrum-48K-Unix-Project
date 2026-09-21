@@ -1006,6 +1006,7 @@ p607_scratch: defs P607_LINE_MAX,0
 P608_Q_NONE              EQU 0
 P608_Q_SINGLE            EQU 1
 P608_Q_DOUBLE            EQU 2
+P608_TOKEN_MAX           EQU 248
 
 ; HL=NUL command line, IX=writable token buffer >=248 bytes.
 ; Success: B=token count, output is NUL-separated dequoted token bytes.
@@ -1169,7 +1170,7 @@ sh_p608_end_token:
 sh_p608_emit:
     push af
     ld a,(p608_length)
-    cp P607_LINE_MAX+1
+    cp P608_TOKEN_MAX
     jp nc,sh_p608_emit_overflow
     ld e,a
     ld d,0
