@@ -87,8 +87,10 @@ def dispatch(root:Path,action:str,step:str,*,sha256_file,run_command,require_pro
         vr=run_command([exe,"--version"],cwd=root,timeout_seconds=15)
         require(not vr.timed_out and vr.exit_code==0 and "13" in (vr.stdout+vr.stderr),f"P5.18 ZEsarUX version failure: {vr.stdout} {vr.stderr}")
         commands.append(vr)
+        zhome=build/"p518-zesarux-home"; zhome.mkdir(exist_ok=True)
+        env=dict(os.environ); env["HOME"]=str(zhome)
         proc=subprocess.Popen([exe,"--noconfigfile","--vo","null","--ao","null","--enable-remoteprotocol"],
-          cwd=root,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+          cwd=zhome,env=env,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
         try:
             sock=_connect()
             try:
