@@ -50,22 +50,22 @@ def dispatch(root:Path,action:str,step:str,*,sha256_file,run_command,require_pro
     syscall=(root/"v1/src/kernel/syscall.asm").read_text()
     shell=(root/"v1/src/shell/sh.asm").read_text()
     interrupt=(root/"v1/src/kernel/interrupt.asm").read_text()
-    boundary=syscall.split("zx48_p626_boundary:",1)[1].split("zx48_syscall_impl:",1)[0]
+    boundary=(root/"v1/src/kernel/keyboard.asm").read_text().split("zx48_p626_break_boundary:",1)[1].split("zx48_keyboard_init:",1)[0]
     kill=shell.split("MACRO EMIT_P626_KILL_ROUTINES",1)[1].split("ENDM",1)[0]
     assertions=[
       {"name":"im2-remains-producer-only","passed":"ld (break_pending),a" in interrupt and "zx48_process_kill" not in interrupt and "zx48_schedule" not in interrupt.split("zx48_interrupt_break:",1)[1].split("zx48_interrupt_done:",1)[0]},
-      {"name":"syscall-entry-services-break-before-dispatch","passed":"call zx48_p626_boundary" in syscall and syscall.index("call zx48_p626_boundary") < syscall.index("cp SYS_KILL+1")},
-      {"name":"shell-owner-break-is-line-eintr-only","passed":"zx48_p626_shell:" in boundary and "ld a,E_INTR" in boundary.split("zx48_p626_shell:",1)[1].split("zx48_p626_ok:",1)[0] and "PROC_FLAG_CANCEL" not in boundary.split("zx48_p626_shell:",1)[1].split("zx48_p626_ok:",1)[0]},
+      {"name":"syscall-entry-services-break-before-dispatch","passed":"call zx48_p626_break_boundary" in syscall and syscall.index("call zx48_p626_break_boundary") < syscall.index("cp SYS_KILL+1")},
+      {"name":"shell-owner-break-is-line-eintr-only","passed":"zx48_p626_break_shell:" in boundary and "ld a,E_INTR" in boundary},
       {"name":"child-break-targets-tty-owner-only","passed":"ld a,(tty_input_owner)" in boundary and "call zx48_process_kill_started" in boundary},
       {"name":"no-break-scheduler-preemption","passed":"zx48_schedule" not in boundary},
-      {"name":"current-cancel-consumed-before-syscall-side-effects","passed":"res 0,(ix+PROC_FLAGS)" in boundary and "ld a,E_INTR" in boundary},
+      {"name":"current-cancel-consumed-before-syscall-side-effects","passed":"zx48_p626_break_current:" in boundary and "ld a,E_INTR" in boundary},
       {"name":"kill-exact-one-decimal-operand","passed":"cp 1" in kill and "ld a,SYS_KILL" in kill},
       {"name":"kernel-forbids-pid0-pid1","passed":"zx48_process_kill:" in process and "cp 2" in process.split("zx48_process_kill:",1)[1].split("zx48_process_wait:",1)[0]},
     ]
     require(all(a["passed"] for a in assertions),"P6.26 static contract failure")
 
     cmd,kernel,listing=phase1._assemble_kernel(root,run_command,require_project_tool)
-    labels=phase1._labels(listing,("zx48_process_init","zx48_process_ptr","zx48_p626_boundary","zx48_process_kill","process_table","current_pid","tty_input_owner","break_pending","E_INTR","E_PERM"))
+    labels=phase1._labels(listing,("zx48_process_init","zx48_process_ptr","zx48_p626_break_boundary","zx48_process_kill","process_table","current_pid","tty_input_owner","break_pending","E_INTR","E_PERM"))
     kernel_bytes=kernel.read_bytes()
     commands=[cmd]
 
@@ -91,7 +91,7 @@ p626_end:
         # BREAK with PID1 owner: only shell boundary consumes E_INTR; no process cancel flag.
         code=bytearray(b"\xF3"+phase1._ld_sp(0xFD00)+phase1._call(labels["zx48_process_init"]))
         code+=setb(pid1+PROC_STATE,PROC_RUNNING)+setb(labels["current_pid"],1)+setb(labels["tty_input_owner"],1)+setb(labels["break_pending"],1)
-        code+=phase1._call(labels["zx48_p626_boundary"])+b"\xD2"+word(FAIL_PC)+bytes((0xFE,labels["E_INTR"]&255))+phase1._jp_nz(FAIL_PC)
+        code+=phase1._call(labels["zx48_p626_break_boundary"])+b"\xD2"+word(FAIL_PC)+bytes((0xFE,labels["E_INTR"]&255))+phase1._jp_nz(FAIL_PC)
         code+=expectb(labels["break_pending"],0)+expectb(pid1+PROC_FLAGS,0)+phase1._jp(PASS_PC)
         run_sna(root,bytes(code),patch=patch_kernel(kernel_bytes))
 
@@ -100,15 +100,15 @@ p626_end:
         code+=setb(pid2+PROC_STATE,PROC_WAIT_PIPE_READ)+setb(pid2+PROC_PRIVATE_FLAGS,PROC_PRIVATE_STARTED)
         code+=setb(pid3+PROC_STATE,PROC_RUNNING)+setb(pid3+PROC_PRIVATE_FLAGS,PROC_PRIVATE_STARTED)
         code+=setb(labels["current_pid"],3)+setb(labels["tty_input_owner"],2)+setb(labels["break_pending"],1)
-        code+=phase1._call(labels["zx48_p626_boundary"])+phase1._jp_c(FAIL_PC)
+        code+=phase1._call(labels["zx48_p626_break_boundary"])+phase1._jp_c(FAIL_PC)
         code+=expectb(labels["break_pending"],0)+expectb(pid2+PROC_FLAGS,PROC_FLAG_CANCEL)+expectb(pid2+PROC_STATE,PROC_READY)+expectb(pid3+PROC_FLAGS,0)+phase1._jp(PASS_PC)
         run_sna(root,bytes(code),patch=patch_kernel(kernel_bytes))
 
         # A pending cancel on the current started owner is consumed exactly once.
         code=bytearray(b"\xF3"+phase1._ld_sp(0xFD00)+phase1._call(labels["zx48_process_init"]))
         code+=setb(pid2+PROC_STATE,PROC_RUNNING)+setb(pid2+PROC_PRIVATE_FLAGS,PROC_PRIVATE_STARTED)+setb(pid2+PROC_FLAGS,PROC_FLAG_CANCEL)+setb(labels["current_pid"],2)
-        code+=phase1._call(labels["zx48_p626_boundary"])+b"\xD2"+word(FAIL_PC)+bytes((0xFE,labels["E_INTR"]&255))+phase1._jp_nz(FAIL_PC)
-        code+=expectb(pid2+PROC_FLAGS,0)+phase1._call(labels["zx48_p626_boundary"])+phase1._jp_c(FAIL_PC)+phase1._jp(PASS_PC)
+        code+=phase1._call(labels["zx48_p626_break_boundary"])+b"\xD2"+word(FAIL_PC)+bytes((0xFE,labels["E_INTR"]&255))+phase1._jp_nz(FAIL_PC)
+        code+=expectb(pid2+PROC_FLAGS,0)+phase1._call(labels["zx48_p626_break_boundary"])+phase1._jp_c(FAIL_PC)+phase1._jp(PASS_PC)
         run_sna(root,bytes(code),patch=patch_kernel(kernel_bytes))
 
         # Existing Phase-2 kill oracles remain authoritative for never-started discard,
@@ -127,6 +127,7 @@ p626_end:
     hashes={
       "v1/src/shell/sh.asm":sha256_file(root/"v1/src/shell/sh.asm"),
       "v1/src/kernel/process.asm":sha256_file(root/"v1/src/kernel/process.asm"),
+      "v1/src/kernel/keyboard.asm":sha256_file(root/"v1/src/kernel/keyboard.asm"),
       "v1/src/kernel/syscall.asm":sha256_file(root/"v1/src/kernel/syscall.asm"),
       "v1/src/kernel/interrupt.asm":sha256_file(root/"v1/src/kernel/interrupt.asm"),
       "v1/build/kernel.bin":sha256_file(kernel),

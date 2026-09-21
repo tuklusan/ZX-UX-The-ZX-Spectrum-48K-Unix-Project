@@ -15,6 +15,19 @@
 SYSCALL_FRAME_PC_O       EQU 10
 syscall_frame_sp          EQU FAST_RESERVE_END-1
 
+; Fixed emergency-reserve syscall scratch. This relocates mutable scratch only;
+; no public ABI address is exposed.
+SYSCALL_STATE_BASE        EQU EMERGENCY_START+$1F
+syscall_user_sp           EQU SYSCALL_STATE_BASE+0
+syscall_saved_ix          EQU SYSCALL_STATE_BASE+2
+syscall_arg_hl            EQU SYSCALL_STATE_BASE+4
+syscall_arg_de            EQU SYSCALL_STATE_BASE+6
+syscall_arg_bc            EQU SYSCALL_STATE_BASE+8
+syscall_temp              EQU SYSCALL_STATE_BASE+10
+syscall_tick_lo           EQU SYSCALL_STATE_BASE+11
+syscall_tick_hi           EQU SYSCALL_STATE_BASE+13
+SYSCALL_STATE_END         EQU SYSCALL_STATE_BASE+15
+
 ; P2.09 exact pointer-based spawn preflight record.
 PROC1_PATH_PTR             EQU 0
 PROC1_ARG1_PTR             EQU 2
@@ -155,53 +168,11 @@ zx48_user_range_bad:
 
 
     MACRO EMIT_SYSCALL_IMPL
-; P6.26 cooperative BREAK/cancellation boundary. IM2 is producer-only.
-zx48_p626_boundary:
-    ld a,(break_pending)
-    or a
-    jr z,zx48_p626_current
-    ld a,(tty_input_owner)
-    cp 1
-    jr z,zx48_p626_shell
-    cp 2
-    jr c,zx48_p626_drop
-    cp MAX_PROCESSES
-    jr nc,zx48_p626_drop
-    call zx48_process_live_lookup
-    jr c,zx48_p626_drop
-    call zx48_process_kill_started
-zx48_p626_drop:
-    xor a
-    ld (break_pending),a
-zx48_p626_current:
-    ld a,(current_pid)
-    cp 2
-    jr c,zx48_p626_ok
-    call zx48_process_ptr
-    bit 0,(ix+PROC_FLAGS)
-    jr z,zx48_p626_ok
-    res 0,(ix+PROC_FLAGS)
-    ld a,E_INTR
-    scf
-    ret
-zx48_p626_shell:
-    ld a,(current_pid)
-    cp 1
-    jr nz,zx48_p626_current
-    xor a
-    ld (break_pending),a
-    ld a,E_INTR
-    scf
-    ret
-zx48_p626_ok:
-    xor a
-    ret
-
 zx48_syscall_impl:
     ld (syscall_arg_hl),hl
     ld (syscall_arg_de),de
     ld (syscall_arg_bc),bc
-    call zx48_p626_boundary
+    call zx48_p626_break_boundary
     ret c
     cp SYS_KILL+1
     jr c,zx48_sys_dispatch_proc
@@ -746,14 +717,6 @@ zx48_sys_console_table:
 zx48_sys_info_table:
     dw zx48_sys_mem_info,zx48_sys_proc_info,zx48_sys_ticks,zx48_sys_time_get,zx48_sys_time_set
 
-syscall_user_sp: dw 0
-syscall_saved_ix: dw 0
-syscall_arg_hl: dw 0
-syscall_arg_de: dw 0
-syscall_arg_bc: dw 0
-syscall_temp: db 0
-syscall_tick_lo: dw 0
-syscall_tick_hi: dw 0
     ENDM
 
 ; P2.09/P2.10 staged production spawn entry and preflight. The resident kernel

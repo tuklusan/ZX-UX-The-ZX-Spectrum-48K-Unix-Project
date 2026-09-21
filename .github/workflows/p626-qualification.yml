@@ -35,6 +35,7 @@ jobs:
           git diff --name-only "$P626_BASE" HEAD | sort > /tmp/p626-changed
           printf '%s\n' \
             .github/workflows/p626-qualification.yml \
+            v1/src/kernel/keyboard.asm \
             v1/src/kernel/syscall.asm \
             v1/src/shell/sh.asm \
             v1/tools-host/test-driver/phase6_kill_break.py \
@@ -50,7 +51,7 @@ jobs:
             python3 -m py_compile v1/tools-host/test-driver/phase6_kill_break.py v1/tools-host/test-driver/run.py
             find v1/tools-host/test-driver -type d -name __pycache__ -prune -exec rm -rf {} +
             test -z "$(git status --porcelain)"; test "$(git rev-parse 'HEAD^{tree}')" = "$tree"
-            digest="$(sha256sum v1/src/kernel/process.asm v1/src/kernel/syscall.asm v1/src/shell/sh.asm v1/tools-host/test-driver/phase6_kill_break.py v1/tools-host/test-driver/run.py .github/workflows/p626-qualification.yml v1/dist/certification/P6.25.build.json v1/dist/certification/P6.25.test.json v1/dist/media/P6.25/manifest.json | sha256sum | awk '{print $1}')"
+            digest="$(sha256sum v1/src/kernel/keyboard.asm v1/src/kernel/process.asm v1/src/kernel/syscall.asm v1/src/shell/sh.asm v1/tools-host/test-driver/phase6_kill_break.py v1/tools-host/test-driver/run.py .github/workflows/p626-qualification.yml v1/dist/certification/P6.25.build.json v1/dist/certification/P6.25.test.json v1/dist/media/P6.25/manifest.json | sha256sum | awk '{print $1}')"
             if test -z "$baseline"; then baseline="$digest"; else test "$baseline" = "$digest"; fi
           done
       - name: Mandatory gates
