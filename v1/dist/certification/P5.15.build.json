@@ -1,0 +1,68 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "two-builds-byte-identical",
+      "passed": true
+    },
+    {
+      "name": "native-prefix-exact",
+      "passed": true
+    },
+    {
+      "name": "five-resource-prefix-exact",
+      "passed": true
+    },
+    {
+      "name": "later-resources-contract-valid-stubs",
+      "passed": true
+    },
+    {
+      "name": "fixture-explicitly-non-final",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 31,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 14003 lines, work time: 0.030 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/assets/bincat.bin": "130762f290dad7169ed9e55cc31da09449548ee9156b658a644487d3d611c939",
+    "v1/assets/crontab.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "v1/assets/font4x8-zxux.bin": "90f6818cf81cf3f13509cff32c091075691195d9638dbe801d12daceec1c9339",
+    "v1/assets/issue.txt": "8d57d17f25ef895909a56a3195e29b8f9b83ff2cc31b2537a23d1d02429e3d31",
+    "v1/assets/loading.scr": "9faa5d52fe4d8f9225aa64399a578f546ee2cbb11d01dd241ebfd00eb88b3fe7",
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/phase5-fixture.tap": "81620fbb57ad352c3df590b08835df68bf61d72627aa0ae9ea82918c24c7d80d",
+    "v1/dist/certification/P5.14.build.json": "00ec1e511ee7e561b5f982e05c045ae5763224c14361191fa8d718897dd5542e",
+    "v1/dist/certification/P5.14.test.json": "a5b624840093f06f55df5bc6f9824b3d9a2cf3952dca6bd8c78f6d3f5f41126f",
+    "v1/tools-host/cassette-image/cassette_image.py": "fc17180de8c282d8396a7e22d9a1a6ca080908588034771361b22ff36f1bd311",
+    "v1/tools-host/maketap/maketap.py": "9b9c7623fbff959997ca5e50cb7cd9a735afe06ab63c34d3f224bf00d05f131b",
+    "v1/tools-host/test-driver/phase5_fixture_tape.py": "66df3d5bdc72cc13884ee83c487c2de9cdda29a53284a3e5f1b6b5a0fbf24305",
+    "v1/tools-host/test-driver/run.py": "9b0b2915ea4828677ee3cb2b49995a3085c90a03137a3688cd856549053cfdf7"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P5.14": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "00a0902ab2127cca632333728766a643515212c6",
+  "status": "PASS",
+  "step": "P5.15",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
