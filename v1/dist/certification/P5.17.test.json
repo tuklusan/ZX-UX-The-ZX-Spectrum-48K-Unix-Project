@@ -1,0 +1,98 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "abort-handoff-releases-global-lock",
+      "passed": true
+    },
+    {
+      "name": "platform-recovery-clears-altreg",
+      "passed": true
+    },
+    {
+      "name": "platform-recovery-restores-ula-shadow",
+      "passed": true
+    },
+    {
+      "name": "platform-recovery-restores-iy",
+      "passed": true
+    },
+    {
+      "name": "platform-recovery-checks-kernel-stack",
+      "passed": true
+    },
+    {
+      "name": "rom-tape-return-already-canonicalizes-platform",
+      "passed": true
+    },
+    {
+      "name": "break-recovery-contract-emitted",
+      "passed": true
+    },
+    {
+      "name": "checksum-error-recovery-contract-emitted",
+      "passed": true
+    },
+    {
+      "name": "transport-eof-error-recovery-contract-emitted",
+      "passed": true
+    },
+    {
+      "name": "follow-up-operation-lock-release-contract-emitted",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 43,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 14018 lines, work time: 0.041 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p517-recovery.lst",
+        "--sym=p517-recovery.sym",
+        "p517-recovery.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 6,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 3827 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p517-recovery.bin": "f66b20017b99006880e8a0268bffd6d2815db7fba9e2e05fd5b58115c27763f4",
+    "v1/dist/certification/P5.16.build.json": "47fd6b4c7047dc0f148c6a4abf6cafef80cc632852697469c25bac42b7108be0",
+    "v1/dist/certification/P5.16.test.json": "e116378be4fc933c92a3ee4a958f6b2bfb757498304ee9a8c54ad00bbbad6c29",
+    "v1/src/kernel/errors.asm": "91b7a2176e20488781176e385ac15467cf2aed92d10a01dbb5877ec4511aaee5",
+    "v1/src/kernel/tape.asm": "ff2723f8b9d98f77979c74e47de3c31b1d5d1f664c71b846a9cb39e6f2d3b8a1",
+    "v1/tools-host/test-driver/phase5_tape_recovery.py": "416c7d003abc80c4df93011060a2dd40eaa06c0761382b7b7ced6e23fccff93f",
+    "v1/tools-host/test-driver/run.py": "31456d23e52b72b8981dc97e2bbe1af79d79d01f4b5c86ab688e62a51fca9970"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P5.16": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "a392d459985cd89d8ae606b2f5064d5758f4694b",
+  "status": "PASS",
+  "step": "P5.17",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
