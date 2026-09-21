@@ -48,8 +48,8 @@ jobs:
           import json
           from pathlib import Path
           for a in ("build","test"):
-              r=json.loads(Path(f"v1/dist/certification/P6.21.{a}.json").read_text())
-              assert r["step"]=="P6.21" and r["action"]==a and r["status"]=="PASS"
+              r=json.loads(Path(f"v1/dist/certification/P6.22.{a}.json").read_text())
+              assert r["step"]=="P6.22" and r["action"]==a and r["status"]=="PASS"
               assert r["source_commit"]=="cd1e7f7fdb27d02c6299231a2a04021a3b332b07"
           PY
       - uses: ./.github/actions/setup-zxux-runtime
