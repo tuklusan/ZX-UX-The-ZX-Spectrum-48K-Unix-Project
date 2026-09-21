@@ -1685,3 +1685,120 @@ sh_p612_invalid:
     scf
     ret
     ENDM
+
+; P6.13 exact lower-case core/stateful builtin lookup. Phase-7 ROM-assisted
+; names have explicit zero dispatch-hook slots but are not resolvable here.
+    MACRO EMIT_P613_BUILTIN_ROUTINES
+P613_BUILTIN_CD          EQU 1
+P613_BUILTIN_PWD         EQU 2
+P613_BUILTIN_SET         EQU 3
+P613_BUILTIN_UNSET       EQU 4
+P613_BUILTIN_JOBS        EQU 5
+P613_BUILTIN_WAIT        EQU 6
+P613_BUILTIN_KILL        EQU 7
+P613_BUILTIN_MEM         EQU 8
+P613_BUILTIN_PS          EQU 9
+P613_BUILTIN_CLEAR       EQU 10
+P613_BUILTIN_SAVE        EQU 11
+P613_BUILTIN_LOAD        EQU 12
+P613_BUILTIN_VERIFY      EQU 13
+P613_BUILTIN_TAPE        EQU 14
+P613_BUILTIN_EXIT        EQU 15
+
+; HL=name bytes, B=exact byte length. Success A=stable core builtin ID.
+; Mixed case, aliases, ROM hooks and unknown names return E_NOENT.
+sh_p613_lookup_builtin:
+    ld (p613_query_ptr),hl
+    ld a,b
+    ld (p613_query_len),a
+    ld hl,p613_core_table
+sh_p613_lookup_next:
+    ld a,(hl)
+    or a
+    jr z,sh_p613_lookup_miss
+    ld c,a
+    inc hl
+    ld a,(p613_query_len)
+    cp c
+    jr nz,sh_p613_lookup_skip
+    push hl
+    ld de,(p613_query_ptr)
+    ld b,c
+sh_p613_lookup_cmp:
+    ld a,(de)
+    cp (hl)
+    jr nz,sh_p613_lookup_cmp_fail
+    inc de
+    inc hl
+    djnz sh_p613_lookup_cmp
+    ld a,(hl)
+    pop de
+    or a
+    ret
+sh_p613_lookup_cmp_fail:
+    pop hl
+sh_p613_lookup_skip:
+    ld e,c
+    ld d,0
+    add hl,de
+    inc hl
+    jr sh_p613_lookup_next
+sh_p613_lookup_miss:
+    ld a,E_NOENT
+    scf
+    ret
+
+p613_core_table:
+    db 2,'c','d',P613_BUILTIN_CD
+    db 3,'p','w','d',P613_BUILTIN_PWD
+    db 3,'s','e','t',P613_BUILTIN_SET
+    db 5,'u','n','s','e','t',P613_BUILTIN_UNSET
+    db 4,'j','o','b','s',P613_BUILTIN_JOBS
+    db 4,'w','a','i','t',P613_BUILTIN_WAIT
+    db 4,'k','i','l','l',P613_BUILTIN_KILL
+    db 3,'m','e','m',P613_BUILTIN_MEM
+    db 2,'p','s',P613_BUILTIN_PS
+    db 5,'c','l','e','a','r',P613_BUILTIN_CLEAR
+    db 4,'s','a','v','e',P613_BUILTIN_SAVE
+    db 4,'l','o','a','d',P613_BUILTIN_LOAD
+    db 6,'v','e','r','i','f','y',P613_BUILTIN_VERIFY
+    db 4,'t','a','p','e',P613_BUILTIN_TAPE
+    db 4,'e','x','i','t',P613_BUILTIN_EXIT
+    db 0
+
+; Explicit Phase-7 dispatch hooks. Each trailing word is zero until the owning
+; Phase-7 step installs a handler; P6.13 lookup deliberately ignores this table.
+p613_rom_hook_table:
+    db 4,'c','a','l','c'
+    dw 0
+    db 4,'b','e','e','p'
+    dw 0
+    db 4,'p','l','o','t'
+    dw 0
+    db 4,'l','i','n','e'
+    dw 0
+    db 6,'c','i','r','c','l','e'
+    dw 0
+    db 5,'p','o','i','n','t'
+    dw 0
+    db 3,'i','n','k'
+    dw 0
+    db 5,'p','a','p','e','r'
+    dw 0
+    db 6,'b','r','i','g','h','t'
+    dw 0
+    db 5,'f','l','a','s','h'
+    dw 0
+    db 7,'i','n','v','e','r','s','e'
+    dw 0
+    db 4,'o','v','e','r'
+    dw 0
+    db 6,'b','o','r','d','e','r'
+    dw 0
+    db 3,'r','o','m'
+    dw 0
+    db 0
+
+p613_query_ptr: dw 0
+p613_query_len: db 0
+    ENDM
