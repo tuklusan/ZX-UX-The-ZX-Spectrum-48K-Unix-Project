@@ -380,7 +380,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
         },
         {
             "name": "pid0-pid1-zombie-and-nonexistent-targets-remain-rejected",
-            "passed": "cp 2\n    jr c,zx48_process_perm" in kill and "call zx48_process_lookup" in kill and "cp PROC_ZOMBIE\n    jp z,zx48_process_noent" in kill,
+            "passed": "cp 2\n    jr c,zx48_process_perm" in kill and "call zx48_process_live_lookup" in kill,
         },
         {
             "name": "permission-remains-pid1-or-direct-parent-only",
