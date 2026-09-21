@@ -57,8 +57,10 @@ def dispatch(root:Path,action:str,step:str,*,sha256_file,run_command,require_pro
     ]
     core_section=macro.split("p613_core_table:",1)[1].split("p613_rom_hook_table:",1)[0]
     hook_section=macro.split("p613_rom_hook_table:",1)[1]
-    assertions[0]["passed"]=all(all(f"'{chr(ch)}'" in core_section for ch in n) for n in CORE)
-    assertions[3]["passed"]=all(not all(f"'{chr(ch)}'" in core_section for ch in n) for n in HOOKS)
+    def encoded(name):
+        return ",".join(f"'{chr(ch)}'" for ch in name)
+    assertions[0]["passed"]=all(encoded(n) in core_section for n in CORE)
+    assertions[3]["passed"]=all(encoded(n) not in core_section for n in HOOKS) and all(encoded(n) in hook_section for n in HOOKS)
     require(all(a["passed"] for a in assertions),"P6.13 static contract failure")
     asm=require_project_tool(root,"tools/runtime/sjasmplus/bin/sjasmplus"); build=root/"v1/build"; build.mkdir(parents=True,exist_ok=True)
     sf=build/"p613-fixture.asm"
