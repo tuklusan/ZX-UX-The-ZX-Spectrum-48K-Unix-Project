@@ -2423,3 +2423,39 @@ sh_p619_invalid:
 p619_table: dw 0
 p619_left: db 0
     ENDM
+
+; P6.20 && / || equal-precedence left-to-right short-circuit selector.
+    MACRO EMIT_P620_LOGIC_ROUTINES
+P620_LOGIC_AND           EQU 1
+P620_LOGIC_OR            EQU 2
+
+; A=current foreground status, B=operator. Carry clear with A=1 means execute
+; next RHS; A=0 means skip RHS. Unknown operator is E_INVAL/carry.
+sh_p620_should_execute:
+    ld c,a
+    ld a,b
+    cp P620_LOGIC_AND
+    jr z,sh_p620_and
+    cp P620_LOGIC_OR
+    jr z,sh_p620_or
+    ld a,E_INVAL
+    scf
+    ret
+sh_p620_and:
+    ld a,c
+    or a
+    jr nz,sh_p620_skip
+    ld a,1
+    or a
+    ret
+sh_p620_or:
+    ld a,c
+    or a
+    jr z,sh_p620_skip
+    ld a,1
+    or a
+    ret
+sh_p620_skip:
+    xor a
+    ret
+    ENDM

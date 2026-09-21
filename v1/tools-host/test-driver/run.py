@@ -178,6 +178,7 @@ import phase6_echo
 import phase6_builtin_redir
 import phase6_external_redir
 import phase6_sequence
+import phase6_logic
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
 from media_retention import (
     capture_project_media,
@@ -415,6 +416,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase6_external_redir.dispatch(root, action, step, **kwargs)
     if step == "P6.19":
         return phase6_sequence.dispatch(root, action, step, **kwargs)
+    if step == "P6.20":
+        return phase6_logic.dispatch(root, action, step, **kwargs)
     if step.startswith("P6."):
         raise DriverError(f"numbered Phase-6 step is not registered: {step}")
     module = E0_MODULE.get(step)
