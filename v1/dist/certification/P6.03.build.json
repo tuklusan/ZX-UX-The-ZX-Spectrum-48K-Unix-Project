@@ -1,0 +1,89 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "length-bound-1-through-8",
+      "passed": true
+    },
+    {
+      "name": "first-byte-lowercase-only",
+      "passed": true
+    },
+    {
+      "name": "tail-allows-lower-digit-underscore-hyphen",
+      "passed": true
+    },
+    {
+      "name": "invalid-input-reprompts-exact-login-token",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p603-shell-fixture.lst",
+        "--sym=p603-shell-fixture.sym",
+        "p603-shell-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 445 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p603-login.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 26,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 14672, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 14201, \"image_size\": 82, \"magic\": \"MEX1\", \"minimum_stack_size\": 128, \"relocation_count\": 0, \"relocation_table_offset\": 106, \"relocations\": [], \"stored_length\": 106, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p603-gateway.lst",
+        "--sym=p603-gateway.sym",
+        "p603-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 273 lines, work time: 0.001 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p603-login.mex1": "ed000359c4cac69d7a29b88b156fb55b91d2ed148ffd36148ec14fa9357c78df",
+    "v1/build/p603-login.tap": "0d53bce9f8bead211ca69dabaeb476ef0fa7c72bc5136584cbd790f051f1444f",
+    "v1/dist/certification/P6.02.build.json": "cf3d63404f5c7257fd85b6402dc7a971aa8c1ae42b6fd720577a7718ee225889",
+    "v1/dist/certification/P6.02.test.json": "88307ed91799572c6d503336dff64732faac1e74bfcb428a51357e3c9f6d8a7b",
+    "v1/dist/media/P6.02/manifest.json": "1ae0a381f0420b7feb02666c9b078e358313796337102e44dfa33144eaa31d14",
+    "v1/src/shell/sh.asm": "0ea3af895e9e62a94145daf78c4c1cd0e536296526cf66737d83ebbe3d6f2a40",
+    "v1/tools-host/test-driver/phase6_login.py": "84ba22545ce43d1c142c0276749c65768113c780b31ce449144208dd83f59fbe",
+    "v1/tools-host/test-driver/run.py": "06d242c94e1bc3bff1d27cd4ea82c5ab7422f746be0f7f47740e030d0c3cecfe"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P6.02": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "4668ea0895ddccb4378055bcec6930bbc92a8bf0",
+  "status": "PASS",
+  "step": "P6.03",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
