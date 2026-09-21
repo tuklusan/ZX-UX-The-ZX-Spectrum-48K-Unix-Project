@@ -65,9 +65,17 @@ jobs:
           def get(url):
               req=urllib.request.Request(url,headers=headers)
               with urllib.request.urlopen(req,timeout=60) as r: return r.read()
-          data=json.loads(get(f"https://api.github.com/repos/{repo}/actions/runs/{run}/artifacts"))
-          wanted=[a for a in data["artifacts"] if a["name"].startswith(f"zxux-{slug}-qualification-{run}-")]
-          if len(wanted)!=1: raise SystemExit(f"expected one qualification artifact, got {len(wanted)}")
+          import time
+          wanted=[]
+          for _ in range(60):
+              data=json.loads(get(f"https://api.github.com/repos/{repo}/actions/runs/{run}/artifacts"))
+              wanted=[a for a in data["artifacts"] if a["name"].startswith(f"zxux-{slug}-qualification-{run}-") and not a.get("expired")]
+              if len(wanted)==1:
+                  break
+              if len(wanted)>1:
+                  raise SystemExit(f"multiple qualification artifacts: {len(wanted)}")
+              time.sleep(5)
+          if len(wanted)!=1: raise SystemExit("qualification artifact did not become available")
           payload=get(wanted[0]["archive_download_url"])
           pathlib.Path("/tmp/qualification.zip").write_bytes(payload)
           with zipfile.ZipFile("/tmp/qualification.zip") as z: z.extractall("/tmp/qualification")
