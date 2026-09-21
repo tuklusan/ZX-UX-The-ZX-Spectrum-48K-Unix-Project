@@ -55,7 +55,7 @@ def dispatch(root:Path,action:str,step:str,*,sha256_file,run_command,require_pro
     assertions=[
       {"name":"im2-remains-producer-only","passed":"ld (break_pending),a" in interrupt and "zx48_process_kill" not in interrupt and "zx48_schedule" not in interrupt.split("zx48_interrupt_break:",1)[1].split("zx48_interrupt_done:",1)[0]},
       {"name":"syscall-entry-services-break-before-dispatch","passed":"call zx48_p626_boundary" in syscall and syscall.index("call zx48_p626_boundary") < syscall.index("cp SYS_KILL+1")},
-      {"name":"shell-owner-break-is-line-eintr-only","passed":"cp 1" in boundary and "ld a,E_INTR" in boundary and "PROC_FLAG_CANCEL" not in boundary.split("zx48_p626_break_child:",1)[0]},
+      {"name":"shell-owner-break-is-line-eintr-only","passed":"zx48_p626_shell_break:" in boundary and "ld a,E_INTR" in boundary.split("zx48_p626_shell_break:",1)[1].split("zx48_p626_drop:",1)[0] and "PROC_FLAG_CANCEL" not in boundary.split("zx48_p626_shell_break:",1)[1].split("zx48_p626_drop:",1)[0]},
       {"name":"child-break-targets-tty-owner-only","passed":"ld a,(tty_input_owner)" in boundary and "or PROC_FLAG_CANCEL" in boundary},
       {"name":"no-break-scheduler-preemption","passed":"zx48_schedule" not in boundary},
       {"name":"current-cancel-consumed-before-syscall-side-effects","passed":"res 0,(ix+PROC_FLAGS)" in boundary and "ld a,E_INTR" in boundary},
