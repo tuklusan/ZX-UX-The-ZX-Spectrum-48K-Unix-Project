@@ -1,0 +1,84 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "six-stage-hard-bound",
+      "passed": true
+    },
+    {
+      "name": "immutable-env-snapshot-before-spawn",
+      "passed": true
+    },
+    {
+      "name": "pipes-before-any-spawn",
+      "passed": true
+    },
+    {
+      "name": "wait-only-after-spawn-loop",
+      "passed": true
+    },
+    {
+      "name": "mid-launch-kill-rollback",
+      "passed": true
+    },
+    {
+      "name": "no-yield-during-launch",
+      "passed": true
+    },
+    {
+      "name": "dollar-status-not-serialized",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p621-shell-fixture.lst",
+        "--sym=p621-shell-fixture.sym",
+        "p621-shell-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 8,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 3163 lines, work time: 0.006 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p621-gateway.lst",
+        "--sym=p621-gateway.sym",
+        "p621-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 326 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/dist/certification/P6.20.build.json": "521508d65366e1fb9a9cf3aa7b57b382e6d5d78e6939f837cbc1293ea12bced4",
+    "v1/dist/certification/P6.20.test.json": "b419338e4ab40246d0f227f32cf3c4c500fb9e0a931c508cf7ae69d3325551a5",
+    "v1/dist/media/P6.20/manifest.json": "6516e5d36609245cd681ea472a00c9d3e28ac793384e92a4b3efb9444435ee0a",
+    "v1/src/shell/sh.asm": "c198cfc800fbabdba38a574685a367ffcef5372128a278a300dc908737f8a76b",
+    "v1/tools-host/test-driver/phase6_pipeline.py": "6deb508d7053f3f66322ab5589296c34b0d323a1be65f6feef5f37acb08c9c0f",
+    "v1/tools-host/test-driver/run.py": "ddaab73528f45c8d13e8291ac7cccb825ba59aab3975691572d9d722754f8517"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P6.20": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "72dc3ddc8a0ee357bd0990b08b9d820ddced738a",
+  "status": "PASS",
+  "step": "P6.21",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
