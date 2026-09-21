@@ -1,0 +1,101 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p703-present",
+      "passed": true
+    },
+    {
+      "name": "plot-validates-y-before-visible-mutation",
+      "passed": true
+    },
+    {
+      "name": "plot-public-domain-is-full-256x192",
+      "passed": true
+    },
+    {
+      "name": "native-replacement-rationale-records-rom-domain-mismatch",
+      "passed": true
+    },
+    {
+      "name": "plot-delegates-to-p702-canonical-bitmap-helper",
+      "passed": true
+    },
+    {
+      "name": "plot-publishes-current-hardware-attribute-after-pixel",
+      "passed": true
+    },
+    {
+      "name": "plot-exact-over-inverse-four-mode-shape",
+      "passed": true
+    },
+    {
+      "name": "plot-success-is-canonical-zero-carry-clear",
+      "passed": true
+    },
+    {
+      "name": "fuse-four-corners-and-interiors-set-exact-pixel-and-attribute",
+      "passed": true
+    },
+    {
+      "name": "fuse-over-inverse-four-mode-rom-visible-semantics",
+      "passed": true
+    },
+    {
+      "name": "fuse-y192-y255-einval-before-screen-cursor-or-state-mutation",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 37,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nkernel.asm(87): warning[shortblock]: init data for block truncated to length: 0\nPass 3 complete\nErrors: 0, warnings: 1, compiled: 14775 lines, work time: 0.035 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p703-plot.lst",
+        "--sym=p703-plot.sym",
+        "p703-plot.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 7,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 1265 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "1bcb1862955372e15814296fd248795b3de41baac5596baecd5d5f155ed92a67",
+    "v1/build/p703-plot.bin": "5047c1047d286a6b80c1fb0112d19b0a628f8dfa2ff1f013aeab6e6228420247",
+    "v1/src/kernel/graphics.asm": "6c4292ccad213272f8190c802dd2292e98ff078662f8961942013c51c828219f",
+    "v1/src/kernel/rom_services.asm": "451474302209514de56648eee2d7d98528167496ee8d714d68fa34975371cdee",
+    "v1/src/kernel/syscall.asm": "1310c1750724a262c4d3171a9eacc8b4f734054dbb55ebe2223d4121d27ba25a",
+    "v1/tools-host/test-driver/phase7_plot.py": "c8836b126062f520c45da5c80175cc8197acb46e0fe6fb5fa923c04040cecb3e",
+    "v1/tools-host/test-driver/run.py": "1334d17e4ed6bcca09d70a819217ff5dd67814acfb3e3428d1c8aaa8de66a50b"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P7.02": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "11c0ecaa951d2e217248e6d6edf60d90d233a63b",
+  "status": "PASS",
+  "step": "P7.03",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
