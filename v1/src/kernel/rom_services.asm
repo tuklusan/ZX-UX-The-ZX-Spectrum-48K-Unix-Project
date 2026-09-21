@@ -40,6 +40,12 @@ ROM_ASN                   EQU $3833
 ROM_ACS                   EQU $3843
 ROM_SQR                   EQU $384A
 ROM_POWER                 EQU $3851
+ROM_ERR_SP                EQU $5C3D
+ROM_STKBOT                EQU $5C63
+ROM_STKEND                EQU $5C65
+ROM_MEM                   EQU $5C68
+ROM_MEMBOT                EQU $5C92
+ROM_BEEP_STACK            EQU $5D00
 
     MACRO EMIT_ROM_SERVICE_ROUTINES
 ; Every raw ROM return samples/checks the dedicated kernel stack while preserving
@@ -83,6 +89,89 @@ zx48_rom_plot_sub:
 zx48_rom_draw_line:
     call ROM_DRAW_LINE
     jr zx48_rom_checked_return
+
+; P7.09 isolated BASIC-compatible BEEP gateway.
+; HL -> five-byte duration, DE -> five-byte pitch. The two exact values are
+; copied into a private calculator stack in protected ROM-compatibility RAM.
+; ERR_SP is redirected to a kernel-owned recovery item so any Sinclair report
+; becomes E_INVAL rather than escaping into BASIC.
+zx48_rom_beep_values:
+    ld (rom_beep_duration_ptr),hl
+    ld (rom_beep_pitch_ptr),de
+    ld hl,(ROM_ERR_SP)
+    ld (rom_beep_saved_err_sp),hl
+    ld hl,(ROM_STKBOT)
+    ld (rom_beep_saved_stkbot),hl
+    ld hl,(ROM_STKEND)
+    ld (rom_beep_saved_stkend),hl
+    ld hl,(ROM_MEM)
+    ld (rom_beep_saved_mem),hl
+    ld hl,0
+    add hl,sp
+    ld (rom_beep_saved_sp),hl
+
+    ld hl,ROM_BEEP_STACK
+    ld (ROM_STKBOT),hl
+    ld (ROM_STKEND),hl
+    ld hl,ROM_MEMBOT
+    ld (ROM_MEM),hl
+
+    ld hl,(rom_beep_duration_ptr)
+    ld de,ROM_BEEP_STACK
+    ld bc,5
+    ldir
+    ld hl,(rom_beep_pitch_ptr)
+    ld de,ROM_BEEP_STACK+5
+    ld bc,5
+    ldir
+    ld hl,ROM_BEEP_STACK+10
+    ld (ROM_STKEND),hl
+
+    ld hl,zx48_rom_beep_error
+    push hl
+    ld hl,0
+    add hl,sp
+    ld (ROM_ERR_SP),hl
+    ld iy,ROM_IY_ANCHOR
+    call zx48_ula_rom_prepare
+    call ROM_BEEP_COMMAND
+    pop hl
+    call zx48_rom_beep_cleanup
+    xor a
+    or a
+    ret
+
+zx48_rom_beep_error:
+    ld hl,(rom_beep_saved_sp)
+    ld sp,hl
+    call zx48_rom_beep_cleanup
+    ld a,E_INVAL
+    scf
+    ret
+
+zx48_rom_beep_cleanup:
+    ld hl,(rom_beep_saved_err_sp)
+    ld (ROM_ERR_SP),hl
+    ld hl,(rom_beep_saved_stkbot)
+    ld (ROM_STKBOT),hl
+    ld hl,(rom_beep_saved_stkend)
+    ld (ROM_STKEND),hl
+    ld hl,(rom_beep_saved_mem)
+    ld (ROM_MEM),hl
+    xor a
+    ld (altreg_busy),a
+    ld a,(ula_shadow)
+    call zx48_ula_commit
+    ld iy,ROM_IY_ANCHOR
+    ret
+
+rom_beep_duration_ptr: dw 0
+rom_beep_pitch_ptr: dw 0
+rom_beep_saved_err_sp: dw 0
+rom_beep_saved_stkbot: dw 0
+rom_beep_saved_stkend: dw 0
+rom_beep_saved_mem: dw 0
+rom_beep_saved_sp: dw 0
 
 ; These ROM services drive ULA port 0xFE. Mirror only the kernel border bits
 ; into BORDCR before entry, then re-emit the authoritative shadow on return.

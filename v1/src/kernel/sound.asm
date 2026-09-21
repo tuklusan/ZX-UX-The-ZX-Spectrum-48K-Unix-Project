@@ -14,10 +14,9 @@
 ; ROM calculator gateway; the low-level BEEPER wrapper remains centralized.
 
     MACRO EMIT_SOUND_ROUTINES
+; P7.09 synchronous BASIC-compatible note.
 ; HL=duration five-byte value, DE=pitch five-byte value.
 zx48_sound_beep:
-    ; The ROM public BEEP path is the architecture-approved BASIC-compatible
-    ; semantics. Inputs are already validated as five-byte user values.
     call zx48_rom_beep_values
     ret
     ENDM

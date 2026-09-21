@@ -1184,6 +1184,29 @@ p411_stat_path_ptr: dw 0
 p411_stat_out_ptr: dw 0
     ENDM
 
+; P7.09 staged synchronous BEEP syscall ABI.
+    MACRO EMIT_P709_BEEP_SYSCALL_ROUTINES
+zx48_p709_beep_dispatch:
+    cp SYS_BEEP
+    jr nz,zx48_p709_beep_notsup
+zx48_p709_beep:
+    ld hl,(syscall_arg_hl)
+    ld bc,5
+    call zx48_user_range_validate
+    ret c
+    ld hl,(syscall_arg_de)
+    ld bc,5
+    call zx48_user_range_validate
+    ret c
+    ld hl,(syscall_arg_hl)
+    ld de,(syscall_arg_de)
+    jp zx48_sound_beep
+zx48_p709_beep_notsup:
+    ld a,E_NOTSUP
+    scf
+    ret
+    ENDM
+
 ; P7.01 staged graphics syscall ABI. The resident 8 KiB kernel code pool is already
 ; byte-full at the Phase-6 checkpoint, so Phase-7 graphics qualification emits
 ; this exact syscall surface in a bounded fixture until the later Phase-7
