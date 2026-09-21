@@ -328,3 +328,8 @@ zx48_tty_perm:
     scf
     ret
     ENDM
+
+; P6.22 qualification marker: the production tty ioctl path above remains the
+; authority. TTY_SET_INPUT_OWNER is request 7, accepts only PID1 as caller, and
+; non-owner reads remain E_BUSY through zx48_keyboard_getkey.
+P622_TTY_SET_INPUT_OWNER EQU TTY_REQ_SET_OWNER

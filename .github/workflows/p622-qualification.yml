@@ -1,0 +1,74 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the root LICENSE file.
+# Non-Commercial use is permitted; Commercial Use and use for AI/ML model training are prohibited unless separately authorized.
+# Attribution is required: "Based on original work by Supratim Sanyal of SANYALnet Labs." See LICENSE for full terms.
+name: P6.22 qualification
+on:
+  workflow_dispatch:
+permissions:
+  actions: write
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      ZXUX_EVIDENCE_DIR: /tmp/zxux-p622-qualification
+      P622_BASE: dc4fc0c62cb25f97e569563858d9ff070ba0cc38
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: {fetch-depth: 0}
+      - name: Guard exact P6.22 candidate diff
+        run: |
+          set -euo pipefail
+          git diff --name-only "$P622_BASE" HEAD | sort > /tmp/p622-changed
+          printf '%s\n' .github/workflows/p622-qualification.yml v1/src/kernel/console.asm v1/src/shell/sh.asm v1/tools-host/test-driver/phase6_tty_owner.py v1/tools-host/test-driver/run.py | sort > /tmp/p622-expected
+          diff -u /tmp/p622-expected /tmp/p622-changed
+          git diff --check "$P622_BASE" HEAD
+          test -z "$(git status --porcelain)"
+      - name: Mandatory gates
+        run: |
+          set -euo pipefail
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+          python3 tools/check_phase5_evidence.py --require-active
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          for a in ("build","test"):
+              r=json.loads(Path(f"v1/dist/certification/P6.21.{a}.json").read_text())
+              assert r["step"]=="P6.21" and r["action"]==a and r["status"]=="PASS"
+              assert r["source_commit"]=="72dc3ddc8a0ee357bd0990b08b9d820ddced738a"
+          PY
+      - uses: ./.github/actions/setup-zxux-runtime
+      - name: Execute P6.22 build
+        run: tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P6.22
+      - name: Execute P6.22 test
+        run: tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P6.22
+      - name: Collect exact evidence
+        if: always()
+        run: |
+          mkdir -p "$ZXUX_EVIDENCE_DIR/meta"
+          git rev-parse HEAD > "$ZXUX_EVIDENCE_DIR/meta/candidate-commit.txt"
+          git rev-parse 'HEAD^{tree}' > "$ZXUX_EVIDENCE_DIR/meta/candidate-tree.txt"
+          git status --porcelain > "$ZXUX_EVIDENCE_DIR/meta/worktree-status.txt"
+      - name: Upload exact evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: zxux-p622-qualification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: /tmp/zxux-p622-qualification/
+          retention-days: 90
+          if-no-files-found: error
+      - name: Dispatch exact admission
+        env: {GH_TOKEN: ${{ github.token }}}
+        run: |
+          python3 - <<'PY'
+          import json,os,urllib.request
+          p=json.dumps({"ref":"main","inputs":{"step":"P6.22","run_id":os.environ["GITHUB_RUN_ID"],"source_commit":os.environ["GITHUB_SHA"]}}).encode()
+          q=urllib.request.Request(f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}/actions/workflows/phase6-step-admission.yml/dispatches",data=p,method="POST",headers={"Authorization":f"Bearer {os.environ['GH_TOKEN']}","Accept":"application/vnd.github+json","Content-Type":"application/json"})
+          with urllib.request.urlopen(q,timeout=30) as r: assert r.status==204
+          PY

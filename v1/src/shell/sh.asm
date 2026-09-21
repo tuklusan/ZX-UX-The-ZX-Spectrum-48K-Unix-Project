@@ -2679,3 +2679,42 @@ p621_kill_left: db 0
 p621_error: db 0
 p621_env_snapshot: defs 256,0
     ENDM
+
+; P6.22 foreground tty ownership handoff. PID1 is the only caller allowed to
+; request ownership changes; background launch code never calls this path.
+    MACRO EMIT_P622_TTY_OWNER_ROUTINES
+P622_TTY_HANDLE          EQU 0
+P622_SET_OWNER           EQU 7
+
+; A=first foreground stage PID that reads from tty.
+sh_p622_set_foreground_owner:
+    cp 2
+    jp c,sh_p622_invalid
+    cp MAX_PROCESSES
+    jp nc,sh_p622_invalid
+    ld (p622_owner),a
+    jp sh_p622_issue_owner
+
+; Restore PID1 after foreground completion/error/cancel.
+sh_p622_restore_shell_owner:
+    ld a,1
+    ld (p622_owner),a
+sh_p622_issue_owner:
+    ld a,P622_TTY_HANDLE
+    ld (p622_ioctl),a
+    ld a,P622_SET_OWNER
+    ld (p622_ioctl+1),a
+    ld hl,p622_owner
+    ld (p622_ioctl+2),hl
+    ld hl,p622_ioctl
+    ld a,SYS_IOCTL
+    jp SYSCALL_GATEWAY
+
+sh_p622_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+
+p622_ioctl: db 0,0,0,0
+p622_owner: db 1
+    ENDM
