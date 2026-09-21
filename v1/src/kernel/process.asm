@@ -438,6 +438,155 @@ process_fixed_state_end:
     ENDM
 
 
+
+; P6.01 cold-boot PID1 publication. The caller supplies already loaded sh
+; bootstrap blocks: IX=ARG1, BC=ARG1 length, HL=ENV1, DE=ENV1 length.
+; All validation and open-description acquisition completes while PID1 remains
+; FREE. Descriptor fields, tty ownership, and READY are then published in that
+; order with READY last, so no scheduler can observe a partial PID1 contract.
+    MACRO EMIT_P601_PID1_BOOTSTRAP_ROUTINES
+zx48_p601_pid1_bootstrap:
+    ld (p601_arg_ptr),ix
+    ld (p601_arg_len),bc
+    ld (p601_env_ptr),hl
+    ld (p601_env_len),de
+    ld a,HANDLE_FREE
+    ld (p601_read_od),a
+    ld (p601_write_od),a
+
+    ; PID1 must still be the untouched FREE descriptor.
+    ld a,1
+    call zx48_process_ptr
+    ret c
+    ld a,(ix+PROC_STATE)
+    or a
+    jp nz,zx48_p601_busy
+
+    ; Cold-boot ARG1 is exactly argv[0]="sh".
+    ld ix,(p601_arg_ptr)
+    ld bc,(p601_arg_len)
+    ld hl,p601_name_sh
+    call zx48_arg1_validate
+    ret c
+    ld a,(ix+4)
+    cp 1
+    jp nz,zx48_p601_format
+    ld hl,(p601_arg_len)
+    ld de,11
+    or a
+    sbc hl,de
+    jp nz,zx48_p601_format
+
+    ; Cold-boot ENV1 is the canonical zero-entry eight-byte block.
+    ld ix,(p601_env_ptr)
+    ld bc,(p601_env_len)
+    call zx48_env1_validate
+    ret c
+    ld a,(ix+4)
+    or a
+    jp nz,zx48_p601_format
+    ld hl,(p601_env_len)
+    ld de,8
+    or a
+    sbc hl,de
+    jp nz,zx48_p601_format
+
+    ; Acquire one read tty OD and one write tty OD. stdout/stderr share the
+    ; latter, therefore its final reference count is exactly two.
+    ld b,OD_KIND_TTY
+    ld c,O_READ
+    ld d,0
+    call zx48_od_create
+    ret c
+    ld (p601_read_od),a
+
+    ld b,OD_KIND_TTY
+    ld c,O_WRITE
+    ld d,0
+    call zx48_od_create
+    jr c,zx48_p601_rollback_read
+    ld (p601_write_od),a
+    call zx48_od_retain
+    jr c,zx48_p601_rollback_both
+
+    ; Re-prove PID1 is still FREE, fill every observable boot field, assign tty
+    ; input owner, then publish READY as the final write.
+    ld a,1
+    call zx48_process_ptr
+    jr c,zx48_p601_rollback_write_twice
+    ld a,(ix+PROC_STATE)
+    or a
+    jr nz,zx48_p601_rollback_write_twice
+    xor a
+    ld (ix+PROC_PARENT),a
+    ld (ix+PROC_FLAGS),a
+    ld (ix+PROC_CWD),DIR_ROOT
+    ld hl,p601_name_sh
+    push ix
+    pop de
+    ld bc,PROC_NAME
+    ex de,hl
+    add hl,bc
+    ex de,hl
+    ld hl,p601_name_sh
+    ld bc,10
+    ldir
+    ld hl,(p601_arg_ptr)
+    ld (ix+PROC_ARG_PTR),l
+    ld (ix+PROC_ARG_PTR+1),h
+    ld hl,(p601_env_ptr)
+    ld (ix+PROC_ENV_PTR),l
+    ld (ix+PROC_ENV_PTR+1),h
+    ld a,(p601_read_od)
+    ld (ix+PROC_HANDLES+0),a
+    ld a,(p601_write_od)
+    ld (ix+PROC_HANDLES+1),a
+    ld (ix+PROC_HANDLES+2),a
+    ld a,1
+    ld (tty_input_owner),a
+    ld (ix+PROC_STATE),PROC_READY
+    xor a
+    ret
+
+zx48_p601_rollback_write_twice:
+    ld a,(p601_write_od)
+    call zx48_od_release
+zx48_p601_rollback_both:
+    ld a,(p601_write_od)
+    call zx48_od_release
+zx48_p601_rollback_read:
+    ld a,(p601_read_od)
+    call zx48_od_release
+    ld a,E_BUSY
+    scf
+    ret
+zx48_p601_busy:
+    ld a,E_BUSY
+    scf
+    ret
+zx48_p601_format:
+    ld a,E_FORMAT
+    scf
+    ret
+
+; Boot path wrapper: malformed mandatory sh/bootstrap state is fatal and never
+; reaches the first scheduler dispatch.
+zx48_p601_boot_or_panic:
+    call zx48_p601_pid1_bootstrap
+    ret nc
+    ld a,PANIC_ROM_CONTRACT
+    jp zx48_panic
+
+p601_name_sh: db 's','h',0,0,0,0,0,0,0,0
+p601_arg_ptr: dw 0
+p601_arg_len: dw 0
+p601_env_ptr: dw 0
+p601_env_len: dw 0
+p601_read_od: db HANDLE_FREE
+p601_write_od: db HANDLE_FREE
+    ENDM
+
+
 ; P2.18 resource-safe cancellation for a spawned child that has never reached
 ; user PC. The resident kernel keeps the frozen fallback unless this staged
 ; emitter is selected. The target remains READY while complete ownership shape

@@ -159,6 +159,7 @@ import phase5_roundtrip
 import phase5_tape_recovery
 import phase5_second_emulator
 import phase5_acceptance
+import phase6_pid1
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
 from media_retention import (
     capture_project_media,
@@ -358,6 +359,10 @@ def dispatch(root: Path, action: str, step: str):
         return phase5_acceptance.dispatch(root, action, step, **kwargs)
     if step.startswith("P5."):
         raise DriverError(f"numbered Phase-5 step is not registered: {step}")
+    if step == "P6.01":
+        return phase6_pid1.dispatch(root, action, step, **kwargs)
+    if step.startswith("P6."):
+        raise DriverError(f"numbered Phase-6 step is not registered: {step}")
     module = E0_MODULE.get(step)
     if module is not None:
         return module.dispatch(root, action, step, **kwargs)
@@ -506,6 +511,10 @@ def prerequisite_statuses(step: str) -> dict[str, str]:
         number = int(step.split(".", 1)[1])
         if 1 <= number:
             return {"P4.33": "PASS"} if number == 1 else {f"P5.{number - 1:02d}": "PASS"}
+    if step.startswith("P6."):
+        number = int(step.split(".", 1)[1])
+        if 1 <= number:
+            return {"P5.19": "PASS"} if number == 1 else {f"P6.{number - 1:02d}": "PASS"}
     return {}
 
 
