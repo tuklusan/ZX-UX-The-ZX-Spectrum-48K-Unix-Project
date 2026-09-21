@@ -24,3 +24,30 @@ sh_idle:
     jr sh_idle
 sh_image_end:
     ENDM
+
+; P6.02 exact issue/login presentation. HL/BC supply the canonical /etc/issue
+; bytes and IX points at the exact seven-byte login prompt.
+P602_ISSUE_LENGTH        EQU 144
+P602_LOGIN_LENGTH        EQU 7
+
+    MACRO EMIT_P602_ISSUE_ROUTINES
+sh_p602_display_issue:
+    ld a,b
+    or a
+    jr nz,sh_p602_issue_format
+    ld a,c
+    cp P602_ISSUE_LENGTH
+    jr nz,sh_p602_issue_format
+    ld a,SYS_CON_WRITE
+    call SYSCALL_GATEWAY
+    ret c
+    push ix
+    pop hl
+    ld bc,P602_LOGIN_LENGTH
+    ld a,SYS_CON_WRITE
+    jp SYSCALL_GATEWAY
+sh_p602_issue_format:
+    ld a,E_FORMAT
+    scf
+    ret
+    ENDM
