@@ -1,0 +1,213 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "all-p6-01-through-p6-29-durable-evidence-pass",
+      "passed": true,
+      "record_count": 58
+    },
+    {
+      "basis": "P6.02-P6.12 and P6.28",
+      "name": "login-core-parser-golden-suite-covered",
+      "passed": true
+    },
+    {
+      "basis": "P6.16 and P6.21",
+      "name": "external-echo-and-pipeline-covered",
+      "passed": true
+    },
+    {
+      "basis": "P6.13 P6.14 P6.28",
+      "name": "path-case-builtin-precedence-covered",
+      "passed": true
+    },
+    {
+      "name": "parent-builtins-pipeline-background-e-notsup-before-side-effects",
+      "passed": true
+    },
+    {
+      "basis": "P6.17",
+      "name": "builtin-redirection-rollback-covered",
+      "passed": true
+    },
+    {
+      "basis": "P6.21 P6.26 P6.27 P6.29",
+      "name": "child-error-break-cursor-and-safe-pid1-return-covered",
+      "passed": true
+    },
+    {
+      "name": "normal-boot-wallclock-valid-revision-zero-source-contract",
+      "passed": true
+    },
+    {
+      "name": "normal-time-get-cannot-report-not-set-after-valid-boot",
+      "passed": true
+    },
+    {
+      "name": "date-set-revision-semantics-remain-owned-by-time-abi",
+      "passed": true
+    },
+    {
+      "name": "diagnostic-invalid-wallclock-fixture-remains-explicit",
+      "passed": true
+    },
+    {
+      "name": "cron-cal-later-owning-gates-not-preempted",
+      "passed": true
+    },
+    {
+      "name": "phase6-gate-stops-before-phase7",
+      "passed": true
+    },
+    {
+      "name": "negative-failed-record-or-authority-mutation-blocks-phase",
+      "passed": true
+    },
+    {
+      "name": "fuse-valid-revision-zero-launch-epoch",
+      "passed": true
+    },
+    {
+      "name": "selected-current-head-phase6-acceptance-matrix-pass",
+      "passed": true,
+      "steps": [
+        "P6.17",
+        "P6.21",
+        "P6.27",
+        "P6.28",
+        "P6.29"
+      ]
+    },
+    {
+      "name": "current-head-redirection-pipeline-cursor-pid1-regressions-pass",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 37,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nkernel.asm(87): warning[shortblock]: init data for block truncated to length: 0\nPass 3 complete\nErrors: 0, warnings: 1, compiled: 14222 lines, work time: 0.035 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P6.17",
+        "--evidence-dir",
+        "/tmp/zxux-p630-3cx1gr2_"
+      ],
+      "cwd": ".",
+      "duration_ms": 802,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P6.17 TEST PASS\nevidence=/tmp/zxux-p630-3cx1gr2_/P6.17.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P6.21",
+        "--evidence-dir",
+        "/tmp/zxux-p630-3cx1gr2_"
+      ],
+      "cwd": ".",
+      "duration_ms": 669,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P6.21 TEST PASS\nevidence=/tmp/zxux-p630-3cx1gr2_/P6.21.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P6.27",
+        "--evidence-dir",
+        "/tmp/zxux-p630-3cx1gr2_"
+      ],
+      "cwd": ".",
+      "duration_ms": 645,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P6.27 TEST PASS\nevidence=/tmp/zxux-p630-3cx1gr2_/P6.27.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P6.28",
+        "--evidence-dir",
+        "/tmp/zxux-p630-3cx1gr2_"
+      ],
+      "cwd": ".",
+      "duration_ms": 551,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P6.28 TEST PASS\nevidence=/tmp/zxux-p630-3cx1gr2_/P6.28.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P6.29",
+        "--evidence-dir",
+        "/tmp/zxux-p630-3cx1gr2_"
+      ],
+      "cwd": ".",
+      "duration_ms": 650,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P6.29 TEST PASS\nevidence=/tmp/zxux-p630-3cx1gr2_/P6.29.test.json\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "docs/01-ZX-UX-ARCHITECTURE-REV16.md": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+    "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+    "v1/build/kernel.bin": "1bcb1862955372e15814296fd248795b3de41baac5596baecd5d5f155ed92a67",
+    "v1/build/p630-phase6-acceptance.tap": "f3d945219abd30e524fe7a8f0f1e84f6167894ef3bf9f98b7380a8982acfc896",
+    "v1/dist/certification/P6.29.build.json": "cdc4a5d8e262506cdaea72715867506cf2fe19c7c5ee9c001e5afb9a04a992b8",
+    "v1/dist/certification/P6.29.test.json": "6fc30e4b10ded284e6a79b278bfa280ed42922a90634d2fc3ba42287870934a6",
+    "v1/dist/media/P6.29/manifest.json": "5eb8db872227d7683eed77cdf923c2d779093ab5fcaa2c751def1659a38f7cfe",
+    "v1/src/kernel/interrupt.asm": "cf70af177c18f323ac368f45468dbe907aef3d76488f92d844570b6875d5c9de",
+    "v1/src/kernel/syscall.asm": "86caa7172baf78b4fc4a855fd3ec68be5b2f3389329e5f5767c2bd33c29f5566",
+    "v1/src/shell/sh.asm": "d35b50b2bc276e839cd0755c116c525e1517201ddd791e0fd8166ff5d985d72c",
+    "v1/tools-host/test-driver/phase6_acceptance.py": "fe98570ae87d54987a939fd4da81bbe8597fc4ba89db832e1815942aee6c545e",
+    "v1/tools-host/test-driver/run.py": "cbe4393894029883b25d6e0647677a6ad2e3aec02fdea7bec79790f33f6f0c23"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P6.29": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "77173e2366ca70cac3f0369326f07d92bf1197c1",
+  "status": "PASS",
+  "step": "P6.30",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
