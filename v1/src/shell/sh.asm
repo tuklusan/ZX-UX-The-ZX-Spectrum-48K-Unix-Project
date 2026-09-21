@@ -3273,8 +3273,11 @@ sh_p629_reap_next:
     ld hl,p629_info_req
     ld a,SYS_PROC_INFO
     call SYSCALL_GATEWAY
-    jr c,sh_p629_reap_miss
-
+    jr nc,sh_p629_reap_have_info
+    cp E_NOENT
+    jr z,sh_p629_reap_miss
+    ret
+sh_p629_reap_have_info:
     ld a,(p629_info+2)
     cp P629_PROC_ZOMBIE
     jr nz,sh_p629_reap_advance
@@ -3325,6 +3328,8 @@ sh_p629_exit_scan:
     ld a,SYS_PROC_INFO
     call SYSCALL_GATEWAY
     jr nc,sh_p629_busy
+    cp E_NOENT
+    ret nz
     ld a,(p629_pid)
     inc a
     ld (p629_pid),a
