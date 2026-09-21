@@ -1,0 +1,19 @@
+{
+  "files": [
+    {
+      "action": "build",
+      "path": "build/build-p609-expansion-fa5c332bc04ec550702372959d6dcf17e1ea4555bffe5e0710dd74b2e37955a5.tap",
+      "sha256": "fa5c332bc04ec550702372959d6dcf17e1ea4555bffe5e0710dd74b2e37955a5",
+      "size": 400
+    },
+    {
+      "action": "test",
+      "path": "test/build-p609-expansion-fa5c332bc04ec550702372959d6dcf17e1ea4555bffe5e0710dd74b2e37955a5.tap",
+      "sha256": "fa5c332bc04ec550702372959d6dcf17e1ea4555bffe5e0710dd74b2e37955a5",
+      "size": 400
+    }
+  ],
+  "schema": 1,
+  "source_commit": "4d4876049e155d0a46d0ea05051b2f6967d37612",
+  "step": "P6.09"
+}
