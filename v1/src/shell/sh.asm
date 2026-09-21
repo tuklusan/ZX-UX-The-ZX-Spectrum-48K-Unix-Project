@@ -900,3 +900,103 @@ p606_inserted: db 0
 p606_remaining: db 0
 p606_scratch: defs 256,0
     ENDM
+
+; P6.07 bounded interactive line input. All input is obtained through SYS_READ
+; handle 0, so the kernel tty ownership contract remains the sole input owner.
+    MACRO EMIT_P607_LINE_ROUTINES
+P607_LINE_MAX            EQU 247
+
+; IX=writable destination >=248 bytes. On success copy the edited line plus NUL.
+; On E_TOOLONG/E_INVAL/read failure the caller destination remains untouched.
+sh_p607_read_line:
+    ld (p607_dest),ix
+    xor a
+    ld (p607_len),a
+
+sh_p607_read_next:
+    ld de,0
+    ld hl,p607_key
+    ld bc,1
+    ld a,SYS_READ
+    call SYSCALL_GATEWAY
+    ret c
+    ld a,h
+    or a
+    jp nz,sh_p607_read_fault
+    ld a,l
+    cp 1
+    jp nz,sh_p607_read_fault
+
+    ld a,(p607_key)
+    cp $0d
+    jp z,sh_p607_commit
+    cp $0a
+    jp z,sh_p607_commit
+    cp $08
+    jp z,sh_p607_backspace
+    cp $7f
+    jp z,sh_p607_backspace
+    cp $09
+    jp z,sh_p607_store
+    cp $20
+    jp c,sh_p607_invalid
+    cp $7f
+    jp nc,sh_p607_invalid
+
+sh_p607_store:
+    ld a,(p607_len)
+    cp P607_LINE_MAX
+    jp nc,sh_p607_toolong
+    ld e,a
+    ld d,0
+    ld hl,p607_scratch
+    add hl,de
+    ld a,(p607_key)
+    ld (hl),a
+    ld a,(p607_len)
+    inc a
+    ld (p607_len),a
+    jp sh_p607_read_next
+
+sh_p607_backspace:
+    ld a,(p607_len)
+    or a
+    jp z,sh_p607_read_next
+    dec a
+    ld (p607_len),a
+    jp sh_p607_read_next
+
+sh_p607_commit:
+    ld hl,p607_scratch
+    ld de,(p607_dest)
+    ld a,(p607_len)
+    ld c,a
+    ld b,0
+    push bc
+    ldir
+    xor a
+    ld (de),a
+    pop bc
+    ld h,b
+    ld l,c
+    xor a
+    ret
+
+sh_p607_read_fault:
+    ld a,E_IO
+    scf
+    ret
+sh_p607_toolong:
+    ld a,E_TOOLONG
+    scf
+    ret
+sh_p607_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+
+p607_dest: dw 0
+p607_len: db 0
+p607_key: db 0
+p607_scratch: defs P607_LINE_MAX,0
+    ENDM
