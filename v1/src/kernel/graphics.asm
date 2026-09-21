@@ -243,7 +243,10 @@ zx48_gfx_line_loop:
     ld b,a
     ld a,(gfx_y2)
     cp b
-    ret z
+    jr nz,zx48_gfx_line_step
+    xor a
+    or a
+    ret
 zx48_gfx_line_step:
     ld hl,(gfx_err)
     add hl,hl                    ; e2=2*err
