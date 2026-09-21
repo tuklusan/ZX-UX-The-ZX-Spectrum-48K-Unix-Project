@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import importlib.util
 from pathlib import Path
+import struct
 import sys
 
 from driver_core import DriverError
@@ -59,6 +60,21 @@ def dispatch(root: Path, action: str, step: str, *, sha256_file, run_command, re
     ]
     require(all(item["passed"] for item in assertions), "P6.28 static contract failure")
 
+    # P6+ admission retains generated Spectrum media. P6.28 remains host-only:
+    # this deterministic TAP is a frozen golden-vector carrier and is never run.
+    payload = b"ZXUX-P6.28-HOST-GOLDEN\0"
+    block = bytes((0xFF,)) + payload
+    block += bytes((0xFF ^ payload[0] if len(payload) == 1 else 0,))
+    checksum = 0
+    for byte in block[:-1]:
+        checksum ^= byte
+    block = block[:-1] + bytes((checksum,))
+    tap = struct.pack("<H", len(block)) + block
+    build = root / "v1/build"
+    build.mkdir(parents=True, exist_ok=True)
+    tap_path = build / "p628-shell-golden.tap"
+    tap_path.write_bytes(tap)
+
     if action == "test":
         vectors = _load(vector_path)
         assertions += vectors.run_vectors(
@@ -73,6 +89,7 @@ def dispatch(root: Path, action: str, step: str, *, sha256_file, run_command, re
 
     hashes = {
         "tests/emulator/shell_p628_golden.py": sha256_file(vector_path),
+        "v1/build/p628-shell-golden.tap": sha256_file(tap_path),
         "v1/tools-host/test-driver/phase6_shell_golden.py": sha256_file(root / "v1/tools-host/test-driver/phase6_shell_golden.py"),
         "v1/tools-host/test-driver/phase6_tokenizer.py": sha256_file(root / "v1/tools-host/test-driver/phase6_tokenizer.py"),
         "v1/tools-host/test-driver/phase6_expansion.py": sha256_file(root / "v1/tools-host/test-driver/phase6_expansion.py"),
