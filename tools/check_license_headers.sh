@@ -141,6 +141,15 @@ is_generated_certification_json() {
   [[ "$candidate" == "$GENERATED_CERTIFICATION_DIR"/*.json ]]
 }
 
+is_retained_spectrum_media() {
+  local candidate="$1"
+  [[ "$candidate" == v1/dist/media/P[6-9].*/* || "$candidate" == v1/dist/media/P1[0-2].*/* ]] || return 1
+  case "$candidate" in
+    *.sna|*.tap|*.tzx|*.scr|*.fmf|*.wav|*.flac|*.png|*/manifest.json) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 is_readme_file() {
   local candidate="$1"
   local basename="${candidate##*/}"
@@ -247,6 +256,10 @@ for asset_path in "${!preserved_h04_sdk_assets[@]}"; do
   fi
 done
 
+if ! python3 tools/check_media_retention.py; then
+  exit 1
+fi
+
 if [[ -e .gitmodules ]]; then
   echo "ERROR: submodules are not permitted unless the license-header gate is explicitly extended and approved" >&2
   exit 1
@@ -289,6 +302,11 @@ while IFS= read -r -d '' file; do
   fi
 
   if [[ -n "${preserved_h04_sdk_assets[$file]+approved}" ]]; then
+    explicitly_exempt=$((explicitly_exempt + 1))
+    continue
+  fi
+
+  if is_retained_spectrum_media "$file"; then
     explicitly_exempt=$((explicitly_exempt + 1))
     continue
   fi

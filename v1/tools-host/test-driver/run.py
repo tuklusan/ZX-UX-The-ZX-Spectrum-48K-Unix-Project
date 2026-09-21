@@ -160,6 +160,11 @@ import phase5_tape_recovery
 import phase5_second_emulator
 import phase5_acceptance
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
+from media_retention import (
+    capture_project_media,
+    configure_media_stage,
+    write_action_manifest,
+)
 from driver_core import (
     DriverError,
     find_root,
@@ -533,7 +538,10 @@ def main() -> int:
             os.environ.pop("ZXUX_SOURCE_EPOCH", None)
         source_state = require_clean_source(root)
         evidence_dir = resolve_evidence_dir(root, source_state.source_commit, args.evidence_dir)
+        configure_media_stage(evidence_dir, args.step, args.action)
         commands, hashes, assertions = dispatch(root, args.action, args.step)
+        capture_project_media(root)
+        write_action_manifest(source_state.source_commit)
         after = read_source_state(root)
         if not source_state_unchanged(source_state, after):
             raise DriverError("step changed the source checkout or certification inputs")

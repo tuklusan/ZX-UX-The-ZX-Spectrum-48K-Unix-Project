@@ -19,6 +19,7 @@ import tempfile
 from typing import Callable
 
 from driver_core import DriverError, run_command
+from media_retention import retain_media_bytes
 
 RAM_START = 0x4000
 RAM_SIZE = 0xC000
@@ -52,7 +53,9 @@ def run_sna(root: Path, code: bytes, *, patch: Callable[[bytearray], None] | Non
         raise DriverError("project-local FUSE executable missing")
     with tempfile.TemporaryDirectory(prefix="zxux-fuse-") as temporary:
         sna = Path(temporary) / "fixture.sna"
-        sna.write_bytes(make_sna(code, patch=patch))
+        sna_bytes = make_sna(code, patch=patch)
+        retain_media_bytes(sna_bytes, ".sna", label="fixture")
+        sna.write_bytes(sna_bytes)
         command = (
             f"breakpoint 0x{PASS_PC:04x}\n"
             "commands 1\n"
