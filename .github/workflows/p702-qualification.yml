@@ -32,7 +32,11 @@ jobs:
         run: |
           set -euo pipefail
           git diff --name-only "$P702_BASE" HEAD | sort > /tmp/changed
-          printf '%s\n' .github/workflows/p702-qualification.yml v1/src/kernel/graphics.asm v1/tools-host/test-driver/phase7_pixel_helper.py v1/tools-host/test-driver/run.py | sort > /tmp/expected
+          printf '%s\n' \
+            .github/workflows/p702-qualification.yml \
+            v1/src/kernel/graphics.asm \
+            v1/tools-host/test-driver/phase7_pixel_helper.py \
+            v1/tools-host/test-driver/run.py | sort > /tmp/expected
           diff -u /tmp/expected /tmp/changed
           git diff --check "$P702_BASE" HEAD
           test -z "$(git status --porcelain)"
