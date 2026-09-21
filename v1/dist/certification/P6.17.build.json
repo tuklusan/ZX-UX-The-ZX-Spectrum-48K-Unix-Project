@@ -1,0 +1,76 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "spare-handles-5-6-7",
+      "passed": true
+    },
+    {
+      "name": "preserve-before-replacement",
+      "passed": true
+    },
+    {
+      "name": "failure-rolls-back",
+      "passed": true
+    },
+    {
+      "name": "restore-standard-before-closing-spares",
+      "passed": true
+    },
+    {
+      "name": "builtin-side-effect-outside-prepare",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p617-shell-fixture.lst",
+        "--sym=p617-shell-fixture.sym",
+        "p617-shell-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2689 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p617-gateway.lst",
+        "--sym=p617-gateway.sym",
+        "p617-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 2,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 350 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/dist/certification/P6.16.build.json": "b11ea480748a368133149b6a0a983f8bdfa05e243c9bfc2db99836df701ed75f",
+    "v1/dist/certification/P6.16.test.json": "2aa38d6c40c63626ccdb1e852f1dfaf50696185e573b2de0d3b86e65d719f74d",
+    "v1/dist/media/P6.16/manifest.json": "e70ba6d101395a358a702981ea07165bc54468306e86d7e1aa402425dbc63adb",
+    "v1/src/shell/sh.asm": "8834dd8a29ceacc78aad852cc9d99fdfd16ff1c426310b4bd328de00735e93e4",
+    "v1/tools-host/test-driver/phase6_builtin_redir.py": "709c45a5eae8c86607fe1f23e4e0735fbb3d52014fa344e795cbeaf52493175c",
+    "v1/tools-host/test-driver/run.py": "0aff9f7feb371d108ee6128b60139619b1f5fc104948b95a483d360d61d640e7"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P6.16": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "38d3ab3e8fbdcac63de8fa9ed21e42e33f9df6fe",
+  "status": "PASS",
+  "step": "P6.17",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
