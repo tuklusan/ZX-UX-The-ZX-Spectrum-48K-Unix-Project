@@ -2718,3 +2718,66 @@ sh_p622_invalid:
 p622_ioctl: db 0,0,0,0
 p622_owner: db 1
     ENDM
+
+; P6.23 background launch. '&' validity is closed by P6.11. Background jobs never
+; take tty input ownership; absent explicit stdin redirection, stage 0 reads /dev/null.
+    MACRO EMIT_P623_BACKGROUND_ROUTINES
+; HL=spawn request, DE=pointer to request stdin-handle byte, B=nonzero iff stdin
+; was explicitly redirected, IX=shell status byte.
+sh_p623_launch_background:
+    ld (p623_req),hl
+    ld (p623_stdin_slot),de
+    ld a,b
+    or a
+    jr nz,sh_p623_spawn
+    ld hl,p623_dev_null
+    ld c,O_READ
+    ld b,0
+    ld a,SYS_OPEN
+    call SYSCALL_GATEWAY
+    jr c,sh_p623_fail
+    ld a,l
+    ld (p623_null_handle),a
+    ld hl,(p623_stdin_slot)
+    ld (hl),a
+
+sh_p623_spawn:
+    ld hl,(p623_req)
+    ld a,SYS_SPAWN
+    call SYSCALL_GATEWAY
+    jr c,sh_p623_fail_close
+    ld a,l
+    ld (p623_job_pid),a
+    call sh_p623_close_null
+    xor a
+    ld (ix+0),a
+    ret
+
+sh_p623_fail_close:
+    ld (p623_error),a
+    call sh_p623_close_null
+    ld a,(p623_error)
+sh_p623_fail:
+    ld (ix+0),a
+    scf
+    ret
+
+sh_p623_close_null:
+    ld a,(p623_null_handle)
+    cp HANDLE_FREE
+    ret z
+    ld l,a
+    ld h,0
+    ld a,SYS_CLOSE
+    call SYSCALL_GATEWAY
+    ld a,HANDLE_FREE
+    ld (p623_null_handle),a
+    ret
+
+p623_req: dw 0
+p623_stdin_slot: dw 0
+p623_null_handle: db HANDLE_FREE
+p623_job_pid: db 0
+p623_error: db 0
+p623_dev_null: db '/dev/null',0
+    ENDM
