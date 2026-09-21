@@ -437,3 +437,457 @@ sh_p605_status_init:
     ld (hl),a
     ret
     ENDM
+
+; P6.06 transactional set/unset over the shell's canonical ENV1 table.
+    MACRO EMIT_P606_SET_UNSET_ROUTINES
+; IX=ENV1 buffer, HL=NUL NAME=VALUE. Existing table must be canonical/sorted.
+; On success the exact ENV1 is replaced atomically from a private 256-byte
+; scratch image. On any lexical/capacity failure the original bytes are untouched.
+sh_p606_set:
+    ld (p606_env_ptr),ix
+    ld (p606_new_ptr),hl
+    call sh_p606_parse_set_arg
+    ret c
+    call sh_p606_prepare_env
+    ret c
+    call sh_p606_find_name
+    ret c
+    ld a,(p606_found)
+    or a
+    jr nz,sh_p606_set_replace_count
+    ld a,(p606_old_count)
+    cp 8
+    jr nc,sh_p606_nospc
+    inc a
+    jr sh_p606_set_count_ready
+sh_p606_set_replace_count:
+    ld a,(p606_old_count)
+sh_p606_set_count_ready:
+    ld (p606_new_count),a
+
+    ld hl,(p606_old_total)
+    ld a,(p606_found)
+    or a
+    jr z,sh_p606_set_add_new
+    ld e,(p606_found_len)
+    ld d,0
+    or a
+    sbc hl,de
+sh_p606_set_add_new:
+    ld e,(p606_new_len)
+    ld d,0
+    add hl,de
+    ld a,h
+    or a
+    jr nz,sh_p606_nospc
+    ld a,l
+    or a
+    jr z,sh_p606_nospc
+    ld (p606_new_total),hl
+
+    call sh_p606_scratch_header
+    ld hl,(p606_env_ptr)
+    ld de,8
+    add hl,de
+    ld (p606_old_ptr),hl
+    xor a
+    ld (p606_inserted),a
+    ld a,(p606_old_count)
+    ld (p606_remaining),a
+
+sh_p606_set_rebuild_loop:
+    ld a,(p606_remaining)
+    or a
+    jr z,sh_p606_set_rebuild_done
+    ld hl,(p606_old_ptr)
+    ld de,(p606_new_ptr)
+    call sh_p606_compare_names
+    jr z,sh_p606_set_skip_replaced
+    jr c,sh_p606_set_old_before
+    ld a,(p606_inserted)
+    or a
+    jr nz,sh_p606_set_old_before
+    call sh_p606_copy_new
+    ld a,1
+    ld (p606_inserted),a
+sh_p606_set_old_before:
+    call sh_p606_copy_old
+    jr sh_p606_set_rebuild_next
+sh_p606_set_skip_replaced:
+    call sh_p606_skip_old
+sh_p606_set_rebuild_next:
+    ld a,(p606_remaining)
+    dec a
+    ld (p606_remaining),a
+    jr sh_p606_set_rebuild_loop
+
+sh_p606_set_rebuild_done:
+    ld a,(p606_inserted)
+    or a
+    call z,sh_p606_copy_new
+    jp sh_p606_commit_scratch
+
+; IX=ENV1 buffer, HL=NUL NAME. Missing names are a successful no-op.
+sh_p606_unset:
+    ld (p606_env_ptr),ix
+    ld (p606_new_ptr),hl
+    call sh_p606_parse_name_only
+    ret c
+    call sh_p606_prepare_env
+    ret c
+    call sh_p606_find_name
+    ret c
+    ld a,(p606_found)
+    or a
+    jr z,sh_p606_ok
+
+    ld a,(p606_old_count)
+    dec a
+    ld (p606_new_count),a
+    ld hl,(p606_old_total)
+    ld e,(p606_found_len)
+    ld d,0
+    or a
+    sbc hl,de
+    ld (p606_new_total),hl
+    call sh_p606_scratch_header
+
+    ld hl,(p606_env_ptr)
+    ld de,8
+    add hl,de
+    ld (p606_old_ptr),hl
+    ld a,(p606_old_count)
+    ld (p606_remaining),a
+sh_p606_unset_loop:
+    ld a,(p606_remaining)
+    or a
+    jr z,sh_p606_commit_scratch
+    ld hl,(p606_old_ptr)
+    ld de,(p606_new_ptr)
+    call sh_p606_compare_names
+    jr z,sh_p606_unset_skip
+    call sh_p606_copy_old
+    jr sh_p606_unset_next
+sh_p606_unset_skip:
+    call sh_p606_skip_old
+sh_p606_unset_next:
+    ld a,(p606_remaining)
+    dec a
+    ld (p606_remaining),a
+    jr sh_p606_unset_loop
+
+; Validate set operand. First '=' terminates NAME, later '=' bytes are VALUE data.
+; ENV1 lexical limits are enforced before any table byte changes.
+sh_p606_parse_set_arg:
+    ld hl,(p606_new_ptr)
+    ld b,0
+    ld a,(hl)
+    call sh_p606_name_first
+    ret c
+sh_p606_parse_set_name:
+    ld a,(hl)
+    cp '='
+    jr z,sh_p606_parse_set_value
+    or a
+    jr z,sh_p606_invalid
+    ld a,b
+    cp 15
+    jr nc,sh_p606_invalid
+    ld a,(hl)
+    call sh_p606_name_tail
+    ret c
+    inc b
+    inc hl
+    jr sh_p606_parse_set_name
+
+sh_p606_parse_set_value:
+    ld a,b
+    or a
+    jr z,sh_p606_invalid
+    inc hl
+    ld c,0
+sh_p606_parse_set_value_loop:
+    ld a,(hl)
+    or a
+    jr z,sh_p606_parse_set_done
+    cp $20
+    jr c,sh_p606_invalid
+    cp $7f
+    jr nc,sh_p606_invalid
+    ld a,c
+    cp 63
+    jr nc,sh_p606_invalid
+    inc c
+    inc hl
+    jr sh_p606_parse_set_value_loop
+sh_p606_parse_set_done:
+    ld a,b
+    add a,c
+    add a,2
+    ld (p606_new_len),a
+    xor a
+    ret
+
+; Validate unset operand NAME with no '='.
+sh_p606_parse_name_only:
+    ld hl,(p606_new_ptr)
+    ld b,0
+    ld a,(hl)
+    call sh_p606_name_first
+    ret c
+sh_p606_parse_unset_loop:
+    ld a,(hl)
+    or a
+    jr z,sh_p606_parse_unset_done
+    cp '='
+    jr z,sh_p606_invalid
+    ld a,b
+    cp 15
+    jr nc,sh_p606_invalid
+    ld a,(hl)
+    call sh_p606_name_tail
+    ret c
+    inc b
+    inc hl
+    jr sh_p606_parse_unset_loop
+sh_p606_parse_unset_done:
+    ld a,b
+    or a
+    jr z,sh_p606_invalid
+    inc a
+    ld (p606_new_len),a
+    xor a
+    ret
+
+; A=first NAME byte.
+sh_p606_name_first:
+    cp 'A'
+    jr c,sh_p606_name_first_lower
+    cp 'Z'+1
+    jr c,sh_p606_char_ok
+sh_p606_name_first_lower:
+    cp 'a'
+    jr c,sh_p606_name_first_us
+    cp 'z'+1
+    jr c,sh_p606_char_ok
+sh_p606_name_first_us:
+    cp '_'
+    jr z,sh_p606_char_ok
+    jr sh_p606_invalid
+; A=subsequent NAME byte.
+sh_p606_name_tail:
+    cp 'A'
+    jr c,sh_p606_name_tail_lower
+    cp 'Z'+1
+    jr c,sh_p606_char_ok
+sh_p606_name_tail_lower:
+    cp 'a'
+    jr c,sh_p606_name_tail_digit
+    cp 'z'+1
+    jr c,sh_p606_char_ok
+sh_p606_name_tail_digit:
+    cp '0'
+    jr c,sh_p606_name_tail_us
+    cp '9'+1
+    jr c,sh_p606_char_ok
+sh_p606_name_tail_us:
+    cp '_'
+    jr z,sh_p606_char_ok
+    jr sh_p606_invalid
+sh_p606_char_ok:
+    xor a
+    ret
+
+; Prove the source ENV1 before transaction work.
+sh_p606_prepare_env:
+    ld ix,(p606_env_ptr)
+    ld l,(ix+6)
+    ld h,(ix+7)
+    ld (p606_old_total),hl
+    ld b,h
+    ld c,l
+    call zx48_env1_validate
+    ret c
+    ld ix,(p606_env_ptr)
+    ld a,(ix+4)
+    ld (p606_old_count),a
+    xor a
+    ret
+
+; Search exact NAME. p606_found=1 and found_len includes terminating NUL.
+sh_p606_find_name:
+    xor a
+    ld (p606_found),a
+    ld (p606_found_len),a
+    ld hl,(p606_env_ptr)
+    ld de,8
+    add hl,de
+    ld (p606_old_ptr),hl
+    ld a,(p606_old_count)
+    ld (p606_remaining),a
+sh_p606_find_loop:
+    ld a,(p606_remaining)
+    or a
+    ret z
+    ld hl,(p606_old_ptr)
+    ld de,(p606_new_ptr)
+    call sh_p606_compare_names
+    jr z,sh_p606_find_hit
+    call sh_p606_skip_old
+    ld a,(p606_remaining)
+    dec a
+    ld (p606_remaining),a
+    jr sh_p606_find_loop
+sh_p606_find_hit:
+    ld a,1
+    ld (p606_found),a
+    ld hl,(p606_old_ptr)
+    ld b,0
+sh_p606_find_len:
+    inc b
+    ld a,(hl)
+    inc hl
+    or a
+    jr nz,sh_p606_find_len
+    ld a,b
+    ld (p606_found_len),a
+    xor a
+    ret
+
+; Compare old ENV name at HL with operand NAME at DE.
+; Z => equal. C => old < new. NC/non-Z => old > new.
+sh_p606_compare_names:
+    ld a,(hl)
+    cp '='
+    jr z,sh_p606_cmp_old_end
+    ld a,(de)
+    or a
+    jr z,sh_p606_cmp_old_greater
+    cp '='
+    jr z,sh_p606_cmp_old_greater
+    ld a,(hl)
+    ld b,a
+    ld a,(de)
+    cp b
+    jr c,sh_p606_cmp_old_greater
+    jr nz,sh_p606_cmp_old_less
+    inc hl
+    inc de
+    jr sh_p606_compare_names
+sh_p606_cmp_old_end:
+    ld a,(de)
+    or a
+    jr z,sh_p606_cmp_equal
+    cp '='
+    jr z,sh_p606_cmp_equal
+sh_p606_cmp_old_less:
+    ld a,1
+    scf
+    ret
+sh_p606_cmp_old_greater:
+    ld a,1
+    or a
+    ret
+sh_p606_cmp_equal:
+    xor a
+    ret
+
+sh_p606_scratch_header:
+    ld hl,p606_scratch
+    ld (p606_dst_ptr),hl
+    ld (hl),'E'
+    inc hl
+    ld (hl),'N'
+    inc hl
+    ld (hl),'V'
+    inc hl
+    ld (hl),'1'
+    inc hl
+    ld a,(p606_new_count)
+    ld (hl),a
+    inc hl
+    xor a
+    ld (hl),a
+    inc hl
+    ld de,(p606_new_total)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    inc hl
+    ld (p606_dst_ptr),hl
+    ret
+
+sh_p606_copy_new:
+    ld hl,(p606_new_ptr)
+    ld de,(p606_dst_ptr)
+sh_p606_copy_new_loop:
+    ld a,(hl)
+    ld (de),a
+    inc hl
+    inc de
+    or a
+    jr nz,sh_p606_copy_new_loop
+    ld (p606_dst_ptr),de
+    ret
+
+sh_p606_copy_old:
+    ld hl,(p606_old_ptr)
+    ld de,(p606_dst_ptr)
+sh_p606_copy_old_loop:
+    ld a,(hl)
+    ld (de),a
+    inc hl
+    inc de
+    or a
+    jr nz,sh_p606_copy_old_loop
+    ld (p606_old_ptr),hl
+    ld (p606_dst_ptr),de
+    ret
+
+sh_p606_skip_old:
+    ld hl,(p606_old_ptr)
+sh_p606_skip_old_loop:
+    ld a,(hl)
+    inc hl
+    or a
+    jr nz,sh_p606_skip_old_loop
+    ld (p606_old_ptr),hl
+    ret
+
+; Validate the finished scratch ENV1 and only then publish all bytes.
+sh_p606_commit_scratch:
+    ld ix,p606_scratch
+    ld bc,(p606_new_total)
+    call zx48_env1_validate
+    ret c
+    ld hl,p606_scratch
+    ld de,(p606_env_ptr)
+    ld bc,(p606_new_total)
+    ldir
+sh_p606_ok:
+    xor a
+    ret
+sh_p606_nospc:
+    ld a,E_NOSPC
+    scf
+    ret
+sh_p606_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+
+p606_env_ptr: dw 0
+p606_new_ptr: dw 0
+p606_old_ptr: dw 0
+p606_dst_ptr: dw 0
+p606_old_total: dw 0
+p606_new_total: dw 0
+p606_old_count: db 0
+p606_new_count: db 0
+p606_new_len: db 0
+p606_found_len: db 0
+p606_found: db 0
+p606_inserted: db 0
+p606_remaining: db 0
+p606_scratch: defs 256,0
+    ENDM
