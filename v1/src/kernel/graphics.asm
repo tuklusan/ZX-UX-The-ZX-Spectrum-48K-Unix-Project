@@ -585,7 +585,10 @@ zx48_gfx_border:
     ld a,l
     cp 8
     jp nc,zx48_gfx_bad
-    jp zx48_ula_set_border
+    call zx48_ula_set_border
+    xor a
+    or a
+    ret
 zx48_gfx_bad:
     ld a,E_INVAL
     scf
