@@ -1,0 +1,106 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "colon-left-to-right",
+      "passed": true
+    },
+    {
+      "name": "empty-component-dot",
+      "passed": true
+    },
+    {
+      "name": "unset-empty-no-search",
+      "passed": true
+    },
+    {
+      "name": "slash-bypasses-path",
+      "passed": true
+    },
+    {
+      "name": "skip-nondir-wrongtype",
+      "passed": true
+    },
+    {
+      "name": "direct-does-not-precheck-bin",
+      "passed": true
+    },
+    {
+      "name": "path-limit-31",
+      "passed": true
+    },
+    {
+      "name": "no-hidden-default",
+      "passed": true
+    },
+    {
+      "name": "fuse-path-lookup-matrix",
+      "passed": true
+    },
+    {
+      "name": "fuse-direct-nonbin-bypasses-type-filter",
+      "passed": true
+    },
+    {
+      "name": "fuse-case-sensitive-LS-miss",
+      "passed": true
+    },
+    {
+      "name": "fuse-direct-overlength-toolong",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p614-shell-fixture.lst",
+        "--sym=p614-shell-fixture.sym",
+        "p614-shell-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 7,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2563 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p614-gateway.lst",
+        "--sym=p614-gateway.sym",
+        "p614-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 376 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p614-path.mex1": "32a3785add194282ca9608f8dc2e38b200825011e7b01950bd761a929327c290",
+    "v1/build/p614-path.tap": "ace98c13ff297a9c1d42b6ae82b8b7bea641d0c8b88c0788475d8826987aca93",
+    "v1/dist/certification/P6.13.build.json": "b165e921ec5419ba240f867fabf943baaa8b2749e0a51d96d03851571f630b2b",
+    "v1/dist/certification/P6.13.test.json": "19a82833f59042e0f6348a133e64f1732b221bff583f476c184715752302d9a7",
+    "v1/dist/media/P6.13/manifest.json": "c248f807c156a410172921ff1f08c1f81f003cc81f7c5df12aa60fbc65102638",
+    "v1/src/shell/sh.asm": "f907c9ef3dac56aa6c531a8c4c1d298d4e36aef570e5aab80c053e89019b7195",
+    "v1/tools-host/test-driver/phase6_path.py": "8871fb1e5be8d636f33be4f458a58570a43faa5cc00fb349178fb0283ff010c4",
+    "v1/tools-host/test-driver/run.py": "d8d426bbd0015cdbd9c7a3e302473075e2db06d842ca139056c14f6a944caf4f"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P6.13": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "599aa477cc6873b1f56c82d977a0b6aacea05549",
+  "status": "PASS",
+  "step": "P6.14",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
