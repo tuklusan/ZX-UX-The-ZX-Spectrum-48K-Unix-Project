@@ -1,0 +1,89 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "shell-owner-change-via-tty-ioctl",
+      "passed": true
+    },
+    {
+      "name": "foreground-owner-live-user-pid-range",
+      "passed": true
+    },
+    {
+      "name": "shell-owner-restored-to-pid1",
+      "passed": true
+    },
+    {
+      "name": "kernel-only-pid1-can-set-owner",
+      "passed": true
+    },
+    {
+      "name": "kernel-nonowner-input-e-busy-contract",
+      "passed": true
+    },
+    {
+      "name": "background-does-not-steal-owner",
+      "passed": true
+    },
+    {
+      "name": "fuse-owner-handoff-and-restore",
+      "passed": true
+    },
+    {
+      "name": "fuse-invalid-owner-no-side-effect",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p622-shell-fixture.lst",
+        "--sym=p622-shell-fixture.sym",
+        "p622-shell-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 3020 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p622-gateway.lst",
+        "--sym=p622-gateway.sym",
+        "p622-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 2,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 285 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/dist/certification/P6.21.build.json": "c598ceb9c71fe6128647760c5ffa9585df5a348b8edd014da6be6c861e0297d7",
+    "v1/dist/certification/P6.21.test.json": "0d838da21b4c90996bf5e0cfd9d4c3df28cfe11a8ae1cbf5387a2bed2cf591f3",
+    "v1/dist/media/P6.21/manifest.json": "57562143e26713204d7e1d389ec5cf0af06393a5e27dab20a7f00808b9c5ebca",
+    "v1/src/kernel/console.asm": "f3a5c96052794304b73ae0ee5c85f340ec6144a9a3dea8af48e52d3ce2e3fc8c",
+    "v1/src/shell/sh.asm": "844e717874f16a1a8d4b6fc673bec07f854e93e5c66bab5b00d659c9f4579bed",
+    "v1/tools-host/test-driver/phase6_tty_owner.py": "93d45cbe81c62497d0693ea49cea68e0214ba70a2193ff0f3dc0bbbb57c8408e",
+    "v1/tools-host/test-driver/run.py": "9d2a595172329ace094ec39822baa90727d158a60b9508e6368611fc38685f4d"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P6.21": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "cd1e7f7fdb27d02c6299231a2a04021a3b332b07",
+  "status": "PASS",
+  "step": "P6.22",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
