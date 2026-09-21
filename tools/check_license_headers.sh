@@ -143,11 +143,7 @@ is_generated_certification_json() {
 
 is_retained_spectrum_media() {
   local candidate="$1"
-  [[ "$candidate" == v1/dist/media/P[6-9].*/* || "$candidate" == v1/dist/media/P1[0-2].*/* ]] || return 1
-  case "$candidate" in
-    *.sna|*.tap|*.tzx|*.scr|*.fmf|*.wav|*.flac|*.png|*/manifest.json) return 0 ;;
-    *) return 1 ;;
-  esac
+  [[ "$candidate" == v1/dist/media/* ]]
 }
 
 is_readme_file() {
