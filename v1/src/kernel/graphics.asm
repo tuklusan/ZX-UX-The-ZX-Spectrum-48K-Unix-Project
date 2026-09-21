@@ -212,6 +212,7 @@ zx48_gfx_dy_zero:
     xor a
     ld (gfx_dy),a
     ld (gfx_sy),a
+    jr zx48_gfx_line_start
 zx48_gfx_draw_bad:
     pop hl
     jp zx48_gfx_bad
