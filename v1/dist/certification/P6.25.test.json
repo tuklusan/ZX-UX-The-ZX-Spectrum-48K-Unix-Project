@@ -1,0 +1,92 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "wait-exact-zero-or-one-operands",
+      "passed": true
+    },
+    {
+      "name": "wait-specific-uses-sys-wait",
+      "passed": true
+    },
+    {
+      "name": "wait-all-scans-only-bounded-job-table",
+      "passed": true
+    },
+    {
+      "name": "wait-success-removes-shell-job",
+      "passed": true
+    },
+    {
+      "name": "decimal-nonchild-maps-e-child",
+      "passed": true
+    },
+    {
+      "name": "fuse-wait-all-drains-exact-job-launch-set",
+      "passed": true
+    },
+    {
+      "name": "fuse-wait-specific-adopted-child-status",
+      "passed": true
+    },
+    {
+      "name": "fuse-nonchild-failure-preserves-job-table",
+      "passed": true
+    },
+    {
+      "name": "fuse-invalid-arity-and-decimal-before-wait",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p625-fixture.lst",
+        "--sym=p625-fixture.sym",
+        "p625-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 8,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 3563 lines, work time: 0.007 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p625-gateway.lst",
+        "--sym=p625-gateway.sym",
+        "p625-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 319 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/dist/certification/P6.24.build.json": "b75071c1ebf4662ad8939df0d3c98704fefbb0ed340fdfe3983b8d9429954af2",
+    "v1/dist/certification/P6.24.test.json": "f4b3b2dfdf570f63b264aa23e041fdbdc2f28f0591140b4f6e58c4c20dd3a819",
+    "v1/dist/media/P6.24/manifest.json": "006a18bedf2c32c1faa186b2c1ba4c510789b3bfaa4557b9d6c2e23290591343",
+    "v1/src/shell/sh.asm": "23250e1cb54a556e12c4ecc5cfc9a5601011b4207ce1eb08eb122bab593ee35c",
+    "v1/tools-host/test-driver/phase6_wait.py": "c5ee08478ca69c7cfda091711f92a958302212d6d875ab5aa070324793f8813d",
+    "v1/tools-host/test-driver/run.py": "34a82580990fd3b83c204330222f01e0e7386557734ac13942455fa1f712d77f"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P6.24": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "dd2b1b659c198f941c39ed141d26319679d026e4",
+  "status": "PASS",
+  "step": "P6.25",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
