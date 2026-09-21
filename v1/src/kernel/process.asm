@@ -270,6 +270,8 @@ zx48_process_info_name:
 zx48_process_exit:
     ld (process_temp_status),a
     ld a,(current_pid)
+    cp 1
+    jr z,zx48_process_exit_pid1
     or a
     jr z,zx48_process_exit_panic
     call zx48_process_lookup
@@ -284,6 +286,14 @@ zx48_process_exit:
 zx48_process_exit_panic:
     ld a,PANIC_SCHEDULER
     jp zx48_panic
+
+; P6.29 PID1 is the permanent shell/init process. A requested or unexpected
+; PID1 exit never becomes a zombie and never returns to BASIC or the scheduler.
+zx48_process_exit_pid1:
+    di
+zx48_process_exit_pid1_halt:
+    halt
+    jr zx48_process_exit_pid1_halt
 
 ; If the exiting process owned tty input, hand it back to live PID1 or PID0.
 zx48_process_restore_tty_owner:
