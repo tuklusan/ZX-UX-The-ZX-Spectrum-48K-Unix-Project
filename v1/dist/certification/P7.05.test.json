@@ -1,0 +1,100 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p705-present",
+      "passed": true
+    },
+    {
+      "name": "circle-validates-center-y-before-scratch",
+      "passed": true
+    },
+    {
+      "name": "radius-zero-plots-center-once",
+      "passed": true
+    },
+    {
+      "name": "circle-uses-16-bit-midpoint-decision",
+      "passed": true
+    },
+    {
+      "name": "circle-clipping-checks-x-carry-borrow-and-y-domain",
+      "passed": true
+    },
+    {
+      "name": "circle-deduplicates-axis-and-diagonal-symmetry",
+      "passed": true
+    },
+    {
+      "name": "native-fallback-rationale-recorded",
+      "passed": true
+    },
+    {
+      "name": "syscall-validates-complete-three-byte-record",
+      "passed": true
+    },
+    {
+      "name": "fuse-radius-zero-visible-and-clipped-circles-match-independent-oracle",
+      "passed": true
+    },
+    {
+      "name": "fuse-radius-255-domain-vector-clips-not-rejects",
+      "passed": true
+    },
+    {
+      "name": "fuse-invalid-center-and-malformed-pointer-fail-before-mutation",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 23,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nkernel.asm(87): warning[shortblock]: init data for block truncated to length: 0\nPass 3 complete\nErrors: 0, warnings: 1, compiled: 14896 lines, work time: 0.021 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p705-circle.lst",
+        "--sym=p705-circle.sym",
+        "p705-circle.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2843 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "1bcb1862955372e15814296fd248795b3de41baac5596baecd5d5f155ed92a67",
+    "v1/build/p705-circle.bin": "e4c441cb25ed2879c122eb68ef7d36fd5a6bb911279d4ff9ad97ff09cafbeda4",
+    "v1/src/kernel/graphics.asm": "33652bf4c418a89ea49b9bf702f8cc2750ae46ab295c5df41ba74005c9418455",
+    "v1/src/kernel/syscall.asm": "1310c1750724a262c4d3171a9eacc8b4f734054dbb55ebe2223d4121d27ba25a",
+    "v1/tools-host/test-driver/phase7_circle.py": "f5529801de4486fb653352ed4b6c99699baf3378124e4791b31624c4a04d4c9d",
+    "v1/tools-host/test-driver/run.py": "b99d6ad840dc37c1932180165e88349aec36a891388dfda05fcb1c07a723e1a5"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P7.04": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "f295f7f2bfa3aa150eca780477ef116e1571d230",
+  "status": "PASS",
+  "step": "P7.05",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
