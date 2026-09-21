@@ -293,3 +293,31 @@ def append_logical_files(prefix: bytes, files: Iterable[LogicalFile]) -> bytes:
     for file in files:
         out.extend(logical_file_blocks(file))
     return bytes(out)
+
+
+PHASE5_FIXTURE_LABEL = "zxux-phase5-fixture-non-final"
+PHASE5_FIXTURE_STUB_NAMES = (
+    "cron", "crontab", "vi", "as", "cc", "ld", "ls", "cat", "echo", "cp",
+    "mv", "rm", "pack", "unpack", "hexdump", "grep", "wc", "head", "tail",
+    "cmp", "true", "false", "sleep", "which", "env", "stty", "date", "man",
+    "whoami", "uname", "uptime", "cal", "fortune", "banner", "rev", "yes",
+    "udg", "gfxdemo", "demo",
+)
+
+def phase5_fixture_stub_objects() -> tuple[M48OObject, ...]:
+    payload = minimal_shell_mex1()
+    return tuple(M48OObject(name, M48O_BIN, DIR_BIN, payload) for name in PHASE5_FIXTURE_STUB_NAMES)
+
+def build_phase5_fixture_tape(
+    *, loader_source: str, screen: bytes, kernel: bytes, font: bytes,
+    issue: bytes, crontab: bytes, bincat: bytes,
+    fixture_label: str = PHASE5_FIXTURE_LABEL,
+) -> bytes:
+    _require(fixture_label == PHASE5_FIXTURE_LABEL, "Phase-5 fixture label must be explicitly non-final")
+    out = bytearray(build_boot_tape(
+        loader_source=loader_source, screen=screen, kernel=kernel,
+        font=font, issue=issue, crontab=crontab, bincat=bincat,
+    ))
+    for obj in phase5_fixture_stub_objects():
+        out.extend(m48o_blocks(obj))
+    return bytes(out)
