@@ -2051,3 +2051,64 @@ p614_candidate: defs 32,0
 p614_stat_req: defs 4,0
 p614_statout: defs 10,0
     ENDM
+
+; P6.15 explicit consent gate for catalog-only tape-backed executables.
+    MACRO EMIT_P615_TAPE_DISCOVERY_ROUTINES
+P615_ALLOW_TAPE          EQU 1
+P615_PROC1_FLAGS         EQU 13
+P615_PROMPT_LEN          EQU 52
+
+; C=STATOUT1 state, HL=PROC1 request. Resident commands leave ALLOW_TAPE clear.
+; Tape-backed commands prompt before any authorization. Only y/Y sets the bit.
+sh_p615_authorize_tape:
+    push hl
+    pop ix
+    ld a,(ix+P615_PROC1_FLAGS)
+    and $fe
+    ld (ix+P615_PROC1_FLAGS),a
+    ld a,c
+    cp STATE_TAPE_BACKED
+    jr z,sh_p615_need_tape
+    xor a
+    ret
+
+sh_p615_need_tape:
+    ld hl,p615_prompt
+    ld bc,P615_PROMPT_LEN
+    ld a,SYS_CON_WRITE
+    call SYSCALL_GATEWAY
+    ret c
+    ld de,0
+    ld hl,p615_reply
+    ld bc,1
+    ld a,SYS_READ
+    call SYSCALL_GATEWAY
+    ret c
+    ld a,h
+    or a
+    jr nz,sh_p615_decline
+    ld a,l
+    cp 1
+    jr nz,sh_p615_decline
+    ld a,(p615_reply)
+    cp 'y'
+    jr z,sh_p615_accept
+    cp 'Y'
+    jr nz,sh_p615_decline
+sh_p615_accept:
+    ld a,(ix+P615_PROC1_FLAGS)
+    or P615_ALLOW_TAPE
+    ld (ix+P615_PROC1_FLAGS),a
+    xor a
+    ret
+sh_p615_decline:
+    ld a,E_AGAIN
+    scf
+    ret
+
+p615_prompt:
+    db 'c','a','s','s','e','t','t','e',' ','r','e','q','u','i','r','e','d',';',' '
+    db 'p','o','s','i','t','i','o','n',' ','t','a','p','e','/','P','L','A','Y'
+    db ',',' ','t','h','e','n',' ','p','r','e','s','s',' ','y',':',' '
+p615_reply: db 0
+    ENDM
