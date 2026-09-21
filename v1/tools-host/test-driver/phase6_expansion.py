@@ -120,7 +120,7 @@ p609_end:
             try: expand(bad,env,0)
             except ValueError as exc: require(str(exc)=="E_INVAL","wrong expansion error")
             else: raise P609Error(f"P6.09 malformed expansion accepted: {bad!r}")
-        try: expand(b"$SP"+b"x"*246,env,0)
+        try: expand(b"${SP}"+b"x"*246,env,0)
         except OverflowError as exc: require(str(exc)=="E_TOOLONG","wrong post-expansion bound error")
         else: raise P609Error("P6.09 post-expansion overflow accepted")
         assertions += [
