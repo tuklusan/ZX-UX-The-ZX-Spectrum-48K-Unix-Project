@@ -1,0 +1,57 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "bounded-six-job-table",
+      "passed": true
+    },
+    {
+      "name": "exact-name-stale-pid-defense",
+      "passed": true
+    },
+    {
+      "name": "tracks-state-and-name",
+      "passed": true
+    },
+    {
+      "name": "remove-after-reap-surface",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p624-fixture.lst",
+        "--sym=p624-fixture.sym",
+        "p624-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 3307 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/dist/certification/P6.23.build.json": "75c89003b6e9310c9fe3148e0291bd29264e6e0b45f785a51f4a9ca5173365f6",
+    "v1/dist/certification/P6.23.test.json": "658a653774264d6c1bcb7dfe53d3f7d409ab7c11dcf41471f078590b487e2200",
+    "v1/dist/media/P6.23/manifest.json": "88823f951e36ea3d121744b9021960d39e3a0f57124c1893bcc3c80f4660bd8b",
+    "v1/src/shell/sh.asm": "c8468992ea38551429f57b722fe086eeb3dc22124575c65b05e91a3f0de93073",
+    "v1/tools-host/test-driver/phase6_jobs.py": "9f10e688ae59c56c9fbdf3c7d135798efc421bcd1d7ec1878c904d4f0f970b4e",
+    "v1/tools-host/test-driver/run.py": "eea579d0dc0d4c82df39ae40df39bd58b0dbe60c667aa06231ef777fe16dc163"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P6.23": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "bd5c673412b9f590d46be4c490129066f4f04ee1",
+  "status": "PASS",
+  "step": "P6.24",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
