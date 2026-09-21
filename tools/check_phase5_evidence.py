@@ -46,13 +46,15 @@ def validate():
    if not p.is_file(): raise E(f"missing {name}")
    r=load(p)
    if r.get("step")!=step or r.get("action")!=action or r.get("status")!="PASS" or r.get("worktree_clean") is not True: raise E(f"{name}: PASS")
-   if r.get("architecture_sha256")!=ARCH or r.get("implementation_plan_sha256")!=PLAN or r.get("toolchain_lock_sha256")!=lock or r.get("prerequisites")!=pre(n): raise E(f"{name}: identity")
+   if r.get("architecture_sha256")!=ARCH or r.get("implementation_plan_sha256")!=PLAN or r.get("prerequisites")!=pre(n): raise E(f"{name}: identity")
+   if not isinstance(r.get("toolchain_lock_sha256"),str): raise E(f"{name}: toolchain provenance")
+   if n==19 and r.get("toolchain_lock_sha256")!=lock: raise E(f"{name}: P5.19 toolchain")
    rs=r.get("source_commit")
    if not isinstance(rs,str) or subprocess.run(["git","merge-base","--is-ancestor",rs,source],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode: raise E(f"{name}: ancestry")
    if n==19 and rs!=source: raise E(f"{name}: source")
    if manifest.get(name)!=sha(p): raise E(f"{name}: bytes")
  res=load(CERT/"P5.19.result.json")
- for k,v in {"step":"P5.19","action":"result","status":"PASS","pass_marker":P519,"source_commit":source,"architecture_sha256":ARCH,"implementation_plan_sha256":PLAN,"worktree_clean":True,"prerequisites":{"P5.18":"PASS"}}.items():
+ for k,v in {"step":"P5.19","action":"result","status":"PASS","pass_marker":P519,"source_commit":source,"architecture_sha256":ARCH,"implementation_plan_sha256":PLAN,"toolchain_lock_sha256":lock,"worktree_clean":True,"prerequisites":{"P5.18":"PASS"}}.items():
   if res.get(k)!=v: raise E(f"P5.19.result {k}")
  if manifest.get("P5.19.result.json")!=sha(CERT/"P5.19.result.json"): raise E("P5.19.result bytes")
  req={"p5-19-build-test-result-pass","all-p5-01-through-p5-19-durable-evidence-pass","rev16-rev07-authority-pass","phase5-record-manifest-byte-exact","phase5-acceptance-bullets-pass","phase5-gate-stops-before-phase6"}
