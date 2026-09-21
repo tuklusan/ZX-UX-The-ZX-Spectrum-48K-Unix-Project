@@ -159,6 +159,8 @@ zx48_syscall_impl:
     ld (syscall_arg_hl),hl
     ld (syscall_arg_de),de
     ld (syscall_arg_bc),bc
+    call zx48_p626_boundary
+    ret c
     cp SYS_KILL+1
     jr c,zx48_sys_dispatch_proc
     cp SYS_OPEN

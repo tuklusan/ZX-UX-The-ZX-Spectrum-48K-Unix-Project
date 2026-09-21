@@ -3041,3 +3041,73 @@ p625_child_status: db 0
 p625_wait_req: db 0,0
                dw p625_child_status
     ENDM
+
+; P6.26 kill builtin. Exact one-operand decimal PID syntax; the kernel remains
+; authoritative for PID0/PID1 permission and target existence/parent rules.
+    MACRO EMIT_P626_KILL_ROUTINES
+; B=operand count after "kill", HL=NUL decimal PID, IX=shell $? byte.
+sh_p626_kill:
+    ld (p626_status_ptr),ix
+    ld a,b
+    cp 1
+    jr nz,sh_p626_invalid
+    call sh_p626_parse_pid
+    ret c
+    ld l,a
+    ld h,0
+    ld a,SYS_KILL
+    call SYSCALL_GATEWAY
+    jr c,sh_p626_fail
+    ld hl,(p626_status_ptr)
+    xor a
+    ld (hl),a
+    ret
+sh_p626_fail:
+    ld hl,(p626_status_ptr)
+    ld (hl),a
+    scf
+    ret
+
+; Parse exactly unsigned decimal 0..255.
+sh_p626_parse_pid:
+    ld c,0
+    ld a,(hl)
+    or a
+    jr z,sh_p626_invalid
+sh_p626_parse_loop:
+    ld a,(hl)
+    or a
+    jr z,sh_p626_parse_done
+    cp '0'
+    jr c,sh_p626_invalid
+    cp '9'+1
+    jr nc,sh_p626_invalid
+    sub '0'
+    ld d,a
+    ld a,c
+    cp 26
+    jr nc,sh_p626_overflow
+    ; c = c*10 + digit
+    ld a,c
+    add a,a
+    ld e,a
+    add a,a
+    add a,a
+    add a,e
+    add a,d
+    jr c,sh_p626_overflow
+    ld c,a
+    inc hl
+    jr sh_p626_parse_loop
+sh_p626_parse_done:
+    ld a,c
+    or a
+    ret
+sh_p626_overflow:
+sh_p626_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+
+p626_status_ptr: dw 0
+    ENDM
