@@ -1,0 +1,62 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "txt-exact-case-and-bytes",
+      "passed": true
+    },
+    {
+      "name": "bin-exact-case-and-bytes",
+      "passed": true
+    },
+    {
+      "name": "udg-exact-case-and-bytes",
+      "passed": true
+    },
+    {
+      "name": "raw-logical-crc-roundtrip",
+      "passed": true
+    },
+    {
+      "name": "wrong-case-load-miss",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 23,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 14003 lines, work time: 0.022 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "4a196f4726e1afd15662e8233452971ec5d0f9f64c9c4be654acab67daf78db6",
+    "v1/build/p516-roundtrip.tap": "40e9aebbb55b0b0a810fa9cd67adbec876351a63a9086b692d9377163ee5a324",
+    "v1/dist/certification/P5.15.build.json": "1ac66264e9bf72f39dbf2416745e903e8a024f7b87266bfd34896a2f18020511",
+    "v1/dist/certification/P5.15.test.json": "6636520b5e7601daacf7becd816c1472899ffa97f965aed853e7c3262612dbf4",
+    "v1/tools-host/maketap/maketap.py": "1c8137e2632da3f767630460be5b6f66ff1dca52502d4b56906ef64e4de95b3c",
+    "v1/tools-host/test-driver/phase5_roundtrip.py": "2e61cbcfaca7b41f8035414891ffd210ea63f426faeeeb6f02fe90ab06ab7a65",
+    "v1/tools-host/test-driver/run.py": "0f01ea2f67f5638e04c3b8945f99b915e3d5802c4f34d1a47df5d62d65d706b5"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P5.15": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "e72c05d2837892bfb3f4cbd78f2e99c53a6d1ced",
+  "status": "PASS",
+  "step": "P5.16",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
