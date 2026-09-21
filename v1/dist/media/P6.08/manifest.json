@@ -1,0 +1,19 @@
+{
+  "files": [
+    {
+      "action": "build",
+      "path": "build/build-p608-tokenizer-f9af2893230d5722f02422b41f4fc6b9b216d5aaa356443d42be15bdca35dc84.tap",
+      "sha256": "f9af2893230d5722f02422b41f4fc6b9b216d5aaa356443d42be15bdca35dc84",
+      "size": 427
+    },
+    {
+      "action": "test",
+      "path": "test/build-p608-tokenizer-f9af2893230d5722f02422b41f4fc6b9b216d5aaa356443d42be15bdca35dc84.tap",
+      "sha256": "f9af2893230d5722f02422b41f4fc6b9b216d5aaa356443d42be15bdca35dc84",
+      "size": 427
+    }
+  ],
+  "schema": 1,
+  "source_commit": "4ee3e056a5d93125cca8f96ca19502c99c3bebda",
+  "step": "P6.08"
+}

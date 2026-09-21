@@ -1,0 +1,81 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "byte-parser-no-hidden-shell",
+      "passed": true
+    },
+    {
+      "name": "plain-backslash-quotes-next-byte",
+      "passed": true
+    },
+    {
+      "name": "single-quotes-literal",
+      "passed": true
+    },
+    {
+      "name": "double-backslash-exact-special-set",
+      "passed": true
+    },
+    {
+      "name": "double-nonspecial-backslash-preserved",
+      "passed": true
+    },
+    {
+      "name": "unmatched-quote-invalid",
+      "passed": true
+    },
+    {
+      "name": "documentation-frozen-contract",
+      "passed": true
+    },
+    {
+      "cases": 13,
+      "name": "golden-token-corpus",
+      "passed": true
+    },
+    {
+      "cases": 4,
+      "name": "unterminated-quote-and-trailing-backslash-e-inval",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p608-tokenizer.lst",
+        "--sym=p608-tokenizer.sym",
+        "p608-tokenizer.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 6,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 1680 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p608-tokenizer.tap": "f9af2893230d5722f02422b41f4fc6b9b216d5aaa356443d42be15bdca35dc84",
+    "v1/dist/certification/P6.07.build.json": "7cebb3831cdfa73f9ada1549fcf5b0c290ca8e1fb13cadb75a773882d2312357",
+    "v1/dist/certification/P6.07.test.json": "88f1e0352eb5528fdb0055e2b095968d52aabc08921c1270e97c56e9bf40c38e",
+    "v1/dist/media/P6.07/manifest.json": "63b38cdc0006581abfc473f3b7b5be6f7ca84c5a009b181e09ab91b63c11fd71",
+    "v1/docs/shell.md": "67ce1fff482c985ea2c932190dc25e9d5e76686f6e299f491f3b791e45415952",
+    "v1/src/shell/sh.asm": "a466fdc358c201725dc06d634d2a89f813906693c0c190b5de9a336c7a78518c",
+    "v1/tools-host/test-driver/phase6_tokenizer.py": "7b63037f82f9f581b3c6e21373648b236d3ad2b05ad5a8db85eabf5a059fe563",
+    "v1/tools-host/test-driver/run.py": "e61259bd1ac2bf0fa4d7d380af3b15cd23ca13f301b57e339e6be9cbd712f70c"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P6.07": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "4ee3e056a5d93125cca8f96ca19502c99c3bebda",
+  "status": "PASS",
+  "step": "P6.08",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
