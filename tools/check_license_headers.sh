@@ -67,6 +67,10 @@ declare -A explicit_header_exemptions=(
   ["docs/images/doc-thumbs/c48-compiler-user-manual-r011.png"]="Binary PNG document thumbnail cannot carry the plaintext project header."
   ["docs/images/doc-thumbs/c48-language-spec-r011.png"]="Binary PNG document thumbnail cannot carry the plaintext project header."
   ["docs/images/doc-thumbs/zxux-user-manual-r12.png"]="Binary PNG document thumbnail cannot carry the plaintext project header."
+  ["v1/dist/cassette/phase-5/phase5-fixture.tap"]="Binary Phase-5 certification cassette media cannot carry the plaintext project header."
+  ["v1/dist/cassette/phase-5/phase5-fixture.tzx"]="Binary Phase-5 certification cassette media cannot carry the plaintext project header."
+  ["v1/dist/cassette/phase-5/phase5-fixture-roundtrip.tap"]="Binary Phase-5 certification cassette media cannot carry the plaintext project header."
+  ["v1/dist/cassette/phase-5/p516-roundtrip.tap"]="Binary Phase-5 certification cassette media cannot carry the plaintext project header."
   ["v1/assets/SANYALnet-Labs-4x8-font-0.bin"]="Binary 4x8 font asset cannot carry the plaintext project header."
 )
 
