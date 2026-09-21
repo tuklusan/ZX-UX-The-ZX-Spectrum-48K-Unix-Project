@@ -15,7 +15,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Callable
 from driver_core import DriverError
-from fuse_harness import FAIL_PC, PASS_PC, run_sna
+from fuse_harness import ENTRY_PC, FAIL_PC, PASS_PC, run_sna
 import phase1
 
 ORACLE=0x6000
@@ -70,7 +70,7 @@ def _runtime(root:Path, label:int, kernel:bytes):
     code+=b"\x3a"+_word(YCOUNT)+b"\x3c\x32"+_word(YCOUNT)+b"\xfe\xc0"
     jy=len(code); code+=b"\xc2\x00\x00"
     code+=phase1._jp(PASS_PC)
-    base=phase1.USER_CODE
+    base=ENTRY_PC
     code[jx+1:jx+3]=_word(base+inner)
     code[jy+1:jy+3]=_word(base+outer)
     def patch(ram:bytearray):
