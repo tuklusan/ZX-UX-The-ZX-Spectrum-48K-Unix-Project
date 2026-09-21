@@ -519,7 +519,8 @@ zx48_gfx_circle_pm_done:
     ld l,a
     jp zx48_gfx_plot
 
-; H=selector,L=value. Selectors: ink,paper,bright,flash,inverse,over.
+; P7.07 shared console/graphics state: H=selector,L=value.
+; Selectors: ink,paper,bright,flash,inverse,over; values are validated before commit.
 zx48_gfx_attr:
     ld a,h
     cp 6
