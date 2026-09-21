@@ -577,7 +577,7 @@ zx48_gfx_attr_no_flash:
     or a
     ret
 
-; H=0,L=color.
+; P7.08: H=0,L=color; only the central ULA shadow may publish the border.
 zx48_gfx_border:
     ld a,h
     or a
