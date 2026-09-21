@@ -1,0 +1,96 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p706-present",
+      "passed": true
+    },
+    {
+      "name": "point-validates-y-before-bitmap-access",
+      "passed": true
+    },
+    {
+      "name": "point-returns-only-zero-or-one",
+      "passed": true
+    },
+    {
+      "name": "point-success-canonical-zero-carry-clear",
+      "passed": true
+    },
+    {
+      "name": "point-does-not-call-cursor-or-write-display",
+      "passed": true
+    },
+    {
+      "name": "point-uses-p702-canonical-address-path",
+      "passed": true
+    },
+    {
+      "name": "p706-contract-comment-present",
+      "passed": true
+    },
+    {
+      "name": "fuse-corners-and-interiors-return-exact-zero-one",
+      "passed": true
+    },
+    {
+      "name": "fuse-whole-display-cursor-and-graphics-state-byte-identical",
+      "passed": true
+    },
+    {
+      "name": "fuse-y192-y255-return-einval-without-side-effects",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 45,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nkernel.asm(87): warning[shortblock]: init data for block truncated to length: 0\nPass 3 complete\nErrors: 0, warnings: 1, compiled: 14896 lines, work time: 0.044 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p706-point.lst",
+        "--sym=p706-point.sym",
+        "p706-point.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 9,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2851 lines, work time: 0.008 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "1bcb1862955372e15814296fd248795b3de41baac5596baecd5d5f155ed92a67",
+    "v1/build/p706-point.bin": "6e070929291a707d0eeb944769b14b9e7961ee49fea2fe2af7c5f73916e1c132",
+    "v1/src/kernel/graphics.asm": "8dc2f657ea1a668509b5cb3d9b226d0749fb44c65a76a6b8fc3f07f4d7f50d05",
+    "v1/src/kernel/syscall.asm": "1310c1750724a262c4d3171a9eacc8b4f734054dbb55ebe2223d4121d27ba25a",
+    "v1/tools-host/test-driver/phase7_point.py": "c15554e01fe1cb244231a4d36bcd34e16daf8c6370f6b3bc5b93ee69fccb381b",
+    "v1/tools-host/test-driver/run.py": "7a9ee86f6f2c7add5f8105f0466ae21be2dd2f36ed0f76716c6ad27657473d73"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P7.05": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "6d6bf1367f453226f3a03af969d7c74d726c41a9",
+  "status": "PASS",
+  "step": "P7.06",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

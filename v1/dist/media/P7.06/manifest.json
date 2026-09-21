@@ -1,0 +1,13 @@
+{
+  "files": [
+    {
+      "action": "test",
+      "path": "test/fixture-9c4b24a9d6628a7c2ddf194123a439b5713be220e2df567743d2d6b8ae074862.sna",
+      "sha256": "9c4b24a9d6628a7c2ddf194123a439b5713be220e2df567743d2d6b8ae074862",
+      "size": 49179
+    }
+  ],
+  "schema": 1,
+  "source_commit": "6d6bf1367f453226f3a03af969d7c74d726c41a9",
+  "step": "P7.06"
+}
