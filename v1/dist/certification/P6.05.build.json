@@ -1,0 +1,57 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "env1-four-entry-table",
+      "passed": true
+    },
+    {
+      "name": "sorted-home-path-shell-user",
+      "passed": true
+    },
+    {
+      "name": "required-path-shell-values",
+      "passed": true
+    },
+    {
+      "name": "status-separate-from-env",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p605-fixture.lst",
+        "--sym=p605-fixture.sym",
+        "p605-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 10,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 6446 lines, work time: 0.009 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/dist/certification/P6.04.build.json": "3165f92804c67e86dfa3d85fe4e4c193c48c65c568db50e1f0e277bbcbb8474a",
+    "v1/dist/certification/P6.04.test.json": "08d6c557b1a9941925fe84f89111adf7f1db9d6f134dab06de510e335cfac471",
+    "v1/dist/media/P6.04/manifest.json": "c39642eb7896c5961d445c4582332c4056525f3a6e12dba8673c46d0698e3150",
+    "v1/src/shell/sh.asm": "e877b0a812daffe925f28bcb8adee79afc2aee5be8853b0d90562e9c73f3396c",
+    "v1/tools-host/test-driver/phase6_env.py": "16435ea4a557161282e966617e25c3b395888fd6b3f9ff4847687003e5dff520",
+    "v1/tools-host/test-driver/run.py": "a8337a40bab32fd22551995c762d01e10e5c6a319a64ddebbdf0da796ddb365c"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P6.04": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "20a53fd37d0e832ceeff2661eb54685fe74a7197",
+  "status": "PASS",
+  "step": "P6.05",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
