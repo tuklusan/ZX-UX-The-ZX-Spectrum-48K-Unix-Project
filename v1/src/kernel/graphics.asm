@@ -296,125 +296,228 @@ zx48_gfx_line_skip_x:
     ld (gfx_y),a
     jr zx48_gfx_line_loop
 
-; HL -> x,y,radius. Compact midpoint implementation delegates octant plots.
+; HL -> x,y,radius. Native integer midpoint circle with exact clipping.
+; P7.05 records the Class-B ROM-assisted option but uses the Section-14.9
+; fallback because the ROM graphics path inherits BASIC's y<=175/origin
+; semantics and cannot expose the ZX-UX 0..191 top-origin contract byte-for-byte.
 zx48_gfx_circle:
+    ; Validate center y before touching graphics scratch or display state.
+    push hl
+    inc hl
+    ld a,(hl)
+    cp 192
+    jr nc,zx48_gfx_circle_bad
+    pop hl
     ld a,(hl)
     ld (gfx_cx),a
     inc hl
     ld a,(hl)
-    cp 192
-    jp nc,zx48_gfx_bad
     ld (gfx_cy),a
     inc hl
     ld a,(hl)
     ld (gfx_r),a
-    xor a
+    or a
+    jr nz,zx48_gfx_circle_init
+    ld a,(gfx_cx)
+    ld h,a
+    ld a,(gfx_cy)
+    ld l,a
+    jp zx48_gfx_plot
+zx48_gfx_circle_bad:
+    pop hl
+    jp zx48_gfx_bad
+
+zx48_gfx_circle_init:
+    ld a,(gfx_r)
     ld (gfx_circle_x),a
-    ld a,(gfx_r)
+    xor a
     ld (gfx_circle_y),a
-    ld a,1
-    ld (gfx_circle_d),a
+    ld hl,1
     ld a,(gfx_r)
-    add a,a
-    ld b,a
-    ld a,(gfx_circle_d)
-    sub b
-    ld (gfx_circle_d),a
+    ld e,a
+    ld d,0
+    or a
+    sbc hl,de
+    ld (gfx_circle_d),hl
+
 zx48_gfx_circle_loop:
     call zx48_gfx_circle_octants
     ld a,(gfx_circle_x)
     ld b,a
     ld a,(gfx_circle_y)
     cp b
-    jr c,zx48_gfx_circle_done
-    ld a,(gfx_circle_d)
-    bit 7,a
-    jr z,zx48_gfx_circle_dec_y
-    ld a,(gfx_circle_x)
+    jr nc,zx48_gfx_circle_done
+
     inc a
-    ld (gfx_circle_x),a
-    add a,a
-    inc a
-    ld b,a
-    ld a,(gfx_circle_d)
-    add a,b
-    ld (gfx_circle_d),a
-    jr zx48_gfx_circle_loop
-zx48_gfx_circle_dec_y:
-    ld a,(gfx_circle_x)
-    inc a
-    ld (gfx_circle_x),a
-    ld b,a
-    ld a,(gfx_circle_y)
-    dec a
     ld (gfx_circle_y),a
-    ld c,a
-    ld a,b
-    sub c
-    add a,a
-    inc a
-    ld b,a
-    ld a,(gfx_circle_d)
-    add a,b
-    ld (gfx_circle_d),a
+    ld hl,(gfx_circle_d)
+    bit 7,h
+    jr z,zx48_gfx_circle_nonnegative
+
+    ; err < 0: err += 2*y + 1
+    ld a,(gfx_circle_y)
+    ld l,a
+    ld h,0
+    add hl,hl
+    inc hl
+    ld de,(gfx_circle_d)
+    add hl,de
+    ld (gfx_circle_d),hl
     jr zx48_gfx_circle_loop
+
+zx48_gfx_circle_nonnegative:
+    ; err >= 0: x--, err += 2*(y-x) + 1
+    ld a,(gfx_circle_x)
+    dec a
+    ld (gfx_circle_x),a
+    ld e,a
+    ld d,0
+    ld a,(gfx_circle_y)
+    ld l,a
+    ld h,0
+    or a
+    sbc hl,de
+    add hl,hl
+    inc hl
+    ld de,(gfx_circle_d)
+    add hl,de
+    ld (gfx_circle_d),hl
+    jr zx48_gfx_circle_loop
+
 zx48_gfx_circle_done:
     xor a
     or a
     ret
 
-; Plot eight clipped octants. Clipped points are simply skipped.
+; Plot each unique midpoint-circle point at most once. This matters for OVER:
+; duplicate symmetric points would otherwise toggle an even number of times.
 zx48_gfx_circle_octants:
+    ld a,(gfx_circle_y)
+    or a
+    jr z,zx48_gfx_circle_axis
+    ld b,a
     ld a,(gfx_circle_x)
+    cp b
+    jr z,zx48_gfx_circle_diag
+
+    ; General case: (x,y) and (y,x), four signs each.
     ld b,a
     ld a,(gfx_circle_y)
     ld c,a
-    call zx48_gfx_circle_pair_xy
+    call zx48_gfx_circle_pair
     ld a,(gfx_circle_y)
     ld b,a
     ld a,(gfx_circle_x)
     ld c,a
-zx48_gfx_circle_pair_xy:
-    ; (cx+b,cy+c), (cx-b,cy+c), (cx+b,cy-c), (cx-b,cy-c)
+    jp zx48_gfx_circle_pair
+
+zx48_gfx_circle_diag:
+    ld a,(gfx_circle_x)
+    ld b,a
+    ld c,a
+    jp zx48_gfx_circle_pair
+
+zx48_gfx_circle_axis:
+    ; Four unique axis points for y=0.
+    ld a,(gfx_circle_x)
+    ld b,a
     push bc
     ld a,(gfx_cx)
     add a,b
+    jr c,zx48_gfx_circle_axis_xp_done
     ld h,a
     ld a,(gfx_cy)
-    add a,c
     ld l,a
-    cp 192
-    call c,zx48_gfx_plot
+    call zx48_gfx_plot
+zx48_gfx_circle_axis_xp_done:
     pop bc
+
     push bc
     ld a,(gfx_cx)
     sub b
+    jr c,zx48_gfx_circle_axis_xm_done
     ld h,a
     ld a,(gfx_cy)
-    add a,c
     ld l,a
-    cp 192
-    call c,zx48_gfx_plot
+    call zx48_gfx_plot
+zx48_gfx_circle_axis_xm_done:
     pop bc
+
+    push bc
+    ld a,(gfx_cy)
+    add a,b
+    jr c,zx48_gfx_circle_axis_yp_done
+    cp 192
+    jr nc,zx48_gfx_circle_axis_yp_done
+    ld l,a
+    ld a,(gfx_cx)
+    ld h,a
+    call zx48_gfx_plot
+zx48_gfx_circle_axis_yp_done:
+    pop bc
+
+    ld a,(gfx_cy)
+    sub b
+    ret c
+    ld l,a
+    ld a,(gfx_cx)
+    ld h,a
+    jp zx48_gfx_plot
+
+; B=absolute x offset, C=absolute y offset; both nonzero.
+zx48_gfx_circle_pair:
     push bc
     ld a,(gfx_cx)
     add a,b
+    jr c,zx48_gfx_circle_pp_done
     ld h,a
     ld a,(gfx_cy)
-    sub c
-    ld l,a
+    add a,c
+    jr c,zx48_gfx_circle_pp_done
     cp 192
-    call c,zx48_gfx_plot
+    jr nc,zx48_gfx_circle_pp_done
+    ld l,a
+    call zx48_gfx_plot
+zx48_gfx_circle_pp_done:
     pop bc
+
+    push bc
     ld a,(gfx_cx)
     sub b
+    jr c,zx48_gfx_circle_mp_done
+    ld h,a
+    ld a,(gfx_cy)
+    add a,c
+    jr c,zx48_gfx_circle_mp_done
+    cp 192
+    jr nc,zx48_gfx_circle_mp_done
+    ld l,a
+    call zx48_gfx_plot
+zx48_gfx_circle_mp_done:
+    pop bc
+
+    push bc
+    ld a,(gfx_cx)
+    add a,b
+    jr c,zx48_gfx_circle_pm_done
     ld h,a
     ld a,(gfx_cy)
     sub c
+    jr c,zx48_gfx_circle_pm_done
     ld l,a
-    cp 192
-    call c,zx48_gfx_plot
-    ret
+    call zx48_gfx_plot
+zx48_gfx_circle_pm_done:
+    pop bc
+
+    ld a,(gfx_cx)
+    sub b
+    ret c
+    ld h,a
+    ld a,(gfx_cy)
+    sub c
+    ret c
+    ld l,a
+    jp zx48_gfx_plot
 
 ; H=selector,L=value. Selectors: ink,paper,bright,flash,inverse,over.
 zx48_gfx_attr:
@@ -506,5 +609,5 @@ gfx_cy: db 0
 gfx_r: db 0
 gfx_circle_x: db 0
 gfx_circle_y: db 0
-gfx_circle_d: db 0
+gfx_circle_d: dw 0
     ENDM
