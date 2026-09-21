@@ -77,7 +77,6 @@ def _assemble(root: Path, run_command: Callable[..., Any], require_project_tool:
     fixture.write_text("""    DEVICE ZXSPECTRUM48
     INCLUDE "../include/zx48ux.inc"
     ORG $C000
-syscall_arg_hl: dw 0
 tty_current_attr: db 7
 zx48_cursor_hide: ret
 zx48_cursor_show: ret
