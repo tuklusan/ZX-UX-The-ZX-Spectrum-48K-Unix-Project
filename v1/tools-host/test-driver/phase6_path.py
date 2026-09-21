@@ -105,7 +105,7 @@ p614_gate:
     ld ix,p614_cases
 p614_case_loop:
     ld a,(ix+0)
-    or a
+    cp $ff
     jr z,p614_gate_noent
     ld e,(ix+1)
     ld d,(ix+2)
@@ -129,13 +129,12 @@ p614_case_hit:
     ld a,(ix+3)
     or a
     jr nz,p614_case_error
-    xor a
-    ld (bc),a
-    inc bc
     ld a,(ix+4)
     ld (bc),a
     inc bc
     xor a
+    ld (bc),a
+    inc bc
     ld (bc),a
     inc bc
     ld (bc),a
@@ -197,7 +196,7 @@ p614_cases:
     db 0
     dw p614_s_direct_txt
     db 0,OBJ_TXT
-    db 0,0,0,0,0
+    db $ff,0,0,0,0
 p614_s_bin: db '/','b','i','n',0
 p614_s_dot: db '.',0
 p614_s_bad: db '/','b','a','d',0
