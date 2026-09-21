@@ -39,10 +39,13 @@ M48O_DATA_FLAG = 0xFF
 M48O_TXT = 1
 M48O_BIN = 2
 M48O_FNT = 9
+M48O_UDG = 7
 M48O_CFG = 10
 M48O_SYS = 11
 DIR_BIN = 1
 DIR_ETC = 3
+DIR_USERHOME = 5
+DIR_TMP = 6
 DIR_SYSTEM = 7
 
 TOK_SCREEN = 0xAA
@@ -197,17 +200,19 @@ def minimal_shell_mex1() -> bytes:
 
 def m48o_header(obj: M48OObject) -> bytes:
     encoded = obj.name.encode("ascii")
-    _require(obj.name == obj.name.lower(), "M48O bootstrap name must be lower-case")
     _require(1 <= len(encoded) <= 10, "M48O base name must be 1..10 bytes")
-    _require(obj.object_type in (M48O_TXT, M48O_BIN, M48O_FNT, M48O_CFG, M48O_SYS), "invalid bootstrap object type")
-    allowed = {
-        M48O_BIN: {DIR_BIN},
-        M48O_TXT: {DIR_ETC},
-        M48O_CFG: {DIR_ETC},
-        M48O_FNT: {DIR_SYSTEM},
-        M48O_SYS: {DIR_SYSTEM},
-    }
-    _require(obj.target_directory in allowed[obj.object_type], "invalid bootstrap object placement")
+    _require(all(chr(b).isalnum() or chr(b) in "_.-" for b in encoded), "invalid M48O base-name byte")
+    _require(1 <= obj.object_type <= M48O_SYS, "invalid persistent object type")
+    if obj.target_directory == DIR_BIN:
+        _require(obj.object_type == M48O_BIN, "BIN target accepts only BIN")
+    elif obj.target_directory == DIR_ETC:
+        _require(obj.object_type in (M48O_TXT, M48O_CFG), "ETC target accepts only TXT/CFG")
+    elif obj.target_directory in (DIR_USERHOME, DIR_TMP):
+        _require(1 <= obj.object_type <= M48O_CFG, "ordinary target accepts types 1..10")
+    elif obj.target_directory == DIR_SYSTEM:
+        _require(obj.object_type in (M48O_FNT, M48O_SYS), "SYSTEM target accepts only FNT/SYS")
+    else:
+        raise TapeError("invalid M48O target directory")
     _require(len(obj.payload) <= 32768, "M48O payload too large")
 
     header = bytearray(M48O_HEADER_SIZE)
