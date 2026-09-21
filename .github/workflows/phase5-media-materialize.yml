@@ -103,6 +103,7 @@ jobs:
       - name: Mandatory gates on exact media bytes
         run: |
           set -euo pipefail
+          rm -rf tools/runtime v1/build
           ./tools/check_license_headers.sh
           ./tools/check_project_policy.py
           python3 tools/check_phase4_evidence.py --require-active
