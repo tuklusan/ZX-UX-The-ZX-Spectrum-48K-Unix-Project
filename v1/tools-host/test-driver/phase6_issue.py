@@ -200,7 +200,7 @@ p602_gateway_end:
         duplicate=ISSUE.splitlines(keepends=True)[0]+ISSUE
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0))
         code+=phase1._ld_hl(ISSUE_ADDR)+b"\x01"+word(len(duplicate))+b"\xDD\x21"+word(PROMPT_ADDR)
-        code+=phase1._call(helper)+phase1._jp_nc(FAIL_PC)
+        code+=phase1._call(helper)+b"\xD2"+word(FAIL_PC)
         code+=bytes((0xFE,sy["E_FORMAT"]&0xFF))+phase1._jp_nz(FAIL_PC)
         code+=expect_byte(OUTPUT_ADDR,0xA5)+expect_word(out_ptr,OUTPUT_ADDR)+phase1._jp(PASS_PC)
         run_sna(root,bytes(code),patch=patch(shell_bin,gateway_bin,duplicate,LOGIN))
