@@ -124,6 +124,8 @@ def _assemble(root: Path, run_command: Callable[..., Any], require_project_tool:
     source.write_text(
         "    DEVICE ZXSPECTRUM48\n"
         "    INCLUDE \"../include/zx48ux.inc\"\n"
+        f"    ORG ${MODULE:04X}\\n"
+        "p704_start:\n"
         "tty_current_attr: db 7\n"
         "zx48_cursor_hide: ret\n"
         "zx48_cursor_show: ret\n"
@@ -148,8 +150,6 @@ def _assemble(root: Path, run_command: Callable[..., Any], require_project_tool:
         "    ld l,a\n"
         "    ret\n"
         "    INCLUDE \"../src/kernel/syscall.asm\"\n"
-        f"    ORG ${MODULE:04X}\n"
-        "p704_start:\n"
         "    EMIT_USER_RANGE_VALIDATION_ROUTINE\n"
         "    EMIT_GRAPHICS_ROUTINES\n"
         "    EMIT_P701_GRAPHICS_SYSCALL_ROUTINES\n"
