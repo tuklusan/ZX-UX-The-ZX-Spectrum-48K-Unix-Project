@@ -56,7 +56,7 @@ def dispatch(root:Path,action:str,step:str,*,sha256_file,run_command,require_pro
       {"name":"im2-remains-producer-only","passed":"ld (break_pending),a" in interrupt and "zx48_process_kill" not in interrupt and "zx48_schedule" not in interrupt.split("zx48_interrupt_break:",1)[1].split("zx48_interrupt_done:",1)[0]},
       {"name":"syscall-entry-services-break-before-dispatch","passed":syscall.index("; P6.26 cooperative BREAK boundary.") < syscall.index("cp SYS_KILL+1")},
       {"name":"shell-owner-break-is-line-eintr-only","passed":"ld a,(tty_input_owner)" in boundary and "ld a,E_INTR" in boundary},
-      {"name":"child-break-targets-tty-owner-only","passed":"ld a,(current_pid)" in boundary and "cp b" in boundary and "jr nz,zx48_p626_break_restore_selector" in boundary},
+      {"name":"child-break-targets-tty-owner-only","passed":"ld a,(current_pid)" in boundary and "xor b" in boundary and "jr nz,zx48_p626_break_restore_selector" in boundary},
       {"name":"no-break-scheduler-preemption","passed":"zx48_schedule" not in boundary},
       {"name":"current-owner-cancel-consumed-before-syscall-side-effects","passed":"ld (break_pending),a" in boundary and "ld a,E_INTR" in boundary},
       {"name":"kill-exact-one-decimal-operand","passed":"cp 1" in kill and "ld a,SYS_KILL" in kill},

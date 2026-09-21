@@ -180,12 +180,11 @@ zx48_syscall_impl:
     ld a,(break_pending)
     or a
     jr z,zx48_p626_break_restore_selector
-    ld a,(current_pid)
-    ld b,a
     ld a,(tty_input_owner)
-    cp b
+    ld b,a
+    ld a,(current_pid)
+    xor b
     jr nz,zx48_p626_break_restore_selector
-    xor a
     ld (break_pending),a
     ld a,E_INTR
     scf
@@ -264,8 +263,8 @@ zx48_sys_sleep:
 zx48_sys_getpid:
     ld a,(current_pid)
     ld l,a
-    ld h,0
     xor a
+    ld h,a
     ret
 zx48_sys_spawn_stub:
 zx48_sys_exec_stub:
@@ -436,8 +435,9 @@ zx48_sys_write_pipe:
     call zx48_pipe_write
     ret
 zx48_sys_zero_result:
-    ld hl,0
     xor a
+    ld h,a
+    ld l,a
     ret
 
 zx48_sys_seek:

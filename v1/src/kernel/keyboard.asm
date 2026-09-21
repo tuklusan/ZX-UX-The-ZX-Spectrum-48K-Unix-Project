@@ -110,8 +110,8 @@ zx48_keyboard_busy:
 zx48_keyboard_release:
     ld hl,tty_input_owner
     ld a,(current_pid)
-    cp (hl)
+    sub (hl)
     ret nz
-    ld (hl),0
+    ld (hl),a
     ret
     ENDM
