@@ -36,6 +36,7 @@ def dispatch(root:Path,action:str,step:str,*,sha256_file,run_command,require_pro
     f=b/"p517-recovery.asm"
     f.write_text("""    DEVICE ZXSPECTRUM48
 ROM_IY_ANCHOR EQU $5C3A
+INTERRUPT_STATE_END EQU $5B00
     ORG $C000
 altreg_busy: db 1
 ula_shadow: db 5
