@@ -228,6 +228,14 @@ def valid(root,s,core,shell,gate,arg,dur,pitch):
     code+=checkb(s["altreg_busy"],0)+checkb(s["ula_shadow"],3)+phase1._jp(PASS_PC)
     run_sna(root,bytes(code),patch=patch(core,shell,gate,s,arg=arg),timeout=35)
 
+def calc_result(root,s,core,shell,gate,expr,expected=None):
+    code=bytearray(b"\xf3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(ARG)+phase1._ld_de(s["p720_duration_fp"])+bytes((0x3e,2,0x06,1,0x0e,0))+call(s["sh_p710_calc_builtin"]))
+    code+=jpc(FAIL_PC)+b"\xb7"+phase1._jp_nz(FAIL_PC)
+    if expected is not None:
+        code+=checkmem(s["p720_duration_fp"],expected)
+    code+=checkb(s["altreg_busy"],0)+phase1._jp(PASS_PC)
+    run_sna(root,bytes(code),patch=patch(core,shell,gate,s,arg=expr),timeout=20)
+
 def conversion_only(root,s,core,shell,gate,arg,dur,pitch):
     code=bytearray(b"\xf3"+phase1._ld_sp(0xBFC0)+invoke(s)+jpc(FAIL_PC)+b"\xb7"+phase1._jp_nz(FAIL_PC))
     code+=checkb(s["p720_beep_calls"],1)+checkb(s["p720_forbidden_calls"],0)
@@ -286,7 +294,7 @@ def dispatch(root,action,step,*,sha256_file,run_command,require_project_tool):
     assertions=source(root); bad=[x["name"] for x in assertions if not x["passed"]]; req(not bad,f"static: {bad}")
     kc,kernel,_=phase1._assemble_kernel(root,run_command,require_project_tool)
     fr,cb,sb,gb,sym=assemble(root,run_command,require_project_tool)
-    names=("sh_p720_beep_builtin","sh_p720_lookup_beep","sh_p617_prepare","sh_p617_restore",
+    names=("sh_p720_beep_builtin","sh_p720_lookup_beep","sh_p710_calc_builtin","sh_p617_prepare","sh_p617_restore",
            "p720_duration_fp","p720_pitch_fp","altreg_busy","ula_shadow","p720_handles",
            "p720_beep_calls","p720_forbidden_calls","p720_skip_sound","p720_seen_hl","p720_seen_de",
            "SYS_BEEP","E_INVAL","E_NOTSUP","E_NOENT")
@@ -294,6 +302,9 @@ def dispatch(root,action,step,*,sha256_file,run_command,require_project_tool):
     if action=="test":
         core=cb.read_bytes(); shell=sb.read_bytes(); gate=gb.read_bytes()
         case("valid-1-0",valid,root,s,core,shell,gate,b"1,0",bytes((0,0,1,0,0)),bytes((0,0,0,0,0)))
+        case("calc-half-noexact",calc_result,root,s,core,shell,gate,b".5")
+        case("calc-half-exact",calc_result,root,s,core,shell,gate,b".5",bytes((0x80,0,0,0,0)))
+        case("calc-nine-exact",calc_result,root,s,core,shell,gate,b"9",bytes((0,0,9,0,0)))
         case("convert-half-9",conversion_only,root,s,core,shell,gate,b".5,9",bytes((0x80,0,0,0,0)),bytes((0,0,9,0,0)))
         case("direct-half-9",direct_beep,root,s,core,shell,gate,bytes((0x80,0,0,0,0)),bytes((0,0,9,0,0)))
         case("valid-half-9",valid,root,s,core,shell,gate,b".5,9",bytes((0x80,0,0,0,0)),bytes((0,0,9,0,0)))
