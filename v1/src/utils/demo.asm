@@ -137,7 +137,8 @@ demo_exit_a:
 
 ; HL=path, B=required type. Carry/error on wrong type or failed explicit load.
 demo_ensure:
-    ld (demo_req_type),b
+    ld a,b
+    ld (demo_req_type),a
     ld (demo_path),hl
     call demo_stat
     jr nc,demo_ensure_have
