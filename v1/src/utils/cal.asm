@@ -431,9 +431,9 @@ cal_render_done:
     ld c,l
     ld hl,cal_out
     call cal_write_all
-    jr c,cal_exit_a
+    jp c,cal_exit_a
     xor a
-    jr cal_exit_a
+    jp cal_exit_a
 
 cal_emit:
     push hl
