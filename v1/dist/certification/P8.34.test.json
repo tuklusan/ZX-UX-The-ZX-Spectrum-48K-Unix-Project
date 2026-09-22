@@ -1,0 +1,126 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p834-present",
+      "passed": true
+    },
+    {
+      "name": "stdin-stream",
+      "passed": true
+    },
+    {
+      "name": "line-bounded",
+      "passed": true
+    },
+    {
+      "name": "lf-preserved",
+      "passed": true
+    },
+    {
+      "name": "short-write-safe",
+      "passed": true
+    },
+    {
+      "name": "no-whole-input-buffer",
+      "passed": true
+    },
+    {
+      "name": "fuse-lines-and-final-partial",
+      "passed": true
+    },
+    {
+      "name": "fuse-short-write",
+      "passed": true
+    },
+    {
+      "name": "fuse-read-error",
+      "passed": true
+    },
+    {
+      "name": "fuse-arity",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p834-rev-image.lst",
+        "--sym=p834-rev-image.sym",
+        "p834-rev-image.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 576 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p834-rev.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 33,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 2278, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 26497, \"image_size\": 510, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 534, \"relocations\": [], \"stored_length\": 534, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p834-rev-fixture.lst",
+        "--sym=p834-rev-fixture.sym",
+        "p834-rev-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 576 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p834-gateway.lst",
+        "--sym=p834-gateway.sym",
+        "p834-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 357 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p834-rev.mex1": "ac17eaa8e8eaf94bf566d8c831bc86b21cd3f46aa82293c787e2d6f925068e5f",
+    "v1/build/p834-rev.tap": "fbcb70ac01c0dd78198252d66ce15d087cf5d6430bcdcfeb8795009b8e69f665",
+    "v1/dist/certification/P8.33.test.json": "edafa9ed45574527069cd83c1e8d4358575aef9d6db0a34b760a23e99f849483",
+    "v1/src/utils/rev.asm": "ef281b163196ea34b8274d638b610ee5e8fb66539ce81bc33cb43c91dfe875e7",
+    "v1/tools-host/test-driver/phase8_rev.py": "75f924e6a3b900cd4257c2faea7adecddd4c53033b775f19934cf1d5f2e11abd",
+    "v1/tools-host/test-driver/run.py": "16dcfacff7aa07d86dd39cd23c7229556d94d3246bcbc09fbe7fdb06c271fd19"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.33": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "f511d5fabc6960438131e1665d8f2ac0abd0d3a9",
+  "status": "PASS",
+  "step": "P8.34",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
