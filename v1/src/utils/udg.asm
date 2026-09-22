@@ -482,18 +482,15 @@ udg_p821_skip0_probe:
     or a
     jr nz,udg_p821_skip0_probe
     ld a,(hl)
-    cp 's'
-    jp z,udg_entry
     cp 'l'
     jp z,udg_entry
-    cp 's'
-    jr z,udg_p821_bad
-    ; The only remaining legal three-argument verb is exact lower-case show.
-    ld a,(hl)
     cp 's'
     jr nz,udg_p821_bad
     inc hl
     ld a,(hl)
+    cp 'a'
+    jp z,udg_entry
+    ; The only remaining s* three-argument verb is exact lower-case show.
     cp 'h'
     jr nz,udg_p821_bad
     inc hl
