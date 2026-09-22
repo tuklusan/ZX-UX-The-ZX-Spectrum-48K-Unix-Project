@@ -11,6 +11,7 @@
 ; patent, trademark, and governing-law provisions.
 ;
 ; /bin/unpack: atomically materialize one packed RAM object as exact RAW bytes.
+; Type, name, case, and directory metadata remain kernel-owned and unchanged.
 
     MACRO EMIT_P807_UNPACK_ROUTINES
 unpack_entry:
