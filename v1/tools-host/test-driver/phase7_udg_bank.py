@@ -44,7 +44,7 @@ def source(root:Path):
       {"name":"exact-slot-count-size-code-range","passed":all(x in u for x in ("UDG_SLOT_COUNT           EQU 32","UDG_SLOT_BYTES           EQU 8","UDG_CODE_FIRST           EQU $80","UDG_CODE_LAST            EQU $9F"))},
       {"name":"reuses-p114-single-cold-pinned-bank","passed":init.count("call zx48_alloc")==1 and "ALLOC_COLD_PREFERRED" in init and "ld (ROM_UDG),hl" in init and "call zx48_memory_pin_bytes" in init},
       {"name":"no-second-bank-or-free-repoint","passed":u.count("call zx48_alloc")==1 and "call zx48_free" not in u and u.count("ld (ROM_UDG),hl")==1},
-      {"name":"tty32-maps-80-through-9f-to-existing-bank","passed":"ld hl,(udg_bank_ptr)" in t and "sub UDG_CODE_FIRST" in t and "cp UDG_CODE_LAST+1" in t},
+      {"name":"tty32-maps-80-through-9f-to-existing-bank","passed":"ld de,(udg_bank_ptr)" in t and "sub UDG_CODE_FIRST" in t and "cp UDG_CODE_LAST+1" in t},
       {"name":"glyph-byte-is-copied-without-bit-reversal","passed":"ld a,(hl)\n    inc hl\n    ld (tty32_glyph),hl" in t and "ld (hl),a" in t},
       {"name":"console-admits-only-through-final-udg-code","passed":"cp UDG_CODE_LAST+1" in c},
       {"name":"tty64-renderer-rejects-udg-text-codes","passed":"cp $80" in (root/"v1/src/kernel/tty64.asm").read_text()},
@@ -71,7 +71,7 @@ def runtime(root:Path,labels:dict[str,int],image:bytes):
 
 def dispatch(root:Path,action:str,step:str,*,sha256_file:Callable[[Path],str],run_command:Callable[...,Any],require_project_tool:Callable[[Path,str|Path],Path]):
     if step!="P7.13": raise P713Error(f"unsupported {step} {action}")
-    assertions=source(root); require(all(x["passed"] for x in assertions),"P7.13 static failure")
+    assertions=source(root); failed=[x["name"] for x in assertions if x["passed"] is not True]; require(not failed,f"P7.13 static failure: {failed}")
     cmd,kernel,lst=phase1._assemble_kernel(root,run_command,require_project_tool)
     labels=phase1._labels(lst,("zx48_memory_init","zx48_udg_init","udg_bank_ptr","memory_pinned_bytes","memory_live_allocations","tty_row","tty_col","zx48_tty32_draw_char","zx48_tty64_draw_char"))
     if action=="test":
