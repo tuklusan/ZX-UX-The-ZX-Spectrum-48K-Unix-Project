@@ -38,3 +38,5 @@ def validate_manifest() -> None:
 
 if __name__ == "__main__":
     validate_manifest()
+
+# P8.38 exact candidate anchor.
