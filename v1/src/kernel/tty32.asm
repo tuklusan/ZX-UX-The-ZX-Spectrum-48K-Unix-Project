@@ -46,52 +46,39 @@ zx48_tty32_draw_char:
     cp UDG_CODE_FIRST
     jr nc,zx48_tty32_udg_glyph
     sub $20
-    ld hl,ROM_CHARSET_BITMAP
+    ld de,ROM_CHARSET_BITMAP
     jr zx48_tty32_glyph_base
 zx48_tty32_udg_glyph:
     sub UDG_CODE_FIRST
-    ld hl,(udg_bank_ptr)
+    ld de,(udg_bank_ptr)
 zx48_tty32_glyph_base:
-    ld e,a
-    ld d,0
-    sla e
-    rl d
-    sla e
-    rl d
-    sla e
-    rl d
+    ld l,a
+    ld h,0
+    add hl,hl
+    add hl,hl
+    add hl,hl
     add hl,de
     ld (tty32_glyph),hl
-    xor a
-    ld (tty32_scan),a
-zx48_tty32_draw_loop:
-    ld a,(tty32_scan)
-    cp 8
-    jr nc,zx48_tty32_draw_done
-    ld e,a
     ld a,(tty_row)
     add a,a
     add a,a
     add a,a
-    add a,e
     ld b,a
     ld a,(tty_col)
     ld c,a
+    ld d,8
+zx48_tty32_draw_loop:
     call zx48_bitmap_address
     push hl
     ld hl,(tty32_glyph)
-    ld a,(tty32_scan)
-    ld e,a
-    ld d,0
-    add hl,de
     ld a,(hl)
+    inc hl
+    ld (tty32_glyph),hl
     pop hl
     ld (hl),a
-    ld a,(tty32_scan)
-    inc a
-    ld (tty32_scan),a
-    jr zx48_tty32_draw_loop
-zx48_tty32_draw_done:
+    inc b
+    dec d
+    jr nz,zx48_tty32_draw_loop
     xor a
     ret
 zx48_tty32_bad:
@@ -166,7 +153,6 @@ zx48_tty_scroll_next_row:
     jr zx48_tty_scroll_row_loop
 
 tty32_glyph: dw 0
-tty32_scan: db 0
 tty_scroll_row: db 0
 tty_scroll_scan: db 0
 tty_scroll_src: dw 0
