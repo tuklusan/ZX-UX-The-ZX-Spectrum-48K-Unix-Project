@@ -94,89 +94,89 @@ date_parse_set:
 date_parse_copy:
     ld a,(hl)
     or a
-    jr z,date_parse_bad
+    jp z,date_parse_bad
     ld (de),a
     inc hl
     inc de
     djnz date_parse_copy
     ld a,(hl)
     or a
-    jr nz,date_parse_bad
+    jp nz,date_parse_bad
 
     ld hl,date_parse_buf
     call date_parse_4
-    jr c,date_parse_bad
+    jp c,date_parse_bad
     ld (date_year),de
     ld a,(date_parse_buf+4)
     cp '-'
-    jr nz,date_parse_bad
+    jp nz,date_parse_bad
     ld hl,date_parse_buf+5
     call date_parse_2
-    jr c,date_parse_bad
+    jp c,date_parse_bad
     ld (date_month),a
     ld a,(date_parse_buf+7)
     cp '-'
-    jr nz,date_parse_bad
+    jp nz,date_parse_bad
     ld hl,date_parse_buf+8
     call date_parse_2
-    jr c,date_parse_bad
+    jp c,date_parse_bad
     ld (date_day),a
     ld a,(date_parse_buf+10)
     cp ' '
-    jr nz,date_parse_bad
+    jp nz,date_parse_bad
     ld hl,date_parse_buf+11
     call date_parse_2
-    jr c,date_parse_bad
+    jp c,date_parse_bad
     ld (date_hour),a
     ld a,(date_parse_buf+13)
     cp ':'
-    jr nz,date_parse_bad
+    jp nz,date_parse_bad
     ld hl,date_parse_buf+14
     call date_parse_2
-    jr c,date_parse_bad
+    jp c,date_parse_bad
     ld (date_minute),a
     ld a,(date_parse_buf+16)
     cp ':'
-    jr nz,date_parse_bad
+    jp nz,date_parse_bad
     ld hl,date_parse_buf+17
     call date_parse_2
-    jr c,date_parse_bad
+    jp c,date_parse_bad
     ld (date_second),a
 
     ld hl,(date_year)
     ld de,1970
     or a
     sbc hl,de
-    jr c,date_parse_bad
+    jp c,date_parse_bad
     ld hl,(date_year)
     ld de,2100
     or a
     sbc hl,de
-    jr nc,date_parse_bad
+    jp nc,date_parse_bad
     ld a,(date_month)
     or a
-    jr z,date_parse_bad
+    jp z,date_parse_bad
     cp 13
-    jr nc,date_parse_bad
+    jp nc,date_parse_bad
     ld a,(date_hour)
     cp 24
-    jr nc,date_parse_bad
+    jp nc,date_parse_bad
     ld a,(date_minute)
     cp 60
-    jr nc,date_parse_bad
+    jp nc,date_parse_bad
     ld a,(date_second)
     cp 60
-    jr nc,date_parse_bad
+    jp nc,date_parse_bad
 
     call date_month_length_current
     ld b,a
     ld a,(date_day)
     or a
-    jr z,date_parse_bad
+    jp z,date_parse_bad
     cp b
     jr c,date_parse_valid_day
     jr z,date_parse_valid_day
-    jr date_parse_bad
+    jp date_parse_bad
 date_parse_valid_day:
     call date_fields_to_seconds
     or a
