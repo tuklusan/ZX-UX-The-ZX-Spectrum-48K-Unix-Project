@@ -14,11 +14,15 @@
 man_entry:
     push hl
     pop ix
+    xor a
+    ld (man_has_topic),a
     ld a,(ix+4)
     cp 1
     jr z,man_base
     cp 2
     jr nz,man_bad
+    ld a,1
+    ld (man_has_topic),a
     ld de,8
     add ix,de
 man_skip0:
@@ -36,9 +40,9 @@ man_base:
     ld hl,man_line2
     call man_write_z
     jr c,man_exit_a
-    ld a,(ix+4)
-    cp 2
-    jr nz,man_ok
+    ld a,(man_has_topic)
+    or a
+    jr z,man_ok
     ld hl,man_line3
     call man_write_z
     jr c,man_exit_a
@@ -110,6 +114,7 @@ man_line1: db 'M','a','n','u','a','l','s',':',' ','h','t','t','p','s',':','/','/
 man_line2: db 'S','e','a','r','c','h',' ','f','o','r',' ','Z','X','U','S',10,0
 man_line3: db 'T','o','p','i','c',':',' ',0
 man_lf: db 10
+man_has_topic: db 0
 man_topic: dw 0
 man_ptr: dw 0
 man_left: dw 0
