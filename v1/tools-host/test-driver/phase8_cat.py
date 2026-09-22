@@ -192,9 +192,9 @@ p802_gate:
     cp SYS_WRITE
     jr z,p802_write
     cp SYS_CLOSE
-    jr z,p802_close
+    jp z,p802_close
     cp SYS_EXIT
-    jr z,p802_exit
+    jp z,p802_exit
     ld a,E_NOTSUP
     scf
     ret
