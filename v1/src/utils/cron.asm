@@ -11,6 +11,7 @@
 ; patent, trademark, and governing-law provisions.
 ;
 ; P8.25 cooperative cron daemon.
+; P8.39 exact candidate anchor.
 
 CRON_MAX_CFG             EQU 2048
 CRON_MAX_LINE            EQU 127
