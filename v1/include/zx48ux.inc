@@ -265,3 +265,4 @@ M48O_CHUNK_SIZE          EQU $0200
 ; P7.16 qualification head marker 3.
 ; P7.16 qualification head marker 4.
 ; P7.17 C48 2x2 UDG helper qualification head.
+; P7.17 qualification branch-range repair head.
