@@ -1,0 +1,128 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p826-present",
+      "passed": true
+    },
+    {
+      "name": "exact-forms",
+      "passed": true
+    },
+    {
+      "name": "exclusive-temp",
+      "passed": true
+    },
+    {
+      "name": "cfg-type",
+      "passed": true
+    },
+    {
+      "name": "editor-foreground",
+      "passed": true
+    },
+    {
+      "name": "full-validation-before-rename",
+      "passed": true
+    },
+    {
+      "name": "atomic-rename",
+      "passed": true
+    },
+    {
+      "name": "no-active-no-start",
+      "passed": true
+    },
+    {
+      "name": "cron-start",
+      "passed": true
+    },
+    {
+      "name": "failure-cleans-owned-temp",
+      "passed": true
+    },
+    {
+      "name": "no-case-folding",
+      "passed": true
+    },
+    {
+      "name": "fuse-valid-special-and-calendar",
+      "passed": true
+    },
+    {
+      "name": "fuse-2048-2049-boundary",
+      "passed": true
+    },
+    {
+      "name": "fuse-127-128-line-boundary",
+      "passed": true
+    },
+    {
+      "name": "fuse-eight-nine-active-boundary",
+      "passed": true
+    },
+    {
+      "name": "fuse-field-and-semantics",
+      "passed": true
+    },
+    {
+      "name": "fuse-minute-revision-dedupe",
+      "passed": true
+    },
+    {
+      "name": "fuse-operator-rejection",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p826-crontab.lst",
+        "--sym=p826-crontab.sym",
+        "p826-crontab.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 10,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2434 lines, work time: 0.009 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p826-crontab.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 40,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 39877, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 2547, \"image_size\": 6296, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 6320, \"relocations\": [], \"stored_length\": 6320, \"version\": 1}\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p826-crontab.mex1": "61c8ff6f946398723891a16bfffa5459e1f50ac72e3d962de66d1997f34e6053",
+    "v1/build/p826-crontab.tap": "21bc2bfd52da83c4be8adc8c709bce9582eab0c05b73caeee801de289b86511a",
+    "v1/dist/certification/P8.25.test.json": "f48c58719f77085f6074af33e97cc8a42c12bb7a028a917acb14df90f083f85f",
+    "v1/src/utils/crontab.asm": "69716c9b4ba04e120c4b152d4c0fd365e14f29e8c4dd58a6fb80bf8a6a14df58",
+    "v1/tools-host/test-driver/phase8_crontab.py": "03f4b6b306966a68aff5ab78f2adc02d6d38b1a72a6f370ee343609d49acdcc5",
+    "v1/tools-host/test-driver/run.py": "b4d9ed9a501a08f0e42051672f3db10fa4a71da917dbf4c798adde3031458bea"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.25": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "c040ed5ca86461a530b87da656d1e060c8c8b19d",
+  "status": "PASS",
+  "step": "P8.26",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
