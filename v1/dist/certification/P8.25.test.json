@@ -1,0 +1,136 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p825-present",
+      "passed": true
+    },
+    {
+      "name": "cfg-2048-bound",
+      "passed": true
+    },
+    {
+      "name": "line-127-bound",
+      "passed": true
+    },
+    {
+      "name": "eight-active-bound",
+      "passed": true
+    },
+    {
+      "name": "special-rules",
+      "passed": true
+    },
+    {
+      "name": "all-five-and-match",
+      "passed": true
+    },
+    {
+      "name": "poll-reopen-close",
+      "passed": true
+    },
+    {
+      "name": "serial-spawn-wait",
+      "passed": true
+    },
+    {
+      "name": "allow-tape-zero",
+      "passed": true
+    },
+    {
+      "name": "fifty-tick-sleep",
+      "passed": true
+    },
+    {
+      "name": "time1-gating",
+      "passed": true
+    },
+    {
+      "name": "dedupe-key",
+      "passed": true
+    },
+    {
+      "name": "shell-controls-rejected",
+      "passed": true
+    },
+    {
+      "name": "fuse-valid-special-and-calendar",
+      "passed": true
+    },
+    {
+      "name": "fuse-2048-2049-boundary",
+      "passed": true
+    },
+    {
+      "name": "fuse-127-128-line-boundary",
+      "passed": true
+    },
+    {
+      "name": "fuse-eight-nine-active-boundary",
+      "passed": true
+    },
+    {
+      "name": "fuse-field-and-semantics",
+      "passed": true
+    },
+    {
+      "name": "fuse-minute-revision-dedupe",
+      "passed": true
+    },
+    {
+      "name": "fuse-operator-rejection",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p825-cron.lst",
+        "--sym=p825-cron.sym",
+        "p825-cron.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 1464 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p825-cron.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 22,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 12380, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 45788, \"image_size\": 3078, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 3102, \"relocations\": [], \"stored_length\": 3102, \"version\": 1}\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p825-cron.mex1": "d73989fd83d6debbd5ee3cd88abcd1b8cbc3a2be82f9e797c21fb17e6e62433f",
+    "v1/build/p825-cron.tap": "49b49aa4235f96eea109cf2906a3454f35222e53259282aae55cb7d730a39dbe",
+    "v1/dist/certification/P8.24.test.json": "b2a350ebe8a42ad31d7a26fee597f834ffcaf261a903317f735e81851bcced4e",
+    "v1/src/utils/cron.asm": "438703f306683734f0f51939d67a2890b63bd610395f30ef18a3a78441e85a78",
+    "v1/tools-host/test-driver/phase8_cron.py": "dda8fcb03c368cad0300d880db945f9cd2fa77d825d5509b9ca9ee7a993f88c4",
+    "v1/tools-host/test-driver/run.py": "20c1963bd7d59439f914236687e58ea0563122f3fa9a02103619e35ad2e3e037"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.24": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "df04a54a7f23d6b1f820b421914738499fc75693",
+  "status": "PASS",
+  "step": "P8.25",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
