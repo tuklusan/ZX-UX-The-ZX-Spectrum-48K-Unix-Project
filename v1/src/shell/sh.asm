@@ -3709,3 +3709,114 @@ p710_num_value: defs 5,0
 p710_tokens: defs P710_TOKEN_CAP+1,0
 p710_exec: defs P710_EXEC_CAP+1,0
     ENDM
+
+; P7.11 exact lower-case ROM diagnostic builtin mapping. The command can only
+; enumerate frozen SYS_ROM_INFO metadata; no arbitrary address/control-transfer
+; field exists in either this shell surface or ROMQ1.
+    MACRO EMIT_P711_ROM_BUILTIN_ROUTINES
+P711_ROM_ALL             EQU 0
+P711_ROM_KEYBOARD        EQU 1
+P711_ROM_TAPE            EQU 3
+P711_ROM_GFX             EQU 4
+P711_ROM_MATH            EQU 6
+
+; HL=name, B=len. Success DE=handler.
+sh_p711_lookup_rom:
+    ld a,b
+    cp 3
+    jr nz,sh_p711_lookup_miss
+    ld a,(hl)
+    cp 'r'
+    jr nz,sh_p711_lookup_miss
+    inc hl
+    ld a,(hl)
+    cp 'o'
+    jr nz,sh_p711_lookup_miss
+    inc hl
+    ld a,(hl)
+    cp 'm'
+    jr nz,sh_p711_lookup_miss
+    ld de,sh_p711_rom_builtin
+    xor a
+    ret
+sh_p711_lookup_miss:
+    ld a,E_NOENT
+    scf
+    ret
+
+; A=argc including command, B=pipeline stages, C=background, HL=optional arg.
+; Success returns category in L. This parser executes before any metadata call.
+sh_p711_rom_builtin:
+    ld (p711_arg_ptr),hl
+    ld d,a
+    ld a,b
+    cp 1
+    jr nz,sh_p711_notsup
+    ld a,c
+    or a
+    jr nz,sh_p711_notsup
+    ld a,d
+    cp 1
+    jr z,sh_p711_all
+    cp 2
+    jr nz,sh_p711_invalid
+    ld hl,(p711_arg_ptr)
+    ld de,p711_category_table
+sh_p711_cat_next:
+    ld a,(de)
+    or a
+    jr z,sh_p711_invalid
+    ld b,a
+    inc de
+    push de
+    push hl
+sh_p711_cat_cmp:
+    ld a,(de)
+    cp (hl)
+    jr nz,sh_p711_cat_miss
+    inc de
+    inc hl
+    djnz sh_p711_cat_cmp
+    ld a,(hl)
+    or a
+    jr nz,sh_p711_cat_miss
+    ld a,(de)
+    pop hl
+    pop de
+    ld l,a
+    ld h,0
+    xor a
+    ret
+sh_p711_cat_miss:
+    pop hl
+    pop de
+    ld a,(de)
+    ld e,a
+    ld d,0
+    inc de
+    add hl,de
+    ex de,hl
+    jr sh_p711_cat_next
+
+sh_p711_all:
+    ld hl,P711_ROM_ALL
+    xor a
+    ret
+sh_p711_notsup:
+    ld a,E_NOTSUP
+    scf
+    ret
+sh_p711_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+
+; length, name bytes, category.
+p711_category_table:
+    db 8,'k','e','y','b','o','a','r','d',P711_ROM_KEYBOARD
+    db 4,'t','a','p','e',P711_ROM_TAPE
+    db 3,'g','f','x',P711_ROM_GFX
+    db 4,'m','a','t','h',P711_ROM_MATH
+    db 0
+p711_arg_ptr: dw 0
+    ENDM

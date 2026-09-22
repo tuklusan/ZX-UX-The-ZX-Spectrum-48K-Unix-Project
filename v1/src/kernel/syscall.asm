@@ -1264,3 +1264,40 @@ zx48_p701_gfx_notsup:
     scf
     ret
     ENDM
+
+; P7.11 staged read-only SYS_ROM_INFO metadata ABI.
+    MACRO EMIT_P711_ROM_INFO_SYSCALL_ROUTINES
+zx48_p711_rom_info:
+    ld hl,(syscall_arg_hl)
+    ld bc,4
+    call zx48_user_range_validate
+    ret c
+    ld hl,(syscall_arg_hl)
+    ld a,(hl)
+    ld (p711_rom_index),a
+    inc hl
+    ld a,(hl)
+    cp 7
+    jp nc,zx48_sys_invalid
+    ld (p711_rom_category),a
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (p711_rom_out),de
+    ex de,hl
+    ld bc,24
+    call zx48_user_range_validate
+    ret c
+    ld a,(p711_rom_category)
+    ld b,a
+    ld a,(p711_rom_index)
+    ld c,a
+    ld a,b
+    ld b,c
+    ld de,(p711_rom_out)
+    jp zx48_rom_info_lookup
+p711_rom_index: db 0
+p711_rom_category: db 0
+p711_rom_out: dw 0
+    ENDM
