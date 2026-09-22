@@ -3767,6 +3767,7 @@ sh_p711_cat_next:
     or a
     jr z,sh_p711_invalid
     ld b,a
+    ld c,a
     inc de
     push de
     push hl
@@ -3790,12 +3791,14 @@ sh_p711_cat_cmp:
 sh_p711_cat_miss:
     pop hl
     pop de
-    ld a,(de)
-    ld e,a
-    ld d,0
-    inc de
-    add hl,de
+    push hl
+    ld h,d
+    ld l,e
+    ld b,0
+    inc c
+    add hl,bc
     ex de,hl
+    pop hl
     jr sh_p711_cat_next
 
 sh_p711_all:
