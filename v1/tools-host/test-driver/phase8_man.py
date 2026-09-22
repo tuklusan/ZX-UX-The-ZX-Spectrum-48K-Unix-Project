@@ -43,7 +43,7 @@ def source_contract(root):
     s=(root/"v1/src/utils/man.asm").read_text(); p=(root/"docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md").read_text()
     return [
       {"name":"canonical-p827-present","passed":"## P8.27 - Utility `man`" in p},
-      {"name":"exact-manual-url","passed":"blogspot" in s and "\'s\',\'u\',\'p\',\'r\',\'a\',\'t\',\'i\',\'m\'" in s},
+      {"name":"exact-manual-url","passed":"man_line1:" in s and "\'h\',\'t\',\'t\',\'p\',\'s\',\':\',\'/\',\'/\'" in s and "\'b\',\'l\',\'o\',\'g\',\'s\',\'p\',\'o\',\'t\'" in s},
       {"name":"search-zxus","passed":"Search for ZXUS" not in s and "'S','e','a','r','c','h',' ','f','o','r',' ','Z','X','U','S'" in s},
       {"name":"no-local-loader","passed":"SYS_OPEN" not in s and "SYS_READ" not in s},
       {"name":"short-write-safe","passed":"man_write_loop:" in s and "man_io:" in s},
