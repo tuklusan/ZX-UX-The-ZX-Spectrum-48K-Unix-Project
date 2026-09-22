@@ -18,7 +18,8 @@ from fuse_harness import FAIL_PC, PASS_PC, run_sna
 from phase8_common import arg1, word, mex1, inspect_mex, make_tap
 
 BASE=0xC000; GATE=0xE000; ARG=0xA000; STATUS=0xA200; CALLS=0xA210; MODE=0xA220
-class P822Error(DriverError): pass
+class P822Error(DriverError):
+    pass
 def require(v,m):
     if not v: raise P822Error(m)
 def expect(a,v): return b"\x3A"+word(a)+bytes((0xFE,v&255))+phase1._jp_nz(FAIL_PC)
