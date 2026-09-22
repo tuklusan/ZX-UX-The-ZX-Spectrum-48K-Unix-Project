@@ -4260,6 +4260,7 @@ p720_pitch_fp: defs 5,0
     ENDM
 
 ; P8.19 closes the parent-shell ps builtin behavior without creating /bin/ps.
+; Output is derived only from the public PROC_INFO record and exact process names.
     MACRO EMIT_P819_PS_ROUTINES
 P819_INFO_LEN            EQU 16
 
