@@ -1356,3 +1356,30 @@ zx48_p714_udg_invalid:
     scf
     ret
     ENDM
+
+; P7.15 exact SYS_UDG_DRAW staged syscall surface.
+    MACRO EMIT_P715_UDG_DRAW_SYSCALL_ROUTINES
+zx48_p715_sys_udg_draw:
+    ld hl,(syscall_arg_hl)
+    ld bc,3
+    call zx48_user_range_validate
+    ret c
+    ld hl,(syscall_arg_hl)
+    ld a,(hl)
+    cp UDG_SLOT_COUNT
+    jp nc,zx48_p715_udg_invalid
+    inc hl
+    ld a,(hl)
+    cp 24
+    jp nc,zx48_p715_udg_invalid
+    inc hl
+    ld a,(hl)
+    cp 32
+    jp nc,zx48_p715_udg_invalid
+    ld hl,(syscall_arg_hl)
+    jp zx48_udg_draw
+zx48_p715_udg_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+    ENDM

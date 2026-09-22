@@ -142,8 +142,28 @@ zx48_udg_draw_loop:
     ld (udg_scan),a
     jr zx48_udg_draw_loop
 zx48_udg_draw_done:
+    ; One UDG always owns exactly one physical 8x8 Spectrum cell. In tty64
+    ; that byte spans logical columns 2*col and 2*col+1; the attribute cell is
+    ; therefore still the same physical row/column pair.
+    ld a,(udg_row)
+    ld l,a
+    ld h,0
+    add hl,hl
+    add hl,hl
+    add hl,hl
+    add hl,hl
+    add hl,hl
+    ld a,(udg_col)
+    ld e,a
+    ld d,0
+    add hl,de
+    ld de,ATTR_START
+    add hl,de
+    ld a,(tty_current_attr)
+    ld (hl),a
     call zx48_cursor_show
     xor a
+    or a
     ret
 zx48_udg_bad:
     ld a,E_INVAL
