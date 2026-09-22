@@ -3418,13 +3418,13 @@ sh_p710_calc_builtin:
     ld (p710_expr_ptr),hl
     ld (p710_result_ptr),de
     cp 2
-    jr nz,sh_p710_invalid
+    jp nz,sh_p710_invalid
     ld a,b
     cp 1
-    jr nz,sh_p710_notsup
+    jp nz,sh_p710_notsup
     ld a,c
     or a
-    jr nz,sh_p710_notsup
+    jp nz,sh_p710_notsup
     ld hl,(p710_expr_ptr)
     ld de,p710_tokens
     call sh_p710_tokenize
@@ -3446,7 +3446,7 @@ sh_p710_scan:
     ld hl,(p710_in_ptr)
     ld a,(hl)
     or a
-    jr z,sh_p710_finish
+    jp z,sh_p710_finish
     cp ' '
     jr z,sh_p710_copy_char
     cp '0'
@@ -3471,9 +3471,9 @@ sh_p710_symbol:
     cp ')'
     jr z,sh_p710_copy_seen
     cp 'a'
-    jr c,sh_p710_invalid
+    jp c,sh_p710_invalid
     cp 'z'+1
-    jr nc,sh_p710_invalid
+    jp nc,sh_p710_invalid
     jp sh_p710_word
 
 sh_p710_copy_seen:

@@ -129,7 +129,7 @@ zx48_rom_calc_expr:
     ld (rom_calc_output_ptr),de
     ld a,(altreg_busy)
     or a
-    jr nz,zx48_rom_calc_busy
+    jp nz,zx48_rom_calc_busy
 
     ld hl,0
     add hl,sp
