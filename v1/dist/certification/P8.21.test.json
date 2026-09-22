@@ -1,0 +1,123 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p821-present",
+      "passed": true
+    },
+    {
+      "name": "four-form-wrapper",
+      "passed": true
+    },
+    {
+      "name": "list-32-slots",
+      "passed": true
+    },
+    {
+      "name": "show-one-get",
+      "passed": true
+    },
+    {
+      "name": "save-full-bank",
+      "passed": true
+    },
+    {
+      "name": "load-validates-before-write",
+      "passed": true
+    },
+    {
+      "name": "no-cassette-motion",
+      "passed": true
+    },
+    {
+      "name": "short-write-safe",
+      "passed": true
+    },
+    {
+      "name": "fuse-list-all-32",
+      "passed": true
+    },
+    {
+      "name": "fuse-show-exact-one-slot",
+      "passed": true
+    },
+    {
+      "name": "fuse-list-short-write",
+      "passed": true
+    },
+    {
+      "name": "fuse-invalid-case-range",
+      "passed": true
+    },
+    {
+      "name": "fuse-save-load-regression",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p821-udg-fixture.lst",
+        "--sym=p821-udg-fixture.sym",
+        "p821-udg-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 1706 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p821-gateway.lst",
+        "--sym=p821-gateway.sym",
+        "p821-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 2,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 340 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p821-udg.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 24,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 10092, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 14376, \"image_size\": 1515, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 1539, \"relocations\": [], \"stored_length\": 1539, \"version\": 1}\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p821-udg.mex1": "f1b2ca2fb708679a6d4b418f6aa02d5df45798615f9a05103af2ca65dea7683f",
+    "v1/build/p821-udg.tap": "2de6e3b2e29f3f431b8b09da87cb7f24a6d63973849eb3aeb9b9ca56e39835ee",
+    "v1/dist/certification/P8.20.test.json": "656e1c52e7832f6b6e4c759fdc283ea483c4b053de6c6a24f0ee37cdb14e9a72",
+    "v1/src/utils/udg.asm": "c82a6d08f7d93ca2b4a2788e618c3edecacadb575d21a3c8c5f8cde43f7356f4",
+    "v1/tools-host/test-driver/phase8_udg.py": "872bf4ea32ccbd0220cb10a389cb6a8b7a1659b52dc7355df26a6b2a10511eae",
+    "v1/tools-host/test-driver/run.py": "5d1f2dde3590e45d43a949297e4d7370ac0d105944b604296d780323be162c1a"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.20": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "0c4e4ea4708094d6a556acaba231086ddd9ecd05",
+  "status": "PASS",
+  "step": "P8.21",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
