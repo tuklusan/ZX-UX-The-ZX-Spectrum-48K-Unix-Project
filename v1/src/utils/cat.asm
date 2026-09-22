@@ -67,6 +67,7 @@ cat_read_loop:
     ld hl,cat_buffer
     ld (cat_ptr),hl
 
+; Console and pipe writes may be positive short counts; consume them all.
 cat_write_loop:
     ld hl,(cat_ptr)
     ld bc,(cat_remaining)
