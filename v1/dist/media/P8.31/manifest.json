@@ -1,0 +1,31 @@
+{
+  "files": [
+    {
+      "action": "build",
+      "path": "build/build-p831-uname-1ad3f2ca1d0e472ea44b5347795eeb926ca1a1948974efad91a46e0841a0dab1.tap",
+      "sha256": "1ad3f2ca1d0e472ea44b5347795eeb926ca1a1948974efad91a46e0841a0dab1",
+      "size": 182
+    },
+    {
+      "action": "test",
+      "path": "test/build-p831-uname-1ad3f2ca1d0e472ea44b5347795eeb926ca1a1948974efad91a46e0841a0dab1.tap",
+      "sha256": "1ad3f2ca1d0e472ea44b5347795eeb926ca1a1948974efad91a46e0841a0dab1",
+      "size": 182
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-10b5c7104c1666e9f2a4473bdec57687ed30cf77bdfc704cb85cd6395d65257f.sna",
+      "sha256": "10b5c7104c1666e9f2a4473bdec57687ed30cf77bdfc704cb85cd6395d65257f",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-dc1a5282f2c75ed2fbd22845251434365dd1ed8a9496ec5823bc101357b21e1e.sna",
+      "sha256": "dc1a5282f2c75ed2fbd22845251434365dd1ed8a9496ec5823bc101357b21e1e",
+      "size": 49179
+    }
+  ],
+  "schema": 1,
+  "source_commit": "a6047c07a9e0e6e6a8bfb6be8a40c3498e9d0962",
+  "step": "P8.31"
+}
