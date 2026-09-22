@@ -10,112 +10,34 @@
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
 
-# P2.24 post-admission validation checkpoint.
+# Historical full-regression diagnostic. Automatic ownership moved to exact-head regression.
 name: ZX-UX Phase 1 Certification
-
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - .github/workflows/phase1-certification.yml
-      - .github/phase1-certification.trigger
-      - tools/manifest/toolchain.lock.json
-      - tools/scripts/bootstrap-environment.py
-      - tools/scripts/verify-environment.py
-      - tools/finalize_phase1_evidence.py
-      - v1/include/**
-      - v1/src/boot/**
-      - v1/src/kernel/**
-      - v1/tools-host/test-driver/**
-      - v1/dist/certification/P0.*.json
-      - v1/dist/certification/phase-0.json
-      - v1/dist/certification/P1.*.json
-      - v1/dist/certification/phase-1.json
-      - '!**/*.md'
-      - '!**/*.markdown'
-      - '!**/*.mdown'
-      - '!**/*.mdx'
-      - '!**/*.rst'
-      - '!**/*.adoc'
-      - '!**/*.asciidoc'
-      - '!**/*.txt'
-      - '!**/*.text'
-      - '!**/*.rtf'
-      - '!**/*.doc'
-      - '!**/*.docx'
-      - '!**/*.odt'
-      - '!**/*.pdf'
-      - '!**/*.tex'
-      - '!**/*.epub'
-      - '!**/*.html'
-      - '!**/*.htm'
-      - '!**/*.ppt'
-      - '!**/*.pptx'
-      - '!**/*.odp'
-      - '!**/*.pages'
-      - '!**/*.key'
-      - '!LICENSE'
-      - '!LICENSE.*'
-      - '!COPYING'
-      - '!COPYING.*'
-      - '!NOTICE'
-      - '!NOTICE.*'
-      - '!CHANGELOG'
-      - '!CHANGELOG.*'
-      - '!CONTRIBUTING'
-      - '!CONTRIBUTING.*'
-      - '!AUTHORS'
-      - '!AUTHORS.*'
-      - '!docs/**'
-      - '!scratch/**'
   workflow_dispatch:
-
 permissions:
   contents: read
-
 concurrency:
-  group: zxux-phase1-${{ github.ref }}
+  group: zxux-phase1-manual
   cancel-in-progress: true
-
 jobs:
   phase1-certification:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
-      ZXUX_EVIDENCE_DIR: /tmp/zxux-phase1-evidence-${{ github.run_id }}-${{ github.run_attempt }}
-
+      ZXUX_EVIDENCE_DIR: /tmp/zxux-phase1-evidence-${ github.run_id }-${ github.run_attempt }
     steps:
-      - name: Checkout current commit
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          fetch-depth: 0
-
-      - name: Require active durable Phase 0 evidence
-        run: python3 tools/check_phase0_evidence.py --require-active
-
-      - name: Restore or build certified ZX-UX runtime
-        uses: ./.github/actions/setup-zxux-runtime
-
-      - name: Execute registered Phase 1 gates
-        run: tools/runtime/python/bin/python v1/tools-host/test-driver/phase1_gate.py
-
-      - name: Finalize Phase 1 aggregate evidence
-        run: tools/runtime/python/bin/python tools/finalize_phase1_evidence.py --root "$GITHUB_WORKSPACE" --evidence-dir "$ZXUX_EVIDENCE_DIR"
-
-      - name: Validate immutable active Phase 1 evidence
-        run: |
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: {fetch-depth: 0}
+      - run: python3 tools/check_phase0_evidence.py --require-active
+      - uses: ./.github/actions/setup-zxux-runtime
+      - run: tools/runtime/python/bin/python v1/tools-host/test-driver/phase1_gate.py
+      - run: |
           python3 tools/check_phase1_evidence.py --require-active
           python3 tools/test_phase1_evidence_negative.py
-
-      - name: Upload Phase 1 evidence and diagnostics
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: zxux-phase1-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            /tmp/zxux-phase1-evidence-${{ github.run_id }}-${{ github.run_attempt }}/**/*.json
-            /tmp/zxux-phase1-evidence-${{ github.run_id }}-${{ github.run_attempt }}/P1.22-font-atlas.png
-            /tmp/zxux-phase1-evidence-${{ github.run_id }}-${{ github.run_attempt }}/P1.22-font-atlas.scr
+          name: zxux-phase1-${ github.run_id }-${ github.run_attempt }
+          path: /tmp/zxux-phase1-evidence-${ github.run_id }-${ github.run_attempt }/
           retention-days: 90
           if-no-files-found: warn

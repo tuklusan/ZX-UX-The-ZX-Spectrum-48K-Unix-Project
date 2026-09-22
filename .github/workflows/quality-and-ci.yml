@@ -12,153 +12,45 @@
 
 name: ZX-UX Quality and CI
 on:
-  push:
-    branches: [main]
-    paths-ignore:
-      - '**/*.md'
-      - '**/*.markdown'
-      - '**/*.mdown'
-      - '**/*.mdx'
-      - '**/*.rst'
-      - '**/*.adoc'
-      - '**/*.asciidoc'
-      - '**/*.txt'
-      - '**/*.text'
-      - '**/*.rtf'
-      - '**/*.doc'
-      - '**/*.docx'
-      - '**/*.odt'
-      - '**/*.pdf'
-      - '**/*.tex'
-      - '**/*.epub'
-      - '**/*.html'
-      - '**/*.htm'
-      - '**/*.ppt'
-      - '**/*.pptx'
-      - '**/*.odp'
-      - '**/*.pages'
-      - '**/*.key'
-      - 'LICENSE'
-      - 'LICENSE.*'
-      - 'COPYING'
-      - 'COPYING.*'
-      - 'NOTICE'
-      - 'NOTICE.*'
-      - 'CHANGELOG'
-      - 'CHANGELOG.*'
-      - 'CONTRIBUTING'
-      - 'CONTRIBUTING.*'
-      - 'AUTHORS'
-      - 'AUTHORS.*'
-      - 'docs/**'
-      - 'scratch/**'
-      - '.github/workflows/p*-qualification.yml'
-      - '.github/workflows/p*-dispatch-*.yml'
-      - '.github/workflows/p*-activation-*.yml'
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: zxux-ci-${{ github.ref }}
+  group: zxux-quality-manual
   cancel-in-progress: true
 jobs:
-  project-policy:
+  static-integrity:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - run: ./tools/check_project_policy.py
-  e0-metadata:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - run: python3 tools/scripts/verify-environment.py --metadata-only
-      - name: Reject altered lock
-        run: |
-          cp tools/manifest/toolchain.lock.json /tmp/zxux-bad-lock.json
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          p=Path('/tmp/zxux-bad-lock.json'); d=json.loads(p.read_text()); d['artifacts'][0]['sha256']='0'*64; p.write_text(json.dumps(d))
-          PY
-          ! python tools/scripts/verify-environment.py --metadata-only --manifest /tmp/zxux-bad-lock.json
+        with: {fetch-depth: 0}
+      - run: |
+          set -euo pipefail
+          ./tools/check_project_policy.py
+          ./tools/check_license_headers.sh
+          ./tools/ci.sh
+          python3 tools/scripts/verify-environment.py --metadata-only
+          for phase in $(seq 0 12); do
+            aggregate="v1/dist/certification/phase-$phase.json"; checker="tools/check_phase$phase"_evidence.py
+            if test -f "$aggregate"; then test -f "$checker"; python3 "$checker" --require-active; fi
+          done
   e0-foundation:
-    needs: e0-metadata
+    needs: static-integrity
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
-      ZXUX_EVIDENCE_DIR: /tmp/zxux-e0-${{ github.run_id }}-${{ github.run_attempt }}
+      ZXUX_EVIDENCE_DIR: /tmp/zxux-e0-${ github.run_id }-${ github.run_attempt }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Restore or build certified ZX-UX runtime
-        uses: ./.github/actions/setup-zxux-runtime
-      - name: Execute all exact E0 steps
-        run: |
-          set -euo pipefail; py=tools/runtime/python/bin/python; driver=v1/tools-host/test-driver/run.py
+      - uses: ./.github/actions/setup-zxux-runtime
+      - run: |
+          set -euo pipefail
+          py=tools/runtime/python/bin/python; driver=v1/tools-host/test-driver/run.py
           for n in 01 02 03 04 05 06; do "$py" "$driver" build --step "E0.$n"; "$py" "$driver" test --step "E0.$n"; done
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: zxux-e0-${{ github.run_id }}-${{ github.run_attempt }}
-          path: /tmp/zxux-e0-${{ github.run_id }}-${{ github.run_attempt }}/*.json
+          name: zxux-e0-${ github.run_id }-${ github.run_attempt }
+          path: /tmp/zxux-e0-${ github.run_id }-${ github.run_attempt }/
           retention-days: 90
-          if-no-files-found: error
-  license-headers:
-    needs: project-policy
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - run: ./tools/check_license_headers.sh
-  phase0-evidence:
-    needs: project-policy
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with: {fetch-depth: 0}
-      - run: python3 tools/check_phase0_evidence.py --require-active
-      - run: python3 tools/test_phase0_evidence_negative.py
-  phase1-evidence:
-    needs: project-policy
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with: {fetch-depth: 0}
-      - run: python3 tools/check_phase1_evidence.py --require-active
-      - run: python3 tools/test_phase1_evidence_negative.py
-  phase2-evidence:
-    needs: project-policy
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with: {fetch-depth: 0}
-      - run: python3 tools/check_phase2_evidence.py --require-active
-      - run: python3 tools/test_phase2_evidence_negative.py
-  phase3-evidence:
-    needs: project-policy
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with: {fetch-depth: 0}
-      - run: python3 tools/check_phase3_evidence.py --require-active
-      - run: python3 tools/test_phase3_evidence_negative.py
-  phase4-evidence:
-    needs: project-policy
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with: {fetch-depth: 0}
-      - run: python3 tools/check_phase4_evidence.py --require-active
-      - run: python3 tools/test_phase4_evidence_negative.py
-  project-ci:
-    needs: [project-policy, e0-metadata, e0-foundation, license-headers, phase0-evidence, phase1-evidence, phase2-evidence, phase3-evidence, phase4-evidence]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - run: ./tools/ci.sh
+          if-no-files-found: warn

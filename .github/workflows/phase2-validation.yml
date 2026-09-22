@@ -10,114 +10,40 @@
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
 
-# P2.24 post-admission validation checkpoint.
+# Historical full-regression diagnostic. Automatic ownership moved to exact-head regression.
 name: ZX-UX Phase 2 Validation
-
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - .github/workflows/phase2-validation.yml
-      - tools/manifest/toolchain.lock.json
-      - tools/scripts/bootstrap-environment.py
-      - tools/scripts/verify-environment.py
-      - v1/include/**
-      - v1/src/boot/**
-      - v1/src/kernel/**
-      - v1/tools-host/inspect-mex/**
-      - v1/tools-host/test-driver/**
-      - v1/tests/multiprocessing/**
-      - v1/dist/certification/P0.*.json
-      - v1/dist/certification/phase-0.json
-      - v1/dist/certification/P1.*.json
-      - v1/dist/certification/phase-1.json
-      - v1/dist/certification/P2.*.json
-      - v1/dist/certification/phase-2.json
-      - v1/dist/certification/R16.00.*.json
-      - '!**/*.md'
-      - '!**/*.markdown'
-      - '!**/*.mdown'
-      - '!**/*.mdx'
-      - '!**/*.rst'
-      - '!**/*.adoc'
-      - '!**/*.asciidoc'
-      - '!**/*.txt'
-      - '!**/*.text'
-      - '!**/*.rtf'
-      - '!**/*.doc'
-      - '!**/*.docx'
-      - '!**/*.odt'
-      - '!**/*.pdf'
-      - '!**/*.tex'
-      - '!**/*.epub'
-      - '!**/*.html'
-      - '!**/*.htm'
-      - '!**/*.ppt'
-      - '!**/*.pptx'
-      - '!**/*.odp'
-      - '!**/*.pages'
-      - '!**/*.key'
-      - '!LICENSE'
-      - '!LICENSE.*'
-      - '!COPYING'
-      - '!COPYING.*'
-      - '!NOTICE'
-      - '!NOTICE.*'
-      - '!CHANGELOG'
-      - '!CHANGELOG.*'
-      - '!CONTRIBUTING'
-      - '!CONTRIBUTING.*'
-      - '!AUTHORS'
-      - '!AUTHORS.*'
-      - '!docs/**'
-      - '!scratch/**'
   workflow_dispatch:
-
 permissions:
   contents: read
-
 concurrency:
-  group: zxux-phase2-${{ github.ref }}
+  group: zxux-phase2-manual
   cancel-in-progress: true
-
 jobs:
   phase2-validation:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
-      ZXUX_EVIDENCE_DIR: /tmp/zxux-phase2-evidence-${{ github.run_id }}-${{ github.run_attempt }}
-
+      ZXUX_EVIDENCE_DIR: /tmp/zxux-phase2-evidence-${ github.run_id }-${ github.run_attempt }
     steps:
-      - name: Checkout current commit
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          fetch-depth: 0
-
-      - name: Require active durable Phase 0 and Phase 1 evidence
-        run: |
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: {fetch-depth: 0}
+      - run: |
           python3 tools/check_phase0_evidence.py --require-active
           python3 tools/check_phase1_evidence.py --require-active
-
-      - name: Restore or build certified ZX-UX runtime
-        uses: ./.github/actions/setup-zxux-runtime
-
-      - name: Execute Phase 2 acceptance gate
-        run: |
+      - uses: ./.github/actions/setup-zxux-runtime
+      - run: |
+          set -euo pipefail
           py=tools/runtime/python/bin/python
           "$py" v1/tools-host/test-driver/run.py build --step P2.24
           "$py" v1/tools-host/test-driver/run.py test --step P2.24
-
-      - name: Validate immutable active Phase 2 evidence
-        run: |
+      - run: |
           python3 tools/check_phase2_evidence.py --require-active
           python3 tools/test_phase2_evidence_negative.py
-
-      - name: Upload Phase 2 scratch evidence and diagnostics
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: zxux-phase2-${{ github.run_id }}-${{ github.run_attempt }}
-          path: /tmp/zxux-phase2-evidence-${{ github.run_id }}-${{ github.run_attempt }}/**/*.json
+          name: zxux-phase2-${ github.run_id }-${ github.run_attempt }
+          path: /tmp/zxux-phase2-evidence-${ github.run_id }-${ github.run_attempt }/
           retention-days: 90
           if-no-files-found: warn

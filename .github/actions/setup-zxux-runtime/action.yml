@@ -12,26 +12,9 @@
 
 name: ZX-UX certified runtime
 description: Restore a verified pinned ZX-UX runtime, rebuilding only on cache miss or failed verification.
-
 runs:
   using: composite
   steps:
-    - name: Install native runtime prerequisites
-      shell: bash
-      run: |
-        set -euo pipefail
-        mapfile -t packages < <(python3 - <<'PY'
-        import json
-        from pathlib import Path
-        data = json.loads(Path("tools/manifest/toolchain.lock.json").read_text(encoding="utf-8"))
-        for package in data["bootstrap"]["native_build_prerequisites"]:
-            print(package)
-        PY
-        )
-        test "${#packages[@]}" -gt 0
-        sudo apt-get update
-        sudo apt-get install -y --no-install-recommends "${packages[@]}"
-
     - name: Compute exact runtime cache identity
       id: identity
       shell: bash
@@ -42,98 +25,90 @@ runs:
         verify_sha="$(sha256sum tools/scripts/verify-environment.py | awk '{print $1}')"
         provenance_sha="$(sha256sum tools/scripts/record-bootstrap-provenance.py | awk '{print $1}')"
         action_sha="$(sha256sum .github/actions/setup-zxux-runtime/action.yml | awk '{print $1}')"
-        image_os="${ImageOS:-ubuntu24}"
-        image_version="${ImageVersion:-unknown}"
+        image_os="$${ImageOS:-ubuntu24}"; image_version="$${ImageVersion:-unknown}"
         image_token="$(printf '%s-%s' "$image_os" "$image_version" | tr -c 'A-Za-z0-9_.-' '-')"
-        base="zxux-runtime-v2-${RUNNER_OS:-Linux}-${RUNNER_ARCH:-unknown}-${image_token}-${lock_sha}-${bootstrap_sha}-${verify_sha}-${provenance_sha}-${action_sha}"
-        primary="${base}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-        printf 'base_key=%s\n' "$base" >> "$GITHUB_OUTPUT"
-        printf 'primary_key=%s\n' "$primary" >> "$GITHUB_OUTPUT"
-
+        base="zxux-runtime-v3-$${RUNNER_OS:-Linux}-$${RUNNER_ARCH:-unknown}-$image_token-$lock_sha-$bootstrap_sha-$verify_sha-$provenance_sha-$action_sha"
+        primary="$base-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+        printf 'base_key=%s\n' "$base" >> "$GITHUB_OUTPUT"; printf 'primary_key=%s\n' "$primary" >> "$GITHUB_OUTPUT"
     - name: Restore newest matching certified runtime
       id: runtime_cache
       uses: actions/cache/restore@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5.0.2
       with:
         path: tools/runtime
-        key: ${{ steps.identity.outputs.primary_key }}
+        key: ${ steps.identity.outputs.primary_key }
         restore-keys: |
-          ${{ steps.identity.outputs.base_key }}-
-
-    - name: Verify restored runtime before use
-      id: restored
+          ${ steps.identity.outputs.base_key }-
+    - name: Verify restored runtime before package installation
+      id: probe
       shell: bash
       run: |
         set -euo pipefail
-        matched='${{ steps.runtime_cache.outputs.cache-matched-key }}'
-        if test -n "$matched" \
-          && test -x tools/runtime/python/bin/python \
-          && test -f tools/runtime/bootstrap-provenance.json; then
-          if tools/runtime/python/bin/python tools/scripts/verify-environment.py; then
-            echo "valid=true" >> "$GITHUB_OUTPUT"
-            echo "ZX-UX VERIFIED RUNTIME CACHE HIT"
-            exit 0
-          fi
+        matched='${ steps.runtime_cache.outputs.cache-matched-key }'
+        if test -n "$matched" && test -x tools/runtime/python/bin/python && test -f tools/runtime/bootstrap-provenance.json; then
+          if tools/runtime/python/bin/python tools/scripts/verify-environment.py; then echo "valid=true" >> "$GITHUB_OUTPUT"; echo "ZX-UX VERIFIED RUNTIME CACHE HIT"; exit 0; fi
+        fi
+        echo "valid=false" >> "$GITHUB_OUTPUT"
+    - name: Install pinned native prerequisites only when direct cache verification failed
+      if: steps.probe.outputs.valid != 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
+        mapfile -t packages < <(python3 - <<'PY'
+        import json
+        from pathlib import Path
+        data=json.loads(Path("tools/manifest/toolchain.lock.json").read_text())
+        for package in data["bootstrap"]["native_build_prerequisites"]: print(package)
+        PY
+        )
+        test "$${#packages[@]}" -gt 0
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends "$${packages[@]}"
+    - name: Reverify restored runtime after native prerequisites
+      id: restored
+      if: steps.probe.outputs.valid != 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
+        if test -x tools/runtime/python/bin/python && test -f tools/runtime/bootstrap-provenance.json; then
+          if tools/runtime/python/bin/python tools/scripts/verify-environment.py; then echo "valid=true" >> "$GITHUB_OUTPUT"; echo "ZX-UX VERIFIED RUNTIME CACHE HIT AFTER NATIVE PREREQUISITES"; exit 0; fi
         fi
         rm -rf tools/runtime
         echo "valid=false" >> "$GITHUB_OUTPUT"
-        echo "ZX-UX RUNTIME CACHE MISS OR INVALID"
-
     - name: Select pinned bootstrap Python
-      if: steps.restored.outputs.valid != 'true'
+      if: steps.probe.outputs.valid != 'true' && steps.restored.outputs.valid != 'true'
       uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
       with:
         python-version: '3.13.15'
         check-latest: false
-
     - name: Build pinned runtime on cache miss
-      if: steps.restored.outputs.valid != 'true'
+      if: steps.probe.outputs.valid != 'true' && steps.restored.outputs.valid != 'true'
       shell: bash
       run: |
         set -euo pipefail
         python tools/scripts/bootstrap-environment.py
-        tools/runtime/python/bin/python tools/scripts/record-bootstrap-provenance.py \
-          --output tools/runtime/bootstrap-provenance.json
-
+        tools/runtime/python/bin/python tools/scripts/record-bootstrap-provenance.py --output tools/runtime/bootstrap-provenance.json
     - name: Certify runtime
       shell: bash
       run: tools/runtime/python/bin/python tools/scripts/verify-environment.py
-
     - name: Publish non-normative bootstrap provenance
       shell: bash
       run: |
         set -euo pipefail
-        provenance=tools/runtime/bootstrap-provenance.json
-        test -f "$provenance"
-        echo "ZX-UX BOOTSTRAP PROVENANCE (informational; not certification input)"
-        sha256sum "$provenance"
+        provenance=tools/runtime/bootstrap-provenance.json; test -f "$provenance"
+        echo "ZX-UX BOOTSTRAP PROVENANCE (informational; not certification input)"; sha256sum "$provenance"
         tools/runtime/python/bin/python - "$provenance" <<'PY'
-        import json
-        import sys
+        import json,sys
         from pathlib import Path
-        data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
-        runner = data["runner"]
+        data=json.loads(Path(sys.argv[1]).read_text()); runner=data["runner"]
         print(f"runner_image={runner.get('image_os')} {runner.get('image_version')}")
         for item in data["bootstrap"]["requested_native_build_prerequisites"]:
-            if item["directly_installed"]:
-                print(
-                    f"apt={item['requested']}={item['version']} "
-                    f"package={item['package']} arch={item['architecture']}"
-                )
-            else:
-                print(
-                    f"apt={item['requested']} provider/transaction detail retained "
-                    "in bootstrap-provenance.json"
-                )
-
+            if item["directly_installed"]: print(f"apt={item['requested']}={item['version']} package={item['package']} arch={item['architecture']}")
+            else: print(f"apt={item['requested']} provider/transaction detail retained in bootstrap-provenance.json")
         PY
-        if test -n "${ZXUX_EVIDENCE_DIR:-}"; then
-          mkdir -p "$ZXUX_EVIDENCE_DIR"
-          cp "$provenance" "$ZXUX_EVIDENCE_DIR/bootstrap-provenance.json"
-        fi
-
+        if test -n "$${ZXUX_EVIDENCE_DIR:-}"; then mkdir -p "$ZXUX_EVIDENCE_DIR"; cp "$provenance" "$ZXUX_EVIDENCE_DIR/bootstrap-provenance.json"; fi
     - name: Save rebuilt certified runtime
-      if: steps.restored.outputs.valid != 'true'
+      if: steps.probe.outputs.valid != 'true' && steps.restored.outputs.valid != 'true'
       uses: actions/cache/save@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5.0.2
       with:
         path: tools/runtime
-        key: ${{ steps.identity.outputs.primary_key }}
+        key: ${ steps.identity.outputs.primary_key }
