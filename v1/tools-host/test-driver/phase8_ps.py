@@ -107,8 +107,10 @@ g_p0:
     ld (hl),a
     inc hl
     ld de,n_idle
+    ex de,hl
     ld bc,10
     ldir
+    ex de,hl
     ld (hl),100
     inc hl
     xor a
@@ -127,8 +129,10 @@ g_p1:
     ld (hl),a
     inc hl
     ld de,n_sh
+    ex de,hl
     ld bc,10
     ldir
+    ex de,hl
     ld (hl),0
     inc hl
     ld (hl),2
@@ -146,8 +150,10 @@ g_p3:
     ld (hl),a
     inc hl
     ld de,n_full
+    ex de,hl
     ld bc,10
     ldir
+    ex de,hl
     xor a
     ld (hl),a
     inc hl
