@@ -1,0 +1,118 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p818-present",
+      "passed": true
+    },
+    {
+      "name": "stdin-stream",
+      "passed": true
+    },
+    {
+      "name": "hex-ascii",
+      "passed": true
+    },
+    {
+      "name": "uppercase-hex",
+      "passed": true
+    },
+    {
+      "name": "eight-byte-rows",
+      "passed": true
+    },
+    {
+      "name": "stdout",
+      "passed": true
+    },
+    {
+      "name": "short-write-safe",
+      "passed": true
+    },
+    {
+      "name": "exact-no-arg-form",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p818-hexdump-image.lst",
+        "--sym=p818-hexdump-image.sym",
+        "p818-hexdump-image.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 737 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p818-hexdump.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 41746, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 33652, \"image_size\": 437, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 461, \"relocations\": [], \"stored_length\": 461, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p818-hexdump-fixture.lst",
+        "--sym=p818-hexdump-fixture.sym",
+        "p818-hexdump-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 737 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p818-gateway.lst",
+        "--sym=p818-gateway.sym",
+        "p818-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 360 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p818-hexdump.mex1": "38c0629186ba7c9822d2afa992ab6c8fdc01efd60e8a69ba6a53ee2c8721aec8",
+    "v1/build/p818-hexdump.tap": "96f6e06717da3a43b69533a40f40812eb9e74741d3a665457d0aea9960a38034",
+    "v1/dist/certification/P8.17.test.json": "aae12206b2a81528c2a84242e1b3344d89f01540ff60561f734f9bc3ebf11803",
+    "v1/src/utils/hexdump.asm": "54d0358196218ec1f3e56bacd0c8df58f0148d17658b4edd83b92228c6f58233",
+    "v1/tools-host/test-driver/phase8_hexdump.py": "1bf2b883b50b46293c250e3972c66007ebf0eedd99d86e8bf9ee1340d1e9bfcf",
+    "v1/tools-host/test-driver/run.py": "d246427b8c6cb709cc98fe7121b552a65144506d36a844be28ee1c110a7395ce"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.17": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "cfd972402512f508936b57ce2e2e542775c56d1c",
+  "status": "PASS",
+  "step": "P8.18",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
