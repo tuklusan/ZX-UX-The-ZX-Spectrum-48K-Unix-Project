@@ -1,0 +1,138 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p817-present",
+      "passed": true
+    },
+    {
+      "name": "env1-magic",
+      "passed": true
+    },
+    {
+      "name": "stored-order",
+      "passed": true
+    },
+    {
+      "name": "case-preserving",
+      "passed": true
+    },
+    {
+      "name": "one-entry-per-line",
+      "passed": true
+    },
+    {
+      "name": "stdout",
+      "passed": true
+    },
+    {
+      "name": "short-write-safe",
+      "passed": true
+    },
+    {
+      "name": "exact-arity",
+      "passed": true
+    },
+    {
+      "name": "fuse-exact-case-and-order",
+      "passed": true
+    },
+    {
+      "name": "fuse-empty-env",
+      "passed": true
+    },
+    {
+      "name": "fuse-short-write-retried",
+      "passed": true
+    },
+    {
+      "name": "fuse-write-error-propagates",
+      "passed": true
+    },
+    {
+      "name": "fuse-malformed-env-rejected",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p817-env-image.lst",
+        "--sym=p817-env-image.sym",
+        "p817-env-image.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 555 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p817-env.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 27,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 30681, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 41320, \"image_size\": 223, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 247, \"relocations\": [], \"stored_length\": 247, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p817-env-fixture.lst",
+        "--sym=p817-env-fixture.sym",
+        "p817-env-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 555 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p817-gateway.lst",
+        "--sym=p817-gateway.sym",
+        "p817-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 327 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p817-env.mex1": "56413d75b536a8efc8c15d50e22e96e143ef3063324a04afed24f54ace4a166f",
+    "v1/build/p817-env.tap": "6e28182b4a27eadbf7a65624b9789d747376814fbc02735b4ac17c17f40e03fc",
+    "v1/dist/certification/P8.16.test.json": "052058cfc63af080277a879da00be24b44d922f3d94b76f8ebf6a4834a906363",
+    "v1/src/utils/env.asm": "48c1091f4e624e957feded6eec8cde0229492f88faac0c1d331822f8014983d6",
+    "v1/tools-host/test-driver/phase8_env.py": "569dd96441b7105520ea258862517ac5c18655d4b7ed4e1b98960ffd8e375c6a",
+    "v1/tools-host/test-driver/run.py": "27a27a20cf6074e3ad6a1c8e8166b8d2f14c22a17bb4e88fe18ba78ba3a9241d"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.16": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "bab5da9babd8f562d6131e302a387c3bc20c1c75",
+  "status": "PASS",
+  "step": "P8.17",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
