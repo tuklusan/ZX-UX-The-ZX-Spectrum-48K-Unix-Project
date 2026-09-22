@@ -1,0 +1,122 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p804-present",
+      "passed": true
+    },
+    {
+      "name": "rename-only",
+      "passed": true
+    },
+    {
+      "name": "ren1-record",
+      "passed": true
+    },
+    {
+      "name": "exact-two-operands",
+      "passed": true
+    },
+    {
+      "name": "kernel-errors-propagate",
+      "passed": true
+    },
+    {
+      "name": "no-case-folding",
+      "passed": true
+    },
+    {
+      "name": "fuse-case-only-delegated",
+      "passed": true
+    },
+    {
+      "name": "fuse-ebusy-propagated",
+      "passed": true
+    },
+    {
+      "name": "fuse-invalid-arity-no-rename",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p804-mv-image.lst",
+        "--sym=p804-mv-image.sym",
+        "p804-mv-image.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 379 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p804-mv.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 12017, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 52743, \"image_size\": 69, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 93, \"relocations\": [], \"stored_length\": 93, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p804-mv-fixture.lst",
+        "--sym=p804-mv-fixture.sym",
+        "p804-mv-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 379 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p804-gateway.lst",
+        "--sym=p804-gateway.sym",
+        "p804-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 317 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p804-mv.mex1": "22ab86e584522e1586596d5c66974459c9dd5f6cecc47871f5696a32d9d82cb9",
+    "v1/build/p804-mv.tap": "2bba50893e0a0838b3e31c7f4a99eddb74865a7b83a3fdc4f9faac6a83656929",
+    "v1/dist/certification/P8.03.test.json": "0e4c0f54af9a59ea1adfb90b49e9751e6e05b9b71eee6c47836dd1cf833ef443",
+    "v1/src/utils/mv.asm": "464ee4e13cdff0b77b5564874edff01cde55099e542e7bb28b1e492b5a826bcd",
+    "v1/tools-host/test-driver/phase8_mv.py": "9cd0bc6e8a9f865fddb75b2db0da44c5178eab4f5c72a55800cd9c7e3e6fc64d",
+    "v1/tools-host/test-driver/run.py": "a6cdca69f2eb85c10539ddd1386b659f877ae39a9c67caca7606bcd2e43fca2f"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.03": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "11bd4d0c640fe5d9f8bfbaac0d4e85c77287756c",
+  "status": "PASS",
+  "step": "P8.04",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
