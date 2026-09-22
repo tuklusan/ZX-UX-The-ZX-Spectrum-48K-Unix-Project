@@ -72,9 +72,36 @@ pack_error:
     ret
 
 pack_write:
+    ld (pack_write_ptr),hl
+    ld (pack_write_left),bc
+pack_write_loop:
+    ld hl,(pack_write_ptr)
+    ld bc,(pack_write_left)
     ld de,1
     ld a,SYS_WRITE
     call SYSCALL_GATEWAY
+    ret c
+    ld a,h
+    or l
+    jr z,pack_write_zero
+    ld (pack_written),hl
+    ld de,(pack_write_ptr)
+    add hl,de
+    ld (pack_write_ptr),hl
+    ld hl,(pack_write_left)
+    ld de,(pack_written)
+    or a
+    sbc hl,de
+    jr c,pack_write_zero
+    ld (pack_write_left),hl
+    ld a,h
+    or l
+    jr nz,pack_write_loop
+    xor a
+    ret
+pack_write_zero:
+    ld a,E_IO
+    scf
     ret
 
 pack_write_u16:
@@ -128,6 +155,9 @@ pack_path: dw 0
 pack_stat_req: defs 4,0
 pack_stat_out: defs 10,0
 pack_started: db 0
+pack_write_ptr: dw 0
+pack_write_left: dw 0
+pack_written: dw 0
 pack_num: defs 5,0
 pack_arrow: db ' ','-','>',' '
 pack_lf: db 10
