@@ -1,0 +1,126 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p802-present",
+      "passed": true
+    },
+    {
+      "name": "named-object-open-read-only",
+      "passed": true
+    },
+    {
+      "name": "stdin-handle-zero",
+      "passed": true
+    },
+    {
+      "name": "stream-read-loop",
+      "passed": true
+    },
+    {
+      "name": "stdout-handle-one",
+      "passed": true
+    },
+    {
+      "name": "partial-write-loop",
+      "passed": true
+    },
+    {
+      "name": "zero-write-fails",
+      "passed": true
+    },
+    {
+      "name": "named-object-close",
+      "passed": true
+    },
+    {
+      "name": "invalid-arity-fails",
+      "passed": true
+    },
+    {
+      "name": "case-preserving-path",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p802-cat-image.lst",
+        "--sym=p802-cat-image.sym",
+        "p802-cat-image.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 552 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p802-cat.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 3086, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 23637, \"image_size\": 290, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 314, \"relocations\": [], \"stored_length\": 314, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p802-cat-fixture.lst",
+        "--sym=p802-cat-fixture.sym",
+        "p802-cat-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 552 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p802-gateway.lst",
+        "--sym=p802-gateway.sym",
+        "p802-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 407 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p802-cat.mex1": "e4d672c4d454cc2f3b23fdd17b8f61e4ae880fe717fe92eaa9ece44611972b1f",
+    "v1/build/p802-cat.tap": "2204a9230b2db3413a917ec8f1e64e276cafef90ac93133a00c5ce287ff3e78d",
+    "v1/dist/certification/P8.01.test.json": "ab2b6b96a44aefc1eab0acb730e2a024594dd496833753323d4bb38d4e88d36b",
+    "v1/src/utils/cat.asm": "156351fb6d03108f83073e6ec6d3617fc6b3583c9b17d1de8ccddb180f728c4f",
+    "v1/tools-host/test-driver/phase8_cat.py": "205dc1b018c95e99249c349ae0e8ebea22be8938ce52867a01fc986ad68c6c2d",
+    "v1/tools-host/test-driver/run.py": "23cb04b4ba539d4e5e565fe9adc4bac6b8a68024d0bac9470cdefe1ddd706cfd"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.01": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "53dac1fd4bf0606dc1b73bb57f17e851def2f223",
+  "status": "PASS",
+  "step": "P8.02",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
