@@ -204,6 +204,7 @@ import phase7_shell_graphics
 import phase7_udg_bank
 import phase7_udg_ops
 import phase7_udg_draw
+import phase7_udg_2x2
 import phase7_udg_persistence
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
 from media_retention import (
@@ -496,6 +497,10 @@ def dispatch(root: Path, action: str, step: str):
         return phase7_udg_ops.dispatch(root, action, step, **kwargs)
     if step == "P7.15":
         return phase7_udg_draw.dispatch(root, action, step, **kwargs)
+    if step == "P7.16":
+        return phase7_udg_persistence.dispatch(root, action, step, **kwargs)
+    if step == "P7.17":
+        return phase7_udg_2x2.dispatch(root, action, step, **kwargs)
     if step == "P7.16":
         return phase7_udg_persistence.dispatch(root, action, step, **kwargs)
     if step.startswith("P7."):
