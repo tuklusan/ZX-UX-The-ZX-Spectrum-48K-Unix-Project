@@ -1,0 +1,197 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p838-present",
+      "passed": true
+    },
+    {
+      "name": "six-stage-bounded-pipeline",
+      "passed": true
+    },
+    {
+      "name": "pipeline-rollback",
+      "passed": true
+    },
+    {
+      "name": "final-echo-wc-vector",
+      "passed": true
+    },
+    {
+      "name": "required-error-domains",
+      "passed": true
+    },
+    {
+      "name": "stream-readers-covered",
+      "passed": true
+    },
+    {
+      "name": "stream-writers-covered",
+      "passed": true
+    },
+    {
+      "name": "fuse-bounded-pipeline-launch-and-rollback",
+      "passed": true
+    },
+    {
+      "name": "fuse-cat-read-write-status",
+      "passed": true
+    },
+    {
+      "name": "fuse-wc-read-write-status",
+      "passed": true
+    },
+    {
+      "name": "fuse-head-read-write-status",
+      "passed": true
+    },
+    {
+      "name": "fuse-rev-read-write-status",
+      "passed": true
+    },
+    {
+      "name": "fuse-final-external-echo-status",
+      "passed": true
+    },
+    {
+      "name": "negative-injected-pipeline-launch-failure",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p621-shell-fixture.lst",
+        "--sym=p621-shell-fixture.sym",
+        "p621-shell-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 6,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 5418 lines, work time: 0.006 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p621-gateway.lst",
+        "--sym=p621-gateway.sym",
+        "p621-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 2,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 340 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P8.02",
+        "--evidence-dir",
+        "/tmp/zxux-p838-px62rkrp"
+      ],
+      "cwd": ".",
+      "duration_ms": 765,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P8.02 TEST PASS\nevidence=/tmp/zxux-p838-px62rkrp/P8.02.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P8.09",
+        "--evidence-dir",
+        "/tmp/zxux-p838-px62rkrp"
+      ],
+      "cwd": ".",
+      "duration_ms": 699,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P8.09 TEST PASS\nevidence=/tmp/zxux-p838-px62rkrp/P8.09.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P8.10",
+        "--evidence-dir",
+        "/tmp/zxux-p838-px62rkrp"
+      ],
+      "cwd": ".",
+      "duration_ms": 903,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P8.10 TEST PASS\nevidence=/tmp/zxux-p838-px62rkrp/P8.10.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P8.34",
+        "--evidence-dir",
+        "/tmp/zxux-p838-px62rkrp"
+      ],
+      "cwd": ".",
+      "duration_ms": 725,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P8.34 TEST PASS\nevidence=/tmp/zxux-p838-px62rkrp/P8.34.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P8.37",
+        "--evidence-dir",
+        "/tmp/zxux-p838-px62rkrp"
+      ],
+      "cwd": ".",
+      "duration_ms": 615,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P8.37 TEST PASS\nevidence=/tmp/zxux-p838-px62rkrp/P8.37.test.json\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/dist/certification/P8.37.test.json": "ba4f0da1ed05bf40b1b27b1737386f183acfaca2c24f9556e57883de3b387814",
+    "v1/src/shell/sh.asm": "25d5719bf16791000c01d3c3787206ceb38edd57ec09d5a0fe6fffac8868c304",
+    "v1/tests/emulator/utils_pipe.py": "743c28d82f3844104297793d8ce96474f08a9964814eee98ef0b09d0424fe45c",
+    "v1/tools-host/test-driver/phase6_pipeline.py": "6deb508d7053f3f66322ab5589296c34b0d323a1be65f6feef5f37acb08c9c0f",
+    "v1/tools-host/test-driver/phase8_pipe_matrix.py": "2f1ec0dfbabdd966de8a1a58038158eb566d2c01eb8a5a60d16d387564cccf2e",
+    "v1/tools-host/test-driver/run.py": "a17b445ae43f0fdf124495824f1fca79c70cd80dcdc902f3a92edbc04cb4c8bb"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.37": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "51aec0a286719f0971591c1cf6802b5bdeb09973",
+  "status": "PASS",
+  "step": "P8.38",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

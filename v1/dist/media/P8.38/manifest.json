@@ -1,0 +1,49 @@
+{
+  "files": [
+    {
+      "action": "test",
+      "path": "test/build-p802-cat-2204a9230b2db3413a917ec8f1e64e276cafef90ac93133a00c5ce287ff3e78d.tap",
+      "sha256": "2204a9230b2db3413a917ec8f1e64e276cafef90ac93133a00c5ce287ff3e78d",
+      "size": 354
+    },
+    {
+      "action": "test",
+      "path": "test/build-p809-wc-a33d02baec65836de0ad5a5bf5f1fb71a5f1ec4454c1c87d4d8ca3795a02ab1d.tap",
+      "sha256": "a33d02baec65836de0ad5a5bf5f1fb71a5f1ec4454c1c87d4d8ca3795a02ab1d",
+      "size": 413
+    },
+    {
+      "action": "test",
+      "path": "test/build-p810-head-900c97966266be3c2f70bebbb65322fca1c5f1a24a285292cd9baa33a6a87bd6.tap",
+      "sha256": "900c97966266be3c2f70bebbb65322fca1c5f1a24a285292cd9baa33a6a87bd6",
+      "size": 300
+    },
+    {
+      "action": "test",
+      "path": "test/build-p834-rev-fbcb70ac01c0dd78198252d66ce15d087cf5d6430bcdcfeb8795009b8e69f665.tap",
+      "sha256": "fbcb70ac01c0dd78198252d66ce15d087cf5d6430bcdcfeb8795009b8e69f665",
+      "size": 578
+    },
+    {
+      "action": "test",
+      "path": "test/build-p837-echo-a0eb0129fbadf255c1ad5c257f183d62ffc66a8e3079f7bf246d0db87190026b.tap",
+      "sha256": "a0eb0129fbadf255c1ad5c257f183d62ffc66a8e3079f7bf246d0db87190026b",
+      "size": 187
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-88c1bb19b3b15c6848e3d0f1c7bed88f1b9dcb1887de0a02735b7dc5e2c767f3.sna",
+      "sha256": "88c1bb19b3b15c6848e3d0f1c7bed88f1b9dcb1887de0a02735b7dc5e2c767f3",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-9146cd0f91217ac6f2321c0e5658e251553ba56a257671bba5beedbb3faa384b.sna",
+      "sha256": "9146cd0f91217ac6f2321c0e5658e251553ba56a257671bba5beedbb3faa384b",
+      "size": 49179
+    }
+  ],
+  "schema": 1,
+  "source_commit": "51aec0a286719f0971591c1cf6802b5bdeb09973",
+  "step": "P8.38"
+}
