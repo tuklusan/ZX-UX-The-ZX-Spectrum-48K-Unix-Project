@@ -33,6 +33,7 @@ jobs:
           git diff --name-only "$P718_BASE" HEAD | sort > /tmp/changed
           printf '%s\n' \
             .github/workflows/p718-qualification.yml \
+            v1/src/kernel/sound.asm \
             v1/tools-host/test-driver/phase7_beep_c48.py \
             v1/tools-host/test-driver/run.py | sort > /tmp/expected
           diff -u /tmp/expected /tmp/changed
@@ -48,7 +49,7 @@ jobs:
             ./tools/check_project_policy.py
             test -z "$(git status --porcelain)"
             test "$(git rev-parse 'HEAD^{tree}')" = "$tree"
-            d="$(sha256sum v1/tools-host/test-driver/phase7_beep_c48.py v1/tools-host/test-driver/run.py .github/workflows/p718-qualification.yml | sha256sum | awk '{print $1}')"
+            d="$(sha256sum v1/src/kernel/sound.asm v1/tools-host/test-driver/phase7_beep_c48.py v1/tools-host/test-driver/run.py .github/workflows/p718-qualification.yml | sha256sum | awk '{print $1}')"
             if test -z "$baseline"; then baseline="$d"; else test "$baseline" = "$d"; fi
           done
       - name: Mandatory prerequisite gates
