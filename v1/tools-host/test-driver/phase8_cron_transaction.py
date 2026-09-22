@@ -177,16 +177,16 @@ gate_end:
         gb=(b/"p839-gateway.bin").read_bytes()
         # Fresh lock succeeds and removes nothing.
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["cron_lock_acquire"])+jp_c(FAIL_PC)+expect(REMOVES,0)+phase1._jp(PASS_PC))
-        run_sna(root,bytes(code),patch(image,gb,0),timeout=30)
+        run_sna(root,bytes(code),patch=patch(image,gb,0),timeout=30)
         # Valid live owner rejects duplicate, never deletes.
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["cron_lock_acquire"])+jp_nc(FAIL_PC)+bytes((0xFE,sy["E_BUSY"]&255))+phase1._jp_nz(FAIL_PC)+expect(REMOVES,0)+phase1._jp(PASS_PC))
-        run_sna(root,bytes(code),patch(image,gb,1),timeout=30)
+        run_sna(root,bytes(code),patch=patch(image,gb,1),timeout=30)
         # Valid stale owner is the only path that deletes and recreates.
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["cron_lock_acquire"])+jp_c(FAIL_PC)+expect(REMOVES,1)+phase1._jp(PASS_PC))
-        run_sna(root,bytes(code),patch(image,gb,2),timeout=30)
+        run_sna(root,bytes(code),patch=patch(image,gb,2),timeout=30)
         # Malformed/unknown lock is conservatively live.
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["cron_lock_acquire"])+jp_nc(FAIL_PC)+bytes((0xFE,sy["E_BUSY"]&255))+phase1._jp_nz(FAIL_PC)+expect(REMOVES,0)+phase1._jp(PASS_PC))
-        run_sna(root,bytes(code),patch(image,gb,3),timeout=30)
+        run_sna(root,bytes(code),patch=patch(image,gb,3),timeout=30)
 
         k0=bytes((0xEA,0x07,9,22,18,11,0,0))
         k1=bytes((0xEA,0x07,9,22,18,11,1,0))
@@ -194,7 +194,7 @@ gate_end:
         code+=phase1._ld_hl(KEY)+phase1._call(sy["cron_dedupe_key"])+phase1._jp_nz(FAIL_PC)
         # Change revision only: must be a new key, representing date -s reset.
         code+=bytes((0x3E,1,0x32))+word(KEY+6)+phase1._ld_hl(KEY)+phase1._call(sy["cron_dedupe_key"])+phase1._jp_z(FAIL_PC)+phase1._jp(PASS_PC)
-        run_sna(root,bytes(code),patch(image,gb,0,k0),timeout=30)
+        run_sna(root,bytes(code),patch=patch(image,gb,0,k0),timeout=30)
         assertions += [
           {"name":"fuse-fresh-lock-exact-owner","passed":True},
           {"name":"fuse-live-owner-rejected","passed":True},
