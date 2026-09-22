@@ -59,7 +59,7 @@ banner_char_loop:
     ld b,a
     ld a,(banner_chars)
     cp b
-    jr z,banner_ok
+    jp z,banner_ok
     ld hl,(banner_text)
     ld e,b
     ld d,0
@@ -139,7 +139,7 @@ banner_next_char:
     ld a,(banner_index)
     inc a
     ld (banner_index),a
-    jr banner_char_loop
+    jp banner_char_loop
 
 banner_ok:
     xor a
