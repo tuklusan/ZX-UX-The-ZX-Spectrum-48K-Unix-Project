@@ -1,0 +1,50 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: ZX-UX Evidence Integrity
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'v1/dist/certification/**'
+      - 'v1/dist/media/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zxux-evidence-integrity-main
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: {fetch-depth: 0}
+      - name: Validate policy, media, and every active phase aggregate
+        run: |
+          set -euo pipefail
+          ./tools/check_project_policy.py
+          ./tools/check_license_headers.sh
+          python3 tools/check_media_retention.py
+          for phase in $(seq 0 12); do
+            aggregate="v1/dist/certification/phase-${phase}.json"
+            checker="tools/check_phase${phase}_evidence.py"
+            if test -f "$aggregate"; then
+              test -f "$checker"
+              python3 "$checker" --require-active
+            fi
+          done

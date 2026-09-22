@@ -32,7 +32,7 @@ jobs:
           ./tools/ci.sh
           python3 tools/scripts/verify-environment.py --metadata-only
           for phase in $(seq 0 12); do
-            aggregate="v1/dist/certification/phase-$phase.json"; checker="tools/check_phase$phase"_evidence.py
+            aggregate="v1/dist/certification/phase-${phase}.json"; checker="tools/check_phase${phase}_evidence.py"
             if test -f "$aggregate"; then test -f "$checker"; python3 "$checker" --require-active; fi
           done
   e0-foundation:
