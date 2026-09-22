@@ -249,6 +249,12 @@ def redirection(root,s,core,shell,gate):
     code+=checkb(s["p720_beep_calls"],1)+checkb(s["p720_forbidden_calls"],0)+phase1._jp(PASS_PC)
     run_sna(root,bytes(code),patch=patch(core,shell,gate,s,arg=arg),timeout=30)
 
+def case(name, fn, *args, **kwargs):
+    try:
+        return fn(*args, **kwargs)
+    except DriverError as exc:
+        raise P720Error(f"{name}: {exc}") from exc
+
 def dispatch(root,action,step,*,sha256_file,run_command,require_project_tool):
     if step!="P7.20": raise P720Error(step)
     assertions=source(root); bad=[x["name"] for x in assertions if not x["passed"]]; req(not bad,f"static: {bad}")
@@ -261,22 +267,23 @@ def dispatch(root,action,step,*,sha256_file,run_command,require_project_tool):
     s=phase3_open_descriptions._symbols(sym,names)
     if action=="test":
         core=cb.read_bytes(); shell=sb.read_bytes(); gate=gb.read_bytes()
-        valid(root,s,core,shell,gate,b"1,0",bytes((0,0,1,0,0)),bytes((0,0,0,0,0)))
-        valid(root,s,core,shell,gate,b".5,9",bytes((0x80,0,0,0,0)),bytes((0,0,9,0,0)))
-        valid(root,s,core,shell,gate,b".25,-12",bytes((0x7f,0,0,0,0)),bytes((0,0xff,0xf4,0xff,0)))
-        valid(root,s,core,shell,gate,b".5,0.5",bytes((0x80,0,0,0,0)),bytes((0x80,0,0,0,0)))
-        valid_no_exact(root,s,core,shell,gate,b"(1/4),(12+0.5)")
+        case("valid-1-0",valid,root,s,core,shell,gate,b"1,0",bytes((0,0,1,0,0)),bytes((0,0,0,0,0)))
+        case("valid-half-9",valid,root,s,core,shell,gate,b".5,9",bytes((0x80,0,0,0,0)),bytes((0,0,9,0,0)))
+        case("valid-quarter-minus12",valid,root,s,core,shell,gate,b".25,-12",bytes((0x7f,0,0,0,0)),bytes((0,0xff,0xf4,0xff,0)))
+        case("valid-half-half",valid,root,s,core,shell,gate,b".5,0.5",bytes((0x80,0,0,0,0)),bytes((0x80,0,0,0,0)))
+        case("valid-parenthesized",valid_no_exact,root,s,core,shell,gate,b"(1/4),(12+0.5)")
 
         for arg in (b"1",b"1,2,3",b",1",b"1,",b"(1,2",b"1,usr(0)",b"peek(1),0",b"in(1),0",b"poke 1,2,0",b"out 1,2,0",b"1,(2,3)"):
-            invalid(root,s,core,shell,gate,arg,s["E_INVAL"])
-        invalid(root,s,core,shell,gate,b"1,0",s["E_INVAL"],argc=1)
-        invalid(root,s,core,shell,gate,b"1,0",s["E_INVAL"],argc=3)
-        invalid(root,s,core,shell,gate,b"USR(0),0",s["E_NOTSUP"],stages=2)
-        invalid(root,s,core,shell,gate,b"USR(0),0",s["E_NOTSUP"],bg=1)
+            case(f"invalid-{arg!r}",invalid,root,s,core,shell,gate,arg,s["E_INVAL"])
+        case("invalid-argc-1",invalid,root,s,core,shell,gate,b"1,0",s["E_INVAL"],argc=1)
+        case("invalid-argc-3",invalid,root,s,core,shell,gate,b"1,0",s["E_INVAL"],argc=3)
+        case("invalid-pipeline",invalid,root,s,core,shell,gate,b"USR(0),0",s["E_NOTSUP"],stages=2)
+        case("invalid-background",invalid,root,s,core,shell,gate,b"USR(0),0",s["E_NOTSUP"],bg=1)
 
-        lookup(root,s,core,shell,gate,b"beep",True)
-        for name in (b"BEEP",b"Beep",b"beepx",b"calc"): lookup(root,s,core,shell,gate,name,False)
-        redirection(root,s,core,shell,gate)
+        case("lookup-beep",lookup,root,s,core,shell,gate,b"beep",True)
+        for name in (b"BEEP",b"Beep",b"beepx",b"calc"):
+            case(f"lookup-{name!r}",lookup,root,s,core,shell,gate,name,False)
+        case("redirection",redirection,root,s,core,shell,gate)
 
         assertions += [
           {"name":"fuse-basic-compatible-beep-vectors-pass","passed":True},
