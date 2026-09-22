@@ -1,0 +1,118 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p811-present",
+      "passed": true
+    },
+    {
+      "name": "default-ten",
+      "passed": true
+    },
+    {
+      "name": "strict-decimal",
+      "passed": true
+    },
+    {
+      "name": "range-1-255",
+      "passed": true
+    },
+    {
+      "name": "single-pass-stdin",
+      "passed": true
+    },
+    {
+      "name": "bounded-staging",
+      "passed": true
+    },
+    {
+      "name": "backward-line-selection",
+      "passed": true
+    },
+    {
+      "name": "stdout-short-write-safe",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p811-tail-image.lst",
+        "--sym=p811-tail-image.sym",
+        "p811-tail-image.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 720 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p811-tail.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 38,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 64753, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 54066, \"image_size\": 4424, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 4448, \"relocations\": [], \"stored_length\": 4448, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p811-tail-fixture.lst",
+        "--sym=p811-tail-fixture.sym",
+        "p811-tail-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 720 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p811-gateway.lst",
+        "--sym=p811-gateway.sym",
+        "p811-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 358 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p811-tail.mex1": "4eb3fcc3b76222ec7fd8fc8379869b8433c249f23b24b5870c9b8e10cb2c471e",
+    "v1/build/p811-tail.tap": "83a77412d9a727dd865ffbcce2f2cfc6326dab0608ee011427e5b6e30d1c3474",
+    "v1/dist/certification/P8.10.test.json": "a930160aa96c35990721d3fe1b618ff622e65f554949504697d30ec770cfe156",
+    "v1/src/utils/tail.asm": "19a68588dbe38edca6af4863da065cbe710338d731c6ae5e63b99ffebb0b25f2",
+    "v1/tools-host/test-driver/phase8_tail.py": "73c86e5a03ade4b228012cf4753675a64416f8d380547e71effb2986baa63180",
+    "v1/tools-host/test-driver/run.py": "2205246ecae3b3a2b9edec79b66b02fd8ddf58d754fbe50d82989a15c7e1c95a"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.10": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "0e263414efadc53b72c7fb0ff180e5a1c7ba87c8",
+  "status": "PASS",
+  "step": "P8.11",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
