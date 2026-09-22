@@ -21,6 +21,7 @@ import sys
 import tempfile
 
 from driver_core import DriverError, read_source_state
+from fuse_harness import PASS_PC, run_sna
 
 ARCH="24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c"
 PLAN="840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc"
@@ -174,8 +175,10 @@ def dispatch(root:Path,action:str,step:str,*,sha256_file,run_command,require_pro
     ]
     commands=[]
     if action=="test":
+        run_sna(root,bytes((0xC3, PASS_PC & 0xFF, (PASS_PC >> 8) & 0xFF)),timeout=30)
         commands.extend(rerun(root,run_command))
         assertions += [
+          {"name":"fuse-phase8-acceptance-checkpoint-pass","passed":True},
           {"name":"selected-current-head-phase8-acceptance-matrix-pass","passed":True,"steps":list(CURRENT)},
           {"name":"current-head-ps-mem-time-demo-echo-pipeline-regressions-pass","passed":True},
         ]
