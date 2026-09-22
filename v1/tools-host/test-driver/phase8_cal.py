@@ -41,7 +41,7 @@ def dispatch(root,action,step,*,sha256_file,run_command,require_project_tool):
       {"name":"canonical-p828-present","passed":"## P8.28 - Utility `cal`" in p},
       {"name":"forms","passed":"cal_current:" in s and "cal_one:" in s and "cal_render:" in s},
       {"name":"time-gated-current","passed":"SYS_TIME_GET" in s and "cal: date not set" not in s and "cal_not_set:" in s},
-      {"name":"range-1970-2099","passed":"ld de,1970" in s and "ld bc,2100" in s},
+      {"name":"range-1970-2099","passed":"ld bc,1970" in s and "ld bc,2100" in s},
       {"name":"gregorian-months","passed":"cal_month_lengths:" in s and "and 3" in s},
       {"name":"short-write-safe","passed":"cal_write_loop:" in s and "cal_write_io:" in s},
       {"name":"case-sensitive","passed":"casefold" not in s.lower()},
