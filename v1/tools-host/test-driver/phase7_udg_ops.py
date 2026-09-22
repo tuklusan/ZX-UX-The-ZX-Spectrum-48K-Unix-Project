@@ -21,6 +21,7 @@ def req(v,m):
     if not v: raise P714Error(m)
 def w(v): return bytes((v&255,v>>8))
 def call(a): return b"\xcd"+w(a)
+def ldbc(v): return b"\x01"+w(v)
 def jpc(a): return b"\xda"+w(a)
 def jpnc(a): return b"\xd2"+w(a)
 def ex(a,v): return b"\x3a"+w(a)+bytes((0xfe,v))+phase1._jp_nz(FAIL_PC)
@@ -73,13 +74,13 @@ def dispatch(root,action,step,*,sha256_file,run_command,require_project_tool):
       img=binp.read_bytes(); pat=bytes((0x80,0x40,0x20,0x10,8,4,2,1))
       code=bytearray(b"\xf3"+phase1._ld_sp(phase1.USER_STACK)+call(s["zx48_udg_init"])+jpc(FAIL_PC))
       # define slot0
-      code+=phase1._ld_hl(SRC)+b"\x22"+w(s["syscall_arg_hl"])+phase1._ld_bc(0)+b"\xed\x43"+w(s["syscall_arg_bc"])+call(s["zx48_p714_sys_udg_define"])+jpc(FAIL_PC)
+      code+=phase1._ld_hl(SRC)+b"\x22"+w(s["syscall_arg_hl"])+ldbc(0)+b"\xed\x43"+w(s["syscall_arg_bc"])+call(s["zx48_p714_sys_udg_define"])+jpc(FAIL_PC)
       for i,v in enumerate(pat): code+=ex(BANK+i,v)
       # get slot0
-      code+=phase1._ld_hl(DST)+b"\x22"+w(s["syscall_arg_hl"])+phase1._ld_bc(0)+b"\xed\x43"+w(s["syscall_arg_bc"])+call(s["zx48_p714_sys_udg_get"])+jpc(FAIL_PC)
+      code+=phase1._ld_hl(DST)+b"\x22"+w(s["syscall_arg_hl"])+ldbc(0)+b"\xed\x43"+w(s["syscall_arg_bc"])+call(s["zx48_p714_sys_udg_get"])+jpc(FAIL_PC)
       for i,v in enumerate(pat): code+=ex(DST+i,v)
       # define/get slot31
-      code+=phase1._ld_hl(SRC)+b"\x22"+w(s["syscall_arg_hl"])+phase1._ld_bc(31)+b"\xed\x43"+w(s["syscall_arg_bc"])+call(s["zx48_p714_sys_udg_define"])+jpc(FAIL_PC)
+      code+=phase1._ld_hl(SRC)+b"\x22"+w(s["syscall_arg_hl"])+ldbc(31)+b"\xed\x43"+w(s["syscall_arg_bc"])+call(s["zx48_p714_sys_udg_define"])+jpc(FAIL_PC)
       for i,v in enumerate(pat): code+=ex(BANK+31*8+i,v)
       # clear slot31
       code+=phase1._ld_hl(31)+b"\x22"+w(s["syscall_arg_hl"])+call(s["zx48_p714_sys_udg_clear"])+jpc(FAIL_PC)
@@ -88,7 +89,7 @@ def dispatch(root,action,step,*,sha256_file,run_command,require_project_tool):
       # Invalid slot/B/pointer: live bank remains canary.
       for fn,hl,bc in ((s["zx48_p714_sys_udg_define"],SRC,32),(s["zx48_p714_sys_udg_define"],SRC,0x0100),(s["zx48_p714_sys_udg_define"],0xDFFC,0),(s["zx48_p714_sys_udg_get"],0xDFFC,0)):
         q=bytearray(b"\xf3"+phase1._ld_sp(phase1.USER_STACK)+call(s["zx48_udg_init"]))
-        q+=phase1._ld_hl(hl)+b"\x22"+w(s["syscall_arg_hl"])+phase1._ld_bc(bc)+b"\xed\x43"+w(s["syscall_arg_bc"])+call(fn)+jpnc(FAIL_PC)+bytes((0xfe,1))+phase1._jp_nz(FAIL_PC)
+        q+=phase1._ld_hl(hl)+b"\x22"+w(s["syscall_arg_hl"])+ldbc(bc)+b"\xed\x43"+w(s["syscall_arg_bc"])+call(fn)+jpnc(FAIL_PC)+bytes((0xfe,1))+phase1._jp_nz(FAIL_PC)
         q+=ex(BANK,0)+phase1._jp(PASS_PC); run_sna(root,bytes(q),patch=patch(img,pat))
       q=bytearray(b"\xf3"+phase1._ld_sp(phase1.USER_STACK)+call(s["zx48_udg_init"])+phase1._ld_hl(0x0120)+b"\x22"+w(s["syscall_arg_hl"])+call(s["zx48_p714_sys_udg_clear"])+jpnc(FAIL_PC)+phase1._jp(PASS_PC)); run_sna(root,bytes(q),patch=patch(img,pat))
       assertions += [{"name":"fuse-slot0-slot31-roundtrip-clear-exact","passed":True},{"name":"fuse-invalid-slot-reserved-register-pointer-no-mutation","passed":True}]
