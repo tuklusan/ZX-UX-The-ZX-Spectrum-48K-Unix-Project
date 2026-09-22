@@ -49,6 +49,7 @@ ROM_BEEP_STACK            EQU $5D00
 ROM_FLAGS                 EQU $5C3B
 ROM_CH_ADD                EQU $5C5D
 ROM_SCANNING              EQU $24FB
+ROM_DEC_TO_FP             EQU $2C9B
 ROM_CALC_STACK            EQU $5D80
 
     MACRO EMIT_ROM_SERVICE_ROUTINES
@@ -124,6 +125,77 @@ zx48_rom_ula_done:
 ; tokens. No user identifier, string token, BASIC statement, or arbitrary ROM
 ; address reaches SCANNING.
     MACRO EMIT_P710_ROM_CALC_ROUTINES
+; Convert one already allow-listed decimal literal to the exact Spectrum
+; five-byte representation without modifying the source text. HL=literal start,
+; DE=writable five-byte destination. The caller has already validated the whole
+; expression before this routine may enter ROM.
+zx48_rom_decimal_literal:
+    ld (rom_decimal_input_ptr),hl
+    ld (rom_decimal_output_ptr),de
+    ld a,(altreg_busy)
+    or a
+    jp nz,zx48_rom_calc_busy
+
+    ld hl,0
+    add hl,sp
+    ld (rom_calc_saved_sp),hl
+    ld hl,(ROM_ERR_SP)
+    ld (rom_calc_saved_err_sp),hl
+    ld hl,(ROM_STKBOT)
+    ld (rom_calc_saved_stkbot),hl
+    ld hl,(ROM_STKEND)
+    ld (rom_calc_saved_stkend),hl
+    ld hl,(ROM_MEM)
+    ld (rom_calc_saved_mem),hl
+    ld hl,(ROM_CH_ADD)
+    ld (rom_calc_saved_chadd),hl
+    ld a,(ROM_FLAGS)
+    ld (rom_calc_saved_flags),a
+    ld a,(ROM_IY_ANCHOR)
+    ld (rom_calc_saved_errnr),a
+
+    ld a,1
+    ld (altreg_busy),a
+    ld hl,ROM_CALC_STACK
+    ld (ROM_STKBOT),hl
+    ld (ROM_STKEND),hl
+    ld hl,ROM_MEMBOT
+    ld (ROM_MEM),hl
+    ld hl,(rom_decimal_input_ptr)
+    ld (ROM_CH_ADD),hl
+    ld a,$ff
+    ld (ROM_IY_ANCHOR),a
+
+    ld hl,zx48_rom_decimal_error
+    push hl
+    ld hl,0
+    add hl,sp
+    ld (ROM_ERR_SP),hl
+    ld iy,ROM_IY_ANCHOR
+    ld hl,(rom_decimal_input_ptr)
+    ld a,(hl)
+    call ROM_DEC_TO_FP
+    pop hl
+
+    ld hl,(ROM_STKEND)
+    ld bc,5
+    or a
+    sbc hl,bc
+    ld de,(rom_decimal_output_ptr)
+    ldir
+    call zx48_rom_calc_cleanup
+    xor a
+    or a
+    ret
+
+zx48_rom_decimal_error:
+    ld hl,(rom_calc_saved_sp)
+    ld sp,hl
+    call zx48_rom_calc_cleanup
+    ld a,E_INVAL
+    scf
+    ret
+
 zx48_rom_calc_expr:
     ld (rom_calc_input_ptr),hl
     ld (rom_calc_output_ptr),de
@@ -227,6 +299,8 @@ zx48_rom_calc_busy:
     scf
     ret
 
+rom_decimal_input_ptr: dw 0
+rom_decimal_output_ptr: dw 0
 rom_calc_input_ptr: dw 0
 rom_calc_output_ptr: dw 0
 rom_calc_saved_sp: dw 0
