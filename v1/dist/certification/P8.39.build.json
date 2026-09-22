@@ -1,0 +1,96 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p839-present",
+      "passed": true
+    },
+    {
+      "name": "exact-lock-path",
+      "passed": true
+    },
+    {
+      "name": "exclusive-create",
+      "passed": true
+    },
+    {
+      "name": "pid-lf-payload",
+      "passed": true
+    },
+    {
+      "name": "malformed-treated-live",
+      "passed": true
+    },
+    {
+      "name": "stale-proved-by-proc-info",
+      "passed": true
+    },
+    {
+      "name": "dedupe-key-eight-bytes",
+      "passed": true
+    },
+    {
+      "name": "boot-revision-zero",
+      "passed": true
+    },
+    {
+      "name": "successful-set-increments-revision",
+      "passed": true
+    },
+    {
+      "name": "invalid-time-suppresses-calendar",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p839-cron-fixture.lst",
+        "--sym=p839-cron-fixture.sym",
+        "p839-cron-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 8,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 1835 lines, work time: 0.007 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p839-gateway.lst",
+        "--sym=p839-gateway.sym",
+        "p839-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 372 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/dist/certification/P8.38.test.json": "9f4e2eb3d08160b74552079377851b12eb8a2bc65afd6cd76235b5a75816ee0c",
+    "v1/src/kernel/interrupt.asm": "a1256a70b8ecdb7b9705ad2eac3a242a2aff73168665be2f46c0a6678a829e56",
+    "v1/src/kernel/syscall.asm": "2e43770c08e0b7bf15cec8d5c54c183365db64375c7a5110e83367ccab02a546",
+    "v1/src/utils/cron.asm": "45d71db7b0716d3637b0f03cfa87cfabedd30b32baab6278b27e5f0fe63f04c7",
+    "v1/tools-host/test-driver/phase8_cron_transaction.py": "f524462c1dfef6f11d761f8dbcdc020f59065b5dc91f9dc678bc354a89bd799a",
+    "v1/tools-host/test-driver/run.py": "b2e4a19ca07afb5fa183220450a4ad41d0c1be548f2277033bf0f298fd2f2fd8"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.38": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "0bcd827400c9d44993ec0a7929ea589c9989d798",
+  "status": "PASS",
+  "step": "P8.39",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
