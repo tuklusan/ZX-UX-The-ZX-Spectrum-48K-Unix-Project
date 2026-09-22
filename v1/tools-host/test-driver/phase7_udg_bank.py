@@ -45,7 +45,7 @@ def source(root:Path):
       {"name":"reuses-p114-single-cold-pinned-bank","passed":init.count("call zx48_alloc")==1 and "ALLOC_COLD_PREFERRED" in init and "ld (ROM_UDG),hl" in init and "call zx48_memory_pin_bytes" in init},
       {"name":"no-second-bank-or-free-repoint","passed":u.count("call zx48_alloc")==1 and "call zx48_free" not in u and u.count("ld (ROM_UDG),hl")==1},
       {"name":"tty32-maps-80-through-9f-to-existing-bank","passed":"ld hl,(udg_bank_ptr)" in t and "sub UDG_CODE_FIRST" in t and "cp UDG_CODE_LAST+1" in t},
-      {"name":"bit7-leftmost-byte-preserved","passed":"ld a,(hl)\n    pop hl\n    ld (hl),a" in t},
+      {"name":"glyph-byte-is-copied-without-bit-reversal","passed":"ld a,(hl)\n    inc hl\n    ld (tty32_glyph),hl" in t and "ld (hl),a" in t},
       {"name":"console-admits-only-through-final-udg-code","passed":"cp UDG_CODE_LAST+1" in c},
       {"name":"tty64-renderer-rejects-udg-text-codes","passed":"cp $80" in (root/"v1/src/kernel/tty64.asm").read_text()},
     ]
