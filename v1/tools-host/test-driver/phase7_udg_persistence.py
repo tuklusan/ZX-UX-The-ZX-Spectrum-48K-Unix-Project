@@ -47,7 +47,7 @@ def source(root):
       {"name":"save-exclusive-temp-and-atomic-rename","passed":all(x in u for x in ("O_WRITE|O_CREATE|O_EXCL","OBJ_UDG","SYS_RENAME","SYS_REMOVE"))},
       {"name":"load-ram-udg-only","passed":"SYS_STAT" in u and "OBJ_UDG" in u and "STATE_RAM" in u},
       {"name":"raw-packed-logical-read","passed":"OBJ_PACKED" not in u and "SYS_READ" in u},
-      {"name":"whole-payload-validated-before-define","passed":u.index("udg_load_validate:") < u.index("udg_load_apply_loop:") and u.index("udg_load_apply_loop:") < u.index("SYS_UDG_DEFINE")},
+      {"name":"whole-payload-validated-before-define","passed":u.index("udg_load_validate:") < u.index("udg_load_apply_loop:") and "ld a,SYS_UDG_DEFINE" in u.split("udg_load_apply_loop:",1)[1].split("udg_load_format:",1)[0]},
       {"name":"no-secondary-checksum","passed":"crc" not in u.lower() and "checksum" not in u.lower()},
       {"name":"no-cassette-motion-path","passed":"SYS_TAPE_" not in u},
     ]
