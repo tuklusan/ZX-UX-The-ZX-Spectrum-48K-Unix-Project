@@ -3966,9 +3966,11 @@ sh_p712_plot:
     cp 3
     jp nz,sh_p712_inval
     ld a,(hl)
-    ld h,a
+    ld d,a
     inc hl
-    ld l,(hl)
+    ld e,(hl)
+    ld h,d
+    ld l,e
     ld a,SYS_GFX_PLOT
     jp SYSCALL_GATEWAY
 
@@ -3978,9 +3980,11 @@ sh_p712_point:
     cp 3
     jp nz,sh_p712_inval
     ld a,(hl)
-    ld h,a
+    ld d,a
     inc hl
-    ld l,(hl)
+    ld e,(hl)
+    ld h,d
+    ld l,e
     ld a,SYS_GFX_POINT
     jp SYSCALL_GATEWAY
 
