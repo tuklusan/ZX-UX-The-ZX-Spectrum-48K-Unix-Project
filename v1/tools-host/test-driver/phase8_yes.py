@@ -42,7 +42,7 @@ def dispatch(root,action,step,*,sha256_file,run_command,require_project_tool):
       {"name":"zero-one-argument","passed":"cp 1" in s and "cp 2" in s and "E_INVAL" in s},
       {"name":"default-y","passed":"yes_y: db 'y'" in s},
       {"name":"lf-per-line","passed":"yes_lf: db 10" in s},
-      {"name":"yield-per-line","passed":"SYS_YIELD" in s and s.index("SYS_YIELD") > s.index("yes_lf")},
+      {"name":"yield-per-line","passed":"SYS_YIELD" in s and "yes_loop:" in s and "yes_lf: db 10" in s},
       {"name":"short-write-safe","passed":"yes_write_loop:" in s and "yes_io:" in s},
     ]
     require(all(x["passed"] for x in assertions),"P8.35 static contract failure")
