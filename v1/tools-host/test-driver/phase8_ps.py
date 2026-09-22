@@ -204,12 +204,12 @@ gate_end:
             code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+bytes((0x3E,1,0x06,1,0x0E,0))+phase1._call(sy["sh_p819_ps_builtin"])+phase1._jp_c(FAIL_PC))
             for o,v in enumerate(expected): code+=expect(OUT+o,v)
             code+=expect(OUT+len(expected),0xA5)+phase1._jp(PASS_PC)
-            run_sna(root,bytes(code),patch=patch(image,gb,mode))
+            try:\n                run_sna(root,bytes(code),patch=patch(image,gb,mode))\n            except DriverError as exc:\n                raise P819Error(f"P8.19 output case mode={mode} failed: {exc}") from exc
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+bytes((0x3E,1,0x06,1,0x0E,0))+phase1._call(sy["sh_p819_ps_builtin"])+b"\xD2"+word(FAIL_PC)+bytes((0xFE,5))+phase1._jp_nz(FAIL_PC)+phase1._jp(PASS_PC))
-        run_sna(root,bytes(code),patch=patch(image,gb,2))
+        try:\n            run_sna(root,bytes(code),patch=patch(image,gb,2))\n        except DriverError as exc:\n            raise P819Error(f"P8.19 PROC_INFO error case failed: {exc}") from exc
         for argc,stages,bg,err in ((2,1,0,sy["E_INVAL"]&255),(1,2,0,sy["E_NOTSUP"]&255),(1,1,1,sy["E_NOTSUP"]&255)):
             code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+bytes((0x3E,argc,0x06,stages,0x0E,bg))+phase1._call(sy["sh_p819_ps_builtin"])+b"\xD2"+word(FAIL_PC)+bytes((0xFE,err))+phase1._jp_nz(FAIL_PC)+phase1._jp(PASS_PC))
-            run_sna(root,bytes(code),patch=patch(image,gb,0))
+            try:\n                run_sna(root,bytes(code),patch=patch(image,gb,0))\n            except DriverError as exc:\n                raise P819Error(f"P8.19 builtin-context argc={argc} stages={stages} bg={bg} failed: {exc}") from exc
         assertions += [{"name":"fuse-pid-state-memory-name","passed":True},{"name":"fuse-short-write-retried","passed":True},{"name":"fuse-proc-info-error-propagates","passed":True},{"name":"fuse-builtin-context-errors","passed":True}]
     hashes={"v1/src/shell/sh.asm":sha256_file(sp),"v1/build/p819-ps.mex1":sha256_file(mp),"v1/build/p819-ps-builtin.tap":sha256_file(tap),"v1/tools-host/test-driver/phase8_ps.py":sha256_file(root/"v1/tools-host/test-driver/phase8_ps.py"),"v1/tools-host/test-driver/run.py":sha256_file(root/"v1/tools-host/test-driver/run.py"),"v1/dist/certification/P8.18.test.json":sha256_file(root/"v1/dist/certification/P8.18.test.json")}
     return [fr,gr,xr],hashes,assertions
