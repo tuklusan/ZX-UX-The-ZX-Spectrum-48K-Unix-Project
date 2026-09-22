@@ -4503,3 +4503,404 @@ p819_write_ptr: dw 0
 p819_write_left: dw 0
 p819_written: dw 0
     ENDM
+
+
+; P8.20 closes the parent-shell mem builtin using only public memory,
+; process, and zxpack accounting syscalls.
+    MACRO EMIT_P820_MEM_ROUTINES
+P820_MINFO_LEN            EQU 16
+P820_ZPINFO_LEN           EQU 20
+
+; A=argc, B=pipeline stage count, C=background flag, HL=sole argument for argc=2.
+sh_p820_mem_builtin:
+    ld (p820_arg_ptr),hl
+    ld e,a
+    ld a,b
+    cp 1
+    jp nz,sh_p820_notsup
+    ld a,c
+    or a
+    jp nz,sh_p820_notsup
+    xor a
+    ld (p820_detail),a
+    ld a,e
+    cp 1
+    jr z,sh_p820_args_ok
+    cp 2
+    jp nz,sh_p820_invalid
+    ld hl,(p820_arg_ptr)
+    ld a,(hl)
+    cp '-'
+    jp nz,sh_p820_invalid
+    inc hl
+    ld a,(hl)
+    cp 'c'
+    jp nz,sh_p820_invalid
+    inc hl
+    ld a,(hl)
+    or a
+    jp nz,sh_p820_invalid
+    ld a,1
+    ld (p820_detail),a
+
+sh_p820_args_ok:
+    ld hl,p820_minfo
+    ld a,SYS_MEM_INFO
+    call SYSCALL_GATEWAY
+    ret c
+    ld hl,p820_zinfo
+    ld a,SYS_ZXPACK_INFO
+    call SYSCALL_GATEWAY
+    ret c
+
+    ld hl,0
+    ld (p820_process_bytes),hl
+    xor a
+    ld (p820_pid),a
+sh_p820_proc_scan:
+    ld a,(p820_pid)
+    cp MAX_PROCESSES
+    jr nc,sh_p820_proc_done
+    ld (p820_preq),a
+    xor a
+    ld (p820_preq+1),a
+    ld hl,p820_pinfo
+    ld (p820_preq+2),hl
+    ld hl,p820_preq
+    ld a,SYS_PROC_INFO
+    call SYSCALL_GATEWAY
+    jr nc,sh_p820_proc_add
+    cp E_NOENT
+    jr z,sh_p820_proc_next
+    scf
+    ret
+sh_p820_proc_add:
+    ld hl,(p820_process_bytes)
+    ld de,(p820_pinfo+14)
+    add hl,de
+    ld (p820_process_bytes),hl
+sh_p820_proc_next:
+    ld a,(p820_pid)
+    inc a
+    ld (p820_pid),a
+    jr sh_p820_proc_scan
+
+sh_p820_proc_done:
+    ld hl,ARENA_SIZE
+    ld de,(p820_minfo+8)
+    or a
+    sbc hl,de
+    ld (p820_used),hl
+
+    ; Stable shell-time residual accounting: arena use minus public process,
+    ; mutable-object physical, pinned, and packed-reader state is pipe memory.
+    ld de,(p820_process_bytes)
+    or a
+    sbc hl,de
+    jp c,sh_p820_invalid
+    ld de,(p820_zinfo+4)
+    or a
+    sbc hl,de
+    jp c,sh_p820_invalid
+    ld de,(p820_minfo+12)
+    or a
+    sbc hl,de
+    jp c,sh_p820_invalid
+    ld de,(p820_zinfo+12)
+    or a
+    sbc hl,de
+    jp c,sh_p820_invalid
+    ld (p820_pipe_bytes),hl
+
+    ld hl,p820_s_used
+    ld de,(p820_used)
+    call sh_p820_line_u16
+    ret c
+    ld hl,p820_s_total_free
+    ld de,(p820_minfo+8)
+    call sh_p820_line_u16
+    ret c
+    ld hl,p820_s_fast_free
+    ld de,(p820_minfo+0)
+    call sh_p820_line_u16
+    ret c
+    ld hl,p820_s_fast_largest
+    ld de,(p820_minfo+2)
+    call sh_p820_line_u16
+    ret c
+    ld hl,p820_s_contended_free
+    ld de,(p820_minfo+4)
+    call sh_p820_line_u16
+    ret c
+    ld hl,p820_s_contended_largest
+    ld de,(p820_minfo+6)
+    call sh_p820_line_u16
+    ret c
+    ld hl,p820_s_process
+    ld de,(p820_process_bytes)
+    call sh_p820_line_u16
+    ret c
+    ld hl,p820_s_object
+    ld de,(p820_zinfo+4)
+    call sh_p820_line_u16
+    ret c
+    ld hl,p820_s_pipe
+    ld de,(p820_pipe_bytes)
+    call sh_p820_line_u16
+    ret c
+    ld hl,p820_s_pinned
+    ld de,(p820_minfo+12)
+    call sh_p820_line_u16
+    ret c
+
+    ld a,(p820_detail)
+    or a
+    jr z,sh_p820_ok
+
+    ld hl,p820_s_logical
+    call sh_p820_write_z
+    ret c
+    ld hl,p820_zinfo+0
+    call sh_p820_write_u32_hex
+    ret c
+    call sh_p820_write_lf
+    ret c
+    ld hl,p820_s_physical
+    ld de,(p820_zinfo+4)
+    call sh_p820_line_u16
+    ret c
+    ld hl,p820_s_saved
+    call sh_p820_write_z
+    ret c
+    ld hl,p820_zinfo+6
+    call sh_p820_write_u32_hex
+    ret c
+    call sh_p820_write_lf
+    ret c
+    ld hl,p820_s_raw
+    ld a,(p820_zinfo+11)
+    ld e,a
+    ld d,0
+    call sh_p820_line_u16
+    ret c
+    ld hl,p820_s_packed
+    ld a,(p820_zinfo+10)
+    ld e,a
+    ld d,0
+    call sh_p820_line_u16
+    ret c
+    ld hl,p820_s_decoder
+    ld de,(p820_zinfo+12)
+    call sh_p820_line_u16
+    ret c
+    ld hl,p820_s_attempts
+    ld de,(p820_zinfo+14)
+    call sh_p820_line_u16
+    ret c
+    ld hl,p820_s_successes
+    ld de,(p820_zinfo+16)
+    call sh_p820_line_u16
+    ret c
+
+sh_p820_ok:
+    xor a
+    ret
+sh_p820_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+sh_p820_notsup:
+    ld a,E_NOTSUP
+    scf
+    ret
+
+; HL=NUL label, DE=u16 value.
+sh_p820_line_u16:
+    push de
+    call sh_p820_write_z
+    pop hl
+    ret c
+    call sh_p820_write_u16
+    ret c
+    jp sh_p820_write_lf
+
+sh_p820_write_lf:
+    ld hl,p820_lf
+    ld bc,1
+    jp sh_p820_write_all
+
+sh_p820_write_z:
+    push hl
+    ld bc,0
+sh_p820_z_count:
+    ld a,(hl)
+    or a
+    jr z,sh_p820_z_ready
+    inc hl
+    inc bc
+    jr sh_p820_z_count
+sh_p820_z_ready:
+    pop hl
+    jp sh_p820_write_all
+
+sh_p820_write_u16:
+    push ix
+    ld ix,p820_num
+    ld b,0
+    xor a
+    ld (p820_num_started),a
+    ld de,10000
+    call sh_p820_dec_place
+    ld de,1000
+    call sh_p820_dec_place
+    ld de,100
+    call sh_p820_dec_place
+    ld de,10
+    call sh_p820_dec_place
+    ld a,l
+    add a,'0'
+    ld (ix+0),a
+    inc b
+    ld hl,p820_num
+    ld c,b
+    ld b,0
+    call sh_p820_write_all
+    pop ix
+    ret
+
+sh_p820_dec_place:
+    ld c,0
+sh_p820_dec_loop:
+    or a
+    sbc hl,de
+    jr c,sh_p820_dec_done
+    inc c
+    jr sh_p820_dec_loop
+sh_p820_dec_done:
+    add hl,de
+    ld a,(p820_num_started)
+    or c
+    ret z
+    ld a,1
+    ld (p820_num_started),a
+    ld a,c
+    add a,'0'
+    ld (ix+0),a
+    inc ix
+    inc b
+    ret
+
+; HL points at a little-endian u32. Emit exact fixed-width hexadecimal.
+sh_p820_write_u32_hex:
+    push hl
+    ld hl,p820_hex_prefix
+    ld bc,2
+    call sh_p820_write_all
+    pop hl
+    ret c
+    ld de,3
+    add hl,de
+    ld ix,p820_hexbuf
+    ld b,4
+sh_p820_hex32_loop:
+    ld a,(hl)
+    call sh_p820_hex_byte
+    dec hl
+    djnz sh_p820_hex32_loop
+    ld hl,p820_hexbuf
+    ld bc,8
+    jp sh_p820_write_all
+
+sh_p820_hex_byte:
+    ld c,a
+    rrca
+    rrca
+    rrca
+    rrca
+    and $0f
+    call sh_p820_hex_nibble
+    ld a,c
+    and $0f
+sh_p820_hex_nibble:
+    cp 10
+    jr c,sh_p820_hex_digit
+    add a,'A'-10
+    jr sh_p820_hex_store
+sh_p820_hex_digit:
+    add a,'0'
+sh_p820_hex_store:
+    ld (ix+0),a
+    inc ix
+    ret
+
+sh_p820_write_all:
+    ld (p820_write_ptr),hl
+    ld (p820_write_left),bc
+sh_p820_write_loop:
+    ld hl,(p820_write_ptr)
+    ld bc,(p820_write_left)
+    ld de,1
+    ld a,SYS_WRITE
+    call SYSCALL_GATEWAY
+    ret c
+    ld a,h
+    or l
+    jr z,sh_p820_write_zero
+    ld (p820_written),hl
+    ld de,(p820_write_ptr)
+    add hl,de
+    ld (p820_write_ptr),hl
+    ld hl,(p820_write_left)
+    ld de,(p820_written)
+    or a
+    sbc hl,de
+    jr c,sh_p820_write_zero
+    ld (p820_write_left),hl
+    ld a,h
+    or l
+    jr nz,sh_p820_write_loop
+    xor a
+    ret
+sh_p820_write_zero:
+    ld a,E_IO
+    scf
+    ret
+
+p820_s_used: db 'a','r','e','n','a','_','u','s','e','d',' ',0
+p820_s_total_free: db 't','o','t','a','l','_','f','r','e','e',' ',0
+p820_s_fast_free: db 'f','a','s','t','_','f','r','e','e',' ',0
+p820_s_fast_largest: db 'f','a','s','t','_','l','a','r','g','e','s','t',' ',0
+p820_s_contended_free: db 'c','o','n','t','e','n','d','e','d','_','f','r','e','e',' ',0
+p820_s_contended_largest: db 'c','o','n','t','e','n','d','e','d','_','l','a','r','g','e','s','t',' ',0
+p820_s_process: db 'p','r','o','c','e','s','s','_','b','y','t','e','s',' ',0
+p820_s_object: db 'o','b','j','e','c','t','_','p','h','y','s','i','c','a','l',' ',0
+p820_s_pipe: db 'p','i','p','e','_','b','y','t','e','s',' ',0
+p820_s_pinned: db 'p','i','n','n','e','d','_','b','y','t','e','s',' ',0
+p820_s_logical: db 'l','o','g','i','c','a','l','_','o','b','j','e','c','t','_','b','y','t','e','s',' ',0
+p820_s_physical: db 'p','h','y','s','i','c','a','l','_','o','b','j','e','c','t','_','b','y','t','e','s',' ',0
+p820_s_saved: db 'b','y','t','e','s','_','s','a','v','e','d',' ',0
+p820_s_raw: db 'r','a','w','_','o','b','j','e','c','t','s',' ',0
+p820_s_packed: db 'p','a','c','k','e','d','_','o','b','j','e','c','t','s',' ',0
+p820_s_decoder: db 'd','e','c','o','d','e','r','_','s','t','a','t','e','_','b','y','t','e','s',' ',0
+p820_s_attempts: db 'p','a','c','k','_','a','t','t','e','m','p','t','s',' ',0
+p820_s_successes: db 'p','a','c','k','_','s','u','c','c','e','s','s','e','s',' ',0
+p820_hex_prefix: db '0','x'
+p820_lf: db 10
+p820_arg_ptr: dw 0
+p820_detail: db 0
+p820_pid: db 0
+p820_preq: db 0,0
+    dw p820_pinfo
+p820_pinfo: defs 16,0
+p820_minfo: defs P820_MINFO_LEN,0
+p820_zinfo: defs P820_ZPINFO_LEN,0
+p820_process_bytes: dw 0
+p820_used: dw 0
+p820_pipe_bytes: dw 0
+p820_num_started: db 0
+p820_num: defs 5,0
+p820_hexbuf: defs 8,0
+p820_write_ptr: dw 0
+p820_write_left: dw 0
+p820_written: dw 0
+    ENDM
