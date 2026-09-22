@@ -36,7 +36,7 @@ def activation():
 
 def validate():
     a=load(CERT/"phase-8.json")
-    for k,v in {"schema":2,"phase":7,"action":"phase-result","status":"PASS","pass_marker":PHASE,
+    for k,v in {"schema":2,"phase":8,"action":"phase-result","status":"PASS","pass_marker":PHASE,
                 "worktree_clean":True,"architecture_sha256":ARCH,"implementation_plan_sha256":PLAN}.items():
         if a.get(k)!=v: raise E(f"phase-8 {k}")
     source=a.get("source_commit"); lock=a.get("toolchain_lock_sha256")
@@ -57,21 +57,21 @@ def validate():
             if r.get("architecture_sha256")!=ARCH or r.get("implementation_plan_sha256")!=PLAN or r.get("prerequisites")!=pre(n):
                 raise E(f"{name}: identity")
             if not isinstance(r.get("toolchain_lock_sha256"),str): raise E(f"{name}: toolchain provenance")
-            if n==21 and r.get("toolchain_lock_sha256")!=lock: raise E(f"{name}: P8.40 toolchain")
+            if n==40 and r.get("toolchain_lock_sha256")!=lock: raise E(f"{name}: P8.40 toolchain")
             rs=r.get("source_commit")
             if not isinstance(rs,str) or subprocess.run(["git","merge-base","--is-ancestor",rs,source],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode:
                 raise E(f"{name}: ancestry")
-            if n==21 and rs!=source: raise E(f"{name}: source")
+            if n==40 and rs!=source: raise E(f"{name}: source")
             if manifest.get(name)!=sha(p): raise E(f"{name}: bytes")
     res=load(CERT/"P8.40.result.json")
     for k,v in {"step":"P8.40","action":"result","status":"PASS","pass_marker":P840,"source_commit":source,
                 "architecture_sha256":ARCH,"implementation_plan_sha256":PLAN,"toolchain_lock_sha256":lock,
-                "worktree_clean":True,"prerequisites":{"P8.20":"PASS"}}.items():
+                "worktree_clean":True,"prerequisites":{"P8.39":"PASS"}}.items():
         if res.get(k)!=v: raise E(f"P8.40.result {k}")
     if manifest.get("P8.40.result.json")!=sha(CERT/"P8.40.result.json"): raise E("P8.40.result bytes")
-    req={"p8-40-build-test-result-pass","all-p7-01-through-p8-40-durable-evidence-pass",
+    req={"p8-40-build-test-result-pass","all-p8-01-through-p8-40-durable-evidence-pass",
          "rev16-rev07-authority-pass","phase8-record-manifest-byte-exact",
-         "phase8-acceptance-bullets-pass","phase8-gate-stops-before-phase8"}
+         "phase8-acceptance-bullets-pass","phase8-gate-stops-before-phase9"}
     got={x.get("name") for x in a.get("assertions",[]) if isinstance(x,dict) and x.get("passed") is True}
     if not req.issubset(got): raise E("aggregate assertions")
     return a
