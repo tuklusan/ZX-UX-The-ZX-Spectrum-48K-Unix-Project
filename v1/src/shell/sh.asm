@@ -3382,7 +3382,8 @@ P710_TOKEN_INT           EQU $BA
 P710_TOKEN_SQR           EQU $BB
 P710_TOKEN_SGN           EQU $BC
 P710_TOKEN_ABS           EQU $BD
-P710_TOKEN_CAP           EQU 94
+P710_TOKEN_CAP           EQU 60
+P710_EXEC_CAP            EQU 250
 
 ; Exact builtin lookup: HL=name, B=len. Success DE=handler. No PATH/BCAT/tape.
 sh_p710_lookup_calc:
@@ -3429,7 +3430,9 @@ sh_p710_calc_builtin:
     ld de,p710_tokens
     call sh_p710_tokenize
     ret c
-    ld hl,p710_tokens
+    call sh_p710_encode_numbers
+    ret c
+    ld hl,p710_exec
     ld de,(p710_result_ptr)
     jp zx48_rom_calc_expr
 
@@ -3576,6 +3579,98 @@ sh_p710_finish:
     xor a
     ret
 
+
+; The first pass above has already rejected every unsafe token in the complete
+; argument. Only now may decimal conversion enter ROM. This second pass copies
+; the safe token stream and appends BASIC number marker 14 plus five-byte value
+; after each decimal literal, producing the exact execution form SCANNING expects.
+sh_p710_encode_numbers:
+    ld hl,p710_tokens
+    ld (p710_enc_ptr),hl
+    ld hl,p710_exec
+    ld (p710_exec_ptr),hl
+    xor a
+    ld (p710_exec_len),a
+sh_p710_encode_loop:
+    ld hl,(p710_enc_ptr)
+    ld a,(hl)
+    cp 13
+    jp z,sh_p710_encode_finish
+    cp '0'
+    jr c,sh_p710_encode_dot
+    cp '9'+1
+    jp c,sh_p710_encode_number
+sh_p710_encode_dot:
+    cp '.'
+    jp z,sh_p710_encode_number
+    call sh_p710_exec_emit
+    ret c
+    ld hl,(p710_enc_ptr)
+    inc hl
+    ld (p710_enc_ptr),hl
+    jr sh_p710_encode_loop
+
+sh_p710_encode_number:
+    ld de,p710_num_value
+    call zx48_rom_decimal_literal
+    ret c
+    ld hl,(p710_enc_ptr)
+sh_p710_encode_number_copy:
+    ld a,(hl)
+    cp '0'
+    jr c,sh_p710_encode_number_dot
+    cp '9'+1
+    jr c,sh_p710_encode_number_byte
+sh_p710_encode_number_dot:
+    cp '.'
+    jr nz,sh_p710_encode_number_done
+sh_p710_encode_number_byte:
+    call sh_p710_exec_emit
+    ret c
+    inc hl
+    jr sh_p710_encode_number_copy
+sh_p710_encode_number_done:
+    ld (p710_enc_ptr),hl
+    ld a,14
+    call sh_p710_exec_emit
+    ret c
+    ld hl,p710_num_value
+    ld b,5
+sh_p710_encode_value:
+    ld a,(hl)
+    call sh_p710_exec_emit
+    ret c
+    inc hl
+    djnz sh_p710_encode_value
+    jr sh_p710_encode_loop
+
+sh_p710_encode_finish:
+    ld a,13
+    call sh_p710_exec_emit
+    ret c
+    xor a
+    ret
+
+sh_p710_exec_emit:
+    push af
+    ld a,(p710_exec_len)
+    cp P710_EXEC_CAP
+    jr nc,sh_p710_exec_too_long
+    inc a
+    ld (p710_exec_len),a
+    ld de,(p710_exec_ptr)
+    pop af
+    ld (de),a
+    inc de
+    ld (p710_exec_ptr),de
+    xor a
+    ret
+sh_p710_exec_too_long:
+    pop af
+    ld a,E_TOOLONG
+    scf
+    ret
+
 sh_p710_notsup:
     ld a,E_NOTSUP
     scf
@@ -3607,5 +3702,10 @@ p710_in_ptr: dw 0
 p710_out_ptr: dw 0
 p710_out_len: db 0
 p710_seen: db 0
+p710_enc_ptr: dw 0
+p710_exec_ptr: dw 0
+p710_exec_len: db 0
+p710_num_value: defs 5,0
 p710_tokens: defs P710_TOKEN_CAP+1,0
+p710_exec: defs P710_EXEC_CAP+1,0
     ENDM
