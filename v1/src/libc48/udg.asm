@@ -18,25 +18,25 @@
 udg_draw_2x2:
     ld a,h
     or a
-    jr nz,udg_draw_2x2_invalid
+    jp nz,udg_draw_2x2_invalid
     ld a,d
     or a
-    jr nz,udg_draw_2x2_invalid
+    jp nz,udg_draw_2x2_invalid
     ld a,b
     or a
-    jr nz,udg_draw_2x2_invalid
+    jp nz,udg_draw_2x2_invalid
 
     ld a,l
     cp 29
-    jr nc,udg_draw_2x2_invalid
+    jp nc,udg_draw_2x2_invalid
     ld (udg2_base),a
     ld a,e
     cp 23
-    jr nc,udg_draw_2x2_invalid
+    jp nc,udg_draw_2x2_invalid
     ld (udg2_row),a
     ld a,c
     cp 31
-    jr nc,udg_draw_2x2_invalid
+    jp nc,udg_draw_2x2_invalid
     ld (udg2_col),a
 
     ; top-left: base+0,row,col
