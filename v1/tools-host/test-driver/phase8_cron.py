@@ -18,7 +18,7 @@ from driver_core import DriverError
 from fuse_harness import FAIL_PC, PASS_PC, run_sna
 from phase8_common import mex1, inspect_mex, make_tap
 
-BASE=0xC000
+BASE=0xC000  # qualification fixture load address
 BUF=0xA000
 KEY=0xA900
 SCHED=0xA920
