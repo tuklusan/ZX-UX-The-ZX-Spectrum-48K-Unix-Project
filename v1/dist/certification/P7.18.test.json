@@ -1,0 +1,93 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p718-present",
+      "passed": true
+    },
+    {
+      "name": "c48-beep-signature-frozen",
+      "passed": true
+    },
+    {
+      "name": "c48-regcall-float-pointer-contract-frozen",
+      "passed": true
+    },
+    {
+      "name": "beep-shares-sys-beep-service",
+      "passed": true
+    },
+    {
+      "name": "kernel-validates-both-five-byte-pointer-ranges",
+      "passed": true
+    },
+    {
+      "name": "kernel-forwards-exact-hl-de-pointers-to-sound",
+      "passed": true
+    },
+    {
+      "name": "fuse-c48-regcall-hl-de-float-pointers-reach-sys-beep-exact",
+      "passed": true
+    },
+    {
+      "name": "fuse-c48-success-maps-to-int-zero",
+      "passed": true
+    },
+    {
+      "name": "fuse-c48-kernel-errno-maps-to-positive-int",
+      "passed": true
+    },
+    {
+      "name": "fuse-nonpointer-register-convention-rejected-before-sound",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 38,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 15512 lines, work time: 0.037 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p718-c48-beep.sym",
+        "p718-c48-beep.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 6,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2394 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "ae3c54f9cd50eade1e543d9ac3c6ff58c83d63d6951c707b192ef5f9e26d4806",
+    "v1/src/kernel/syscall.asm": "0b1d45a8024ef930032063306f706aa87d209bc281488e26458943594c3091f7",
+    "v1/tools-host/test-driver/phase7_beep_c48.py": "90e900dd7d5a0e57a30fe757a2266905b481f7842f7e085585660a0145ddfd32",
+    "v1/tools-host/test-driver/run.py": "8320ec265f407dbf08890d68aa02a3e813714e4a6d617c0ac0882fc3ee2c98ef"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P7.17": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "51daccdf6f0fcbd87358206a3d4f27fb3e5ed7af",
+  "status": "PASS",
+  "step": "P7.18",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
