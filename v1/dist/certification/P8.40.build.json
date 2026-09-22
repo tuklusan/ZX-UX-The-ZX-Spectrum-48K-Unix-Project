@@ -1,0 +1,78 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "all-p8-01-through-p8-39-durable-evidence-pass",
+      "passed": true,
+      "record_count": 78
+    },
+    {
+      "name": "all-required-lower-case-phase8-command-sources-present",
+      "passed": true
+    },
+    {
+      "name": "ps-mem-remain-builtins",
+      "passed": true
+    },
+    {
+      "basis": "P8.37 P8.38",
+      "name": "final-external-echo-wc-pipeline-pass",
+      "passed": true
+    },
+    {
+      "basis": "P8.38",
+      "name": "utility-error-propagation-pass",
+      "passed": true
+    },
+    {
+      "basis": "P8.36",
+      "name": "demo-contract-valid-fixtures-pass",
+      "passed": true
+    },
+    {
+      "basis": "P8.26",
+      "name": "crontab-editor-transaction-fixture-pass",
+      "passed": true
+    },
+    {
+      "basis": "P8.24 P8.39",
+      "name": "boot-valid-date-and-diagnostic-invalid-time-pass",
+      "passed": true
+    },
+    {
+      "basis": "P8.24 P8.25 P8.39",
+      "name": "date-set-revision-and-cron-dedupe-pass",
+      "passed": true
+    },
+    {
+      "name": "negative-failed-record-or-authority-drift-blocks-phase",
+      "passed": true
+    },
+    {
+      "name": "phase8-gate-stops-before-phase9",
+      "passed": true
+    }
+  ],
+  "commands": [],
+  "hashes": {
+    "docs/01-ZX-UX-ARCHITECTURE-REV16.md": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+    "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+    "v1/build/p840-phase8-acceptance.tap": "e2f640f18a373a5ac45f1d22eb549625fdc4f43a6b447dc041837326988e3009",
+    "v1/dist/certification/P8.39.build.json": "177186202eb0e12ec55307bc9aba411befd60e29a7bbafdf79d82e2f31409049",
+    "v1/dist/certification/P8.39.test.json": "801f699e7e6ed4abd0907d29b14be713f264a3ae503fdc3808664042836bcfd2",
+    "v1/dist/media/P8.39/manifest.json": "aa0d171fe5396f8abe7d3f9e5b1ddf7e0da73df7bce25421a0c8d0c27b1bcaba",
+    "v1/tools-host/test-driver/phase8_acceptance.py": "7a322fbc2b8323b050741dc6a502dfc51ce4f31690a07c049f6521405491b6c6",
+    "v1/tools-host/test-driver/run.py": "527b96d3b4046a909cde4ef84719fb255bf21f18dac476324790a2721fea65e2"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.39": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "4035eb79f3c0a2cb556e38134a35a1a1c0d7673a",
+  "status": "PASS",
+  "step": "P8.40",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
