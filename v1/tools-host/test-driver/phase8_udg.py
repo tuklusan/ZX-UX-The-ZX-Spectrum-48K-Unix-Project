@@ -26,7 +26,8 @@ MODE=0xA3F0
 STATUS=0xA3F1
 GETS=0xA3F2
 
-class P821Error(DriverError): pass
+class P821Error(DriverError):
+    pass
 
 def require(v,m):
     if not v: raise P821Error(m)
