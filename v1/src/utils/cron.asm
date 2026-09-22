@@ -592,7 +592,7 @@ cron_lock_create:
     ld b,OBJ_DAT
     ld a,SYS_OPEN
     call SYSCALL_GATEWAY
-    jr c,cron_lock_exists
+    jp c,cron_lock_exists
     ld a,l
     ld (cron_lock_handle),a
     ld e,a
@@ -601,13 +601,13 @@ cron_lock_create:
     ld bc,2
     ld a,SYS_WRITE
     call SYSCALL_GATEWAY
-    jr c,cron_lock_create_fail
+    jp c,cron_lock_create_fail
     ld a,h
     or a
-    jr nz,cron_lock_short_write
+    jp nz,cron_lock_short_write
     ld a,l
     cp 2
-    jr nz,cron_lock_short_write
+    jp nz,cron_lock_short_write
     call cron_lock_close
     ret c
     ld a,1
@@ -634,7 +634,7 @@ cron_lock_exists:
     ld b,0
     ld a,SYS_OPEN
     call SYSCALL_GATEWAY
-    jr c,cron_lock_busy
+    jp c,cron_lock_busy
     ld a,l
     ld (cron_lock_handle),a
     ld e,a
@@ -643,22 +643,22 @@ cron_lock_exists:
     ld bc,3
     ld a,SYS_READ
     call SYSCALL_GATEWAY
-    jr c,cron_lock_read_fail
+    jp c,cron_lock_read_fail
     ld a,h
     or a
-    jr nz,cron_lock_malformed
+    jp nz,cron_lock_malformed
     ld a,l
     cp 2
-    jr nz,cron_lock_malformed
+    jp nz,cron_lock_malformed
     ld a,(cron_lock_read)
     cp '2'
-    jr c,cron_lock_malformed
+    jp c,cron_lock_malformed
     cp '8'
-    jr nc,cron_lock_malformed
+    jp nc,cron_lock_malformed
     ld b,a
     ld a,(cron_lock_read+1)
     cp 10
-    jr nz,cron_lock_malformed
+    jp nz,cron_lock_malformed
 
     ; Confirm exact EOF after the two-byte payload.
     ld a,(cron_lock_handle)
@@ -668,10 +668,10 @@ cron_lock_exists:
     ld bc,1
     ld a,SYS_READ
     call SYSCALL_GATEWAY
-    jr c,cron_lock_read_fail
+    jp c,cron_lock_read_fail
     ld a,h
     or l
-    jr nz,cron_lock_malformed
+    jp nz,cron_lock_malformed
 
     ld a,b
     sub '0'
@@ -683,9 +683,9 @@ cron_lock_exists:
     ld hl,cron_proc_req
     ld a,SYS_PROC_INFO
     call SYSCALL_GATEWAY
-    jr nc,cron_lock_live
+    jp nc,cron_lock_live
     cp E_NOENT
-    jr nz,cron_lock_live
+    jp nz,cron_lock_live
     ; Stale valid owner only: close, remove, then create once.
     call cron_lock_close
     ret c
