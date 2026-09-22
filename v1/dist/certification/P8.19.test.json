@@ -1,0 +1,115 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p819-present",
+      "passed": true
+    },
+    {
+      "name": "ps-remains-p613-builtin",
+      "passed": true
+    },
+    {
+      "name": "no-external-ps-module",
+      "passed": true
+    },
+    {
+      "name": "proc-info-source",
+      "passed": true
+    },
+    {
+      "name": "pid-state-memory-name",
+      "passed": true
+    },
+    {
+      "name": "stdout-short-write-safe",
+      "passed": true
+    },
+    {
+      "name": "single-foreground-only",
+      "passed": true
+    },
+    {
+      "name": "fuse-pid-state-memory-name",
+      "passed": true
+    },
+    {
+      "name": "fuse-short-write-retried",
+      "passed": true
+    },
+    {
+      "name": "fuse-proc-info-error-propagates",
+      "passed": true
+    },
+    {
+      "name": "fuse-builtin-context-errors",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p819-ps-fixture.lst",
+        "--sym=p819-ps-fixture.sym",
+        "p819-ps-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 10,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 5155 lines, work time: 0.008 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p819-gateway.lst",
+        "--sym=p819-gateway.sym",
+        "p819-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 411 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p819-ps.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 36,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 2138, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 38485, \"image_size\": 758, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 782, \"relocations\": [], \"stored_length\": 782, \"version\": 1}\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p819-ps-builtin.tap": "dae7d03aa9266883b5fd6636175062618be7c1733b7076f16018f2e9c64a0f62",
+    "v1/build/p819-ps.mex1": "1dc1f7d391b8a23d6494da28b78c7c68c69f6ea877401015547608b9d7216709",
+    "v1/dist/certification/P8.18.test.json": "cfb92751c8b7fa7336f60eb73cf99e825d076580969d44ece1919a7c9308ccae",
+    "v1/src/shell/sh.asm": "a8539b12124e5d888e377a8b0801b267823a2b2c092bfb18ad9c2e0668546e7a",
+    "v1/tools-host/test-driver/phase8_ps.py": "5061af76bd25318b6803dbc9dc668a1cd849b8fcb2361d929d65d30f25db1196",
+    "v1/tools-host/test-driver/run.py": "f04e0e602ee092260090fd8c259edfb9bd07757d1e90c666d0041c303248d897"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.18": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "bd00e38440ea2631bffd23eb148788762726a586",
+  "status": "PASS",
+  "step": "P8.19",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

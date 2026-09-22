@@ -1,0 +1,55 @@
+{
+  "files": [
+    {
+      "action": "build",
+      "path": "build/build-p819-ps-builtin-dae7d03aa9266883b5fd6636175062618be7c1733b7076f16018f2e9c64a0f62.tap",
+      "sha256": "dae7d03aa9266883b5fd6636175062618be7c1733b7076f16018f2e9c64a0f62",
+      "size": 826
+    },
+    {
+      "action": "test",
+      "path": "test/build-p819-ps-builtin-dae7d03aa9266883b5fd6636175062618be7c1733b7076f16018f2e9c64a0f62.tap",
+      "sha256": "dae7d03aa9266883b5fd6636175062618be7c1733b7076f16018f2e9c64a0f62",
+      "size": 826
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-37cd7eec6164fbbb1292a370a66a554731984be6c58eda57b79237b572d92408.sna",
+      "sha256": "37cd7eec6164fbbb1292a370a66a554731984be6c58eda57b79237b572d92408",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-479be259ba51c787339a27eebaae832e0d5e023e61775a383cb752a020db0a94.sna",
+      "sha256": "479be259ba51c787339a27eebaae832e0d5e023e61775a383cb752a020db0a94",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-570543ee3f782edcbf541303609035c4b67c98ee374a633cfb99867e7b73fd03.sna",
+      "sha256": "570543ee3f782edcbf541303609035c4b67c98ee374a633cfb99867e7b73fd03",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-91d2a717655aa56c46e8314887c8fe2897f077f49c7154a770760b1c8028c7d8.sna",
+      "sha256": "91d2a717655aa56c46e8314887c8fe2897f077f49c7154a770760b1c8028c7d8",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-dafc9eb79a69d5655ea8c4a2be326202e2d7a3b73276a3cc088ba5fb3d8f3b72.sna",
+      "sha256": "dafc9eb79a69d5655ea8c4a2be326202e2d7a3b73276a3cc088ba5fb3d8f3b72",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-f2005d1496d5ec93813a65f8b5fb01781345045ac418253631355b2de69b8c12.sna",
+      "sha256": "f2005d1496d5ec93813a65f8b5fb01781345045ac418253631355b2de69b8c12",
+      "size": 49179
+    }
+  ],
+  "schema": 1,
+  "source_commit": "bd00e38440ea2631bffd23eb148788762726a586",
+  "step": "P8.19"
+}
