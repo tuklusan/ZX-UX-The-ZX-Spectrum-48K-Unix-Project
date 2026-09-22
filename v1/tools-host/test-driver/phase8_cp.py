@@ -108,7 +108,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
     plan = (root / "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md").read_text(encoding="utf-8")
     return [
         {"name": "canonical-p803-present", "passed": "## P8.03 - Utility `cp`" in plan},
-        {"name": "exact-same-path-noop", "passed": "cp_same_loop:" in src and "jr z,cp_success" in src},
+        {"name": "exact-same-path-noop", "passed": "cp_same_loop:" in src and ("jr z,cp_success" in src or "jp z,cp_success" in src)},
         {"name": "source-stat-preserves-type", "passed": "ld a,SYS_STAT" in src and "ld a,(cp_stat_out+0)" in src and "ld (cp_src_type),a" in src},
         {"name": "ram-source-only", "passed": "cp STATE_RAM" in src and "ld a,E_PERM" in src},
         {"name": "logical-read-stream", "passed": "ld a,SYS_READ" in src and "cp_buffer" in src},
