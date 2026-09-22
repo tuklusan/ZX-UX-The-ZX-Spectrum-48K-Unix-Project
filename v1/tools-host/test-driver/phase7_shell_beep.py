@@ -12,8 +12,10 @@
 # patent, trademark, and governing-law provisions.
 
 from pathlib import Path
-from driver_core import DriverError
-from fuse_harness import FAIL_PC, PASS_PC, run_sna
+import tempfile
+from driver_core import DriverError, run_command
+from fuse_harness import FAIL_PC, PASS_PC, make_sna, run_sna
+from media_retention import retain_media_bytes
 import phase1, phase3_open_descriptions
 
 CORE=0x6000
@@ -228,6 +230,27 @@ def valid(root,s,core,shell,gate,arg,dur,pitch):
     code+=checkb(s["altreg_busy"],0)+checkb(s["ula_shadow"],3)+phase1._jp(PASS_PC)
     run_sna(root,bytes(code),patch=patch(core,shell,gate,s,arg=arg),timeout=35)
 
+def calc_dump(root,s,core,shell,gate,expr):
+    code=bytearray(b"\xf3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(ARG)+phase1._ld_de(s["p720_duration_fp"])+bytes((0x3e,2,0x06,1,0x0e,0))+call(s["sh_p710_calc_builtin"]))
+    code+=jpc(FAIL_PC)+b"\xb7"+phase1._jp_nz(FAIL_PC)+phase1._jp(PASS_PC)
+    sna_bytes=make_sna(bytes(code),patch=patch(core,shell,gate,s,arg=expr))
+    retain_media_bytes(sna_bytes,".sna",label="fixture")
+    with tempfile.TemporaryDirectory(prefix="zxux-p720-dump-") as temporary:
+        sna=Path(temporary)/"fixture.sna"
+        sna.write_bytes(sna_bytes)
+        addr=s["p720_duration_fp"]
+        command=(f"breakpoint 0x{PASS_PC:04x}\ncommands 1\n"+
+                 "".join(f"print [0x{addr+i:04x}]\n" for i in range(5))+
+                 "exit 0\nend\n"+
+                 f"breakpoint 0x{FAIL_PC:04x}\ncommands 2\nexit 1\nend\ncontinue")
+        result=run_command([
+            "/usr/bin/env","SDL_VIDEODRIVER=dummy","SDL_AUDIODRIVER=dummy",
+            root/"tools/runtime/fuse/bin/fuse","--machine","48","--no-sound",
+            "--no-confirm-actions","--debugger-command",command,sna
+        ],cwd=root,timeout_seconds=20)
+    req(not result.timed_out and result.exit_code==0,f"calc dump execution failed: {result.stdout!r} {result.stderr!r}")
+    raise P720Error(f"calc-dump {expr!r}: {result.stdout!r}")
+
 def calc_result(root,s,core,shell,gate,expr,expected=None):
     code=bytearray(b"\xf3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(ARG)+phase1._ld_de(s["p720_duration_fp"])+bytes((0x3e,2,0x06,1,0x0e,0))+call(s["sh_p710_calc_builtin"]))
     code+=jpc(FAIL_PC)+b"\xb7"+phase1._jp_nz(FAIL_PC)
@@ -303,6 +326,7 @@ def dispatch(root,action,step,*,sha256_file,run_command,require_project_tool):
         core=cb.read_bytes(); shell=sb.read_bytes(); gate=gb.read_bytes()
         case("valid-1-0",valid,root,s,core,shell,gate,b"1,0",bytes((0,0,1,0,0)),bytes((0,0,0,0,0)))
         case("calc-half-noexact",calc_result,root,s,core,shell,gate,b".5")
+        case("calc-half-dump",calc_dump,root,s,core,shell,gate,b".5")
         case("calc-half-exact",calc_result,root,s,core,shell,gate,b".5",bytes((0x80,0,0,0,0)))
         case("calc-nine-exact",calc_result,root,s,core,shell,gate,b"9",bytes((0,0,9,0,0)))
         case("convert-half-9",conversion_only,root,s,core,shell,gate,b".5,9",bytes((0x80,0,0,0,0)),bytes((0,0,9,0,0)))
