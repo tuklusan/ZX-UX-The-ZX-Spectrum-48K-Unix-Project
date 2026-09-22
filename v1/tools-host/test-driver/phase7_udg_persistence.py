@@ -19,11 +19,11 @@ import phase1, phase3_open_descriptions
 UTIL=0xC000
 GATE=0xE000
 LIVE=0x7000
-LOAD=0x9000
-STAGED=0x9200
-TARGET=0x9400
-PATH=0xA000
-ARG1=0xA100
+LOAD=0xA000
+STAGED=0xA200
+TARGET=0xA400
+PATH=0xA600
+ARG1=0xA700
 
 class P716Error(DriverError): pass
 def req(v,m):
@@ -71,9 +71,9 @@ p716_util_end:
     g.write_text("""    DEVICE ZXSPECTRUM48
     INCLUDE "../include/zx48ux.inc"
 LIVE EQU $7000
-LOAD EQU $9000
-STAGED EQU $9200
-TARGET EQU $9400
+LOAD EQU $A000
+STAGED EQU $A200
+TARGET EQU $A400
     ORG $E000
 p716_gate:
     cp SYS_GETPID
