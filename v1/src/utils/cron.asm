@@ -347,7 +347,7 @@ cron_cmd_escape:
     ld (cron_escape),a
 cron_cmd_advance:
     inc hl
-    jr cron_cmd_loop
+    jp cron_cmd_loop
 cron_cmd_done:
     ld a,(cron_quote)
     or a
