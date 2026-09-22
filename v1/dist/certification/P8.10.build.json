@@ -1,0 +1,118 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p810-present",
+      "passed": true
+    },
+    {
+      "name": "default-ten",
+      "passed": true
+    },
+    {
+      "name": "strict-decimal",
+      "passed": true
+    },
+    {
+      "name": "range-1-255",
+      "passed": true
+    },
+    {
+      "name": "stdin-stream",
+      "passed": true
+    },
+    {
+      "name": "line-bound",
+      "passed": true
+    },
+    {
+      "name": "stdout-short-write-safe",
+      "passed": true
+    },
+    {
+      "name": "invalid-arity",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p810-head-image.lst",
+        "--sym=p810-head-image.sym",
+        "p810-head-image.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 589 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p810-head.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 33,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 4928, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 43893, \"image_size\": 236, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 260, \"relocations\": [], \"stored_length\": 260, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p810-head-fixture.lst",
+        "--sym=p810-head-fixture.sym",
+        "p810-head-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 589 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p810-gateway.lst",
+        "--sym=p810-gateway.sym",
+        "p810-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 358 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p810-head.mex1": "b3af3f0c63085964ebd3866b26eae82a8ef3c87a632e448720e66e71ce1d1a85",
+    "v1/build/p810-head.tap": "900c97966266be3c2f70bebbb65322fca1c5f1a24a285292cd9baa33a6a87bd6",
+    "v1/dist/certification/P8.09.test.json": "f14728c717a7f9761a8fa7c031d92800391e4fcbf8b40574ee570db35f15c606",
+    "v1/src/utils/head.asm": "33a9e02f7f40fd1823b79000a47e78bfa1762e079709b4601b95c8da84b437a9",
+    "v1/tools-host/test-driver/phase8_head.py": "dfbb5d8b8045bee70cf0a5aa87f638856738adb26d1609cb7b1e5c7e5a625b99",
+    "v1/tools-host/test-driver/run.py": "9594516c993346b4aa3bdbb7266344eff3c3ef470df44d33bf87046b8e11f942"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.09": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "0e2d58eb7b794b5bcfcbba242d121d6d89d50800",
+  "status": "PASS",
+  "step": "P8.10",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
