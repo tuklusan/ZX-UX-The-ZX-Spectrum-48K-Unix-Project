@@ -99,17 +99,25 @@ cron_val_parse:
     ld hl,(cron_cfg_end)
     jr cron_val_line
 cron_val_skip_line:
-    ld a,(hl)
-    cp 10
-    jr z,cron_val_skip_lf
-    inc hl
+    xor a
+    ld (cron_line_len),a
+cron_val_skip_line_loop:
     ld de,(cron_cfg_end)
     push hl
     or a
     sbc hl,de
     pop hl
-    jr nz,cron_val_skip_line
-    jr cron_val_ok
+    jr z,cron_val_ok
+    ld a,(hl)
+    cp 10
+    jr z,cron_val_skip_lf
+    inc hl
+    ld a,(cron_line_len)
+    inc a
+    ld (cron_line_len),a
+    cp CRON_MAX_LINE+1
+    jr nc,cron_val_bad
+    jr cron_val_skip_line_loop
 cron_val_skip_lf:
     inc hl
     jr cron_val_line
