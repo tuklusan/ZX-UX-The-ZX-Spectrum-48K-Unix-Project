@@ -14,14 +14,14 @@
 from __future__ import annotations
 import phase1, phase3_open_descriptions
 from driver_core import DriverError
-from fuse_harness import PASS_PC, run_sna
+from fuse_harness import FAIL_PC, PASS_PC, run_sna
 from phase8_common import arg1, word, assemble_utility, inspect_mex, make_tap
 
 UTIL=0xC000; GATE=0xE000; ARG=0xA000; OUT=0xA300; MODE=0xA2F0; STATUS=0xA2F1
 class P818Error(DriverError): pass
 def require(v,m):
     if not v: raise P818Error(m)
-def expect(addr,val): return b"\x3A"+word(addr)+bytes((0xFE,val&255))+phase1._jp_nz(0x8F00)
+def expect(addr,val): return b"\x3A"+word(addr)+bytes((0xFE,val&255))+phase1._jp_nz(FAIL_PC)
 def expected(data:bytes)->bytes:
     out=bytearray()
     for off in range(0,len(data),8):
