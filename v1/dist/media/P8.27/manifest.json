@@ -1,0 +1,37 @@
+{
+  "files": [
+    {
+      "action": "build",
+      "path": "build/build-p827-man-f4f412ceddbc87ef541a057f84a084124d88c069d4d1462c7c2360db1938e5e2.tap",
+      "sha256": "f4f412ceddbc87ef541a057f84a084124d88c069d4d1462c7c2360db1938e5e2",
+      "size": 328
+    },
+    {
+      "action": "test",
+      "path": "test/build-p827-man-f4f412ceddbc87ef541a057f84a084124d88c069d4d1462c7c2360db1938e5e2.tap",
+      "sha256": "f4f412ceddbc87ef541a057f84a084124d88c069d4d1462c7c2360db1938e5e2",
+      "size": 328
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-28a05aa59f2b171ecbfac39f7ba1056919c0a9a40a5c7ad133f8f4901b2e0e43.sna",
+      "sha256": "28a05aa59f2b171ecbfac39f7ba1056919c0a9a40a5c7ad133f8f4901b2e0e43",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-437e7e80635f6b0473e6a336eb47d49c44a68d25caa52ce728fa052b1e7c8097.sna",
+      "sha256": "437e7e80635f6b0473e6a336eb47d49c44a68d25caa52ce728fa052b1e7c8097",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-d8c7a8f7825418a8ae5fb28c0220e93c3b396f1b1afc98ef101381a01451a309.sna",
+      "sha256": "d8c7a8f7825418a8ae5fb28c0220e93c3b396f1b1afc98ef101381a01451a309",
+      "size": 49179
+    }
+  ],
+  "schema": 1,
+  "source_commit": "d12c7511738c82881e7bb0458e5952db1d879912",
+  "step": "P8.27"
+}

@@ -1,0 +1,122 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p827-present",
+      "passed": true
+    },
+    {
+      "name": "exact-manual-url",
+      "passed": true
+    },
+    {
+      "name": "search-zxus",
+      "passed": true
+    },
+    {
+      "name": "no-local-loader",
+      "passed": true
+    },
+    {
+      "name": "short-write-safe",
+      "passed": true
+    },
+    {
+      "name": "arity-one-or-two",
+      "passed": true
+    },
+    {
+      "name": "fuse-base-lines",
+      "passed": true
+    },
+    {
+      "name": "fuse-topic-suggestion",
+      "passed": true
+    },
+    {
+      "name": "fuse-arity",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p827-man-image.lst",
+        "--sym=p827-man-image.sym",
+        "p827-man-image.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 510 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p827-man.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 37051, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 38887, \"image_size\": 264, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 288, \"relocations\": [], \"stored_length\": 288, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p827-man-fixture.lst",
+        "--sym=p827-man-fixture.sym",
+        "p827-man-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 510 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p827-gateway.lst",
+        "--sym=p827-gateway.sym",
+        "p827-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 327 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p827-man.mex1": "64f892838b13892409378852285eed86f1e9cfdca8512f314d4a229382c2d02d",
+    "v1/build/p827-man.tap": "f4f412ceddbc87ef541a057f84a084124d88c069d4d1462c7c2360db1938e5e2",
+    "v1/dist/certification/P8.26.test.json": "51054e2aed9caf55f352cc95fb598725be4c9ec75561bcb99f1e31cb5a5ee7a1",
+    "v1/src/utils/man.asm": "52eef7d6f5d1754674c3689853616eb70f03febc52d7a3fda77583eced5c5549",
+    "v1/tools-host/test-driver/phase8_man.py": "97e7d22b89306b837932926a92f83af75cbb2fc1053f6fface42f7aa19cf384b",
+    "v1/tools-host/test-driver/run.py": "e7703b207d8b7743471a002600376cc144b3624a95a01e87e41ed5be04fe3ab4"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.26": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "d12c7511738c82881e7bb0458e5952db1d879912",
+  "status": "PASS",
+  "step": "P8.27",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
