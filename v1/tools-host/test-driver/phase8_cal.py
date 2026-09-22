@@ -138,10 +138,16 @@ gate_end:
             ab=arg1(args); code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(ARG)+b"\x01"+word(len(ab))+phase1._call(sy["cal_entry"]))
             for i,v in enumerate(prefix): code+=expect(OUT+i,v)
             code+=expect(STATUS,status)+phase1._jp(PASS_PC)
-            try:\n                run_sna(root,bytes(code),patch=patch(ub,gb,args,mode),timeout=30)\n            except Exception as e:\n                raise P828Error(f"P8.28 case {args!r} failed: {e}")
+            try:
+                run_sna(root,bytes(code),patch=patch(ub,gb,args,mode),timeout=30)
+            except Exception as e:
+                raise P828Error(f"P8.28 case {args!r} failed: {e}")
         for args in ([b"cal",b"0"],[b"cal",b"13"],[b"cal",b"1",b"1969"],[b"cal",b"1",b"2100"],[b"cal",b"1",b"2024",b"x"]):
             ab=arg1(list(args)); code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(ARG)+b"\x01"+word(len(ab))+phase1._call(sy["cal_entry"])+expect(STATUS,sy["E_INVAL"]&255)+phase1._jp(PASS_PC))
-            try:\n                run_sna(root,bytes(code),patch=patch(ub,gb,list(args),0),timeout=30)\n            except Exception as e:\n                raise P828Error(f"P8.28 invalid case {args!r} failed: {e}")
+            try:
+                run_sna(root,bytes(code),patch=patch(ub,gb,list(args),0),timeout=30)
+            except Exception as e:
+                raise P828Error(f"P8.28 invalid case {args!r} failed: {e}")
         assertions += [{"name":"fuse-current-month-year","passed":True},{"name":"fuse-two-arg-independent","passed":True},{"name":"fuse-invalid-wall-state","passed":True},{"name":"fuse-range-rejection","passed":True}]
     hashes={"v1/src/utils/cal.asm":sha256_file(root/"v1/src/utils/cal.asm"),"v1/build/p828-cal.mex1":sha256_file(mex),"v1/build/p828-cal.tap":sha256_file(tap),"v1/tools-host/test-driver/phase8_cal.py":sha256_file(root/"v1/tools-host/test-driver/phase8_cal.py"),"v1/tools-host/test-driver/run.py":sha256_file(root/"v1/tools-host/test-driver/run.py"),"v1/dist/certification/P8.27.test.json":sha256_file(root/"v1/dist/certification/P8.27.test.json")}
     return [ir,xr,fr,gr],hashes,assertions
