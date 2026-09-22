@@ -140,7 +140,7 @@ udg_save_invalid:
 udg_save_opened:
     ld a,h
     or a
-    jr nz,udg_save_bad_handle
+    jp nz,udg_save_bad_handle
     ld a,l
     ld (udg_handle),a
 
