@@ -191,8 +191,16 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
     printable_exact = _ordered(
         printable,
         (
-            "cp $80",
+            "cp udg_code_last+1",
             "jr nc,zx48_console_bad",
+            "cp udg_code_first",
+            "jr c,zx48_console_print",
+            "push af",
+            "ld a,(tty_mode)",
+            "cp tty_mode_64",
+            "pop af",
+            "jr z,zx48_console_bad",
+            "zx48_console_print:",
             "push af",
             "call zx48_cursor_hide",
             "ld a,(tty_wrap_pending)",
@@ -219,7 +227,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
     return [
         {"name": "canonical-putchar-syscall-number", "passed": any(line.split() == ["sys_con_putchar", "equ", "$31"] for line in include.splitlines())},
         {"name": "putchar-rejects-nonzero-h-before-output", "passed": syscall_exact},
-        {"name": "printable-byte-range-is-20-through-7f", "passed": "cp $20" in console and printable_exact},
+        {"name": "printable-byte-range-preserves-text-and-tty32-udg-extension", "passed": "cp $20" in console and printable_exact},
         {"name": "printable-resolves-deferred-wrap-before-draw", "passed": printable_exact},
         {"name": "printable-dispatches-current-tty-mode", "passed": "call zx48_tty32_draw_char" in printable and "call zx48_tty64_draw_char" in printable},
         {"name": "moving-controls-cancel-pending-before-motion", "passed": control_exact},
@@ -301,6 +309,19 @@ def _abi_negative_fixture(root: Path, labels: dict[str, int], kernel: bytes) -> 
     code += _expect_iy_anchor()
 
     code += phase1._ld_iy(0x2345)
+    code += _sys_putchar(0xA0)
+    code += _jp_nc(FAIL_PC) + bytes((0xFE, labels["E_INVAL"] & 0xFF)) + _jp_nz(FAIL_PC)
+    code += _expect_byte(labels["tty_row"], row)
+    code += _expect_byte(labels["tty_col"], col)
+    code += _expect_byte(labels["tty_wrap_pending"], 1)
+    code += _expect_byte(labels["screen_mutation_depth"], 0)
+    code += _expect_byte(guard, 0x69) + _expect_byte(attr, 0x96)
+    code += _expect_iy_anchor()
+
+    # P7.13 extends tty32 only: tty64 must reject UDG bytes before any cursor,
+    # deferred-wrap, bitmap, attribute, or coordinate mutation.
+    code += _store_byte(labels["tty_mode"], 64)
+    code += phase1._ld_iy(0x2A45)
     code += _sys_putchar(0x80)
     code += _jp_nc(FAIL_PC) + bytes((0xFE, labels["E_INVAL"] & 0xFF)) + _jp_nz(FAIL_PC)
     code += _expect_byte(labels["tty_row"], row)
@@ -588,7 +609,7 @@ def dispatch(
         _cursor_balance_fixture(root, labels, kernel)
         assertions.extend(
             (
-                {"name": "nonzero-h-and-invalid-byte-are-atomic-runtime", "passed": True},
+                {"name": "nonzero-h-and-mode-invalid-bytes-are-atomic-runtime", "passed": True},
                 {"name": "tty32-printable-bitmap-neighbors-and-attribute-exact", "passed": True},
                 {"name": "tty64-even-odd-nibbles-and-attributes-exact", "passed": True},
                 {"name": "tty32-and-tty64-deferred-wrap-controls-exact", "passed": True},

@@ -99,7 +99,7 @@ zx48_console_getpos:
     xor a
     ret
 
-; A=byte. Printable target codes are exactly 20h..7Fh.
+; A=byte. Text is 20h..7Fh. tty32 additionally accepts UDG codes 80h..9Fh.
 zx48_console_putchar:
     cp $20
     jr nc,zx48_console_printable
@@ -155,10 +155,17 @@ zx48_console_tab:
     jr zx48_console_control_done
 
 zx48_console_printable:
-    ; tty32 accepts 80h..9Fh through its UDG renderer. tty64's renderer rejects
-    ; the same bytes, so it never reinterprets them as 4x8 text glyphs.
+    ; tty32 accepts 80h..9Fh through its UDG renderer. tty64 rejects the UDG
+    ; extension before cursor/wrap state can be mutated.
     cp UDG_CODE_LAST+1
     jr nc,zx48_console_bad
+    cp UDG_CODE_FIRST
+    jr c,zx48_console_print
+    push af
+    ld a,(tty_mode)
+    cp TTY_MODE_64
+    pop af
+    jr z,zx48_console_bad
 zx48_console_print:
     push af
     call zx48_cursor_hide
