@@ -97,73 +97,68 @@ zx48_udg_clear_loop:
     ret
 
 zx48_udg_draw:
+    ; Validate all three record bytes before cursor/screen/attribute mutation.
     ld c,(hl)
+    ld a,c
+    cp UDG_SLOT_COUNT
+    jp nc,zx48_udg_bad
     inc hl
-    ld a,(hl)
+    ld b,(hl)
+    ld a,b
     cp 24
     jp nc,zx48_udg_bad
-    ld (udg_row),a
     inc hl
     ld a,(hl)
     cp 32
     jp nc,zx48_udg_bad
-    ld (udg_col),a
+
+    ; Preserve validated col and row/slot across cursor hiding, then draw the
+    ; one physical byte-wide cell. DE walks the eight-byte glyph.
+    push af
+    push bc
     call zx48_udg_slot_ptr
-    ret c
-    ld (udg_glyph),hl
+    ex de,hl
+    push de
     call zx48_cursor_hide
-    xor a
-    ld (udg_scan),a
-zx48_udg_draw_loop:
-    ld a,(udg_scan)
-    cp 8
-    jr nc,zx48_udg_draw_done
+    pop de
+    pop bc
+    pop af
     ld c,a
-    ld a,(udg_row)
+    ld a,b
     add a,a
     add a,a
     add a,a
-    add a,c
     ld b,a
-    ld a,(udg_col)
-    ld c,a
+zx48_udg_draw_loop:
     call zx48_bitmap_address
-    push hl
-    ld hl,(udg_glyph)
-    ld a,(udg_scan)
-    ld e,a
-    ld d,0
-    add hl,de
-    ld a,(hl)
-    pop hl
+    ld a,(de)
     ld (hl),a
-    ld a,(udg_scan)
-    inc a
-    ld (udg_scan),a
-    jr zx48_udg_draw_loop
-zx48_udg_draw_done:
-    ; One UDG always owns exactly one physical 8x8 Spectrum cell. In tty64
-    ; that byte spans logical columns 2*col and 2*col+1; the attribute cell is
-    ; therefore still the same physical row/column pair.
-    ld a,(udg_row)
+    inc de
+    inc b
+    ld a,b
+    and 7
+    jr nz,zx48_udg_draw_loop
+
+    ; B is now one scanline past the cell. Rewind to its first scanline and
+    ; derive the Spectrum attribute address directly from y and byte column.
+    ld a,b
+    sub 8
+    ld b,a
+    and $c0
+    rlca
+    rlca
+    add a,$58
+    ld h,a
+    ld a,b
+    and $38
+    rlca
+    rlca
+    or c
     ld l,a
-    ld h,0
-    add hl,hl
-    add hl,hl
-    add hl,hl
-    add hl,hl
-    add hl,hl
-    ld a,(udg_col)
-    ld e,a
-    ld d,0
-    add hl,de
-    ld de,ATTR_START
-    add hl,de
     ld a,(tty_current_attr)
     ld (hl),a
     call zx48_cursor_show
     xor a
-    or a
     ret
 zx48_udg_bad:
     ld a,E_INVAL
@@ -172,8 +167,4 @@ zx48_udg_bad:
 
 udg_bank_ptr: dw 0
 udg_io_ptr: dw 0
-udg_glyph: dw 0
-udg_row: db 0
-udg_col: db 0
-udg_scan: db 0
     ENDM
