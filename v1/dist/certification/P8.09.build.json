@@ -1,0 +1,118 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p809-present",
+      "passed": true
+    },
+    {
+      "name": "stdin-stream",
+      "passed": true
+    },
+    {
+      "name": "byte-count",
+      "passed": true
+    },
+    {
+      "name": "word-count",
+      "passed": true
+    },
+    {
+      "name": "line-count",
+      "passed": true
+    },
+    {
+      "name": "stdout",
+      "passed": true
+    },
+    {
+      "name": "short-write-safe",
+      "passed": true
+    },
+    {
+      "name": "no-extra-operands",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p809-wc-image.lst",
+        "--sym=p809-wc-image.sym",
+        "p809-wc-image.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 653 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p809-wc.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 33,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 60621, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 60195, \"image_size\": 349, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 373, \"relocations\": [], \"stored_length\": 373, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p809-wc-fixture.lst",
+        "--sym=p809-wc-fixture.sym",
+        "p809-wc-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 653 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p809-gateway.lst",
+        "--sym=p809-gateway.sym",
+        "p809-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 358 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p809-wc.mex1": "9b6a0b2e75bce40c6fd431b9a5115b0f653c60fb9f234d91853abbbccbaa4542",
+    "v1/build/p809-wc.tap": "a33d02baec65836de0ad5a5bf5f1fb71a5f1ec4454c1c87d4d8ca3795a02ab1d",
+    "v1/dist/certification/P8.08.test.json": "5f9fa77dc2dc112951f911ed360656b961ca23ea781b6bafcd2e456f7093a610",
+    "v1/src/utils/wc.asm": "b266b70a76b77b6698cf84b608aca8c61c069e7be974991b38d79a8ea242aafa",
+    "v1/tools-host/test-driver/phase8_wc.py": "60d140fc7288526de56872b94247935782d65e4ab649cb3acdea486741531ee6",
+    "v1/tools-host/test-driver/run.py": "4e3960b5bc9cc3766f1a50efed4ebe8a124592ee49641afef4fa520f241aeef0"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.08": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "6fff04160cb61fef27bd8f2fa732c3b35e17ecda",
+  "status": "PASS",
+  "step": "P8.09",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
