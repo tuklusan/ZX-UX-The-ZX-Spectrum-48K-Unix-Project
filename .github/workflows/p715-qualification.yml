@@ -33,6 +33,7 @@ jobs:
           git diff --name-only "$P715_BASE" HEAD | sort > /tmp/changed
           printf '%s\n' \
             .github/workflows/p715-qualification.yml \
+            .github/workflows/qualification-auto-dispatch.yml \
             v1/src/kernel/udg.asm \
             v1/src/kernel/syscall.asm \
             v1/tools-host/test-driver/phase7_udg_draw.py \
@@ -50,7 +51,7 @@ jobs:
             ./tools/check_project_policy.py
             test -z "$(git status --porcelain)"
             test "$(git rev-parse 'HEAD^{tree}')" = "$tree"
-            d="$(sha256sum v1/src/kernel/udg.asm v1/src/kernel/syscall.asm v1/tools-host/test-driver/phase7_udg_draw.py v1/tools-host/test-driver/run.py .github/workflows/p715-qualification.yml | sha256sum | awk '{print $1}')"
+            d="$(sha256sum v1/src/kernel/udg.asm v1/src/kernel/syscall.asm v1/tools-host/test-driver/phase7_udg_draw.py v1/tools-host/test-driver/run.py .github/workflows/p715-qualification.yml .github/workflows/qualification-auto-dispatch.yml | sha256sum | awk '{print $1}')"
             if test -z "$baseline"; then baseline="$d"; else test "$baseline" = "$d"; fi
           done
       - name: Mandatory prerequisite gates
