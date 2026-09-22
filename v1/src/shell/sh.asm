@@ -4258,3 +4258,247 @@ p720_validate_buf: defs P710_TOKEN_CAP+1,0
 p720_duration_fp: defs 5,0
 p720_pitch_fp: defs 5,0
     ENDM
+
+; P8.19 closes the parent-shell ps builtin behavior without creating /bin/ps.
+    MACRO EMIT_P819_PS_ROUTINES
+P819_INFO_LEN            EQU 16
+
+; A=argc, B=pipeline stage count, C=background flag.
+sh_p819_ps_builtin:
+    cp 1
+    jr nz,sh_p819_invalid
+    ld a,b
+    cp 1
+    jr nz,sh_p819_notsup
+    ld a,c
+    or a
+    jr nz,sh_p819_notsup
+    xor a
+    ld (p819_pid),a
+sh_p819_scan:
+    ld a,(p819_pid)
+    cp MAX_PROCESSES
+    jr nc,sh_p819_ok
+    ld (p819_req),a
+    xor a
+    ld (p819_req+1),a
+    ld hl,p819_info
+    ld (p819_req+2),hl
+    ld hl,p819_req
+    ld a,SYS_PROC_INFO
+    call SYSCALL_GATEWAY
+    jr nc,sh_p819_emit
+    cp E_NOENT
+    jr z,sh_p819_next
+    scf
+    ret
+
+sh_p819_emit:
+    ld a,(p819_info)
+    add a,'0'
+    ld (p819_one),a
+    ld hl,p819_one
+    ld bc,1
+    call sh_p819_write_all
+    ret c
+    ld hl,p819_space
+    ld bc,1
+    call sh_p819_write_all
+    ret c
+
+    ld a,(p819_info+2)
+    cp 1
+    jr c,sh_p819_bad_state
+    cp 9
+    jr nc,sh_p819_bad_state
+    dec a
+    add a,a
+    ld e,a
+    ld d,0
+    ld hl,p819_state_table
+    add hl,de
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ex de,hl
+    call sh_p819_write_z
+    ret c
+    ld hl,p819_space
+    ld bc,1
+    call sh_p819_write_all
+    ret c
+
+    ld hl,(p819_info+14)
+    call sh_p819_write_u16
+    ret c
+    ld hl,p819_space
+    ld bc,1
+    call sh_p819_write_all
+    ret c
+
+    ld hl,p819_info+4
+    ld b,0
+sh_p819_name_count:
+    ld a,b
+    cp 10
+    jr z,sh_p819_name_ready
+    ld a,(hl)
+    or a
+    jr z,sh_p819_name_ready
+    inc hl
+    inc b
+    jr sh_p819_name_count
+sh_p819_name_ready:
+    ld a,b
+    or a
+    jr z,sh_p819_name_done
+    ld c,b
+    ld b,0
+    ld hl,p819_info+4
+    call sh_p819_write_all
+    ret c
+sh_p819_name_done:
+    ld hl,p819_lf
+    ld bc,1
+    call sh_p819_write_all
+    ret c
+
+sh_p819_next:
+    ld a,(p819_pid)
+    inc a
+    ld (p819_pid),a
+    jr sh_p819_scan
+
+sh_p819_bad_state:
+    ld a,E_INVAL
+    scf
+    ret
+sh_p819_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+sh_p819_notsup:
+    ld a,E_NOTSUP
+    scf
+    ret
+sh_p819_ok:
+    xor a
+    ret
+
+sh_p819_write_z:
+    push hl
+    ld bc,0
+sh_p819_z_count:
+    ld a,(hl)
+    or a
+    jr z,sh_p819_z_ready
+    inc hl
+    inc bc
+    jr sh_p819_z_count
+sh_p819_z_ready:
+    pop hl
+    jp sh_p819_write_all
+
+sh_p819_write_u16:
+    push ix
+    ld ix,p819_num
+    ld b,0
+    xor a
+    ld (p819_num_started),a
+    ld de,10000
+    call sh_p819_dec_place
+    ld de,1000
+    call sh_p819_dec_place
+    ld de,100
+    call sh_p819_dec_place
+    ld de,10
+    call sh_p819_dec_place
+    ld a,l
+    add a,'0'
+    ld (ix+0),a
+    inc b
+    ld hl,p819_num
+    ld c,b
+    ld b,0
+    call sh_p819_write_all
+    pop ix
+    ret
+sh_p819_dec_place:
+    ld c,0
+sh_p819_dec_loop:
+    or a
+    sbc hl,de
+    jr c,sh_p819_dec_done
+    inc c
+    jr sh_p819_dec_loop
+sh_p819_dec_done:
+    add hl,de
+    ld a,(p819_num_started)
+    or c
+    ret z
+    ld a,1
+    ld (p819_num_started),a
+    ld a,c
+    add a,'0'
+    ld (ix+0),a
+    inc ix
+    inc b
+    ret
+
+sh_p819_write_all:
+    ld (p819_write_ptr),hl
+    ld (p819_write_left),bc
+sh_p819_write_loop:
+    ld hl,(p819_write_ptr)
+    ld bc,(p819_write_left)
+    ld de,1
+    ld a,SYS_WRITE
+    call SYSCALL_GATEWAY
+    ret c
+    ld a,h
+    or l
+    jr z,sh_p819_write_zero
+    ld (p819_written),hl
+    ld de,(p819_write_ptr)
+    add hl,de
+    ld (p819_write_ptr),hl
+    ld hl,(p819_write_left)
+    ld de,(p819_written)
+    or a
+    sbc hl,de
+    jr c,sh_p819_write_zero
+    ld (p819_write_left),hl
+    ld a,h
+    or l
+    jr nz,sh_p819_write_loop
+    xor a
+    ret
+sh_p819_write_zero:
+    ld a,E_IO
+    scf
+    ret
+
+p819_state_table:
+    dw p819_ready,p819_running,p819_sleeping,p819_wait_input
+    dw p819_wait_pipe_read,p819_wait_pipe_write,p819_wait_child,p819_zombie
+p819_ready: db 'R','E','A','D','Y',0
+p819_running: db 'R','U','N','N','I','N','G',0
+p819_sleeping: db 'S','L','E','E','P','I','N','G',0
+p819_wait_input: db 'W','A','I','T','_','I','N','P','U','T',0
+p819_wait_pipe_read: db 'W','A','I','T','_','P','I','P','E','_','R','E','A','D',0
+p819_wait_pipe_write: db 'W','A','I','T','_','P','I','P','E','_','W','R','I','T','E',0
+p819_wait_child: db 'W','A','I','T','_','C','H','I','L','D',0
+p819_zombie: db 'Z','O','M','B','I','E',0
+p819_req: db 0,0
+    dw p819_info
+p819_info: defs P819_INFO_LEN,0
+p819_pid: db 0
+p819_one: db 0
+p819_space: db ' '
+p819_lf: db 10
+p819_num_started: db 0
+p819_num: defs 5,0
+p819_write_ptr: dw 0
+p819_write_left: dw 0
+p819_written: dw 0
+    ENDM
