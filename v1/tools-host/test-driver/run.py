@@ -205,6 +205,7 @@ import phase7_udg_bank
 import phase7_udg_ops
 import phase7_udg_draw
 import phase7_udg_2x2
+import phase7_beep_c48
 import phase7_udg_persistence
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
 from media_retention import (
@@ -501,6 +502,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase7_udg_persistence.dispatch(root, action, step, **kwargs)
     if step == "P7.17":
         return phase7_udg_2x2.dispatch(root, action, step, **kwargs)
+    if step == "P7.18":
+        return phase7_beep_c48.dispatch(root, action, step, **kwargs)
     if step.startswith("P7."):
         raise DriverError(f"numbered Phase-7 step is not registered: {step}")
     module = E0_MODULE.get(step)
