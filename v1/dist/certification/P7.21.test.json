@@ -1,0 +1,275 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "all-p7-01-through-p7-20-durable-evidence-pass",
+      "passed": true,
+      "record_count": 40
+    },
+    {
+      "basis": "P7.02 P7.19",
+      "name": "graphics-edge-addressing-and-screen-domain-pass",
+      "passed": true
+    },
+    {
+      "basis": "P7.07 P7.08 P7.19",
+      "name": "attributes-border-and-ula-shadow-pass",
+      "passed": true
+    },
+    {
+      "basis": "P7.13-P7.17 P7.19",
+      "name": "udg-bank-roundtrip-draw-persistence-and-2x2-pass",
+      "passed": true
+    },
+    {
+      "basis": "P7.09",
+      "name": "kernel-sys-beep-basic-compatible-vectors-pass",
+      "passed": true
+    },
+    {
+      "basis": "P7.18",
+      "name": "c48-beep-same-service-and-errno-map-pass",
+      "passed": true
+    },
+    {
+      "basis": "P7.10-P7.12 P7.20",
+      "name": "final-rom-backed-shell-builtins-pass",
+      "passed": true
+    },
+    {
+      "basis": "P7.20",
+      "name": "shell-beep-grammar-lookup-redirection-pass",
+      "passed": true
+    },
+    {
+      "basis": "P7.08 P7.09 P7.19 P7.20",
+      "name": "ula-iy-rom-state-drift-guards-pass",
+      "passed": true
+    },
+    {
+      "name": "negative-authority-or-failed-record-blocks-phase",
+      "passed": true
+    },
+    {
+      "name": "phase7-gate-stops-before-phase8",
+      "passed": true
+    },
+    {
+      "name": "current-head-integrated-gfx-udg-sound-golden-pass",
+      "passed": true
+    },
+    {
+      "name": "selected-current-head-phase7-acceptance-matrix-pass",
+      "passed": true,
+      "steps": [
+        "P7.02",
+        "P7.08",
+        "P7.10",
+        "P7.11",
+        "P7.12",
+        "P7.16",
+        "P7.18",
+        "P7.20"
+      ]
+    },
+    {
+      "name": "current-head-shell-beep-calc-rom-graphics-udg-c48-regressions-pass",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 38,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 15514 lines, work time: 0.037 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p719-golden.sym",
+        "p719-golden.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 10,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2642 lines, work time: 0.008 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P7.02",
+        "--evidence-dir",
+        "/tmp/zxux-p721-ee1ht63u"
+      ],
+      "cwd": ".",
+      "duration_ms": 1118,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P7.02 TEST PASS\nevidence=/tmp/zxux-p721-ee1ht63u/P7.02.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P7.08",
+        "--evidence-dir",
+        "/tmp/zxux-p721-ee1ht63u"
+      ],
+      "cwd": ".",
+      "duration_ms": 721,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P7.08 TEST PASS\nevidence=/tmp/zxux-p721-ee1ht63u/P7.08.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P7.10",
+        "--evidence-dir",
+        "/tmp/zxux-p721-ee1ht63u"
+      ],
+      "cwd": ".",
+      "duration_ms": 4354,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P7.10 TEST PASS\nevidence=/tmp/zxux-p721-ee1ht63u/P7.10.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P7.11",
+        "--evidence-dir",
+        "/tmp/zxux-p721-ee1ht63u"
+      ],
+      "cwd": ".",
+      "duration_ms": 2041,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P7.11 TEST PASS\nevidence=/tmp/zxux-p721-ee1ht63u/P7.11.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P7.12",
+        "--evidence-dir",
+        "/tmp/zxux-p721-ee1ht63u"
+      ],
+      "cwd": ".",
+      "duration_ms": 1485,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P7.12 TEST PASS\nevidence=/tmp/zxux-p721-ee1ht63u/P7.12.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P7.16",
+        "--evidence-dir",
+        "/tmp/zxux-p721-ee1ht63u"
+      ],
+      "cwd": ".",
+      "duration_ms": 1480,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P7.16 TEST PASS\nevidence=/tmp/zxux-p721-ee1ht63u/P7.16.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P7.18",
+        "--evidence-dir",
+        "/tmp/zxux-p721-ee1ht63u"
+      ],
+      "cwd": ".",
+      "duration_ms": 896,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P7.18 TEST PASS\nevidence=/tmp/zxux-p721-ee1ht63u/P7.18.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P7.20",
+        "--evidence-dir",
+        "/tmp/zxux-p721-ee1ht63u"
+      ],
+      "cwd": ".",
+      "duration_ms": 5212,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P7.20 TEST PASS\nevidence=/tmp/zxux-p721-ee1ht63u/P7.20.test.json\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "docs/01-ZX-UX-ARCHITECTURE-REV16.md": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+    "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+    "p719:v1/build/kernel.bin": "ae3c54f9cd50eade1e543d9ac3c6ff58c83d63d6951c707b192ef5f9e26d4806",
+    "p719:v1/src/kernel/graphics.asm": "28dd845c26c82a090949463e3295ce22e1e2d37959083d2a98f6e51da30e38f4",
+    "p719:v1/src/kernel/rom_services.asm": "59da3741bd4c37c6299cd6412f42ffe6b2cf2f743893d74b7ccb7f239af3ccfe",
+    "p719:v1/src/kernel/sound.asm": "ba941cd0fdc5d6ad6e45d6a94ab60388a8fc80dd1005fe85e0442b39a7da16bb",
+    "p719:v1/src/kernel/udg.asm": "e74208f0d478d432895297b20188dec7018e494709b8fac163abc6eaaabe9089",
+    "p719:v1/tools-host/test-driver/phase7_gfx_golden.py": "a0bb9f5468f279f4a893e67e935abee0f90fda2c9fca682697229591457f9565",
+    "p719:v1/tools-host/test-driver/run.py": "503bc3a211b60fb97a378e13036b004ad483854a42912dcdf2c4fbfc9b98e01f",
+    "v1/build/p721-phase7-acceptance.tap": "d08832f159c669d3f0b9038e6703adfa33c216d3cb8fa110fd0ed15606e2df5a",
+    "v1/dist/certification/P7.20.build.json": "d3fa1f274ec29aa375bd0db2b1d2bfc2b4deac33bcd7b2a5e6d2d0474e739d8f",
+    "v1/dist/certification/P7.20.test.json": "3394539095a49ce16281140cf3e461039c5d89169ef3ef384939299b5a56438d",
+    "v1/dist/media/P7.20/manifest.json": "a115411001fc716142e3798eeecfcaf46d7a6fe07778bfc49c2954ba85b0b316",
+    "v1/tools-host/test-driver/phase7_acceptance.py": "a45bb5096ed12503a2c23d04292791512e6cd93697ae0fa875c71da5be084c0f",
+    "v1/tools-host/test-driver/run.py": "503bc3a211b60fb97a378e13036b004ad483854a42912dcdf2c4fbfc9b98e01f"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P7.20": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "365afb136281961dded3389169f23c7593ede462",
+  "status": "PASS",
+  "step": "P7.21",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
