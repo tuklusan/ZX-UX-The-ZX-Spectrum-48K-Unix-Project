@@ -22,6 +22,7 @@ class P833Error(DriverError):
 def require(v,m):
     if not v: raise P833Error(m)
 def expect(a,v): return b"\x3A"+word(a)+bytes((0xFE,v&255))+phase1._jp_nz(FAIL_PC)
+def jp_nc(a): return b"\xD2"+word(a)
 def patch(util,gate,args):
     ab=arg1(args)
     def apply(ram):
@@ -123,7 +124,7 @@ gate_end:
         sy=phase3_open_descriptions._symbols(b/"p833-banner-fixture.sym",("banner_entry","E_INVAL","E_TOOLONG"))
         ub=(b/"p833-banner-fixture.bin").read_bytes(); gb=(b/"p833-gateway.bin").read_bytes()
         args=[b"banner",b"A"]; ab=arg1(args); code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(ARG)+b"\x01"+word(len(ab))+phase1._call(sy["banner_entry"]))
-        code+=expect(STATUS,0)+b"\x3A"+word(COUNT)+b"\xB7"+phase1._jp_z(FAIL_PC)+b"\x3A"+word(MAXX)+bytes((0xFE,8))+phase1._jp_nc(FAIL_PC)+expect(MINY,8)+b"\x3A"+word(MAXY)+bytes((0xFE,16))+phase1._jp_nc(FAIL_PC)+phase1._jp(PASS_PC)
+        code+=expect(STATUS,0)+b"\x3A"+word(COUNT)+b"\xB7"+phase1._jp_z(FAIL_PC)+b"\x3A"+word(MAXX)+bytes((0xFE,8))+jp_nc(FAIL_PC)+expect(MINY,8)+b"\x3A"+word(MAXY)+bytes((0xFE,16))+jp_nc(FAIL_PC)+phase1._jp(PASS_PC)
         run_sna(root,bytes(code),patch=patch(ub,gb,args),timeout=30)
         for args,status in (([b"banner"],sy["E_INVAL"]&255),([b"banner",b"x"*33],sy["E_TOOLONG"]&255),([b"banner",b"\x01"],sy["E_INVAL"]&255)):
             ab=arg1(args); code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(ARG)+b"\x01"+word(len(ab))+phase1._call(sy["banner_entry"])+expect(STATUS,status)+expect(COUNT,0)+phase1._jp(PASS_PC)); run_sna(root,bytes(code),patch=patch(ub,gb,args),timeout=30)
