@@ -1,0 +1,158 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p803-present",
+      "passed": true
+    },
+    {
+      "name": "exact-same-path-noop",
+      "passed": true
+    },
+    {
+      "name": "source-stat-preserves-type",
+      "passed": true
+    },
+    {
+      "name": "ram-source-only",
+      "passed": true
+    },
+    {
+      "name": "logical-read-stream",
+      "passed": true
+    },
+    {
+      "name": "exclusive-transaction-create",
+      "passed": true
+    },
+    {
+      "name": "retry-only-eexist",
+      "passed": true
+    },
+    {
+      "name": "source-type-used-for-temp",
+      "passed": true
+    },
+    {
+      "name": "full-ram-write-required",
+      "passed": true
+    },
+    {
+      "name": "close-before-rename",
+      "passed": true
+    },
+    {
+      "name": "atomic-rename-commit",
+      "passed": true
+    },
+    {
+      "name": "failure-removes-owned-temp",
+      "passed": true
+    },
+    {
+      "name": "case-preserving-paths",
+      "passed": true
+    },
+    {
+      "name": "fuse-packed-source-logical-copy-type-preserving-rename",
+      "passed": true
+    },
+    {
+      "name": "fuse-exact-same-path-noop",
+      "passed": true
+    },
+    {
+      "name": "fuse-write-error-cleans-owned-temp",
+      "passed": true
+    },
+    {
+      "name": "fuse-exclusive-temp-eexist-retry",
+      "passed": true
+    },
+    {
+      "name": "fuse-invalid-arity-no-side-effects",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p803-cp-image.lst",
+        "--sym=p803-cp-image.sym",
+        "p803-cp-image.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 6,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 891 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p803-cp.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 33,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 57032, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 19790, \"image_size\": 665, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 689, \"relocations\": [], \"stored_length\": 689, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p803-cp-fixture.lst",
+        "--sym=p803-cp-fixture.sym",
+        "p803-cp-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 6,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 891 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p803-gateway.lst",
+        "--sym=p803-gateway.sym",
+        "p803-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 421 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p803-cp.mex1": "bbf33f9264ddd7c2892151b641d306d25b8069ce69bc86fd0b1a6d33d57a3831",
+    "v1/build/p803-cp.tap": "10a267e23f6adc110c110d919c0d5a14b43732e49d10bdbd1fa6a5fbb98f9ef0",
+    "v1/dist/certification/P8.02.test.json": "adf0f81ca204aa5f6d1db46adfde2c50162f9d1a97cb65eabbbe5ecfc27732f3",
+    "v1/src/utils/cp.asm": "e4be03e3792328aaabefd4496afa1e23eaba0def814eb2e2d5189ec3c1d2c52c",
+    "v1/tools-host/test-driver/phase8_cp.py": "42163ed7906076f84e3f6c355acac49697948ff87e1887ccae9975c70c3cd1c6",
+    "v1/tools-host/test-driver/run.py": "812b68c4e2eed8ae9985ba9b87818af76b012a975e08f7c63456e18b3b4d403d"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.02": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "e68011c9e6b4ffe1a42f45b243b72eb24c6e5277",
+  "status": "PASS",
+  "step": "P8.03",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
