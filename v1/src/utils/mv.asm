@@ -11,6 +11,7 @@
 ; patent, trademark, and governing-law provisions.
 ;
 ; /bin/mv: delegate exact atomic rename semantics to SYS_RENAME.
+; Kernel resolver owns case-only, replacement, placement, and E_BUSY rules.
 
     MACRO EMIT_P804_MV_ROUTINES
 mv_entry:
