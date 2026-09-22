@@ -17,7 +17,7 @@ from driver_core import DriverError
 from fuse_harness import PASS_PC, run_sna
 from phase8_common import arg1, word, assemble_utility, inspect_mex, make_tap
 
-UTIL=0xC000; GATE=0xE000; ARG=0xA000; ENV=0xA100; OUT=0xA300
+UTIL=0xC000; GATE=0xE000; ARG=0xA000; ENV=0xA100; OUT=0xA300  # exact fixture map
 STATUS=0xA280; MODE=0xA282
 class P827Error(DriverError):
     pass
