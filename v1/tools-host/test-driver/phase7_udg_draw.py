@@ -39,8 +39,8 @@ def source(root):
       {"name":"canonical-p715-present","passed":"## P7.15 - SYS_UDG_DRAW and tty64 width" in p},
       {"name":"whole-three-byte-record-validated-first","passed":m.index("ld bc,3")<m.index("ld a,(hl)")<m.index("jp zx48_udg_draw")},
       {"name":"slot-row-col-domains-before-draw","passed":all(x in m for x in ("cp UDG_SLOT_COUNT","cp 24","cp 32"))},
-      {"name":"draw-is-physical-eight-scanline-cell","passed":"cp 8" in d and "call zx48_bitmap_address" in d},
-      {"name":"current-console-attribute-published","passed":"ld a,(tty_current_attr)" in d and "ld de,ATTR_START" in d},
+      {"name":"draw-is-physical-eight-scanline-cell","passed":"and 7" in d and "call zx48_bitmap_address" in d and "inc b" in d},
+      {"name":"current-console-attribute-published","passed":"ld a,(tty_current_attr)" in d and "add a,$58" in d and "ld (hl),a" in d},
       {"name":"tty64-no-half-cell-renderer-path","passed":"zx48_tty64_draw_char" not in d and "tty_mode" not in d},
       {"name":"cursor-hidden-before-first-bitmap-write","passed":d.index("call zx48_cursor_hide")<d.index("call zx48_bitmap_address")},
     ]
