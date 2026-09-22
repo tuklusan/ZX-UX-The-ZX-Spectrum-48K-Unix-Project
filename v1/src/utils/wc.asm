@@ -11,6 +11,7 @@
 ; patent, trademark, and governing-law provisions.
 ;
 ; /bin/wc: streaming byte, word, and LF-line counts from stdin.
+; Output is deterministic: lines words bytes, separated by one ASCII space.
 
     MACRO EMIT_P809_WC_ROUTINES
 wc_entry:
