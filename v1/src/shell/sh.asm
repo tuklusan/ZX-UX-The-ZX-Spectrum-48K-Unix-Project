@@ -3361,3 +3361,251 @@ p629_wait_status: db 0
 p629_pid: db 0
 p629_halt_text: db 's','y','s','t','e','m',' ','h','a','l','t','e','d'
     ENDM
+
+; P7.10 final safe calc gateway. This macro is staged independently from the
+; frozen P6.13 hook table so historical Phase-6 fixtures remain byte-stable.
+; Public input is lower-case and case-sensitive. The tokenizer emits only
+; decimal/operator bytes and these approved Spectrum tokens:
+; pi A7, sin B2, cos B3, tan B4, asin B5, acos B6, atan B7, ln B8, exp B9,
+; int BA, sqrt->SQR BB, sgn BC, abs BD.
+    MACRO EMIT_P710_CALC_ROUTINES
+P710_TOKEN_PI            EQU $A7
+P710_TOKEN_SIN           EQU $B2
+P710_TOKEN_COS           EQU $B3
+P710_TOKEN_TAN           EQU $B4
+P710_TOKEN_ASN           EQU $B5
+P710_TOKEN_ACS           EQU $B6
+P710_TOKEN_ATN           EQU $B7
+P710_TOKEN_LN            EQU $B8
+P710_TOKEN_EXP           EQU $B9
+P710_TOKEN_INT           EQU $BA
+P710_TOKEN_SQR           EQU $BB
+P710_TOKEN_SGN           EQU $BC
+P710_TOKEN_ABS           EQU $BD
+P710_TOKEN_CAP           EQU 94
+
+; Exact builtin lookup: HL=name, B=len. Success DE=handler. No PATH/BCAT/tape.
+sh_p710_lookup_calc:
+    ld a,b
+    cp 4
+    jr nz,sh_p710_lookup_miss
+    ld a,(hl)
+    cp 'c'
+    jr nz,sh_p710_lookup_miss
+    inc hl
+    ld a,(hl)
+    cp 'a'
+    jr nz,sh_p710_lookup_miss
+    inc hl
+    ld a,(hl)
+    cp 'l'
+    jr nz,sh_p710_lookup_miss
+    inc hl
+    ld a,(hl)
+    cp 'c'
+    jr nz,sh_p710_lookup_miss
+    ld de,sh_p710_calc_builtin
+    xor a
+    ret
+sh_p710_lookup_miss:
+    ld a,E_NOENT
+    scf
+    ret
+
+; A=argc including "calc", B=pipeline stage count, C=background flag,
+; HL=the sole post-expansion expression argument, DE=writable five-byte result.
+sh_p710_calc_builtin:
+    ld (p710_expr_ptr),hl
+    ld (p710_result_ptr),de
+    cp 2
+    jr nz,sh_p710_invalid
+    ld a,b
+    cp 1
+    jr nz,sh_p710_notsup
+    ld a,c
+    or a
+    jr nz,sh_p710_notsup
+    ld hl,(p710_expr_ptr)
+    ld de,p710_tokens
+    call sh_p710_tokenize
+    ret c
+    ld hl,p710_tokens
+    ld de,(p710_result_ptr)
+    jp zx48_rom_calc_expr
+
+; HL=NUL source, DE=token buffer. Reject every byte family outside the exact
+; allow-list before ROM entry. Malformed arrangements of otherwise safe tokens
+; remain trapped by the isolated ROM error gateway.
+sh_p710_tokenize:
+    ld (p710_in_ptr),hl
+    ld (p710_out_ptr),de
+    xor a
+    ld (p710_out_len),a
+    ld (p710_seen),a
+sh_p710_scan:
+    ld hl,(p710_in_ptr)
+    ld a,(hl)
+    or a
+    jr z,sh_p710_finish
+    cp ' '
+    jr z,sh_p710_copy_char
+    cp '0'
+    jr c,sh_p710_symbol
+    cp '9'+1
+    jr c,sh_p710_copy_seen
+sh_p710_symbol:
+    cp '.'
+    jr z,sh_p710_copy_seen
+    cp '+'
+    jr z,sh_p710_copy_seen
+    cp '-'
+    jr z,sh_p710_copy_seen
+    cp '*'
+    jr z,sh_p710_copy_seen
+    cp '/'
+    jr z,sh_p710_copy_seen
+    cp '^'
+    jr z,sh_p710_copy_seen
+    cp '('
+    jr z,sh_p710_copy_seen
+    cp ')'
+    jr z,sh_p710_copy_seen
+    cp 'a'
+    jr c,sh_p710_invalid
+    cp 'z'+1
+    jr nc,sh_p710_invalid
+    jp sh_p710_word
+
+sh_p710_copy_seen:
+    push af
+    ld a,1
+    ld (p710_seen),a
+    pop af
+sh_p710_copy_char:
+    call sh_p710_emit
+    ret c
+    ld hl,(p710_in_ptr)
+    inc hl
+    ld (p710_in_ptr),hl
+    jr sh_p710_scan
+
+sh_p710_word:
+    ld hl,p710_word_table
+sh_p710_word_next:
+    ld a,(hl)
+    or a
+    jp z,sh_p710_invalid
+    ld c,a
+    inc hl
+    push hl
+    ld de,(p710_in_ptr)
+    ld b,c
+sh_p710_word_cmp:
+    ld a,(de)
+    cp (hl)
+    jr nz,sh_p710_word_miss
+    inc de
+    inc hl
+    djnz sh_p710_word_cmp
+    ld a,(de)
+    cp 'a'
+    jr c,sh_p710_word_boundary
+    cp 'z'+1
+    jr c,sh_p710_word_miss_after
+    cp 'A'
+    jr c,sh_p710_word_boundary
+    cp 'Z'+1
+    jr c,sh_p710_word_miss_after
+    cp '$'
+    jr z,sh_p710_word_miss_after
+    cp '_'
+    jr z,sh_p710_word_miss_after
+sh_p710_word_boundary:
+    ld a,(hl)
+    ld (p710_in_ptr),de
+    pop de
+    call sh_p710_emit
+    ret c
+    ld a,1
+    ld (p710_seen),a
+    jp sh_p710_scan
+
+sh_p710_word_miss:
+    pop hl
+    ld e,c
+    ld d,0
+    add hl,de
+    inc hl
+    jr sh_p710_word_next
+sh_p710_word_miss_after:
+    pop hl
+    ld e,c
+    ld d,0
+    add hl,de
+    inc hl
+    jr sh_p710_word_next
+
+; A=byte to append.
+sh_p710_emit:
+    push af
+    ld a,(p710_out_len)
+    cp P710_TOKEN_CAP
+    jr nc,sh_p710_emit_too_long
+    inc a
+    ld (p710_out_len),a
+    ld hl,(p710_out_ptr)
+    pop af
+    ld (hl),a
+    inc hl
+    ld (p710_out_ptr),hl
+    xor a
+    ret
+sh_p710_emit_too_long:
+    pop af
+    ld a,E_TOOLONG
+    scf
+    ret
+
+sh_p710_finish:
+    ld a,(p710_seen)
+    or a
+    jr z,sh_p710_invalid
+    ld a,13
+    call sh_p710_emit
+    ret c
+    xor a
+    ret
+
+sh_p710_notsup:
+    ld a,E_NOTSUP
+    scf
+    ret
+sh_p710_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+
+p710_word_table:
+    db 2,'p','i',P710_TOKEN_PI
+    db 3,'a','b','s',P710_TOKEN_ABS
+    db 3,'s','g','n',P710_TOKEN_SGN
+    db 3,'i','n','t',P710_TOKEN_INT
+    db 4,'s','q','r','t',P710_TOKEN_SQR
+    db 3,'e','x','p',P710_TOKEN_EXP
+    db 2,'l','n',P710_TOKEN_LN
+    db 3,'s','i','n',P710_TOKEN_SIN
+    db 3,'c','o','s',P710_TOKEN_COS
+    db 3,'t','a','n',P710_TOKEN_TAN
+    db 4,'a','s','i','n',P710_TOKEN_ASN
+    db 4,'a','c','o','s',P710_TOKEN_ACS
+    db 4,'a','t','a','n',P710_TOKEN_ATN
+    db 0
+
+p710_expr_ptr: dw 0
+p710_result_ptr: dw 0
+p710_in_ptr: dw 0
+p710_out_ptr: dw 0
+p710_out_len: db 0
+p710_seen: db 0
+p710_tokens: defs P710_TOKEN_CAP+1,0
+    ENDM

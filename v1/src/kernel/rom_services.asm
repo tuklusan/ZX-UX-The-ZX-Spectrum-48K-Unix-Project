@@ -46,6 +46,10 @@ ROM_STKEND                EQU $5C65
 ROM_MEM                   EQU $5C68
 ROM_MEMBOT                EQU $5C92
 ROM_BEEP_STACK            EQU $5D00
+ROM_FLAGS                 EQU $5C3B
+ROM_CH_ADD                EQU $5C5D
+ROM_SCANNING              EQU $24FB
+ROM_CALC_STACK            EQU $5D80
 
     MACRO EMIT_ROM_SERVICE_ROUTINES
 ; Every raw ROM return samples/checks the dedicated kernel stack while preserving
@@ -114,6 +118,127 @@ zx48_rom_ula_done:
 
 ; P7.09 staged ROM BEEP gateway. Kept out of the resident Phase-6 ROM macro
 ; until the Phase-7 integration/packing boundary owns the final kernel layout.
+
+; P7.10 isolated numeric-expression gateway. The shell tokenizer has already
+; reduced input to decimal/operator bytes plus the exact approved ROM function
+; tokens. No user identifier, string token, BASIC statement, or arbitrary ROM
+; address reaches SCANNING.
+    MACRO EMIT_P710_ROM_CALC_ROUTINES
+zx48_rom_calc_expr:
+    ld (rom_calc_input_ptr),hl
+    ld (rom_calc_output_ptr),de
+    ld a,(altreg_busy)
+    or a
+    jr nz,zx48_rom_calc_busy
+
+    ld hl,0
+    add hl,sp
+    ld (rom_calc_saved_sp),hl
+    ld hl,(ROM_ERR_SP)
+    ld (rom_calc_saved_err_sp),hl
+    ld hl,(ROM_STKBOT)
+    ld (rom_calc_saved_stkbot),hl
+    ld hl,(ROM_STKEND)
+    ld (rom_calc_saved_stkend),hl
+    ld hl,(ROM_MEM)
+    ld (rom_calc_saved_mem),hl
+    ld hl,(ROM_CH_ADD)
+    ld (rom_calc_saved_chadd),hl
+    ld a,(ROM_FLAGS)
+    ld (rom_calc_saved_flags),a
+    ld a,(ROM_IY_ANCHOR)
+    ld (rom_calc_saved_errnr),a
+
+    ld a,1
+    ld (altreg_busy),a
+    ld hl,ROM_CALC_STACK
+    ld (ROM_STKBOT),hl
+    ld (ROM_STKEND),hl
+    ld hl,ROM_MEMBOT
+    ld (ROM_MEM),hl
+    ld hl,(rom_calc_input_ptr)
+    ld (ROM_CH_ADD),hl
+    ld a,(rom_calc_saved_flags)
+    and $bf
+    or $80
+    ld (ROM_FLAGS),a
+    ld a,$ff
+    ld (ROM_IY_ANCHOR),a
+
+    ld hl,zx48_rom_calc_error
+    push hl
+    ld hl,0
+    add hl,sp
+    ld (ROM_ERR_SP),hl
+    ld iy,ROM_IY_ANCHOR
+    call ROM_SCANNING
+    pop hl
+
+    ld a,(ROM_FLAGS)
+    bit 6,a
+    jr z,zx48_rom_calc_type_error
+    ld hl,(ROM_STKEND)
+    ld bc,5
+    or a
+    sbc hl,bc
+    ld de,(rom_calc_output_ptr)
+    ldir
+    call zx48_rom_calc_cleanup
+    xor a
+    or a
+    ret
+
+zx48_rom_calc_type_error:
+    call zx48_rom_calc_cleanup
+    ld a,E_INVAL
+    scf
+    ret
+
+zx48_rom_calc_error:
+    ld hl,(rom_calc_saved_sp)
+    ld sp,hl
+    call zx48_rom_calc_cleanup
+    ld a,E_INVAL
+    scf
+    ret
+
+zx48_rom_calc_cleanup:
+    ld hl,(rom_calc_saved_err_sp)
+    ld (ROM_ERR_SP),hl
+    ld hl,(rom_calc_saved_stkbot)
+    ld (ROM_STKBOT),hl
+    ld hl,(rom_calc_saved_stkend)
+    ld (ROM_STKEND),hl
+    ld hl,(rom_calc_saved_mem)
+    ld (ROM_MEM),hl
+    ld hl,(rom_calc_saved_chadd)
+    ld (ROM_CH_ADD),hl
+    ld a,(rom_calc_saved_flags)
+    ld (ROM_FLAGS),a
+    ld a,(rom_calc_saved_errnr)
+    ld (ROM_IY_ANCHOR),a
+    xor a
+    ld (altreg_busy),a
+    ld iy,ROM_IY_ANCHOR
+    ret
+
+zx48_rom_calc_busy:
+    ld a,E_BUSY
+    scf
+    ret
+
+rom_calc_input_ptr: dw 0
+rom_calc_output_ptr: dw 0
+rom_calc_saved_sp: dw 0
+rom_calc_saved_err_sp: dw 0
+rom_calc_saved_stkbot: dw 0
+rom_calc_saved_stkend: dw 0
+rom_calc_saved_mem: dw 0
+rom_calc_saved_chadd: dw 0
+rom_calc_saved_flags: db 0
+rom_calc_saved_errnr: db 0
+    ENDM
+
     MACRO EMIT_P709_ROM_BEEP_ROUTINES
 ; P7.09 isolated BASIC-compatible BEEP gateway.
 ; HL -> five-byte duration, DE -> five-byte pitch. The two exact values are
