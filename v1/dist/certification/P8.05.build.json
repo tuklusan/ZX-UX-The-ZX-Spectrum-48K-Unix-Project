@@ -1,0 +1,110 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p805-present",
+      "passed": true
+    },
+    {
+      "name": "sys-remove-only",
+      "passed": true
+    },
+    {
+      "name": "exact-one-operand",
+      "passed": true
+    },
+    {
+      "name": "kernel-protection-errors-propagate",
+      "passed": true
+    },
+    {
+      "name": "no-tape-syscalls",
+      "passed": true
+    },
+    {
+      "name": "no-case-folding",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p805-rm-image.lst",
+        "--sym=p805-rm-image.sym",
+        "p805-rm-image.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 355 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p805-rm.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 33,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 5094, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 59819, \"image_size\": 46, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 70, \"relocations\": [], \"stored_length\": 70, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p805-rm-fixture.lst",
+        "--sym=p805-rm-fixture.sym",
+        "p805-rm-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 355 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p805-gateway.lst",
+        "--sym=p805-gateway.sym",
+        "p805-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 305 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p805-rm.mex1": "530ba7c846b0997f67bcbae32d3c355a7f2ed2d137db37930f92012ab97a77ef",
+    "v1/build/p805-rm.tap": "fed8522de494c5e742b116af9c3d7c8476fe86dbbf2ff0556f61a07f578e2e90",
+    "v1/dist/certification/P8.04.test.json": "0cf80e90775ea8caea7b121a4b1d8854afc6be9a67b812ecf6d24c138c80aed7",
+    "v1/src/utils/rm.asm": "585f2534cb8c77b52e0f20f643a21aae051981aa45f61c27e7f181c9cf8ff0e4",
+    "v1/tools-host/test-driver/phase8_rm.py": "2bda9c9c5678da094cd6e35b1b1c3d32411ffaedb17b6803ce353733c4f6cd8c",
+    "v1/tools-host/test-driver/run.py": "c8dfd0e4871b84237175ce4d3972e3b2fa4ce9e50f301e1f8d5478142267146f"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.04": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "3b9469eb015a37b5de392cce2b7203548772c065",
+  "status": "PASS",
+  "step": "P8.05",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
