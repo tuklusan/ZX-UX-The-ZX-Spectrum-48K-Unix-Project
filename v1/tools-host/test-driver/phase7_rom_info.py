@@ -69,7 +69,6 @@ def _assemble(root:Path,run_command:Callable[...,Any],require_project_tool:Calla
       "    INCLUDE \"../src/shell/sh.asm\"\n"
       f"    ORG ${MODULE:04X}\n"
       "p711_start:\n"
-      "syscall_arg_hl: dw 0\n"
       "    EMIT_USER_RANGE_VALIDATION_ROUTINE\n"
       "    EMIT_P711_ROM_INFO_ROUTINES\n"
       "    EMIT_P711_ROM_INFO_SYSCALL_ROUTINES\n"
