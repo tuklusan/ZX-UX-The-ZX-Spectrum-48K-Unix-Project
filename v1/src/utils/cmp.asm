@@ -11,6 +11,7 @@
 ; patent, trademark, and governing-law provisions.
 ;
 ; /bin/cmp: exact bytewise comparison of two RAM objects.
+; Equal returns 0; any byte or logical-length difference returns status 1.
 
     MACRO EMIT_P812_CMP_ROUTINES
 cmp_entry:
