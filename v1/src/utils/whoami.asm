@@ -10,6 +10,7 @@
 ; SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 ; patent, trademark, and governing-law provisions.
 
+; P8.30 exact qualification source.
     MACRO EMIT_P830_WHOAMI_ROUTINES
 whoami_entry:
     ld (whoami_env),de
