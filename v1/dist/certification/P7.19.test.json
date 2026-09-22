@@ -1,0 +1,104 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p719-present",
+      "passed": true
+    },
+    {
+      "name": "golden-uses-production-graphics-routines",
+      "passed": true
+    },
+    {
+      "name": "golden-uses-production-udg-routines",
+      "passed": true
+    },
+    {
+      "name": "golden-uses-production-sound-rom-gateway",
+      "passed": true
+    },
+    {
+      "name": "screen-domain-frozen",
+      "passed": true
+    },
+    {
+      "name": "udg-bank-is-256-bytes",
+      "passed": true
+    },
+    {
+      "name": "fuse-integrated-gfx-udg-sound-golden-passes",
+      "passed": true
+    },
+    {
+      "name": "fuse-screen-sum-and-exact-touched-bytes-match",
+      "passed": true
+    },
+    {
+      "name": "fuse-attribute-cells-and-udg-bank-bytes-exact",
+      "passed": true
+    },
+    {
+      "name": "fuse-rom-udg-pointer-and-iy-exact",
+      "passed": true
+    },
+    {
+      "name": "fuse-guard-canaries-survive-approved-writes",
+      "passed": true
+    },
+    {
+      "name": "fuse-negative-guard-corruption-detected",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 38,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 15513 lines, work time: 0.036 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p719-golden.sym",
+        "p719-golden.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 10,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2637 lines, work time: 0.009 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "ae3c54f9cd50eade1e543d9ac3c6ff58c83d63d6951c707b192ef5f9e26d4806",
+    "v1/src/kernel/graphics.asm": "57dd8dd2c577188eae073bad712f81ea4635d57c04235cbea8ab93517bc08b92",
+    "v1/src/kernel/rom_services.asm": "59da3741bd4c37c6299cd6412f42ffe6b2cf2f743893d74b7ccb7f239af3ccfe",
+    "v1/src/kernel/sound.asm": "158a6df70ccee79a01817f9671b985751f0e9bc04bdd420fc3c1d38501ea079f",
+    "v1/src/kernel/udg.asm": "e74208f0d478d432895297b20188dec7018e494709b8fac163abc6eaaabe9089",
+    "v1/tools-host/test-driver/phase7_gfx_golden.py": "a0bb9f5468f279f4a893e67e935abee0f90fda2c9fca682697229591457f9565",
+    "v1/tools-host/test-driver/run.py": "8f6892ee32d44c2b494734662ed56a364e5f815d483994ab19cfe7b8f8ece31f"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P7.18": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "9b64e273eb98b979222adf3d478137944b1e14d6",
+  "status": "PASS",
+  "step": "P7.19",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
