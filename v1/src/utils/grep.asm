@@ -11,6 +11,7 @@
 ; patent, trademark, and governing-law provisions.
 ;
 ; /bin/grep: case-sensitive literal substring match over stdin or one named object.
+; Matching output preserves the exact input bytes and original LF presence.
 
     MACRO EMIT_P808_GREP_ROUTINES
 grep_entry:
