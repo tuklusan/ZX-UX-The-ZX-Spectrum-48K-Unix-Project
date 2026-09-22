@@ -232,10 +232,16 @@ gate_end:
         list_expected=(b"hello hello.c\ncolors colors.c\nlines lines.c\nship ship.c\nball ball.c\nstars stars.c\nlife life.c\nmaze maze.c\nsine sine.c\nmandel mandel.c\ntune tune.c\npipe pipe.c\nmulti multi.c\n")
         args=[b"demo"]; ab=arg1(args); code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(ARG)+b"\x01"+word(len(ab))+b"\x11"+word(ENV)+phase1._call(sy["demo_entry"]))
         for i,v in enumerate(list_expected): code+=expect(OUT+i,v)
-        code+=expect(OUT+len(list_expected),0xA5)+expect(STATUS,0)+phase1._jp(PASS_PC)\n        try: run_sna(root,bytes(code),patch=patch(ub,gb,args,0),timeout=30)\n        except Exception as e: raise P836Error(f"P8.36 list case failed: {e}")
+        code+=expect(OUT+len(list_expected),0xA5)+expect(STATUS,0)+phase1._jp(PASS_PC)
+        try: run_sna(root,bytes(code),patch=patch(ub,gb,args,0),timeout=30)
+        except Exception as e: raise P836Error(f"P8.36 list case failed: {e}")
         for mode,loads,status,spawned in ((0,0,0,1),(1,1,0,1),(2,0,sy["E_FORMAT"]&255,0)):
-            args=[b"demo",b"ship"]; ab=arg1(args); code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(ARG)+b"\x01"+word(len(ab))+b"\x11"+word(ENV)+phase1._call(sy["demo_entry"])+expect(STATUS,status)+expect(LOADS,loads)+expect(SPAWNED,spawned)+phase1._jp(PASS_PC))\n            try: run_sna(root,bytes(code),patch=patch(ub,gb,args,mode),timeout=30)\n            except Exception as e: raise P836Error(f"P8.36 ship mode={mode} failed: {e}")
-        args=[b"demo",b"SHIP"]; ab=arg1(args); code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(ARG)+b"\x01"+word(len(ab))+b"\x11"+word(ENV)+phase1._call(sy["demo_entry"])+expect(STATUS,sy["E_NOENT"]&255)+expect(SPAWNED,0)+phase1._jp(PASS_PC))\n        try: run_sna(root,bytes(code),patch=patch(ub,gb,args,0),timeout=30)\n        except Exception as e: raise P836Error(f"P8.36 wrong-case failed: {e}")
+            args=[b"demo",b"ship"]; ab=arg1(args); code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(ARG)+b"\x01"+word(len(ab))+b"\x11"+word(ENV)+phase1._call(sy["demo_entry"])+expect(STATUS,status)+expect(LOADS,loads)+expect(SPAWNED,spawned)+phase1._jp(PASS_PC))
+            try: run_sna(root,bytes(code),patch=patch(ub,gb,args,mode),timeout=30)
+            except Exception as e: raise P836Error(f"P8.36 ship mode={mode} failed: {e}")
+        args=[b"demo",b"SHIP"]; ab=arg1(args); code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(ARG)+b"\x01"+word(len(ab))+b"\x11"+word(ENV)+phase1._call(sy["demo_entry"])+expect(STATUS,sy["E_NOENT"]&255)+expect(SPAWNED,0)+phase1._jp(PASS_PC))
+        try: run_sna(root,bytes(code),patch=patch(ub,gb,args,0),timeout=30)
+        except Exception as e: raise P836Error(f"P8.36 wrong-case failed: {e}")
         assertions += [{"name":"fuse-list-all-pairs","passed":True},{"name":"fuse-resident-preserved","passed":True},{"name":"fuse-load-only-missing","passed":True},{"name":"fuse-wrong-type-refusal","passed":True},{"name":"fuse-wrong-case-refusal","passed":True}]
     hashes={"v1/src/utils/demo.asm":sha256_file(root/"v1/src/utils/demo.asm"),"v1/build/p836-demo.mex1":sha256_file(mex),"v1/build/p836-demo.tap":sha256_file(tap),"v1/tools-host/test-driver/phase8_demo.py":sha256_file(root/"v1/tools-host/test-driver/phase8_demo.py"),"v1/tools-host/test-driver/run.py":sha256_file(root/"v1/tools-host/test-driver/run.py"),"v1/dist/certification/P8.35.test.json":sha256_file(root/"v1/dist/certification/P8.35.test.json")}
     return [ir,xr,fr,gr],hashes,assertions
