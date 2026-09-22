@@ -115,9 +115,10 @@ g_miss:
     jr g_case_loop
 g_hit:
     pop hl
-    xor a
+    ld a,(ix+4)
     ld (bc),a
     inc bc
+    xor a
     ld (bc),a
     inc bc
     ld (bc),a
