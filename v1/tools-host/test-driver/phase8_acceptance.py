@@ -25,6 +25,7 @@ from driver_core import DriverError, read_source_state
 ARCH="24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c"
 PLAN="840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc"
 PASS_MARKER="ZX-UX PHASE 8 ACCEPTANCE PASS"
+# P8.40 exact-head qualification trigger.
 CURRENT=("P8.19","P8.20","P8.24","P8.25","P8.26","P8.36","P8.37","P8.38","P8.39")
 
 class P840Error(DriverError):
