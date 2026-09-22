@@ -198,6 +198,7 @@ date_parse_4_loop:
     jr nc,date_parse_digit_bad
     sub '0'
     ld c,a
+    push hl
     ex de,hl
     add hl,hl
     push hl
@@ -209,6 +210,7 @@ date_parse_4_loop:
     ld d,0
     add hl,de
     ex de,hl
+    pop hl
     inc hl
     djnz date_parse_4_loop
     or a
