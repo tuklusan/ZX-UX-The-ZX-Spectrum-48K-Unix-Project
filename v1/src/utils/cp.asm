@@ -11,6 +11,7 @@
 ; patent, trademark, and governing-law provisions.
 ;
 ; /bin/cp: atomic logical RAM-object copy via an exclusive /tmp transaction.
+; The destination becomes visible only through the final SYS_RENAME commit.
 
     MACRO EMIT_P803_CP_ROUTINES
 cp_entry:
