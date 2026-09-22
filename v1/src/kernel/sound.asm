@@ -15,7 +15,7 @@
 
     MACRO EMIT_SOUND_ROUTINES
 ; P7.18 C48_REGCALL bridge passes duration/pitch as the same five-byte pointers.
-; P7.20 shell beep reaches this same synchronous service after both operands pass safe expression conversion; qualification rechecks exact converter encoding and direct half-note service behavior independently.
+; P7.20 shell beep reaches this same synchronous service after both operands pass the safe calculator conversion used by calc.
 ; P7.09 synchronous BASIC-compatible note.
 ; HL=duration five-byte value, DE=pitch five-byte value.
 zx48_sound_beep:
