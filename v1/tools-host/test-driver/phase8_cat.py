@@ -215,6 +215,7 @@ p802_open_fail:
     ret
 
 p802_read:
+    ld (p802_dest),hl
     ld a,($A3F4)
     inc a
     ld ($A3F4),a
@@ -247,9 +248,7 @@ p802_read_short:
     ld bc,4
 p802_copy_read:
     push bc
-    push de
-    ex (sp),hl
-    pop de
+    ld de,(p802_dest)
     ldir
     pop hl
     ld a,1
@@ -315,6 +314,7 @@ p802_named: db 'M','i','X','e','D',10
 p802_pipe: db 'p','i','p','e','-','d','a','t','a'
 p802_short: db 'a','b','c','d'
 p802_read_done: db 0
+p802_dest: dw 0
 p802_out: dw $A200
 p802_gate_end:
     SAVEBIN "p802-gateway.bin",p802_gate,p802_gate_end-p802_gate
@@ -332,7 +332,7 @@ p802_gate_end:
         cases = [
             ([b"cat", b"MiXeD"], 0, b"MiXeD\n", 0, (1, 2, 1, 1)),
             ([b"cat"], 1, b"pipe-data", 0, (0, 2, 1, 0)),
-            ([b"cat", b"missing"], 2, b"", E_NOENT := 2, (1, 0, 0, 0)),
+            ([b"cat", b"missing"], 2, b"", 2, (1, 0, 0, 0)),
             ([b"cat"], 3, b"abcd", 0, (0, 2, 2, 0)),
             ([b"cat", b"a", b"b"], 0, b"", 1, (0, 0, 0, 0)),
         ]
