@@ -12,6 +12,7 @@
 ;
 ; /bin/tail: stream stdin once, then emit the last N text lines.
 ; The bounded 4096-byte staging arena fails closed with E_NOSPC if exhausted.
+; No random access, seek, or cassette rewind is assumed.
 
     MACRO EMIT_P811_TAIL_ROUTINES
 tail_entry:
