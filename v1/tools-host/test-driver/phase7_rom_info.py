@@ -137,23 +137,36 @@ def dispatch(root:Path,action:str,step:str,*,sha256_file,run_command,require_pro
     symbols=phase3_open_descriptions._symbols(sym,names)
     if action=="test":
         module=binary.read_bytes()
-        _info(root,symbols,module,0,1,("KEY-SCAN",0x028e,1,1,0))
-        _info(root,symbols,module,2,1,("KEY-DECODE",0x0333,1,1,10))
-        _info(root,symbols,module,0,2,("PRINT-A",0x0010,1,2,11))
-        _info(root,symbols,module,1,3,("LD-BYTES",0x0556,1,3,14))
-        _info(root,symbols,module,4,4,("DRAW-LINE",0x24ba,1,4,11))
-        _info(root,symbols,module,1,5,("BEEP-COMMAND",0x03f8,2,5,15))
-        _info(root,symbols,module,0,6,("FP-CALC",0x0028,2,6,11))
-        _info(root,symbols,module,15,6,("USR",0x34bc,3,6,11))
-        _info(root,symbols,module,16,6,None)
-        _info(root,symbols,module,29,0,None)
-        _bad(root,symbols,module,bytes((0,7,OUT&255,OUT>>8)))
-        _bad(root,symbols,module,bytes((0,1,0xfe,0xdf)))
-        _shell(root,symbols,module,None,0)
-        for arg,cat in ((b"keyboard",1),(b"tape",3),(b"gfx",4),(b"math",6)): _shell(root,symbols,module,arg,cat)
-        for arg in (b"sound",b"console",b"ROM",b"romcall"):_shell(root,symbols,module,arg,None)
-        _shell(root,symbols,module,b"math",None,stages=2)
-        _shell(root,symbols,module,b"math",None,bg=1)
+        cases = [
+          ("keyboard-first", lambda: _info(root,symbols,module,0,1,("KEY-SCAN",0x028e,1,1,0))),
+          ("keyboard-last", lambda: _info(root,symbols,module,2,1,("KEY-DECODE",0x0333,1,1,10))),
+          ("console-first", lambda: _info(root,symbols,module,0,2,("PRINT-A",0x0010,1,2,11))),
+          ("tape-last", lambda: _info(root,symbols,module,1,3,("LD-BYTES",0x0556,1,3,14))),
+          ("graphics-last", lambda: _info(root,symbols,module,4,4,("DRAW-LINE",0x24ba,1,4,11))),
+          ("sound-last", lambda: _info(root,symbols,module,1,5,("BEEP-COMMAND",0x03f8,2,5,15))),
+          ("math-first", lambda: _info(root,symbols,module,0,6,("FP-CALC",0x0028,2,6,11))),
+          ("math-last", lambda: _info(root,symbols,module,15,6,("USR",0x34bc,3,6,11))),
+          ("math-past", lambda: _info(root,symbols,module,16,6,None)),
+          ("all-past", lambda: _info(root,symbols,module,29,0,None)),
+          ("bad-category", lambda: _bad(root,symbols,module,bytes((0,7,OUT&255,OUT>>8)))),
+          ("bad-range", lambda: _bad(root,symbols,module,bytes((0,1,0xfe,0xdf)))),
+          ("shell-all", lambda: _shell(root,symbols,module,None,0)),
+          ("shell-keyboard", lambda: _shell(root,symbols,module,b"keyboard",1)),
+          ("shell-tape", lambda: _shell(root,symbols,module,b"tape",3)),
+          ("shell-gfx", lambda: _shell(root,symbols,module,b"gfx",4)),
+          ("shell-math", lambda: _shell(root,symbols,module,b"math",6)),
+          ("shell-sound-reject", lambda: _shell(root,symbols,module,b"sound",None)),
+          ("shell-console-reject", lambda: _shell(root,symbols,module,b"console",None)),
+          ("shell-case-reject", lambda: _shell(root,symbols,module,b"ROM",None)),
+          ("shell-romcall-reject", lambda: _shell(root,symbols,module,b"romcall",None)),
+          ("shell-pipeline-reject", lambda: _shell(root,symbols,module,b"math",None,stages=2)),
+          ("shell-bg-reject", lambda: _shell(root,symbols,module,b"math",None,bg=1)),
+        ]
+        for name, case in cases:
+            try:
+                case()
+            except Exception as exc:
+                raise P711Error(f"P7.11 runtime vector {name} failed: {exc}") from exc
         assertions += [
           {"name":"fuse-every-category-first-last-past-end-layout-exact","passed":True},
           {"name":"fuse-classes-a-b-c-and-contract-flags-exact","passed":True},
