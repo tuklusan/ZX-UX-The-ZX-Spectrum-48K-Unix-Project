@@ -516,6 +516,10 @@ def dispatch(root: Path, action: str, step: str):
         return phase7_acceptance.dispatch(root, action, step, **kwargs)
     if step.startswith("P7."):
         raise DriverError(f"numbered Phase-7 step is not registered: {step}")
+    if step == "P8.01":
+        return phase8_ls.dispatch(root, action, step, **kwargs)
+    if step.startswith("P8."):
+        raise DriverError(f"numbered Phase-8 step is not registered: {step}")
     module = E0_MODULE.get(step)
     if module is not None:
         return module.dispatch(root, action, step, **kwargs)
@@ -672,6 +676,10 @@ def prerequisite_statuses(step: str) -> dict[str, str]:
         number = int(step.split(".", 1)[1])
         if 1 <= number:
             return {"P6.30": "PASS"} if number == 1 else {f"P7.{number - 1:02d}": "PASS"}
+    if step.startswith("P8."):
+        number = int(step.split(".", 1)[1])
+        if 1 <= number <= 40:
+            return {"P7.21": "PASS"} if number == 1 else {f"P8.{number - 1:02d}": "PASS"}
     return {}
 
 
