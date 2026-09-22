@@ -227,7 +227,7 @@ gate_end:
 """,encoding="utf-8",newline="\n")
     gr=run_command([tool,"--nologo","--lst=p836-gateway.lst","--sym=p836-gateway.sym",gate.name],cwd=b,timeout_seconds=30); require(not gr.timed_out and gr.exit_code==0,f"P8.36 gateway: {gr.stderr or gr.stdout}")
     if action=="test":
-        sy=phase3_open_descriptions._symbols(b/"p836-demo-fixture.sym",("demo_entry","E_NOENT","E_FORMAT"))
+        sy=phase3_open_descriptions._symbols(b/"p836-demo-fixture.sym",("demo_entry","demo_exec_name","demo_source_name","E_NOENT","E_FORMAT"))
         ub=(b/"p836-demo-fixture.bin").read_bytes(); gb=(b/"p836-gateway.bin").read_bytes()
         list_expected=(b"hello hello.c\ncolors colors.c\nlines lines.c\nship ship.c\nball ball.c\nstars stars.c\nlife life.c\nmaze maze.c\nsine sine.c\nmandel mandel.c\ntune tune.c\npipe pipe.c\nmulti multi.c\n")
         args=[b"demo"]; ab=arg1(args); code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(ARG)+b"\x01"+word(len(ab))+b"\x11"+word(ENV)+phase1._call(sy["demo_entry"]))
@@ -235,6 +235,13 @@ gate_end:
         code+=expect(OUT+len(list_expected),0xA5)+expect(STATUS,0)+phase1._jp(PASS_PC)
         try: run_sna(root,bytes(code),patch=patch(ub,gb,args,0),timeout=30)
         except Exception as e: raise P836Error(f"P8.36 list case failed: {e}")
+        args=[b"demo",b"ship"]; ab=arg1(args)
+        for label,base,want in (("exec-name",sy["demo_exec_name"],b"ship\0"),("source-name",sy["demo_source_name"],b"ship.c\0")):
+            code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(ARG)+b"\x01"+word(len(ab))+b"\x11"+word(ENV)+phase1._call(sy["demo_entry"]))
+            for i,v in enumerate(want): code+=expect(base+i,v)
+            code+=phase1._jp(PASS_PC)
+            try: run_sna(root,bytes(code),patch=patch(ub,gb,args,0),timeout=30)
+            except Exception as e: raise P836Error(f"P8.36 {label} failed: {e}")
         for mode,loads,status,spawned in ((0,0,0,1),(1,1,0,1),(2,0,sy["E_FORMAT"]&255,0)):
             args=[b"demo",b"ship"]; ab=arg1(args)
             observed={}
