@@ -460,6 +460,8 @@ cron_entry:
     ld a,(ix+4)
     cp 1
     jp nz,cron_entry_bad
+    call cron_lock_acquire
+    jp c,cron_exit_a
 cron_poll:
     ld hl,cron_cfg_path
     ld c,O_READ
@@ -553,9 +555,184 @@ cron_entry_bad:
 cron_exit_ok:
     xor a
 cron_exit_a:
+    ld (cron_error),a
+    call cron_lock_release
+    ld a,(cron_error)
     ld l,a
     ld h,0
     ld a,SYS_EXIT
+    call SYSCALL_GATEWAY
+    ret
+
+; Acquire /tmp/.cron.lock exactly as "<pid>\n". Existing malformed content is
+; conservatively treated as live. A syntactically valid owner is removed only
+; after SYS_PROC_INFO proves that PID is absent with E_NOENT.
+cron_lock_acquire:
+    xor a
+    ld (cron_lock_owned),a
+    ld a,SYS_GETPID
+    call SYSCALL_GATEWAY
+    ret c
+    ld a,h
+    or a
+    jp nz,cron_lock_invalid
+    ld a,l
+    cp 2
+    jp c,cron_lock_invalid
+    cp 8
+    jp nc,cron_lock_invalid
+    add a,'0'
+    ld (cron_lock_payload),a
+    ld a,10
+    ld (cron_lock_payload+1),a
+cron_lock_create:
+    ld hl,cron_lock_path
+    ld c,O_WRITE|O_CREATE|O_EXCL
+    ld b,OBJ_DAT
+    ld a,SYS_OPEN
+    call SYSCALL_GATEWAY
+    jr c,cron_lock_exists
+    ld a,l
+    ld (cron_lock_handle),a
+    ld e,a
+    ld d,0
+    ld hl,cron_lock_payload
+    ld bc,2
+    ld a,SYS_WRITE
+    call SYSCALL_GATEWAY
+    jr c,cron_lock_create_fail
+    ld a,h
+    or a
+    jr nz,cron_lock_short_write
+    ld a,l
+    cp 2
+    jr nz,cron_lock_short_write
+    call cron_lock_close
+    ret c
+    ld a,1
+    ld (cron_lock_owned),a
+    xor a
+    ret
+cron_lock_short_write:
+    ld a,E_IO
+cron_lock_create_fail:
+    ld (cron_lock_error),a
+    call cron_lock_close
+    ld hl,cron_lock_path
+    ld a,SYS_REMOVE
+    call SYSCALL_GATEWAY
+    ld a,(cron_lock_error)
+    scf
+    ret
+
+cron_lock_exists:
+    cp E_EXIST
+    ret nz
+    ld hl,cron_lock_path
+    ld c,O_READ
+    ld b,0
+    ld a,SYS_OPEN
+    call SYSCALL_GATEWAY
+    jr c,cron_lock_busy
+    ld a,l
+    ld (cron_lock_handle),a
+    ld e,a
+    ld d,0
+    ld hl,cron_lock_read
+    ld bc,3
+    ld a,SYS_READ
+    call SYSCALL_GATEWAY
+    jr c,cron_lock_read_fail
+    ld a,h
+    or a
+    jr nz,cron_lock_malformed
+    ld a,l
+    cp 2
+    jr nz,cron_lock_malformed
+    ld a,(cron_lock_read)
+    cp '2'
+    jr c,cron_lock_malformed
+    cp '8'
+    jr nc,cron_lock_malformed
+    ld b,a
+    ld a,(cron_lock_read+1)
+    cp 10
+    jr nz,cron_lock_malformed
+
+    ; Confirm exact EOF after the two-byte payload.
+    ld a,(cron_lock_handle)
+    ld e,a
+    ld d,0
+    ld hl,cron_lock_read+2
+    ld bc,1
+    ld a,SYS_READ
+    call SYSCALL_GATEWAY
+    jr c,cron_lock_read_fail
+    ld a,h
+    or l
+    jr nz,cron_lock_malformed
+
+    ld a,b
+    sub '0'
+    ld (cron_proc_req),a
+    xor a
+    ld (cron_proc_req+1),a
+    ld hl,cron_proc_info
+    ld (cron_proc_req+2),hl
+    ld hl,cron_proc_req
+    ld a,SYS_PROC_INFO
+    call SYSCALL_GATEWAY
+    jr nc,cron_lock_live
+    cp E_NOENT
+    jr nz,cron_lock_live
+    ; Stale valid owner only: close, remove, then create once.
+    call cron_lock_close
+    ret c
+    ld hl,cron_lock_path
+    ld a,SYS_REMOVE
+    call SYSCALL_GATEWAY
+    ret c
+    jp cron_lock_create
+
+cron_lock_read_fail:
+    ld (cron_lock_error),a
+    call cron_lock_close
+    ld a,(cron_lock_error)
+    scf
+    ret
+cron_lock_malformed:
+    call cron_lock_close
+cron_lock_live:
+    call cron_lock_close
+cron_lock_busy:
+    ld a,E_BUSY
+    scf
+    ret
+cron_lock_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+
+cron_lock_close:
+    ld a,(cron_lock_handle)
+    cp HANDLE_FREE
+    ret z
+    ld l,a
+    ld h,0
+    ld a,SYS_CLOSE
+    call SYSCALL_GATEWAY
+    ld a,HANDLE_FREE
+    ld (cron_lock_handle),a
+    ret
+
+cron_lock_release:
+    ld a,(cron_lock_owned)
+    or a
+    ret z
+    xor a
+    ld (cron_lock_owned),a
+    ld hl,cron_lock_path
+    ld a,SYS_REMOVE
     call SYSCALL_GATEWAY
     ret
 
@@ -575,6 +752,7 @@ cron_boot: db '@','b','o','o','t',0
 cron_hourly: db '@','h','o','u','r','l','y',0
 cron_daily: db '@','d','a','i','l','y',0
 cron_cfg_path: db '/etc/crontab',0
+cron_lock_path: db '/tmp/.cron.lock',0
 cron_sleep_50: db 50,0,0,0
 cron_cfg_start: dw 0
 cron_cfg_end: dw 0
@@ -601,4 +779,11 @@ cron_proc1: defs 16,0
 cron_wait_req: defs 4,0
 cron_wait_status: db 0
 cron_error: db 0
+cron_lock_owned: db 0
+cron_lock_handle: db HANDLE_FREE
+cron_lock_payload: db '2',10
+cron_lock_read: defs 3,0
+cron_lock_error: db 0
+cron_proc_req: defs 4,0
+cron_proc_info: defs 16,0
     ENDM
