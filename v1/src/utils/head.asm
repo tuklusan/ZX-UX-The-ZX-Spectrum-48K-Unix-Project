@@ -11,6 +11,7 @@
 ; patent, trademark, and governing-law provisions.
 ;
 ; /bin/head: emit the first N text lines from stdin, default N=10.
+; Explicit N is strict unsigned decimal in the canonical 1..255 range.
 
     MACRO EMIT_P810_HEAD_ROUTINES
 head_entry:
