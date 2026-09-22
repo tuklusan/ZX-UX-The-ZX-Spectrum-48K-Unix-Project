@@ -1,0 +1,110 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p830-present",
+      "passed": true
+    },
+    {
+      "name": "mutable-env-user",
+      "passed": true
+    },
+    {
+      "name": "env1-validated",
+      "passed": true
+    },
+    {
+      "name": "no-fixed-user",
+      "passed": true
+    },
+    {
+      "name": "short-write-safe",
+      "passed": true
+    },
+    {
+      "name": "case-sensitive",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p830-whoami-image.lst",
+        "--sym=p830-whoami-image.sym",
+        "p830-whoami-image.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 561 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p830-whoami.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 32,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 1831, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 47706, \"image_size\": 232, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 256, \"relocations\": [], \"stored_length\": 256, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p830-whoami-fixture.lst",
+        "--sym=p830-whoami-fixture.sym",
+        "p830-whoami-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 561 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p830-gateway.lst",
+        "--sym=p830-gateway.sym",
+        "p830-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 307 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p830-whoami.mex1": "bf5e4657b1e2b114a07334d1b2f01144a5e3f7121230643bb5bc6482bd2c9492",
+    "v1/build/p830-whoami.tap": "69ede251d48af6302135f6aa7742662d66331d5930bc26173da4758e0c21a5a6",
+    "v1/dist/certification/P8.29.test.json": "b3212a7a245aebcd13dbbad14be1fa09ff57b1bcf8c47d9b3649e8e10fa4d3b1",
+    "v1/src/utils/whoami.asm": "6d8877b4fe7cc8805f63038a0fb116622d3384c6ec922e6656c053c12f6a6b12",
+    "v1/tools-host/test-driver/phase8_whoami.py": "f8fec19e09a680a9af7d7ee89496409c9682a9609c67c32a4012c529dfdc82ec",
+    "v1/tools-host/test-driver/run.py": "28b73a8eea3b6205a5c906aefb6c6447fdd461059c888ae3ac0ab5c07644f6de"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.29": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "c30d4d3ce1e8f88d0b91f0f7f51c10c6cdb1b505",
+  "status": "PASS",
+  "step": "P8.30",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
