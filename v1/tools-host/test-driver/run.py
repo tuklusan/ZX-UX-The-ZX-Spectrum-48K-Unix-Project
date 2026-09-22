@@ -205,7 +205,6 @@ import phase7_udg_bank
 import phase7_udg_ops
 import phase7_udg_draw
 import phase7_udg_2x2
-import phase7_c48_beep
 import phase7_beep_c48
 import phase7_udg_persistence
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
