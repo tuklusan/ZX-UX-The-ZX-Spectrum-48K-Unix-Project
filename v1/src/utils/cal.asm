@@ -110,22 +110,24 @@ cal_parse_year:
     call cal_parse_u16
     ret c
     push hl
-    ex de,hl
-    ld de,1970
-    or a
-    sbc hl,de
+    push de
     pop hl
-    jr c,cal_parse_bad
-    push hl
-    ex de,hl
+    ld bc,1970
+    or a
+    sbc hl,bc
+    jr c,cal_parse_year_bad
+    push de
+    pop hl
     ld bc,2100
     or a
     sbc hl,bc
-    ex de,hl
+    jr nc,cal_parse_year_bad
     pop hl
-    jr nc,cal_parse_bad
     or a
     ret
+cal_parse_year_bad:
+    pop hl
+    jp cal_parse_bad
 cal_parse_bad:
     ld a,E_INVAL
     scf
