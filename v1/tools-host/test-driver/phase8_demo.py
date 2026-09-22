@@ -95,10 +95,12 @@ g_stat:
     inc hl
     ld b,(hl)
     ex de,hl
+    push hl
     push bc
     ld de,g_ship_c
     call g_streq
     pop bc
+    pop hl
     jr z,g_stat_source
     push bc
     ld de,g_ship
