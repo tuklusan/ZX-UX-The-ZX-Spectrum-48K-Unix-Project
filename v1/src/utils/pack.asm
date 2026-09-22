@@ -11,6 +11,7 @@
 ; patent, trademark, and governing-law provisions.
 ;
 ; /bin/pack: atomically request ZXP1 packing and report logical -> physical.
+; A valid noncompressible RAW object is still a successful command.
 
     MACRO EMIT_P806_PACK_ROUTINES
 pack_entry:
