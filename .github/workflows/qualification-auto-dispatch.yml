@@ -121,7 +121,18 @@ jobs:
         run: |
           set -euo pipefail
           test "$QUALIFICATION_HEAD" = "$CANDIDATE_SHA"
+          git fetch --quiet origin main
+          test "$(git rev-parse origin/main)" = "$CANDIDATE_SHA"
           existing="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/$QUALIFICATION_WORKFLOW/runs?event=workflow_dispatch&branch=main&per_page=50" | python3 -c 'import json,os,sys; d=json.load(sys.stdin); print(next((str(r["id"]) for r in d["workflow_runs"] if r["head_sha"]==os.environ["CANDIDATE_SHA"]), ""))')"
           if test -n "$existing"; then echo "ZX-UX QUALIFICATION AUTO-DISPATCH SKIP existing_run=$existing step=$QUALIFICATION_STEP"; exit 0; fi
           gh api -X POST "repos/$GITHUB_REPOSITORY/actions/workflows/$QUALIFICATION_WORKFLOW/dispatches" -f ref=main
-          echo "ZX-UX QUALIFICATION AUTO-DISPATCH PASS step=$QUALIFICATION_STEP head=$QUALIFICATION_HEAD"
+          for attempt in $(seq 1 15); do
+            run_id="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/$QUALIFICATION_WORKFLOW/runs?event=workflow_dispatch&branch=main&per_page=50" | python3 -c 'import json,os,sys; d=json.load(sys.stdin); print(next((str(r["id"]) for r in d["workflow_runs"] if r["head_sha"]==os.environ["CANDIDATE_SHA"]), ""))')"
+            if test -n "$run_id"; then
+              echo "ZX-UX QUALIFICATION AUTO-DISPATCH PASS step=$QUALIFICATION_STEP head=$QUALIFICATION_HEAD run_id=$run_id"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "exact dispatched run not observed for $QUALIFICATION_STEP at $CANDIDATE_SHA" >&2
+          exit 1
