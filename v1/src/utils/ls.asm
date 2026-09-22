@@ -80,12 +80,12 @@ ls_loop:
     jp c,ls_fail
     ld a,h
     or l
-    jr z,ls_ok
+    jp z,ls_ok
     call ls_print_entry
     jp c,ls_fail
     ld a,(ls_index)
     inc a
-    jr z,ls_ok
+    jp z,ls_ok
     ld (ls_index),a
     jr ls_loop
 
@@ -235,7 +235,7 @@ ls_copy_name_done:
 ls_type_text:
     dec a
     cp 13
-    jr nc,ls_invalid_ret
+    jp nc,ls_invalid_ret
     add a,a
     ld e,a
     ld d,0
@@ -249,7 +249,7 @@ ls_type_text:
 
 ls_state_text:
     cp 4
-    jr nc,ls_invalid_ret
+    jp nc,ls_invalid_ret
     add a,a
     ld e,a
     ld d,0
