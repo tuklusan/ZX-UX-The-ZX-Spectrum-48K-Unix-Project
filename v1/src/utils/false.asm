@@ -11,7 +11,7 @@
 ; patent, trademark, and governing-law provisions.
 ;
 ; /bin/false: emit no bytes and return exact process status 1.
-; Arguments are intentionally ignored; the status is invariant and side-effect free by construction.
+; Arguments are intentionally ignored; the status is invariant and side-effect free by construction; no I/O syscall is reachable.
 
     MACRO EMIT_P814_FALSE_ROUTINES
 false_entry:

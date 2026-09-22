@@ -32,7 +32,7 @@ jobs:
         run: |
           set -euo pipefail
           git diff --name-only "$P814_BASE" HEAD | sort > /tmp/changed
-          printf '%s\\n' \
+          printf '%s\n' \
             .github/workflows/p814-qualification.yml \
             v1/src/utils/false.asm \
             v1/tools-host/test-driver/phase8_false.py \
