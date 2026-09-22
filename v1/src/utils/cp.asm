@@ -44,7 +44,7 @@ cp_same_loop:
     cp (hl)
     jr nz,cp_stat_source
     or a
-    jr z,cp_success
+    jp z,cp_success
     inc hl
     inc de
     jr cp_same_loop
@@ -66,7 +66,7 @@ cp_stat_source:
 cp_type_check:
     ld a,(cp_stat_out+0)
     or a
-    jr z,cp_invalid
+    jp z,cp_invalid
     cp 11
     jr c,cp_type_ok
     ld a,E_PERM
@@ -167,7 +167,7 @@ cp_finish_stream:
 cp_committed:
     xor a
     ld (cp_tmp_created),a
-    jr cp_success
+    jp cp_success
 
 cp_cleanup_error:
     ld (cp_error),a
