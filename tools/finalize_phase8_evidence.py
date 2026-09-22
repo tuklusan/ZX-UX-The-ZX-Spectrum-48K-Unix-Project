@@ -37,7 +37,7 @@ def main():
         source=res.get("source_commit")
         exact={"step":"P8.40","action":"result","status":"PASS","pass_marker":P840,
                "architecture_sha256":ARCH,"implementation_plan_sha256":PLAN,
-               "worktree_clean":True,"prerequisites":{"P8.20":"PASS"}}
+               "worktree_clean":True,"prerequisites":{"P8.39":"PASS"}}
         for k,v in exact.items():
             if res.get(k)!=v: raise E(f"P8.40.result {k}")
         if not isinstance(source,str) or len(source)!=40: raise E("P8.40 result source")
@@ -57,24 +57,24 @@ def main():
                 rs=r.get("source_commit")
                 if not isinstance(rs,str) or subprocess.run(["git","merge-base","--is-ancestor",rs,source],cwd=root,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode:
                     raise E(f"{name}: source ancestry")
-                if n==21 and rs!=source: raise E(f"{name}: P8.40 source mismatch")
+                if n==40 and rs!=source: raise E(f"{name}: P8.40 source mismatch")
                 if not isinstance(r.get("toolchain_lock_sha256"),str): raise E(f"{name}: toolchain provenance")
-                if n==21 and r.get("toolchain_lock_sha256")!=phase_lock: raise E(f"{name}: P8.40 toolchain")
+                if n==40 and r.get("toolchain_lock_sha256")!=phase_lock: raise E(f"{name}: P8.40 toolchain")
                 names.append(name); manifest[name]=sha(p)
         names.append("P8.40.result.json")
         manifest["P8.40.result.json"]=sha(cert/"P8.40.result.json")
         agg={
-            "schema":2,"phase":7,"action":"phase-result","status":"PASS","pass_marker":PHASE,
+            "schema":2,"phase":8,"action":"phase-result","status":"PASS","pass_marker":PHASE,
             "source_commit":source,"toolchain_lock_sha256":phase_lock,
             "architecture_sha256":ARCH,"implementation_plan_sha256":PLAN,"worktree_clean":True,
             "required_records":names,"record_sha256":manifest,
             "assertions":[
                 {"name":"p8-40-build-test-result-pass","passed":True},
-                {"name":"all-p7-01-through-p8-40-durable-evidence-pass","passed":True},
+                {"name":"all-p8-01-through-p8-40-durable-evidence-pass","passed":True},
                 {"name":"rev16-rev07-authority-pass","passed":True},
                 {"name":"phase8-record-manifest-byte-exact","passed":True},
                 {"name":"phase8-acceptance-bullets-pass","passed":True},
-                {"name":"phase8-gate-stops-before-phase8","passed":True},
+                {"name":"phase8-gate-stops-before-phase9","passed":True},
             ],
         }
         out.parent.mkdir(parents=True,exist_ok=True)
