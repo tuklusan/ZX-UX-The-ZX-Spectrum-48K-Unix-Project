@@ -1,0 +1,139 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p816-present",
+      "passed": true
+    },
+    {
+      "name": "shell-path-algorithm-reused",
+      "passed": true
+    },
+    {
+      "name": "exact-path-env",
+      "passed": true
+    },
+    {
+      "name": "builtin-filter",
+      "passed": true
+    },
+    {
+      "name": "bin-only-path-resolution",
+      "passed": true
+    },
+    {
+      "name": "catalog-only-no-tape-motion",
+      "passed": true
+    },
+    {
+      "name": "stdout-path-lf",
+      "passed": true
+    },
+    {
+      "name": "short-write-safe",
+      "passed": true
+    },
+    {
+      "name": "fuse-path-left-to-right-exact-case",
+      "passed": true
+    },
+    {
+      "name": "fuse-wrong-type-skipped",
+      "passed": true
+    },
+    {
+      "name": "fuse-tape-backed-catalog-only",
+      "passed": true
+    },
+    {
+      "name": "fuse-builtin-not-reported",
+      "passed": true
+    },
+    {
+      "name": "fuse-short-write-retried",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p816-which-image.lst",
+        "--sym=p816-which-image.sym",
+        "p816-which-image.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 7,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 5287 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p816-which.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 23,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 46439, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 3791, \"image_size\": 932, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 956, \"relocations\": [], \"stored_length\": 956, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p816-which-fixture.lst",
+        "--sym=p816-which-fixture.sym",
+        "p816-which-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 6,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 5287 lines, work time: 0.006 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p816-gateway.lst",
+        "--sym=p816-gateway.sym",
+        "p816-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 2,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 421 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p816-which.mex1": "ef03af6ee2d5a98a9378a5214a752c5d31b9fb883b71200bc099f99fd40fbdf1",
+    "v1/build/p816-which.tap": "085f9295bcde2efd2072e9d6d07c315bf9d284317a17ac3847ae08377e706871",
+    "v1/dist/certification/P8.15.test.json": "761c6dcff2debed1eecbcdf86d924b501d45ae4803157665d6ed2107edc83ca7",
+    "v1/src/shell/sh.asm": "d0f15306b5ccaeeb6ac76895231cf379a2d721bbb96b1e6cdb0bc5ec3ceb86a3",
+    "v1/src/utils/which.asm": "709ed3541835e8eb84ef01f1a90529bdf3fa399b27253ab22cde4984dd5fada5",
+    "v1/tools-host/test-driver/phase8_which.py": "6b69f55ec568412ffdfc2789cea813fd9f2dd13edf29f3bb35e1ebc7d2ec9e59",
+    "v1/tools-host/test-driver/run.py": "4910560627f784015194a817ea4912e30a00bb6bdc344ada0cd1d7235eba1dc4"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.15": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "b46477b399195db4d91a5119e6405a8f1c172a34",
+  "status": "PASS",
+  "step": "P8.16",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
