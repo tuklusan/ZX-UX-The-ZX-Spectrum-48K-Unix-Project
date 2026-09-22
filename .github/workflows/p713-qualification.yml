@@ -11,8 +11,10 @@
 # patent, trademark, and governing-law provisions.
 name: P7.13 UDG bank qualification
 on:
-  workflow_dispatch:
-permissions: {actions: write, contents: read}
+  workflow_dispatch: {}
+permissions:
+  actions: write
+  contents: read
 jobs:
   qualify:
     runs-on: ubuntu-24.04
@@ -90,7 +92,8 @@ jobs:
           retention-days: 90
           if-no-files-found: error
       - name: Dispatch exact admission
-        env: {GH_TOKEN: ${{ github.token }}}
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           python3 - <<'PY'
           import json,os,urllib.request
