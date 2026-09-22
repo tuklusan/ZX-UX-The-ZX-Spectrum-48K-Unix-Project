@@ -1,0 +1,122 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p808-present",
+      "passed": true
+    },
+    {
+      "name": "literal-no-regex",
+      "passed": true
+    },
+    {
+      "name": "case-sensitive-compare",
+      "passed": true
+    },
+    {
+      "name": "stdin-or-named",
+      "passed": true
+    },
+    {
+      "name": "line-streaming",
+      "passed": true
+    },
+    {
+      "name": "matching-lines-stdout",
+      "passed": true
+    },
+    {
+      "name": "short-write-safe",
+      "passed": true
+    },
+    {
+      "name": "status-no-match-one",
+      "passed": true
+    },
+    {
+      "name": "bounded-line-fail-closed",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p808-grep-image.lst",
+        "--sym=p808-grep-image.sym",
+        "p808-grep-image.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 7,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 901 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p808-grep.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 37,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 32583, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 61359, \"image_size\": 766, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 790, \"relocations\": [], \"stored_length\": 790, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p808-grep-fixture.lst",
+        "--sym=p808-grep-fixture.sym",
+        "p808-grep-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 6,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 901 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p808-gateway.lst",
+        "--sym=p808-gateway.sym",
+        "p808-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 396 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p808-grep.mex1": "6bc5e4fe4aa78c9276af94a44627b2bd028b2e2b0683bb9cef38ccf896a1a664",
+    "v1/build/p808-grep.tap": "ddd0941f1553b29c30efb09fe0b731b8b78e15b26a5d73521587973d39415173",
+    "v1/dist/certification/P8.07.test.json": "0b5fcf3d1e7964dc8f328c2472d4adf94c60529a9b95a170f68999089ea08667",
+    "v1/src/utils/grep.asm": "a636b83fe765c0338ed89af3ecb7d5d71b55416e47c3ea7b8654cfea1d82520b",
+    "v1/tools-host/test-driver/phase8_grep.py": "56164b5e8c03c5b8275aa2fd178ad2c770ed3c5513c2e7ba23b3876451c44b24",
+    "v1/tools-host/test-driver/run.py": "4ade6eb1be9dd8f48b0bb913f153d45bf7c80ade08a14767769fe09df1d00566"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.07": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "5775b540392af6482365c19341c60b9e5ababa3b",
+  "status": "PASS",
+  "step": "P8.08",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
