@@ -3941,15 +3941,15 @@ sh_p712_lookup_miss:
 ; A=argc including command, B=pipeline stage count, C=background flag,
 ; HL=compact parsed operand bytes. Guards execute before any request mutation.
 sh_p712_guard:
-    ld d,a
+    ld e,a
     ld a,b
     cp 1
     jr nz,sh_p712_notsup
     ld a,c
     or a
     jr nz,sh_p712_notsup
-    ld a,d
-    xor a
+    ld a,e
+    or a
     ret
 sh_p712_notsup:
     ld a,E_NOTSUP
