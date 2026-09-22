@@ -218,6 +218,7 @@ import phase8_rm
 import phase8_pack
 import phase8_unpack
 import phase8_grep
+import phase8_wc
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
 from media_retention import (
     capture_project_media,
@@ -539,6 +540,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase8_unpack.dispatch(root, action, step, **kwargs)
     if step == "P8.08":
         return phase8_grep.dispatch(root, action, step, **kwargs)
+    if step == "P8.09":
+        return phase8_wc.dispatch(root, action, step, **kwargs)
     if step.startswith("P8."):
         raise DriverError(f"numbered Phase-8 step is not registered: {step}")
     module = E0_MODULE.get(step)
