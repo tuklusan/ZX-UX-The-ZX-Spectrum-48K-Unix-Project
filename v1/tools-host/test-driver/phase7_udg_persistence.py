@@ -329,27 +329,32 @@ def basepatch(util,gate,live=None,load=None,target=None,gv=None):
     return p
 
 def runtime(root,u,g,util,gate):
+    def execute(label, code, patch):
+        try:
+            run_sna(root,code,patch=patch)
+        except DriverError as exc:
+            raise P716Error(f"{label}: {exc}") from exc
     live=bytes(((i*37+11)&255) for i in range(256))
     want=b"UDG1"+bytes((1,0,32,0))+live
     code=bytearray(b"\xf3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(PATH)+call(u["udg_save_path"])+phase1._jp_c(FAIL_PC))
     code+=checkb(g["p716_create_type"],g["OBJ_UDG"])+checkb(g["p716_create_flags"],g["O_WRITE"]|g["O_CREATE"]|g["O_EXCL"])
     code+=checkb(g["p716_committed"],1)+checkb(g["p716_tape_motion"],0)+checkmem(TARGET,want)+phase1._jp(PASS_PC)
-    run_sna(root,bytes(code),patch=basepatch(util,gate,live=live))
+    execute("save-full",bytes(code),basepatch(util,gate,live=live))
     for flag in ("p716_force_write","p716_force_rename"):
         old=bytes(((i*13+7)&255) for i in range(264))
         code=bytearray(b"\xf3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(PATH)+call(u["udg_save_path"])+jpnc(FAIL_PC)+bytes((0xfe,g["E_IO"]))+phase1._jp_nz(FAIL_PC))
         code+=checkb(g["p716_committed"],0)+checkb(g["p716_remove_calls"],1)+checkb(g["p716_tape_motion"],0)+checkmem(TARGET,old)+phase1._jp(PASS_PC)
-        run_sna(root,bytes(code),patch=basepatch(util,gate,live=live,target=old,gv={g[flag]:1}))
+        execute(f"save-failure-{flag}",bytes(code),basepatch(util,gate,live=live,target=old,gv={g[flag]:1}))
     payload=b"UDG1"+bytes((1,2,2,0))+bytes(range(16))
     for flags in (0,g["OBJ_PACKED"]):
         code=bytearray(b"\xf3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(PATH)+call(u["udg_load_path"])+phase1._jp_c(FAIL_PC))
         code+=checkb(g["p716_define_calls"],2)+checkb(g["p716_tape_motion"],0)
         code+=checkmem(LIVE+16,bytes(range(16)))+checkmem(LIVE+8,b"\xa5"*8)+checkmem(LIVE+32,b"\xa5"*8)+phase1._jp(PASS_PC)
-        run_sna(root,bytes(code),patch=basepatch(util,gate,load=payload,gv={g["p716_load_len"]:len(payload),g["p716_load_flags"]:flags}))
+        execute(f"load-range-flags-{flags}",bytes(code),basepatch(util,gate,load=payload,gv={g["p716_load_len"]:len(payload),g["p716_load_flags"]:flags}))
     full=b"UDG1"+bytes((1,0,32,0))+live
     code=bytearray(b"\xf3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(PATH)+call(u["udg_load_path"])+phase1._jp_c(FAIL_PC))
     code+=checkb(g["p716_define_calls"],32)+checkmem(LIVE,live)+phase1._jp(PASS_PC)
-    run_sna(root,bytes(code),patch=basepatch(util,gate,load=full,gv={g["p716_load_len"]:len(full)}))
+    execute("load-full",bytes(code),basepatch(util,gate,load=full,gv={g["p716_load_len"]:len(full)}))
     bad=[]
     x=bytearray(payload); x[0]=ord("X"); bad.append(bytes(x))
     x=bytearray(payload); x[4]=2; bad.append(bytes(x))
@@ -359,13 +364,13 @@ def runtime(root,u,g,util,gate):
     for malformed in bad:
         code=bytearray(b"\xf3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(PATH)+call(u["udg_load_path"])+jpnc(FAIL_PC)+bytes((0xfe,g["E_FORMAT"]))+phase1._jp_nz(FAIL_PC))
         code+=checkb(g["p716_define_calls"],0)+checkb(LIVE,0xa5)+checkb(LIVE+255,0xa5)+checkb(g["p716_tape_motion"],0)+phase1._jp(PASS_PC)
-        run_sna(root,bytes(code),patch=basepatch(util,gate,load=malformed,gv={g["p716_load_len"]:len(malformed)}))
+        execute("load-malformed",bytes(code),basepatch(util,gate,load=malformed,gv={g["p716_load_len"]:len(malformed)}))
     code=bytearray(b"\xf3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(PATH)+call(u["udg_load_path"])+jpnc(FAIL_PC)+bytes((0xfe,g["E_FORMAT"]))+phase1._jp_nz(FAIL_PC))
     code+=checkb(g["p716_define_calls"],0)+checkb(LIVE,0xa5)+checkb(g["p716_tape_motion"],0)+phase1._jp(PASS_PC)
-    run_sna(root,bytes(code),patch=basepatch(util,gate,load=payload+b"\0",gv={g["p716_load_len"]:len(payload)+1}))
+    execute("load-length-mismatch",bytes(code),basepatch(util,gate,load=payload+b"\0",gv={g["p716_load_len"]:len(payload)+1}))
     code=bytearray(b"\xf3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(PATH)+call(u["udg_load_path"])+jpnc(FAIL_PC)+bytes((0xfe,g["E_IO"]))+phase1._jp_nz(FAIL_PC))
     code+=checkb(g["p716_define_calls"],0)+checkb(LIVE,0xa5)+checkb(g["p716_tape_motion"],0)+phase1._jp(PASS_PC)
-    run_sna(root,bytes(code),patch=basepatch(util,gate,load=payload,gv={g["p716_load_len"]:len(payload),g["p716_force_read"]:1}))
+    execute("load-read-failure",bytes(code),basepatch(util,gate,load=payload,gv={g["p716_load_len"]:len(payload),g["p716_force_read"]:1}))
 
 def dispatch(root,action,step,*,sha256_file,run_command,require_project_tool):
     if step!="P7.16": raise P716Error(step)
