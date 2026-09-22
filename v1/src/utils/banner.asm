@@ -13,6 +13,7 @@
 ; P8.33 renders one bounded ARG1 text argument through the shared pixel syscall.
 ; The Spectrum ROM 8x8 font at $3D00 supplies glyph bits for ASCII 32..127.
 
+; P8.33 exact qualification source.
     MACRO EMIT_P833_BANNER_ROUTINES
 banner_entry:
     push hl
