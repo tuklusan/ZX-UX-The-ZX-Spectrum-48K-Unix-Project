@@ -1,0 +1,107 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p823-present",
+      "passed": true
+    },
+    {
+      "name": "six-public-forms",
+      "passed": true
+    },
+    {
+      "name": "tty-ioctl-only",
+      "passed": true
+    },
+    {
+      "name": "default-exact-report",
+      "passed": true
+    },
+    {
+      "name": "short-write-safe",
+      "passed": true
+    },
+    {
+      "name": "case-sensitive",
+      "passed": true
+    },
+    {
+      "name": "fuse-default-report",
+      "passed": true
+    },
+    {
+      "name": "fuse-all-setters",
+      "passed": true
+    },
+    {
+      "name": "fuse-invalid-case-range",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p823-stty.lst",
+        "--sym=p823-stty.sym",
+        "p823-stty.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 6,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 910 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p823-gateway.lst",
+        "--sym=p823-gateway.sym",
+        "p823-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 361 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p823-stty.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 50172, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 50289, \"image_size\": 622, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 646, \"relocations\": [], \"stored_length\": 646, \"version\": 1}\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p823-stty.mex1": "803e314741f2ba5e0aafff95bcfa2f72194b7c38e58af89f92bcf087f24bd369",
+    "v1/build/p823-stty.tap": "a7be64ec9872e9e1e17eaee80a78c65d9ec5612c0c8aadb4e73260c7efc0579e",
+    "v1/dist/certification/P8.22.test.json": "64daa8b2d876007cdb8bb8544edea895a3fb540ed15d07eff2f32db7b45b7276",
+    "v1/src/utils/stty.asm": "da0dca00da4d263020c05eccf02654de366ef3d226f72fea352311a3728dca1f",
+    "v1/tools-host/test-driver/phase8_stty.py": "7c8127bd904c36900e146af67cba663daa6a6766f13be8bed00f5321e1c1be60",
+    "v1/tools-host/test-driver/run.py": "e99c9eb85864d6e81f705431dcdf852b79d5d5f60d557b5639c30a1fd5441b1e"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.22": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "da04c3d0fdf7bcc96584dd6717e0c8cd773cfb2b",
+  "status": "PASS",
+  "step": "P8.23",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
