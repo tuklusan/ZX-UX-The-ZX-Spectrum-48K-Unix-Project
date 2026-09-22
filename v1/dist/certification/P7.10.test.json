@@ -1,0 +1,120 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p710-present",
+      "passed": true
+    },
+    {
+      "name": "exact-lowercase-token-table",
+      "passed": true
+    },
+    {
+      "name": "rnd-deferred",
+      "passed": true
+    },
+    {
+      "name": "only-decimal-safe-operators-accepted-directly",
+      "passed": true
+    },
+    {
+      "name": "unknown-or-uppercase-byte-families-reject",
+      "passed": true
+    },
+    {
+      "name": "exact-one-argument-before-tokenizer",
+      "passed": true
+    },
+    {
+      "name": "single-stage-foreground-before-tokenizer",
+      "passed": true
+    },
+    {
+      "name": "calc-lookup-is-exact-and-no-external-resolution",
+      "passed": true
+    },
+    {
+      "name": "rom-entry-after-complete-shell-allowlist",
+      "passed": true
+    },
+    {
+      "name": "rom-scanner-isolated-stack-and-error-gateway",
+      "passed": true
+    },
+    {
+      "name": "rom-numeric-type-required-and-state-restored",
+      "passed": true
+    },
+    {
+      "name": "serialized-altreg-critical-section",
+      "passed": true
+    },
+    {
+      "name": "fuse-every-allowed-grammar-family-returns-controlled-five-byte-result",
+      "passed": true
+    },
+    {
+      "name": "fuse-forbidden-token-families-reject-safely",
+      "passed": true
+    },
+    {
+      "name": "fuse-arity-pipeline-background-fail-before-result-mutation",
+      "passed": true
+    },
+    {
+      "name": "fuse-exact-case-calc-builtin-lookup-bypasses-external-resolution",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 36,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nkernel.asm(87): warning[shortblock]: init data for block truncated to length: 0\nPass 3 complete\nErrors: 0, warnings: 1, compiled: 15216 lines, work time: 0.035 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p710-calc.lst",
+        "--sym=p710-calc.sym",
+        "p710-calc.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 10,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 4907 lines, work time: 0.009 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "1bcb1862955372e15814296fd248795b3de41baac5596baecd5d5f155ed92a67",
+    "v1/build/p710-calc.bin": "7c6c2d72b6ddddb76e4fe7bfe35c52ab1de0da83c34d83c1e9cb41ab071e821f",
+    "v1/src/kernel/rom_services.asm": "a17aa3d4f665728355c23deb4234463e2e8eeed3fe8f2cd0cfabbcb9586f6648",
+    "v1/src/shell/sh.asm": "08fecd9215867202d5d696687276850b661987e29ccb5425ed93ac05e92ac9ae",
+    "v1/tools-host/test-driver/phase7_calc.py": "8d32779c022d0532f24095fe0e11f7ac2006d22c8459cee4f783a49cadabd48c",
+    "v1/tools-host/test-driver/run.py": "ac563c22755ed8d59b04774cf8c31498e97028d692700013bf892e129a863cde"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P7.09": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "78de81b0885be475e6f17b599ff6ec7e37f018a2",
+  "status": "PASS",
+  "step": "P7.10",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
