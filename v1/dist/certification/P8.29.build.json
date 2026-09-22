@@ -1,0 +1,110 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p829-present",
+      "passed": true
+    },
+    {
+      "name": "sys-ticks-only",
+      "passed": true
+    },
+    {
+      "name": "u32-format",
+      "passed": true
+    },
+    {
+      "name": "modulo-independent",
+      "passed": true
+    },
+    {
+      "name": "short-write-safe",
+      "passed": true
+    },
+    {
+      "name": "arity",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p829-uptime-image.lst",
+        "--sym=p829-uptime-image.sym",
+        "p829-uptime-image.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 567 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p829-uptime.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 32,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 14104, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 47157, \"image_size\": 240, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 264, \"relocations\": [], \"stored_length\": 264, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p829-uptime-fixture.lst",
+        "--sym=p829-uptime-fixture.sym",
+        "p829-uptime-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 567 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p829-gateway.lst",
+        "--sym=p829-gateway.sym",
+        "p829-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 318 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p829-uptime.mex1": "fdbccd43bda7d57d9035c8629fa557f0b45ab9567412519ab76b2004f2586a76",
+    "v1/build/p829-uptime.tap": "edbd48dee0105fbb93b794ebfeb4ef5775275226f47966ddeb4c7da15b283acb",
+    "v1/dist/certification/P8.28.test.json": "d647f720d9653a917c06bf29b77b9590b65c89913b3e590746d788e9b53a59d7",
+    "v1/src/utils/uptime.asm": "f249fefcd55380e67ccc1074ee47145b5ef7a97b315e633ad45dfc5209531e73",
+    "v1/tools-host/test-driver/phase8_uptime.py": "9aa623fc0a8f6a0232e46ed396b75a86b781441162ecd5d5cec6a84e6240c2b0",
+    "v1/tools-host/test-driver/run.py": "595d4e7b7825c5f203edaebbc0b3e667d7751a97b1801d47c53aa6cd4ac55206"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.28": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "5809bdd80aa56e17f7b5e593fa8a547def02cdbf",
+  "status": "PASS",
+  "step": "P8.29",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
