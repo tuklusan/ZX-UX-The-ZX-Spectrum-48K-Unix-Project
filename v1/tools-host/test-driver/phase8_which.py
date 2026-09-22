@@ -205,7 +205,7 @@ g_cases:
     dw s_dot_text
     db 0,OBJ_BIN
     db 1
-    dw s_bin_tape
+    dw s_bin_lazy
     db 0,OBJ_BIN
     db $ff,0,0,0,0
 s_bin: db '/','b','i','n',0
@@ -213,7 +213,7 @@ s_dot: db '.',0
 s_bin_ls: db '/','b','i','n','/','l','s',0
 s_bin_text: db '/','b','i','n','/','t','e','x','t',0
 s_dot_text: db '.','/','t','e','x','t',0
-s_bin_tape: db '/','b','i','n','/','t','a','p','e',0
+s_bin_lazy: db '/','b','i','n','/','l','a','z','y',0
 g_out: dw $A300
 gate_end:
     SAVEBIN "p816-gateway.bin",gate,gate_end-gate
@@ -224,7 +224,7 @@ gate_end:
         cases=[
           ([b"which",b"ls"],b"/bad:/bin:.",b"/bin/ls\n",0,0),
           ([b"which",b"text"],b"/bin:.",b"./text\n",0,1),
-          ([b"which",b"tape"],b"/bin:.",b"/bin/tape\n",0,0),
+          ([b"which",b"lazy"],b"/bin:.",b"/bin/lazy\n",0,0),
           ([b"which",b"cd"],b"/bin:.",b"",1,0),
           ([b"which",b"LS"],b"/bin:.",b"",1,0),
           ([b"which",b"missing"],b"/bin:.",b"",1,0),
