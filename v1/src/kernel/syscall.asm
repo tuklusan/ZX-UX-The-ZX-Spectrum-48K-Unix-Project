@@ -1305,3 +1305,54 @@ p711_rom_index: db 0
 p711_rom_category: db 0
 p711_rom_out: dw 0
     ENDM
+
+; P7.14 exact SYS_UDG_DEFINE/GET/CLEAR staged syscall surfaces.
+    MACRO EMIT_P714_UDG_SYSCALL_ROUTINES
+zx48_p714_sys_udg_define:
+    ld bc,(syscall_arg_bc)
+    ld a,b
+    or a
+    jp nz,zx48_p714_udg_invalid
+    ld a,c
+    cp UDG_SLOT_COUNT
+    jp nc,zx48_p714_udg_invalid
+    ld hl,(syscall_arg_hl)
+    ld bc,UDG_SLOT_BYTES
+    call zx48_user_range_validate
+    ret c
+    ld bc,(syscall_arg_bc)
+    ld hl,(syscall_arg_hl)
+    jp zx48_udg_define
+
+zx48_p714_sys_udg_get:
+    ld bc,(syscall_arg_bc)
+    ld a,b
+    or a
+    jp nz,zx48_p714_udg_invalid
+    ld a,c
+    cp UDG_SLOT_COUNT
+    jp nc,zx48_p714_udg_invalid
+    ld hl,(syscall_arg_hl)
+    ld bc,UDG_SLOT_BYTES
+    call zx48_user_range_validate
+    ret c
+    ld bc,(syscall_arg_bc)
+    ld hl,(syscall_arg_hl)
+    jp zx48_udg_get
+
+zx48_p714_sys_udg_clear:
+    ld hl,(syscall_arg_hl)
+    ld a,h
+    or a
+    jp nz,zx48_p714_udg_invalid
+    ld a,l
+    cp UDG_SLOT_COUNT
+    jp nc,zx48_p714_udg_invalid
+    ld hl,(syscall_arg_hl)
+    jp zx48_udg_clear
+
+zx48_p714_udg_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+    ENDM

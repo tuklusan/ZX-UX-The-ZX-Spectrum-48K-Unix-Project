@@ -62,7 +62,7 @@ zx48_udg_define:
     ret c
     ex de,hl
     ld hl,(udg_io_ptr)
-    ld bc,8
+    ld bc,UDG_SLOT_BYTES
     call zx48_memcpy
     xor a
     ret
@@ -75,7 +75,7 @@ zx48_udg_get:
     call zx48_udg_slot_ptr
     ret c
     ld de,(udg_io_ptr)
-    ld bc,8
+    ld bc,UDG_SLOT_BYTES
     call zx48_memcpy
     xor a
     ret
@@ -87,7 +87,7 @@ zx48_udg_clear:
     ld c,l
     call zx48_udg_slot_ptr
     ret c
-    ld b,8
+    ld b,UDG_SLOT_BYTES
     xor a
 zx48_udg_clear_loop:
     ld (hl),a
