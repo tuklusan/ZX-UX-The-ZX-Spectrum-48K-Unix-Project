@@ -10,6 +10,7 @@
 ; SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 ; patent, trademark, and governing-law provisions.
 
+; P8.28 exact qualification source.
     MACRO EMIT_P828_CAL_ROUTINES
 cal_entry:
     push hl
