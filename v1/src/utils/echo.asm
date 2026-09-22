@@ -13,6 +13,7 @@
 ; /bin/echo: external/pipelineable; arguments separated by one ASCII space and
 ; terminated by one LF. No arguments emits LF.
 
+; P8.37 external echo regression anchor.
     MACRO EMIT_P616_ECHO_ROUTINES
 echo_entry:
     push hl
