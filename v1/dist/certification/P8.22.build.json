@@ -1,0 +1,95 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p822-present",
+      "passed": true
+    },
+    {
+      "name": "external-gfxdemo-source",
+      "passed": true
+    },
+    {
+      "name": "six-graphics-apis",
+      "passed": true
+    },
+    {
+      "name": "exact-one-argument",
+      "passed": true
+    },
+    {
+      "name": "error-propagation",
+      "passed": true
+    },
+    {
+      "name": "no-case-folding",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p822-gfxdemo.lst",
+        "--sym=p822-gfxdemo.sym",
+        "p822-gfxdemo.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 400 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p822-gateway.lst",
+        "--sym=p822-gateway.sym",
+        "p822-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 324 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p822-gfxdemo.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 32,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 1919, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 34138, \"image_size\": 94, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 118, \"relocations\": [], \"stored_length\": 118, \"version\": 1}\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p822-gfxdemo.mex1": "19caf2d58c89cc07865a2488c2072bd3c81e5b6c2e4c57d45bda3f50b7e75cac",
+    "v1/build/p822-gfxdemo.tap": "9dd85592b5ffe7bac4e60ceda7ec4629f6b1ae066980731c582e02082675dd39",
+    "v1/dist/certification/P8.21.test.json": "a0cf6a4a1ed472226ebfc3069a21fe167606f176e0dc8e908cdce6d7b67f6f36",
+    "v1/src/utils/gfxdemo.asm": "66a287fda7d0332875df65e283e8f3eb7d50f01e41c31b0f88bb5caa14f383b7",
+    "v1/tools-host/test-driver/phase8_gfxdemo.py": "5f7862b5253ae398c3823d00855c1552917627e228c3a4c14a4ae4c082e99824",
+    "v1/tools-host/test-driver/run.py": "af968b8c8f71172f2f0e1049ad0958c3995c54f9c41f21c11cefa11d15e3eebd"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.21": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "6c078041086b46d06e2a0bcf831c756de7507f0e",
+  "status": "PASS",
+  "step": "P8.22",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
