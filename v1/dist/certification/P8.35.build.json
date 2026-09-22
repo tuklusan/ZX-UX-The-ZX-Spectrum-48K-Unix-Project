@@ -1,0 +1,110 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p835-present",
+      "passed": true
+    },
+    {
+      "name": "zero-one-argument",
+      "passed": true
+    },
+    {
+      "name": "default-y",
+      "passed": true
+    },
+    {
+      "name": "lf-per-line",
+      "passed": true
+    },
+    {
+      "name": "yield-per-line",
+      "passed": true
+    },
+    {
+      "name": "short-write-safe",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p835-yes-image.lst",
+        "--sym=p835-yes-image.sym",
+        "p835-yes-image.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 487 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p835-yes.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 28,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 27809, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 26402, \"image_size\": 185, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 209, \"relocations\": [], \"stored_length\": 209, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p835-yes-fixture.lst",
+        "--sym=p835-yes-fixture.sym",
+        "p835-yes-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 487 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p835-gateway.lst",
+        "--sym=p835-gateway.sym",
+        "p835-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 328 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p835-yes.mex1": "de978f25d265facd0cf03d9de9ef1812ddf20cb259a22b99ef6a12d1fa498d60",
+    "v1/build/p835-yes.tap": "addc6a7cde6c0ea865c0d48879191696b8e89caf651f7a855072836070ff90ef",
+    "v1/dist/certification/P8.34.test.json": "c980643a6a20a95b3a71e7d36e8ff79a2cddeb175debc763fe5ed573ece0cfa9",
+    "v1/src/utils/yes.asm": "5f8365b7c48329d8826526f12d50bf89c9bc303974de3cf5c7e89c07963173c3",
+    "v1/tools-host/test-driver/phase8_yes.py": "b1ef705b6e698fa9b5a649a3153c390a35deb07a8927e3c7ad6baf804afa2858",
+    "v1/tools-host/test-driver/run.py": "a4f3334c4a60d5052abee0248d1a6ab7189eb1d9fd6125f67501003dec7458aa"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.34": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "2fc6ceafb6d05e71733e861e3b10001303f5696e",
+  "status": "PASS",
+  "step": "P8.35",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
