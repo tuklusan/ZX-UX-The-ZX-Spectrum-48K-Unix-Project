@@ -97,6 +97,15 @@ jobs:
           kernel=common or hit(prefixes=("v1/tools-host/inspect-mex/","v1/tools-host/inspect-obj/"))
           phase1=common or hit(prefixes=("v1/tools-host/test-driver/phase1",), exact=("v1/tools-host/test-driver/driver_core.py","v1/tools-host/test-driver/phase1_gate.py"))
           phase2=phase1 or hit(prefixes=("v1/tools-host/test-driver/phase2","v1/tests/multiprocessing/","v1/tools-host/inspect-mex/"), exact=("v1/tools-host/test-driver/phase2_gate.py",))
+          for p in changed:
+              if not p.startswith("v1/tools-host/test-driver/") or p.endswith("/run.py"):
+                  continue
+              name=Path(p).name
+              m=re.match(r"phase(\d+)_",name)
+              if m and int(m.group(1))>=3:
+                  continue
+              phase1=True
+              phase2=True
           if "v1/tools-host/test-driver/run.py" in changed:
               before=Path("/tmp/zxux-before").read_text().strip()
               diff=subprocess.check_output(["git","diff","-U0",before,"HEAD","--","v1/tools-host/test-driver/run.py"],text=True)
