@@ -182,7 +182,10 @@ gate_end:
             ab=arg1(args); code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(ARG)+b"\x01"+word(len(ab))+phase1._call(sy["hexdump_entry"]))
             for o,v in enumerate(want): code+=expect(OUT+o,v)
             code+=expect(OUT+len(want),0xA5)+expect(STATUS,status)+expect(STATUS+1,1)+phase1._jp(PASS_PC)
-            run_sna(root,bytes(code),patch=patch(ub,gb,args,mode))
+            try:
+                run_sna(root,bytes(code),patch=patch(ub,gb,args,mode))
+            except DriverError as exc:
+                raise P818Error(f"P8.18 runtime case mode={mode} args={args!r} failed: {exc}") from exc
         assertions += [
           {"name":"fuse-hex-ascii-two-row-view","passed":True},
           {"name":"fuse-short-write-retried","passed":True},
