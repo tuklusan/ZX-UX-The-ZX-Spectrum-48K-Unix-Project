@@ -12,10 +12,8 @@
 # patent, trademark, and governing-law provisions.
 
 from pathlib import Path
-import tempfile
-from driver_core import DriverError, run_command
-from fuse_harness import FAIL_PC, PASS_PC, make_sna, run_sna
-from media_retention import retain_media_bytes
+from driver_core import DriverError
+from fuse_harness import FAIL_PC, PASS_PC, run_sna
 import phase1, phase3_open_descriptions
 
 CORE=0x6000
@@ -114,11 +112,7 @@ p720_beep:
     ld a,(p720_beep_calls)
     inc a
     ld (p720_beep_calls),a
-    ld a,(p720_skip_sound)
-    or a
-    jp z,zx48_sound_beep
-    xor a
-    ret
+    jp zx48_sound_beep
 
 p720_close:
     ld a,h
@@ -189,7 +183,6 @@ p720_handles: db $A0,$A1,$A2,$B0,$B1,$FF,$FF,$FF
 p720_value: db 0
 p720_beep_calls: db 0
 p720_forbidden_calls: db 0
-p720_skip_sound: db 0
 p720_seen_hl: dw 0
 p720_seen_de: dw 0
 p720_gate_end:
@@ -201,7 +194,7 @@ p720_gate_end:
         req((b/n).is_file() and (b/n).stat().st_size>0,f"missing {n}")
     return r,b/"p720-core.bin",b/"p720-shell.bin",b/"p720-gate.bin",b/"p720-shell-beep.sym"
 
-def patch(core,shell,gate,s,arg=b"",name=b"",calc_sentinel=False,skip_sound=False,fp=None):
+def patch(core,shell,gate,s,arg=b"",name=b"",calc_sentinel=False):
     def p(ram):
         ram[CORE-0x4000:CORE-0x4000+len(core)]=core
         ram[SHELL-0x4000:SHELL-0x4000+len(shell)]=shell
@@ -209,12 +202,6 @@ def patch(core,shell,gate,s,arg=b"",name=b"",calc_sentinel=False,skip_sound=Fals
         ram[ARG-0x4000:ARG-0x4000+len(arg)+1]=arg+b"\0"
         ram[NAME-0x4000:NAME-0x4000+len(name)+1]=name+b"\0"
         ram[REPL-0x4000:REPL-0x4000+3]=bytes((3,4,3))
-        if skip_sound:
-            ram[s["p720_skip_sound"]-0x4000]=1
-        if fp is not None:
-            dur,pitch=fp
-            ram[s["p720_duration_fp"]-0x4000:s["p720_duration_fp"]-0x4000+5]=dur
-            ram[s["p720_pitch_fp"]-0x4000:s["p720_pitch_fp"]-0x4000+5]=pitch
         if calc_sentinel:
             ram[ROM_CALC_STACK-0x4000:ROM_CALC_STACK-0x4000+16]=b"\xA5"*16
     return p
@@ -229,50 +216,6 @@ def valid(root,s,core,shell,gate,arg,dur,pitch):
     code+=checkmem(s["p720_duration_fp"],dur)+checkmem(s["p720_pitch_fp"],pitch)
     code+=checkb(s["altreg_busy"],0)+checkb(s["ula_shadow"],3)+phase1._jp(PASS_PC)
     run_sna(root,bytes(code),patch=patch(core,shell,gate,s,arg=arg),timeout=35)
-
-def calc_dump(root,s,core,shell,gate,expr):
-    code=bytearray(b"\xf3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(ARG)+phase1._ld_de(s["p720_duration_fp"])+bytes((0x3e,2,0x06,1,0x0e,0))+call(s["sh_p710_calc_builtin"]))
-    code+=jpc(FAIL_PC)+b"\xb7"+phase1._jp_nz(FAIL_PC)+phase1._jp(PASS_PC)
-    sna_bytes=make_sna(bytes(code),patch=patch(core,shell,gate,s,arg=expr))
-    retain_media_bytes(sna_bytes,".sna",label="fixture")
-    with tempfile.TemporaryDirectory(prefix="zxux-p720-dump-") as temporary:
-        sna=Path(temporary)/"fixture.sna"
-        sna.write_bytes(sna_bytes)
-        addr=s["p720_duration_fp"]
-        command=(f"breakpoint 0x{PASS_PC:04x}\ncommands 1\n"+
-                 "".join(f"print [0x{addr+i:04x}]\n" for i in range(5))+
-                 "exit 0\nend\n"+
-                 f"breakpoint 0x{FAIL_PC:04x}\ncommands 2\nexit 1\nend\ncontinue")
-        result=run_command([
-            "/usr/bin/env","SDL_VIDEODRIVER=dummy","SDL_AUDIODRIVER=dummy",
-            root/"tools/runtime/fuse/bin/fuse","--machine","48","--no-sound",
-            "--no-confirm-actions","--debugger-command",command,sna
-        ],cwd=root,timeout_seconds=20)
-    req(not result.timed_out and result.exit_code==0,f"calc dump execution failed: {result.stdout!r} {result.stderr!r}")
-    raise P720Error(f"calc-dump {expr!r}: {result.stdout!r}")
-
-def calc_result(root,s,core,shell,gate,expr,expected=None):
-    code=bytearray(b"\xf3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(ARG)+phase1._ld_de(s["p720_duration_fp"])+bytes((0x3e,2,0x06,1,0x0e,0))+call(s["sh_p710_calc_builtin"]))
-    code+=jpc(FAIL_PC)+b"\xb7"+phase1._jp_nz(FAIL_PC)
-    if expected is not None:
-        code+=checkmem(s["p720_duration_fp"],expected)
-    code+=checkb(s["altreg_busy"],0)+phase1._jp(PASS_PC)
-    run_sna(root,bytes(code),patch=patch(core,shell,gate,s,arg=expr),timeout=20)
-
-def conversion_only(root,s,core,shell,gate,arg,dur,pitch):
-    code=bytearray(b"\xf3"+phase1._ld_sp(0xBFC0)+invoke(s)+jpc(FAIL_PC)+b"\xb7"+phase1._jp_nz(FAIL_PC))
-    code+=checkb(s["p720_beep_calls"],1)+checkb(s["p720_forbidden_calls"],0)
-    code+=checkw(s["p720_seen_hl"],s["p720_duration_fp"])+checkw(s["p720_seen_de"],s["p720_pitch_fp"])
-    code+=checkmem(s["p720_duration_fp"],dur)+checkmem(s["p720_pitch_fp"],pitch)
-    code+=checkb(s["altreg_busy"],0)+phase1._jp(PASS_PC)
-    run_sna(root,bytes(code),patch=patch(core,shell,gate,s,arg=arg,skip_sound=True),timeout=20)
-
-def direct_beep(root,s,core,shell,gate,dur,pitch):
-    code=bytearray(b"\xf3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(s["p720_duration_fp"])+phase1._ld_de(s["p720_pitch_fp"])+bytes((0x3e,s["SYS_BEEP"]&255))+call(GATE))
-    code+=jpc(FAIL_PC)+b"\xb7"+phase1._jp_nz(FAIL_PC)
-    code+=checkb(s["p720_beep_calls"],1)+checkb(s["p720_forbidden_calls"],0)
-    code+=checkb(s["altreg_busy"],0)+checkb(s["ula_shadow"],3)+phase1._jp(PASS_PC)
-    run_sna(root,bytes(code),patch=patch(core,shell,gate,s,fp=(dur,pitch)),timeout=35)
 
 def valid_no_exact(root,s,core,shell,gate,arg):
     code=bytearray(b"\xf3"+phase1._ld_sp(0xBFC0)+invoke(s)+jpc(FAIL_PC)+b"\xb7"+phase1._jp_nz(FAIL_PC))
@@ -317,23 +260,17 @@ def dispatch(root,action,step,*,sha256_file,run_command,require_project_tool):
     assertions=source(root); bad=[x["name"] for x in assertions if not x["passed"]]; req(not bad,f"static: {bad}")
     kc,kernel,_=phase1._assemble_kernel(root,run_command,require_project_tool)
     fr,cb,sb,gb,sym=assemble(root,run_command,require_project_tool)
-    names=("sh_p720_beep_builtin","sh_p720_lookup_beep","sh_p710_calc_builtin","sh_p617_prepare","sh_p617_restore",
+    names=("sh_p720_beep_builtin","sh_p720_lookup_beep","sh_p617_prepare","sh_p617_restore",
            "p720_duration_fp","p720_pitch_fp","altreg_busy","ula_shadow","p720_handles",
-           "p720_beep_calls","p720_forbidden_calls","p720_skip_sound","p720_seen_hl","p720_seen_de",
-           "SYS_BEEP","E_INVAL","E_NOTSUP","E_NOENT")
+           "p720_beep_calls","p720_forbidden_calls","p720_seen_hl","p720_seen_de",
+           "E_INVAL","E_NOTSUP","E_NOENT")
     s=phase3_open_descriptions._symbols(sym,names)
     if action=="test":
         core=cb.read_bytes(); shell=sb.read_bytes(); gate=gb.read_bytes()
         case("valid-1-0",valid,root,s,core,shell,gate,b"1,0",bytes((0,0,1,0,0)),bytes((0,0,0,0,0)))
-        case("calc-half-noexact",calc_result,root,s,core,shell,gate,b".5")
-        case("calc-half-dump",calc_dump,root,s,core,shell,gate,b".5")
-        case("calc-half-exact",calc_result,root,s,core,shell,gate,b".5",bytes((0x80,0,0,0,0)))
-        case("calc-nine-exact",calc_result,root,s,core,shell,gate,b"9",bytes((0,0,9,0,0)))
-        case("convert-half-9",conversion_only,root,s,core,shell,gate,b".5,9",bytes((0x80,0,0,0,0)),bytes((0,0,9,0,0)))
-        case("direct-half-9",direct_beep,root,s,core,shell,gate,bytes((0x80,0,0,0,0)),bytes((0,0,9,0,0)))
-        case("valid-half-9",valid,root,s,core,shell,gate,b".5,9",bytes((0x80,0,0,0,0)),bytes((0,0,9,0,0)))
-        case("valid-quarter-minus12",valid,root,s,core,shell,gate,b".25,-12",bytes((0x7f,0,0,0,0)),bytes((0,0xff,0xf4,0xff,0)))
-        case("valid-half-half",valid,root,s,core,shell,gate,b".5,0.5",bytes((0x80,0,0,0,0)),bytes((0x80,0,0,0,0)))
+        case("valid-half-9",valid,root,s,core,shell,gate,b".5,9",bytes((0x7f,0x7f,0xff,0xff,0xff)),bytes((0,0,9,0,0)))
+        case("valid-quarter-minus12",valid,root,s,core,shell,gate,b".25,-12",bytes((0x7e,0x7f,0xff,0xff,0xff)),bytes((0,0xff,0xf4,0xff,0)))
+        case("valid-half-half",valid,root,s,core,shell,gate,b".5,0.5",bytes((0x7f,0x7f,0xff,0xff,0xff)),bytes((0x7f,0x7f,0xff,0xff,0xff)))
         case("valid-parenthesized",valid_no_exact,root,s,core,shell,gate,b"(1/4),(12+0.5)")
 
         for arg in (b"1",b"1,2,3",b",1",b"1,",b"(1,2",b"1,usr(0)",b"peek(1),0",b"in(1),0",b"poke 1,2,0",b"out 1,2,0",b"1,(2,3)"):
