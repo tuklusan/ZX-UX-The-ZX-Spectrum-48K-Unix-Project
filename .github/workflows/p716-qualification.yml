@@ -1,0 +1,101 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+name: P7.16 UDG persistence qualification
+on:
+  workflow_dispatch: {}
+permissions:
+  actions: write
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      ZXUX_EVIDENCE_DIR: /tmp/zxux-p716-qualification
+      P716_BASE: d175ec48fbb61f3eca0968b203ebd2bbd5e17258
+      ZXUX_REV16_SHA256: 24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c
+      ZXUX_REV07_SHA256: 840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: {fetch-depth: 0}
+      - name: Guard exact P7.16 candidate diff
+        run: |
+          set -euo pipefail
+          git diff --name-only "$P716_BASE" HEAD | sort > /tmp/changed
+          printf '%s\n' \
+            .github/workflows/p716-qualification.yml \
+            v1/include/zx48ux.inc \
+            v1/src/utils/udg.asm \
+            v1/tools-host/test-driver/phase7_udg_persistence.py \
+            v1/tools-host/test-driver/run.py | sort > /tmp/expected
+          diff -u /tmp/expected /tmp/changed
+          git diff --check "$P716_BASE" HEAD
+      - name: Three unchanged candidate scans
+        run: |
+          set -euo pipefail
+          tree="$(git rev-parse 'HEAD^{tree}')"; baseline=""
+          for scan in 1 2 3; do
+            python3 -m py_compile v1/tools-host/test-driver/phase7_udg_persistence.py v1/tools-host/test-driver/run.py
+            find . -type d -name __pycache__ -prune -exec rm -rf {} +
+            ./tools/check_license_headers.sh
+            ./tools/check_project_policy.py
+            test -z "$(git status --porcelain)"
+            test "$(git rev-parse 'HEAD^{tree}')" = "$tree"
+            d="$(sha256sum v1/include/zx48ux.inc v1/src/utils/udg.asm v1/tools-host/test-driver/phase7_udg_persistence.py v1/tools-host/test-driver/run.py .github/workflows/p716-qualification.yml | sha256sum | awk '{print $1}')"
+            if test -z "$baseline"; then baseline="$d"; else test "$baseline" = "$d"; fi
+          done
+      - name: Mandatory prerequisite gates
+        run: |
+          set -euo pipefail
+          test "$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV16.md | awk '{print $1}')" = "$ZXUX_REV16_SHA256"
+          test "$(sha256sum docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md | awk '{print $1}')" = "$ZXUX_REV07_SHA256"
+          python3 tools/check_phase6_evidence.py --require-active
+          python3 tools/check_media_retention.py
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          for a in ("build","test"):
+              r=json.loads((Path("v1/dist/certification")/f"P7.15.{a}.json").read_text())
+              assert r["status"]=="PASS" and r["step"]=="P7.15" and r["action"]==a
+          assert Path("v1/dist/media/P7.15/manifest.json").is_file()
+          PY
+      - name: Restore or build certified ZX-UX runtime
+        uses: ./.github/actions/setup-zxux-runtime
+      - name: Execute P7.16 build
+        run: tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P7.16
+      - name: Execute P7.16 test
+        run: tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P7.16
+      - name: Collect exact evidence
+        if: always()
+        run: |
+          mkdir -p "$ZXUX_EVIDENCE_DIR/meta"
+          git rev-parse HEAD > "$ZXUX_EVIDENCE_DIR/meta/candidate-commit.txt"
+          git rev-parse 'HEAD^{tree}' > "$ZXUX_EVIDENCE_DIR/meta/candidate-tree.txt"
+          git status --porcelain > "$ZXUX_EVIDENCE_DIR/meta/worktree-status.txt"
+      - name: Upload exact evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: zxux-p716-qualification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: /tmp/zxux-p716-qualification/
+          retention-days: 90
+          if-no-files-found: error
+      - name: Dispatch exact admission
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json,os,urllib.request
+          p=json.dumps({"ref":"main","inputs":{"step":"P7.16","run_id":os.environ["GITHUB_RUN_ID"],"source_commit":os.environ["GITHUB_SHA"]}}).encode()
+          q=urllib.request.Request(f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}/actions/workflows/phase7-step-admission.yml/dispatches",data=p,method="POST",headers={"Authorization":f"Bearer {os.environ['GH_TOKEN']}","Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","Content-Type":"application/json"})
+          with urllib.request.urlopen(q,timeout=30) as r: assert r.status==204
+          PY
