@@ -11,6 +11,7 @@
 ; patent, trademark, and governing-law provisions.
 ;
 ; Bounded native Spectrum graphics primitives. Pixel writes touch bitmap only.
+; P7.19 integrated golden qualification binds screen/attribute/UDG guard behavior.
 ; P7.01 exposes these routines only through the validated public syscall ABI.
 ; P7.02 delegates every direct pixel address to the one canonical zx48_bitmap_address helper.
 
