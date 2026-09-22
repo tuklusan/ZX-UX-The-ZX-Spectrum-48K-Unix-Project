@@ -14,7 +14,7 @@
 from __future__ import annotations
 import phase1, phase3_open_descriptions
 from driver_core import DriverError
-from fuse_harness import PASS_PC, run_sna
+from fuse_harness import FAIL_PC, PASS_PC, run_sna
 from phase8_common import arg1, word, assemble_utility, inspect_mex, make_tap
 
 UTIL=0xC000; GATE=0xE000; ARG=0xA000; OUT=0xA400; STATUS=0xA300; MODE=0xA301
@@ -22,7 +22,7 @@ class P828Error(DriverError):
     pass
 def require(v,m):
     if not v: raise P828Error(m)
-def expect(a,v): return b"\x3A"+word(a)+bytes((0xFE,v&255))+phase1._jp_nz(0x8F00)
+def expect(a,v): return b"\x3A"+word(a)+bytes((0xFE,v&255))+phase1._jp_nz(FAIL_PC)
 def patch(util,gate,args,mode=0):
     ab=arg1(args)
     def apply(ram):
