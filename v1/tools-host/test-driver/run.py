@@ -210,6 +210,7 @@ import phase7_gfx_golden
 import phase7_shell_beep
 import phase7_udg_persistence
 import phase7_acceptance
+import phase8_ls
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
 from media_retention import (
     capture_project_media,
