@@ -67,7 +67,7 @@ jobs:
           import json
           for p in ("v1/dist/certification/P8.19.build.json","v1/dist/certification/P8.19.test.json"):
               d=json.load(open(p,encoding="utf-8"))
-              assert d["status"]=="PASS" and d["step"]=="P8.18"
+              assert d["status"]=="PASS" and d["step"]=="P8.19"
           PY
       - name: Restore or build certified ZX-UX runtime
         uses: ./.github/actions/setup-zxux-runtime
