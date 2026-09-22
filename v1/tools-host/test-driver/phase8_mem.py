@@ -47,8 +47,8 @@ def dispatch(root,action,step,*,sha256_file,run_command,require_project_tool):
     if step!="P8.20":
         raise DriverError(f"Phase-8 mem step is not registered: {step}")
     sp=root/"v1/src/shell/sh.asm"
-    s=sp.read_text()
-    p=(root/"docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md").read_text()
+    s=sp.read_text(encoding="utf-8")
+    p=(root/"docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md").read_text(encoding="utf-8")
     assertions=[
       {"name":"canonical-p820-present","passed":"## P8.20 - Built-in `mem` Phase-8 regression" in p},
       {"name":"mem-remains-p613-builtin","passed":"db 3,'m','e','m',P613_BUILTIN_MEM" in s},
