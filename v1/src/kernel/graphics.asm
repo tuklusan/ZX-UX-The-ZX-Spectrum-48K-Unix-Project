@@ -16,6 +16,7 @@
 ; P7.02 delegates every direct pixel address to the one canonical zx48_bitmap_address helper.
 
     MACRO EMIT_GRAPHICS_ROUTINES
+; P7.21 aggregate acceptance revalidates this graphics owner.
 ; H=x,L=y. Exact 0..255/0..191 coordinate domain.
 ; P7.03 uses a native PLOT-SUB-visible replacement because the 48K ROM
 ; PIXEL-ADD/PLOT-SUB contract rejects y>175 and uses BASIC's 175-y origin,
