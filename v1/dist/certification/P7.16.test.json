@@ -1,0 +1,128 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p716-present",
+      "passed": true
+    },
+    {
+      "name": "udg1-public-constants",
+      "passed": true
+    },
+    {
+      "name": "save-full-32-slot-header",
+      "passed": true
+    },
+    {
+      "name": "save-exclusive-temp-and-atomic-rename",
+      "passed": true
+    },
+    {
+      "name": "load-ram-udg-only",
+      "passed": true
+    },
+    {
+      "name": "raw-packed-logical-read",
+      "passed": true
+    },
+    {
+      "name": "whole-payload-validated-before-define",
+      "passed": true
+    },
+    {
+      "name": "no-secondary-checksum",
+      "passed": true
+    },
+    {
+      "name": "no-cassette-motion-path",
+      "passed": true
+    },
+    {
+      "name": "fuse-save-full-udg1-exact-and-atomic-rename",
+      "passed": true
+    },
+    {
+      "name": "fuse-save-failure-preserves-prior-object",
+      "passed": true
+    },
+    {
+      "name": "fuse-raw-packed-load-identical-live-bytes",
+      "passed": true
+    },
+    {
+      "name": "fuse-full-and-ranged-bank-load-exact",
+      "passed": true
+    },
+    {
+      "name": "fuse-invalid-payload-zero-live-mutation",
+      "passed": true
+    },
+    {
+      "name": "fuse-no-tape-motion",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 15510 lines, work time: 0.032 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p716-util.sym",
+        "p716-util.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 1114 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p716-gate.sym",
+        "p716-gate.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 503 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "ae3c54f9cd50eade1e543d9ac3c6ff58c83d63d6951c707b192ef5f9e26d4806",
+    "v1/include/zx48ux.inc": "ea106551279818e0777a8a571818b52fdc17e432d5e3079769260229f611904f",
+    "v1/src/utils/udg.asm": "c2ae4cbe91fcedccb4f87a61f6e6630eca4f05cd5052eca8249786d99dd7b1ed",
+    "v1/tools-host/test-driver/phase7_udg_persistence.py": "86adebabe67379343fa5534fe51884761ed2417baaaa2786cffca4ce76840c64",
+    "v1/tools-host/test-driver/run.py": "7e3f3ef252e9c900df470666d150c6157b26c3e71ffbba2a6aace3b3cd9a4823"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P7.15": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "0498f07738984198eb8b865bf01e9d75f58fbf12",
+  "status": "PASS",
+  "step": "P7.16",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
