@@ -41,7 +41,7 @@ def patch(util,gate,args,mode):
         ram[ARG-0x4000:ARG-0x4000+len(ab)]=ab
         ram[OUT-0x4000:OUT-0x4000+256]=b"\xA5"*256
         ram[MODE-0x4000]=mode
-        ram[STATUS-0x4000:STATUS-0x4000+16]=b"\0"*16
+        ram[STATUS-0x4000:STATUS-0x4000+8]=b"\0"*8
     return apply
 def source_contract(root):
     s=(root/"v1/src/utils/hexdump.asm").read_text()
