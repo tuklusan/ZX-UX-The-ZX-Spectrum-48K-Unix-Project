@@ -1,0 +1,126 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p720-present",
+      "passed": true
+    },
+    {
+      "name": "exact-lowercase-beep-lookup",
+      "passed": true
+    },
+    {
+      "name": "lookup-never-enters-path-bcat-tape",
+      "passed": true
+    },
+    {
+      "name": "one-shell-argument-required",
+      "passed": true
+    },
+    {
+      "name": "foreground-single-stage-before-parse",
+      "passed": true
+    },
+    {
+      "name": "top-level-comma-depth-tracked",
+      "passed": true
+    },
+    {
+      "name": "both-operands-safe-tokenized-before-rom-evaluation",
+      "passed": true
+    },
+    {
+      "name": "exact-calc-grammar-reused",
+      "passed": true
+    },
+    {
+      "name": "sys-beep-invoked-once",
+      "passed": true
+    },
+    {
+      "name": "no-narrower-pitch-range",
+      "passed": true
+    },
+    {
+      "name": "shared-synchronous-sound-service-bound",
+      "passed": true
+    },
+    {
+      "name": "fuse-basic-compatible-beep-vectors-pass",
+      "passed": true
+    },
+    {
+      "name": "fuse-parenthesized-expression-comma-depth-pass",
+      "passed": true
+    },
+    {
+      "name": "fuse-malformed-and-unsafe-operands-fail-before-rom-stack-mutation",
+      "passed": true
+    },
+    {
+      "name": "fuse-pipeline-background-fail-before-parse-or-side-effect",
+      "passed": true
+    },
+    {
+      "name": "fuse-lowercase-only-lookup-never-enters-external-resolution",
+      "passed": true
+    },
+    {
+      "name": "fuse-sys-beep-reached-exactly-once-per-valid-command",
+      "passed": true
+    },
+    {
+      "name": "fuse-builtin-redirection-restores-exact-stdio",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 32,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 15513 lines, work time: 0.030 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p720-shell-beep.sym",
+        "p720-shell-beep.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 11,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 6203 lines, work time: 0.010 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "ae3c54f9cd50eade1e543d9ac3c6ff58c83d63d6951c707b192ef5f9e26d4806",
+    "v1/src/kernel/sound.asm": "ba941cd0fdc5d6ad6e45d6a94ab60388a8fc80dd1005fe85e0442b39a7da16bb",
+    "v1/src/shell/sh.asm": "d0f15306b5ccaeeb6ac76895231cf379a2d721bbb96b1e6cdb0bc5ec3ceb86a3",
+    "v1/tools-host/test-driver/phase7_shell_beep.py": "3f5f08ea6112142740a408462cb76aa3ef64ea938c7f0e06fb23eb81b344d258",
+    "v1/tools-host/test-driver/run.py": "f01042247eaa29926325c7586a2c38706130a0439d428ef5259f9176f523d556"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P7.19": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "ff117a2519eb0fbf86f3241f732d0e235c398f97",
+  "status": "PASS",
+  "step": "P7.20",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
