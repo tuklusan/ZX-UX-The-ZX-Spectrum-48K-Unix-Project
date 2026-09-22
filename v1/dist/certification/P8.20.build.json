@@ -1,0 +1,107 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p820-present",
+      "passed": true
+    },
+    {
+      "name": "mem-remains-p613-builtin",
+      "passed": true
+    },
+    {
+      "name": "no-external-mem-module",
+      "passed": true
+    },
+    {
+      "name": "public-memory-accounting",
+      "passed": true
+    },
+    {
+      "name": "fast-contended-largest",
+      "passed": true
+    },
+    {
+      "name": "process-object-pipe-pinned",
+      "passed": true
+    },
+    {
+      "name": "compression-accounting",
+      "passed": true
+    },
+    {
+      "name": "single-foreground-only",
+      "passed": true
+    },
+    {
+      "name": "stdout-short-write-safe",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p820-mem-fixture.lst",
+        "--sym=p820-mem-fixture.sym",
+        "p820-mem-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 11,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 5711 lines, work time: 0.010 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p820-gateway.lst",
+        "--sym=p820-gateway.sym",
+        "p820-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 395 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p820-mem.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 7950, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 58914, \"image_size\": 1304, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 1328, \"relocations\": [], \"stored_length\": 1328, \"version\": 1}\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p820-mem.mex1": "571f81d85fdb06d2da1f72e21ba2e88bb4f1cd002dbc1c757bdb14c6acefc4d2",
+    "v1/build/p820-mem.tap": "0f7251e969b720093b49c439cc1c2a14c199c1c658aa5963cc51b8bf5032d649",
+    "v1/dist/certification/P8.19.test.json": "0623ad650c30de9ce61c822aca8bb4b7b5d023974757009083e991704486fa02",
+    "v1/src/shell/sh.asm": "25d5719bf16791000c01d3c3787206ceb38edd57ec09d5a0fe6fffac8868c304",
+    "v1/tools-host/test-driver/phase8_mem.py": "1b0756cf0868f52049959c2ec6e266abfca24db0b6d1705da79c43c4fa9c5f22",
+    "v1/tools-host/test-driver/run.py": "559b4d09ecbd4f97a4099385f73ce7ae2992412f585027a5568a453302a064dd"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.19": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "8e195827c958db6cdf657af659234d12bb339e3f",
+  "status": "PASS",
+  "step": "P8.20",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
