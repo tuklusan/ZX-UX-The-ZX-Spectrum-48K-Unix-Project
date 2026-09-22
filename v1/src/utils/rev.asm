@@ -13,6 +13,7 @@
 ; /bin/rev: reverse bytes within each LF-delimited input line.
 ; Bounded line buffering is used; the whole input is never buffered.
 
+; P8.34 exact qualification source.
     MACRO EMIT_P834_REV_ROUTINES
 rev_entry:
     push hl
