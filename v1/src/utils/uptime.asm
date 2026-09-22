@@ -10,6 +10,7 @@
 ; SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 ; patent, trademark, and governing-law provisions.
 
+; P8.29 exact qualification source.
     MACRO EMIT_P829_UPTIME_ROUTINES
 uptime_entry:
     push hl
