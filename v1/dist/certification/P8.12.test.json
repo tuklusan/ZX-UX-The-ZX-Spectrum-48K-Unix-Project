@@ -1,0 +1,150 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p812-present",
+      "passed": true
+    },
+    {
+      "name": "exact-two-operands",
+      "passed": true
+    },
+    {
+      "name": "ram-only-stat",
+      "passed": true
+    },
+    {
+      "name": "two-read-handles",
+      "passed": true
+    },
+    {
+      "name": "bytewise",
+      "passed": true
+    },
+    {
+      "name": "length-difference",
+      "passed": true
+    },
+    {
+      "name": "equal-zero-different-one",
+      "passed": true
+    },
+    {
+      "name": "close-cleanup",
+      "passed": true
+    },
+    {
+      "name": "no-output",
+      "passed": true
+    },
+    {
+      "name": "fuse-equal-zero",
+      "passed": true
+    },
+    {
+      "name": "fuse-byte-different-one",
+      "passed": true
+    },
+    {
+      "name": "fuse-length-different-one",
+      "passed": true
+    },
+    {
+      "name": "fuse-read-error",
+      "passed": true
+    },
+    {
+      "name": "fuse-nonram-eperm",
+      "passed": true
+    },
+    {
+      "name": "fuse-open-error",
+      "passed": true
+    },
+    {
+      "name": "fuse-invalid-arity",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p812-cmp-image.lst",
+        "--sym=p812-cmp-image.sym",
+        "p812-cmp-image.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 725 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p812-cmp.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 16467, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 2470, \"image_size\": 395, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 419, \"relocations\": [], \"stored_length\": 419, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p812-cmp-fixture.lst",
+        "--sym=p812-cmp-fixture.sym",
+        "p812-cmp-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 725 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p812-gateway.lst",
+        "--sym=p812-gateway.sym",
+        "p812-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 455 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p812-cmp.mex1": "a6a4384a87e2cd59f91ea1832aeafc684c104519672e6b3e859309c9095eb984",
+    "v1/build/p812-cmp.tap": "5e032a9c94df250759e751fe6719691b2eb46344ac6d1307fd903041976392c4",
+    "v1/dist/certification/P8.11.test.json": "21ac03696bb2c86f3230440d2c53c35ae5c279779cb4e0165e406853d64ea7a8",
+    "v1/src/utils/cmp.asm": "55212077b649a646ab81d439831c34658686caec57391d1014e3d86c6d1a993a",
+    "v1/tools-host/test-driver/phase8_cmp.py": "00a86cb69d4d2cb8018f14f3fcfa0abc3a418ba003560aaf602383c40741fe26",
+    "v1/tools-host/test-driver/run.py": "e042460f2aaa1e7c40e096edb81f8f7fbc397cad61621353a52adbb45fc64a78"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.11": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "fd749936899b1ea1ce5e83ce1e9ad12e454eaadd",
+  "status": "PASS",
+  "step": "P8.12",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
