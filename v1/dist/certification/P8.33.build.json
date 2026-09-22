@@ -1,0 +1,106 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p833-present",
+      "passed": true
+    },
+    {
+      "name": "rom-font",
+      "passed": true
+    },
+    {
+      "name": "shared-pixel-api",
+      "passed": true
+    },
+    {
+      "name": "screen-width-bound",
+      "passed": true
+    },
+    {
+      "name": "arity",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p833-banner-image.lst",
+        "--sym=p833-banner-image.sym",
+        "p833-banner-image.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 594 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p833-banner.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 33,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 26849, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 14819, \"image_size\": 239, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 263, \"relocations\": [], \"stored_length\": 263, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p833-banner-fixture.lst",
+        "--sym=p833-banner-fixture.sym",
+        "p833-banner-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 594 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p833-gateway.lst",
+        "--sym=p833-gateway.sym",
+        "p833-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 330 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p833-banner.mex1": "32b31e5b58e863009cede0c6936ccf717e50fce9135859b04b7bd30232c8104b",
+    "v1/build/p833-banner.tap": "3949c8121917962a84f38b09b67d0cd7f349171f66bbee92bbd81b34b044c00c",
+    "v1/dist/certification/P8.32.test.json": "ee3eb0bca809815fa1b4d6b4d603e13e3596ec5bf1324b3ad6e69fa14dbfc9fe",
+    "v1/src/utils/banner.asm": "c8cb4418abb48e16140a5ecefb5b09452f1288dc55f7d4be1aa922e7997a09a7",
+    "v1/tools-host/test-driver/phase8_banner.py": "f618ed6f26630a1f73d9d0f76d4d485d7dda6cdd73f5c0b55e438dcb492f3b36",
+    "v1/tools-host/test-driver/run.py": "c9d3cec2a7ded93c34aefe4850819c4851e756656f618448dc21f3157d254677"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.32": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "13c285cb09efd8353d5e7fd7ffc17a09f503d277",
+  "status": "PASS",
+  "step": "P8.33",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
