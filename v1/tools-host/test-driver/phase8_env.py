@@ -133,7 +133,7 @@ gate_end:
           ([b"env"],[],1,b"",0,False),
           ([b"env"],[b"A=1"],2,b"",5,False),
           ([b"env",b"x"],[b"A=1"],0,b"",1,False),
-          ([b"env"],[b"A=1"],0,b"",6,True),
+          ([b"env"],[b"A=1"],0,b"",11,True),
         ]
         for args,entries,mode,expected,status,bad_magic in cases:
             ab=arg1(args); code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(ARG)+phase1._ld_de(ENV)+b"\x01"+word(len(ab))+phase1._call(sy["env_entry"]))
