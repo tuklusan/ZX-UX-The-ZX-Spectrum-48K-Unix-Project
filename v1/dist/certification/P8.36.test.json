@@ -1,0 +1,134 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p836-present",
+      "passed": true
+    },
+    {
+      "name": "all-thirteen-pairs",
+      "passed": true
+    },
+    {
+      "name": "exact-case-table",
+      "passed": true
+    },
+    {
+      "name": "preserve-resident",
+      "passed": true
+    },
+    {
+      "name": "wrong-type-refusal",
+      "passed": true
+    },
+    {
+      "name": "spawn-wait",
+      "passed": true
+    },
+    {
+      "name": "rebuild-hint",
+      "passed": true
+    },
+    {
+      "name": "fuse-list-all-pairs",
+      "passed": true
+    },
+    {
+      "name": "fuse-resident-preserved",
+      "passed": true
+    },
+    {
+      "name": "fuse-load-only-missing",
+      "passed": true
+    },
+    {
+      "name": "fuse-wrong-type-refusal",
+      "passed": true
+    },
+    {
+      "name": "fuse-wrong-case-refusal",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p836-demo-image.lst",
+        "--sym=p836-demo-image.sym",
+        "p836-demo-image.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 1059 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p836-demo.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 32,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 14398, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 5175, \"image_size\": 1063, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 1087, \"relocations\": [], \"stored_length\": 1087, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p836-demo-fixture.lst",
+        "--sym=p836-demo-fixture.sym",
+        "p836-demo-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 1059 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p836-gateway.lst",
+        "--sym=p836-gateway.sym",
+        "p836-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 429 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p836-demo.mex1": "613718691349cfc009f8991331dee4fe14af8dbafa311c9769712b7ef9e36cd1",
+    "v1/build/p836-demo.tap": "4225f749daa117348887ee3d9642f1322f8effec17bbdc8ffff0302826507219",
+    "v1/dist/certification/P8.35.test.json": "4c840a118243a5c5f47b73a6658c047984be9dbc703cfaf80fedb55d2a974e2e",
+    "v1/src/utils/demo.asm": "19d30d059123d1329f7dfb9a0c0d1e9d1593f8fe950a19d84086efb3cc78dc44",
+    "v1/tools-host/test-driver/phase8_demo.py": "63f42400bbb34558ec17d203040d91baf665716604135dd8d33420b6df1e8d2f",
+    "v1/tools-host/test-driver/run.py": "b7631e46dc73de63db1850f361080464b6ef4e3ccd7cde587e7232eae1578b5a"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.35": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "d4f810b19874ab2525af3e6847ced67ef7622f51",
+  "status": "PASS",
+  "step": "P8.36",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
