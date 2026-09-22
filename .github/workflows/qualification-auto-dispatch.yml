@@ -160,6 +160,64 @@ jobs:
           print(f"head={d['head']}")
           PY
 
+      - name: Require current-head regression workflows PASS
+        if: steps.detect.outputs.due == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, subprocess, time
+
+          repo=os.environ["GITHUB_REPOSITORY"]
+          head=os.environ["GITHUB_SHA"]
+          required=("ZX-UX Phase 1 Certification","ZX-UX Phase 2 Validation")
+          optional=("ZX-UX Kernel Build",)
+          seen_optional=set()
+
+          def runs():
+              p=subprocess.run(
+                  ["gh","api",f"repos/{repo}/actions/runs?head_sha={head}&per_page=100"],
+                  check=True,text=True,capture_output=True,
+              )
+              return json.loads(p.stdout)["workflow_runs"]
+
+          for attempt in range(120):
+              by_name={}
+              for run in runs():
+                  if run.get("head_sha") != head:
+                      continue
+                  name=run.get("name")
+                  if name not in required+optional:
+                      continue
+                  current=by_name.get(name)
+                  if current is None or run.get("id",0) > current.get("id",0):
+                      by_name[name]=run
+              seen_optional.update(name for name in optional if name in by_name)
+
+              missing=[name for name in required if name not in by_name]
+              active=[
+                  name for name in required+tuple(sorted(seen_optional))
+                  if name in by_name and by_name[name].get("status")!="completed"
+              ]
+              failed=[
+                  (name,by_name[name].get("conclusion"),by_name[name].get("id"))
+                  for name in required+tuple(sorted(seen_optional))
+                  if name in by_name
+                  and by_name[name].get("status")=="completed"
+                  and by_name[name].get("conclusion")!="success"
+              ]
+              if failed:
+                  raise SystemExit(f"ZX-UX REGRESSION GATE FAIL head={head} runs={failed!r}")
+              if not missing and not active:
+                  summary={name:(by_name[name]["id"],by_name[name]["conclusion"]) for name in required+tuple(sorted(seen_optional))}
+                  print(f"ZX-UX REGRESSION GATE PASS head={head} runs={summary!r}")
+                  break
+              time.sleep(4)
+          else:
+              raise SystemExit(f"ZX-UX REGRESSION GATE TIMEOUT head={head}")
+          PY
+
       - name: Dispatch exact candidate qualification
         if: steps.detect.outputs.due == 'true'
         env:
