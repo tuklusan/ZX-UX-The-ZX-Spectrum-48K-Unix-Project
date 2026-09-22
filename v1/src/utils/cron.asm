@@ -276,7 +276,7 @@ cron_command_ok:
 cron_cmd_loop:
     ld a,(hl)
     or a
-    jr z,cron_cmd_done
+    jp z,cron_cmd_done
     ld b,a
     ld a,(cron_escape)
     or a
@@ -284,7 +284,7 @@ cron_cmd_loop:
     xor a
     ld (cron_escape),a
     inc hl
-    jr cron_cmd_loop
+    jp cron_cmd_loop
 cron_cmd_not_escaped:
     ld a,(cron_quote)
     cp 1
