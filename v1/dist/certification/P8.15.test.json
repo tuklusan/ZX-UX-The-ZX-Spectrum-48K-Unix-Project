@@ -1,0 +1,130 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p815-present",
+      "passed": true
+    },
+    {
+      "name": "exact-one-operand",
+      "passed": true
+    },
+    {
+      "name": "decimal-only",
+      "passed": true
+    },
+    {
+      "name": "range-65535",
+      "passed": true
+    },
+    {
+      "name": "fifty-hz-conversion",
+      "passed": true
+    },
+    {
+      "name": "sys-sleep-pointer",
+      "passed": true
+    },
+    {
+      "name": "error-propagation",
+      "passed": true
+    },
+    {
+      "name": "fuse-zero-one-max-seconds",
+      "passed": true
+    },
+    {
+      "name": "fuse-sleep-error-propagates",
+      "passed": true
+    },
+    {
+      "name": "fuse-negative-overflow-malformed-rejected",
+      "passed": true
+    },
+    {
+      "name": "fuse-excess-arity-rejected-before-sleep",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p815-sleep-image.lst",
+        "--sym=p815-sleep-image.sym",
+        "p815-sleep-image.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 483 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p815-sleep.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 27,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 1368, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 23220, \"image_size\": 159, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 183, \"relocations\": [], \"stored_length\": 183, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p815-sleep-fixture.lst",
+        "--sym=p815-sleep-fixture.sym",
+        "p815-sleep-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 483 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p815-gateway.lst",
+        "--sym=p815-gateway.sym",
+        "p815-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 306 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p815-sleep.mex1": "4880630b7fb923e2eeda5e0e680a556baa0097d1359a58f7ff25c722dccbe576",
+    "v1/build/p815-sleep.tap": "9e7f28d556903ccf8db3ffd2ea37d6e3a63bdd542fced3b105111bcc39c2e1bc",
+    "v1/dist/certification/P8.14.test.json": "6a769116fb607d9f60d77a3681126270ce6a96211c4557520f3ec761ec885ee8",
+    "v1/src/utils/sleep.asm": "3f5f8502c8e29f0af5eacb0daee262d795d22b3ff7f16c910f17ebd83c62725d",
+    "v1/tools-host/test-driver/phase8_sleep.py": "79e1c378290f0584640d0b11b5e9eb9162bbe5f6110a95b5046daf85e2c420a1",
+    "v1/tools-host/test-driver/run.py": "9d913e7991b2ad79766369cf750d347675ecf54e941e643c8a71d9fa10a37deb"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.14": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "0b6cdb9c01464efcb2a6eb5ba27ab92dd709ac7f",
+  "status": "PASS",
+  "step": "P8.15",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
