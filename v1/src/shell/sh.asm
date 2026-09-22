@@ -4267,19 +4267,19 @@ P819_INFO_LEN            EQU 16
 ; A=argc, B=pipeline stage count, C=background flag.
 sh_p819_ps_builtin:
     cp 1
-    jr nz,sh_p819_invalid
+    jp nz,sh_p819_invalid
     ld a,b
     cp 1
-    jr nz,sh_p819_notsup
+    jp nz,sh_p819_notsup
     ld a,c
     or a
-    jr nz,sh_p819_notsup
+    jp nz,sh_p819_notsup
     xor a
     ld (p819_pid),a
 sh_p819_scan:
     ld a,(p819_pid)
     cp MAX_PROCESSES
-    jr nc,sh_p819_ok
+    jp nc,sh_p819_ok
     ld (p819_req),a
     xor a
     ld (p819_req+1),a
@@ -4368,7 +4368,7 @@ sh_p819_next:
     ld a,(p819_pid)
     inc a
     ld (p819_pid),a
-    jr sh_p819_scan
+    jp sh_p819_scan
 
 sh_p819_bad_state:
     ld a,E_INVAL
