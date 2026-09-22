@@ -139,7 +139,10 @@ gate_end:
             ab=arg1(args); code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(ARG)+phase1._ld_de(ENV)+b"\x01"+word(len(ab))+phase1._call(sy["env_entry"]))
             for o,v in enumerate(expected): code+=expect(OUT+o,v)
             code+=expect(OUT+len(expected),0xA5)+expect(STATUS,status)+expect(STATUS+1,1)+phase1._jp(PASS_PC)
-            run_sna(root,bytes(code),patch=patch(ub,gb,args,entries,mode,bad_magic))
+            try:
+                run_sna(root,bytes(code),patch=patch(ub,gb,args,entries,mode,bad_magic))
+            except DriverError as exc:
+                raise P817Error(f"runtime case args={args!r} entries={entries!r} mode={mode} bad_magic={bad_magic} failed: {exc}") from exc
         assertions += [
           {"name":"fuse-exact-case-and-order","passed":True},
           {"name":"fuse-empty-env","passed":True},
