@@ -1,0 +1,83 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p712-present",
+      "passed": true
+    },
+    {
+      "name": "all-exact-lowercase-builtins-present",
+      "passed": true
+    },
+    {
+      "name": "all-kernel-graphics-selectors-wired",
+      "passed": true
+    },
+    {
+      "name": "foreground-single-stage-guard-before-handlers",
+      "passed": true
+    },
+    {
+      "name": "draw-and-circle-copy-exact-record-sizes",
+      "passed": true
+    },
+    {
+      "name": "attribute-selectors-zero-through-five",
+      "passed": true
+    },
+    {
+      "name": "no-bcat-or-tape-path-in-builtin-wiring",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 23,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nkernel.asm(87): warning[shortblock]: init data for block truncated to length: 0\nPass 3 complete\nErrors: 0, warnings: 1, compiled: 15385 lines, work time: 0.022 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p712-shell-gfx.lst",
+        "--sym=p712-shell-gfx.sym",
+        "p712-shell-gfx.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 4588 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "1bcb1862955372e15814296fd248795b3de41baac5596baecd5d5f155ed92a67",
+    "v1/build/p712-shell-gfx.bin": "2ab257ade988e7765a4b4319a7bf04fdcf38187e6988bba6f852b53e7128ca08",
+    "v1/src/shell/sh.asm": "6a09d33ae82e7c1fa6cbb638f7c39add302f18dbd43cb5673e7824777c750ec8",
+    "v1/tools-host/test-driver/phase7_shell_graphics.py": "4ef1282b3c40d0b1d524e7ab06082f3c294f12aef47fd9e31a65dbc3d80bd06c",
+    "v1/tools-host/test-driver/run.py": "047c77e3b7924e178fe21d16b226b215ab172bff795e6dcc852671e74c17302b"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P7.11": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "05a2c8636123067963e77570759e80ac5b96de48",
+  "status": "PASS",
+  "step": "P7.12",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
