@@ -11,6 +11,7 @@
 ; patent, trademark, and governing-law provisions.
 ;
 ; /bin/rm: remove exactly one mutable RAM object through SYS_REMOVE.
+; Kernel policy protects open, system, pseudo, and cassette-backed objects.
 
     MACRO EMIT_P805_RM_ROUTINES
 rm_entry:
