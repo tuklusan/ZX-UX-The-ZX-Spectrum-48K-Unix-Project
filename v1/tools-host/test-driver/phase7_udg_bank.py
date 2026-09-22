@@ -46,8 +46,8 @@ def source(root:Path):
       {"name":"no-second-bank-or-free-repoint","passed":u.count("call zx48_alloc")==1 and "call zx48_free" not in u and u.count("ld (ROM_UDG),hl")==1},
       {"name":"tty32-maps-80-through-9f-to-existing-bank","passed":"ld hl,(udg_bank_ptr)" in t and "sub UDG_CODE_FIRST" in t and "cp UDG_CODE_LAST+1" in t},
       {"name":"bit7-leftmost-byte-preserved","passed":"ld a,(hl)\n    pop hl\n    ld (hl),a" in t},
-      {"name":"tty64-rejects-udg-text-codes-before-render","passed":"cp TTY_MODE_32\n    jr nz,zx48_console_bad" in c},
-      {"name":"tty64-renderer-itself-remains-20h-through-7fh","passed":"cp $80" in (root/"v1/src/kernel/tty64.asm").read_text()},
+      {"name":"console-admits-only-through-final-udg-code","passed":"cp UDG_CODE_LAST+1" in c},
+      {"name":"tty64-renderer-rejects-udg-text-codes","passed":"cp $80" in (root/"v1/src/kernel/tty64.asm").read_text()},
     ]
 
 def runtime(root:Path,labels:dict[str,int],image:bytes):
