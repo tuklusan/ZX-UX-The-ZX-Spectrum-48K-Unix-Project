@@ -238,9 +238,17 @@ gate_end:
         for mode,loads,status,spawned in ((0,0,0,1),(1,1,0,1),(2,0,sy["E_FORMAT"]&255,0)):
             args=[b"demo",b"ship"]; ab=arg1(args)
             for label,addr,want in (("status",STATUS,status),("loads",LOADS,loads),("spawned",SPAWNED,spawned)):
-                code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(ARG)+b"\x01"+word(len(ab))+b"\x11"+word(ENV)+phase1._call(sy["demo_entry"])+expect(addr,want)+phase1._jp(PASS_PC))
-                try: run_sna(root,bytes(code),patch=patch(ub,gb,args,mode),timeout=30)
-                except Exception as e: raise P836Error(f"P8.36 ship mode={mode} {label} failed: {e}")
+                actual=None
+                for candidate in range(256):
+                    code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(ARG)+b"\x01"+word(len(ab))+b"\x11"+word(ENV)+phase1._call(sy["demo_entry"])+expect(addr,candidate)+phase1._jp(PASS_PC))
+                    try:
+                        run_sna(root,bytes(code),patch=patch(ub,gb,args,mode),timeout=30)
+                        actual=candidate
+                        break
+                    except Exception:
+                        pass
+                if actual != want:
+                    raise P836Error(f"P8.36 ship mode={mode} {label}: actual={actual} expected={want}")
         args=[b"demo",b"SHIP"]; ab=arg1(args); code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(ARG)+b"\x01"+word(len(ab))+b"\x11"+word(ENV)+phase1._call(sy["demo_entry"])+expect(STATUS,sy["E_NOENT"]&255)+expect(SPAWNED,0)+phase1._jp(PASS_PC))
         try: run_sna(root,bytes(code),patch=patch(ub,gb,args,0),timeout=30)
         except Exception as e: raise P836Error(f"P8.36 wrong-case failed: {e}")
