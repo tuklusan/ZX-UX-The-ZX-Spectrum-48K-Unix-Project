@@ -155,8 +155,17 @@ zx48_console_tab:
     jr zx48_console_control_done
 
 zx48_console_printable:
-    cp $80
+    cp UDG_CODE_FIRST
+    jr c,zx48_console_print
+    cp UDG_CODE_LAST+1
     jr nc,zx48_console_bad
+    ; UDG character codes are text-identifiers only in tty32. tty64 never
+    ; reinterprets them as 4x8 glyphs; full-size tty64 UDGs use SYS_UDG_DRAW.
+    ld d,a
+    ld a,(tty_mode)
+    cp TTY_MODE_32
+    jr nz,zx48_console_bad
+    ld a,d
 zx48_console_print:
     push af
     call zx48_cursor_hide

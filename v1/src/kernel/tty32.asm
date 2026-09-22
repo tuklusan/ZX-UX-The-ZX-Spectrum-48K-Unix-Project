@@ -36,12 +36,28 @@ zx48_bitmap_address:
     ld l,a
     ret
 
-; A=target code 20h..7Fh. Draw directly from frozen 48K ROM font bitmap.
+; A=target code. 20h..7Fh uses the frozen ROM font. P7.13 reserves
+; 80h..9Fh as the exact 32 UDG slot identifiers in tty32 only.
 zx48_tty32_draw_char:
     cp $20
     jr c,zx48_tty32_bad
-    cp $80
+    cp UDG_CODE_FIRST
+    jr c,zx48_tty32_rom_glyph
+    cp UDG_CODE_LAST+1
     jr nc,zx48_tty32_bad
+    sub UDG_CODE_FIRST
+    ld e,a
+    ld d,0
+    sla e
+    rl d
+    sla e
+    rl d
+    sla e
+    rl d
+    ld hl,(udg_bank_ptr)
+    add hl,de
+    jr zx48_tty32_glyph_ready
+zx48_tty32_rom_glyph:
     sub $20
     ld e,a
     ld d,0
@@ -53,6 +69,7 @@ zx48_tty32_draw_char:
     rl d
     ld hl,ROM_CHARSET_BITMAP
     add hl,de
+zx48_tty32_glyph_ready:
     ld (tty32_glyph),hl
     xor a
     ld (tty32_scan),a

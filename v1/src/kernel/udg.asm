@@ -12,6 +12,11 @@
 ;
 ; Allocator-owned 32-slot UDG bank. Each slot is one conventional 8x8 glyph.
 
+UDG_SLOT_COUNT           EQU 32
+UDG_SLOT_BYTES           EQU 8
+UDG_CODE_FIRST           EQU $80
+UDG_CODE_LAST            EQU $9F
+
     MACRO EMIT_UDG_ROUTINES
 zx48_udg_init:
     ld bc,UDG_BANK_SIZE
@@ -36,7 +41,7 @@ zx48_udg_init:
 
 zx48_udg_slot_ptr:
     ld a,c
-    cp 32
+    cp UDG_SLOT_COUNT
     jp nc,zx48_udg_bad
     add a,a
     add a,a
