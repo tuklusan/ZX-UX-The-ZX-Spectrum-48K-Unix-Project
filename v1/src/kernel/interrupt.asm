@@ -25,7 +25,7 @@ wall_valid                EQU INTERRUPT_STATE_BASE+14
 INTERRUPT_STATE_END       EQU INTERRUPT_STATE_BASE+15
 
     MACRO EMIT_INTERRUPT_ROUTINE
-; Successful cold boot enters with interrupts disabled. Seed exact TIME1 state,
+; P8.39 TIME1 boot revision contract: valid cold boot starts at revision 0.\n; Successful cold boot enters with interrupts disabled. Seed exact TIME1 state,
 ; leave independent SYS_TICKS untouched, then tail into canonical IM2 setup.
 zx48_wall_boot_init:
     di
