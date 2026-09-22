@@ -125,7 +125,7 @@ p716_open:
     jr z,p716_open_read
     ld a,(p716_force_open)
     or a
-    jr nz,p716_io_fail
+    jp nz,p716_io_fail
     ld a,b
     ld (p716_create_type),a
     ld a,c
@@ -140,13 +140,13 @@ p716_open_read:
 p716_write:
     ld a,(p716_force_write)
     or a
-    jr nz,p716_io_fail
+    jp nz,p716_io_fail
     ld a,d
     or a
-    jr nz,p716_bad
+    jp nz,p716_bad
     ld a,e
     cp 3
-    jr nz,p716_bad
+    jp nz,p716_bad
     ld (p716_staged_len),bc
     push bc
     ld de,STAGED
@@ -157,13 +157,13 @@ p716_write:
 p716_read:
     ld a,(p716_force_read)
     or a
-    jr nz,p716_io_fail
+    jp nz,p716_io_fail
     ld a,d
     or a
-    jr nz,p716_bad
+    jp nz,p716_bad
     ld a,e
     cp 4
-    jr nz,p716_bad
+    jp nz,p716_bad
     push bc
     push hl
     ld hl,LOAD
@@ -217,7 +217,7 @@ p716_remove:
 p716_rename:
     ld a,(p716_force_rename)
     or a
-    jr nz,p716_io_fail
+    jp nz,p716_io_fail
     ld a,1
     ld (p716_committed),a
     ld bc,(p716_staged_len)
@@ -229,10 +229,10 @@ p716_rename:
 p716_udg_get:
     ld a,b
     or a
-    jr nz,p716_bad
+    jp nz,p716_bad
     ld a,c
     cp 32
-    jr nc,p716_bad
+    jp nc,p716_bad
     push hl
     add a,a
     add a,a
@@ -251,10 +251,10 @@ p716_udg_get:
 p716_udg_define:
     ld a,b
     or a
-    jr nz,p716_bad
+    jp nz,p716_bad
     ld a,c
     cp 32
-    jr nc,p716_bad
+    jp nc,p716_bad
     push hl
     add a,a
     add a,a

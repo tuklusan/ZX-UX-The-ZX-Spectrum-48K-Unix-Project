@@ -261,3 +261,4 @@ MINFO1_SIZE              EQU $0010
 ZPINFO1_SIZE             EQU $0014
 M48O_CHUNK_SIZE          EQU $0200
 ; P7.16 qualification head marker 1.
+; P7.16 qualification head marker 2.
