@@ -1,0 +1,82 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p715-present",
+      "passed": true
+    },
+    {
+      "name": "whole-three-byte-record-validated-first",
+      "passed": true
+    },
+    {
+      "name": "slot-row-col-domains-before-draw",
+      "passed": true
+    },
+    {
+      "name": "draw-is-physical-eight-scanline-cell",
+      "passed": true
+    },
+    {
+      "name": "current-console-attribute-published",
+      "passed": true
+    },
+    {
+      "name": "tty64-no-half-cell-renderer-path",
+      "passed": true
+    },
+    {
+      "name": "cursor-hidden-before-first-bitmap-write",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 37,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 15498 lines, work time: 0.036 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p715.sym",
+        "p715.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 7,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2980 lines, work time: 0.006 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "ae3c54f9cd50eade1e543d9ac3c6ff58c83d63d6951c707b192ef5f9e26d4806",
+    "v1/src/kernel/syscall.asm": "0b1d45a8024ef930032063306f706aa87d209bc281488e26458943594c3091f7",
+    "v1/src/kernel/udg.asm": "e74208f0d478d432895297b20188dec7018e494709b8fac163abc6eaaabe9089",
+    "v1/tools-host/test-driver/phase7_udg_draw.py": "15e752f34c7c5cb377a74a9d6e6632a534dd32853afa92d78f77f6766ebc6483",
+    "v1/tools-host/test-driver/run.py": "c08344e829d3da62bc9bd8597dc9a5b4832038d4925a83f1d129d4abb0c30eda"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P7.14": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "e8080f351ffbed7ee2d15564682dc37989ef8058",
+  "status": "PASS",
+  "step": "P7.15",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
