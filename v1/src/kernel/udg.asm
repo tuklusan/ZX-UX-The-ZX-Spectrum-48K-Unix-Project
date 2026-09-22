@@ -97,6 +97,7 @@ zx48_udg_clear_loop:
     ret
 
 zx48_udg_draw:
+    ; Consume the already-initialized live bank; P7.15 never reallocates/repoints it.
     ; Validate all three record bytes before cursor/screen/attribute mutation.
     ld c,(hl)
     ld a,c
