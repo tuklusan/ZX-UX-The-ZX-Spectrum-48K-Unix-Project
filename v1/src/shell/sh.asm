@@ -3823,3 +3823,230 @@ p711_category_table:
     db 0
 p711_arg_ptr: dw 0
     ENDM
+
+
+; P7.12 graphics/attribute shell builtin wiring. Parsing has already produced
+; compact byte operands; these parent-shell handlers own arity/foreground policy
+; and the exact kernel selector/argument mapping.
+    MACRO EMIT_P712_GRAPHICS_BUILTIN_ROUTINES
+P712_ID_PLOT             EQU 1
+P712_ID_LINE             EQU 2
+P712_ID_CIRCLE           EQU 3
+P712_ID_POINT            EQU 4
+P712_ID_INK              EQU 5
+P712_ID_PAPER            EQU 6
+P712_ID_BRIGHT           EQU 7
+P712_ID_FLASH            EQU 8
+P712_ID_INVERSE          EQU 9
+P712_ID_OVER             EQU 10
+P712_ID_BORDER           EQU 11
+
+; HL=name, B=len. Success A=stable builtin id. Exact lower-case only.
+sh_p712_lookup:
+    ld a,b
+    cp 3
+    jp z,sh_p712_lookup_len3
+    cp 4
+    jp z,sh_p712_lookup_len4
+    cp 5
+    jp z,sh_p712_lookup_len5
+    cp 6
+    jp z,sh_p712_lookup_len6
+    cp 7
+    jp z,sh_p712_lookup_len7
+    jp sh_p712_lookup_miss
+sh_p712_lookup_len3:
+    ld de,p712_name_ink
+    call sh_p712_name_eq
+    jr z,sh_p712_lookup_ink
+    jp sh_p712_lookup_miss
+sh_p712_lookup_len4:
+    ld de,p712_name_plot
+    call sh_p712_name_eq
+    jr z,sh_p712_lookup_plot
+    ld de,p712_name_line
+    call sh_p712_name_eq
+    jr z,sh_p712_lookup_line
+    ld de,p712_name_over
+    call sh_p712_name_eq
+    jr z,sh_p712_lookup_over
+    jp sh_p712_lookup_miss
+sh_p712_lookup_len5:
+    ld de,p712_name_point
+    call sh_p712_name_eq
+    jr z,sh_p712_lookup_point
+    ld de,p712_name_paper
+    call sh_p712_name_eq
+    jr z,sh_p712_lookup_paper
+    ld de,p712_name_flash
+    call sh_p712_name_eq
+    jr z,sh_p712_lookup_flash
+    jp sh_p712_lookup_miss
+sh_p712_lookup_len6:
+    ld de,p712_name_circle
+    call sh_p712_name_eq
+    jr z,sh_p712_lookup_circle
+    ld de,p712_name_bright
+    call sh_p712_name_eq
+    jr z,sh_p712_lookup_bright
+    ld de,p712_name_border
+    call sh_p712_name_eq
+    jr z,sh_p712_lookup_border
+    jp sh_p712_lookup_miss
+sh_p712_lookup_len7:
+    ld de,p712_name_inverse
+    call sh_p712_name_eq
+    jr z,sh_p712_lookup_inverse
+    jp sh_p712_lookup_miss
+
+; Compare exactly B bytes at HL and DE while preserving HL/B.
+sh_p712_name_eq:
+    push hl
+    push bc
+sh_p712_name_eq_loop:
+    ld a,(de)
+    cp (hl)
+    jr nz,sh_p712_name_eq_no
+    inc de
+    inc hl
+    djnz sh_p712_name_eq_loop
+    pop bc
+    pop hl
+    xor a
+    ret
+sh_p712_name_eq_no:
+    pop bc
+    pop hl
+    ld a,1
+    or a
+    ret
+
+sh_p712_lookup_plot:    ld a,P712_ID_PLOT : ret
+sh_p712_lookup_line:    ld a,P712_ID_LINE : ret
+sh_p712_lookup_circle:  ld a,P712_ID_CIRCLE : ret
+sh_p712_lookup_point:   ld a,P712_ID_POINT : ret
+sh_p712_lookup_ink:     ld a,P712_ID_INK : ret
+sh_p712_lookup_paper:   ld a,P712_ID_PAPER : ret
+sh_p712_lookup_bright:  ld a,P712_ID_BRIGHT : ret
+sh_p712_lookup_flash:   ld a,P712_ID_FLASH : ret
+sh_p712_lookup_inverse: ld a,P712_ID_INVERSE : ret
+sh_p712_lookup_over:    ld a,P712_ID_OVER : ret
+sh_p712_lookup_border:  ld a,P712_ID_BORDER : ret
+sh_p712_lookup_miss:
+    ld a,E_NOENT
+    scf
+    ret
+
+; Common entry contract for handlers:
+; A=argc including command, B=pipeline stage count, C=background flag,
+; HL=compact parsed operand bytes. Guards execute before any request mutation.
+sh_p712_guard:
+    ld d,a
+    ld a,b
+    cp 1
+    jr nz,sh_p712_notsup
+    ld a,c
+    or a
+    jr nz,sh_p712_notsup
+    ld a,d
+    xor a
+    ret
+sh_p712_notsup:
+    ld a,E_NOTSUP
+    scf
+    ret
+sh_p712_inval:
+    ld a,E_INVAL
+    scf
+    ret
+
+sh_p712_plot:
+    call sh_p712_guard
+    ret c
+    cp 3
+    jp nz,sh_p712_inval
+    ld a,(hl)
+    ld h,a
+    inc hl
+    ld l,(hl)
+    ld a,SYS_GFX_PLOT
+    jp SYSCALL_GATEWAY
+
+sh_p712_point:
+    call sh_p712_guard
+    ret c
+    cp 3
+    jp nz,sh_p712_inval
+    ld a,(hl)
+    ld h,a
+    inc hl
+    ld l,(hl)
+    ld a,SYS_GFX_POINT
+    jp SYSCALL_GATEWAY
+
+sh_p712_line:
+    call sh_p712_guard
+    ret c
+    cp 5
+    jp nz,sh_p712_inval
+    ld de,p712_line_req
+    ld bc,4
+    ldir
+    ld hl,p712_line_req
+    ld a,SYS_GFX_DRAW
+    jp SYSCALL_GATEWAY
+
+sh_p712_circle:
+    call sh_p712_guard
+    ret c
+    cp 4
+    jp nz,sh_p712_inval
+    ld de,p712_circle_req
+    ld bc,3
+    ldir
+    ld hl,p712_circle_req
+    ld a,SYS_GFX_CIRCLE
+    jp SYSCALL_GATEWAY
+
+; Attribute helpers use H selector 0..5 and L value.
+sh_p712_ink:     ld d,0 : jp sh_p712_attr
+sh_p712_paper:   ld d,1 : jp sh_p712_attr
+sh_p712_bright:  ld d,2 : jp sh_p712_attr
+sh_p712_flash:   ld d,3 : jp sh_p712_attr
+sh_p712_inverse: ld d,4 : jp sh_p712_attr
+sh_p712_over:    ld d,5
+sh_p712_attr:
+    call sh_p712_guard
+    ret c
+    cp 2
+    jp nz,sh_p712_inval
+    ld a,(hl)
+    ld l,a
+    ld h,d
+    ld a,SYS_GFX_ATTR
+    jp SYSCALL_GATEWAY
+
+sh_p712_border:
+    call sh_p712_guard
+    ret c
+    cp 2
+    jp nz,sh_p712_inval
+    ld l,(hl)
+    ld h,0
+    ld a,SYS_GFX_BORDER
+    jp SYSCALL_GATEWAY
+
+p712_line_req: defs 4,0
+p712_circle_req: defs 3,0
+p712_name_plot: db 'p','l','o','t'
+p712_name_line: db 'l','i','n','e'
+p712_name_circle: db 'c','i','r','c','l','e'
+p712_name_point: db 'p','o','i','n','t'
+p712_name_ink: db 'i','n','k'
+p712_name_paper: db 'p','a','p','e','r'
+p712_name_bright: db 'b','r','i','g','h','t'
+p712_name_flash: db 'f','l','a','s','h'
+p712_name_inverse: db 'i','n','v','e','r','s','e'
+p712_name_over: db 'o','v','e','r'
+p712_name_border: db 'b','o','r','d','e','r'
+    ENDM
