@@ -1,0 +1,114 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p814-present",
+      "passed": true
+    },
+    {
+      "name": "status-one",
+      "passed": true
+    },
+    {
+      "name": "no-output",
+      "passed": true
+    },
+    {
+      "name": "no-input-io",
+      "passed": true
+    },
+    {
+      "name": "fuse-status-one",
+      "passed": true
+    },
+    {
+      "name": "fuse-no-nonexit-syscalls",
+      "passed": true
+    },
+    {
+      "name": "fuse-extra-args-do-not-change-status",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p814-false-image.lst",
+        "--sym=p814-false-image.sym",
+        "p814-false-image.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 309 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p814-false.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 48045, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 55619, \"image_size\": 8, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 32, \"relocations\": [], \"stored_length\": 32, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p814-false-fixture.lst",
+        "--sym=p814-false-fixture.sym",
+        "p814-false-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 309 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p814-gateway.lst",
+        "--sym=p814-gateway.sym",
+        "p814-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 291 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p814-false.mex1": "65ee643fa538737f41b77b8e593416366fa347d1029264322003d84f95849f6b",
+    "v1/build/p814-false.tap": "0addc45696d692e159e8b2f4a04e2af9d3ad060f1db6aea8bed55a7fac118a48",
+    "v1/dist/certification/P8.13.test.json": "92b8d1b45bae85f08eda9c86273261da9976cf78c0ec008dd7d5b0dc08c2eb61",
+    "v1/src/utils/false.asm": "fbe88be3b0a5ccb02cbdc4c2bfb8a33d2e36e1b91955b2885fec38818ffef225",
+    "v1/tools-host/test-driver/phase8_false.py": "79fe2aa9dab34f684802ea4d393a6b156ad0a0278c0949c2c8b686402fc2b59e",
+    "v1/tools-host/test-driver/run.py": "5083fa1c7f3cb6f7bd4e784ef3946893cd130f572698c5fcc97d00ba9b969899"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.13": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "54f1bb3b9ed78749e1055a6396ffb439bbb77ec3",
+  "status": "PASS",
+  "step": "P8.14",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
