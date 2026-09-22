@@ -1278,7 +1278,7 @@ zx48_p711_rom_info:
     inc hl
     ld a,(hl)
     cp 7
-    jp nc,zx48_sys_invalid
+    jr nc,zx48_p711_rom_invalid
     ld (p711_rom_category),a
     inc hl
     ld e,(hl)
@@ -1297,6 +1297,10 @@ zx48_p711_rom_info:
     ld b,c
     ld de,(p711_rom_out)
     jp zx48_rom_info_lookup
+zx48_p711_rom_invalid:
+    ld a,E_INVAL
+    scf
+    ret
 p711_rom_index: db 0
 p711_rom_category: db 0
 p711_rom_out: dw 0
