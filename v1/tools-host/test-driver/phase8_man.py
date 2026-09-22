@@ -19,7 +19,8 @@ from phase8_common import arg1, word, assemble_utility, inspect_mex, make_tap
 
 UTIL=0xC000; GATE=0xE000; ARG=0xA000; ENV=0xA100; OUT=0xA300
 STATUS=0xA280; MODE=0xA282
-class P827Error(DriverError): pass
+class P827Error(DriverError):
+    pass
 def require(v,m):
     if not v: raise P827Error(m)
 def expect(addr,val): return b"\x3A"+word(addr)+bytes((0xFE,val&255))+phase1._jp_nz(0x8F00)
@@ -49,7 +50,7 @@ def source_contract(root):
       {"name":"arity-one-or-two","passed":"cp 1" in s and "cp 2" in s and "E_INVAL" in s},
     ]
 def dispatch(root,action,step,*,sha256_file,run_command,require_project_tool):
-    if step!="P8.27": raise DriverError(f"Phase-8 env step is not registered: {step}")
+    if step!="P8.27": raise DriverError(f"Phase-8 man step is not registered: {step}")
     assertions=source_contract(root); require(all(x["passed"] for x in assertions),"P8.27 static contract failure")
     tool=require_project_tool(root,"tools/runtime/sjasmplus/bin/sjasmplus"); build=root/"v1/build"; build.mkdir(parents=True,exist_ok=True)
     try: ir,image,mex=assemble_utility(root,build,tool,"man","p827","EMIT_P827_MAN_ROUTINES",run_command); xr=inspect_mex(root,mex,run_command,require_project_tool); tap=make_tap(root,build,"man","p827",mex)
