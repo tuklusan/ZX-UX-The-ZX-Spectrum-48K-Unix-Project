@@ -215,7 +215,7 @@ gate_end:
     mp.write_bytes(mex1(image))
     try:
         xr=inspect_mex(root,mp,run_command,require_project_tool)
-        tap=make_tap(root,build,"mem-builtin","p820",mp)
+        tap=make_tap(root,build,"mem","p820",mp)
     except RuntimeError as e:
         raise P820Error(str(e))
 
@@ -279,7 +279,7 @@ gate_end:
     hashes={
         "v1/src/shell/sh.asm":sha256_file(sp),
         "v1/build/p820-mem.mex1":sha256_file(mp),
-        "v1/build/p820-mem-builtin.tap":sha256_file(tap),
+        "v1/build/p820-mem.tap":sha256_file(tap),
         "v1/tools-host/test-driver/phase8_mem.py":sha256_file(root/"v1/tools-host/test-driver/phase8_mem.py"),
         "v1/tools-host/test-driver/run.py":sha256_file(root/"v1/tools-host/test-driver/run.py"),
         "v1/dist/certification/P8.19.test.json":sha256_file(root/"v1/dist/certification/P8.19.test.json"),
