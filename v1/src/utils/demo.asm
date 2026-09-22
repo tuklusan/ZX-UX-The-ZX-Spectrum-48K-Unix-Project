@@ -14,6 +14,7 @@
 ; explicitly; resident expected-type members are preserved and never overwritten.
 
 ; P8.36 exact qualification source.
+; P8.36 qualification retry anchor.
     MACRO EMIT_P836_DEMO_ROUTINES
 DEMO_STAT_TYPE      EQU 0
 DEMO_PROC_PATH      EQU 0
