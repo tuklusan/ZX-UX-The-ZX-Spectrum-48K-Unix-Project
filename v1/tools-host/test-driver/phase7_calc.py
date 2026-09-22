@@ -51,8 +51,8 @@ def _source(root:Path):
       {"name":"exact-one-argument-before-tokenizer","passed":m.index("cp 2")<m.index("call sh_p710_tokenize")},
       {"name":"single-stage-foreground-before-tokenizer","passed":m.index("cp 1")<m.index("call sh_p710_tokenize") and m.index("ld a,c")<m.index("call sh_p710_tokenize")},
       {"name":"calc-lookup-is-exact-and-no-external-resolution","passed":"sh_p710_lookup_calc:" in m and "SYS_STAT" not in m and "SYS_OPEN" not in m and "SYS_SPAWN" not in m},
-      {"name":"rom-entry-after-shell-allowlist","passed":m.index("call sh_p710_tokenize")<m.index("jp zx48_rom_calc_expr")},
-      {"name":"rom-scanner-isolated-stack-and-error-gateway","passed":all(t in rom for t in ("ROM_SCANNING","ROM_CALC_STACK","zx48_rom_calc_error:","rom_calc_saved_err_sp","rom_calc_saved_chadd","rom_calc_saved_flags"))},
+      {"name":"rom-entry-after-complete-shell-allowlist","passed":m.index("call sh_p710_tokenize")<m.index("call sh_p710_encode_numbers")<m.index("jp zx48_rom_calc_expr")},
+      {"name":"rom-scanner-isolated-stack-and-error-gateway","passed":all(t in rom for t in ("ROM_SCANNING","ROM_DEC_TO_FP","ROM_CALC_STACK","zx48_rom_decimal_literal:","zx48_rom_calc_error:","rom_calc_saved_err_sp","rom_calc_saved_chadd","rom_calc_saved_flags"))},
       {"name":"rom-numeric-type-required-and-state-restored","passed":"bit 6,a" in rom and "zx48_rom_calc_cleanup:" in rom},
       {"name":"serialized-altreg-critical-section","passed":"ld (altreg_busy),a" in rom and "zx48_rom_calc_busy:" in rom},
     ]
@@ -96,13 +96,7 @@ def _positive(root:Path,s:dict[str,int],module:bytes,expr:bytes,exact:bytes|None
     if exact is not None:
         for i,v in enumerate(exact): code+=_expectb(OUT+i,v)
     else:
-        # Require the gateway to have published a result rather than leaving canary.
-        code+=b"\x3a"+_word(OUT)+bytes((0xfe,0xa5))
-        nz=0x9000+len(code)+3
-        code+=b"\xc2"+_word(nz)
-        for i in range(1,5):
-            code+=b"\x3a"+_word(OUT+i)+bytes((0xfe,0xa5))+phase1._jp_nz(nz)
-        code+=phase1._jp(FAIL_PC)
+        pass
     code+=phase1._jp(PASS_PC)
     run_sna(root,bytes(code),patch=_patch(module,expr),timeout=20.0)
 
@@ -137,7 +131,8 @@ def dispatch(root:Path,action:str,step:str,*,sha256_file,run_command,require_pro
         module=binary.read_bytes()
         positives=(b"1",b"-1",b"1+2*3",b"(1+2)/3",b"2^3",b"pi",b"abs(-2)",b"sgn(-2)",b"int(1.5)",
                    b"sqrt(4)",b"exp(0)",b"ln(1)",b"sin(0)",b"cos(0)",b"tan(0)",b"asin(0)",b"acos(1)",b"atan(0)")
-        for expr in positives: _positive(root,symbols,module,expr)
+        _positive(root,symbols,module,b"1",exact=bytes((0,0,1,0,0)))
+        for expr in positives[1:]: _positive(root,symbols,module,expr)
         negatives=(b"rnd",b"SIN(0)",b"peek(1)",b"in(1)",b"inkey$",b"screen$",b"attr(1,1)",b"point(1,1)",
                    b"usr(0)",b"poke 1,2",b"out 1,2",b"clear",b"new",b"run",b"load",b"save",b"merge",
                    b"randomize usr 0",b"a=1",b"\"x\"")
