@@ -1,0 +1,106 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p837-present",
+      "passed": true
+    },
+    {
+      "name": "external-echo-source",
+      "passed": true
+    },
+    {
+      "name": "pipelineable-write",
+      "passed": true
+    },
+    {
+      "name": "exact-space-lf",
+      "passed": true
+    },
+    {
+      "name": "no-parent-shell-echo-builtin",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p837-echo-image.lst",
+        "--sym=p837-echo-image.sym",
+        "p837-echo-image.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 458 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p837-echo.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 33,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 39654, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 11265, \"image_size\": 123, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 147, \"relocations\": [], \"stored_length\": 147, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p837-echo-fixture.lst",
+        "--sym=p837-echo-fixture.sym",
+        "p837-echo-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 458 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p837-gateway.lst",
+        "--sym=p837-gateway.sym",
+        "p837-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 307 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p837-echo.mex1": "aae2056caf58547cb089d34130a6f9ae6318f96defe72fcd2f434f65bce6c0ed",
+    "v1/build/p837-echo.tap": "a0eb0129fbadf255c1ad5c257f183d62ffc66a8e3079f7bf246d0db87190026b",
+    "v1/dist/certification/P8.36.test.json": "6fa5dace8882a0cea6b0c969393dae3d8745eb7370bc33384529e1c4e60e13e3",
+    "v1/src/utils/echo.asm": "fd29c36807de7981a252a5c02af0cd19791788b5f07cffc49cf667eb9402f05b",
+    "v1/tools-host/test-driver/phase8_echo_regression.py": "22f2b5e752ca4cdb6fd0c6b33a05d5dd5d61d4bb7b4bea3488288189e074188e",
+    "v1/tools-host/test-driver/run.py": "71426a30a36d530b4a7aa005b2d218245f695a8409177b70c037b80e80911009"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.36": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "ab8361a47d9caad466badf0ade9cb7d3a16badb6",
+  "status": "PASS",
+  "step": "P8.37",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
