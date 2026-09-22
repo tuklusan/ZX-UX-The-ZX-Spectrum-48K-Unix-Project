@@ -280,55 +280,58 @@ ls_write:
     ret
 
 ; HL unsigned 16-bit -> decimal on stdout, no leading zeroes.
+; Repeated subtraction is deliberately small and deterministic; ls is not a hot path.
 ls_write_u16:
-    push hl
-    ld de,ls_num_buf+5
-    xor a
-    ld (de),a
-    pop hl
+    push ix
+    ld ix,ls_num_buf
     ld b,0
-ls_u16_loop:
-    ld a,h
-    or l
-    jr z,ls_u16_done
-    ld bc,10
-    call ls_div16_10
+    xor a
+    ld (ls_num_started),a
+    ld de,10000
+    call ls_u16_place
+    ld de,1000
+    call ls_u16_place
+    ld de,100
+    call ls_u16_place
+    ld de,10
+    call ls_u16_place
+    ld a,l
     add a,'0'
-    dec de
-    ld (de),a
+    ld (ix+0),a
     inc b
-    jr ls_u16_loop
-ls_u16_done:
-    ld a,b
-    or a
-    jr nz,ls_u16_emit
-    dec de
-    ld a,'0'
-    ld (de),a
-    ld b,1
-ls_u16_emit:
-    push de
-    pop hl
+    ld hl,ls_num_buf
     ld c,b
     ld b,0
-    jp ls_write
+    call ls_write
+    pop ix
+    ret
 
-; HL / 10 -> HL quotient, A remainder.
-ls_div16_10:
-    ld de,0
-    ld b,16
-ls_div16_loop:
-    add hl,hl
-    rl e
-    rl d
-    ld a,e
-    sub 10
-    jr c,ls_div16_no_sub
-    ld e,a
-    inc l
-ls_div16_no_sub:
-    djnz ls_div16_loop
-    ld a,e
+; HL=current remainder, DE=decimal place. Preserve remainder modulo DE in HL.
+; B is total emitted digits; leading zero places are skipped.
+ls_u16_place:
+    ld c,0
+ls_u16_place_loop:
+    or a
+    sbc hl,de
+    jr c,ls_u16_place_done
+    inc c
+    jr ls_u16_place_loop
+ls_u16_place_done:
+    add hl,de
+    ld a,(ls_num_started)
+    or a
+    jr nz,ls_u16_place_emit
+    ld a,c
+    or a
+    ret z
+    ld a,1
+    ld (ls_num_started),a
+ls_u16_place_emit:
+    ld a,c
+    add a,'0'
+    ld (ix+0),a
+    inc ix
+    inc b
     ret
 
 ls_argv1:
@@ -420,5 +423,6 @@ ls_list_out: defs 16,0
 ls_stat_req: defs 4,0
 ls_stat_out: defs 10,0
 ls_stat_path: defs 32,0
+ls_num_started: db 0
 ls_num_buf: defs 6,0
     ENDM
