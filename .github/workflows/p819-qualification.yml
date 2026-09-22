@@ -91,7 +91,8 @@ jobs:
           retention-days: 90
           if-no-files-found: error
       - name: Dispatch exact admission
-        env:\n          GH_TOKEN: ${{ github.token }}
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           python3 - <<'PY'
