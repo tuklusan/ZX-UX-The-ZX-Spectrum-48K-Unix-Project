@@ -10,7 +10,8 @@
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
 name: P7.13 UDG bank qualification
-on: {workflow_dispatch: {}}
+on:
+  workflow_dispatch:
 permissions: {actions: write, contents: read}
 jobs:
   qualify:
@@ -28,7 +29,13 @@ jobs:
         run: |
           set -euo pipefail
           git diff --name-only "$P713_BASE" HEAD | sort > /tmp/changed
-          printf '%s\n' .github/workflows/p713-qualification.yml v1/src/kernel/udg.asm v1/src/kernel/tty32.asm v1/src/kernel/console.asm v1/tools-host/test-driver/phase7_udg_bank.py v1/tools-host/test-driver/run.py | sort > /tmp/expected
+          printf '%s\n' \
+            .github/workflows/p713-qualification.yml \
+            v1/src/kernel/udg.asm \
+            v1/src/kernel/tty32.asm \
+            v1/src/kernel/console.asm \
+            v1/tools-host/test-driver/phase7_udg_bank.py \
+            v1/tools-host/test-driver/run.py | sort > /tmp/expected
           diff -u /tmp/expected /tmp/changed
           git diff --check "$P713_BASE" HEAD
           test -z "$(git status --porcelain)"
