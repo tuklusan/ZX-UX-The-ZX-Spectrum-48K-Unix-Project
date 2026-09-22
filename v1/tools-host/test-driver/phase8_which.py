@@ -134,10 +134,9 @@ g_hit:
     ld a,(ix+0)
     ld (bc),a
     inc bc
-    ld a,(ix+4)
+    xor a
     ld (bc),a
     inc bc
-    xor a
     ld (bc),a
     inc bc
     ld (bc),a
@@ -235,7 +234,10 @@ gate_end:
             ab=arg1(args); code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(ARG)+phase1._ld_de(ENV)+b"\x01"+word(len(ab))+phase1._call(sy["which_entry"]))
             for o,v in enumerate(expected): code+=expect(OUT+o,v)
             code+=expect(OUT+len(expected),0xA5)+expect(STATUS,status)+expect(STATUS+1,1)+phase1._jp(PASS_PC)
-            run_sna(root,bytes(code),patch=patch(ub,gb,args,path,mode))
+            try:
+                run_sna(root,bytes(code),patch=patch(ub,gb,args,path,mode))
+            except DriverError as exc:
+                raise P816Error(f"runtime case {args!r} path={path!r} failed: {exc}") from exc
         assertions += [
           {"name":"fuse-path-left-to-right-exact-case","passed":True},
           {"name":"fuse-wrong-type-skipped","passed":True},
