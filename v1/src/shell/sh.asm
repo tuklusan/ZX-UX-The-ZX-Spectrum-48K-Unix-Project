@@ -4054,3 +4054,207 @@ p712_name_inverse: db 'i','n','v','e','r','s','e'
 p712_name_over: db 'o','v','e','r'
 p712_name_border: db 'b','o','r','d','e','r'
     ENDM
+
+; P7.20 final lower-case parent-shell beep builtin. The complete one-argument
+; text is split and both operands are safe-grammar validated before any ROM
+; numeric conversion or SYS_BEEP entry.
+    MACRO EMIT_P720_BEEP_BUILTIN_ROUTINES
+P720_EXPR_CAP            EQU 60
+
+; HL=name, B=len. Success DE=handler. Exact lower-case only; no PATH/BCAT/tape.
+sh_p720_lookup_beep:
+    ld a,b
+    cp 4
+    jp nz,sh_p720_lookup_miss
+    ld a,(hl)
+    cp 'b'
+    jp nz,sh_p720_lookup_miss
+    inc hl
+    ld a,(hl)
+    cp 'e'
+    jp nz,sh_p720_lookup_miss
+    inc hl
+    ld a,(hl)
+    cp 'e'
+    jp nz,sh_p720_lookup_miss
+    inc hl
+    ld a,(hl)
+    cp 'p'
+    jp nz,sh_p720_lookup_miss
+    ld de,sh_p720_beep_builtin
+    xor a
+    ret
+sh_p720_lookup_miss:
+    ld a,E_NOENT
+    scf
+    ret
+
+; A=argc including command, B=pipeline stage count, C=background flag,
+; HL=the sole post-expansion duration,pitch text argument.
+sh_p720_beep_builtin:
+    ld (p720_arg_ptr),hl
+    cp 2
+    jp nz,sh_p720_invalid
+    ld a,b
+    cp 1
+    jp nz,sh_p720_notsup
+    ld a,c
+    or a
+    jp nz,sh_p720_notsup
+
+    ld hl,(p720_arg_ptr)
+    ld de,p720_duration_expr
+    ld (p720_out_ptr),de
+    xor a
+    ld (p720_depth),a
+    ld (p720_comma_seen),a
+    ld (p720_out_len),a
+
+sh_p720_split_scan:
+    ld a,(hl)
+    or a
+    jp z,sh_p720_split_finish
+    cp '('
+    jp z,sh_p720_split_open
+    cp ')'
+    jp z,sh_p720_split_close
+    cp ','
+    jp z,sh_p720_split_comma
+sh_p720_split_copy:
+    push hl
+    call sh_p720_emit
+    pop hl
+    ret c
+    inc hl
+    jp sh_p720_split_scan
+
+sh_p720_split_open:
+    ld a,(p720_depth)
+    cp $ff
+    jp z,sh_p720_invalid
+    inc a
+    ld (p720_depth),a
+    ld a,'('
+    jp sh_p720_split_copy
+
+sh_p720_split_close:
+    ld a,(p720_depth)
+    or a
+    jp z,sh_p720_invalid
+    dec a
+    ld (p720_depth),a
+    ld a,')'
+    jp sh_p720_split_copy
+
+sh_p720_split_comma:
+    ld a,(p720_depth)
+    or a
+    jr nz,sh_p720_split_comma_nested
+    ld a,(p720_comma_seen)
+    or a
+    jp nz,sh_p720_invalid
+    ld a,(p720_out_len)
+    or a
+    jp z,sh_p720_invalid
+    ld de,(p720_out_ptr)
+    xor a
+    ld (de),a
+    ld a,1
+    ld (p720_comma_seen),a
+    ld de,p720_pitch_expr
+    ld (p720_out_ptr),de
+    xor a
+    ld (p720_out_len),a
+    inc hl
+    jp sh_p720_split_scan
+sh_p720_split_comma_nested:
+    ld a,','
+    jp sh_p720_split_copy
+
+sh_p720_split_finish:
+    ld a,(p720_depth)
+    or a
+    jp nz,sh_p720_invalid
+    ld a,(p720_comma_seen)
+    cp 1
+    jp nz,sh_p720_invalid
+    ld a,(p720_out_len)
+    or a
+    jp z,sh_p720_invalid
+    ld de,(p720_out_ptr)
+    xor a
+    ld (de),a
+
+    ; Both complete operands pass the exact calc allow-list before either
+    ; numeric conversion may enter ROM.
+    ld hl,p720_duration_expr
+    ld de,p720_validate_buf
+    call sh_p710_tokenize
+    ret c
+    ld hl,p720_pitch_expr
+    ld de,p720_validate_buf
+    call sh_p710_tokenize
+    ret c
+
+    ld a,2
+    ld b,1
+    ld c,0
+    ld hl,p720_duration_expr
+    ld de,p720_duration_fp
+    call sh_p710_calc_builtin
+    ret c
+
+    ld a,2
+    ld b,1
+    ld c,0
+    ld hl,p720_pitch_expr
+    ld de,p720_pitch_fp
+    call sh_p710_calc_builtin
+    ret c
+
+    ld hl,p720_duration_fp
+    ld de,p720_pitch_fp
+    ld a,SYS_BEEP
+    jp SYSCALL_GATEWAY
+
+; A=byte. Current destination and length are bounded before mutation.
+sh_p720_emit:
+    push af
+    ld a,(p720_out_len)
+    cp P720_EXPR_CAP
+    jp nc,sh_p720_emit_too_long
+    inc a
+    ld (p720_out_len),a
+    ld de,(p720_out_ptr)
+    pop af
+    ld (de),a
+    inc de
+    ld (p720_out_ptr),de
+    xor a
+    ret
+sh_p720_emit_too_long:
+    pop af
+    ld a,E_INVAL
+    scf
+    ret
+
+sh_p720_notsup:
+    ld a,E_NOTSUP
+    scf
+    ret
+sh_p720_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+
+p720_arg_ptr: dw 0
+p720_out_ptr: dw 0
+p720_depth: db 0
+p720_comma_seen: db 0
+p720_out_len: db 0
+p720_duration_expr: defs P720_EXPR_CAP+1,0
+p720_pitch_expr: defs P720_EXPR_CAP+1,0
+p720_validate_buf: defs P710_TOKEN_CAP+1,0
+p720_duration_fp: defs 5,0
+p720_pitch_fp: defs 5,0
+    ENDM
