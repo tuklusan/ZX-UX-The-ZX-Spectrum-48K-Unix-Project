@@ -1,0 +1,130 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p828-present",
+      "passed": true
+    },
+    {
+      "name": "forms",
+      "passed": true
+    },
+    {
+      "name": "time-gated-current",
+      "passed": true
+    },
+    {
+      "name": "range-1970-2099",
+      "passed": true
+    },
+    {
+      "name": "gregorian-months",
+      "passed": true
+    },
+    {
+      "name": "short-write-safe",
+      "passed": true
+    },
+    {
+      "name": "case-sensitive",
+      "passed": true
+    },
+    {
+      "name": "fuse-current-month-year",
+      "passed": true
+    },
+    {
+      "name": "fuse-two-arg-independent",
+      "passed": true
+    },
+    {
+      "name": "fuse-invalid-wall-state",
+      "passed": true
+    },
+    {
+      "name": "fuse-range-rejection",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p828-cal-image.lst",
+        "--sym=p828-cal-image.sym",
+        "p828-cal-image.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 7,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 1387 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p828-cal.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 7583, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 26342, \"image_size\": 1180, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 1204, \"relocations\": [], \"stored_length\": 1204, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p828-cal-fixture.lst",
+        "--sym=p828-cal-fixture.sym",
+        "p828-cal-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 7,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 1387 lines, work time: 0.006 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p828-gateway.lst",
+        "--sym=p828-gateway.sym",
+        "p828-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 330 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p828-cal.mex1": "93b8d281b4e2f838fedf442684041f544910029af726df472faf2560240b2edd",
+    "v1/build/p828-cal.tap": "87b24430a7214d558cdad3861767f5bc2972772b401e89405b1a2ce979332cd0",
+    "v1/dist/certification/P8.27.test.json": "00b3cd5506d684f60f86dd8356a7ce7fa9e75411f1dcadce5c23f825b1629da4",
+    "v1/src/utils/cal.asm": "72a4ba9b0ef93b4dc83beabe1f97a76d64548acd04034fe55011b033f6456e74",
+    "v1/tools-host/test-driver/phase8_cal.py": "9221d66aa1c6c3c489de18dc2d6a1cf5881aec7ad8a3a7ce83227dc8ca7ce2c0",
+    "v1/tools-host/test-driver/run.py": "68d8ce82eda9ca04ad6c157a31009c94489cd358818dcb2c130037cf32726de5"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.27": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "f4a4074df4a8ab8553f7829d247b12bfa9c3df2e",
+  "status": "PASS",
+  "step": "P8.28",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
