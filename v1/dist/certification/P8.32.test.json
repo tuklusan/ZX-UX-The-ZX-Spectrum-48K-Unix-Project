@@ -1,0 +1,114 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p832-present",
+      "passed": true
+    },
+    {
+      "name": "fixed-small-table",
+      "passed": true
+    },
+    {
+      "name": "nonsecurity-entropy",
+      "passed": true
+    },
+    {
+      "name": "short-write-safe",
+      "passed": true
+    },
+    {
+      "name": "arity",
+      "passed": true
+    },
+    {
+      "name": "fuse-all-table-slots",
+      "passed": true
+    },
+    {
+      "name": "fuse-arity",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p832-fortune-image.lst",
+        "--sym=p832-fortune-image.sym",
+        "p832-fortune-image.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 472 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p832-fortune.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 27,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 15304, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 61828, \"image_size\": 282, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 306, \"relocations\": [], \"stored_length\": 306, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p832-fortune-fixture.lst",
+        "--sym=p832-fortune-fixture.sym",
+        "p832-fortune-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 472 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p832-gateway.lst",
+        "--sym=p832-gateway.sym",
+        "p832-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 318 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p832-fortune.mex1": "72ff753c1ce29ee69b223cdbc3f42b8695263920f84f9c5fc7bb7e2aec98a020",
+    "v1/build/p832-fortune.tap": "3bb466bcb2ac9bca11b52f804517a805cc9c3b6b80abb088223f9885a3ada6cc",
+    "v1/dist/certification/P8.31.test.json": "a6ad83ee9157f1c4da741b4e383dfcc3113bb5b441daff681d8f944df1d53b7e",
+    "v1/src/utils/fortune.asm": "2d4fed22af9dc0d288db84511f09ae433e549451e136e19fac3cd59fab2bcd08",
+    "v1/tools-host/test-driver/phase8_fortune.py": "9a55168b5935f7fc93807e5548d0944842fce0db882144c82052285650a58689",
+    "v1/tools-host/test-driver/run.py": "9cf6586d58814d0968bf008cb3ed0ba110b8e8ee5191893522c891ffa255a2f0"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.31": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "495710f8349f8efdf8b5b646440dca1ddd5733db",
+  "status": "PASS",
+  "step": "P8.32",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
