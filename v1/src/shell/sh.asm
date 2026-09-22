@@ -3572,7 +3572,7 @@ sh_p710_emit_too_long:
 sh_p710_finish:
     ld a,(p710_seen)
     or a
-    jr z,sh_p710_invalid
+    jp z,sh_p710_invalid
     ld a,13
     call sh_p710_emit
     ret c
