@@ -110,6 +110,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
     return [
         {"name": "canonical-p801-present", "passed": "## P8.01 - Utility `ls`" in plan},
         {"name": "sys-list-drives-enumeration", "passed": "ld a,SYS_LIST" in src and "ls_list_out: defs 16,0" in src},
+        {"name": "default-current-directory-dot", "passed": "ls_dot: db '.',0" in src and "ld hl,ls_dot" in src},
         {"name": "exact-type-table-complete", "passed": all(x in src for x in ("ls_type_txt:", "ls_type_bin:", "ls_type_obj:", "ls_type_asm:", "ls_type_c:", "ls_type_dat:", "ls_type_udg:", "ls_type_gfx:", "ls_type_fnt:", "ls_type_cfg:", "ls_type_sys:", "ls_type_dir:", "ls_type_dev:"))},
         {"name": "long-format-logical-and-state", "passed": "ld hl,(ls_list_out+12)" in src and "ld a,(ls_list_out+14)" in src},
         {"name": "packed-ram-physical-from-stat", "passed": "cp STATE_RAM" in src and "and OBJ_PACKED" in src and "ld a,SYS_STAT" in src and "ld hl,(ls_stat_out+4)" in src},
