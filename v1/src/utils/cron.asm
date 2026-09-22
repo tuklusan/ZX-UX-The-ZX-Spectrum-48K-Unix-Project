@@ -28,10 +28,10 @@ cron_validate:
     ld a,b
     cp 8
     jr c,cron_val_len_ok
-    jr nz,cron_val_bad
+    jp nz,cron_val_bad
     ld a,c
     or a
-    jr nz,cron_val_bad
+    jp nz,cron_val_bad
 cron_val_len_ok:
     ld (cron_cfg_start),hl
     add hl,bc
@@ -45,7 +45,7 @@ cron_val_line:
     or a
     sbc hl,de
     pop hl
-    jr z,cron_val_ok
+    jp z,cron_val_ok
     ld a,(hl)
     cp '#'
     jr z,cron_val_skip_line
@@ -97,7 +97,7 @@ cron_val_parse:
     or l
     jr nz,cron_val_line
     ld hl,(cron_cfg_end)
-    jr cron_val_line
+    jp cron_val_line
 cron_val_skip_line:
     xor a
     ld (cron_line_len),a
@@ -107,7 +107,7 @@ cron_val_skip_line_loop:
     or a
     sbc hl,de
     pop hl
-    jr z,cron_val_ok
+    jp z,cron_val_ok
     ld a,(hl)
     cp 10
     jr z,cron_val_skip_lf
@@ -120,7 +120,7 @@ cron_val_skip_line_loop:
     jr cron_val_skip_line_loop
 cron_val_skip_lf:
     inc hl
-    jr cron_val_line
+    jp cron_val_line
 cron_val_ok:
     ld a,(cron_active)
     or a
@@ -172,7 +172,7 @@ cron_parse_special:
     ld hl,(cron_line_start)
     ld de,cron_daily
     call cron_word
-    jr c,cron_parse_bad
+    jp c,cron_parse_bad
 cron_special_cmd:
     call cron_spaces
     jp cron_command_ok
@@ -219,15 +219,15 @@ cron_field:
     cp ' '
     jr z,cron_field_ok
     cp 9
-    jr nz,cron_parse_bad
+    jp nz,cron_parse_bad
 cron_field_ok:
     xor a
     ret
 cron_field_num:
     cp '0'
-    jr c,cron_parse_bad
+    jp c,cron_parse_bad
     cp '9'+1
-    jr nc,cron_parse_bad
+    jp nc,cron_parse_bad
     sub '0'
     ld e,a
     inc hl
@@ -252,15 +252,15 @@ cron_field_check:
     cp ' '
     jr z,cron_field_bounds
     cp 9
-    jr nz,cron_parse_bad
+    jp nz,cron_parse_bad
 cron_field_bounds:
     ld a,e
     cp c
-    jr c,cron_parse_bad
+    jp c,cron_parse_bad
     ld d,a
     ld a,b
     cp d
-    jr c,cron_parse_bad
+    jp c,cron_parse_bad
     xor a
     ret
 
@@ -269,7 +269,7 @@ cron_field_bounds:
 cron_command_ok:
     ld a,(hl)
     or a
-    jr z,cron_parse_bad
+    jp z,cron_parse_bad
     xor a
     ld (cron_quote),a
     ld (cron_escape),a
@@ -299,21 +299,21 @@ cron_cmd_not_escaped:
     cp 34
     jr z,cron_cmd_double_open
     cp '|'
-    jr z,cron_parse_bad
+    jp z,cron_parse_bad
     cp '&'
-    jr z,cron_parse_bad
+    jp z,cron_parse_bad
     cp '<'
-    jr z,cron_parse_bad
+    jp z,cron_parse_bad
     cp '>'
-    jr z,cron_parse_bad
+    jp z,cron_parse_bad
     cp ';'
-    jr z,cron_parse_bad
+    jp z,cron_parse_bad
     cp '('
-    jr z,cron_parse_bad
+    jp z,cron_parse_bad
     cp ')'
-    jr z,cron_parse_bad
+    jp z,cron_parse_bad
     cp '='
-    jr z,cron_parse_bad
+    jp z,cron_parse_bad
     inc hl
     jr cron_cmd_loop
 cron_cmd_single:
@@ -351,10 +351,10 @@ cron_cmd_advance:
 cron_cmd_done:
     ld a,(cron_quote)
     or a
-    jr nz,cron_parse_bad
+    jp nz,cron_parse_bad
     ld a,(cron_escape)
     or a
-    jr nz,cron_parse_bad
+    jp nz,cron_parse_bad
     xor a
     ret
 cron_parse_bad:
@@ -459,14 +459,14 @@ cron_entry:
     pop ix
     ld a,(ix+4)
     cp 1
-    jr nz,cron_entry_bad
+    jp nz,cron_entry_bad
 cron_poll:
     ld hl,cron_cfg_path
     ld c,O_READ
     ld b,0
     ld a,SYS_OPEN
     call SYSCALL_GATEWAY
-    jr c,cron_exit_a
+    jp c,cron_exit_a
     ld a,l
     ld (cron_cfg_handle),a
     ld hl,0
@@ -500,7 +500,7 @@ cron_read_done:
     ld hl,cron_cfg
     ld bc,(cron_loaded)
     call cron_validate
-    jr c,cron_exit_a
+    jp c,cron_exit_a
     or a
     jr z,cron_exit_ok
     ; Calendar forms require TIME1; E_AGAIN merely suppresses calendar work.
@@ -535,8 +535,8 @@ cron_sleep:
     ld hl,cron_sleep_50
     ld a,SYS_SLEEP
     call SYSCALL_GATEWAY
-    jr c,cron_exit_a
-    jr cron_poll
+    jp c,cron_exit_a
+    jp cron_poll
 cron_read_fail:
     ld (cron_error),a
     call cron_close_cfg
