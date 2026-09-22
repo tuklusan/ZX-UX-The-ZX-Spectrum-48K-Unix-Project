@@ -1,0 +1,103 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p824-present",
+      "passed": true
+    },
+    {
+      "name": "time1-get-set-only",
+      "passed": true
+    },
+    {
+      "name": "boot-not-set-diagnostic",
+      "passed": true
+    },
+    {
+      "name": "gregorian-1970-2099",
+      "passed": true
+    },
+    {
+      "name": "leap-year-rule-valid-range",
+      "passed": true
+    },
+    {
+      "name": "exact-display-width",
+      "passed": true
+    },
+    {
+      "name": "set-resets-through-kernel",
+      "passed": true
+    },
+    {
+      "name": "case-sensitive",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p824-date.lst",
+        "--sym=p824-date.sym",
+        "p824-date.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 8,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 1626 lines, work time: 0.007 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p824-gateway.lst",
+        "--sym=p824-gateway.sym",
+        "p824-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 336 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p824-date.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 13211, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 38456, \"image_size\": 1279, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 1303, \"relocations\": [], \"stored_length\": 1303, \"version\": 1}\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p824-date.mex1": "7872e94d019db1ce987f611895c4a5f0bfa6be63075619b0f635e237b00f06a9",
+    "v1/build/p824-date.tap": "ba57974617dcd5a260b8421aa1d8952724b4eb54b0ba636bc858331db122b4fa",
+    "v1/dist/certification/P8.23.test.json": "f71260a74915164880c1352552a75d1f0790daf2d65c070b5ca4688671e154bb",
+    "v1/src/utils/date.asm": "30ba50c0410a4dbc977da50aa4c0e9b8d48c382b15b7590340cec0d2872daf95",
+    "v1/tools-host/test-driver/phase8_date.py": "9eb08e20b4de98ac786a2e20ef755b2d9098efb045f171520c353138ddfec191",
+    "v1/tools-host/test-driver/run.py": "2db653ae520c9d0ba21e1a9db5554ed9384ce75548eadf2bc0cf5c91e12bf1c9"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.23": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "2d48d8153c2bb008164b3c949d17cbb3a4d765d0",
+  "status": "PASS",
+  "step": "P8.24",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
