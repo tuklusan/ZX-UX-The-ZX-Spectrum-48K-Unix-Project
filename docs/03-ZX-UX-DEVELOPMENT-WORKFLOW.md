@@ -179,6 +179,27 @@ Qualification eligibility remains fail-closed: build/test evidence must not alre
 
 The optimization changes orchestration only. Exact candidate diff guards, three unchanged scans, canonical authority hashes, prerequisites, retained media, deterministic current-step build/test, exact evidence binding, independent admission, post-admission current-step revalidation, aggregate certification, and activation validation remain mandatory.
 
+
+### 6.2 Speculative next-step development while current-step CI is pending
+
+To reduce idle wall-clock time without weakening canonical sequencing, ZX-UX permits one speculative development lane for the immediately following canonical step while the current step's qualification, admission, or mandatory validation workflows are still pending.
+
+This lane is strictly non-canonical. It may advance analysis, implementation, test design, expected-file planning, qualification-workflow preparation, and other reversible development work for the immediately following REV07 step, but it MUST NOT advance project state. In particular, speculative work MUST NOT be committed or pushed to `main`, dispatched for qualification, admitted, activated, used to generate durable certification evidence, or used to replace or mutate retained media.
+
+The speculative workspace MUST be based on the exact source-candidate commit of the current step whose workflows are pending. It may be a separate local worktree, copied workspace, patch set, or equivalent isolated developer workspace. Because routine project history remains single-developer and direct-to-`main`, a speculative lane is not a second canonical branch and MUST NOT become an alternate line of project history.
+
+The current step remains the sole canonical active candidate until all qualification, admission, and mandatory admission-triggered validations required by the active workflow and REV07 PASS exactly. The speculative next step has no prerequisite standing before that point.
+
+If the current step PASSes and becomes fully admitted, the speculative changes MUST be replayed or otherwise re-applied onto the exact admitted `main` state before they may become the next canonical candidate. The resulting bytes are new candidate bytes and therefore must undergo the complete normal workflow from `SCAN-1`, including all license, policy, adversarial-review, build/test, qualification, admission, and validation gates required for that next step.
+
+If any current-step workflow FAILs, the speculative next-step work MUST be preserved without publication while the current step is repaired and driven to full admission. After the repair is admitted, the speculative changes MUST be replayed onto the corrected admitted base and reassessed before use. Any overlap between current-step repair changes and speculative next-step changes is a review conflict: the speculative bytes may not be accepted automatically and must be inspected and reconciled before the next step's SoP Scan begins.
+
+Only the immediately following canonical REV07 step may be developed speculatively. Speculation MUST NOT skip over an unadmitted prerequisite, chain multiple future steps, create durable evidence ahead of prerequisite admission, or reinterpret canonical order. The purpose is to overlap developer thinking and reversible implementation work with CI latency while preserving exact serial certification and admission semantics.
+
+The governing invariant is:
+
+> **Speculation may advance implementation effort, but never canonical project state.**
+
 ## 7. GitHub Linux runner
 
 Active long-lived ZX-UX automation uses GitHub-hosted `ubuntu-24.04` runners rather than the moving `ubuntu-latest` label. GitHub-hosted runners do not expose an immutable image-build selector, so the major runner image is pinned to Ubuntu 24.04 and the actual hosted image identity (`ImageOS` / `ImageVersion`) is included in runtime-cache identity. Third-party GitHub Actions used by active long-lived workflows are pinned to exact commit SHAs; movable major-version tags are comments only, not executable references.
