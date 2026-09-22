@@ -39,13 +39,15 @@ jobs:
       ZXUX_EVIDENCE_DIR: /tmp/zxux-phase6-admission-validation
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with: {fetch-depth: 0}
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.admitted_commit || github.sha }}
       - name: Validate durable admission chain
         id: chain
         run: |
           set -euo pipefail
           git cat-file -e "$ADMITTED_COMMIT^{commit}"
-          git merge-base --is-ancestor "$ADMITTED_COMMIT" HEAD || test "$ADMITTED_COMMIT" = "$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD)" = "$ADMITTED_COMMIT"
           ./tools/check_license_headers.sh
           ./tools/check_project_policy.py
           test "$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV16.md | awk '{print $1}')" = "$ZXUX_REV16_SHA256"
