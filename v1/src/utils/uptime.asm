@@ -46,9 +46,11 @@ uptime_format_u32:
     ld b,10
 uptime_digit_loop:
     dec hl
+    push bc
     push hl
     call uptime_div10
     pop hl
+    pop bc
     add a,'0'
     ld (hl),a
     djnz uptime_digit_loop
