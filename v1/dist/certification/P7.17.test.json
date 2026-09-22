@@ -1,0 +1,107 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p717-present",
+      "passed": true
+    },
+    {
+      "name": "c48-regcall-register-validation",
+      "passed": true
+    },
+    {
+      "name": "all-fit-validation-before-first-draw",
+      "passed": true
+    },
+    {
+      "name": "exact-four-sys-udg-draw-composition",
+      "passed": true
+    },
+    {
+      "name": "no-kernel-state",
+      "passed": true
+    },
+    {
+      "name": "quadrant-offsets-explicit",
+      "passed": true
+    },
+    {
+      "name": "fuse-golden-2x2-quadrant-slot-order-exact",
+      "passed": true
+    },
+    {
+      "name": "fuse-current-attribute-applied-to-all-four-cells",
+      "passed": true
+    },
+    {
+      "name": "fuse-boundary-base28-row22-col30-exact",
+      "passed": true
+    },
+    {
+      "name": "fuse-invalid-all-four-fit-rejected-before-first-draw",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 32,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 15512 lines, work time: 0.031 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p717-lib.sym",
+        "p717-lib.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 478 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p717-gate.sym",
+        "p717-gate.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 660 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "ae3c54f9cd50eade1e543d9ac3c6ff58c83d63d6951c707b192ef5f9e26d4806",
+    "v1/src/libc48/udg.asm": "eca8e768ba6b92352ad3c66b6b972d0038876e56554616c019765c5f18cbd392",
+    "v1/tools-host/test-driver/phase7_udg_2x2.py": "29dd4673b9377a3665cca43364a32f61f20ffd5b856354afe010ee1a66d836a6",
+    "v1/tools-host/test-driver/run.py": "27eac5b450e73afabb6e75b4341ee98682f4ebb906a5a7a1879a8e1deeaef62c"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P7.16": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "5d53ac4eae27606150b283f9d18f210709759bcd",
+  "status": "PASS",
+  "step": "P7.17",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

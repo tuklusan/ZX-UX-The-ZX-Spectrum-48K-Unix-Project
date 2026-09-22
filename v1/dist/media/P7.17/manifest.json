@@ -1,0 +1,55 @@
+{
+  "files": [
+    {
+      "action": "test",
+      "path": "test/fixture-0b15e00ed9203259ac23406470cf0f97fdbcf72d02dc1272b7961d3cd16bb0e3.sna",
+      "sha256": "0b15e00ed9203259ac23406470cf0f97fdbcf72d02dc1272b7961d3cd16bb0e3",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-36bd5d6da25a2808bae7f6a75318b5ce4a039fe2cd7ccb2625d967d72d2e060e.sna",
+      "sha256": "36bd5d6da25a2808bae7f6a75318b5ce4a039fe2cd7ccb2625d967d72d2e060e",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-9e078b9fdcc8f0fa601ed402841611af014b35ebfaae6cea78370c526ab3b376.sna",
+      "sha256": "9e078b9fdcc8f0fa601ed402841611af014b35ebfaae6cea78370c526ab3b376",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-a503965002063ea829db92a5f67d9f0a407cf852e21611e609efad6fe35740b7.sna",
+      "sha256": "a503965002063ea829db92a5f67d9f0a407cf852e21611e609efad6fe35740b7",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-b671512acc548158e8418ff5644539449456e83c827cb43e12696e3b301cf104.sna",
+      "sha256": "b671512acc548158e8418ff5644539449456e83c827cb43e12696e3b301cf104",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-cb67deffe87e2b3f75a33244cbf547549788c78f76c01ea1decaa78963fb2dc2.sna",
+      "sha256": "cb67deffe87e2b3f75a33244cbf547549788c78f76c01ea1decaa78963fb2dc2",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-f332107af7268acd994ee8593f3a67e068397a8965342243dd4d1adc9e2b7b5c.sna",
+      "sha256": "f332107af7268acd994ee8593f3a67e068397a8965342243dd4d1adc9e2b7b5c",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-f92325e68fb8351b811fa51d9bc21740ce031e4841dca8ba411980547cc243dd.sna",
+      "sha256": "f92325e68fb8351b811fa51d9bc21740ce031e4841dca8ba411980547cc243dd",
+      "size": 49179
+    }
+  ],
+  "schema": 1,
+  "source_commit": "5d53ac4eae27606150b283f9d18f210709759bcd",
+  "step": "P7.17"
+}
