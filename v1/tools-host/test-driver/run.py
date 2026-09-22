@@ -236,6 +236,7 @@ import phase8_stty
 import phase8_date
 import phase8_cron
 import phase8_crontab
+import phase8_man
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
 from media_retention import (
     capture_project_media,
@@ -593,6 +594,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase8_cron.dispatch(root, action, step, **kwargs)
     if step == "P8.26":
         return phase8_crontab.dispatch(root, action, step, **kwargs)
+    if step == "P8.27":
+        return phase8_man.dispatch(root, action, step, **kwargs)
     if step.startswith("P8."):
         raise DriverError(f"numbered Phase-8 step is not registered: {step}")
     module = E0_MODULE.get(step)
