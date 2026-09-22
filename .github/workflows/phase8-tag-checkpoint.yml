@@ -1,0 +1,47 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: Phase-8 durable checkpoint tag
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/phase8-tag-checkpoint.yml
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          ref: main
+      - name: Verify active Phase-8 aggregate
+        run: |
+          set -euo pipefail
+          python3 tools/check_phase8_evidence.py --require-active
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+      - name: Self-clean and tag exact final tree
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/phase8-tag-checkpoint.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "phase8: finalize durable checkpoint tag"
+          final="$(git rev-parse HEAD)"
+          git tag -f PHASE-8-COMPLETE "$final"
+          git push origin HEAD:main
+          git push -f origin refs/tags/PHASE-8-COMPLETE
