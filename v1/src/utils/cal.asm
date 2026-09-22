@@ -52,9 +52,11 @@ cal_skip0_one:
     pop hl
     call cal_parse_month
     jp c,cal_bad
-    ld (cal_month),a
+    ld (cal_requested_month),a
     call cal_get_current_year
     jp c,cal_time_error
+    ld a,(cal_requested_month)
+    ld (cal_month),a
     jp cal_render
 
 cal_current:
@@ -543,6 +545,7 @@ cal_work: defs 4,0
 cal_days: dw 0
 cal_year: dw 0
 cal_month: db 0
+cal_requested_month: db 0
 cal_iter_year: dw 0
 cal_iter_month: db 0
 cal_total_days: dw 0
