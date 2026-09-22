@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
-      ZXUX_EVIDENCE_DIR: /tmp/zxux-e0-${ github.run_id }-${ github.run_attempt }
+      ZXUX_EVIDENCE_DIR: /tmp/zxux-e0-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/setup-zxux-runtime
@@ -50,7 +50,7 @@ jobs:
           for n in 01 02 03 04 05 06; do "$py" "$driver" build --step "E0.$n"; "$py" "$driver" test --step "E0.$n"; done
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: zxux-e0-${ github.run_id }-${ github.run_attempt }
-          path: /tmp/zxux-e0-${ github.run_id }-${ github.run_attempt }/
+          name: zxux-e0-${{ github.run_id }}-${{ github.run_attempt }}
+          path: /tmp/zxux-e0-${{ github.run_id }}-${{ github.run_attempt }}/
           retention-days: 90
           if-no-files-found: warn

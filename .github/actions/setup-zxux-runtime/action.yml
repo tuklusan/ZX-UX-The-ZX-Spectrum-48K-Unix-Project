@@ -25,9 +25,9 @@ runs:
         verify_sha="$(sha256sum tools/scripts/verify-environment.py | awk '{print $1}')"
         provenance_sha="$(sha256sum tools/scripts/record-bootstrap-provenance.py | awk '{print $1}')"
         action_sha="$(sha256sum .github/actions/setup-zxux-runtime/action.yml | awk '{print $1}')"
-        image_os="$${ImageOS:-ubuntu24}"; image_version="$${ImageVersion:-unknown}"
+        image_os="${ImageOS:-ubuntu24}"; image_version="${ImageVersion:-unknown}"
         image_token="$(printf '%s-%s' "$image_os" "$image_version" | tr -c 'A-Za-z0-9_.-' '-')"
-        base="zxux-runtime-v3-$${RUNNER_OS:-Linux}-$${RUNNER_ARCH:-unknown}-$image_token-$lock_sha-$bootstrap_sha-$verify_sha-$provenance_sha-$action_sha"
+        base="zxux-runtime-v3-${RUNNER_OS:-Linux}-${RUNNER_ARCH:-unknown}-$image_token-$lock_sha-$bootstrap_sha-$verify_sha-$provenance_sha-$action_sha"
         primary="$base-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
         printf 'base_key=%s\n' "$base" >> "$GITHUB_OUTPUT"; printf 'primary_key=%s\n' "$primary" >> "$GITHUB_OUTPUT"
     - name: Restore newest matching certified runtime
@@ -35,15 +35,15 @@ runs:
       uses: actions/cache/restore@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5.0.2
       with:
         path: tools/runtime
-        key: ${ steps.identity.outputs.primary_key }
+        key: ${{ steps.identity.outputs.primary_key }}
         restore-keys: |
-          ${ steps.identity.outputs.base_key }-
+          ${{ steps.identity.outputs.base_key }}-
     - name: Verify restored runtime before package installation
       id: probe
       shell: bash
       run: |
         set -euo pipefail
-        matched='${ steps.runtime_cache.outputs.cache-matched-key }'
+        matched='${{ steps.runtime_cache.outputs.cache-matched-key }}'
         if test -n "$matched" && test -x tools/runtime/python/bin/python && test -f tools/runtime/bootstrap-provenance.json; then
           if tools/runtime/python/bin/python tools/scripts/verify-environment.py; then echo "valid=true" >> "$GITHUB_OUTPUT"; echo "ZX-UX VERIFIED RUNTIME CACHE HIT"; exit 0; fi
         fi
@@ -60,9 +60,9 @@ runs:
         for package in data["bootstrap"]["native_build_prerequisites"]: print(package)
         PY
         )
-        test "$${#packages[@]}" -gt 0
+        test "${#packages[@]}" -gt 0
         sudo apt-get update
-        sudo apt-get install -y --no-install-recommends "$${packages[@]}"
+        sudo apt-get install -y --no-install-recommends "${packages[@]}"
     - name: Reverify restored runtime after native prerequisites
       id: restored
       if: steps.probe.outputs.valid != 'true'
@@ -105,10 +105,10 @@ runs:
             if item["directly_installed"]: print(f"apt={item['requested']}={item['version']} package={item['package']} arch={item['architecture']}")
             else: print(f"apt={item['requested']} provider/transaction detail retained in bootstrap-provenance.json")
         PY
-        if test -n "$${ZXUX_EVIDENCE_DIR:-}"; then mkdir -p "$ZXUX_EVIDENCE_DIR"; cp "$provenance" "$ZXUX_EVIDENCE_DIR/bootstrap-provenance.json"; fi
+        if test -n "${ZXUX_EVIDENCE_DIR:-}"; then mkdir -p "$ZXUX_EVIDENCE_DIR"; cp "$provenance" "$ZXUX_EVIDENCE_DIR/bootstrap-provenance.json"; fi
     - name: Save rebuilt certified runtime
       if: steps.probe.outputs.valid != 'true' && steps.restored.outputs.valid != 'true'
       uses: actions/cache/save@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5.0.2
       with:
         path: tools/runtime
-        key: ${ steps.identity.outputs.primary_key }
+        key: ${{ steps.identity.outputs.primary_key }}
