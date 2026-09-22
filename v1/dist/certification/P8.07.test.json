@@ -1,0 +1,123 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p807-present",
+      "passed": true
+    },
+    {
+      "name": "sys-unpack",
+      "passed": true
+    },
+    {
+      "name": "exact-one-operand",
+      "passed": true
+    },
+    {
+      "name": "error-propagation",
+      "passed": true
+    },
+    {
+      "name": "no-metadata-rewrite",
+      "passed": true
+    },
+    {
+      "name": "no-case-folding",
+      "passed": true
+    },
+    {
+      "name": "fuse-unpack-success",
+      "passed": true
+    },
+    {
+      "name": "fuse-allocation-busy-error",
+      "passed": true
+    },
+    {
+      "name": "fuse-invalid-arity-no-unpack",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p807-unpack-image.lst",
+        "--sym=p807-unpack-image.sym",
+        "p807-unpack-image.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 355 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p807-unpack.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 36,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 12231, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 6293, \"image_size\": 46, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 70, \"relocations\": [], \"stored_length\": 70, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p807-unpack-fixture.lst",
+        "--sym=p807-unpack-fixture.sym",
+        "p807-unpack-fixture.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 355 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p807-gateway.lst",
+        "--sym=p807-gateway.sym",
+        "p807-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 303 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p807-unpack.mex1": "c62ef402f4e6818c2259525c60f55de5061cfd798d689c1c00d5d77c78788bce",
+    "v1/build/p807-unpack.tap": "a872f4d5b3b1b3d4f9c5045d75ffd80c84890c343382322492464428ae14d206",
+    "v1/dist/certification/P8.06.test.json": "718666a777f8707d417e919e9f2704dfcc849ed603d1fc84067f556b72a08f90",
+    "v1/src/utils/unpack.asm": "898ef05449fbf569c6785248fa8d78e3edbc5eb628288ab7bc8d0f2479d24e54",
+    "v1/tools-host/test-driver/phase8_common.py": "8d71609e966ac70b7604c82b0bec8b809ff519ec4eae2e1bb831a8974ba789a7",
+    "v1/tools-host/test-driver/phase8_unpack.py": "cbdf51df3515b0d3fea7071d7627f72c61ef63e08b3651f4297ee201eb2d4f3f",
+    "v1/tools-host/test-driver/run.py": "7f4de63c8a2158efa1ecd32a0790715830809648b2b7037e18b825fd2a5c412f"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.06": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "27a50888bbe07e2dbbc7facfad7db17bec86d9fe",
+  "status": "PASS",
+  "step": "P8.07",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
