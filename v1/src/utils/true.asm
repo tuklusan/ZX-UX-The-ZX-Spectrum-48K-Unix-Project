@@ -11,6 +11,7 @@
 ; patent, trademark, and governing-law provisions.
 ;
 ; /bin/true: emit no bytes and return exact process status 0.
+; Arguments are intentionally ignored; the utility has no failure path.
 
     MACRO EMIT_P813_TRUE_ROUTINES
 true_entry:
