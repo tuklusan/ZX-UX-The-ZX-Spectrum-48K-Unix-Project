@@ -54,17 +54,19 @@ rev_emit_line:
     ld a,(rev_len)
     or a
     jr z,rev_emit_lf
-    ld b,a
+    ld (rev_pos),a
 rev_reverse_loop:
-    dec b
-    ld e,b
+    ld a,(rev_pos)
+    dec a
+    ld (rev_pos),a
+    ld e,a
     ld d,0
     ld hl,rev_buffer
     add hl,de
     ld bc,1
     call rev_write_all
     jp c,rev_exit_a
-    ld a,b
+    ld a,(rev_pos)
     or a
     jr nz,rev_reverse_loop
 rev_emit_lf:
@@ -80,17 +82,19 @@ rev_eof:
     ld a,(rev_len)
     or a
     jr z,rev_ok
-    ld b,a
+    ld (rev_pos),a
 rev_eof_reverse:
-    dec b
-    ld e,b
+    ld a,(rev_pos)
+    dec a
+    ld (rev_pos),a
+    ld e,a
     ld d,0
     ld hl,rev_buffer
     add hl,de
     ld bc,1
     call rev_write_all
     jp c,rev_exit_a
-    ld a,b
+    ld a,(rev_pos)
     or a
     jr nz,rev_eof_reverse
 rev_ok:
@@ -143,6 +147,7 @@ rev_io:
 
 rev_byte: db 0
 rev_len: db 0
+rev_pos: db 0
 rev_lf: db 10
 rev_wptr: dw 0
 rev_wleft: dw 0
