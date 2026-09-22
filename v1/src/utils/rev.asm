@@ -20,7 +20,7 @@ rev_entry:
     pop ix
     ld a,(ix+4)
     cp 1
-    jr nz,rev_bad
+    jp nz,rev_bad
     xor a
     ld (rev_len),a
 
