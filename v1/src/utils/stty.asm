@@ -23,7 +23,7 @@ stty_entry:
     pop ix
     ld a,(ix+4)
     cp 1
-    jr z,stty_show
+    jp z,stty_show
     cp 3
     jp nz,stty_bad
     ld de,8
@@ -36,11 +36,11 @@ stty_skip_argv0:
     push ix
     pop hl
     call stty_match_cols
-    jr nc,stty_set_cols
+    jp nc,stty_set_cols
     push ix
     pop hl
     call stty_match_cursor
-    jr nc,stty_set_cursor
+    jp nc,stty_set_cursor
     jp stty_bad
 
 stty_show:
