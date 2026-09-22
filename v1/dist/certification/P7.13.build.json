@@ -1,0 +1,73 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p713-present",
+      "passed": true
+    },
+    {
+      "name": "exact-slot-count-size-code-range",
+      "passed": true
+    },
+    {
+      "name": "reuses-p114-single-cold-pinned-bank",
+      "passed": true
+    },
+    {
+      "name": "no-second-bank-or-free-repoint",
+      "passed": true
+    },
+    {
+      "name": "tty32-maps-80-through-9f-to-existing-bank",
+      "passed": true
+    },
+    {
+      "name": "glyph-byte-is-copied-without-bit-reversal",
+      "passed": true
+    },
+    {
+      "name": "console-admits-only-through-final-udg-code",
+      "passed": true
+    },
+    {
+      "name": "tty64-renderer-rejects-udg-text-codes",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 38,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 15382 lines, work time: 0.036 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "ba417934b75694d3d98ae3c8f665e536b7c66b464628ba32e17f67cdbb08f52d",
+    "v1/src/kernel/console.asm": "3898928735a7b325678aa9f6e11f1afb6a8549eebfb2a7ca7b500af485215ef8",
+    "v1/src/kernel/tty32.asm": "1d9ef08244697c588021faf6e4a5b121bfcb880ed8cbf57d2dbcfa7ccd247d8a",
+    "v1/src/kernel/udg.asm": "d561c1059ec890c30338795b316f75ecae7282815697aa752a4b6c273a71c25d",
+    "v1/tools-host/test-driver/phase7_udg_bank.py": "e0a645b94c01aaf0a54ef4f905c52d980d6a863a306031467f8b94667d3eb536",
+    "v1/tools-host/test-driver/run.py": "b97415b1ef54c4d86e964716f8f31203e91ea0b868371bef6364164ffc773fa7"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P7.12": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "24085c9d535ab620e0677514289889f4bf261de4",
+  "status": "PASS",
+  "step": "P7.13",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
