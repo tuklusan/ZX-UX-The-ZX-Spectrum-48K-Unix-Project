@@ -1,0 +1,74 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p714-present",
+      "passed": true
+    },
+    {
+      "name": "eight-byte-constant-used-by-native-ops",
+      "passed": true
+    },
+    {
+      "name": "define-validates-b-slot-before-pointer",
+      "passed": true
+    },
+    {
+      "name": "get-validates-b-slot-before-output",
+      "passed": true
+    },
+    {
+      "name": "clear-validates-h-slot-before-mutation",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 38,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 15433 lines, work time: 0.036 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p714.sym",
+        "p714.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 7,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2648 lines, work time: 0.006 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "ba417934b75694d3d98ae3c8f665e536b7c66b464628ba32e17f67cdbb08f52d",
+    "v1/src/kernel/syscall.asm": "595dd77139cd9dfba60daf792a7807ed20e7947119b246bf4132c686f2bac879",
+    "v1/src/kernel/udg.asm": "ad72557a95669a7d0f1923a87eb77586a15147e93c6135e6aab77d478590b7e1",
+    "v1/tools-host/test-driver/phase7_udg_ops.py": "c8114b7947110cc42d05a3bbe890baa56bbb8cdb55b50ce11022738cbd44292a",
+    "v1/tools-host/test-driver/run.py": "6b517d70f07dcfb9fd468f72f86259f4e98a7426920f6cf78484c8645e338a56"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P7.13": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "2d5c80dd212382b2fd485c643f9c9fa20630fa60",
+  "status": "PASS",
+  "step": "P7.14",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
