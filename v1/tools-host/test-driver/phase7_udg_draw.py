@@ -96,9 +96,17 @@ def set_attr(s,v):
 def invoke(s,ptr=REC):
     return phase1._ld_hl(ptr)+b"\x22"+w(s["syscall_arg_hl"])+call(s["zx48_p715_sys_udg_draw"])
 
+def seed_slot(slot,pat):
+    addr=BANK+slot*8
+    code=bytearray()
+    for v in pat:
+        code+=bytes((0x3e,v,0x32))+w(addr)
+        addr+=1
+    return bytes(code)
+
 def positive(root,s,img,slot,row,col,pat,attr):
     rec=bytes((slot,row,col))
-    code=bytearray(b"\xf3"+phase1._ld_sp(phase1.USER_STACK)+call(s["zx48_udg_init"])+jpc(FAIL_PC)+set_attr(s,attr))
+    code=bytearray(b"\xf3"+phase1._ld_sp(phase1.USER_STACK)+call(s["zx48_udg_init"])+jpc(FAIL_PC)+seed_slot(slot,pat)+set_attr(s,attr))
     code+=invoke(s)+jpc(FAIL_PC)
     y0=row*8
     for scan,v in enumerate(pat): code+=ex(bitmap_addr(y0+scan,col),v)
