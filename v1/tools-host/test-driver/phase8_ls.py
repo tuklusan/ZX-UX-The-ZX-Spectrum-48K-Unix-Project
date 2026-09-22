@@ -116,6 +116,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
         {"name": "packed-ram-physical-from-stat", "passed": "cp STATE_RAM" in src and "and OBJ_PACKED" in src and "ld a,SYS_STAT" in src and "ld hl,(ls_stat_out+4)" in src},
         {"name": "packed-savings-derived-logical-minus-storage", "passed": "ld hl,(ls_stat_out+2)" in src and "ld de,(ls_stat_out+4)" in src and "sbc hl,de" in src},
         {"name": "case-preserving-output", "passed": "ld hl,ls_list_out" in src and "casefold" not in src.lower()},
+        {"name": "stdout-handle-one", "passed": "ld de,1" in src and "ld a,SYS_WRITE" in src},
         {"name": "bounded-index-termination", "passed": "inc a\n    jr z,ls_ok" in src},
         {"name": "invalid-arity-fails-before-list", "passed": "cp 3\n    jr z,ls_three\n    jp ls_invalid" in src},
     ]
