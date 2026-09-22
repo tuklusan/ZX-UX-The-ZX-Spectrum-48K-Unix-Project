@@ -1,0 +1,121 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p711-present",
+      "passed": true
+    },
+    {
+      "name": "romq1-complete-four-byte-validation-first",
+      "passed": true
+    },
+    {
+      "name": "romout1-complete-24-byte-validation-before-lookup",
+      "passed": true
+    },
+    {
+      "name": "category-domain-zero-through-six",
+      "passed": true
+    },
+    {
+      "name": "fixed-record-layout-size-24",
+      "passed": true
+    },
+    {
+      "name": "all-three-classifications-present",
+      "passed": true
+    },
+    {
+      "name": "all-contract-flag-bits-defined",
+      "passed": true
+    },
+    {
+      "name": "reserved-field-hardwired-zero",
+      "passed": true
+    },
+    {
+      "name": "no-request-address-dispatch",
+      "passed": true
+    },
+    {
+      "name": "class-c-usr-is-metadata-only",
+      "passed": true
+    },
+    {
+      "name": "rom-builtin-exact-lowercase-categories",
+      "passed": true
+    },
+    {
+      "name": "romcall-not-exposed",
+      "passed": true
+    },
+    {
+      "name": "fuse-every-category-first-last-past-end-layout-exact",
+      "passed": true
+    },
+    {
+      "name": "fuse-classes-a-b-c-and-contract-flags-exact",
+      "passed": true
+    },
+    {
+      "name": "fuse-invalid-category-and-malformed-output-range-fail-before-publish",
+      "passed": true
+    },
+    {
+      "name": "fuse-rom-builtin-only-exposes-frozen-safe-categories",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 29,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nkernel.asm(87): warning[shortblock]: init data for block truncated to length: 0\nPass 3 complete\nErrors: 0, warnings: 1, compiled: 15385 lines, work time: 0.028 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p711-rom-info.lst",
+        "--sym=p711-rom-info.sym",
+        "p711-rom-info.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 11,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 7048 lines, work time: 0.010 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/kernel.bin": "1bcb1862955372e15814296fd248795b3de41baac5596baecd5d5f155ed92a67",
+    "v1/build/p711-rom-info.bin": "5a52e4bdda0c89865209edf1465543adc7d365fceb63ec5076fe0bf2be94aa49",
+    "v1/src/kernel/rom_services.asm": "59da3741bd4c37c6299cd6412f42ffe6b2cf2f743893d74b7ccb7f239af3ccfe",
+    "v1/src/kernel/syscall.asm": "b907e35733e8b110239ea14ed56a4a462febd547afc8d45c474de3a34a29874c",
+    "v1/src/shell/sh.asm": "19d6a00e92cf32cf7b79015a45d6678804c0aa8fd3583257cc654f81646d79ec",
+    "v1/tools-host/test-driver/phase7_rom_info.py": "423ba7934966bd8c4462f06e6479664693a0de89ce52f8fef7fc106496017793",
+    "v1/tools-host/test-driver/run.py": "950b0ea7b8dad56efbf292dd6f835908eda4e5b4e54aff1c53a64f257d8e89a5"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P7.10": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "b2b41565b763892f6341c173ef75bacb2eebc9e1",
+  "status": "PASS",
+  "step": "P7.11",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
