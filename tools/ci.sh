@@ -13,7 +13,7 @@
 
 set -euo pipefail
 required_files=(LICENSE README.md docs/03-ZX-UX-DEVELOPMENT-WORKFLOW.md .github/workflows/exact-head-regression.yml .github/workflows/quality-and-ci.yml .github/workflows/qualification-auto-dispatch.yml .github/actions/setup-zxux-runtime/action.yml tools/check_project_policy.py tools/check_license_headers.sh tools/check_reference_tree.py tools/scripts/record-bootstrap-provenance.py)
-for file in "$${required_files[@]}"; do test -f "$file" || { echo "ERROR: required file missing: $file" >&2; exit 1; }; done
+for file in "${required_files[@]}"; do test -f "$file" || { echo "ERROR: required file missing: $file" >&2; exit 1; }; done
 python3 ./tools/check_reference_tree.py
 while IFS= read -r -d '' file; do
   [[ "$file" == "./reference/"* ]] && continue

@@ -91,10 +91,20 @@ jobs:
           changed=Path("/tmp/zxux-changed").read_text().splitlines()
           def hit(prefixes=(), exact=()):
               return any(p in exact or any(p.startswith(x) for x in prefixes) for p in changed)
+          import re,subprocess
           common=hit(prefixes=("v1/include/","v1/src/boot/","v1/src/kernel/"), exact=("tools/manifest/toolchain.lock.json","tools/scripts/bootstrap-environment.py","tools/scripts/verify-environment.py",".github/actions/setup-zxux-runtime/action.yml"))
           kernel=common or hit(prefixes=("v1/tools-host/inspect-mex/","v1/tools-host/inspect-obj/"))
           phase1=common or hit(prefixes=("v1/tools-host/test-driver/phase1",), exact=("v1/tools-host/test-driver/driver_core.py","v1/tools-host/test-driver/phase1_gate.py"))
           phase2=phase1 or hit(prefixes=("v1/tools-host/test-driver/phase2","v1/tests/multiprocessing/","v1/tools-host/inspect-mex/"), exact=("v1/tools-host/test-driver/phase2_gate.py",))
+          if "v1/tools-host/test-driver/run.py" in changed:
+              before=subprocess.check_output(["git","rev-parse","HEAD^"],text=True).strip()
+              diff=subprocess.check_output(["git","diff","-U0",before,"HEAD","--","v1/tools-host/test-driver/run.py"],text=True)
+              changed_lines=[line[1:].strip() for line in diff.splitlines() if line.startswith(("+","-")) and not line.startswith(("+++","---")) and line[1:].strip()]
+              later=re.compile(r"^(?:import\s+phase(?:[3-9]|1[0-2])_|from\s+phase(?:[3-9]|1[0-2])_|(?:elif\s+|if\s+)?step\s*[=!]=|return\s+phase(?:[3-9]|1[0-2])_|phase(?:[3-9]|1[0-2])_)")
+              route_only=bool(changed_lines) and all(later.search(line) or re.search(r'P(?:[3-9]|1[0-2])\.\d+',line) for line in changed_lines)
+              if not route_only:
+                  phase1=True
+                  phase2=True
           print(f"kernel={'true' if kernel else 'false'}")
           print(f"phase1={'true' if phase1 else 'false'}")
           print(f"phase2={'true' if phase2 else 'false'}")
@@ -131,10 +141,9 @@ jobs:
           if test -z "$before" || test "$before" = "0000000000000000000000000000000000000000"; then before="$(git rev-parse HEAD^)"; fi
           changed="$(git diff --name-only "$before" HEAD)"
           for phase in $(seq 0 12); do
-            if printf '%s
-' "$changed" | grep -Eq "^tools/(check_phase$phase"_evidence"|test_phase$phase"_evidence_negative"|finalize_phase$phase"_evidence")\.py$"; then
-              test -f "tools/test_phase$phase"_evidence_negative.py
-              python3 "tools/test_phase$phase"_evidence_negative.py
+            if printf '%s\n' "$changed" | grep -Eq "^tools/(check_phase${phase}_evidence|test_phase${phase}_evidence_negative|finalize_phase${phase}_evidence)\.py$"; then
+              test -f "tools/test_phase${phase}_evidence_negative.py"
+              python3 "tools/test_phase${phase}_evidence_negative.py"
             fi
           done
 
