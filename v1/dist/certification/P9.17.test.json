@@ -1,0 +1,119 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p917-present",
+      "passed": true
+    },
+    {
+      "name": "exact-temp-pattern",
+      "passed": true
+    },
+    {
+      "name": "exclusive-create",
+      "passed": true
+    },
+    {
+      "name": "retry-only-exist",
+      "passed": true
+    },
+    {
+      "name": "atomic-rename-after-close",
+      "passed": true
+    },
+    {
+      "name": "cleanup-owned-only",
+      "passed": true
+    },
+    {
+      "name": "lowercase-suffix-types",
+      "passed": true
+    },
+    {
+      "name": "fuse-collisions-0-through-8-then-9",
+      "passed": true
+    },
+    {
+      "name": "fuse-all-ten-collisions-no-remove",
+      "passed": true
+    },
+    {
+      "name": "fuse-write-rename-failure-owned-cleanup",
+      "passed": true
+    },
+    {
+      "name": "fuse-existing-type-preservation",
+      "passed": true
+    },
+    {
+      "name": "fuse-new-suffix-type-selection",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p917-vi.lst",
+        "--sym=p917-vi.sym",
+        "p917-vi.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 19,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 5760 lines, work time: 0.018 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p917-vi.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 41,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 51881, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 41244, \"image_size\": 7934, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 7958, \"relocations\": [], \"stored_length\": 7958, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p917-gateway.lst",
+        "--sym=p917-gateway.sym",
+        "p917-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 401 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/vi.asm": "5bea524f0ec55f8e284e03dd0ff91fd9c1f27ed2d225c99a20c9e019c5b1e207",
+    "v1/build/p917-vi.mex1": "64e0b90a0d5f9e2c11513d08a5e9197cd8ea45663736e88a8235481a4d9b4c9b",
+    "v1/build/p917-vi.tap": "a0c42e429c9f6188db9815ab0858337f1dcd3f41a5948bf1f8fabd8f23c75a53",
+    "v1/dist/certification/P9.16.test.json": "8855620337899f6e4960423fa65023bc11e3d1404f639914e79ae1fc95a14499",
+    "v1/tools-host/test-driver/phase9_vi_write_tx.py": "c857481b3807b7104b473f903bbbb7fc106c24bee43733b5038eb61a44dac196",
+    "v1/tools-host/test-driver/run.py": "789cd0a89dd7c7deada7d0c9f43224006b089a722b67e8a15fe221034764bad2"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P9.16": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "4c240430c2a50fa5a932cb8f6470a543726dc0c7",
+  "status": "PASS",
+  "step": "P9.17",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
