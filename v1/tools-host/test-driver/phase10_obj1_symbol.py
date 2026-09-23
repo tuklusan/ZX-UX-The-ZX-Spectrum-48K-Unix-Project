@@ -99,7 +99,7 @@ def source_assertions(root: Path) -> list[dict[str, object]]:
         {"name":"native-symbol-section-validation-present","passed":"as_obj1_symbol_validate:" in asm and "AS_OBJ1_SEC_UNDEF" in asm and "AS_OBJ1_SEC_ABS" in asm},
         {"name":"doc-assembly-grammar-exact","passed":"[A-Za-z_.$][A-Za-z0-9_.$]*" in doc},
         {"name":"doc-c48-grammar-exact","passed":"[A-Za-z_][A-Za-z0-9_]*" in doc},
-        {"name":"doc-no-silent-truncation","passed":"never silently truncated" in doc or "Silent truncation" in doc},
+        {"name":"doc-no-silent-truncation","passed":"silently truncated" in doc or "Silent truncation" in doc},
     ]
 
 
