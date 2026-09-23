@@ -1,0 +1,84 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p903-present",
+      "passed": true
+    },
+    {
+      "name": "gap-pair-present",
+      "passed": true
+    },
+    {
+      "name": "compact-u16-line-index",
+      "passed": true
+    },
+    {
+      "name": "staged-index-publish",
+      "passed": true
+    },
+    {
+      "name": "no-second-file-image",
+      "passed": true
+    },
+    {
+      "name": "bounded-undo-record",
+      "passed": true
+    },
+    {
+      "name": "failure-before-gap-motion",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p903-vi.lst",
+        "--sym=p903-vi.sym",
+        "p903-vi.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 7,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 1386 lines, work time: 0.006 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p903-vi.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 18270, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 57760, \"image_size\": 2572, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 2596, \"relocations\": [], \"stored_length\": 2596, \"version\": 1}\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/vi.asm": "ae1106311e239de3d964417aa0ae31fc9a3129192b2980b96d48e609b757251a",
+    "v1/build/p903-vi.mex1": "b0c3097cedffc6f882ae7fe002cc8110289426edf990e1eff8060b26a262e824",
+    "v1/build/p903-vi.tap": "253d31c1714bdc1c847b83b821e686863d965520110eda9f95f94507ba93d682",
+    "v1/dist/certification/P9.02.test.json": "201fd3fa6164c3d30800cdeecf88f7686306a86de2a716a61025cc555d494ec1",
+    "v1/tools-host/test-driver/phase9_vi_gap.py": "158f0250260fcdce30b60b020079f39373e026a30d5561fd003188faa598eddb",
+    "v1/tools-host/test-driver/run.py": "25f2c80c22a59b63bb83ce70c396895025bf5a7d753bc332760de8d00bf005c0"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P9.02": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "878e008ebdeef4d3462d180500396642aef5dac2",
+  "status": "PASS",
+  "step": "P9.03",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
