@@ -66,14 +66,15 @@ jobs:
           assert s.count(old)==1
           p.write_text(s.replace(old,new),encoding='utf-8',newline='\n')
           PY
-          (cd v1/src/kernel && "$GITHUB_WORKSPACE/tools/runtime/sjasmplus/bin/sjasmplus" --nologo --lst=../../build/kernel.lst kernel.asm)
+          (cd v1/src/kernel && "$GITHUB_WORKSPACE/tools/runtime/sjasmplus/bin/sjasmplus" --nologo --lst=../../build/kernel.lst --sym=../../build/kernel.sym kernel.asm)
           git checkout -- v1/src/kernel/syscall.asm
           trap - EXIT
           test -z "$(git diff -- v1/src/kernel/syscall.asm)"
           test "$(wc -c < v1/build/kernel.bin)" -eq 8192
+
           tools/runtime/python/bin/python - <<'PY'
           from __future__ import annotations
-          import hashlib, importlib.util, json, struct, sys
+          import hashlib, importlib.util, json, re, struct, sys
           from pathlib import Path
 
           root=Path.cwd()
@@ -85,83 +86,107 @@ jobs:
               assert spec is not None and spec.loader is not None
               mod=importlib.util.module_from_spec(spec); sys.modules[name]=mod; spec.loader.exec_module(mod); return mod
 
+          def sym(name:str)->int:
+              text=(root/'v1/build/kernel.sym').read_text(encoding='utf-8',errors='replace')
+              m=re.search(rf'^{re.escape(name)}:\\s+equ\\s+0x([0-9A-Fa-f]+)\\s*$',text,re.I|re.M)
+              assert m is not None, name
+              return int(m.group(1),16)
+
           maketap=load(root/'v1/tools-host/maketap/maketap.py','zxux_p9_prerelease_maketap')
           cassette=load(root/'v1/tools-host/cassette-image/cassette_image.py','zxux_p9_prerelease_cassette')
 
-          loader=(root/'v1/src/boot/loader.bas').read_text(encoding='utf-8')
           screen=(root/'v1/assets/loading.scr').read_bytes()
-          kernel=(root/'v1/build/kernel.bin').read_bytes()
-          font=(root/'v1/assets/font4x8-zxux.bin').read_bytes()
           issue=(root/'v1/assets/issue.txt').read_bytes()
-          crontab=(root/'v1/assets/crontab.txt').read_bytes()
-          bincat=(root/'v1/assets/bincat.bin').read_bytes()
           prompt=b'login: '
+          assert len(screen)==6912 and len(issue)==144 and len(prompt)==7
 
-          issue_off=35
-          prompt_off=issue_off+len(issue)
-          image=bytearray()
-          image += b'\x21'+struct.pack('<H',issue_off)
-          image += b'\x01'+struct.pack('<H',len(issue))
-          image += b'\x3e\x32\xcd\x00\xe0\x38\x14'
-          image += b'\x21'+struct.pack('<H',prompt_off)
-          image += b'\x01'+struct.pack('<H',len(prompt))
-          image += b'\x3e\x32\xcd\x00\xe0\x38\x07'
-          image += b'\x3e\x02\xcd\x00\xe0\x18\xf9\x18\xfe'
-          assert len(image)==issue_off
-          image += issue + prompt
-          assert len(image)==prompt_off+len(prompt)
-          relocs=struct.pack('<HH',1,14)
-          body=bytes(image)+relocs
-          hdr=bytearray(24)
-          hdr[:4]=b'MEX1'; hdr[4]=1; hdr[5]=0
-          hdr[6:8]=struct.pack('<H',24)
-          hdr[8:10]=struct.pack('<H',len(image))
-          hdr[10:12]=b'\0\0'; hdr[12:14]=b'\0\0'
-          hdr[14:16]=struct.pack('<H',512)
-          hdr[16:18]=struct.pack('<H',2)
-          hdr[18:20]=struct.pack('<H',24+len(image))
-          hdr[20:22]=struct.pack('<H',maketap.crc16_ccitt_false(body))
-          hdr[22:24]=b'\0\0'
-          hdr[22:24]=struct.pack('<H',maketap.crc16_ccitt_false(bytes(hdr)))
-          shell=bytes(hdr)+body
+          idle=sym('zx48_idle_loop')
+          conwrite=sym('zx48_console_write')
+          assert 0xE000 <= idle <= 0xFAFD
+          kernel=bytearray((root/'v1/build/kernel.bin').read_bytes())
+          idle_off=idle-0xE000
+          original_idle=bytes(kernel[idle_off:idle_off+3])
+          assert original_idle==b'\\xfb\\x76\\xcd'
+          kernel[idle_off:idle_off+3]=bytes((0xC3,0x00,0x60))
+          kernel=bytes(kernel)
 
-          prefix=maketap.build_bootstrap_prefix(loader_source=loader,screen=screen,kernel=kernel)
-          resources=(
-              maketap.M48OObject('sh',maketap.M48O_BIN,maketap.DIR_BIN,shell),
-              maketap.M48OObject('font4x8',maketap.M48O_FNT,maketap.DIR_SYSTEM,font),
-              maketap.M48OObject('issue',maketap.M48O_TXT,maketap.DIR_ETC,issue),
-              maketap.M48OObject('crontab',maketap.M48O_CFG,maketap.DIR_ETC,crontab),
-              maketap.M48OObject('bincat',maketap.M48O_SYS,maketap.DIR_SYSTEM,bincat),
+          base=0x6000
+          code_size=45
+          issue_addr=base+code_size
+          prompt_addr=issue_addr+len(issue)
+          finish=base+42
+          reached=base+39
+          preview=bytearray()
+          for addr,value in ((idle,0xFB),(idle+1,0x76),(idle+2,0xCD)):
+              preview += bytes((0x3E,value,0x32,addr&0xFF,(addr>>8)&0xFF))
+          preview += bytes((0x21,issue_addr&0xFF,(issue_addr>>8)&0xFF,0x01,len(issue)&0xFF,(len(issue)>>8)&0xFF))
+          preview += bytes((0xCD,conwrite&0xFF,(conwrite>>8)&0xFF,0xDA,finish&0xFF,(finish>>8)&0xFF))
+          preview += bytes((0x21,prompt_addr&0xFF,(prompt_addr>>8)&0xFF,0x01,len(prompt),0x00))
+          preview += bytes((0xCD,conwrite&0xFF,(conwrite>>8)&0xFF,0xDA,finish&0xFF,(finish>>8)&0xFF))
+          assert base+len(preview)==reached
+          preview += bytes((0xC3,idle&0xFF,(idle>>8)&0xFF))
+          assert base+len(preview)==finish
+          preview += bytes((0xC3,idle&0xFF,(idle>>8)&0xFF))
+          assert len(preview)==code_size
+          preview += issue+prompt
+
+          n0=maketap._integer_number(0); n7=maketap._integer_number(7)
+          n24575=maketap._integer_number(24575); n57347=maketap._integer_number(57347)
+          loader_bytes=b''.join((
+              maketap._basic_line(10,bytes((maketap.TOK_BORDER,0x20))+n0+b': '+bytes((maketap.TOK_PAPER,0x20))+n0+b': '+bytes((maketap.TOK_INK,0x20))+n7+b': '+bytes((maketap.TOK_CLS,))),
+              maketap._basic_line(20,bytes((maketap.TOK_CLEAR,0x20))+n24575),
+              maketap._basic_line(30,bytes((maketap.TOK_LOAD,0x20,0x22,0x22,0x20,maketap.TOK_SCREEN))),
+              maketap._basic_line(40,bytes((maketap.TOK_LOAD,0x20,0x22,0x22,0x20,maketap.TOK_CODE))),
+              maketap._basic_line(45,bytes((maketap.TOK_LOAD,0x20,0x22,0x22,0x20,maketap.TOK_CODE))),
+              maketap._basic_line(50,bytes((maketap.TOK_RANDOMIZE,0x20,maketap.TOK_USR,0x20))+n57347),
+          ))
+          loader_text=(
+              '10 BORDER 0: PAPER 0: INK 7: CLS\n'
+              '20 CLEAR 24575\n'
+              '30 LOAD "" SCREEN$\n'
+              '40 LOAD "" CODE\n'
+              '45 LOAD "" CODE\n'
+              '50 RANDOMIZE USR 57347\n'
+          )
+          files=(
+              maketap.LogicalFile('zx48ux',maketap.PROGRAM_TYPE,loader_bytes,10,len(loader_bytes)),
+              maketap.LogicalFile('zx48uxscr',maketap.CODE_TYPE,screen,maketap.SCREEN_START,0x8000),
+              maketap.LogicalFile('kernel',maketap.CODE_TYPE,kernel,maketap.KERNEL_START,0x8000),
+              maketap.LogicalFile('p9preview',maketap.CODE_TYPE,bytes(preview),base,0x8000),
           )
           def build():
-              data=bytearray(prefix)
-              for obj in resources: data.extend(maketap.m48o_blocks(obj))
-              return bytes(data)
+              return b''.join(maketap.logical_file_blocks(x) for x in files)
           tape1=build(); tape2=build(); assert tape1==tape2
+          parsed=cassette.parse_files(tape1)
+          assert [x.name for x in parsed]==['zx48ux','zx48uxscr','kernel','p9preview']
+          assert parsed[0].file_type==0 and parsed[0].param1==10 and parsed[0].data==loader_bytes
+          assert parsed[1].file_type==3 and parsed[1].param1==0x4000 and parsed[1].length==6912
+          assert parsed[2].file_type==3 and parsed[2].param1==0xE000 and parsed[2].length==8192
+          assert parsed[3].file_type==3 and parsed[3].param1==base and parsed[3].data==bytes(preview)
 
-          files=cassette.assert_bootstrap_prefix(prefix)
-          assert [f.name for f in files[:3]]==['zx48ux','zx48uxscr','kernel']
-          assert files[0].file_type==0 and files[0].param1==10
-          assert files[1].file_type==3 and files[1].param1==0x4000 and files[1].length==6912
-          assert files[2].file_type==3 and files[2].param1==0xe000 and files[2].length==8192
-          assert files[0].data==maketap.tokenized_loader(loader)
-
-          tap_path=out/'zx-ux-phase9-pre-release.tap'
-          tap_path.write_bytes(tape1)
-          shell_path=out/'phase9-preview-sh.mex1'
-          shell_path.write_bytes(shell)
-          (out/'loader.bas').write_text(loader,encoding='utf-8',newline='\n')
+          tap_path=out/'zx-ux-phase9-pre-release.tap'; tap_path.write_bytes(tape1)
+          kernel_path=out/'kernel-phase9-pre-release.bin'; kernel_path.write_bytes(kernel)
+          preview_path=out/'phase9-preview.bin'; preview_path.write_bytes(bytes(preview))
+          (out/'loader.bas').write_text(loader_text,encoding='utf-8',newline='\n')
           (out/'README.txt').write_text(
               'ZX-UX Phase-9 development/pre-release boot tape\n\n'
-              'Load on a 48K-compatible Sinclair ZX Spectrum with: LOAD ""\n\n'
-              'The first tape file is the canonical auto-start BASIC loader. It loads\n'
-              'the loading SCREEN$, the current Phase-9 kernel at 0xE000, then transfers\n'
-              'control through the ZX-UX boot gateway at 0xE003. The kernel consumes the\n'
-              'bootstrap M48O resources and starts a Phase-9 preview PID1 which displays\n'
-              'the frozen /etc/issue text and the exact "login: " prompt.\n\n'
-              'This is deliberately a Phase-9 development preview, not the Phase-12 final\n'
-              'release tape. The preview PID1 is only a boot/display integration shim; it\n'
-              'does not claim the final integrated release shell or Phase-10+ toolchain.\n',
+              'On a 48K-compatible Sinclair ZX Spectrum, use: LOAD ""\n\n'
+              'The auto-start BASIC loader loads the ZX-UX loading screen, the Phase-9\n'
+              'resident kernel at 0xE000, and a small development preview payload at\n'
+              '0x6000, then transfers control through the real ZX-UX boot gateway at\n'
+              '0xE003. After normal kernel initialization, the preview payload uses the\n'
+              'current ZX-UX console routine to display the frozen /etc/issue text and\n'
+              'the exact "login: " prompt, then restores and enters the normal PID0 idle\n'
+              'scheduler.\n\n'
+              'This is intentionally a Phase-9 development preview, not a final release.\n'
+              'Phase-9 shell and vi behavior is qualified in staged target fixtures, but\n'
+              'the admitted resident boot image does not yet compose those stages into an\n'
+              'interactive login/session executable. Accordingly this tape stops at the\n'
+              'login prompt and does not pretend later integration already exists.\n\n'
+              'The Phase-9 checkpoint also contains one internal syscall-table symbol typo\n'
+              'which prevents a fresh resident-kernel assembly. This pre-release build uses\n'
+              'the exact already-qualified handler offset for that table entry without\n'
+              'changing the checked-in Phase-9 source or certification evidence.\n',
               encoding='utf-8',newline='\n')
 
           def sha(p:Path): return hashlib.sha256(p.read_bytes()).hexdigest()
@@ -173,20 +198,21 @@ jobs:
               'boot_contract':{'entry_command':'LOAD ""','basic_name':'zx48ux','autostart_line':10,
                                'screen_name':'zx48uxscr','screen_address':16384,'screen_size':6912,
                                'kernel_name':'kernel','kernel_address':57344,'kernel_size':8192,
-                               'boot_gateway':57347,'expected_prompt':'login: '},
-              'resources':[{'name':'sh','type':'BIN','target':'/bin'},
-                           {'name':'font4x8','type':'FNT','target':'system'},
-                           {'name':'issue','type':'TXT','target':'/etc'},
-                           {'name':'crontab','type':'CFG','target':'/etc'},
-                           {'name':'bincat','type':'SYS','target':'system'}],
-              'files':[],'tests':{'deterministic_rebuild':'PASS','bootstrap_structure':'PASS',
-                                  'mex1_inspection':'PENDING','fuse_boot_to_login':'PENDING'}
+                               'preview_name':'p9preview','preview_address':24576,
+                               'boot_gateway':57347,'expected_prompt':'login: ',
+                               'login_reached_address':reached},
+              'pre_release_patches':[
+                  {'scope':'assembly-only','detail':'syscall time-set table entry resolved to the exact qualified handler offset'},
+                  {'scope':'output-kernel-only','detail':'PID0 idle entry redirects once to 0x6000; preview restores the original three bytes before output'}
+              ],
+              'files':[],
+              'tests':{'deterministic_rebuild':'PASS','bootstrap_structure':'PASS',
+                       'fuse_basic_to_boot_gateway':'PENDING','fuse_boot_to_login':'PENDING'}
           }
-          for p in (tap_path,shell_path,out/'loader.bas',out/'README.txt'):
+          for p in (tap_path,kernel_path,preview_path,out/'loader.bas',out/'README.txt'):
               meta['files'].append({'path':p.name,'size':p.stat().st_size,'sha256':sha(p)})
           (out/'pre-release.json').write_text(json.dumps(meta,indent=2,sort_keys=True)+'\n',encoding='utf-8')
           PY
-          tools/runtime/python/bin/python v1/tools-host/inspect-mex/inspect.py /tmp/p9-prerelease/P9.pre-release/phase9-preview-sh.mex1 --base 0x6000
 
       - name: Boot tape through BASIC to login prompt in Fuse
         shell: bash
