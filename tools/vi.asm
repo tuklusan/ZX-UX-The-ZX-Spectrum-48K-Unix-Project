@@ -2220,4 +2220,279 @@ vi_search_last: dw 0
 vi_search_match_pos: dw 0
 vi_search_match_index: db 0
 vi_search_prompt: db '/'
+
+; P9.16 transactional :e and :r staging.  Failed loads never touch the live
+; gap buffer or current target; path lookup remains exact/case-sensitive.
+VI_EX_STAGE_CAPACITY    EQU VI_LOAD_CAPACITY
+
+; HL=path. Dirty buffers refuse :e. Successful load atomically replaces buffer
+; and target after complete staging/type/line validation.
+vi_p916_e:
+    ld (vi_ex_path),hl
+    ld a,(vi_dirty)
+    or a
+    jr z,vi_p916_e_clean
+    ld a,E_BUSY
+    scf
+    ret
+vi_p916_e_clean:
+    call vi_p916_stage_load
+    ret c
+    call vi_p916_validate_stage_lines
+    ret c
+    ld hl,vi_ex_stage
+    ld de,vi_buffer
+    ld bc,(vi_ex_stage_len)
+    ldir
+    ld hl,(vi_ex_stage_len)
+    ld (vi_buffer_len),hl
+    call vi_p903_init
+    ret c
+    ld hl,0
+    ld (vi_cursor_off),hl
+    xor a
+    ld (vi_undo_kind),a
+    ld a,(vi_ex_stage_type)
+    ld hl,(vi_ex_path)
+    jp vi_p904_commit_target
+
+; HL=path. :r inserts staged bytes after the current logical line and never
+; changes the current target. Full capacity/index preflight precedes mutation.
+vi_p916_r:
+    ld (vi_ex_path),hl
+    call vi_p916_stage_load
+    ret c
+    call vi_p916_validate_stage_lines
+    ret c
+    ld hl,(vi_ex_stage_len)
+    ld a,h
+    or l
+    ret z
+    call vi_p916_r_preflight
+    ret c
+    call vi_p914_stage_state
+    call vi_p906_locate_line
+    ld a,(vi_motion_line)
+    inc a
+    ld b,a
+    ld a,(vi_line_count)
+    cp b
+    jr z,vi_p916_r_eof
+    jr c,vi_p916_r_eof
+    ld a,b
+    call vi_p906_line_start
+    jr vi_p916_r_pos_ready
+vi_p916_r_eof:
+    ld hl,(vi_buffer_len)
+vi_p916_r_pos_ready:
+    ld (vi_ex_insert_pos),hl
+    ld de,vi_ex_stage
+    ld bc,(vi_ex_stage_len)
+vi_p916_r_loop:
+    ld a,b
+    or c
+    jr z,vi_p916_r_done
+    ld a,(de)
+    push bc
+    push de
+    push hl
+    call vi_p903_insert_byte
+    pop hl
+    pop de
+    pop bc
+    ret c
+    inc hl
+    inc de
+    dec bc
+    jr vi_p916_r_loop
+vi_p916_r_done:
+    ld hl,(vi_ex_insert_pos)
+    ld bc,(vi_ex_stage_len)
+    call vi_p914_commit_insert
+    ld a,1
+    ld (vi_dirty),a
+    xor a
+    ret
+
+vi_p916_r_preflight:
+    ld a,(vi_fail_gap_alloc)
+    or a
+    jr nz,vi_p916_nomem
+    ld a,(vi_fail_index_alloc)
+    or a
+    jr nz,vi_p916_nomem
+    ld hl,(vi_gap_end)
+    ld de,(vi_gap_start)
+    or a
+    sbc hl,de
+    ld de,(vi_ex_stage_len)
+    or a
+    sbc hl,de
+    jr c,vi_p916_nomem
+    ld a,(vi_ex_stage_lines)
+    dec a
+    ld b,a
+    ld a,(vi_line_count)
+    add a,b
+    jr c,vi_p916_nomem
+    cp VI_LINE_MAX+1
+    jr nc,vi_p916_nomem
+    xor a
+    ret
+
+; Stage an editable object without touching live file bytes.
+vi_p916_stage_load:
+    ld (vi_ex_path),hl
+    xor a
+    ld (vi_ex_stage_len),a
+    ld (vi_ex_stage_len+1),a
+    ld (vi_ex_open),a
+    ld (vi_ex_stat_req),hl
+    ld hl,vi_ex_stat_out
+    ld (vi_ex_stat_req+2),hl
+    ld hl,vi_ex_stat_req
+    ld a,SYS_STAT
+    call SYSCALL_GATEWAY
+    ret c
+    ld a,(vi_ex_stat_out)
+    cp OBJ_TXT
+    jr z,vi_p916_type_ok
+    cp OBJ_C
+    jr z,vi_p916_type_ok
+    cp OBJ_ASM
+    jr z,vi_p916_type_ok
+    cp OBJ_CFG
+    jr z,vi_p916_type_ok
+    ld a,E_FORMAT
+    scf
+    ret
+vi_p916_type_ok:
+    ld (vi_ex_stage_type),a
+    ld hl,(vi_ex_path)
+    ld c,O_READ
+    ld b,0
+    ld a,SYS_OPEN
+    call SYSCALL_GATEWAY
+    ret c
+    ld a,h
+    or a
+    jr nz,vi_p916_bad_handle
+    ld a,l
+    ld (vi_ex_handle),a
+    ld a,1
+    ld (vi_ex_open),a
+vi_p916_read:
+    ld a,(vi_ex_handle)
+    ld e,a
+    ld d,0
+    ld hl,vi_io_chunk
+    ld bc,64
+    ld a,SYS_READ
+    call SYSCALL_GATEWAY
+    jr c,vi_p916_stream_error
+    ld a,h
+    or l
+    jr z,vi_p916_eof
+    ld (vi_chunk_len),hl
+    ex de,hl
+    ld hl,(vi_ex_stage_len)
+    add hl,de
+    ld a,h
+    cp 4
+    jr c,vi_p916_room
+    jr nz,vi_p916_overflow
+    ld a,l
+    or a
+    jr nz,vi_p916_overflow
+vi_p916_room:
+    ld (vi_ex_new_len),hl
+    ld de,vi_ex_stage
+    ld hl,(vi_ex_stage_len)
+    add hl,de
+    ex de,hl
+    ld hl,vi_io_chunk
+    ld bc,(vi_chunk_len)
+    ldir
+    ld hl,(vi_ex_new_len)
+    ld (vi_ex_stage_len),hl
+    jr vi_p916_read
+vi_p916_overflow:
+    ld a,E_NOMEM
+    jr vi_p916_stream_error
+vi_p916_eof:
+    call vi_p916_close
+    ret c
+    xor a
+    ret
+vi_p916_stream_error:
+    ld (vi_ex_errno),a
+    call vi_p916_close
+    ld a,(vi_ex_errno)
+    scf
+    ret
+vi_p916_bad_handle:
+    ld a,E_FORMAT
+    scf
+    ret
+
+vi_p916_close:
+    ld a,(vi_ex_open)
+    or a
+    ret z
+    xor a
+    ld (vi_ex_open),a
+    ld a,(vi_ex_handle)
+    ld l,a
+    ld h,0
+    ld a,SYS_CLOSE
+    jp SYSCALL_GATEWAY
+
+; Count logical lines in staging.  This guarantees p903 reindex cannot fail.
+vi_p916_validate_stage_lines:
+    ld a,1
+    ld (vi_ex_stage_lines),a
+    ld hl,0
+vi_p916_line_loop:
+    ld de,(vi_ex_stage_len)
+    push hl
+    or a
+    sbc hl,de
+    pop hl
+    jr z,vi_p916_lines_ok
+    ld de,vi_ex_stage
+    add hl,de
+    ld a,(hl)
+    cp 10
+    jr nz,vi_p916_line_next
+    ld a,(vi_ex_stage_lines)
+    cp VI_LINE_MAX
+    jr nc,vi_p916_nomem
+    inc a
+    ld (vi_ex_stage_lines),a
+vi_p916_line_next:
+    ld de,vi_ex_stage
+    or a
+    sbc hl,de
+    inc hl
+    jr vi_p916_line_loop
+vi_p916_lines_ok:
+    xor a
+    ret
+vi_p916_nomem:
+    ld a,E_NOMEM
+    scf
+    ret
+
+vi_ex_path: dw 0
+vi_ex_handle: db 0
+vi_ex_open: db 0
+vi_ex_errno: db 0
+vi_ex_stage_type: db OBJ_TXT
+vi_ex_stage_lines: db 1
+vi_ex_stage_len: dw 0
+vi_ex_new_len: dw 0
+vi_ex_insert_pos: dw 0
+vi_ex_stat_req: defs 4,0
+vi_ex_stat_out: defs 10,0
+vi_ex_stage: defs VI_EX_STAGE_CAPACITY,0
     ENDM
