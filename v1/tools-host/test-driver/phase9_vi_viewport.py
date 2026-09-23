@@ -20,6 +20,7 @@ from phase8_common import inspect_mex, make_tap, mex1, word
 BASE=0xC000; GATE=0xE000
 CALLS=0xA300; LASTROW=0xA301; LASTCOL=0xA302; LASTBYTE=0xA303
 CANARY0=0xA304; CANARY1=0xA305
+# Exact P9.22 candidate.
 
 class P922Error(DriverError): pass
 def require(v,m):
@@ -135,11 +136,7 @@ gate_end:
 
         # TAB is one file byte yet advances display column to the next multiple of eight.
         data=b"a\tb"
-        code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC))
-        code+=phase1._call(sy["vi_p922_cursor_column"])+b"\x7C\xB5"+phase1._jp_nz(FAIL_PC)
-        # cursor starts at supplied offset 2; expected column is 8.
-        code[-5:-5]=b""
-        code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC)+phase1._call(sy["vi_p922_cursor_column"]))
+        # Cursor starts at supplied offset 2; expected display column is 8.\n        code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC)+phase1._call(sy["vi_p922_cursor_column"]))
         code+=b"\x7C\xB7"+phase1._jp_nz(FAIL_PC)+b"\x7D\xFE\x08"+phase1._jp_nz(FAIL_PC)
         code+=expect_byte(sy["vi_buffer"]+1,9)+phase1._jp(PASS_PC)
         run_sna(root,bytes(code),patch=patch(image,gate,sy,data,cursor=2))
