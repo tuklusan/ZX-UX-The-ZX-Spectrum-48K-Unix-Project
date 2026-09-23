@@ -20,6 +20,7 @@ from fuse_harness import FAIL_PC, PASS_PC, run_sna
 from phase8_common import inspect_mex, make_tap, mex1, word
 
 BASE=0xC000
+# Exact branch-repair candidate.
 GATE=0xE000
 CURSOR=0xA300
 ROW=0xA301
