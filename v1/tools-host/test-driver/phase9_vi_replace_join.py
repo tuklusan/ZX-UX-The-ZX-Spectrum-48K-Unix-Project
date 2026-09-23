@@ -19,6 +19,7 @@ from phase8_common import inspect_mex, make_tap, mex1, word
 
 BASE=0xC000
 # Exact P9.13 qualification candidate.
+# Current-head acceptance diagnostics.
 class P913Error(DriverError): pass
 def require(v,m):
     if not v: raise P913Error(m)
