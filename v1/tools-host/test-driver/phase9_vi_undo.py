@@ -18,6 +18,7 @@ from fuse_harness import FAIL_PC, PASS_PC, run_sna
 from phase8_common import inspect_mex, make_tap, mex1, word
 
 BASE=0xC000
+# Exact P9.14 qualification candidate.
 class P914Error(DriverError): pass
 def require(v,m):
     if not v: raise P914Error(m)
