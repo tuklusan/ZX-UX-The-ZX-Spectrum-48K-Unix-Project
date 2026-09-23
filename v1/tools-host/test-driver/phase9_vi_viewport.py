@@ -136,7 +136,8 @@ gate_end:
 
         # TAB is one file byte yet advances display column to the next multiple of eight.
         data=b"a\tb"
-        # Cursor starts at supplied offset 2; expected display column is 8.\n        code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC)+phase1._call(sy["vi_p922_cursor_column"]))
+        # Cursor starts at supplied offset 2; expected display column is 8.
+        code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC)+phase1._call(sy["vi_p922_cursor_column"]))
         code+=b"\x7C\xB7"+phase1._jp_nz(FAIL_PC)+b"\x7D\xFE\x08"+phase1._jp_nz(FAIL_PC)
         code+=expect_byte(sy["vi_buffer"]+1,9)+phase1._jp(PASS_PC)
         run_sna(root,bytes(code),patch=patch(image,gate,sy,data,cursor=2))
