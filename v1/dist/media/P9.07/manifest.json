@@ -1,0 +1,55 @@
+{
+  "files": [
+    {
+      "action": "build",
+      "path": "build/build-p907-vi-bec99fdd815420763a1e8bfaff8170def773134317ddeabf23673b68f8f07665.tap",
+      "sha256": "bec99fdd815420763a1e8bfaff8170def773134317ddeabf23673b68f8f07665",
+      "size": 3874
+    },
+    {
+      "action": "test",
+      "path": "test/build-p907-vi-bec99fdd815420763a1e8bfaff8170def773134317ddeabf23673b68f8f07665.tap",
+      "sha256": "bec99fdd815420763a1e8bfaff8170def773134317ddeabf23673b68f8f07665",
+      "size": 3874
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-08ec2e5e50813a1ca8af6d6520bdb27a600860ce2a736a9a24281f4889d5f412.sna",
+      "sha256": "08ec2e5e50813a1ca8af6d6520bdb27a600860ce2a736a9a24281f4889d5f412",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-09847b00178a183cf10b82c69a67268f77d150da34da38625eb85c56220b8867.sna",
+      "sha256": "09847b00178a183cf10b82c69a67268f77d150da34da38625eb85c56220b8867",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-12792a7bdd673b19f384eca5c7584b0794e06d33a6b305c5f277043f5598b796.sna",
+      "sha256": "12792a7bdd673b19f384eca5c7584b0794e06d33a6b305c5f277043f5598b796",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-27c4103eaac99bef69e404f2f7640336a80b14fa2dc6af6effdcf2e9d5582f6b.sna",
+      "sha256": "27c4103eaac99bef69e404f2f7640336a80b14fa2dc6af6effdcf2e9d5582f6b",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-6cc47abdb8c8cd5059dcf255e5e14705f55e1262d3a7d6e99348fdb8f6c1fd25.sna",
+      "sha256": "6cc47abdb8c8cd5059dcf255e5e14705f55e1262d3a7d6e99348fdb8f6c1fd25",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-790ebd28475cee9228d20419c2ea47d5fb438cf6ec8ad2f878041c2c8dab2dfe.sna",
+      "sha256": "790ebd28475cee9228d20419c2ea47d5fb438cf6ec8ad2f878041c2c8dab2dfe",
+      "size": 49179
+    }
+  ],
+  "schema": 1,
+  "source_commit": "b123df56522d6a68701f859fdf1c5c1ee4de2dc8",
+  "step": "P9.07"
+}
