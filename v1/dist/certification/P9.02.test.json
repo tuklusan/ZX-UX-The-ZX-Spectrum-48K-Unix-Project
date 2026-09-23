@@ -1,0 +1,115 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p902-present",
+      "passed": true
+    },
+    {
+      "name": "documented-editable-types-only",
+      "passed": true
+    },
+    {
+      "name": "wrong-type-format-rejection",
+      "passed": true
+    },
+    {
+      "name": "source-open-read-only",
+      "passed": true
+    },
+    {
+      "name": "complete-load-closes-source",
+      "passed": true
+    },
+    {
+      "name": "ready-only-after-close",
+      "passed": true
+    },
+    {
+      "name": "read-error-closes-source",
+      "passed": true
+    },
+    {
+      "name": "fuse-editable-types-byte-exact",
+      "passed": true
+    },
+    {
+      "name": "fuse-source-handle-count-baseline-after-load",
+      "passed": true
+    },
+    {
+      "name": "fuse-bin-type-rejected-before-open",
+      "passed": true
+    },
+    {
+      "name": "fuse-read-error-closes-source",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p902-vi.lst",
+        "--sym=p902-vi.sym",
+        "p902-vi.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 862 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p902-vi.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 28985, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 58544, \"image_size\": 1585, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 1609, \"relocations\": [], \"stored_length\": 1609, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p902-gateway.lst",
+        "--sym=p902-gateway.sym",
+        "p902-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 342 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/vi.asm": "e9798a005c2a9fded409e9f828e179aa97b929e4184a68ef2d83009756cbbbbb",
+    "v1/build/p902-vi.mex1": "c5ad5b1523056b21af9e1733b9bb2202aab0d723a0b94a232ac26925384d5116",
+    "v1/build/p902-vi.tap": "737f8d77d2a9f4cda6a7ac6527d24b050cb1445002565c6bdac4483f0f854d16",
+    "v1/dist/certification/P9.01.test.json": "cd65808daf93d6b05ba537b6a3bb913a99aa7dad92adf65ec01597c5a9a086f8",
+    "v1/tools-host/test-driver/phase9_vi_load.py": "de8b43acc0f9769a953f7d20e11e1a6568709c810b85a1272cf58fe04e02cab9",
+    "v1/tools-host/test-driver/run.py": "7ff93025bc3e5cb2081aca79299dad6b39041f603848d82f5ac8d01fff918550"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P9.01": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "7dcd77ea313ffd2b3fdc8f8ba08e73f1239202ae",
+  "status": "PASS",
+  "step": "P9.02",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
