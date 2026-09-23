@@ -1353,14 +1353,6 @@ vi_p910_open:
     ; Below: insert a line separator immediately after the current logical
     ; line.  For the final unterminated line this is exactly buffer_len.
     call vi_p906_current_end
-    ld de,(vi_buffer_len)
-    push hl
-    or a
-    sbc hl,de
-    pop hl
-    jr z,vi_p910_below_pos
-    inc hl
-vi_p910_below_pos:
     ld (vi_open_pos),hl
     jr vi_p910_insert
 
