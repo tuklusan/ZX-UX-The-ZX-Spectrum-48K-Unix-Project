@@ -23,8 +23,8 @@
   "files": [
     {
       "path": "README.txt",
-      "sha256": "62dd843b0c197eb7bb12c8c5609aaec6e995d73bc03b5a538b37d95a7ccde7e6",
-      "size": 1240
+      "sha256": "9d18aec80dd932fcb0f6b3080073c92756702ab3979eb1003981fe7405eda148",
+      "size": 1385
     },
     {
       "path": "kernel-phase9-pre-release.bin",
@@ -45,6 +45,31 @@
       "path": "phase9-preview.bin",
       "sha256": "e9953e07f7070436492cbd800e2307dc7209b3730d79009dd7e092a68e57ce8a",
       "size": 609
+    },
+    {
+      "path": "workflows/README.txt",
+      "sha256": "9f38c985b98c1006a24d6447f0c17d6bab10e37f804a59d511bff9f54a105988",
+      "size": 568
+    },
+    {
+      "path": "workflows/exact-head-regression.yml",
+      "sha256": "2175986723d4cfe300e75a8595a01c289f2a9b85ba03c13cbe0be5d9ba6ef503",
+      "size": 9094
+    },
+    {
+      "path": "workflows/p9-prerelease-build.yml",
+      "sha256": "7f9c2ba8506be53797089b45c82a788062e97f8e97b26118931918d6f759fc0a",
+      "size": 23379
+    },
+    {
+      "path": "workflows/qualification-auto-dispatch.yml",
+      "sha256": "98a6e76cfeb428899b11d890957ccde69192c00b39600085dd76a2bf76b5e29e",
+      "size": 7492
+    },
+    {
+      "path": "workflows/snapshot.json",
+      "sha256": "ba0cbdc0fa74ce26608a03e7196cea8d157d14b8f8752ac8b6a8bcc184f0a260",
+      "size": 836
     },
     {
       "path": "zx-ux-phase9-pre-release.tap",

@@ -1,0 +1,200 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: ZX-UX Exact-Head Regression
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - '**/*.markdown'
+      - '**/*.mdown'
+      - '**/*.mdx'
+      - '**/*.rst'
+      - '**/*.adoc'
+      - '**/*.asciidoc'
+      - '**/*.txt'
+      - '**/*.text'
+      - '**/*.rtf'
+      - '**/*.doc'
+      - '**/*.docx'
+      - '**/*.odt'
+      - '**/*.pdf'
+      - '**/*.tex'
+      - '**/*.epub'
+      - '**/*.html'
+      - '**/*.htm'
+      - '**/*.ppt'
+      - '**/*.pptx'
+      - '**/*.odp'
+      - '**/*.pages'
+      - '**/*.key'
+      - 'LICENSE'
+      - 'LICENSE.*'
+      - 'COPYING'
+      - 'COPYING.*'
+      - 'NOTICE'
+      - 'NOTICE.*'
+      - 'CHANGELOG'
+      - 'CHANGELOG.*'
+      - 'CONTRIBUTING'
+      - 'CONTRIBUTING.*'
+      - 'AUTHORS'
+      - 'AUTHORS.*'
+      - 'docs/**'
+      - 'scratch/**'
+      - 'v1/dist/certification/**'
+      - 'v1/dist/media/**'
+      - '.github/workflows/p*-qualification.yml'
+      - '.github/workflows/p*-dispatch-*.yml'
+      - '.github/workflows/p*-activation-*.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zxux-exact-head-main
+  cancel-in-progress: true
+
+jobs:
+  static-integrity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    outputs:
+      kernel: ${{ steps.classify.outputs.kernel }}
+      phase1: ${{ steps.classify.outputs.phase1 }}
+      phase2: ${{ steps.classify.outputs.phase2 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: {fetch-depth: 0}
+      - name: Classify exact candidate dependencies
+        id: classify
+        shell: bash
+        run: |
+          set -euo pipefail
+          before="${{ github.event.before }}"
+          if test -z "$before" || test "$before" = "0000000000000000000000000000000000000000"; then before="$(git rev-parse HEAD^)"; fi
+          printf '%s\n' "$before" > /tmp/zxux-before
+          git diff --name-only "$before" HEAD > /tmp/zxux-changed
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          from pathlib import Path
+          changed=Path("/tmp/zxux-changed").read_text().splitlines()
+          def hit(prefixes=(), exact=()):
+              return any(p in exact or any(p.startswith(x) for x in prefixes) for p in changed)
+          import re,subprocess
+          common=hit(prefixes=("v1/include/","v1/src/boot/","v1/src/kernel/"), exact=("tools/manifest/toolchain.lock.json","tools/scripts/bootstrap-environment.py","tools/scripts/verify-environment.py",".github/actions/setup-zxux-runtime/action.yml"))
+          kernel=common or hit(prefixes=("v1/tools-host/inspect-mex/","v1/tools-host/inspect-obj/"))
+          phase1=common or hit(prefixes=("v1/tools-host/test-driver/phase1",), exact=("v1/tools-host/test-driver/driver_core.py","v1/tools-host/test-driver/phase1_gate.py"))
+          phase2=phase1 or hit(prefixes=("v1/tools-host/test-driver/phase2","v1/tests/multiprocessing/","v1/tools-host/inspect-mex/"), exact=("v1/tools-host/test-driver/phase2_gate.py",))
+          for p in changed:
+              if not p.startswith("v1/tools-host/test-driver/") or p.endswith("/run.py"):
+                  continue
+              name=Path(p).name
+              m=re.match(r"phase(\d+)_",name)
+              if m and int(m.group(1))>=3:
+                  continue
+              phase1=True
+              phase2=True
+          if "v1/tools-host/test-driver/run.py" in changed:
+              before=Path("/tmp/zxux-before").read_text().strip()
+              diff=subprocess.check_output(["git","diff","-U0",before,"HEAD","--","v1/tools-host/test-driver/run.py"],text=True)
+              changed_lines=[line[1:].strip() for line in diff.splitlines() if line.startswith(("+","-")) and not line.startswith(("+++","---")) and line[1:].strip()]
+              later=re.compile(r"^(?:import\s+phase(?:[3-9]|1[0-2])_|from\s+phase(?:[3-9]|1[0-2])_|(?:elif\s+|if\s+)?step\s*[=!]=|return\s+phase(?:[3-9]|1[0-2])_|phase(?:[3-9]|1[0-2])_)")
+              route_only=bool(changed_lines) and all(later.search(line) or re.search(r'P(?:[3-9]|1[0-2])\.\d+',line) for line in changed_lines)
+              if not route_only:
+                  phase1=True
+                  phase2=True
+          print(f"kernel={'true' if kernel else 'false'}")
+          print(f"phase1={'true' if phase1 else 'false'}")
+          print(f"phase2={'true' if phase2 else 'false'}")
+          PY
+      - name: Project policy, license, and static CI
+        run: |
+          set -euo pipefail
+          ./tools/check_project_policy.py
+          ./tools/check_license_headers.sh
+          ./tools/ci.sh
+          python3 -m py_compile v1/tools-host/test-driver/run.py
+      - name: Verify toolchain metadata and negative altered-lock oracle
+        run: |
+          set -euo pipefail
+          python3 tools/scripts/verify-environment.py --metadata-only
+          cp tools/manifest/toolchain.lock.json /tmp/zxux-bad-lock.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("/tmp/zxux-bad-lock.json"); d=json.loads(p.read_text()); d["artifacts"][0]["sha256"]="0"*64; p.write_text(json.dumps(d))
+          PY
+          ! python3 tools/scripts/verify-environment.py --metadata-only --manifest /tmp/zxux-bad-lock.json
+      - name: Validate all active durable phase aggregates
+        run: |
+          set -euo pipefail
+          for phase in $(seq 0 12); do
+            aggregate="v1/dist/certification/phase-$phase.json"; checker="tools/check_phase$phase"_evidence.py
+            if test -f "$aggregate"; then test -f "$checker"; python3 "$checker" --require-active; fi
+          done
+      - name: Run evidence-validator negative self-tests only when their machinery changes
+        run: |
+          set -euo pipefail
+          before="${{ github.event.before }}"
+          if test -z "$before" || test "$before" = "0000000000000000000000000000000000000000"; then before="$(git rev-parse HEAD^)"; fi
+          changed="$(git diff --name-only "$before" HEAD)"
+          for phase in $(seq 0 12); do
+            if printf '%s\n' "$changed" | grep -Eq "^tools/(check_phase${phase}_evidence|test_phase${phase}_evidence_negative|finalize_phase${phase}_evidence)\.py$"; then
+              test -f "tools/test_phase${phase}_evidence_negative.py"
+              python3 "tools/test_phase${phase}_evidence_negative.py"
+            fi
+          done
+
+  runtime-regression:
+    needs: static-integrity
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      ZXUX_EVIDENCE_DIR: /tmp/zxux-exact-head-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: {fetch-depth: 0}
+      - uses: ./.github/actions/setup-zxux-runtime
+      - name: Execute exact E0 foundation once
+        run: |
+          set -euo pipefail
+          py=tools/runtime/python/bin/python; driver=v1/tools-host/test-driver/run.py
+          for n in 01 02 03 04 05 06; do "$py" "$driver" build --step "E0.$n"; "$py" "$driver" test --step "E0.$n"; done
+      - name: Kernel regression when kernel dependencies changed
+        if: needs.static-integrity.outputs.kernel == 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p v1/build
+          (cd v1/src/kernel && "$GITHUB_WORKSPACE/tools/runtime/sjasmplus/bin/sjasmplus" --nologo --lst=../../build/kernel.lst kernel.asm)
+          test "$(wc -c < v1/build/kernel.bin)" -eq 8192
+          python3 v1/tools-host/inspect-mex/inspect.py --self-test
+          python3 v1/tools-host/inspect-obj/inspect.py --self-test
+      - name: Full historical Phase-1 regression only when its dependency set changed
+        if: needs.static-integrity.outputs.phase1 == 'true'
+        run: tools/runtime/python/bin/python v1/tools-host/test-driver/phase1_gate.py
+      - name: Full historical Phase-2 regression only when its dependency set changed
+        if: needs.static-integrity.outputs.phase2 == 'true'
+        run: |
+          set -euo pipefail
+          py=tools/runtime/python/bin/python
+          "$py" v1/tools-host/test-driver/run.py build --step P2.24
+          "$py" v1/tools-host/test-driver/run.py test --step P2.24
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        if: always()
+        with:
+          name: zxux-exact-head-${{ github.run_id }}-${{ github.run_attempt }}
+          path: /tmp/zxux-exact-head-${{ github.run_id }}-${{ github.run_attempt }}/
+          retention-days: 90
+          if-no-files-found: warn

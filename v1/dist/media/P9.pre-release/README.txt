@@ -16,6 +16,9 @@ fixtures, but the admitted resident boot image does not yet compose those
 stages into a live interactive login/session. This tape therefore stops at
 the login prompt instead of pretending later integration already exists.
 
+The workflows/ directory preserves the final workflow set used to create
+and validate this demonstration for reference by later phase previews.
+
 The Phase-9 checkpoint contains an internal time-set table symbol typo which
 prevents a fresh resident-kernel assembly. This build resolves that one table
 entry to the exact already-qualified handler offset during assembly only; the
