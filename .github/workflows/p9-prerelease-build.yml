@@ -88,7 +88,222 @@ jobs:
 
           def sym(name:str)->int:
               text=(root/'v1/build/kernel.sym').read_text(encoding='utf-8',errors='replace')
-              m=re.search(rf'^{re.escape(name)}:\\s+equ\\s+0x([0-9A-Fa-f]+)\\s*$',text,re.I|re.M)
+              m=re.search(rf'^\\s*{re.escape(name)}:\\s+equ\\s+0x([0-9A-Fa-f]+)\\s*
+              assert m is not None, name
+              return int(m.group(1),16)
+
+          maketap=load(root/'v1/tools-host/maketap/maketap.py','zxux_p9_prerelease_maketap')
+          cassette=load(root/'v1/tools-host/cassette-image/cassette_image.py','zxux_p9_prerelease_cassette')
+
+          screen=(root/'v1/assets/loading.scr').read_bytes()
+          issue=(root/'v1/assets/issue.txt').read_bytes()
+          prompt=b'login: '
+          assert len(screen)==6912 and len(issue)==144 and len(prompt)==7
+
+          idle=sym('zx48_idle_loop')
+          conwrite=sym('zx48_console_write')
+          assert 0xE000 <= idle <= 0xFAFD
+          kernel=bytearray((root/'v1/build/kernel.bin').read_bytes())
+          idle_off=idle-0xE000
+          original_idle=bytes(kernel[idle_off:idle_off+3])
+          assert original_idle==b'\\xfb\\x76\\xcd'
+          kernel[idle_off:idle_off+3]=bytes((0xC3,0x00,0x60))
+          kernel=bytes(kernel)
+
+          base=0x6000
+          code_size=45
+          issue_addr=base+code_size
+          prompt_addr=issue_addr+len(issue)
+          finish=base+42
+          reached=base+39
+          preview=bytearray()
+          for addr,value in ((idle,0xFB),(idle+1,0x76),(idle+2,0xCD)):
+              preview += bytes((0x3E,value,0x32,addr&0xFF,(addr>>8)&0xFF))
+          preview += bytes((0x21,issue_addr&0xFF,(issue_addr>>8)&0xFF,0x01,len(issue)&0xFF,(len(issue)>>8)&0xFF))
+          preview += bytes((0xCD,conwrite&0xFF,(conwrite>>8)&0xFF,0xDA,finish&0xFF,(finish>>8)&0xFF))
+          preview += bytes((0x21,prompt_addr&0xFF,(prompt_addr>>8)&0xFF,0x01,len(prompt),0x00))
+          preview += bytes((0xCD,conwrite&0xFF,(conwrite>>8)&0xFF,0xDA,finish&0xFF,(finish>>8)&0xFF))
+          assert base+len(preview)==reached
+          preview += bytes((0xC3,idle&0xFF,(idle>>8)&0xFF))
+          assert base+len(preview)==finish
+          preview += bytes((0xC3,idle&0xFF,(idle>>8)&0xFF))
+          assert len(preview)==code_size
+          preview += issue+prompt
+
+          n0=maketap._integer_number(0); n7=maketap._integer_number(7)
+          n24575=maketap._integer_number(24575); n57347=maketap._integer_number(57347)
+          loader_bytes=b''.join((
+              maketap._basic_line(10,bytes((maketap.TOK_BORDER,0x20))+n0+b': '+bytes((maketap.TOK_PAPER,0x20))+n0+b': '+bytes((maketap.TOK_INK,0x20))+n7+b': '+bytes((maketap.TOK_CLS,))),
+              maketap._basic_line(20,bytes((maketap.TOK_CLEAR,0x20))+n24575),
+              maketap._basic_line(30,bytes((maketap.TOK_LOAD,0x20,0x22,0x22,0x20,maketap.TOK_SCREEN))),
+              maketap._basic_line(40,bytes((maketap.TOK_LOAD,0x20,0x22,0x22,0x20,maketap.TOK_CODE))),
+              maketap._basic_line(45,bytes((maketap.TOK_LOAD,0x20,0x22,0x22,0x20,maketap.TOK_CODE))),
+              maketap._basic_line(50,bytes((maketap.TOK_RANDOMIZE,0x20,maketap.TOK_USR,0x20))+n57347),
+          ))
+          loader_text=(
+              '10 BORDER 0: PAPER 0: INK 7: CLS\n'
+              '20 CLEAR 24575\n'
+              '30 LOAD "" SCREEN$\n'
+              '40 LOAD "" CODE\n'
+              '45 LOAD "" CODE\n'
+              '50 RANDOMIZE USR 57347\n'
+          )
+          files=(
+              maketap.LogicalFile('zx48ux',maketap.PROGRAM_TYPE,loader_bytes,10,len(loader_bytes)),
+              maketap.LogicalFile('zx48uxscr',maketap.CODE_TYPE,screen,maketap.SCREEN_START,0x8000),
+              maketap.LogicalFile('kernel',maketap.CODE_TYPE,kernel,maketap.KERNEL_START,0x8000),
+              maketap.LogicalFile('p9preview',maketap.CODE_TYPE,bytes(preview),base,0x8000),
+          )
+          def build():
+              return b''.join(maketap.logical_file_blocks(x) for x in files)
+          tape1=build(); tape2=build(); assert tape1==tape2
+          parsed=cassette.parse_files(tape1)
+          assert [x.name for x in parsed]==['zx48ux','zx48uxscr','kernel','p9preview']
+          assert parsed[0].file_type==0 and parsed[0].param1==10 and parsed[0].data==loader_bytes
+          assert parsed[1].file_type==3 and parsed[1].param1==0x4000 and parsed[1].length==6912
+          assert parsed[2].file_type==3 and parsed[2].param1==0xE000 and parsed[2].length==8192
+          assert parsed[3].file_type==3 and parsed[3].param1==base and parsed[3].data==bytes(preview)
+
+          tap_path=out/'zx-ux-phase9-pre-release.tap'; tap_path.write_bytes(tape1)
+          kernel_path=out/'kernel-phase9-pre-release.bin'; kernel_path.write_bytes(kernel)
+          preview_path=out/'phase9-preview.bin'; preview_path.write_bytes(bytes(preview))
+          (out/'loader.bas').write_text(loader_text,encoding='utf-8',newline='\n')
+          (out/'README.txt').write_text(
+              'ZX-UX Phase-9 development/pre-release boot tape\n\n'
+              'On a 48K-compatible Sinclair ZX Spectrum, use: LOAD ""\n\n'
+              'The auto-start BASIC loader loads the ZX-UX loading screen, the Phase-9\n'
+              'resident kernel at 0xE000, and a small development preview payload at\n'
+              '0x6000, then transfers control through the real ZX-UX boot gateway at\n'
+              '0xE003. After normal kernel initialization, the preview payload uses the\n'
+              'current ZX-UX console routine to display the frozen /etc/issue text and\n'
+              'the exact "login: " prompt, then restores and enters the normal PID0 idle\n'
+              'scheduler.\n\n'
+              'This is intentionally a Phase-9 development preview, not a final release.\n'
+              'Phase-9 shell and vi behavior is qualified in staged target fixtures, but\n'
+              'the admitted resident boot image does not yet compose those stages into an\n'
+              'interactive login/session executable. Accordingly this tape stops at the\n'
+              'login prompt and does not pretend later integration already exists.\n\n'
+              'The Phase-9 checkpoint also contains one internal syscall-table symbol typo\n'
+              'which prevents a fresh resident-kernel assembly. This pre-release build uses\n'
+              'the exact already-qualified handler offset for that table entry without\n'
+              'changing the checked-in Phase-9 source or certification evidence.\n',
+              encoding='utf-8',newline='\n')
+
+          def sha(p:Path): return hashlib.sha256(p.read_bytes()).hexdigest()
+          meta={
+              'schema':1,'kind':'phase9-development-pre-release',
+              'source_commit':'6811d6f936851a67c7870ded34038133fa6a820a',
+              'architecture_sha256':'24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c',
+              'implementation_plan_sha256':'840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc',
+              'boot_contract':{'entry_command':'LOAD ""','basic_name':'zx48ux','autostart_line':10,
+                               'screen_name':'zx48uxscr','screen_address':16384,'screen_size':6912,
+                               'kernel_name':'kernel','kernel_address':57344,'kernel_size':8192,
+                               'preview_name':'p9preview','preview_address':24576,
+                               'boot_gateway':57347,'expected_prompt':'login: ',
+                               'login_reached_address':reached},
+              'pre_release_patches':[
+                  {'scope':'assembly-only','detail':'syscall time-set table entry resolved to the exact qualified handler offset'},
+                  {'scope':'output-kernel-only','detail':'PID0 idle entry redirects once to 0x6000; preview restores the original three bytes before output'}
+              ],
+              'files':[],
+              'tests':{'deterministic_rebuild':'PASS','bootstrap_structure':'PASS',
+                       'fuse_basic_to_boot_gateway':'PENDING','fuse_boot_to_login':'PENDING'}
+          }
+          for p in (tap_path,kernel_path,preview_path,out/'loader.bas',out/'README.txt'):
+              meta['files'].append({'path':p.name,'size':p.stat().st_size,'sha256':sha(p)})
+          (out/'pre-release.json').write_text(json.dumps(meta,indent=2,sort_keys=True)+'\n',encoding='utf-8')
+          PY
+
+      - name: Boot tape through BASIC to login prompt in Fuse
+        shell: bash
+        run: |
+          set -euo pipefail
+          tap=/tmp/p9-prerelease/P9.pre-release/zx-ux-phase9-pre-release.tap
+          cat > /tmp/p9-prerelease/fuse-transfer.txt <<'EOF'
+          breakpoint 0xe003
+          commands 1
+          exit 0
+          end
+          continue
+          EOF
+          if ! timeout -k 5s 60s env SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
+            tools/runtime/fuse/bin/fuse \
+            --machine 48 --no-sound --no-confirm-actions --auto-load --detect-loader --fastload \
+            --debugger-command "$(cat /tmp/p9-prerelease/fuse-transfer.txt)" "$tap" \
+            > /tmp/p9-prerelease/fuse-transfer.log 2>&1; then
+            cat /tmp/p9-prerelease/fuse-transfer.log
+            exit 1
+          fi
+          cat > /tmp/p9-prerelease/fuse-login.txt <<'EOF'
+          breakpoint 0x6027
+          commands 1
+          exit 0
+          end
+          continue
+          EOF
+          if ! timeout -k 5s 180s env SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
+            tools/runtime/fuse/bin/fuse \
+            --machine 48 --no-sound --no-confirm-actions --auto-load --detect-loader --fastload \
+            --debugger-command "$(cat /tmp/p9-prerelease/fuse-login.txt)" "$tap" \
+            > /tmp/p9-prerelease/fuse-login.log 2>&1; then
+            cat /tmp/p9-prerelease/fuse-login.log
+            exit 1
+          fi
+          tools/runtime/python/bin/python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('/tmp/p9-prerelease/P9.pre-release/pre-release.json')
+          d=json.loads(p.read_text())
+          d['tests']['fuse_basic_to_boot_gateway']='PASS'
+          d['tests']['fuse_boot_to_login']='PASS'
+          p.write_text(json.dumps(d,indent=2,sort_keys=True)+'\n')
+          PY
+
+      - name: Three unchanged final-output scans
+        shell: bash
+        run: |
+          set -euo pipefail
+          dir=/tmp/p9-prerelease/P9.pre-release
+          baseline=""
+          for scan in 1 2 3; do
+            tools/runtime/python/bin/python - <<'PY'
+          import hashlib,json,struct
+          from pathlib import Path
+          d=Path('/tmp/p9-prerelease/P9.pre-release')
+          meta=json.loads((d/'pre-release.json').read_text())
+          assert meta['kind']=='phase9-development-pre-release'
+          assert meta['source_commit']=='6811d6f936851a67c7870ded34038133fa6a820a'
+          assert meta['tests']=={'bootstrap_structure':'PASS','deterministic_rebuild':'PASS','fuse_basic_to_boot_gateway':'PASS','fuse_boot_to_login':'PASS'}
+          for item in meta['files']:
+              p=d/item['path']; data=p.read_bytes()
+              assert len(data)==item['size'] and hashlib.sha256(data).hexdigest()==item['sha256']
+          tap=(d/'zx-ux-phase9-pre-release.tap').read_bytes()
+          off=0; blocks=[]
+          while off<len(tap):
+              assert off+2<=len(tap); n=struct.unpack_from('<H',tap,off)[0]; off+=2
+              assert off+n<=len(tap); b=tap[off:off+n]; off+=n
+              x=0
+              for v in b[:-1]: x^=v
+              assert b[-1]==x
+              blocks.append(b)
+          assert off==len(tap) and len(blocks)==8
+          loader=(d/'loader.bas').read_text()
+          assert loader=='10 BORDER 0: PAPER 0: INK 7: CLS\n20 CLEAR 24575\n30 LOAD "" SCREEN$\n40 LOAD "" CODE\n45 LOAD "" CODE\n50 RANDOMIZE USR 57347\n'
+          assert (d/'README.txt').read_bytes().endswith(b'certification evidence.\n')
+          PY
+            digest="$(find "$dir" -maxdepth 1 -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')"
+            if test -z "$baseline"; then baseline="$digest"; else test "$digest" = "$baseline"; fi
+          done
+
+      - name: Upload tested pre-release tape bundle
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: zxux-phase9-pre-release
+          path: /tmp/p9-prerelease/P9.pre-release/
+          retention-days: 30
+          if-no-files-found: error
+,text,re.I|re.M)
               assert m is not None, name
               return int(m.group(1),16)
 
