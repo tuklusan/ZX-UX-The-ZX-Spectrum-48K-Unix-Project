@@ -1,0 +1,56 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "obj1-header-constants-exact",
+      "passed": true
+    },
+    {
+      "name": "obj1-doc-exact-header-size",
+      "passed": true
+    },
+    {
+      "name": "obj1-doc-body-crc-complete",
+      "passed": true
+    },
+    {
+      "name": "obj1-doc-widened-arithmetic-and-no-trailing",
+      "passed": true
+    },
+    {
+      "name": "golden-magic-and-version",
+      "passed": true
+    },
+    {
+      "name": "golden-offsets",
+      "passed": true
+    },
+    {
+      "name": "golden-text-bss",
+      "passed": true
+    },
+    {
+      "name": "golden-header-crc-zero-field",
+      "passed": true
+    }
+  ],
+  "commands": [],
+  "hashes": {
+    "v1/dist/certification/phase-9.json": "fd33c3253d10e822b7f9569ef537377541ec6921e374178a411e412797fa8a04",
+    "v1/docs/obj1.md": "757e0abce4004d89d77615c13eb9cbd27824f28bf3cacb68eea9980458bb300a",
+    "v1/include/obj1.inc": "acb62936905a4cfae7bd6b9fc9f2ed9b1a9208aca5feaf15346ae47c17fa2ef0",
+    "v1/tools-host/test-driver/phase10_obj1_header.py": "8f7cdcd81a5984fe61866784210c963a2d6e05af22dc2ac2e169f192f69c0a80",
+    "v1/tools-host/test-driver/run.py": "9973918f60a6d4cf17b60f69952642709cd023475cd13e00479f844d2322b2ee"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P9.24": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "21f6fcf0cbb8553048a2058fe08cb8b56b396eff",
+  "status": "PASS",
+  "step": "P10.01",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
