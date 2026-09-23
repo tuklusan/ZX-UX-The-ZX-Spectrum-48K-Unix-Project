@@ -52,7 +52,18 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/p9-prerelease/P9.pre-release v1/build
+          trap 'git checkout -- v1/src/kernel/syscall.asm' EXIT
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('v1/src/kernel/syscall.asm')
+          s=p.read_text(encoding='utf-8')
+          assert s.count('zx48_time_set_handler')==2
+          p.write_text(s.replace('zx48_time_set_handler','zx48_sys_time_set'),encoding='utf-8',newline='\n')
+          PY
           (cd v1/src/kernel && "$GITHUB_WORKSPACE/tools/runtime/sjasmplus/bin/sjasmplus" --nologo --lst=../../build/kernel.lst kernel.asm)
+          git checkout -- v1/src/kernel/syscall.asm
+          trap - EXIT
+          test -z "$(git diff -- v1/src/kernel/syscall.asm)"
           test "$(wc -c < v1/build/kernel.bin)" -eq 8192
           tools/runtime/python/bin/python - <<'PY'
           from __future__ import annotations
