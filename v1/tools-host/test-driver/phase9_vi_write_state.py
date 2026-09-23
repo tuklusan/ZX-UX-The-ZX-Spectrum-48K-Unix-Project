@@ -18,6 +18,7 @@ from fuse_harness import FAIL_PC, PASS_PC, run_sna
 from phase8_common import inspect_mex, make_tap, mex1, word
 
 BASE=0xC000; GATE=0xE000; NEW=0xA100
+# Exact P9.18 qualification candidate.
 FAILR=0xA200; OUT=0xA300
 
 class P918Error(DriverError): pass
