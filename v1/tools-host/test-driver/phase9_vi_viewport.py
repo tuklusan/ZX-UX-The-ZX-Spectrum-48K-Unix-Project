@@ -143,9 +143,11 @@ gate_end:
         data=b"a\tb"
         # Cursor starts at supplied offset 2; expected display column is 8.
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC)+phase1._call(sy["vi_p922_cursor_column"]))
-        code+=b"\x7C\xB7"+phase1._jp_nz(FAIL_PC)+b"\x7D\xFE\x08"+phase1._jp_nz(FAIL_PC)
+        code+=b"\x7C\xB7"+phase1._jp_nz(FAIL_PC)+b"\x7D\xFE\x08"+phase1._jp_nz(FAIL_PC)+phase1._jp(PASS_PC)
+        run_case(root,"tab-column-value",code,patch(image,gate,sy,data,cursor=2))
+        code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC))
         code+=expect_byte(sy["vi_buffer"]+1,9)+phase1._jp(PASS_PC)
-        run_case(root,"tab-column",code,patch(image,gate,sy,data,cursor=2))
+        run_case(root,"tab-byte-preserved",code,patch(image,gate,sy,data,cursor=2))
 
         # Unnumbered: logical column 69 scrolls to xoff 6, landing at screen column 63.
         data=b"x"*70
