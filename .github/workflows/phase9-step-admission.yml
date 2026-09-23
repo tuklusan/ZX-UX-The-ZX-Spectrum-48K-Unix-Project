@@ -124,8 +124,11 @@ jobs:
               if dst.exists(): raise SystemExit(f"immutable evidence already exists: {dst}")
               dst.write_bytes(p.read_bytes())
           PY
-          python3 tools/finalize_step_media.py --step "$STEP" --evidence-dir /tmp/qualification
-          git add "v1/dist/certification/$STEP.build.json" "v1/dist/certification/$STEP.test.json" "v1/dist/media/$STEP"
+          if test -d "/tmp/qualification/media-staging/$STEP" && find "/tmp/qualification/media-staging/$STEP" -type f ! -name manifest.json -print -quit | grep -q .; then
+            python3 tools/finalize_step_media.py --step "$STEP" --evidence-dir /tmp/qualification
+          fi
+          git add "v1/dist/certification/$STEP.build.json" "v1/dist/certification/$STEP.test.json"
+          if test -d "v1/dist/media/$STEP"; then git add "v1/dist/media/$STEP"; fi
           if test "$STEP" = P9.24; then git add v1/dist/certification/P9.24.result.json; fi
           test -n "$(git diff --cached --name-only)"
           ./tools/check_license_headers.sh
