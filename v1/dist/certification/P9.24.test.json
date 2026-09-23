@@ -1,0 +1,430 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "all-p9-01-through-p9-23-durable-evidence-pass",
+      "passed": true,
+      "record_count": 46
+    },
+    {
+      "basis": "P9.05 P9.15",
+      "name": "physical-edit-escape-and-break-separation-pass",
+      "passed": true
+    },
+    {
+      "basis": "P9.08 P9.10 P9.12 P9.15",
+      "name": "case-sensitive-p-P-o-O-n-N-g-G-pass",
+      "passed": true
+    },
+    {
+      "basis": "P9.09 P9.17 P9.18",
+      "name": "failed-growth-and-write-rollback-pass",
+      "passed": true
+    },
+    {
+      "basis": "P9.16 P9.18 P9.19 P9.21",
+      "name": "ex-command-and-dirty-retarget-pass",
+      "passed": true
+    },
+    {
+      "basis": "P9.20",
+      "name": "crontab-real-vi-integration-pass",
+      "passed": true
+    },
+    {
+      "basis": "P9.22",
+      "name": "tty64-viewport-column63-pass",
+      "passed": true
+    },
+    {
+      "basis": "P9.23",
+      "name": "vi-documentation-frozen-pass",
+      "passed": true
+    },
+    {
+      "bytes": 8168,
+      "name": "vi-size-at-most-8192",
+      "passed": true
+    },
+    {
+      "name": "phase9-gate-stops-before-phase10",
+      "passed": true
+    },
+    {
+      "name": "fuse-create-edit-save-reload-hello-c-pass",
+      "passed": true
+    },
+    {
+      "name": "fuse-failed-transaction-prior-destination-byte-exact",
+      "passed": true
+    },
+    {
+      "name": "selected-current-head-phase9-acceptance-matrix-pass",
+      "passed": true,
+      "steps": [
+        "P9.05",
+        "P9.08",
+        "P9.09",
+        "P9.10",
+        "P9.12",
+        "P9.13",
+        "P9.14",
+        "P9.15",
+        "P9.16",
+        "P9.17",
+        "P9.18",
+        "P9.19",
+        "P9.20",
+        "P9.21",
+        "P9.22",
+        "P9.23"
+      ]
+    },
+    {
+      "name": "fuse-phase9-acceptance-checkpoint-pass",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p924-vi.lst",
+        "--sym=p924-vi.sym",
+        "p924-vi.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 13,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 6448 lines, work time: 0.013 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p924-vi.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 28,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 11355, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 29335, \"image_size\": 8168, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 8192, \"relocations\": [], \"stored_length\": 8192, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p924-gateway.lst",
+        "--sym=p924-gateway.sym",
+        "p924-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 2,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 410 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P9.05",
+        "--evidence-dir",
+        "/tmp/zxux-p924-g6zgrfzr"
+      ],
+      "cwd": ".",
+      "duration_ms": 725,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P9.05 TEST PASS\nevidence=/tmp/zxux-p924-g6zgrfzr/P9.05.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P9.08",
+        "--evidence-dir",
+        "/tmp/zxux-p924-g6zgrfzr"
+      ],
+      "cwd": ".",
+      "duration_ms": 679,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P9.08 TEST PASS\nevidence=/tmp/zxux-p924-g6zgrfzr/P9.08.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P9.09",
+        "--evidence-dir",
+        "/tmp/zxux-p924-g6zgrfzr"
+      ],
+      "cwd": ".",
+      "duration_ms": 676,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P9.09 TEST PASS\nevidence=/tmp/zxux-p924-g6zgrfzr/P9.09.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P9.10",
+        "--evidence-dir",
+        "/tmp/zxux-p924-g6zgrfzr"
+      ],
+      "cwd": ".",
+      "duration_ms": 707,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P9.10 TEST PASS\nevidence=/tmp/zxux-p924-g6zgrfzr/P9.10.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P9.12",
+        "--evidence-dir",
+        "/tmp/zxux-p924-g6zgrfzr"
+      ],
+      "cwd": ".",
+      "duration_ms": 767,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P9.12 TEST PASS\nevidence=/tmp/zxux-p924-g6zgrfzr/P9.12.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P9.13",
+        "--evidence-dir",
+        "/tmp/zxux-p924-g6zgrfzr"
+      ],
+      "cwd": ".",
+      "duration_ms": 739,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P9.13 TEST PASS\nevidence=/tmp/zxux-p924-g6zgrfzr/P9.13.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P9.14",
+        "--evidence-dir",
+        "/tmp/zxux-p924-g6zgrfzr"
+      ],
+      "cwd": ".",
+      "duration_ms": 683,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P9.14 TEST PASS\nevidence=/tmp/zxux-p924-g6zgrfzr/P9.14.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P9.15",
+        "--evidence-dir",
+        "/tmp/zxux-p924-g6zgrfzr"
+      ],
+      "cwd": ".",
+      "duration_ms": 764,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P9.15 TEST PASS\nevidence=/tmp/zxux-p924-g6zgrfzr/P9.15.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P9.16",
+        "--evidence-dir",
+        "/tmp/zxux-p924-g6zgrfzr"
+      ],
+      "cwd": ".",
+      "duration_ms": 740,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P9.16 TEST PASS\nevidence=/tmp/zxux-p924-g6zgrfzr/P9.16.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P9.17",
+        "--evidence-dir",
+        "/tmp/zxux-p924-g6zgrfzr"
+      ],
+      "cwd": ".",
+      "duration_ms": 1071,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P9.17 TEST PASS\nevidence=/tmp/zxux-p924-g6zgrfzr/P9.17.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P9.18",
+        "--evidence-dir",
+        "/tmp/zxux-p924-g6zgrfzr"
+      ],
+      "cwd": ".",
+      "duration_ms": 843,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P9.18 TEST PASS\nevidence=/tmp/zxux-p924-g6zgrfzr/P9.18.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P9.19",
+        "--evidence-dir",
+        "/tmp/zxux-p924-g6zgrfzr"
+      ],
+      "cwd": ".",
+      "duration_ms": 680,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P9.19 TEST PASS\nevidence=/tmp/zxux-p924-g6zgrfzr/P9.19.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P9.20",
+        "--evidence-dir",
+        "/tmp/zxux-p924-g6zgrfzr"
+      ],
+      "cwd": ".",
+      "duration_ms": 841,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P9.20 TEST PASS\nevidence=/tmp/zxux-p924-g6zgrfzr/P9.20.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P9.21",
+        "--evidence-dir",
+        "/tmp/zxux-p924-g6zgrfzr"
+      ],
+      "cwd": ".",
+      "duration_ms": 736,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P9.21 TEST PASS\nevidence=/tmp/zxux-p924-g6zgrfzr/P9.21.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P9.22",
+        "--evidence-dir",
+        "/tmp/zxux-p924-g6zgrfzr"
+      ],
+      "cwd": ".",
+      "duration_ms": 1244,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P9.22 TEST PASS\nevidence=/tmp/zxux-p924-g6zgrfzr/P9.22.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P9.23",
+        "--evidence-dir",
+        "/tmp/zxux-p924-g6zgrfzr"
+      ],
+      "cwd": ".",
+      "duration_ms": 485,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P9.23 TEST PASS\nevidence=/tmp/zxux-p924-g6zgrfzr/P9.23.test.json\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "docs/01-ZX-UX-ARCHITECTURE-REV16.md": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+    "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+    "tools/vi.asm": "acdeed6797d56b2be27481b0f7ed85ccc4427d4911907f2c6a5e764ef3d84d5f",
+    "v1/build/p924-phase9-acceptance.tap": "e7de93366397ac8f20d0c7fb4ca98c98aa811b5c8e70bc9751340fc09e32a3e5",
+    "v1/build/p924-vi.mex1": "06c2bc4dc98b605eaeb0b91173d7b25d963ab290ca3cfc723a69ee79b552ffe4",
+    "v1/build/p924-vi.tap": "d8f27233304592083c7ab54a93356aa4b8cbd60940265616df93f405471999c5",
+    "v1/dist/certification/P9.23.build.json": "05c72a28e1b1336fa8f3820ff3573c995051824ac0fd51ee582212771e7803d1",
+    "v1/dist/certification/P9.23.test.json": "1312991e51679e961c6b681b49dd11160f2feff0b929803234ed1a33d444da98",
+    "v1/tools-host/test-driver/phase9_acceptance.py": "972cae21c79b501f3e831d55cc783b1ff53e7cf589624a4381413e9a7f0240da",
+    "v1/tools-host/test-driver/run.py": "ca95cde0353d43083c1889dbaac6d479f3518cb90386bb0f9ed4e261a85d281b"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P9.23": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "e933e8986c1ff90b9b0f0eb0c949fc367acb2fa7",
+  "status": "PASS",
+  "step": "P9.24",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
