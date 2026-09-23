@@ -91,19 +91,20 @@ DEFERRED = (
 
 def validate_document(text: str) -> list[str]:
     errors=[]
+    normalized=" ".join(text.split())
     for item in REQUIRED:
-        if item not in text:
+        if " ".join(item.split()) not in normalized:
             errors.append(f"missing required vi contract: {item}")
     for item in DEFERRED:
         if text.count(item) != 1:
             errors.append(f"deferred feature must appear exactly once: {item}")
-    if "`?`" in text:
+    if "`?`" in normalized:
         errors.append("unsupported normal/search command documented: ?")
     if text.count("`:udg`") != 1:
         errors.append(":udg deferral must appear exactly once")
-    if "BREAK is not editor escape" not in text:
+    if "BREAK is not editor escape" not in normalized:
         errors.append("BREAK/editor-escape separation missing")
-    if "case-sensitive" not in text:
+    if "case-sensitive" not in normalized:
         errors.append("case sensitivity missing")
     return errors
 
