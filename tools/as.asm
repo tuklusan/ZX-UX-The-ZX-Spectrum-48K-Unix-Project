@@ -190,3 +190,94 @@ as_obj1_value_tmp:       dw 0
 as_obj1_section_tmp:     db 0
 as_obj1_flags_tmp:       db 0
     ENDM
+
+
+; P10.03 OBJ1 relocation record contract.
+    MACRO EMIT_P10_AS_OBJ1_RELOC_ROUTINES
+AS_OBJ1_RELOC_SIZE       EQU 6
+AS_OBJ1_RELOC_OFFSET     EQU 0
+AS_OBJ1_RELOC_SYMBOL     EQU 2
+AS_OBJ1_RELOC_TYPE       EQU 4
+AS_OBJ1_RELOC_RESERVED   EQU 5
+AS_OBJ1_RELOC_ABS16      EQU 1
+
+; HL -> relocation record, DE=text_size, BC=symbol_count.
+; IX optionally points to previous relocation offset u16; IX=0 means first.
+; Structural range/order checks only. Final symbol+signed-addend arithmetic is
+; rechecked by the linker before narrowing.
+as_obj1_reloc_validate:
+    ld (as_obj1_reloc_record_tmp),hl
+    ld (as_obj1_reloc_text_tmp),de
+    ld (as_obj1_reloc_symbols_tmp),bc
+
+    ld de,AS_OBJ1_RELOC_TYPE
+    add hl,de
+    ld a,(hl)
+    cp AS_OBJ1_RELOC_ABS16
+    jr nz,as_obj1_reloc_invalid
+    inc hl
+    ld a,(hl)
+    or a
+    jr nz,as_obj1_reloc_invalid
+
+    ld hl,(as_obj1_reloc_record_tmp)
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (as_obj1_reloc_offset_tmp),de
+
+    ld hl,(as_obj1_reloc_text_tmp)
+    ld a,h
+    or a
+    jr nz,as_obj1_reloc_text_room
+    ld a,l
+    cp 2
+    jr c,as_obj1_reloc_invalid
+as_obj1_reloc_text_room:
+    dec hl
+    dec hl
+    or a
+    sbc hl,de
+    jr c,as_obj1_reloc_invalid
+
+    ld hl,(as_obj1_reloc_record_tmp)
+    inc hl
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld hl,(as_obj1_reloc_symbols_tmp)
+    or a
+    sbc hl,de
+    jr z,as_obj1_reloc_invalid
+    jr c,as_obj1_reloc_invalid
+
+    push ix
+    pop hl
+    ld a,h
+    or l
+    jr z,as_obj1_reloc_valid
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    inc de
+    inc de
+    ld hl,(as_obj1_reloc_offset_tmp)
+    or a
+    sbc hl,de
+    jr c,as_obj1_reloc_invalid
+
+as_obj1_reloc_valid:
+    xor a
+    ret
+
+as_obj1_reloc_invalid:
+    ld a,E_FORMAT
+    scf
+    ret
+
+as_obj1_reloc_record_tmp:  dw 0
+as_obj1_reloc_text_tmp:    dw 0
+as_obj1_reloc_symbols_tmp: dw 0
+as_obj1_reloc_offset_tmp:  dw 0
+    ENDM
