@@ -2923,10 +2923,8 @@ VI_TTY_LAST_COL         EQU 63
 ; Recompute the cursor's logical display column from the current line start.
 ; TAB remains one stored byte but advances to the next multiple-of-eight column.
 vi_p922_cursor_column:
-    call vi_p906_locate_line
-    ld hl,(vi_motion_start)
-    ld (vi_p922_scan_off),hl
     ld hl,0
+    ld (vi_p922_scan_off),hl
     ld (vi_p922_logical_col),hl
 vi_p922_col_loop:
     ld hl,(vi_p922_scan_off)
@@ -2935,11 +2933,22 @@ vi_p922_col_loop:
     sbc hl,de
     jr z,vi_p922_col_done
     ld hl,(vi_p922_scan_off)
+    ld de,(vi_buffer_len)
+    or a
+    sbc hl,de
+    jr nc,vi_p922_col_done
+    ld hl,(vi_p922_scan_off)
     call vi_p903_get_byte
+    cp 10
+    jr z,vi_p922_col_lf
     cp 9
     jr z,vi_p922_col_tab
     ld hl,(vi_p922_logical_col)
     inc hl
+    ld (vi_p922_logical_col),hl
+    jr vi_p922_col_next
+vi_p922_col_lf:
+    ld hl,0
     ld (vi_p922_logical_col),hl
     jr vi_p922_col_next
 vi_p922_col_tab:
