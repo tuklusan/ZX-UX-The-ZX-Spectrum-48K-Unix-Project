@@ -1042,4 +1042,217 @@ vi_motion_col: dw 0
 vi_motion_target_start: dw 0
 vi_motion_target_end: dw 0
 vi_motion_maxcol: dw 0
+
+; P9.07 w/b/e word motions.  Classification is ASCII: [A-Za-z0-9_] is one
+; class, horizontal whitespace another, and punctuation a third.  Motion is
+; bounded to the current logical line and never consumes LF.
+vi_p907_move:
+    ld (vi_word_cmd),a
+    ld hl,(vi_buffer_len)
+    ld a,h
+    or l
+    jr nz,vi_p907_nonempty
+    xor a
+    ret
+vi_p907_nonempty:
+    call vi_p906_locate_line
+    ld a,(vi_word_cmd)
+    cp 'w'
+    jp z,vi_p907_w
+    cp 'b'
+    jp z,vi_p907_b
+    cp 'e'
+    jp z,vi_p907_e
+    ld a,E_INVAL
+    scf
+    ret
+
+vi_p907_w:
+    call vi_p906_current_end
+    ld (vi_word_end),hl
+    ld hl,(vi_cursor_off)
+    inc hl
+    ld de,(vi_word_end)
+    push hl
+    or a
+    sbc hl,de
+    pop hl
+    jp nc,vi_p907_ok
+    ; Skip the remainder of the current class when currently non-space.
+    ld de,(vi_cursor_off)
+    ex de,hl
+    call vi_p903_get_byte
+    call vi_p907_class
+    ld (vi_word_class),a
+    cp 0
+    jr z,vi_p907_w_skip_space
+    ld hl,(vi_cursor_off)
+    inc hl
+vi_p907_w_same:
+    ld de,(vi_word_end)
+    push hl
+    or a
+    sbc hl,de
+    pop hl
+    jp nc,vi_p907_ok
+    push hl
+    call vi_p903_get_byte
+    call vi_p907_class
+    ld b,a
+    pop hl
+    ld a,(vi_word_class)
+    cp b
+    jr nz,vi_p907_w_skip_space
+    inc hl
+    jr vi_p907_w_same
+vi_p907_w_skip_space:
+    ld hl,(vi_cursor_off)
+    inc hl
+vi_p907_w_space_loop:
+    ld de,(vi_word_end)
+    push hl
+    or a
+    sbc hl,de
+    pop hl
+    jp nc,vi_p907_ok
+    push hl
+    call vi_p903_get_byte
+    call vi_p907_class
+    ld b,a
+    pop hl
+    ld a,b
+    or a
+    jr nz,vi_p907_set
+    inc hl
+    jr vi_p907_w_space_loop
+
+vi_p907_b:
+    ld hl,(vi_cursor_off)
+    ld de,(vi_motion_start)
+    or a
+    sbc hl,de
+    jp z,vi_p907_ok
+    ld hl,(vi_cursor_off)
+    dec hl
+vi_p907_b_skip_space:
+    push hl
+    call vi_p903_get_byte
+    call vi_p907_class
+    ld b,a
+    pop hl
+    ld a,b
+    or a
+    jr nz,vi_p907_b_class
+    ld de,(vi_motion_start)
+    push hl
+    or a
+    sbc hl,de
+    pop hl
+    jr z,vi_p907_set
+    dec hl
+    jr vi_p907_b_skip_space
+vi_p907_b_class:
+    ld a,b
+    ld (vi_word_class),a
+vi_p907_b_same:
+    ld de,(vi_motion_start)
+    push hl
+    or a
+    sbc hl,de
+    pop hl
+    jr z,vi_p907_set
+    dec hl
+    push hl
+    call vi_p903_get_byte
+    call vi_p907_class
+    ld b,a
+    pop hl
+    ld a,(vi_word_class)
+    cp b
+    jr z,vi_p907_b_same
+    inc hl
+    jr vi_p907_set
+
+vi_p907_e:
+    call vi_p906_current_end
+    ld (vi_word_end),hl
+    ld hl,(vi_cursor_off)
+vi_p907_e_skip_space:
+    ld de,(vi_word_end)
+    push hl
+    or a
+    sbc hl,de
+    pop hl
+    jp nc,vi_p907_ok
+    push hl
+    call vi_p903_get_byte
+    call vi_p907_class
+    ld b,a
+    pop hl
+    ld a,b
+    or a
+    jr nz,vi_p907_e_class
+    inc hl
+    jr vi_p907_e_skip_space
+vi_p907_e_class:
+    ld a,b
+    ld (vi_word_class),a
+vi_p907_e_same:
+    inc hl
+    ld de,(vi_word_end)
+    push hl
+    or a
+    sbc hl,de
+    pop hl
+    jr nc,vi_p907_e_back
+    push hl
+    call vi_p903_get_byte
+    call vi_p907_class
+    ld b,a
+    pop hl
+    ld a,(vi_word_class)
+    cp b
+    jr z,vi_p907_e_same
+vi_p907_e_back:
+    dec hl
+
+vi_p907_set:
+    ld (vi_cursor_off),hl
+vi_p907_ok:
+    xor a
+    ret
+
+; A=byte -> A=0 whitespace, 1 [A-Za-z0-9_], 2 punctuation.
+vi_p907_class:
+    cp ' '
+    jr z,vi_p907_class_space
+    cp 9
+    jr z,vi_p907_class_space
+    cp '_'
+    jr z,vi_p907_class_word
+    cp '0'
+    jr c,vi_p907_class_punct
+    cp '9'+1
+    jr c,vi_p907_class_word
+    cp 'A'
+    jr c,vi_p907_class_punct
+    cp 'Z'+1
+    jr c,vi_p907_class_word
+    cp 'a'
+    jr c,vi_p907_class_punct
+    cp 'z'+1
+    jr c,vi_p907_class_word
+vi_p907_class_punct:
+    ld a,2
+    ret
+vi_p907_class_word:
+    ld a,1
+    ret
+vi_p907_class_space:
+    xor a
+    ret
+
+vi_word_cmd: db 0
+vi_word_class: db 0
+vi_word_end: dw 0
     ENDM
