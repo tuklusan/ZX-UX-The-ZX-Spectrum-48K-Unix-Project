@@ -11,7 +11,15 @@
 ; patent, trademark, and governing-law provisions.
 ;
 ; OBJ1 version-1 object format.
+; P10.01 freezes the exact 24-byte header and its bounds.
 
+OBJ1_MAGIC_0             EQU $4F
+OBJ1_MAGIC_1             EQU $42
+OBJ1_MAGIC_2             EQU $4A
+OBJ1_MAGIC_3             EQU $31
+OBJ1_HEADER_SIZE         EQU 24
+OBJ1_MAX_TEXT_BSS        EQU 32768
+OBJ1_MAX_STORED          EQU 32768
 OBJ1_VERSION             EQU 1
 OBJ1_FLAGS               EQU 0
 OBJ1_HDR_MAGIC           EQU 0
