@@ -1699,4 +1699,99 @@ vi_p912_nomem:
 
 vi_put_cmd: db 0
 vi_put_start: dw 0
+
+; P9.13 r/J replacement and join.
+; r is two-stage so a missing replacement byte leaves the buffer untouched.
+vi_p913_r_begin:
+    ld hl,(vi_buffer_len)
+    ld de,(vi_cursor_off)
+    or a
+    sbc hl,de
+    jr z,vi_p913_r_empty
+    jr c,vi_p913_r_empty
+    ld a,1
+    ld (vi_replace_pending),a
+    xor a
+    ret
+vi_p913_r_empty:
+    xor a
+    ld (vi_replace_pending),a
+    ret
+
+; A is the replacement byte.
+vi_p913_r_char:
+    ld b,a
+    ld a,(vi_replace_pending)
+    or a
+    jr z,vi_p913_r_missing
+    xor a
+    ld (vi_replace_pending),a
+    ld hl,(vi_cursor_off)
+    ld a,b
+    call vi_p913_set_byte
+    ret c
+    ld a,1
+    ld (vi_dirty),a
+    xor a
+    ret
+vi_p913_r_missing:
+    ld a,E_INVAL
+    scf
+    ret
+
+; J replaces the current line's LF separator with one ASCII space.
+; No next line is a safe no-op.
+vi_p913_J:
+    ld hl,(vi_buffer_len)
+    ld a,h
+    or l
+    ret z
+    call vi_p906_locate_line
+    ld a,(vi_motion_line)
+    inc a
+    ld b,a
+    ld a,(vi_line_count)
+    cp b
+    ret z
+    ret c
+    call vi_p906_current_end
+    ; current_end points at the LF for every non-final logical line.
+    ld a,' '
+    call vi_p913_set_byte
+    ret c
+    ; Removing the LF line boundary requires a fresh compact index.
+    call vi_p903_reindex
+    ret c
+    ld a,1
+    ld (vi_dirty),a
+    xor a
+    ret
+
+; HL logical offset, A replacement byte. Same-size update: allocation-free.
+vi_p913_set_byte:
+    ld (vi_replace_byte),a
+    ld de,(vi_gap_start)
+    push hl
+    or a
+    sbc hl,de
+    pop hl
+    jr c,vi_p913_set_physical
+    push hl
+    ld hl,(vi_gap_end)
+    or a
+    sbc hl,de
+    ld b,h
+    ld c,l
+    pop hl
+    add hl,bc
+vi_p913_set_physical:
+    ld de,vi_buffer
+    add hl,de
+    ld a,(vi_replace_byte)
+    ld (hl),a
+    xor a
+    ret
+
+vi_replace_pending: db 0
+vi_replace_byte: db 0
     ENDM
