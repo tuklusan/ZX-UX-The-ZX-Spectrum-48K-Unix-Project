@@ -156,14 +156,14 @@ jobs:
               if r.status!=204: raise SystemExit(f"validation dispatch failed: {r.status}")
           PY
 )"
-          n="${STEP#P9.}"
+          n="${STEP#P8.}"
           test "$((10#$n))" -ge 1
-          test "$((10#$n))" -le 24
+          test "$((10#$n))" -le 40
           test "$(git rev-parse HEAD)" = "$SOURCE_COMMIT"
           test "$(git ls-remote origin refs/heads/main | awk '{print $1}')" = "$SOURCE_COMMIT"
           ./tools/check_license_headers.sh
           ./tools/check_project_policy.py
-          python3 tools/check_phase8_evidence.py --require-active
+          python3 tools/check_phase7_evidence.py --require-active
       - name: Download exact qualification artifact
         env:
           GH_TOKEN: ${{ github.token }}
@@ -208,7 +208,7 @@ jobs:
           import json, pathlib, sys
           step,source=sys.argv[1:3]
           n=int(step.split(".")[1])
-          expected={"P8.40":"PASS"} if n==1 else {f"P9.{n-1:02d}":"PASS"}
+          expected={"P7.21":"PASS"} if n==1 else {f"P8.{n-1:02d}":"PASS"}
           root=pathlib.Path("/tmp/qualification")
           for action in ("build","test"):
               p=root/f"{step}.{action}.json"
@@ -221,13 +221,13 @@ jobs:
               dst=pathlib.Path("v1/dist/certification")/p.name
               if dst.exists(): raise SystemExit(f"immutable evidence already exists: {dst}")
               dst.write_bytes(p.read_bytes())
-          if step=="P9.24":
-              p=root/"P9.24.result.json"
+          if step=="P8.40":
+              p=root/"P8.40.result.json"
               r=json.loads(p.read_text())
-              assert r["schema"]==2 and r["step"]=="P9.24" and r["action"]=="result"
+              assert r["schema"]==2 and r["step"]=="P8.40" and r["action"]=="result"
               assert r["status"]=="PASS" and r["worktree_clean"] is True
-              assert r["source_commit"]==source and r["prerequisites"]=={"P9.23":"PASS"}
-              assert r["pass_marker"]=="ZX-UX PHASE 9 ACCEPTANCE PASS"
+              assert r["source_commit"]==source and r["prerequisites"]=={"P8.39":"PASS"}
+              assert r["pass_marker"]=="ZX-UX PHASE 8 ACCEPTANCE PASS"
               assert r["architecture_sha256"]=="24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c"
               assert r["implementation_plan_sha256"]=="840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc"
               dst=pathlib.Path("v1/dist/certification")/p.name
@@ -236,7 +236,7 @@ jobs:
           PY
           python3 tools/finalize_step_media.py --step "$STEP" --evidence-dir /tmp/qualification
           git add "v1/dist/certification/$STEP.build.json" "v1/dist/certification/$STEP.test.json" "v1/dist/media/$STEP"
-          if test "$STEP" = P9.24; then git add v1/dist/certification/P9.24.result.json; fi
+          if test "$STEP" = P8.40; then git add v1/dist/certification/P8.40.result.json; fi
           test -n "$(git diff --cached --name-only)"
           ./tools/check_license_headers.sh
           ./tools/check_project_policy.py
@@ -259,7 +259,7 @@ jobs:
           import json, os, urllib.request
           payload=json.dumps({"ref":"main","inputs":{"admitted_commit":os.environ["ADMITTED_COMMIT"]}}).encode()
           req=urllib.request.Request(
-              f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}/actions/workflows/phase9-admission-validation.yml/dispatches",
+              f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}/actions/workflows/phase8-admission-validation.yml/dispatches",
               data=payload,method="POST",
               headers={"Authorization":f"Bearer {os.environ['GH_TOKEN']}","Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","Content-Type":"application/json"})
           with urllib.request.urlopen(req,timeout=30) as r:
