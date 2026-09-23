@@ -1,0 +1,96 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p906-present",
+      "passed": true
+    },
+    {
+      "name": "six-exact-motion-keys",
+      "passed": true
+    },
+    {
+      "name": "logical-cursor-offset",
+      "passed": true
+    },
+    {
+      "name": "indexed-line-boundaries",
+      "passed": true
+    },
+    {
+      "name": "empty-buffer-stable",
+      "passed": true
+    },
+    {
+      "name": "fuse-horizontal-boundaries-exact",
+      "passed": true
+    },
+    {
+      "name": "fuse-down-boundaries-exact",
+      "passed": true
+    },
+    {
+      "name": "fuse-up-boundaries-exact",
+      "passed": true
+    },
+    {
+      "name": "fuse-zero-dollar-exact",
+      "passed": true
+    },
+    {
+      "name": "fuse-empty-no-under-overflow",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p906-vi.lst",
+        "--sym=p906-vi.sym",
+        "p906-vi.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 8,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2354 lines, work time: 0.007 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p906-vi.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 30,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 25365, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 13403, \"image_size\": 3438, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 3462, \"relocations\": [], \"stored_length\": 3462, \"version\": 1}\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/vi.asm": "2efb1c8bcc2380e7ce5a6853c928f7ac1ecb142c02d839982e9fca801c85c8c1",
+    "v1/build/p906-vi.mex1": "6992b1f9ac2c841990b43b2d6984c513b0d773e4d7a0bef6fc195510ec437d24",
+    "v1/build/p906-vi.tap": "41aa16a7e29e9a3c0b2e2ce87b3decaef5aa7758c85a877b747efaf0acd82cb5",
+    "v1/dist/certification/P9.05.test.json": "3a5548da7c289adbe8418be6506545c91ff7afb72ca0f45eba186a5584984f38",
+    "v1/tools-host/test-driver/phase9_vi_motion_basic.py": "be8209112bd5672bd1df3e7b16772f660daa15549e18e6c7a9fae6e6fd1ffd80",
+    "v1/tools-host/test-driver/run.py": "c1fe677ba955bf71d508429dc0c5344893152e7c8448d04b1711ad7d40d7a579"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P9.05": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "9575e8ef32eb56a4f190e31a93b49421134319a6",
+  "status": "PASS",
+  "step": "P9.06",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
