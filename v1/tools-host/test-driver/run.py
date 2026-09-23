@@ -275,6 +275,7 @@ import phase9_vi_viewport
 import phase9_vi_docs
 import phase9_acceptance
 import phase10_obj1_header
+import phase10_obj1_symbol
 # Phase-9 vi qualification dispatch.
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
 from media_retention import (
@@ -715,6 +716,8 @@ def dispatch(root: Path, action: str, step: str):
         raise DriverError(f"numbered Phase-9 step is not registered: {step}")
     if step == "P10.01":
         return phase10_obj1_header.dispatch(root, action, step, **kwargs)
+    if step == "P10.02":
+        return phase10_obj1_symbol.dispatch(root, action, step, **kwargs)
     if step.startswith("P10."):
         raise DriverError(f"numbered Phase-10 step is not registered: {step}")
     module = E0_MODULE.get(step)
