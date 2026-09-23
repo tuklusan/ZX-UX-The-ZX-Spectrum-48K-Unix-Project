@@ -115,7 +115,7 @@ def _ordered(text: str, tokens: tuple[str, ...]) -> bool:
 
 
 def _time_get_ok(syscall: str) -> bool:
-    block = _block(syscall, "zx48_sys_time_get:", "zx48_sys_time_set:")
+    block = _block(syscall, "zx48_sys_time_get:", "zx48_time_set_handler:")
     return _ordered(block, (
         "ld hl,(syscall_arg_hl)",
         "ld bc,6",
@@ -137,8 +137,8 @@ def _time_get_ok(syscall: str) -> bool:
 
 
 def _time_set_ok(syscall: str) -> bool:
-    block = _block(syscall, "zx48_sys_time_set:", "emit_user_range_validation_routine")
-    precommit = _block(block, "zx48_sys_time_set:", "zx48_sys_time_valid:")
+    block = _block(syscall, "zx48_time_set_handler:", "emit_user_range_validation_routine")
+    precommit = _block(block, "zx48_time_set_handler:", "zx48_sys_time_valid:")
     commit = block[block.find("zx48_sys_time_valid:"):] if "zx48_sys_time_valid:" in block else ""
     return (
         _ordered(precommit, (
@@ -197,7 +197,7 @@ def _contracts(root: Path) -> list[dict[str, object]]:
         {"name": "canonical-time-error-numbers", "passed": "e_inval                  equ $01" in include and "e_perm                   equ $07" in include and "e_again                  equ $0d" in include},
         {"name": "time-get-exact-six-byte-atomic-copy", "passed": time_get},
         {"name": "time-set-pid1-permission-range-and-atomic-commit", "passed": time_set},
-        {"name": "time-info-dispatch-order", "passed": "dw zx48_sys_mem_info,zx48_sys_proc_info,zx48_sys_ticks,zx48_sys_time_get,zx48_sys_time_set" in info_table},
+        {"name": "time-info-dispatch-order", "passed": "dw zx48_sys_mem_info,zx48_sys_proc_info,zx48_sys_ticks,zx48_sys_time_get,zx48_time_set_handler" in info_table},
         {"name": "time-state-layout-is-time1-prefix", "passed": all(token in interrupt for token in (
             "wall_seconds              equ interrupt_state_base+7",
             "wall_revision             equ interrupt_state_base+11",
@@ -209,7 +209,7 @@ def _contracts(root: Path) -> list[dict[str, object]]:
         {"name": "abi-doc-set-permission-and-range", "passed": "sys_time_set is restricted to pid1" in abi and "1970 through 2099" in abi},
         {"name": "abi-doc-revision-and-subsecond", "passed": "increments revision modulo 65536 even when the seconds value is unchanged" in abi and "resets the private subsecond frame counter to zero" in abi},
         {"name": "reject-missing-revision-increment", "passed": not _time_set_ok(syscall.replace("    inc hl\n    ld (wall_revision),hl", "    ld (wall_revision),hl", 1))},
-        {"name": "reject-nonatomic-prevalidation-write", "passed": not _time_set_ok(syscall.replace("zx48_sys_time_set:\n    ld a,(current_pid)", "zx48_sys_time_set:\n    ld (wall_valid),a\n    ld a,(current_pid)", 1))},
+        {"name": "reject-nonatomic-prevalidation-write", "passed": not _time_set_ok(syscall.replace("zx48_time_set_handler:\n    ld a,(current_pid)", "zx48_time_set_handler:\n    ld (wall_valid),a\n    ld a,(current_pid)", 1))},
         {"name": "reject-wrong-2100-boundary", "passed": not _time_set_ok(syscall.replace("ld de,$5700", "ld de,$5701", 1))},
     ]
     return assertions
