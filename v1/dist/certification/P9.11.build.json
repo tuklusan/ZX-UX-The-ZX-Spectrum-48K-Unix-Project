@@ -1,0 +1,72 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p911-present",
+      "passed": true
+    },
+    {
+      "name": "three-delete-entrypoints",
+      "passed": true
+    },
+    {
+      "name": "bounded-yank-buffer",
+      "passed": true
+    },
+    {
+      "name": "empty-end-safe",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p911-vi.lst",
+        "--sym=p911-vi.sym",
+        "p911-vi.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 12,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 3364 lines, work time: 0.011 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p911-vi.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 37,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 1495, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 33871, \"image_size\": 4488, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 4512, \"relocations\": [], \"stored_length\": 4512, \"version\": 1}\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/vi.asm": "06cd1f99e16729864ec9e224e3f6cc4e20aa094e8f593d8de42f9854784e9430",
+    "v1/build/p911-vi.mex1": "358f1e7289189817de6eb9a2991fab5230af8b8820338c5ffaca0d0472e07d5f",
+    "v1/build/p911-vi.tap": "0417cf4b1ff70cba70ee694340b6c2354b8c72385f4355414f47478dc9abbd71",
+    "v1/dist/certification/P9.10.test.json": "69dacb05247c4d449878e4036dd1016bbe2f6ea7716a68cda225f6076c796581",
+    "v1/tools-host/test-driver/phase9_vi_delete.py": "bb48860824d9f4e50e94f8478a2d9ed31af4138e9a1fb348405f11bceeef7559",
+    "v1/tools-host/test-driver/run.py": "0ecacd9176a0a4baacd04ad13ae50cf3cd10453fc34500eb4e8adaf3f48d09d0"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P9.10": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "c142b23aa3c84c0423d8363a10512082b1060da5",
+  "status": "PASS",
+  "step": "P9.11",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
