@@ -267,7 +267,6 @@ import phase9_vi_undo
 import phase9_vi_search
 import phase9_vi_ex_read
 import phase9_vi_write_tx
-import phase9_vi_write_rules
 import phase9_vi_write_state
 # Phase-9 vi qualification dispatch.
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
