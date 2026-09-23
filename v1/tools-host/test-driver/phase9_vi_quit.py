@@ -20,6 +20,7 @@ from phase8_common import inspect_mex, make_tap, mex1, word
 BASE=0xC000; GATE=0xE000
 MODE=0xA300; CURSOR=0xA301; CLOSED=0xA302; EXITED=0xA303
 # Exact P9.19 qualification candidate.
+# Final exact candidate after workflow creation.
 
 class P919Error(DriverError): pass
 def require(v,m):
