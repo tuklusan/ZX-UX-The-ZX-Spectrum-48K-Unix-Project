@@ -255,6 +255,7 @@ import phase9_vi_load
 import phase9_vi_gap
 import phase9_vi_unnamed
 import phase9_vi_modes
+import phase9_vi_motion_basic
 # Phase-9 vi qualification dispatch.
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
 from media_retention import (
@@ -653,6 +654,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase9_vi_unnamed.dispatch(root, action, step, **kwargs)
     if step == "P9.05":
         return phase9_vi_modes.dispatch(root, action, step, **kwargs)
+    if step == "P9.06":
+        return phase9_vi_motion_basic.dispatch(root, action, step, **kwargs)
     if step.startswith("P9."):
         raise DriverError(f"numbered Phase-9 step is not registered: {step}")
     module = E0_MODULE.get(step)
