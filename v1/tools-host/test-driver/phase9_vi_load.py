@@ -221,7 +221,7 @@ gate_end:
         run_sna(root, bytes(code), patch=patch(image, gateway, symbols["OBJ_BIN"], 0))
 
         code = bytearray(b"\xF3" + phase1._ld_sp(0xBFC0) + phase1._ld_hl(PATH) + phase1._call(symbols["vi_p902_load"]))
-        code += phase1._jp_nc(FAIL_PC)
+        code += b"\xD2" + word(FAIL_PC)
         code += b"\xFE" + bytes((symbols["E_IO"] & 0xFF,)) + phase1._jp_nz(FAIL_PC)
         code += expect_byte(OPEN_COUNT, 1) + expect_byte(CLOSE_COUNT, 1) + expect_byte(symbols["vi_source_open"], 0)
         code += phase1._jp(PASS_PC)
