@@ -26,6 +26,7 @@ MEDIA = ROOT / "v1/dist/media"
 ALLOWED_SUFFIXES = frozenset({".sna", ".tap", ".tzx", ".scr", ".fmf", ".wav", ".flac", ".png"})
 STEP_RE = re.compile(r"^P(?:[6-9]|1[0-2])\.\d{2}$")
 LEGACY_MEDIA_DIRS = frozenset({"P0", "P5"})
+NON_CERTIFICATION_MEDIA_DIRS = frozenset({"P9.pre-release"})
 HEADING_RE = re.compile(r"^## (P(?:[6-9]|1[0-2])\.\d{2}) - ")
 ARTIFACT_PREFIX = "6. **Emulator test artifact:** "
 
@@ -152,7 +153,7 @@ def main() -> int:
             for child in MEDIA.iterdir():
                 if not child.is_dir() or child.is_symlink():
                     raise MediaError(f"unexpected retained-media entry: {child.relative_to(ROOT)}")
-                if child.name in LEGACY_MEDIA_DIRS:
+                if child.name in LEGACY_MEDIA_DIRS or child.name in NON_CERTIFICATION_MEDIA_DIRS:
                     continue
                 if not STEP_RE.fullmatch(child.name):
                     raise MediaError(f"unexpected retained-media entry: {child.relative_to(ROOT)}")
