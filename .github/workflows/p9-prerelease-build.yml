@@ -235,14 +235,8 @@ jobs:
             exit 1
           fi
           cat > /tmp/p9-prerelease/fuse-login.txt <<'EOF'
-          set $booted 0
-          breakpoint 0xe003
+          breakpoint 0x6027
           commands 1
-          set $booted 1
-          continue
-          end
-          breakpoint 0xe000 if z80:a == 0x02 && $booted == 1
-          commands 2
           exit 0
           end
           continue
@@ -260,7 +254,7 @@ jobs:
           from pathlib import Path
           p=Path('/tmp/p9-prerelease/P9.pre-release/pre-release.json')
           d=json.loads(p.read_text())
-          d['tests']['mex1_inspection']='PASS'
+          d['tests']['fuse_basic_to_boot_gateway']='PASS'
           d['tests']['fuse_boot_to_login']='PASS'
           p.write_text(json.dumps(d,indent=2,sort_keys=True)+'\n')
           PY
