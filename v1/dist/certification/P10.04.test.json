@@ -1,0 +1,114 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "inspector-independent-module",
+      "passed": true
+    },
+    {
+      "name": "inspector-self-test-entry",
+      "passed": true
+    },
+    {
+      "name": "built-in-self-test-pass",
+      "passed": true
+    },
+    {
+      "name": "fixture-decodes-deterministically",
+      "passed": true
+    },
+    {
+      "name": "fixture-relocation-signed-addend",
+      "passed": true
+    },
+    {
+      "name": "one-bit-mutation-0-rejected",
+      "passed": true
+    },
+    {
+      "name": "one-bit-mutation-4-rejected",
+      "passed": true
+    },
+    {
+      "name": "one-bit-mutation-5-rejected",
+      "passed": true
+    },
+    {
+      "name": "one-bit-mutation-6-rejected",
+      "passed": true
+    },
+    {
+      "name": "one-bit-mutation-8-rejected",
+      "passed": true
+    },
+    {
+      "name": "one-bit-mutation-10-rejected",
+      "passed": true
+    },
+    {
+      "name": "one-bit-mutation-12-rejected",
+      "passed": true
+    },
+    {
+      "name": "one-bit-mutation-14-rejected",
+      "passed": true
+    },
+    {
+      "name": "one-bit-mutation-16-rejected",
+      "passed": true
+    },
+    {
+      "name": "one-bit-mutation-18-rejected",
+      "passed": true
+    },
+    {
+      "name": "one-bit-mutation-20-rejected",
+      "passed": true
+    },
+    {
+      "name": "one-bit-mutation-22-rejected",
+      "passed": true
+    },
+    {
+      "name": "one-bit-mutation-52-rejected",
+      "passed": true
+    },
+    {
+      "name": "trailing-byte-rejected",
+      "passed": true
+    },
+    {
+      "name": "short-header-rejected",
+      "passed": true
+    },
+    {
+      "name": "symbol-count-wrap-vector-rejected",
+      "passed": true
+    },
+    {
+      "name": "reloc-count-wrap-vector-rejected",
+      "passed": true
+    }
+  ],
+  "commands": [],
+  "hashes": {
+    "v1/dist/certification/P10.03.build.json": "81747449530ce9b8c383b7459f59bed02ef0635fea06a3b134c0863258d9a9eb",
+    "v1/dist/certification/P10.03.test.json": "2f0091ee470b15f33c1f1907f788e93e28a22c1a5e92d86ce71e06a327c7b44e",
+    "v1/docs/obj1.md": "f2db3a361b1c8f12dba446609687306f2b05c4a69ca3285027d8a85d9f43e931",
+    "v1/include/obj1.inc": "acb62936905a4cfae7bd6b9fc9f2ed9b1a9208aca5feaf15346ae47c17fa2ef0",
+    "v1/tools-host/inspect-obj/inspect.py": "29b4eb6094ef4204486c6be044c4db799c982692e3aa3278849c60273d540566",
+    "v1/tools-host/test-driver/phase10_obj1_inspector.py": "14e6cd5a052fc3ff6b72ef2094864760d37f54c21b7b720d7367f21171f3dbb0",
+    "v1/tools-host/test-driver/run.py": "bf7a5e50168ce4a2b3c0164a6afa2feba8a085075f50c14bd604a30ce9b18b42"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P10.03": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "1dad6eb703c16b744f83a0035c623144baf3c82e",
+  "status": "PASS",
+  "step": "P10.04",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
