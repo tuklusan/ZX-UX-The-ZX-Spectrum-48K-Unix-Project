@@ -1,0 +1,84 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p908-present",
+      "passed": true
+    },
+    {
+      "name": "case-sensitive-gg-G",
+      "passed": true
+    },
+    {
+      "name": "single-g-pending-only",
+      "passed": true
+    },
+    {
+      "name": "last-line-indexed",
+      "passed": true
+    },
+    {
+      "name": "fuse-gg-first-line-golden",
+      "passed": true
+    },
+    {
+      "name": "fuse-G-last-line-golden",
+      "passed": true
+    },
+    {
+      "name": "fuse-single-g-no-G-alias",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p908-vi.lst",
+        "--sym=p908-vi.sym",
+        "p908-vi.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 12,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2886 lines, work time: 0.010 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p908-vi.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 40,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 39759, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 16758, \"image_size\": 3854, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 3878, \"relocations\": [], \"stored_length\": 3878, \"version\": 1}\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/vi.asm": "ab21d2d31a1c2a99bb1b451d29ecd09a85147527220e86de8ee3eb0103edf997",
+    "v1/build/p908-vi.mex1": "e6950459a829bcb6abc0f7e6e3ff6e8ec84560bd8ecf6444050a05b2ad16318c",
+    "v1/build/p908-vi.tap": "7b4c761228ce80c9d46f9cafbf46af4aaf9afc3e4d3d37718aad5f78c629f9e5",
+    "v1/dist/certification/P9.07.test.json": "d562cab1c88c455ca7100428566ead2f47c346b9e3ee945e897a481be6cb5fb8",
+    "v1/tools-host/test-driver/phase9_vi_motion_gg.py": "d3f3a0cbfad0b96f8a8f15a406f94b60f536d25d7b892c2841a74c962ca2e549",
+    "v1/tools-host/test-driver/run.py": "0e8349fc87678584a06db4b6d705d176f7185fecc4d693ced313aad39006917b"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P9.07": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "90201bc2e363fd9854ea6132509395949e2e0285",
+  "status": "PASS",
+  "step": "P9.08",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
