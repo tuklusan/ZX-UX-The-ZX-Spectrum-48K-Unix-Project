@@ -129,18 +129,18 @@ g_pid:
 g_open:
     ld a,c
     cp O_READ
-    jr z,g_open_read
+    jp z,g_open_read
     ld hl,5
     xor a
     ret
 g_open_read:
     ld a,(hl)
     cp '/'
-    jr nz,g_bad
+    jp nz,g_bad
     inc hl
     ld a,(hl)
     cp 'e'
-    jr z,g_open_live
+    jp z,g_open_live
     xor a
     ld ($A306),a
     ld hl,5
@@ -153,13 +153,13 @@ g_open_live:
 g_read:
     ld a,d
     or e
-    jr z,g_consent
+    jp z,g_consent
     ld a,e
     cp 4
-    jr z,g_live_read
+    jp z,g_live_read
     cp 5
-    jr z,g_temp_read
-    jr g_bad
+    jp z,g_temp_read
+    jp g_bad
 g_consent:
     ld a,'n'
     ld (hl),a
@@ -169,27 +169,27 @@ g_consent:
 g_live_read:
     ld a,($A305)
     or a
-    jr nz,g_eof
+    jp nz,g_eof
     inc a
     ld ($A305),a
     ld de,g_valid
     ld bc,g_valid_end-g_valid
-    jr g_copy
+    jp g_copy
 g_temp_read:
     ld a,($A306)
     or a
-    jr nz,g_eof
+    jp nz,g_eof
     inc a
     ld ($A306),a
     ld a,($A300)
     cp 1
-    jr nz,g_temp_valid
+    jp nz,g_temp_valid
     ld a,($A301)
     cp 1
-    jr nz,g_temp_valid
+    jp nz,g_temp_valid
     ld de,g_invalid
     ld bc,g_invalid_end-g_invalid
-    jr g_copy
+    jp g_copy
 g_temp_valid:
     ld de,g_valid
     ld bc,g_valid_end-g_valid
@@ -203,7 +203,7 @@ g_copy_loop:
     dec bc
     ld a,b
     or c
-    jr nz,g_copy_loop
+    jp nz,g_copy_loop
     pop hl
     xor a
     ret
@@ -230,7 +230,7 @@ g_stat:
     add hl,de
     ld a,($A300)
     cp 2
-    jr z,g_stat_tape
+    jp z,g_stat_tape
     xor a
     ld (hl),a
     ret
