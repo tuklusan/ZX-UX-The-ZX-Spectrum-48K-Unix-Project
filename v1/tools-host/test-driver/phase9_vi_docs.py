@@ -15,6 +15,8 @@ from __future__ import annotations
 
 from driver_core import DriverError
 
+# Exact P9.23 host-only candidate.
+
 class P923Error(DriverError):
     pass
 
