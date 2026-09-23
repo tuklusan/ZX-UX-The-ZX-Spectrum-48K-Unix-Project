@@ -156,6 +156,29 @@ def negative_assertions() -> list[dict[str, object]]:
     x=bytearray(good); x[20]^=1; cases.append(("body-crc",bytes(x)))
     x=bytearray(good); x[22]^=1; cases.append(("header-crc",bytes(x)))
     cases.append(("reloc-with-text-lt-two",build_obj(text=b"", relocs=b"\x00"*6)))
+    wrap_symbols = bytearray(HEADER_SIZE)
+    wrap_symbols[0:4] = MAGIC
+    wrap_symbols[4] = 1
+    wrap_symbols[6:8] = HEADER_SIZE.to_bytes(2, "little")
+    wrap_symbols[12:14] = (0x4000).to_bytes(2, "little")
+    wrap_symbols[16:18] = HEADER_SIZE.to_bytes(2, "little")
+    wrap_symbols[18:20] = HEADER_SIZE.to_bytes(2, "little")
+    wrap_symbols[20:22] = crc16_ccitt_false(b"").to_bytes(2, "little")
+    wrap_symbols[22:24] = b"\x00\x00"
+    wrap_symbols[22:24] = crc16_ccitt_false(bytes(wrap_symbols)).to_bytes(2, "little")
+    cases.append(("symbol-count-16-bit-wrap-rejected", bytes(wrap_symbols)))
+    wrap_relocs = bytearray(HEADER_SIZE + 2)
+    wrap_relocs[0:4] = MAGIC
+    wrap_relocs[4] = 1
+    wrap_relocs[6:8] = HEADER_SIZE.to_bytes(2, "little")
+    wrap_relocs[8:10] = (2).to_bytes(2, "little")
+    wrap_relocs[14:16] = (0x4000).to_bytes(2, "little")
+    wrap_relocs[16:18] = (HEADER_SIZE + 2).to_bytes(2, "little")
+    wrap_relocs[18:20] = (HEADER_SIZE + 2).to_bytes(2, "little")
+    wrap_relocs[20:22] = crc16_ccitt_false(bytes(wrap_relocs[HEADER_SIZE:])).to_bytes(2, "little")
+    wrap_relocs[22:24] = b"\x00\x00"
+    wrap_relocs[22:24] = crc16_ccitt_false(bytes(wrap_relocs[:HEADER_SIZE])).to_bytes(2, "little")
+    cases.append(("relocation-count-16-bit-wrap-rejected", bytes(wrap_relocs)))
     assertions=[]
     for name,image in cases:
         rejected=False
