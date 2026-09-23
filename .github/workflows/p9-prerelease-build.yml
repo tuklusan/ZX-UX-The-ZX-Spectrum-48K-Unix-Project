@@ -192,7 +192,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat > /tmp/p9-prerelease/fuse-debugger.txt <<'EOF'
+          tap=/tmp/p9-prerelease/P9.pre-release/zx-ux-phase9-pre-release.tap
+          cat > /tmp/p9-prerelease/fuse-transfer.txt <<'EOF'
+          breakpoint 0xe003
+          commands 1
+          exit 0
+          end
+          continue
+          EOF
+          if ! timeout -k 5s 60s env SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
+            tools/runtime/fuse/bin/fuse \
+            --machine 48 --no-sound --no-confirm-actions --auto-load --detect-loader --fastload \
+            --debugger-command "$(cat /tmp/p9-prerelease/fuse-transfer.txt)" "$tap" \
+            > /tmp/p9-prerelease/fuse-transfer.log 2>&1; then
+            cat /tmp/p9-prerelease/fuse-transfer.log
+            exit 1
+          fi
+          cat > /tmp/p9-prerelease/fuse-login.txt <<'EOF'
           set $booted 0
           breakpoint 0xe003
           commands 1
@@ -205,11 +221,14 @@ jobs:
           end
           continue
           EOF
-          timeout -k 5s 300s env SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
+          if ! timeout -k 5s 180s env SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
             tools/runtime/fuse/bin/fuse \
             --machine 48 --no-sound --no-confirm-actions --auto-load --detect-loader --fastload \
-            --debugger-command "$(cat /tmp/p9-prerelease/fuse-debugger.txt)" \
-            /tmp/p9-prerelease/P9.pre-release/zx-ux-phase9-pre-release.tap
+            --debugger-command "$(cat /tmp/p9-prerelease/fuse-login.txt)" "$tap" \
+            > /tmp/p9-prerelease/fuse-login.log 2>&1; then
+            cat /tmp/p9-prerelease/fuse-login.log
+            exit 1
+          fi
           tools/runtime/python/bin/python - <<'PY'
           import json
           from pathlib import Path
@@ -257,6 +276,7 @@ jobs:
           done
 
       - name: Upload tested pre-release tape bundle
+        if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: zxux-phase9-pre-release
