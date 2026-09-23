@@ -45,7 +45,117 @@ jobs:
       - name: Guard exact qualified head
         run: |
           set -euo pipefail
-          test "$STEP" = "$(printf '%s' "$STEP" | grep -Eo '^P8\.[0-9]{2}$')"
+          test "$STEP" = "$(printf '%s' "$STEP" | grep -Eo '^P9\.[0-9]{2})"
+          n="${STEP#P9.}"
+          test "$((10#$n))" -ge 1
+          test "$((10#$n))" -le 24
+          test "$(git rev-parse HEAD)" = "$SOURCE_COMMIT"
+          test "$(git ls-remote origin refs/heads/main | awk '{print $1}')" = "$SOURCE_COMMIT"
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+          python3 tools/check_phase8_evidence.py --require-active
+      - name: Download exact qualification artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, pathlib, urllib.error, urllib.request, zipfile, time
+          step=os.environ["STEP"]; run=os.environ["RUN_ID"]
+          slug=step.lower().replace(".","")
+          repo=os.environ["GITHUB_REPOSITORY"]; token=os.environ["GH_TOKEN"]
+          headers={"Authorization":f"Bearer {token}","Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"}
+          def get(url):
+              req=urllib.request.Request(url,headers=headers)
+              with urllib.request.urlopen(req,timeout=60) as r: return r.read()
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, hdrs, newurl): return None
+          def get_zip(url):
+              req=urllib.request.Request(url,headers=headers)
+              opener=urllib.request.build_opener(NoRedirect)
+              try: opener.open(req,timeout=60)
+              except urllib.error.HTTPError as exc:
+                  if exc.code not in (301,302,303,307,308): raise
+                  location=exc.headers.get("Location")
+                  if not location: raise
+                  with urllib.request.urlopen(location,timeout=60) as r: return r.read()
+              raise SystemExit("artifact endpoint did not redirect")
+          wanted=[]
+          for _ in range(60):
+              data=json.loads(get(f"https://api.github.com/repos/{repo}/actions/runs/{run}/artifacts"))
+              wanted=[a for a in data["artifacts"] if a["name"].startswith(f"zxux-{slug}-qualification-{run}-") and not a.get("expired")]
+              if len(wanted)==1: break
+              if len(wanted)>1: raise SystemExit(f"multiple qualification artifacts: {len(wanted)}")
+              time.sleep(5)
+          if len(wanted)!=1: raise SystemExit("qualification artifact did not become available")
+          pathlib.Path("/tmp/qualification.zip").write_bytes(get_zip(wanted[0]["archive_download_url"]))
+          with zipfile.ZipFile("/tmp/qualification.zip") as z: z.extractall("/tmp/qualification")
+          PY
+      - name: Validate and stage immutable evidence
+        run: |
+          set -euo pipefail
+          python3 - "$STEP" "$SOURCE_COMMIT" <<'PY'
+          import json, pathlib, sys
+          step,source=sys.argv[1:3]
+          n=int(step.split(".")[1])
+          expected={"P8.40":"PASS"} if n==1 else {f"P9.{n-1:02d}":"PASS"}
+          root=pathlib.Path("/tmp/qualification")
+          for action in ("build","test"):
+              p=root/f"{step}.{action}.json"
+              r=json.loads(p.read_text())
+              assert r["schema"]==2 and r["step"]==step and r["action"]==action
+              assert r["status"]=="PASS" and r["worktree_clean"] is True
+              assert r["source_commit"]==source and r["prerequisites"]==expected
+              assert r["architecture_sha256"]=="24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c"
+              assert r["implementation_plan_sha256"]=="840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc"
+              dst=pathlib.Path("v1/dist/certification")/p.name
+              if dst.exists(): raise SystemExit(f"immutable evidence already exists: {dst}")
+              dst.write_bytes(p.read_bytes())
+          if step=="P9.24":
+              p=root/"P9.24.result.json"
+              r=json.loads(p.read_text())
+              assert r["schema"]==2 and r["step"]=="P9.24" and r["action"]=="result"
+              assert r["status"]=="PASS" and r["worktree_clean"] is True
+              assert r["source_commit"]==source and r["prerequisites"]=={"P9.23":"PASS"}
+              assert r["pass_marker"]=="ZX-UX PHASE 9 ACCEPTANCE PASS"
+              assert r["architecture_sha256"]=="24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c"
+              assert r["implementation_plan_sha256"]=="840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc"
+              dst=pathlib.Path("v1/dist/certification")/p.name
+              if dst.exists(): raise SystemExit(f"immutable evidence already exists: {dst}")
+              dst.write_bytes(p.read_bytes())
+          PY
+          python3 tools/finalize_step_media.py --step "$STEP" --evidence-dir /tmp/qualification
+          git add "v1/dist/certification/$STEP.build.json" "v1/dist/certification/$STEP.test.json" "v1/dist/media/$STEP"
+          if test "$STEP" = P9.24; then git add v1/dist/certification/P9.24.result.json; fi
+          test -n "$(git diff --cached --name-only)"
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+      - name: Admit exact evidence-only commit
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "$STEP: admit qualification evidence and media"
+          test "$(git rev-parse HEAD^)" = "$SOURCE_COMMIT"
+          admitted="$(git rev-parse HEAD)"
+          git push origin HEAD:main
+          echo "ADMITTED_COMMIT=$admitted" >> "$GITHUB_ENV"
+      - name: Dispatch admission validation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, urllib.request
+          payload=json.dumps({"ref":"main","inputs":{"admitted_commit":os.environ["ADMITTED_COMMIT"]}}).encode()
+          req=urllib.request.Request(
+              f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}/actions/workflows/phase9-admission-validation.yml/dispatches",
+              data=payload,method="POST",
+              headers={"Authorization":f"Bearer {os.environ['GH_TOKEN']}","Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","Content-Type":"application/json"})
+          with urllib.request.urlopen(req,timeout=30) as r:
+              if r.status!=204: raise SystemExit(f"validation dispatch failed: {r.status}")
+          PY
+)"
           n="${STEP#P9.}"
           test "$((10#$n))" -ge 1
           test "$((10#$n))" -le 24
