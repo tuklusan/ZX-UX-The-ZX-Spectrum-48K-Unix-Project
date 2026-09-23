@@ -27,6 +27,11 @@ def require(v,m):
     if not v: raise P922Error(m)
 def expect_byte(a,v): return b"\x3A"+word(a)+bytes((0xFE,v&255))+phase1._jp_nz(FAIL_PC)
 def expect_word(a,v): return expect_byte(a,v&255)+expect_byte(a+1,(v>>8)&255)
+def run_case(root,name,code,patcher):
+    try:
+        run_sna(root,bytes(code),patch=patcher)
+    except DriverError as exc:
+        raise P922Error(f"P9.22 {name}: {exc}") from exc
 
 def patch(image,gate,sy,data,cursor=0,xoff=0,number=0):
     def apply(ram):
@@ -140,25 +145,25 @@ gate_end:
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC)+phase1._call(sy["vi_p922_cursor_column"]))
         code+=b"\x7C\xB7"+phase1._jp_nz(FAIL_PC)+b"\x7D\xFE\x08"+phase1._jp_nz(FAIL_PC)
         code+=expect_byte(sy["vi_buffer"]+1,9)+phase1._jp(PASS_PC)
-        run_sna(root,bytes(code),patch=patch(image,gate,sy,data,cursor=2))
+        run_case(root,"tab-column",code,patch(image,gate,sy,data,cursor=2))
 
         # Unnumbered: logical column 69 scrolls to xoff 6, landing at screen column 63.
         data=b"x"*70
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC)+phase1._call(sy["vi_p922_follow_cursor"])+phase1._jp_c(FAIL_PC))
         code+=expect_word(sy["vi_view_xoff"],6)+phase1._ld_hl(69)+phase1._call(sy["vi_p922_screen_col"])+phase1._jp_c(FAIL_PC)
         code+=b"\x7D\xFE\x3F"+phase1._jp_nz(FAIL_PC)+phase1._jp(PASS_PC)
-        run_sna(root,bytes(code),patch=patch(image,gate,sy,data,cursor=69))
+        run_case(root,"unnumbered-follow",code,patch(image,gate,sy,data,cursor=69))
 
         # Numbered: width 59 plus five-column gutter still lands at column 63.
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC)+phase1._call(sy["vi_p922_follow_cursor"])+phase1._jp_c(FAIL_PC))
         code+=expect_word(sy["vi_view_xoff"],11)+phase1._ld_hl(69)+phase1._call(sy["vi_p922_screen_col"])+phase1._jp_c(FAIL_PC)
         code+=b"\x7D\xFE\x3F"+phase1._jp_nz(FAIL_PC)+phase1._jp(PASS_PC)
-        run_sna(root,bytes(code),patch=patch(image,gate,sy,data,cursor=69,number=1))
+        run_case(root,"numbered-follow",code,patch(image,gate,sy,data,cursor=69,number=1))
 
         # Exact edge row22/col63 may write; canaries remain intact.
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+b"\x16\x16\x1E\x3F\x3E\x5A"+phase1._call(sy["vi_p922_emit_at"])+phase1._jp_c(FAIL_PC))
         code+=expect_byte(CALLS,2)+expect_byte(LASTROW,22)+expect_byte(LASTCOL,63)+expect_byte(LASTBYTE,0x5A)+expect_byte(CANARY0,0xA5)+expect_byte(CANARY1,0x5A)+phase1._jp(PASS_PC)
-        run_sna(root,bytes(code),patch=patch(image,gate,sy,b""))
+        run_case(root,"edge-oracle",code,patch(image,gate,sy,b""))
 
         # Instrumented column64 attempt must be rejected before either terminal syscall.
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p922_probe_col64"]))
@@ -173,7 +178,7 @@ gate_end:
         # Rendering a TAB emits a space but does not rewrite stored 0x09.
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(8)+b"\x16\x00\x3E\x09"+phase1._call(sy["vi_p922_render_cell"])+phase1._jp_c(FAIL_PC))
         code+=expect_byte(LASTCOL,8)+expect_byte(LASTBYTE,ord(" "))+expect_byte(sy["vi_buffer"],9)+phase1._jp(PASS_PC)
-        run_sna(root,bytes(code),patch=patch(image,gate,sy,b"\t"))
+        run_case(root,"tab-render",code,patch(image,gate,sy,b"\t"))
 
         assertions += [
           {"name":"fuse-tab-logical-column-exact","passed":True},
