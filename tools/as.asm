@@ -643,8 +643,8 @@ as_p1007_ds:
     ld a,b
     or c
     jr z,as_p1007_ds_done
-    xor a
 as_p1007_ds_loop:
+    xor a
     ld (hl),a
     inc hl
     dec bc
