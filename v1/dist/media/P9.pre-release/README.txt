@@ -19,7 +19,7 @@ the login prompt instead of pretending later integration already exists.
 The workflows/ directory preserves the final workflow set used to create
 and validate this demonstration for reference by later phase previews.
 
-The Phase-9 checkpoint contains an internal time-set table symbol typo which
-prevents a fresh resident-kernel assembly. This build resolves that one table
-entry to the exact already-qualified handler offset during assembly only; the
-checked-in Phase-9 source and certification evidence remain unchanged.
+The post-Phase-9 housekeeping source repairs the malformed TIME1 set-handler
+label so the resident kernel now assembles directly without a preview-only
+source rewrite. The PHASE-9-COMPLETE tag and admitted Phase-9 evidence remain
+unchanged historical records.

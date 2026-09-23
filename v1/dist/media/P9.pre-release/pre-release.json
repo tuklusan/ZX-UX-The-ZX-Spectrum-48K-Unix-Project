@@ -23,8 +23,8 @@
   "files": [
     {
       "path": "README.txt",
-      "sha256": "9d18aec80dd932fcb0f6b3080073c92756702ab3979eb1003981fe7405eda148",
-      "size": 1385
+      "sha256": "44a9137da5bb6267c6061dbfe1941905071e8850d112ab1a06ed1e056fa979fb",
+      "size": 1341
     },
     {
       "path": "kernel-phase9-pre-release.bin",
