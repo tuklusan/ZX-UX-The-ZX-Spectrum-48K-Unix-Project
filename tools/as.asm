@@ -1261,7 +1261,7 @@ as_p1011_abs16_reloc:
     ld a,d
     ld (bc),a
     inc bc
-    ld a,AS_OBJ1_RELOC_ABS16
+    ld a,AS_P1013_RELOC_ABS16
     ld (bc),a
     inc bc
     xor a
@@ -1429,6 +1429,7 @@ as_p1012_error:
 ; Condition code order is NZ,Z,NC,C,PO,PE,P,M = 0..7.
     MACRO EMIT_P10_AS_CONTROL_ENCODER
 AS_P1013_UNCOND EQU $FF
+AS_P1013_RELOC_ABS16 EQU 1
 
 ; A=0 JP / 1 CALL, B=condition 0..7 or $FF for unconditional.
 ; Returns A=opcode, carry clear.
