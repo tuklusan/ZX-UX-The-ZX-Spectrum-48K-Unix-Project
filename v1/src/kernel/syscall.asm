@@ -650,6 +650,7 @@ zx48_sys_time_get:
     xor a
     ret
 ; P8.39 TIME1 set revision contract: every successful set increments revision.
+; Keep this handler label explicit: the resident syscall table resolves it directly.
 zx48_time_set_handler:
     ld a,(current_pid)
     cp 1
