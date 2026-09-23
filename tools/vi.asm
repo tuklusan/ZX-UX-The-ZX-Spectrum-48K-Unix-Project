@@ -1992,7 +1992,7 @@ vi_p915_normal_key:
     cp 'N'
     jp z,vi_p915_repeat_opposite
     cp '?'
-    jr z,vi_p915_unsupported
+    jp z,vi_p915_unsupported
 vi_p915_unsupported:
     ld a,E_NOTSUP
     scf
@@ -2030,7 +2030,7 @@ vi_p915_input:
     ld b,a
     ld a,(vi_search_edit_len)
     cp VI_SEARCH_CAPACITY
-    jr nc,vi_p915_nomem
+    jp nc,vi_p915_nomem
     ld e,a
     ld d,0
     ld hl,vi_search_edit_buf
@@ -2053,7 +2053,7 @@ vi_p915_cancel:
 vi_p915_commit:
     ld a,(vi_search_edit_len)
     or a
-    jr z,vi_p915_invalid
+    jp z,vi_p915_invalid
     ld (vi_search_len),a
     ld c,a
     ld b,0
@@ -2075,7 +2075,7 @@ vi_p915_commit:
 vi_p915_repeat_same:
     ld a,(vi_search_len)
     or a
-    jr z,vi_p915_unsupported
+    jp z,vi_p915_unsupported
     ld a,(vi_search_dir)
     or a
     jp z,vi_p915_search_backward
@@ -2084,7 +2084,7 @@ vi_p915_repeat_same:
 vi_p915_repeat_opposite:
     ld a,(vi_search_len)
     or a
-    jr z,vi_p915_unsupported
+    jp z,vi_p915_unsupported
     ld a,(vi_search_dir)
     or a
     jp z,vi_p915_search_forward
@@ -2102,10 +2102,10 @@ vi_p915_forward_loop:
     ld de,(vi_search_candidate)
     or a
     sbc hl,de
-    jr c,vi_p915_notfound
+    jp c,vi_p915_notfound
     ld hl,(vi_search_candidate)
     call vi_p915_match_at
-    jr nc,vi_p915_found
+    jp nc,vi_p915_found
     ld hl,(vi_search_candidate)
     inc hl
     ld (vi_search_candidate),hl
@@ -2130,7 +2130,7 @@ vi_p915_backward_loop:
     jr c,vi_p915_backward_next
     ld hl,(vi_search_candidate)
     call vi_p915_match_at
-    jr nc,vi_p915_found
+    jp nc,vi_p915_found
 vi_p915_backward_next:
     ld hl,(vi_search_candidate)
     ld a,h
@@ -2144,7 +2144,7 @@ vi_p915_backward_next:
 vi_p915_last_start:
     ld a,(vi_search_len)
     or a
-    jr z,vi_p915_unsupported
+    jp z,vi_p915_unsupported
     ld e,a
     ld d,0
     ld hl,(vi_buffer_len)
