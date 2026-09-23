@@ -558,4 +558,121 @@ vi_move_byte: db 0
 vi_scan_pos: dw 0
 vi_line_stage: defs VI_LINE_MAX*2,0
 vi_line_index: defs VI_LINE_MAX*2,0
+
+; P9.04 exact invocation and unnamed/named target state.
+VI_TARGET_MAX           EQU 31
+
+; HL points at canonical ARG1.  argc includes argv0.
+vi_p904_invocation:
+    ld a,(hl)
+    cp 'A'
+    jp nz,vi_p904_invalid
+    inc hl
+    ld a,(hl)
+    cp 'R'
+    jp nz,vi_p904_invalid
+    inc hl
+    ld a,(hl)
+    cp 'G'
+    jp nz,vi_p904_invalid
+    inc hl
+    ld a,(hl)
+    cp '1'
+    jp nz,vi_p904_invalid
+    inc hl
+    ld a,(hl)
+    cp 1
+    jr z,vi_p904_new
+    cp 2
+    jp nz,vi_p904_invalid
+    inc hl
+    inc hl
+    inc hl
+    inc hl
+vi_p904_skip_argv0:
+    ld a,(hl)
+    inc hl
+    or a
+    jr nz,vi_p904_skip_argv0
+    push hl
+    call vi_p902_load
+    pop hl
+    ret c
+    push hl
+    call vi_p903_init
+    pop hl
+    ret c
+    ld a,(vi_stat_out)
+    jp vi_p904_commit_target
+
+vi_p904_new:
+    xor a
+    ld (vi_buffer_len),a
+    ld (vi_buffer_len+1),a
+    ld (vi_named),a
+    ld (vi_dirty),a
+    ld a,OBJ_TXT
+    ld (vi_target_type),a
+    ld a,1
+    ld (vi_buffer_ready),a
+    call vi_p903_init
+    ret c
+    xor a
+    ret
+
+vi_p904_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+
+; Commit a successful :w path target. HL=path, A=preserved/requested type.
+; The target is published only after the caller's write transaction succeeds.
+vi_p904_commit_target:
+    ld (vi_target_type),a
+    ld de,vi_target
+    ld b,VI_TARGET_MAX
+vi_p904_copy_target:
+    ld a,(hl)
+    ld (de),a
+    inc de
+    inc hl
+    or a
+    jr z,vi_p904_target_done
+    djnz vi_p904_copy_target
+    xor a
+    ld (de),a
+vi_p904_target_done:
+    ld a,1
+    ld (vi_named),a
+    xor a
+    ld (vi_dirty),a
+    ret
+
+; Failed :w path never retargets and never clears dirty. A is the primary errno.
+vi_p904_failed_write:
+    scf
+    ret
+
+; Bare :w/:wq on an unnamed buffer: exact diagnostic plus E_NOENT.
+vi_p904_require_target:
+    ld a,(vi_named)
+    or a
+    ret nz
+    ld hl,vi_no_name_msg
+    ld bc,17
+    ld de,1
+    ld a,SYS_WRITE
+    call SYSCALL_GATEWAY
+    jr c,vi_p904_require_target_error
+    ld a,E_NOENT
+    scf
+    ret
+vi_p904_require_target_error:
+    scf
+    ret
+
+vi_named: db 0
+vi_target_type: db OBJ_TXT
+vi_target: defs VI_TARGET_MAX+1,0
+vi_no_name_msg: db 'v','i',':',' ','n','o',' ','f','i','l','e',' ','n','a','m','e',10
     ENDM
