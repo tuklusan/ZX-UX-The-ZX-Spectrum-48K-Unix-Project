@@ -1423,3 +1423,170 @@ as_p1012_error:
     scf
     ret
     ENDM
+
+
+; P10.13 documented control-flow encoder primitives.
+; Condition code order is NZ,Z,NC,C,PO,PE,P,M = 0..7.
+    MACRO EMIT_P10_AS_CONTROL_ENCODER
+AS_P1013_UNCOND EQU $FF
+
+; A=0 JP / 1 CALL, B=condition 0..7 or $FF for unconditional.
+; Returns A=opcode, carry clear.
+as_p1013_abs:
+    cp 2
+    jp nc,as_p1013_error
+    ld c,a
+    ld a,b
+    cp AS_P1013_UNCOND
+    jr z,as_p1013_abs_uncond
+    cp 8
+    jp nc,as_p1013_error
+    add a,a
+    add a,a
+    add a,a
+    ld b,a
+    ld a,c
+    or a
+    ld a,b
+    jr nz,as_p1013_abs_call
+    add a,$C2
+    or a
+    ret
+as_p1013_abs_call:
+    add a,$C4
+    or a
+    ret
+as_p1013_abs_uncond:
+    ld a,c
+    or a
+    ld a,$C3
+    ret z
+    ld a,$CD
+    or a
+    ret
+
+; B=condition 0..7 or $FF. Returns RET opcode.
+as_p1013_ret:
+    ld a,b
+    cp AS_P1013_UNCOND
+    jr z,as_p1013_ret_uncond
+    cp 8
+    jp nc,as_p1013_error
+    add a,a
+    add a,a
+    add a,a
+    add a,$C0
+    or a
+    ret
+as_p1013_ret_uncond:
+    ld a,$C9
+    or a
+    ret
+
+; B=condition 0..3 (NZ,Z,NC,C) or $FF. Returns JR opcode.
+as_p1013_jr:
+    ld a,b
+    cp AS_P1013_UNCOND
+    jr z,as_p1013_jr_uncond
+    cp 4
+    jp nc,as_p1013_error
+    add a,a
+    add a,a
+    add a,a
+    add a,$20
+    or a
+    ret
+as_p1013_jr_uncond:
+    ld a,$18
+    or a
+    ret
+
+; HL=target, DE=address immediately following the relative instruction.
+; Returns A=signed displacement byte only for exact mathematical -128..127.
+as_p1013_rel8:
+    or a
+    sbc hl,de
+    ld a,h
+    or a
+    jr z,as_p1013_rel_pos
+    cp $FF
+    jp nz,as_p1013_error
+    ld a,l
+    cp $80
+    jp c,as_p1013_error
+    or a
+    ret
+as_p1013_rel_pos:
+    ld a,l
+    cp $80
+    jp nc,as_p1013_error
+    or a
+    ret
+
+; A=0 for an in-module resolved target. Any unresolved/external relative target
+; is illegal because OBJ1 has no relative relocation type.
+as_p1013_require_local:
+    or a
+    ret z
+    jp as_p1013_error
+
+; A=RST vector. Only documented 00h,08h,...,38h are legal.
+as_p1013_rst:
+    cp $39
+    jp nc,as_p1013_error
+    ld b,a
+    and 7
+    jp nz,as_p1013_error
+    ld a,b
+    or $C7
+    ret
+
+; A=0 HL / 1 IX / 2 IY. Returns H=prefix (0/DD/FD), L=E9.
+as_p1013_jp_indirect:
+    cp 3
+    jp nc,as_p1013_error
+    ld h,0
+    or a
+    jr z,as_p1013_jp_indirect_done
+    ld h,$DD
+    cp 1
+    jr z,as_p1013_jp_indirect_done
+    ld h,$FD
+as_p1013_jp_indirect_done:
+    ld l,$E9
+    xor a
+    ret
+
+; Fixed relative DJNZ opcode.
+as_p1013_djnz:
+    ld a,$10
+    or a
+    ret
+
+; BC -> six-byte OBJ1 ABS16 relocation, HL=TEXT word offset, DE=symbol index.
+; JP/CALL unresolved absolute operands use this exact record.
+as_p1013_abs16_reloc:
+    ld a,l
+    ld (bc),a
+    inc bc
+    ld a,h
+    ld (bc),a
+    inc bc
+    ld a,e
+    ld (bc),a
+    inc bc
+    ld a,d
+    ld (bc),a
+    inc bc
+    ld a,AS_OBJ1_RELOC_ABS16
+    ld (bc),a
+    inc bc
+    xor a
+    ld (bc),a
+    ret
+
+as_p1013_error:
+    ld a,E_FORMAT
+    scf
+    ret
+    ENDM
