@@ -2912,4 +2912,170 @@ vi_view_gutter: db 0
 vi_view_width: db 64
 vi_p921_number_word: db 'n','u','m','b','e','r'
 vi_p921_nonumber_word: db 'n','o','n','u','m','b','e','r'
+
+; P9.22 tty64 viewport and hard column-63 safety.
+; Rows 0..22 are edit rows; row 23 remains exclusively status/command.
+; All edit rendering funnels through vi_p922_emit_at, which rejects row 23+
+; and logical screen column 64+ before any terminal syscall.
+VI_EDIT_LAST_ROW        EQU 22
+VI_TTY_LAST_COL         EQU 63
+
+; Recompute the cursor's logical display column from the current line start.
+; TAB remains one stored byte but advances to the next multiple-of-eight column.
+vi_p922_cursor_column:
+    call vi_p906_locate_line
+    ld hl,(vi_motion_start)
+    ld (vi_p922_scan_off),hl
+    ld hl,0
+    ld (vi_p922_logical_col),hl
+vi_p922_col_loop:
+    ld hl,(vi_p922_scan_off)
+    ld de,(vi_cursor_off)
+    or a
+    sbc hl,de
+    jr z,vi_p922_col_done
+    ld hl,(vi_p922_scan_off)
+    call vi_p903_get_byte
+    cp 9
+    jr z,vi_p922_col_tab
+    ld hl,(vi_p922_logical_col)
+    inc hl
+    ld (vi_p922_logical_col),hl
+    jr vi_p922_col_next
+vi_p922_col_tab:
+    ld hl,(vi_p922_logical_col)
+    ld a,l
+    add a,8
+    and $F8
+    ld l,a
+    jr nc,vi_p922_col_tab_store
+    inc h
+vi_p922_col_tab_store:
+    ld (vi_p922_logical_col),hl
+vi_p922_col_next:
+    ld hl,(vi_p922_scan_off)
+    inc hl
+    ld (vi_p922_scan_off),hl
+    jr vi_p922_col_loop
+vi_p922_col_done:
+    ld hl,(vi_p922_logical_col)
+    ret
+
+; Follow the logical cursor horizontally without changing file bytes.
+; Offset is in display columns, not byte offsets.
+vi_p922_follow_cursor:
+    call vi_p922_cursor_column
+    ld de,(vi_view_xoff)
+    push hl
+    or a
+    sbc hl,de
+    pop hl
+    jr nc,vi_p922_follow_right_check
+    ld (vi_view_xoff),hl
+    xor a
+    ret
+vi_p922_follow_right_check:
+    ld a,(vi_view_width)
+    ld c,a
+    ld b,0
+    ex de,hl
+    add hl,bc
+    ex de,hl
+    ; DE = xoff+width, HL = cursor display column
+    or a
+    sbc hl,de
+    jr c,vi_p922_follow_ok
+    ; new xoff = cursor_col - width + 1
+    call vi_p922_cursor_column
+    ld a,(vi_view_width)
+    ld e,a
+    ld d,0
+    or a
+    sbc hl,de
+    inc hl
+    ld (vi_view_xoff),hl
+vi_p922_follow_ok:
+    xor a
+    ret
+
+; HL=logical display column -> L=tty64 screen column after horizontal offset
+; and optional five-column gutter. Reject anything outside 0..63.
+vi_p922_screen_col:
+    ld de,(vi_view_xoff)
+    or a
+    sbc hl,de
+    jr c,vi_p922_offscreen
+    ld a,(vi_view_gutter)
+    ld e,a
+    ld d,0
+    add hl,de
+    ld a,h
+    or a
+    jr nz,vi_p922_col_bad
+    ld a,l
+    cp 64
+    jr nc,vi_p922_col_bad
+    xor a
+    ret
+vi_p922_offscreen:
+    ld a,E_AGAIN
+    scf
+    ret
+vi_p922_col_bad:
+    ld a,E_INVAL
+    scf
+    ret
+
+; D=edit row, E=tty column, A=byte. No terminal call occurs for row>22 or col>63.
+vi_p922_emit_at:
+    ld (vi_p922_emit_byte),a
+    ld a,d
+    cp VI_EDIT_LAST_ROW+1
+    jr nc,vi_p922_emit_bad
+    ld a,e
+    cp VI_TTY_LAST_COL+1
+    jr nc,vi_p922_emit_bad
+    ld h,d
+    ld l,e
+    ld a,SYS_CON_SETPOS
+    call SYSCALL_GATEWAY
+    ret c
+    ld hl,vi_p922_emit_byte
+    ld bc,1
+    ld a,SYS_CON_WRITE
+    jp SYSCALL_GATEWAY
+vi_p922_emit_bad:
+    ld a,E_INVAL
+    scf
+    ret
+
+; Test/renderer hook: A stored byte, HL logical display column, D edit row.
+; Visible TAB cells are spaces; the underlying 0x09 byte is never rewritten.
+vi_p922_render_cell:
+    ld (vi_p922_source_byte),a
+    push de
+    call vi_p922_screen_col
+    pop de
+    ret c
+    ld e,l
+    ld a,(vi_p922_source_byte)
+    cp 9
+    jr nz,vi_p922_render_emit
+    ld a,' '
+vi_p922_render_emit:
+    jp vi_p922_emit_at
+
+; Deliberate negative-oracle entry used only by qualification: a column-64
+; request must fail before SYS_CON_SETPOS/SYS_CON_WRITE.
+vi_p922_probe_col64:
+    ld d,0
+    ld e,64
+    ld a,'X'
+    jp vi_p922_emit_at
+
+vi_view_xoff: dw 0
+vi_p922_scan_off: dw 0
+vi_p922_logical_col: dw 0
+vi_p922_emit_byte: db 0
+vi_p922_source_byte: db 0
     ENDM
