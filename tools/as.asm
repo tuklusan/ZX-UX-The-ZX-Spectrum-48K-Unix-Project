@@ -1879,3 +1879,85 @@ as_p1015_error:
     scf
     ret
     ENDM
+
+
+; P10.16 documented block-transfer/search and I/O encoder primitives.
+    MACRO EMIT_P10_AS_BLOCK_IO_ENCODER
+; A selector 0 LDI,1 LDIR,2 LDD,3 LDDR,4 CPI,5 CPIR,6 CPD,7 CPDR.
+; Returns H=$ED,L=opcode.
+as_p1016_block:
+    cp 8
+    jp nc,as_p1016_error
+    ld hl,as_p1016_block_table
+    ld e,a
+    ld d,0
+    add hl,de
+    ld l,(hl)
+    ld h,$ED
+    xor a
+    ret
+
+; B=register field B,C,D,E,H,L,(forbidden),A = 0..7.
+; Returns H=$ED,L=IN r,(C) opcode.
+as_p1016_in_c:
+    ld a,b
+    cp 8
+    jp nc,as_p1016_error
+    cp 6
+    jp z,as_p1016_error
+    add a,a
+    add a,a
+    add a,a
+    add a,$40
+    ld l,a
+    ld h,$ED
+    xor a
+    ret
+
+; B=register field. Returns H=$ED,L=OUT (C),r opcode.
+as_p1016_out_c:
+    ld a,b
+    cp 8
+    jp nc,as_p1016_error
+    cp 6
+    jp z,as_p1016_error
+    add a,a
+    add a,a
+    add a,a
+    add a,$41
+    ld l,a
+    ld h,$ED
+    xor a
+    ret
+
+; Exact immediate-port forms.
+as_p1016_in_a_n:
+    ld a,$DB
+    or a
+    ret
+as_p1016_out_n_a:
+    ld a,$D3
+    or a
+    ret
+
+; HL=parsed immediate port. A receives exact 8-bit port.
+as_p1016_port8:
+    ld a,h
+    or a
+    jp nz,as_p1016_error
+    ld a,l
+    or a
+    ret
+
+; Any undocumented ED I/O selector is rejected.
+as_p1016_reject_undocumented:
+    jp as_p1016_error
+
+as_p1016_block_table:
+    db $A0,$B0,$A8,$B8,$A1,$B1,$A9,$B9
+
+as_p1016_error:
+    ld a,E_FORMAT
+    scf
+    ret
+    ENDM
