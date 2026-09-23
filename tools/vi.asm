@@ -309,6 +309,7 @@ vi_p903_init:
     ld (vi_gap_end),hl
     xor a
     ld (vi_undo_kind),a
+    ld (vi_dirty),a
     ld (vi_fail_gap_alloc),a
     ld (vi_fail_index_alloc),a
     jp vi_p903_reindex
@@ -364,6 +365,7 @@ vi_p903_insert_ready:
     inc hl
     ld (vi_buffer_len),hl
     ld a,1
+    ld (vi_dirty),a
     ld (vi_undo_kind),a
     ld hl,(vi_edit_pos)
     ld (vi_undo_pos),hl
@@ -395,6 +397,8 @@ vi_p903_delete_byte:
     ld hl,(vi_buffer_len)
     dec hl
     ld (vi_buffer_len),hl
+    ld a,1
+    ld (vi_dirty),a
     ld a,2
     ld (vi_undo_kind),a
     ld hl,(vi_edit_pos)
@@ -545,6 +549,7 @@ vi_line_count: db 0
 vi_stage_line_count: db 0
 vi_fail_gap_alloc: db 0
 vi_fail_index_alloc: db 0
+vi_dirty: db 0
 vi_undo_kind: db 0
 vi_undo_pos: dw 0
 vi_undo_byte: db 0
