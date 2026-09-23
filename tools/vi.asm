@@ -994,8 +994,7 @@ vi_p906_locate_loop:
     or a
     sbc hl,de
     jr c,vi_p906_locate_done
-    jr z,vi_p906_locate_advance
-    jr vi_p906_locate_done
+    jr vi_p906_locate_advance
 vi_p906_locate_advance:
     ld a,b
     ld (vi_motion_line),a
