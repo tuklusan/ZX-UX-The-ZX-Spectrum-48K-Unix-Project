@@ -851,7 +851,10 @@ vi_p906_nonempty:
     jr z,vi_p906_right
     cp '0'
     jr z,vi_p906_zero
-    cp '    jr z,vi_p906_down
+    cp 36
+    jr z,vi_p906_dollar
+    cp 'j'
+    jr z,vi_p906_down
     cp 'k'
     jr z,vi_p906_up
     ld a,E_INVAL
