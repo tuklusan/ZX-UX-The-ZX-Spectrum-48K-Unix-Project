@@ -1753,3 +1753,129 @@ as_p1014_error:
     scf
     ret
     ENDM
+
+
+; P10.15 documented stack/exchange/interrupt/special encoder primitives.
+    MACRO EMIT_P10_AS_SPECIAL_ENCODER
+; A=0 POP / 1 PUSH, B=pair BC,DE,HL,AF = 0..3. Returns A=opcode.
+as_p1015_stack:
+    cp 2
+    jp nc,as_p1015_error
+    ld c,a
+    ld a,b
+    cp 4
+    jp nc,as_p1015_error
+    rlca
+    rlca
+    rlca
+    rlca
+    add a,$C1
+    ld b,a
+    ld a,c
+    or a
+    ld a,b
+    ret z
+    add a,4
+    or a
+    ret
+
+; A=0 IX / 1 IY, B=0 POP / 1 PUSH. Returns H=prefix,L=opcode.
+as_p1015_stack_index:
+    cp 2
+    jp nc,as_p1015_error
+    ld h,$DD
+    or a
+    jr z,as_p1015_stack_index_prefix
+    ld h,$FD
+as_p1015_stack_index_prefix:
+    ld a,b
+    cp 2
+    jp nc,as_p1015_error
+    ld l,$E1
+    or a
+    jr z,as_p1015_stack_index_done
+    ld l,$E5
+as_p1015_stack_index_done:
+    xor a
+    ret
+
+; A selector: 0 EX AF,AF'; 1 EX DE,HL; 2 EX (SP),HL;
+; 3 EX (SP),IX; 4 EX (SP),IY; 5 EXX. Returns H=prefix,L=opcode.
+as_p1015_exchange:
+    cp 6
+    jp nc,as_p1015_error
+    ld hl,as_p1015_exchange_table
+    add a,a
+    ld e,a
+    ld d,0
+    add hl,de
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ex de,hl
+    xor a
+    ret
+
+; A=IM mode 0,1,2. Returns H=$ED,L=documented opcode.
+as_p1015_im:
+    cp 3
+    jp nc,as_p1015_error
+    ld hl,as_p1015_im_table
+    ld e,a
+    ld d,0
+    add hl,de
+    ld l,(hl)
+    ld h,$ED
+    xor a
+    ret
+
+; A selector: 0 DI,1 EI,2 HALT,3 NOP,4 RETI,5 RETN.
+; Returns H=prefix (0/ED), L=opcode.
+as_p1015_special:
+    cp 6
+    jp nc,as_p1015_error
+    add a,a
+    ld hl,as_p1015_special_table
+    ld e,a
+    ld d,0
+    add hl,de
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ex de,hl
+    xor a
+    ret
+
+; A selector: 0 LD A,I; 1 LD A,R; 2 LD I,A; 3 LD R,A.
+; Returns H=$ED,L=opcode.
+as_p1015_ir:
+    cp 4
+    jp nc,as_p1015_error
+    ld hl,as_p1015_ir_table
+    ld e,a
+    ld d,0
+    add hl,de
+    ld l,(hl)
+    ld h,$ED
+    xor a
+    ret
+
+; Any parser spelling mapped to an undocumented special selector fails here.
+as_p1015_reject_undocumented:
+    jp as_p1015_error
+
+; Tables store little-endian 16-bit prefix/opcode words (H=prefix,L=opcode).
+as_p1015_exchange_table:
+    dw $0008,$00EB,$00E3,$DDE3,$FDE3,$00D9
+as_p1015_im_table:
+    db $46,$56,$5E
+as_p1015_special_table:
+    dw $00F3,$00FB,$0076,$0000,$ED4D,$ED45
+as_p1015_ir_table:
+    db $57,$5F,$47,$4F
+
+as_p1015_error:
+    ld a,E_FORMAT
+    scf
+    ret
+    ENDM
