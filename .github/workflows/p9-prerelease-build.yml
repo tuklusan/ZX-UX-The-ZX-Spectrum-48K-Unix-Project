@@ -43,7 +43,7 @@ jobs:
           git diff --name-only PHASE-9-COMPLETE HEAD > /tmp/changed
           while IFS= read -r path; do
             case "$path" in
-              .github/workflows/p9-prerelease-build.yml|tools/check_media_retention.py|v1/dist/media/P9.pre-release/*) ;;
+              .github/workflows/p9-prerelease-build.yml|tools/check_media_retention.py|v1/src/kernel/syscall.asm|v1/dist/media/P9.pre-release/*) ;;
               *) echo "unexpected post-Phase-9 path: $path" >&2; exit 1 ;;
             esac
           done < /tmp/changed
@@ -65,22 +65,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/p9-prerelease/P9.pre-release v1/build
-          trap 'git checkout -- v1/src/kernel/syscall.asm' EXIT
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path('v1/src/kernel/syscall.asm')
-          s=p.read_text(encoding='utf-8')
-          old='dw zx48_sys_mem_info,zx48_sys_proc_info,zx48_sys_ticks,zx48_sys_time_get,zx48_time_set_handler'
-          new='dw zx48_sys_mem_info,zx48_sys_proc_info,zx48_sys_ticks,zx48_sys_time_get,zx48_sys_time_get+36'
-          assert s.count(old)==1
-          p.write_text(s.replace(old,new),encoding='utf-8',newline='\n')
-          PY
           (
             cd v1/src/kernel
-            "$GITHUB_WORKSPACE/tools/runtime/sjasmplus/bin/sjasmplus"               --nologo --lst=../../build/kernel.lst --sym=../../build/kernel.sym kernel.asm
+            "$GITHUB_WORKSPACE/tools/runtime/sjasmplus/bin/sjasmplus" \
+              --nologo --lst=../../build/kernel.lst --sym=../../build/kernel.sym kernel.asm
           )
-          git checkout -- v1/src/kernel/syscall.asm
-          trap - EXIT
           test -z "$(git diff -- v1/src/kernel/syscall.asm)"
           test "$(wc -c < v1/build/kernel.bin)" -eq 8192
 
@@ -302,10 +291,10 @@ jobs:
               'the login prompt instead of pretending later integration already exists.\n\n'
               'The workflows/ directory preserves the final workflow set used to create\n'
               'and validate this demonstration for reference by later phase previews.\n\n'
-              'The Phase-9 checkpoint contains an internal time-set table symbol typo which\n'
-              'prevents a fresh resident-kernel assembly. This build resolves that one table\n'
-              'entry to the exact already-qualified handler offset during assembly only; the\n'
-              'checked-in Phase-9 source and certification evidence remain unchanged.\n',
+              'The post-Phase-9 housekeeping source repairs the malformed TIME1 set-handler\n'
+              'label so the resident kernel now assembles directly without a preview-only\n'
+              'source rewrite. The PHASE-9-COMPLETE tag and admitted Phase-9 evidence remain\n'
+              'unchanged historical records.\n',
               encoding='utf-8',newline='\n'
           )
 
