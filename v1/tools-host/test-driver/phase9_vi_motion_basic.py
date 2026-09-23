@@ -62,7 +62,7 @@ def dispatch(root,action,step,*,sha256_file,run_command,require_project_tool):
     plan=(root/"docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md").read_text(encoding="utf-8")
     assertions=[
         {"name":"canonical-p906-present","passed":"## P9.06 - h j k l 0 $ movement" in plan},
-        {"name":"six-exact-motion-keys","passed":all(f"cp '{x}'" in text[text.index("vi_p906_move:"):] for x in ("h","j","k","l","0","$"))},
+        {"name":"six-exact-motion-keys","passed":all(f"cp '{x}'" in text[text.index("vi_p906_move:"):] for x in ("h","j","k","l","0")) and "cp 36" in text[text.index("vi_p906_move:"):]},
         {"name":"logical-cursor-offset","passed":"vi_cursor_off: dw 0" in text},
         {"name":"indexed-line-boundaries","passed":"vi_p906_line_start:" in text and "vi_p906_line_end_for_a:" in text},
         {"name":"empty-buffer-stable","passed":"ld (vi_cursor_off),hl" in text[text.index("vi_p906_move:"):text.index("vi_p906_nonempty:")]},
