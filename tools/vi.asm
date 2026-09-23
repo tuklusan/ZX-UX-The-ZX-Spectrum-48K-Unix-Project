@@ -1789,6 +1789,9 @@ vi_p913_J:
     call vi_p906_current_end
     ld (vi_join_pos),hl
     call vi_p914_stage_state
+    ; Staging preserves undo metadata but leaves HL at the prior cursor.
+    ; Reload the exact LF offset before replacing it.
+    ld hl,(vi_join_pos)
     ; current_end points at the LF for every non-final logical line.
     ld a,' '
     call vi_p913_set_byte
