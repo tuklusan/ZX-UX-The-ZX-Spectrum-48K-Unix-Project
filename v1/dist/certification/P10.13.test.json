@@ -1,0 +1,102 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "control-inventory-family-coverage",
+      "passed": true
+    },
+    {
+      "name": "native-absolute-control-encoder",
+      "passed": true
+    },
+    {
+      "name": "native-relative-control-encoder",
+      "passed": true
+    },
+    {
+      "name": "external-relative-rejection",
+      "passed": true
+    },
+    {
+      "name": "native-ret-rst-djnz",
+      "passed": true
+    },
+    {
+      "name": "native-jp-indirect",
+      "passed": true
+    },
+    {
+      "name": "sjasmplus-control-golden",
+      "passed": true
+    },
+    {
+      "name": "fuse-control-condition-vectors",
+      "passed": true
+    },
+    {
+      "name": "fuse-relative-boundaries",
+      "passed": true
+    },
+    {
+      "name": "fuse-relative-overflow-and-external-rejection",
+      "passed": true
+    },
+    {
+      "name": "fuse-jp-indirect-prefixes",
+      "passed": true
+    },
+    {
+      "name": "fuse-absolute-relocation-record",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "p1013-golden.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 2,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 45 lines, work time: 0.001 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1013-native.sym",
+        "p1013-native.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2036 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/as.asm": "f979961e3d1cf42aded735184cb5f59096ae490c699255de964d20f65251e6d5",
+    "v1/build/p1013-golden.bin": "36cf4f9d4db53b284c181b90a3ee0470491da6ea1459c9327d07e76572732330",
+    "v1/build/p1013-native.bin": "982979b25433b3c144be676afd264a48804abe863a213ab5b3a6fca47aa11595",
+    "v1/dist/certification/P10.12.build.json": "cabf127366b34b754615b39f0469f132ba1c685b0df5af4a7e47534dc85f4b38",
+    "v1/dist/certification/P10.12.test.json": "033eab46068c7b43f4cb56a55770e7c25dae59305669fa7b3471708c42c0bdbc",
+    "v1/tests/compiler/as-opcode-inventory": "9052d2f727116ab9d332b32b86683c14f0cda3b4ef11445a8e1d1f5aed7a9f9b",
+    "v1/tools-host/test-driver/phase10_step_13.py": "95acfd70726326fe6df63da5cf44b5f8b5d787727b12a0d3014a51e0dc77976e"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P10.12": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "541dc1e1552e5de70625f394f0b21bca164eb2c5",
+  "status": "PASS",
+  "step": "P10.13",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
