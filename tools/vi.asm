@@ -2317,10 +2317,10 @@ vi_p916_r_done:
 vi_p916_r_preflight:
     ld a,(vi_fail_gap_alloc)
     or a
-    jr nz,vi_p916_nomem
+    jp nz,vi_p916_nomem
     ld a,(vi_fail_index_alloc)
     or a
-    jr nz,vi_p916_nomem
+    jp nz,vi_p916_nomem
     ld hl,(vi_gap_end)
     ld de,(vi_gap_start)
     or a
@@ -2328,15 +2328,15 @@ vi_p916_r_preflight:
     ld de,(vi_ex_stage_len)
     or a
     sbc hl,de
-    jr c,vi_p916_nomem
+    jp c,vi_p916_nomem
     ld a,(vi_ex_stage_lines)
     dec a
     ld b,a
     ld a,(vi_line_count)
     add a,b
-    jr c,vi_p916_nomem
+    jp c,vi_p916_nomem
     cp VI_LINE_MAX+1
-    jr nc,vi_p916_nomem
+    jp nc,vi_p916_nomem
     xor a
     ret
 
@@ -2466,7 +2466,7 @@ vi_p916_line_loop:
     jr nz,vi_p916_line_next
     ld a,(vi_ex_stage_lines)
     cp VI_LINE_MAX
-    jr nc,vi_p916_nomem
+    jp nc,vi_p916_nomem
     inc a
     ld (vi_ex_stage_lines),a
 vi_p916_line_next:
