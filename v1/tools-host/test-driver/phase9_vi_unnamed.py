@@ -45,6 +45,13 @@ def expect_word(address,value):
     return expect_byte(address,value&0xFF)+expect_byte(address+1,(value>>8)&0xFF)
 
 
+def run_case(root,name,code,patcher):
+    try:
+        run_sna(root,bytes(code),patch=patcher)
+    except DriverError as exc:
+        raise P904Error(f"P9.04 {name}: {exc}") from exc
+
+
 def patch(image,gateway,args,type_id=1):
     block=arg1(args)
     def apply(ram):
@@ -191,18 +198,18 @@ gate_end:
         code+=expect_byte(sy["vi_named"],0)+expect_byte(sy["vi_target_type"],sy["OBJ_TXT"])+expect_byte(sy["vi_dirty"],0)
         code+=expect_word(sy["vi_buffer_len"],0)+expect_byte(sy["vi_buffer_ready"],1)+expect_byte(sy["vi_line_count"],1)+expect_word(sy["vi_gap_start"],0)
         code+=phase1._jp(PASS_PC)
-        run_sna(root,bytes(code),patch=patch(image,gateway,[b"vi"],sy["OBJ_TXT"]))
+        run_case(root,"unnamed-empty",code,patch(image,gateway,[b"vi"],sy["OBJ_TXT"]))
 
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(ARG)+phase1._call(sy["vi_p904_invocation"])+phase1._jp_c(FAIL_PC))
         code+=expect_byte(sy["vi_named"],1)+expect_byte(sy["vi_target_type"],sy["OBJ_TXT"])+expect_byte(sy["vi_dirty"],0)
         code+=expect_word(sy["vi_buffer_len"],4)+expect_byte(sy["vi_source_open"],0)+expect_byte(sy["vi_line_count"],2)
         for i,v in enumerate(b"/tmp/x\0"): code+=expect_byte(sy["vi_target"]+i,v)
         code+=phase1._jp(PASS_PC)
-        run_sna(root,bytes(code),patch=patch(image,gateway,[b"vi",b"/tmp/x"],sy["OBJ_TXT"]))
+        run_case(root,"existing-path",code,patch(image,gateway,[b"vi",b"/tmp/x"],sy["OBJ_TXT"]))
 
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(ARG)+phase1._call(sy["vi_p904_invocation"]))
         code+=b"\xD2"+word(FAIL_PC)+b"\xFE"+bytes((sy["E_INVAL"]&0xFF,))+phase1._jp_nz(FAIL_PC)+phase1._jp(PASS_PC)
-        run_sna(root,bytes(code),patch=patch(image,gateway,[b"vi",b"a",b"b"],sy["OBJ_TXT"]))
+        run_case(root,"two-paths",code,patch(image,gateway,[b"vi",b"a",b"b"],sy["OBJ_TXT"]))
 
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(ARG)+phase1._call(sy["vi_p904_invocation"])+phase1._jp_c(FAIL_PC))
         code+=b"\x3E\x01\x32"+word(sy["vi_dirty"])
@@ -210,7 +217,7 @@ gate_end:
         code+=b"\xD2"+word(FAIL_PC)+b"\xFE"+bytes((sy["E_NOENT"]&0xFF,))+phase1._jp_nz(FAIL_PC)
         for i,v in enumerate(b"vi: no file name\n"): code+=expect_byte(OUT+i,v)
         code+=expect_byte(sy["vi_named"],0)+expect_byte(sy["vi_dirty"],1)+phase1._jp(PASS_PC)
-        run_sna(root,bytes(code),patch=patch(image,gateway,[b"vi"],sy["OBJ_TXT"]))
+        run_case(root,"no-name",code,patch(image,gateway,[b"vi"],sy["OBJ_TXT"]))
 
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(ARG)+phase1._call(sy["vi_p904_invocation"])+phase1._jp_c(FAIL_PC))
         code+=b"\x3E\x01\x32"+word(sy["vi_dirty"])
@@ -219,7 +226,7 @@ gate_end:
         code+=expect_byte(sy["vi_named"],0)+expect_byte(sy["vi_dirty"],1)
         code+=phase1._ld_hl(ARG+8+3)+b"\x3E"+bytes((sy["OBJ_C"]&0xFF,))+phase1._call(sy["vi_p904_commit_target"])+phase1._jp_c(FAIL_PC)
         code+=expect_byte(sy["vi_named"],1)+expect_byte(sy["vi_target_type"],sy["OBJ_C"])+expect_byte(sy["vi_dirty"],0)+phase1._jp(PASS_PC)
-        run_sna(root,bytes(code),patch=patch(image,gateway,[b"vi",b"new.c"],sy["OBJ_TXT"]))
+        run_case(root,"retarget-transaction",code,patch(image,gateway,[b"vi",b"new.c"],sy["OBJ_TXT"]))
 
         assertions += [
             {"name":"fuse-unnamed-empty-txt","passed":True},
