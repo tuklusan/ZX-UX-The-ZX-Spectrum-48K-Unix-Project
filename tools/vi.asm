@@ -675,4 +675,158 @@ vi_named: db 0
 vi_target_type: db OBJ_TXT
 vi_target: defs VI_TARGET_MAX+1,0
 vi_no_name_msg: db 'v','i',':',' ','n','o',' ','f','i','l','e',' ','n','a','m','e',10
+
+; P9.05 exact three-mode state machine.
+VI_MODE_NORMAL          EQU 0
+VI_MODE_INSERT          EQU 1
+VI_MODE_COMMAND         EQU 2
+VI_CURSOR_UNDERLINE     EQU 1
+VI_ESC                  EQU $1B
+
+vi_p905_init_mode:
+    xor a
+    ld (vi_editor_mode),a
+    ld (vi_normal_pending),a
+    ld (vi_command_len),a
+    call vi_p905_clear_status
+    ret c
+    jp vi_p905_cursor_block
+
+; A is one decoded target input byte. BREAK is never delivered here as VI_ESC.
+vi_p905_key:
+    cp VI_ESC
+    jp z,vi_p905_escape
+    ld b,a
+    ld a,(vi_editor_mode)
+    cp VI_MODE_NORMAL
+    jr z,vi_p905_normal_key
+    cp VI_MODE_INSERT
+    jr z,vi_p905_insert_key
+    cp VI_MODE_COMMAND
+    jr z,vi_p905_command_key
+    ld a,E_FORMAT
+    scf
+    ret
+
+vi_p905_normal_key:
+    ld a,b
+    cp 'i'
+    jr z,vi_p905_enter_insert
+    cp ':'
+    jr z,vi_p905_enter_command
+    ; A future multi-key normal command may stage here. ESC must cancel it.
+    ld a,1
+    ld (vi_normal_pending),a
+    xor a
+    ret
+
+vi_p905_insert_key:
+    ; Text insertion is introduced by the later canonical editing steps.
+    ; P9.05 proves that non-ESC input does not masquerade as editor escape.
+    xor a
+    ret
+
+vi_p905_command_key:
+    ld a,(vi_command_len)
+    cp 31
+    jr nc,vi_p905_command_full
+    ld e,a
+    ld d,0
+    ld hl,vi_command_buf
+    add hl,de
+    ld a,b
+    ld (hl),a
+    ld a,(vi_command_len)
+    inc a
+    ld (vi_command_len),a
+    xor a
+    ret
+vi_p905_command_full:
+    ld a,E_NOMEM
+    scf
+    ret
+
+vi_p905_enter_insert:
+    call vi_p905_cursor_underline
+    ret c
+    call vi_p905_status_insert
+    ret c
+    ld a,VI_MODE_INSERT
+    ld (vi_editor_mode),a
+    xor a
+    ld (vi_normal_pending),a
+    ret
+
+vi_p905_enter_command:
+    call vi_p905_cursor_underline
+    ret c
+    call vi_p905_status_command
+    ret c
+    ld a,VI_MODE_COMMAND
+    ld (vi_editor_mode),a
+    xor a
+    ld (vi_command_len),a
+    ld (vi_normal_pending),a
+    ret
+
+; Canonical EDIT/0x1B escape. It never writes text and never executes a command.
+vi_p905_escape:
+    xor a
+    ld (vi_normal_pending),a
+    ld (vi_command_len),a
+    call vi_p905_clear_status
+    ret c
+    call vi_p905_cursor_block
+    ret c
+    xor a
+    ld (vi_editor_mode),a
+    ret
+
+vi_p905_cursor_block:
+    ld a,VI_CURSOR_BLOCK
+    jr vi_p905_cursor_set
+vi_p905_cursor_underline:
+    ld a,VI_CURSOR_UNDERLINE
+vi_p905_cursor_set:
+    ld (vi_work),a
+    ld a,VI_TTY_SET_CURSOR
+    ld hl,vi_work
+    jp vi_ioctl
+
+vi_p905_status_pos:
+    ld hl,$1700
+    ld a,SYS_CON_SETPOS
+    jp SYSCALL_GATEWAY
+
+vi_p905_status_insert:
+    call vi_p905_status_pos
+    ret c
+    ld hl,vi_insert_msg
+    ld bc,12
+    ld a,SYS_CON_WRITE
+    jp SYSCALL_GATEWAY
+
+vi_p905_status_command:
+    call vi_p905_status_pos
+    ret c
+    ld hl,vi_command_prompt
+    ld bc,1
+    ld a,SYS_CON_WRITE
+    jp SYSCALL_GATEWAY
+
+vi_p905_clear_status:
+    call vi_p905_status_pos
+    ret c
+    ld hl,vi_status_blank
+    ld bc,12
+    ld a,SYS_CON_WRITE
+    jp SYSCALL_GATEWAY
+
+vi_editor_mode: db VI_MODE_NORMAL
+vi_normal_pending: db 0
+vi_command_len: db 0
+vi_command_buf: defs 31,0
+vi_insert_msg: db '-','-',' ','I','N','S','E','R','T',' ','-','-'
+vi_command_prompt: db ':'
+vi_status_blank: defs 12,' '
     ENDM
