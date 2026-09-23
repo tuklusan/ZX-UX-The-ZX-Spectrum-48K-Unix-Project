@@ -694,3 +694,191 @@ as_p1007_base:   dw 0
 as_p1007_cursor: dw 0
 as_p1007_limit:  dw 0
     ENDM
+
+
+; P10.08 assembler expression operator core.
+; Operator byte: 1 +, 2 -, 3 *, 4 /, 5 %, 6 &, 7 |, 8 ^, 9 <<, 10 >>.
+; Inputs: A=operator, HL=lhs, DE=rhs. Output: HL=result, carry clear.
+; Divide/modulo by zero or unknown operator returns E_FORMAT with carry set.
+    MACRO EMIT_P10_AS_EXPR_ROUTINES
+AS_P1008_OP_ADD EQU 1
+AS_P1008_OP_SUB EQU 2
+AS_P1008_OP_MUL EQU 3
+AS_P1008_OP_DIV EQU 4
+AS_P1008_OP_MOD EQU 5
+AS_P1008_OP_AND EQU 6
+AS_P1008_OP_OR  EQU 7
+AS_P1008_OP_XOR EQU 8
+AS_P1008_OP_SHL EQU 9
+AS_P1008_OP_SHR EQU 10
+
+as_p1008_apply:
+    cp AS_P1008_OP_ADD
+    jp z,as_p1008_add
+    cp AS_P1008_OP_SUB
+    jp z,as_p1008_sub
+    cp AS_P1008_OP_MUL
+    jp z,as_p1008_mul
+    cp AS_P1008_OP_DIV
+    jp z,as_p1008_div
+    cp AS_P1008_OP_MOD
+    jp z,as_p1008_mod
+    cp AS_P1008_OP_AND
+    jp z,as_p1008_and
+    cp AS_P1008_OP_OR
+    jp z,as_p1008_or
+    cp AS_P1008_OP_XOR
+    jp z,as_p1008_xor
+    cp AS_P1008_OP_SHL
+    jp z,as_p1008_shl
+    cp AS_P1008_OP_SHR
+    jp z,as_p1008_shr
+    jp as_p1008_error
+
+as_p1008_add:
+    add hl,de
+    xor a
+    ret
+as_p1008_sub:
+    or a
+    sbc hl,de
+    xor a
+    ret
+
+as_p1008_and:
+    ld a,h
+    and d
+    ld h,a
+    ld a,l
+    and e
+    ld l,a
+    xor a
+    ret
+as_p1008_or:
+    ld a,h
+    or d
+    ld h,a
+    ld a,l
+    or e
+    ld l,a
+    xor a
+    ret
+as_p1008_xor:
+    ld a,h
+    xor d
+    ld h,a
+    ld a,l
+    xor e
+    ld l,a
+    xor a
+    ret
+
+; 16-bit multiply modulo 65536.
+as_p1008_mul:
+    push bc
+    push de
+    ld b,16
+    ld bc,0
+as_p1008_mul_loop:
+    bit 0,e
+    jr z,as_p1008_mul_skip
+    add hl,bc
+as_p1008_mul_skip:
+    sla e
+    rl d
+    sla c
+    rl b
+    djnz as_p1008_mul_loop
+    pop de
+    pop bc
+    xor a
+    ret
+
+; Shared small deterministic unsigned division core.
+; HL dividend, DE divisor. Returns HL quotient, BC remainder.
+as_p1008_udiv:
+    ld a,d
+    or e
+    jr z,as_p1008_error
+    ld bc,0
+as_p1008_udiv_loop:
+    or a
+    sbc hl,de
+    jr c,as_p1008_udiv_done
+    inc bc
+    jr as_p1008_udiv_loop
+as_p1008_udiv_done:
+    add hl,de
+    ex de,hl
+    ld h,b
+    ld l,c
+    ex de,hl
+    ; DE=quotient, HL=remainder
+    ret
+
+as_p1008_div:
+    call as_p1008_udiv
+    ret c
+    ex de,hl
+    xor a
+    ret
+as_p1008_mod:
+    call as_p1008_udiv
+    ret c
+    xor a
+    ret
+
+as_p1008_shl:
+    ld a,e
+    and 15
+    jr z,as_p1008_shift_done
+    ld b,a
+as_p1008_shl_loop:
+    add hl,hl
+    djnz as_p1008_shl_loop
+as_p1008_shift_done:
+    xor a
+    ret
+
+as_p1008_shr:
+    ld a,e
+    and 15
+    jr z,as_p1008_shift_done
+    ld b,a
+as_p1008_shr_loop:
+    srl h
+    rr l
+    djnz as_p1008_shr_loop
+    xor a
+    ret
+
+; Unary minus and bitwise complement.
+as_p1008_neg:
+    xor a
+    sub l
+    ld l,a
+    sbc a,a
+    sub h
+    ld h,a
+    xor a
+    ret
+as_p1008_not:
+    ld a,h
+    cpl
+    ld h,a
+    ld a,l
+    cpl
+    ld l,a
+    xor a
+    ret
+
+as_p1008_error:
+    ld a,E_FORMAT
+    scf
+    ret
+
+; Precedence authority consumed by the expression parser:
+; | ^ & << >> + - * / % => 1,2,3,4,4,5,5,6,6,6.
+as_p1008_precedence:
+    db 5,5,6,6,6,3,1,2,4,4
+    ENDM
