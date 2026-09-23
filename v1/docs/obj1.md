@@ -20,10 +20,20 @@ little-endian. Stored length is exact; trailing bytes are invalid.
 The header is exactly 24 bytes: `OBJ1`, version 1, flags 0, header size 24,
 `text_size`, `bss_size`, `symbol_count`, `relocation_count`,
 `symbol_table_offset`, `relocation_table_offset`, body CRC and header CRC.
+The fixed byte layout is: magic 0..3, version 4, flags 5, header_size 6..7,
+text_size 8..9, bss_size 10..11, symbol_count 12..13, relocation_count 14..15,
+symbol_table_offset 16..17, relocation_table_offset 18..19, body CRC 20..21,
+and header CRC 22..23. `header_size` must be exactly 24.
+
 The symbol table begins exactly at `24 + text_size`; the relocation table begins
 exactly at `symbol_table_offset + symbol_count * 20`; total stored length is
 `relocation_table_offset + relocation_count * 6`. Text+BSS and stored length are
 each at most 32768. All arithmetic is widened before narrowing.
+
+A nonzero relocation count with `text_size < 2` is E_FORMAT. No trailing bytes
+are permitted. Count multiplication and every offset/length addition are
+performed in widened arithmetic before any narrowing, so 16-bit wrap cannot
+make a malformed object appear valid.
 
 The body CRC covers every stored byte after the header: text/data, every symbol
 record, and every relocation record. The header CRC covers the complete header
