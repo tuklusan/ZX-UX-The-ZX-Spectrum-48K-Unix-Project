@@ -1,0 +1,87 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p901-present",
+      "passed": true
+    },
+    {
+      "name": "tty64-and-block-contract",
+      "passed": true
+    },
+    {
+      "name": "shared-restoration-path",
+      "passed": true
+    },
+    {
+      "name": "restore-exact-saved-values",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p901-vi.lst",
+        "--sym=p901-vi.sym",
+        "p901-vi.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 594 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p901-gateway.lst",
+        "--sym=p901-gateway.sym",
+        "p901-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 351 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p901-vi.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 35,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 20690, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 15640, \"image_size\": 267, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 291, \"relocations\": [], \"stored_length\": 291, \"version\": 1}\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/vi.asm": "7a4592f88072955cfb850bd2f5e235f15a5ad35d1c8e445e04684756e672d7dd",
+    "v1/build/p901-vi.mex1": "c3973a1057ee207301e2da9b412d9d620e86f570e400391ad8319b425fbaa5b9",
+    "v1/build/p901-vi.tap": "95742ad2063984e5e486207f40807ae0edd8372a81fd1fcae7a7b9ec8b6fea49",
+    "v1/dist/certification/P8.40.test.json": "62c23225ee8dd49351856f61ad3c09babb71d6881285976f60f41dafc924e786",
+    "v1/tools-host/test-driver/phase9_vi_skeleton.py": "e188cf02ee1cecbfd191cdf72f216ce68a5f9747bcd0a41c7ffb274324056a62",
+    "v1/tools-host/test-driver/run.py": "4cd87cd90a0be213190dcacb5ff0f54055be0b8a32105b04b456abab36ad595e"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P8.40": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "de0bb1d5d51007079894d31e08a338794b221b55",
+  "status": "PASS",
+  "step": "P9.01",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
