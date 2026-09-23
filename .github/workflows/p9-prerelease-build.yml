@@ -86,12 +86,59 @@ jobs:
 
           tools/runtime/python/bin/python - <<'PY'
           from __future__ import annotations
-          import hashlib, importlib.util, json, struct, sys
+          import hashlib, importlib.util, json, os, shutil, struct, sys
           from pathlib import Path
 
           root=Path.cwd()
           out=Path('/tmp/p9-prerelease/P9.pre-release')
           out.mkdir(parents=True,exist_ok=True)
+
+          # Preserve the exact final workflow set that produced/validated this
+          # demonstration. Once captured, future reruns retain these snapshots
+          # rather than silently refreshing them from a later project head.
+          workflow_dir=out/'workflows'
+          retained_workflows=root/'v1/dist/media/P9.pre-release/workflows'
+          if retained_workflows.is_dir():
+              shutil.copytree(retained_workflows,workflow_dir)
+          else:
+              workflow_dir.mkdir(parents=True,exist_ok=True)
+              workflow_sources=(
+                  root/'.github/workflows/p9-prerelease-build.yml',
+                  root/'.github/workflows/exact-head-regression.yml',
+                  root/'.github/workflows/qualification-auto-dispatch.yml',
+              )
+              snapshot_files=[]
+              for src in workflow_sources:
+                  dst=workflow_dir/src.name
+                  shutil.copy2(src,dst)
+                  data=dst.read_bytes()
+                  snapshot_files.append({
+                      'path':src.relative_to(root).as_posix(),
+                      'snapshot':dst.name,
+                      'size':len(data),
+                      'sha256':hashlib.sha256(data).hexdigest(),
+                  })
+              (workflow_dir/'README.txt').write_text(
+                  'ZX-UX Phase-9 pre-release workflow snapshots\n\n'
+                  'These files are preserved copies of the final GitHub Actions workflows\n'
+                  'used to build/publish this Phase-9 demonstration and validate the repo\n'
+                  'head around it. They are reference material for constructing analogous\n'
+                  'development/pre-release previews after later phases.\n\n'
+                  'p9-prerelease-build.yml       demo build/test/publish workflow\n'
+                  'exact-head-regression.yml     repository exact-head validation\n'
+                  'qualification-auto-dispatch.yml qualification dispatch controller\n\n'
+                  'These snapshots are not active workflows from this directory.\n',
+                  encoding='utf-8',newline='\n'
+              )
+              (workflow_dir/'snapshot.json').write_text(
+                  json.dumps({
+                      'schema':1,
+                      'kind':'phase9-pre-release-workflow-snapshot',
+                      'captured_from_commit':os.environ.get('GITHUB_SHA',''),
+                      'files':snapshot_files,
+                  },indent=2,sort_keys=True)+'\n',
+                  encoding='utf-8'
+              )
 
           def load(path:Path,name:str):
               spec=importlib.util.spec_from_file_location(name,path)
@@ -253,6 +300,8 @@ jobs:
               'fixtures, but the admitted resident boot image does not yet compose those\n'
               'stages into a live interactive login/session. This tape therefore stops at\n'
               'the login prompt instead of pretending later integration already exists.\n\n'
+              'The workflows/ directory preserves the final workflow set used to create\n'
+              'and validate this demonstration for reference by later phase previews.\n\n'
               'The Phase-9 checkpoint contains an internal time-set table symbol typo which\n'
               'prevents a fresh resident-kernel assembly. This build resolves that one table\n'
               'entry to the exact already-qualified handler offset during assembly only; the\n'
@@ -298,10 +347,11 @@ jobs:
               },
               'files':[],
           }
-          for p in sorted(out.iterdir()):
-              if p.name=='pre-release.json':
+          for p in sorted(x for x in out.rglob('*') if x.is_file()):
+              if p == out/'pre-release.json':
                   continue
-              meta['files'].append({'path':p.name,'size':p.stat().st_size,'sha256':sha(p)})
+              rel=p.relative_to(out).as_posix()
+              meta['files'].append({'path':rel,'size':p.stat().st_size,'sha256':sha(p)})
           (out/'pre-release.json').write_text(json.dumps(meta,indent=2,sort_keys=True)+'\n',encoding='utf-8')
           PY
 
@@ -399,10 +449,25 @@ jobs:
               blocks.append(b)
           assert off==len(tap)
           assert len(blocks)==8
+          expected_workflows={
+              'p9-prerelease-build.yml',
+              'exact-head-regression.yml',
+              'qualification-auto-dispatch.yml',
+              'README.txt',
+              'snapshot.json',
+          }
+          assert {p.name for p in (d/'workflows').iterdir() if p.is_file()}==expected_workflows
+          snapshot=json.loads((d/'workflows/snapshot.json').read_text(encoding='utf-8'))
+          assert snapshot['kind']=='phase9-pre-release-workflow-snapshot'
+          assert {x['snapshot'] for x in snapshot['files']}=={
+              'p9-prerelease-build.yml',
+              'exact-head-regression.yml',
+              'qualification-auto-dispatch.yml',
+          }
           loader=(d/'loader.bas').read_text(encoding='utf-8')
           assert loader=='10 BORDER 0: PAPER 0: INK 7: CLS\n20 CLEAR 24575\n30 LOAD "" SCREEN$\n40 LOAD "" CODE\n45 LOAD "" CODE\n50 RANDOMIZE USR 57347\n'
           PY
-            digest="$(find "$dir" -maxdepth 1 -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')"
+            digest="$(find "$dir" -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')"
             if test -z "$baseline"; then
               baseline="$digest"
             else
