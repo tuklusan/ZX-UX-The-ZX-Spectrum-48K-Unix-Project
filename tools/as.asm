@@ -786,8 +786,8 @@ as_p1008_mul_loop:
     jr z,as_p1008_mul_skip
     add hl,bc
 as_p1008_mul_skip:
-    sla e
-    rl d
+    srl d
+    rr e
     sla c
     rl b
     dec a
