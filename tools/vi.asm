@@ -1255,4 +1255,57 @@ vi_p907_class_space:
 vi_word_cmd: db 0
 vi_word_class: db 0
 vi_word_end: dw 0
+
+; P9.08 case-sensitive gg / G line motions.
+; Single 'g' only arms the pending state.  A second lowercase 'g' selects
+; the first logical line.  Uppercase 'G' independently selects the last.
+vi_p908_key:
+    ld b,a
+    ld a,(vi_normal_pending)
+    cp 'g'
+    jr z,vi_p908_after_g
+    ld a,b
+    cp 'g'
+    jr z,vi_p908_arm_g
+    cp 'G'
+    jr z,vi_p908_last
+    xor a
+    ld (vi_normal_pending),a
+    ld a,E_NOTSUP
+    scf
+    ret
+
+vi_p908_after_g:
+    xor a
+    ld (vi_normal_pending),a
+    ld a,b
+    cp 'g'
+    jr z,vi_p908_first
+    ld a,E_NOTSUP
+    scf
+    ret
+
+vi_p908_arm_g:
+    ld a,'g'
+    ld (vi_normal_pending),a
+    xor a
+    ret
+
+vi_p908_first:
+    ld hl,0
+    ld (vi_cursor_off),hl
+    xor a
+    ret
+
+vi_p908_last:
+    xor a
+    ld (vi_normal_pending),a
+    ld a,(vi_line_count)
+    or a
+    jr z,vi_p908_first
+    dec a
+    call vi_p906_line_start
+    ld (vi_cursor_off),hl
+    xor a
+    ret
     ENDM
