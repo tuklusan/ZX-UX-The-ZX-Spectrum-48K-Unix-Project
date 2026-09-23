@@ -715,6 +715,10 @@ vi_p905_normal_key:
     jr z,vi_p905_enter_insert
     cp 'a'
     jp z,vi_p909_enter_append
+    cp 'o'
+    jp z,vi_p910_open
+    cp 'O'
+    jp z,vi_p910_open
     cp ':'
     jr z,vi_p905_enter_command
     ; A future multi-key normal command may stage here. ESC must cancel it.
@@ -1335,4 +1339,49 @@ vi_p909_insert_byte:
     ld (vi_cursor_off),hl
     xor a
     ret
+
+; P9.10 case-sensitive o/O open-line commands.
+; Entry A is 'o' (below) or 'O' (above).  The LF insertion is delegated to
+; P9.03 so allocation failure is atomic.
+vi_p910_open:
+    ld (vi_open_cmd),a
+    call vi_p906_locate_line
+    ld a,(vi_open_cmd)
+    cp 'O'
+    jr z,vi_p910_above
+
+    ; Below: insert a line separator immediately after the current logical
+    ; line.  For the final unterminated line this is exactly buffer_len.
+    call vi_p906_current_end
+    ld de,(vi_buffer_len)
+    push hl
+    or a
+    sbc hl,de
+    pop hl
+    jr z,vi_p910_below_pos
+    inc hl
+vi_p910_below_pos:
+    ld (vi_open_pos),hl
+    jr vi_p910_insert
+
+vi_p910_above:
+    ld hl,(vi_motion_start)
+    ld (vi_open_pos),hl
+
+vi_p910_insert:
+    ld a,10
+    ld hl,(vi_open_pos)
+    call vi_p903_insert_byte
+    ret c
+    ld hl,(vi_open_pos)
+    ld a,(vi_open_cmd)
+    cp 'o'
+    jr nz,vi_p910_cursor_ready
+    inc hl
+vi_p910_cursor_ready:
+    ld (vi_cursor_off),hl
+    jp vi_p905_enter_insert
+
+vi_open_cmd: db 0
+vi_open_pos: dw 0
     ENDM
