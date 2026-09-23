@@ -22,6 +22,7 @@ from driver_core import DriverError
 from fuse_harness import PASS_PC, FAIL_PC, run_sna
 
 
+# P10.17 exact-candidate marker.
 class P1017Error(DriverError):
     pass
 
