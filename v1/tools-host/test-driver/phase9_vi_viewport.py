@@ -142,9 +142,10 @@ gate_end:
         # TAB is one file byte yet advances display column to the next multiple of eight.
         data=b"a\tb"
         # Cursor starts at supplied offset 2; expected display column is exactly 8.
-        code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC)+b"\x21\x02\x00\x22"+word(sy["vi_cursor_off"])+phase1._call(sy["vi_p922_cursor_column"]))
-        code+=b"\x7C\xB5"+phase1._jp_z(FAIL_PC)+b"\x7D\xFE\x08"+phase1._jp_nz(FAIL_PC)+b"\x7C\xB7"+phase1._jp_nz(FAIL_PC)+phase1._jp(PASS_PC)
-        run_case(root,"tab-logical-column",code,patch(image,gate,sy,data,cursor=2))
+        for label,address,value in (("tab-logical-low",0xA310,8),("tab-logical-high",0xA311,0)):
+            code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC)+b"\x21\x02\x00\x22"+word(sy["vi_cursor_off"])+phase1._call(sy["vi_p922_cursor_column"]))
+            code+=b"\x22\x10\xA3"+expect_byte(address,value)+phase1._jp(PASS_PC)
+            run_case(root,label,code,patch(image,gate,sy,data,cursor=2))
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC))
         code+=expect_byte(sy["vi_buffer"]+1,9)+phase1._jp(PASS_PC)
         run_case(root,"tab-byte-preserved",code,patch(image,gate,sy,data,cursor=2))
