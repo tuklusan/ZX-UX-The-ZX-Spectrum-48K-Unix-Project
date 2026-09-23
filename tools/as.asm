@@ -32,79 +32,80 @@ AS_OBJ1_SYM_FLAGS_KNOWN  EQU 1
 ; Carry clear means structurally valid; carry set with A=E_FORMAT rejects.
 ; Module-level uniqueness is checked by the symbol-table insertion path.
 as_obj1_symbol_validate:
-    push bc
-    push de
-    push hl
+    ld (as_obj1_text_size_tmp),de
+    ld (as_obj1_bss_size_tmp),bc
+    ld (as_obj1_record_tmp),hl
     call as_obj1_symbol_name_validate
-    jr c,as_obj1_symbol_invalid_pop
-    pop hl
-    push hl
+    jr c,as_obj1_symbol_invalid
+
+    ld hl,(as_obj1_record_tmp)
     ld de,AS_OBJ1_SYMBOL_FLAGS
     add hl,de
     ld a,(hl)
+    ld (as_obj1_flags_tmp),a
     and ~AS_OBJ1_SYM_FLAGS_KNOWN
-    jr nz,as_obj1_symbol_invalid_pop
-    pop hl
-    push hl
+    jr nz,as_obj1_symbol_invalid
+
+    ld hl,(as_obj1_record_tmp)
     ld de,AS_OBJ1_SYMBOL_SECTION
     add hl,de
     ld a,(hl)
     cp AS_OBJ1_SEC_ABS+1
-    jr nc,as_obj1_symbol_invalid_pop
-    ld d,a
-    pop hl
-    push hl
-    ld bc,AS_OBJ1_SYMBOL_VALUE
-    add hl,bc
-    ld c,(hl)
-    inc hl
-    ld b,(hl)
-    pop hl
-    push hl
-    ld a,d
-    or a
-    jr nz,as_obj1_symbol_defined
-    ld a,b
-    or c
-    jr nz,as_obj1_symbol_invalid_pop
-    ld de,AS_OBJ1_SYMBOL_FLAGS
+    jr nc,as_obj1_symbol_invalid
+    ld (as_obj1_section_tmp),a
+
+    ld hl,(as_obj1_record_tmp)
+    ld de,AS_OBJ1_SYMBOL_VALUE
     add hl,de
-    ld a,(hl)
-    and AS_OBJ1_SYM_GLOBAL
-    jr z,as_obj1_symbol_invalid_pop
-    jr as_obj1_symbol_valid_pop
-as_obj1_symbol_defined:
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (as_obj1_value_tmp),de
+
+    ld a,(as_obj1_section_tmp)
+    or a
+    jr z,as_obj1_symbol_undef
     cp AS_OBJ1_SEC_TEXT
     jr z,as_obj1_symbol_text
     cp AS_OBJ1_SEC_BSS
     jr z,as_obj1_symbol_bss
-    jr as_obj1_symbol_valid_pop
+    jr as_obj1_symbol_valid
+
+as_obj1_symbol_undef:
+    ld hl,(as_obj1_value_tmp)
+    ld a,h
+    or l
+    jr nz,as_obj1_symbol_invalid
+    ld a,(as_obj1_flags_tmp)
+    and AS_OBJ1_SYM_GLOBAL
+    jr z,as_obj1_symbol_invalid
+    jr as_obj1_symbol_valid
+
 as_obj1_symbol_text:
-    pop hl
-    pop de
-    push de
-    push hl
-    ld h,b
-    ld l,c
+    ld hl,(as_obj1_value_tmp)
+    ld de,(as_obj1_text_size_tmp)
     or a
     sbc hl,de
-    jr c,as_obj1_symbol_valid_pop
-    jr z,as_obj1_symbol_valid_pop
-    jr as_obj1_symbol_invalid_pop
+    jr c,as_obj1_symbol_valid
+    jr z,as_obj1_symbol_valid
+    jr as_obj1_symbol_invalid
+
 as_obj1_symbol_bss:
-    pop hl
-    pop de
-    pop bc
-    push bc
-    push de
-    push hl
-    ld h,b
-    ld l,c
+    ld hl,(as_obj1_value_tmp)
+    ld de,(as_obj1_bss_size_tmp)
     or a
-    sbc hl,bc
-    jr c,as_obj1_symbol_valid_pop
-    jr z,as_obj1_symbol_valid_pop
-    jr as_obj1_symbol_invalid_pop
+    sbc hl,de
+    jr c,as_obj1_symbol_valid
+    jr z,as_obj1_symbol_valid
+
+as_obj1_symbol_invalid:
+    ld a,E_FORMAT
+    scf
+    ret
+
+as_obj1_symbol_valid:
+    xor a
+    ret
 
 ; Validate exact [A-Za-z_.$][A-Za-z0-9_.$]*, 1..15 visible bytes,
 ; mandatory NUL terminator, and zero tail through byte 15.
@@ -182,17 +183,10 @@ as_obj1_name_char_ok:
     or a
     ret
 
-as_obj1_symbol_valid_pop:
-    pop hl
-    pop de
-    pop bc
-    xor a
-    ret
-as_obj1_symbol_invalid_pop:
-    pop hl
-    pop de
-    pop bc
-    ld a,E_FORMAT
-    scf
-    ret
+as_obj1_record_tmp:      dw 0
+as_obj1_text_size_tmp:   dw 0
+as_obj1_bss_size_tmp:    dw 0
+as_obj1_value_tmp:       dw 0
+as_obj1_section_tmp:     db 0
+as_obj1_flags_tmp:       db 0
     ENDM
