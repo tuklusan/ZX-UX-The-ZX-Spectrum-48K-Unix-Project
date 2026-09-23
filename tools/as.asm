@@ -1038,3 +1038,9 @@ as_p1009_value_arg:   dw 0
 as_p1009_section_arg: db 0
 as_p1009_table: defs AS_P1009_MAX_BINDINGS*AS_P1009_RECORD_SIZE,0
     ENDM
+
+
+; P10.10 required-opcode/addressing coverage authority.
+; The exact portable documented-Z80 inventory is frozen in
+; v1/tests/compiler/as-opcode-inventory. SLL and undocumented indexed-result
+; aliases are deliberately outside the portable baseline.
