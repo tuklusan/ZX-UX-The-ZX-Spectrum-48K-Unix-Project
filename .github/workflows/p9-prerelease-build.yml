@@ -88,7 +88,7 @@ jobs:
 
           def sym(name:str)->int:
               text=(root/'v1/build/kernel.sym').read_text(encoding='utf-8',errors='replace')
-              m=re.search(rf'^\\s*{re.escape(name)}:\\s+equ\\s+0x([0-9A-Fa-f]+)\\s*
+              m=re.search(rf'^\\s*{re.escape(name)}:\\s+equ\\s+0x([0-9A-Fa-f]+)\\s*' + chr(36), text, re.I|re.M)
               assert m is not None, name
               return int(m.group(1),16)
 
