@@ -1,0 +1,82 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "block-io-inventory-family-coverage",
+      "passed": true
+    },
+    {
+      "name": "native-block-encoder",
+      "passed": true
+    },
+    {
+      "name": "native-c-port-encoders",
+      "passed": true
+    },
+    {
+      "name": "native-immediate-port-encoders",
+      "passed": true
+    },
+    {
+      "name": "native-port-range-check",
+      "passed": true
+    },
+    {
+      "name": "undocumented-ed-rejection",
+      "passed": true
+    },
+    {
+      "name": "sjasmplus-block-io-golden",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "p1016-golden.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 2,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 20 lines, work time: 0.001 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1016-native.sym",
+        "p1016-native.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2320 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/as.asm": "60fb8d7fdfc649c821d7702752c9e8ac165aee5613011a14e0a3635cefade2a0",
+    "v1/build/p1016-golden.bin": "2453a154565ae7ec40188da3d93d8d894e54bc586c6da14036019d0fa3121d2d",
+    "v1/build/p1016-native.bin": "f44f5f0fa273fa6eaad145f2d7f754b6fbb61c78f0ff7e2e695dfb721e28e40b",
+    "v1/dist/certification/P10.15.build.json": "1f0db55856da01c8333f367394a9ccdc23ce7f702228cf7fae16a7120f74d8d7",
+    "v1/dist/certification/P10.15.test.json": "bfd5e61ca6d90f5604dd3563e45b1912006592852b854e93e71a53c76f979926",
+    "v1/tests/compiler/as-opcode-inventory": "9052d2f727116ab9d332b32b86683c14f0cda3b4ef11445a8e1d1f5aed7a9f9b",
+    "v1/tools-host/test-driver/phase10_step_16.py": "72826513bce3c568ba3570b64c22c9b0fc0291c9dbaa3195ac330f938db0d629"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P10.15": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "0711af63ebc2ff4b4792403b030d4faf691d5db4",
+  "status": "PASS",
+  "step": "P10.16",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

@@ -1,0 +1,85 @@
+{
+  "files": [
+    {
+      "action": "test",
+      "path": "test/fixture-0914d6fc718b2b4d5fbff70afff997a9bf7bfc336a64db15c8bac8ff9d7f5e82.sna",
+      "sha256": "0914d6fc718b2b4d5fbff70afff997a9bf7bfc336a64db15c8bac8ff9d7f5e82",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-1d5b321f1e09ee5210b87e5d3c59c5e75afe9bdff3f4ab04bbf2c9da8d4bc2a3.sna",
+      "sha256": "1d5b321f1e09ee5210b87e5d3c59c5e75afe9bdff3f4ab04bbf2c9da8d4bc2a3",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-4140c4417a10f35eac3dc379efd6661c40db0c5711e2b297f240fd4b11bbd5b4.sna",
+      "sha256": "4140c4417a10f35eac3dc379efd6661c40db0c5711e2b297f240fd4b11bbd5b4",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-416b96d36187d338dc7a6e1014ba4e97f0e5b7c277fbb841a12c3557a738c26c.sna",
+      "sha256": "416b96d36187d338dc7a6e1014ba4e97f0e5b7c277fbb841a12c3557a738c26c",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-42a01c62dc337a8148ba6a901611a33984fa4afd121fdc608b86401327fcae34.sna",
+      "sha256": "42a01c62dc337a8148ba6a901611a33984fa4afd121fdc608b86401327fcae34",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-944270f88dcb70dee73ea3e99d4a48675a22bef636f84500373d0b99ec9312b6.sna",
+      "sha256": "944270f88dcb70dee73ea3e99d4a48675a22bef636f84500373d0b99ec9312b6",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-9f686c59052fa23e613860665c07b3e8bb8c073756f8b8a0b59442b216bf3612.sna",
+      "sha256": "9f686c59052fa23e613860665c07b3e8bb8c073756f8b8a0b59442b216bf3612",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-ac7deaaa5d2d3e274fbe3a33ac8aec859fded78391cf625fe4daab67eb13cfd5.sna",
+      "sha256": "ac7deaaa5d2d3e274fbe3a33ac8aec859fded78391cf625fe4daab67eb13cfd5",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-b31e1e43a125442f42eaaa598117ea07d379b2838da554e5bda7438c056f884c.sna",
+      "sha256": "b31e1e43a125442f42eaaa598117ea07d379b2838da554e5bda7438c056f884c",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-bb240b998837d21cc89d675689cf4047aac520e0d6e40e40b460a551f460cd9f.sna",
+      "sha256": "bb240b998837d21cc89d675689cf4047aac520e0d6e40e40b460a551f460cd9f",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-ccffbc531283cd3d6c84f7b939020d7e98af4e44ffb672dd8b4d5004420e20bf.sna",
+      "sha256": "ccffbc531283cd3d6c84f7b939020d7e98af4e44ffb672dd8b4d5004420e20bf",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-e4ca529bc102ca3e233f16bfd16061e186e19bc86dad7f1075304e7ef4804e14.sna",
+      "sha256": "e4ca529bc102ca3e233f16bfd16061e186e19bc86dad7f1075304e7ef4804e14",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-ea8da73d14251c721e62aab951ab9b6d70cd582cd84778f8cccd2dce5b919d47.sna",
+      "sha256": "ea8da73d14251c721e62aab951ab9b6d70cd582cd84778f8cccd2dce5b919d47",
+      "size": 49179
+    }
+  ],
+  "schema": 1,
+  "source_commit": "0711af63ebc2ff4b4792403b030d4faf691d5db4",
+  "step": "P10.16"
+}
