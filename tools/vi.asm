@@ -1723,7 +1723,7 @@ vi_p912_nomem:
 vi_put_cmd: db 0
 vi_put_start: dw 0
 
-; P9.13 r/J replacement and join.
+; P9.13 r/J replacement and join; P9.24 current-head J offset repair retained.
 ; r is two-stage so a missing replacement byte leaves the buffer untouched.
 vi_p913_r_begin:
     ld hl,(vi_buffer_len)
