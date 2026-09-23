@@ -1,0 +1,106 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "native-reloc-layout-frozen",
+      "passed": true
+    },
+    {
+      "name": "native-reloc-validator-present",
+      "passed": true
+    },
+    {
+      "name": "include-reloc-layout-agrees",
+      "passed": true
+    },
+    {
+      "name": "doc-strict-order-and-addend",
+      "passed": true
+    },
+    {
+      "name": "doc-widened-arithmetic",
+      "passed": true
+    },
+    {
+      "name": "zero-addend",
+      "passed": true
+    },
+    {
+      "name": "positive-i16-addend",
+      "passed": true
+    },
+    {
+      "name": "negative-boundary-addend",
+      "passed": true
+    },
+    {
+      "name": "negative-one-addend",
+      "passed": true
+    },
+    {
+      "name": "strict-plus-two-order-accepted",
+      "passed": true
+    },
+    {
+      "name": "text-short",
+      "passed": true
+    },
+    {
+      "name": "offset-overrun",
+      "passed": true
+    },
+    {
+      "name": "overlap",
+      "passed": true
+    },
+    {
+      "name": "unsorted",
+      "passed": true
+    },
+    {
+      "name": "symbol-out-of-range",
+      "passed": true
+    },
+    {
+      "name": "wrong-type",
+      "passed": true
+    },
+    {
+      "name": "reserved-nonzero",
+      "passed": true
+    },
+    {
+      "name": "addend-underflow",
+      "passed": true
+    },
+    {
+      "name": "addend-overflow",
+      "passed": true
+    },
+    {
+      "name": "count-wrap-vector",
+      "passed": true
+    }
+  ],
+  "commands": [],
+  "hashes": {
+    "tools/as.asm": "2c250424624fc9b2a3c31d23e050c56f22b8cd45f343a74706dbd7208604d62e",
+    "v1/dist/certification/P10.02.build.json": "d2530cf660f83aa4de27445430401811e71eebe3b0ff1f3b282792e04ca95c34",
+    "v1/dist/certification/P10.02.test.json": "9c5e433841128e31fa2ddb3333bbd3d6256dfc88755397c49e991d413b77cc9c",
+    "v1/docs/obj1.md": "f2db3a361b1c8f12dba446609687306f2b05c4a69ca3285027d8a85d9f43e931",
+    "v1/include/obj1.inc": "acb62936905a4cfae7bd6b9fc9f2ed9b1a9208aca5feaf15346ae47c17fa2ef0",
+    "v1/tools-host/test-driver/phase10_obj1_reloc.py": "44c9db26fc679f43dbc206bcf4e109749612721d7af44fd67c1e471e3ad8e7a8",
+    "v1/tools-host/test-driver/run.py": "32729c143eaf496efd559f5a44ea0da0ec9276dd87a40b0df78e238367327f4e"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P10.02": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "ee46e0c915e6952b20f47ea34344c6e2f910d5e8",
+  "status": "PASS",
+  "step": "P10.03",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
