@@ -1579,7 +1579,7 @@ as_p1013_abs16_reloc:
     ld a,d
     ld (bc),a
     inc bc
-    ld a,AS_OBJ1_RELOC_ABS16
+    ld a,AS_P1013_RELOC_ABS16
     ld (bc),a
     inc bc
     xor a
