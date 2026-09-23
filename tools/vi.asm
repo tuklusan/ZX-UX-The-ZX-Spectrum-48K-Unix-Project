@@ -2495,4 +2495,252 @@ vi_ex_insert_pos: dw 0
 vi_ex_stat_req: defs 4,0
 vi_ex_stat_out: defs 10,0
 vi_ex_stage: defs VI_EX_STAGE_CAPACITY,0
+
+; P9.17 transactional :w path core. The destination is never opened/truncated.
+; A unique /tmp/.vi<pid>.<n> (n=0..9) is created exclusively, completely
+; written and closed, then atomically renamed over the destination.
+vi_p917_write_path:
+    ld (vi_write_dest),hl
+    xor a
+    ld (vi_temp_owned),a
+    ld (vi_temp_open),a
+    call vi_p917_select_type
+    ret c
+    ld a,SYS_GETPID
+    call SYSCALL_GATEWAY
+    ret c
+    ld a,h
+    or a
+    jr nz,vi_p917_format
+    ld a,l
+    cp 10
+    jr nc,vi_p917_format
+    add a,'0'
+    ld (vi_temp_name+8),a
+    xor a
+    ld (vi_temp_n),a
+vi_p917_open_retry:
+    ld a,(vi_temp_n)
+    add a,'0'
+    ld (vi_temp_name+10),a
+    ld hl,vi_temp_name
+    ld c,O_WRITE|O_CREATE|O_EXCL
+    ld a,(vi_write_type)
+    ld b,a
+    ld a,SYS_OPEN
+    call SYSCALL_GATEWAY
+    jr nc,vi_p917_opened
+    cp E_EXIST
+    ret nz
+    ld a,(vi_temp_n)
+    cp 9
+    jr z,vi_p917_exist
+    inc a
+    ld (vi_temp_n),a
+    jr vi_p917_open_retry
+
+vi_p917_opened:
+    ld a,h
+    or a
+    jr nz,vi_p917_format_created
+    ld a,l
+    ld (vi_temp_handle),a
+    ld a,1
+    ld (vi_temp_owned),a
+    ld (vi_temp_open),a
+    call vi_p917_write_all
+    jr c,vi_p917_cleanup_error
+    call vi_p917_close_temp
+    jr c,vi_p917_cleanup_error
+    ld hl,vi_temp_name
+    ld (vi_rename_req),hl
+    ld hl,(vi_write_dest)
+    ld (vi_rename_req+2),hl
+    ld hl,vi_rename_req
+    ld a,SYS_RENAME
+    call SYSCALL_GATEWAY
+    jr c,vi_p917_cleanup_error
+    xor a
+    ld (vi_temp_owned),a
+    ret
+
+vi_p917_write_all:
+    ld hl,0
+    ld (vi_write_pos),hl
+vi_p917_write_loop:
+    ld hl,(vi_write_pos)
+    ld de,(vi_buffer_len)
+    push hl
+    or a
+    sbc hl,de
+    pop hl
+    ret z
+    call vi_p903_get_byte
+    ld (vi_write_byte),a
+    ld a,(vi_temp_handle)
+    ld e,a
+    ld d,0
+    ld hl,vi_write_byte
+    ld bc,1
+    ld a,SYS_WRITE
+    call SYSCALL_GATEWAY
+    ret c
+    ld a,h
+    or a
+    jr nz,vi_p917_io
+    ld a,l
+    cp 1
+    jr nz,vi_p917_io
+    ld hl,(vi_write_pos)
+    inc hl
+    ld (vi_write_pos),hl
+    jr vi_p917_write_loop
+
+vi_p917_close_temp:
+    ld a,(vi_temp_open)
+    or a
+    ret z
+    xor a
+    ld (vi_temp_open),a
+    ld a,(vi_temp_handle)
+    ld l,a
+    ld h,0
+    ld a,SYS_CLOSE
+    jp SYSCALL_GATEWAY
+
+; Preserve the first transactional errno while cleaning only an exclusively
+; created temp owned by this vi process. Unknown E_EXIST collisions are untouched.
+vi_p917_cleanup_error:
+    ld (vi_write_errno),a
+    call vi_p917_close_temp
+    ld a,(vi_temp_owned)
+    or a
+    jr z,vi_p917_return_primary
+    xor a
+    ld (vi_temp_owned),a
+    ld hl,vi_temp_name
+    ld a,SYS_REMOVE
+    call SYSCALL_GATEWAY
+vi_p917_return_primary:
+    ld a,(vi_write_errno)
+    scf
+    ret
+
+vi_p917_format_created:
+    ld a,1
+    ld (vi_temp_owned),a
+    ld a,E_FORMAT
+    jr vi_p917_cleanup_error
+vi_p917_format:
+    ld a,E_FORMAT
+    scf
+    ret
+vi_p917_exist:
+    ld a,E_EXIST
+    scf
+    ret
+vi_p917_io:
+    ld a,E_IO
+    scf
+    ret
+
+; Existing destination type is preserved. A new destination selects C only for
+; exact lower-case .c, ASM only for exact lower-case .asm, TXT otherwise.
+vi_p917_select_type:
+    ld hl,(vi_write_dest)
+    ld (vi_write_stat_req),hl
+    ld hl,vi_write_stat_out
+    ld (vi_write_stat_req+2),hl
+    ld hl,vi_write_stat_req
+    ld a,SYS_STAT
+    call SYSCALL_GATEWAY
+    jr c,vi_p917_select_missing
+    ld a,(vi_write_stat_out)
+    cp OBJ_TXT
+    jr z,vi_p917_select_existing
+    cp OBJ_C
+    jr z,vi_p917_select_existing
+    cp OBJ_ASM
+    jr z,vi_p917_select_existing
+    cp OBJ_CFG
+    jr z,vi_p917_select_existing
+    ld a,E_FORMAT
+    scf
+    ret
+vi_p917_select_existing:
+    ld (vi_write_type),a
+    xor a
+    ret
+vi_p917_select_missing:
+    cp E_NOENT
+    ret nz
+    xor a
+    ld (vi_suffix_1),a
+    ld (vi_suffix_2),a
+    ld (vi_suffix_3),a
+    ld (vi_suffix_4),a
+    ld hl,(vi_write_dest)
+vi_p917_suffix_loop:
+    ld a,(hl)
+    or a
+    jr z,vi_p917_suffix_done
+    ld b,a
+    ld a,(vi_suffix_3)
+    ld (vi_suffix_4),a
+    ld a,(vi_suffix_2)
+    ld (vi_suffix_3),a
+    ld a,(vi_suffix_1)
+    ld (vi_suffix_2),a
+    ld a,b
+    ld (vi_suffix_1),a
+    inc hl
+    jr vi_p917_suffix_loop
+vi_p917_suffix_done:
+    ld a,(vi_suffix_2)
+    cp '.'
+    jr nz,vi_p917_check_asm
+    ld a,(vi_suffix_1)
+    cp 'c'
+    jr nz,vi_p917_check_asm
+    ld a,OBJ_C
+    jr vi_p917_select_new
+vi_p917_check_asm:
+    ld a,(vi_suffix_4)
+    cp '.'
+    jr nz,vi_p917_new_txt
+    ld a,(vi_suffix_3)
+    cp 'a'
+    jr nz,vi_p917_new_txt
+    ld a,(vi_suffix_2)
+    cp 's'
+    jr nz,vi_p917_new_txt
+    ld a,(vi_suffix_1)
+    cp 'm'
+    jr nz,vi_p917_new_txt
+    ld a,OBJ_ASM
+    jr vi_p917_select_new
+vi_p917_new_txt:
+    ld a,OBJ_TXT
+vi_p917_select_new:
+    ld (vi_write_type),a
+    xor a
+    ret
+
+vi_write_dest: dw 0
+vi_write_type: db OBJ_TXT
+vi_write_errno: db 0
+vi_write_pos: dw 0
+vi_write_byte: db 0
+vi_temp_handle: db 0
+vi_temp_open: db 0
+vi_temp_owned: db 0
+vi_temp_n: db 0
+vi_suffix_1: db 0
+vi_suffix_2: db 0
+vi_suffix_3: db 0
+vi_suffix_4: db 0
+vi_write_stat_req: defs 4,0
+vi_write_stat_out: defs 10,0
+vi_rename_req: defs 4,0
+vi_temp_name: db '/','t','m','p','/','.','v','i','0','.','0',0
     ENDM
