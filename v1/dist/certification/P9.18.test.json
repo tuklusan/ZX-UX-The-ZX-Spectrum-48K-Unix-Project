@@ -1,0 +1,107 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p918-present",
+      "passed": true
+    },
+    {
+      "name": "unnamed-requires-target",
+      "passed": true
+    },
+    {
+      "name": "retarget-after-transaction",
+      "passed": true
+    },
+    {
+      "name": "wq-exit-after-write",
+      "passed": true
+    },
+    {
+      "name": "fuse-unnamed-w-exact-diagnostic",
+      "passed": true
+    },
+    {
+      "name": "fuse-named-w-clears-dirty",
+      "passed": true
+    },
+    {
+      "name": "fuse-w-path-retarget-after-commit",
+      "passed": true
+    },
+    {
+      "name": "fuse-failed-write-no-retarget",
+      "passed": true
+    },
+    {
+      "name": "fuse-wq-exit-only-after-success",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p918-vi.lst",
+        "--sym=p918-vi.sym",
+        "p918-vi.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 18,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 5844 lines, work time: 0.017 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p918-vi.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 38,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 48923, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 60934, \"image_size\": 7989, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 8013, \"relocations\": [], \"stored_length\": 8013, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p918-gateway.lst",
+        "--sym=p918-gateway.sym",
+        "p918-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 351 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/vi.asm": "12f6f5383179a9d3942d8745bb5f33d3009932c2ba9daa650fc22a954492668b",
+    "v1/build/p918-vi.mex1": "d51e9f82828492e777992a1b0cbc2c5ef7019ea7d98b55cf0a875b2439eedfc9",
+    "v1/build/p918-vi.tap": "dd55c77fb5029544cf656978358260a3a438a3959fe548bd8eb51363fbf2094d",
+    "v1/dist/certification/P9.17.test.json": "b6ccf21832e3ebaf2e529fc669508691a379375d11406c33cae85bfe3ee2d60c",
+    "v1/tools-host/test-driver/phase9_vi_write_state.py": "6cf9ba3b379c691e9d9963fefba8baff39108c8a3e5dc6de259b476a0082fdea",
+    "v1/tools-host/test-driver/run.py": "524562d7e0f98ff5fe7ad50d5ad77f9076ac0d660040b3cd38d1abdabf2c3601"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P9.17": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "104275719eca5b2cd0d2ee9bd7f4ad39de5982d0",
+  "status": "PASS",
+  "step": "P9.18",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
