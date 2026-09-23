@@ -1,0 +1,127 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p905-present",
+      "passed": true
+    },
+    {
+      "name": "exact-three-mode-constants",
+      "passed": true
+    },
+    {
+      "name": "canonical-escape-byte",
+      "passed": true
+    },
+    {
+      "name": "exact-insert-literal",
+      "passed": true
+    },
+    {
+      "name": "status-row-23",
+      "passed": true
+    },
+    {
+      "name": "insert-and-command-underline",
+      "passed": true
+    },
+    {
+      "name": "normal-block-cursor",
+      "passed": true
+    },
+    {
+      "name": "escape-clears-pending-command",
+      "passed": true
+    },
+    {
+      "name": "break-not-escape-alias",
+      "passed": true
+    },
+    {
+      "name": "fuse-normal-insert-escape-golden",
+      "passed": true
+    },
+    {
+      "name": "fuse-command-line-escape-cancels",
+      "passed": true
+    },
+    {
+      "name": "fuse-normal-pending-command-escape-cancels",
+      "passed": true
+    },
+    {
+      "name": "fuse-nonescape-byte-does-not-exit-insert",
+      "passed": true
+    },
+    {
+      "name": "fuse-escape-does-not-mutate-buffer",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p905-vi.lst",
+        "--sym=p905-vi.sym",
+        "p905-vi.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 8,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 1930 lines, work time: 0.007 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p905-vi.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 36,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 19179, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 50151, \"image_size\": 3056, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 3080, \"relocations\": [], \"stored_length\": 3080, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p905-gateway.lst",
+        "--sym=p905-gateway.sym",
+        "p905-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 314 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/vi.asm": "0cef925944754445932396a0f2d045378c5e9c513969960098475cf4a742d41a",
+    "v1/build/p905-vi.mex1": "d8beb255b538af5a5ed93bfdccacee834c707291077d4ca77ebf7e1296b2c1a2",
+    "v1/build/p905-vi.tap": "bc0a218d7146b31787e90552e2744c3c0cc28a244380deae89dbf58b50b54b96",
+    "v1/dist/certification/P9.04.test.json": "6ef5ada4f3152d9b5dee807c782bde14b2e8366ec22c9bb59af011808f147b06",
+    "v1/tools-host/test-driver/phase9_vi_modes.py": "82d74549b4d70e141d628942403079d69105cf7399e1c9b770a345ec88050693",
+    "v1/tools-host/test-driver/run.py": "7f8cb3eb965d54bd23cb72e2418bcb7425ff581a1d93d1c2494cf09f3b803f1c"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P9.04": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "d9793f09951a8b9bebc5f32316c0109c962ca918",
+  "status": "PASS",
+  "step": "P9.05",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
