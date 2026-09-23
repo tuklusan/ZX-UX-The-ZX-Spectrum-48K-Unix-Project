@@ -25,6 +25,12 @@ def require(v,m):
 def expect_byte(a,v): return b"\x3A"+word(a)+bytes((0xFE,v&255))+phase1._jp_nz(FAIL_PC)
 def logical_byte(sy,off,val):
     return phase1._ld_hl(off)+phase1._call(sy["vi_p903_get_byte"])+bytes((0xFE,val&255))+phase1._jp_nz(FAIL_PC)
+
+def run_case(root,name,code,patcher):
+    try:
+        run_sna(root,bytes(code),patch=patcher)
+    except DriverError as exc:
+        raise P913Error(f"P9.13 {name}: {exc}") from exc
 def patch(image,sy,data,cursor=0):
     def apply(ram):
         ram[BASE-0x4000:BASE-0x4000+len(image)]=image
@@ -75,27 +81,27 @@ fixture_end:
         code+=expect_byte(sy["vi_replace_pending"],1)+b"\x3E"+bytes((ord("X"),))+phase1._call(sy["vi_p913_r_char"])+phase1._jp_c(FAIL_PC)
         for i,v in enumerate(b"aXc"): code+=logical_byte(sy,i,v)
         code+=expect_byte(sy["vi_dirty"],1)+phase1._jp(PASS_PC)
-        run_sna(root,bytes(code),patch=patch(image,sy,data,1))
+        run_case(root,"replace",code,patch(image,sy,data,1))
         # J joins with one space and updates index.
         data2=b"aa\nbb"
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC))
         code+=phase1._call(sy["vi_p913_J"])+phase1._jp_c(FAIL_PC)
         for i,v in enumerate(b"aa bb"): code+=logical_byte(sy,i,v)
         code+=expect_byte(sy["vi_dirty"],1)+phase1._jp(PASS_PC)
-        run_sna(root,bytes(code),patch=patch(image,sy,data2,0))
+        run_case(root,"join",code,patch(image,sy,data2,0))
         # Missing replacement char: begin only, byte-identical.
         data3=b"abc"
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC))
         code+=phase1._call(sy["vi_p913_r_begin"])+phase1._jp_c(FAIL_PC)
         for i,v in enumerate(data3): code+=logical_byte(sy,i,v)
         code+=phase1._jp(PASS_PC)
-        run_sna(root,bytes(code),patch=patch(image,sy,data3,0))
+        run_case(root,"missing-replacement",code,patch(image,sy,data3,0))
         # J on final/only line safe.
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC))
         code+=phase1._call(sy["vi_p913_J"])+phase1._jp_c(FAIL_PC)
         for i,v in enumerate(data3): code+=logical_byte(sy,i,v)
         code+=phase1._jp(PASS_PC)
-        run_sna(root,bytes(code),patch=patch(image,sy,data3,0))
+        run_case(root,"final-line-join",code,patch(image,sy,data3,0))
         assertions += [
           {"name":"fuse-r-golden","passed":True},{"name":"fuse-J-golden","passed":True},
           {"name":"fuse-missing-replacement-safe","passed":True},{"name":"fuse-no-next-line-safe","passed":True},
