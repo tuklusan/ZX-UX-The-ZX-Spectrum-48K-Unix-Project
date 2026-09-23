@@ -1,0 +1,95 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p904-present",
+      "passed": true
+    },
+    {
+      "name": "exact-argc-one-or-two",
+      "passed": true
+    },
+    {
+      "name": "unnamed-default-txt",
+      "passed": true
+    },
+    {
+      "name": "failed-write-does-not-retarget",
+      "passed": true
+    },
+    {
+      "name": "exact-no-file-name-message",
+      "passed": true
+    },
+    {
+      "name": "target-commit-clears-dirty",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p904-vi.lst",
+        "--sym=p904-vi.sym",
+        "p904-vi.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 11,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 1620 lines, work time: 0.010 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p904-vi.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 37,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 23556, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 60571, \"image_size\": 2779, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 2803, \"relocations\": [], \"stored_length\": 2803, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p904-gateway.lst",
+        "--sym=p904-gateway.sym",
+        "p904-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 348 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/vi.asm": "0f54fdda5755675ae007e4028d8328a48692b728a1fa9f547481a973b2924070",
+    "v1/build/p904-vi.mex1": "189f0e925b0d3694540c14467263310567722f96050155dfd13845b0dc9925a7",
+    "v1/build/p904-vi.tap": "5d8c041cd82491b8eb40580df95ddbfced61be6c2636420ccdcaf43a01e3db46",
+    "v1/dist/certification/P9.03.test.json": "5d7ff5e57511e36d912a73f8096ccd8c746a5741ef13148c1d1537e291866d33",
+    "v1/tools-host/test-driver/phase9_vi_unnamed.py": "558428deabfd9f583c003aa6917b939577c90c446259f6de3bca2b0f6b0be284",
+    "v1/tools-host/test-driver/run.py": "ccac88f7444b01951ffdf7b68d9be0fa6e75072c90c37f68899cdbea2dd9690a"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P9.03": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "f44470b51c982ab0a8087191e45292eed109af02",
+  "status": "PASS",
+  "step": "P9.04",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
