@@ -2600,13 +2600,15 @@ vi_p917_close_temp:
     ld a,(vi_temp_open)
     or a
     ret z
-    xor a
-    ld (vi_temp_open),a
     ld a,(vi_temp_handle)
     ld l,a
     ld h,0
     ld a,SYS_CLOSE
-    jp SYSCALL_GATEWAY
+    call SYSCALL_GATEWAY
+    ret c
+    xor a
+    ld (vi_temp_open),a
+    ret
 
 ; Preserve the first transactional errno while cleaning only an exclusively
 ; created temp owned by this vi process. Unknown E_EXIST collisions are untouched.
