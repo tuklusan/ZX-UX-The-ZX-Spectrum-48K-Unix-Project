@@ -19,6 +19,7 @@ from driver_core import DriverError
 from fuse_harness import FAIL_PC, PASS_PC, run_sna
 from phase8_common import inspect_mex, make_tap, mex1, word
 
+# P9.02 qualification boundary.
 BASE = 0xC000
 GATE = 0xE000
 PATH = 0xA000
