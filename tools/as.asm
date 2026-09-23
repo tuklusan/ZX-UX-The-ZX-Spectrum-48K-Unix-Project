@@ -1060,10 +1060,10 @@ AS_P1011_IY      EQU 1
 as_p1011_ld_r_r:
     ld a,b
     cp 8
-    jr nc,as_p1011_error
+    jp nc,as_p1011_error
     ld a,c
     cp 8
-    jr nc,as_p1011_error
+    jp nc,as_p1011_error
     ld a,b
     add a,a
     add a,a
@@ -1071,7 +1071,7 @@ as_p1011_ld_r_r:
     or c
     or $40
     cp $76
-    jr z,as_p1011_error
+    jp z,as_p1011_error
     or a
     ret
 
@@ -1079,7 +1079,7 @@ as_p1011_ld_r_r:
 as_p1011_ld_r_n:
     ld a,b
     cp 8
-    jr nc,as_p1011_error
+    jp nc,as_p1011_error
     add a,a
     add a,a
     add a,a
@@ -1091,7 +1091,7 @@ as_p1011_ld_r_n:
 as_p1011_ld_rr_nn:
     ld a,b
     cp 4
-    jr nc,as_p1011_error
+    jp nc,as_p1011_error
     rlca
     rlca
     rlca
@@ -1105,10 +1105,10 @@ as_p1011_ld_rr_nn:
 as_p1011_ld_rr_mem:
     ld a,b
     cp 4
-    jr nc,as_p1011_error
+    jp nc,as_p1011_error
     ld a,c
     cp 2
-    jr nc,as_p1011_error
+    jp nc,as_p1011_error
     ld a,b
     cp 2
     jr nz,as_p1011_ld_rr_mem_ed
@@ -1142,7 +1142,7 @@ as_p1011_ld_rr_mem_ed:
 as_p1011_ld_index_r:
     ld a,d
     cp 2
-    jr nc,as_p1011_error
+    jp nc,as_p1011_error
     ld h,$DD
     or a
     jr z,as_p1011_index_prefix_done
@@ -1150,12 +1150,12 @@ as_p1011_ld_index_r:
 as_p1011_index_prefix_done:
     ld a,b
     cp 8
-    jr nc,as_p1011_error
+    jp nc,as_p1011_error
     cp AS_P1011_REG_MEM
-    jr z,as_p1011_error
+    jp z,as_p1011_error
     ld a,c
     cp 2
-    jr nc,as_p1011_error
+    jp nc,as_p1011_error
     or a
     jr nz,as_p1011_index_store
     ld a,b
@@ -1176,7 +1176,7 @@ as_p1011_index_store:
 ; A=index selector 0 IX/1 IY. Returns H=prefix, L=$21 for LD IX/IY,nn.
 as_p1011_ld_index_nn:
     cp 2
-    jr nc,as_p1011_error
+    jp nc,as_p1011_error
     ld h,$DD
     or a
     jr z,as_p1011_index_nn_done
@@ -1189,7 +1189,7 @@ as_p1011_index_nn_done:
 ; A=index selector. Returns H=prefix,L=$F9 for LD SP,IX/IY.
 as_p1011_ld_sp_index:
     cp 2
-    jr nc,as_p1011_error
+    jp nc,as_p1011_error
     ld h,$DD
     or a
     jr z,as_p1011_sp_index_done
@@ -1206,16 +1206,16 @@ as_p1011_disp8:
     or a
     jr z,as_p1011_disp_positive
     cp $FF
-    jr nz,as_p1011_error
+    jp nz,as_p1011_error
     ld a,l
     cp $80
-    jr c,as_p1011_error
+    jp c,as_p1011_error
     or a
     ret
 as_p1011_disp_positive:
     ld a,l
     cp $80
-    jr nc,as_p1011_error
+    jp nc,as_p1011_error
     or a
     ret
 
@@ -1223,7 +1223,7 @@ as_p1011_disp_positive:
 as_p1011_imm8:
     ld a,h
     or a
-    jr nz,as_p1011_error
+    jp nz,as_p1011_error
     ld a,l
     or a
     ret
