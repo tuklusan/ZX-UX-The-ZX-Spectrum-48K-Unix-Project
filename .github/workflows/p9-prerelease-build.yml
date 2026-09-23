@@ -1,0 +1,246 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: Phase-9 development pre-release tape build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/p9-prerelease-build.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: {fetch-depth: 0}
+
+      - name: Guard Phase-9 checkpoint and policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse PHASE-9-COMPLETE)" = "6811d6f936851a67c7870ded34038133fa6a820a"
+          git merge-base --is-ancestor PHASE-9-COMPLETE HEAD
+          test "$(git diff --name-only PHASE-9-COMPLETE HEAD)" = ".github/workflows/p9-prerelease-build.yml"
+          test "$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV16.md | awk '{print $1}')" = "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c"
+          test "$(sha256sum docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md | awk '{print $1}')" = "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc"
+          python3 tools/check_phase9_evidence.py --require-active
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+          test -z "$(git status --porcelain)"
+
+      - name: Restore or build certified ZX-UX runtime
+        uses: ./.github/actions/setup-zxux-runtime
+
+      - name: Build Phase-9 pre-release tape
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/p9-prerelease/P9.pre-release v1/build
+          (cd v1/src/kernel && "$GITHUB_WORKSPACE/tools/runtime/sjasmplus/bin/sjasmplus" --nologo --lst=../../build/kernel.lst kernel.asm)
+          test "$(wc -c < v1/build/kernel.bin)" -eq 8192
+          tools/runtime/python/bin/python - <<'PY'
+          from __future__ import annotations
+          import hashlib, importlib.util, json, struct, sys
+          from pathlib import Path
+
+          root=Path.cwd()
+          out=Path('/tmp/p9-prerelease/P9.pre-release')
+          out.mkdir(parents=True,exist_ok=True)
+
+          def load(path:Path,name:str):
+              spec=importlib.util.spec_from_file_location(name,path)
+              assert spec is not None and spec.loader is not None
+              mod=importlib.util.module_from_spec(spec); sys.modules[name]=mod; spec.loader.exec_module(mod); return mod
+
+          maketap=load(root/'v1/tools-host/maketap/maketap.py','zxux_p9_prerelease_maketap')
+          cassette=load(root/'v1/tools-host/cassette-image/cassette_image.py','zxux_p9_prerelease_cassette')
+
+          loader=(root/'v1/src/boot/loader.bas').read_text(encoding='utf-8')
+          screen=(root/'v1/assets/loading.scr').read_bytes()
+          kernel=(root/'v1/build/kernel.bin').read_bytes()
+          font=(root/'v1/assets/font4x8-zxux.bin').read_bytes()
+          issue=(root/'v1/assets/issue.txt').read_bytes()
+          crontab=(root/'v1/assets/crontab.txt').read_bytes()
+          bincat=(root/'v1/assets/bincat.bin').read_bytes()
+          prompt=b'login: '
+
+          issue_off=35
+          prompt_off=issue_off+len(issue)
+          image=bytearray()
+          image += b'\x21'+struct.pack('<H',issue_off)
+          image += b'\x01'+struct.pack('<H',len(issue))
+          image += b'\x3e\x32\xcd\x00\xe0\x38\x14'
+          image += b'\x21'+struct.pack('<H',prompt_off)
+          image += b'\x01'+struct.pack('<H',len(prompt))
+          image += b'\x3e\x32\xcd\x00\xe0\x38\x07'
+          image += b'\x3e\x02\xcd\x00\xe0\x18\xf9\x18\xfe'
+          assert len(image)==issue_off
+          image += issue + prompt
+          assert len(image)==prompt_off+len(prompt)
+          relocs=struct.pack('<HH',1,14)
+          body=bytes(image)+relocs
+          hdr=bytearray(24)
+          hdr[:4]=b'MEX1'; hdr[4]=1; hdr[5]=0
+          hdr[6:8]=struct.pack('<H',24)
+          hdr[8:10]=struct.pack('<H',len(image))
+          hdr[10:12]=b'\0\0'; hdr[12:14]=b'\0\0'
+          hdr[14:16]=struct.pack('<H',512)
+          hdr[16:18]=struct.pack('<H',2)
+          hdr[18:20]=struct.pack('<H',24+len(image))
+          hdr[20:22]=struct.pack('<H',maketap.crc16_ccitt_false(body))
+          hdr[22:24]=b'\0\0'
+          hdr[22:24]=struct.pack('<H',maketap.crc16_ccitt_false(bytes(hdr)))
+          shell=bytes(hdr)+body
+
+          prefix=maketap.build_bootstrap_prefix(loader_source=loader,screen=screen,kernel=kernel)
+          resources=(
+              maketap.M48OObject('sh',maketap.M48O_BIN,maketap.DIR_BIN,shell),
+              maketap.M48OObject('font4x8',maketap.M48O_FNT,maketap.DIR_SYSTEM,font),
+              maketap.M48OObject('issue',maketap.M48O_TXT,maketap.DIR_ETC,issue),
+              maketap.M48OObject('crontab',maketap.M48O_CFG,maketap.DIR_ETC,crontab),
+              maketap.M48OObject('bincat',maketap.M48O_SYS,maketap.DIR_SYSTEM,bincat),
+          )
+          def build():
+              data=bytearray(prefix)
+              for obj in resources: data.extend(maketap.m48o_blocks(obj))
+              return bytes(data)
+          tape1=build(); tape2=build(); assert tape1==tape2
+
+          files=cassette.assert_bootstrap_prefix(tape1)
+          assert [f.name for f in files[:3]]==['zx48ux','zx48uxscr','kernel']
+          assert files[0].file_type==0 and files[0].param1==10
+          assert files[1].file_type==3 and files[1].param1==0x4000 and files[1].length==6912
+          assert files[2].file_type==3 and files[2].param1==0xe000 and files[2].length==8192
+          assert files[0].data==maketap.tokenized_loader(loader)
+
+          tap_path=out/'zx-ux-phase9-pre-release.tap'
+          tap_path.write_bytes(tape1)
+          shell_path=out/'phase9-preview-sh.mex1'
+          shell_path.write_bytes(shell)
+          (out/'loader.bas').write_text(loader,encoding='utf-8',newline='\n')
+          (out/'README.txt').write_text(
+              'ZX-UX Phase-9 development/pre-release boot tape\n\n'
+              'Load on a 48K-compatible Sinclair ZX Spectrum with: LOAD ""\n\n'
+              'The first tape file is the canonical auto-start BASIC loader. It loads\n'
+              'the loading SCREEN$, the current Phase-9 kernel at 0xE000, then transfers\n'
+              'control through the ZX-UX boot gateway at 0xE003. The kernel consumes the\n'
+              'bootstrap M48O resources and starts a Phase-9 preview PID1 which displays\n'
+              'the frozen /etc/issue text and the exact "login: " prompt.\n\n'
+              'This is deliberately a Phase-9 development preview, not the Phase-12 final\n'
+              'release tape. The preview PID1 is only a boot/display integration shim; it\n'
+              'does not claim the final integrated release shell or Phase-10+ toolchain.\n',
+              encoding='utf-8',newline='\n')
+
+          def sha(p:Path): return hashlib.sha256(p.read_bytes()).hexdigest()
+          meta={
+              'schema':1,'kind':'phase9-development-pre-release',
+              'source_commit':'6811d6f936851a67c7870ded34038133fa6a820a',
+              'architecture_sha256':'24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c',
+              'implementation_plan_sha256':'840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc',
+              'boot_contract':{'entry_command':'LOAD ""','basic_name':'zx48ux','autostart_line':10,
+                               'screen_name':'zx48uxscr','screen_address':16384,'screen_size':6912,
+                               'kernel_name':'kernel','kernel_address':57344,'kernel_size':8192,
+                               'boot_gateway':57347,'expected_prompt':'login: '},
+              'resources':[{'name':'sh','type':'BIN','target':'/bin'},
+                           {'name':'font4x8','type':'FNT','target':'system'},
+                           {'name':'issue','type':'TXT','target':'/etc'},
+                           {'name':'crontab','type':'CFG','target':'/etc'},
+                           {'name':'bincat','type':'SYS','target':'system'}],
+              'files':[],'tests':{'deterministic_rebuild':'PASS','bootstrap_structure':'PASS',
+                                  'mex1_inspection':'PENDING','fuse_boot_to_login':'PENDING'}
+          }
+          for p in (tap_path,shell_path,out/'loader.bas',out/'README.txt'):
+              meta['files'].append({'path':p.name,'size':p.stat().st_size,'sha256':sha(p)})
+          (out/'pre-release.json').write_text(json.dumps(meta,indent=2,sort_keys=True)+'\n',encoding='utf-8')
+          PY
+          tools/runtime/python/bin/python v1/tools-host/inspect-mex/inspect.py /tmp/p9-prerelease/P9.pre-release/phase9-preview-sh.mex1 --base 0x6000
+
+      - name: Boot tape through BASIC to login prompt in Fuse
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/p9-prerelease/fuse-debugger.txt <<'EOF'
+          breakpoint 0xe003
+          commands 1
+          continue
+          end
+          breakpoint 0xe000 if a == 0x02
+          commands 2
+          exit 0
+          end
+          continue
+          EOF
+          timeout 180s env SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
+            tools/runtime/fuse/bin/fuse \
+            --machine 48 --no-sound --no-confirm-actions --auto-load --detect-loader \
+            --debugger-command "$(cat /tmp/p9-prerelease/fuse-debugger.txt)" \
+            /tmp/p9-prerelease/P9.pre-release/zx-ux-phase9-pre-release.tap
+          tools/runtime/python/bin/python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('/tmp/p9-prerelease/P9.pre-release/pre-release.json')
+          d=json.loads(p.read_text())
+          d['tests']['mex1_inspection']='PASS'
+          d['tests']['fuse_boot_to_login']='PASS'
+          p.write_text(json.dumps(d,indent=2,sort_keys=True)+'\n')
+          PY
+
+      - name: Three unchanged final-output scans
+        shell: bash
+        run: |
+          set -euo pipefail
+          dir=/tmp/p9-prerelease/P9.pre-release
+          baseline=""
+          for scan in 1 2 3; do
+            tools/runtime/python/bin/python - <<'PY'
+          import hashlib,json,struct
+          from pathlib import Path
+          d=Path('/tmp/p9-prerelease/P9.pre-release')
+          meta=json.loads((d/'pre-release.json').read_text())
+          assert meta['kind']=='phase9-development-pre-release'
+          assert meta['source_commit']=='6811d6f936851a67c7870ded34038133fa6a820a'
+          assert meta['tests']=={'bootstrap_structure':'PASS','deterministic_rebuild':'PASS','fuse_boot_to_login':'PASS','mex1_inspection':'PASS'}
+          for item in meta['files']:
+              p=d/item['path']; data=p.read_bytes()
+              assert len(data)==item['size'] and hashlib.sha256(data).hexdigest()==item['sha256']
+          tap=(d/'zx-ux-phase9-pre-release.tap').read_bytes()
+          off=0; blocks=[]
+          while off<len(tap):
+              assert off+2<=len(tap); n=struct.unpack_from('<H',tap,off)[0]; off+=2
+              assert off+n<=len(tap); b=tap[off:off+n]; off+=n
+              x=0
+              for v in b[:-1]: x^=v
+              assert b[-1]==x
+              blocks.append(b)
+          assert off==len(tap) and len(blocks)>=6
+          loader=(d/'loader.bas').read_text()
+          assert loader=='10 BORDER 0: PAPER 0: INK 7: CLS\n20 CLEAR 24575\n30 LOAD "" SCREEN$\n40 LOAD "" CODE\n50 RANDOMIZE USR 57347\n'
+          assert (d/'README.txt').read_bytes().endswith(b'toolchain.\n')
+          PY
+            digest="$(find "$dir" -maxdepth 1 -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')"
+            if test -z "$baseline"; then baseline="$digest"; else test "$digest" = "$baseline"; fi
+          done
+
+      - name: Upload tested pre-release tape bundle
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: zxux-phase9-pre-release
+          path: /tmp/p9-prerelease/P9.pre-release/
+          retention-days: 30
+          if-no-files-found: error
