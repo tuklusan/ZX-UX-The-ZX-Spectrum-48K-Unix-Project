@@ -296,4 +296,263 @@ vi_stat_req: defs 4,0
 vi_stat_out: defs 10,0
 vi_io_chunk: defs 64,0
 vi_buffer: defs VI_LOAD_CAPACITY,0
+
+; P9.03 gap buffer plus compact line-offset index.  The file bytes live only
+; once in vi_buffer; the gap is [vi_gap_start,vi_gap_end).  The index contains
+; 16-bit logical starts and therefore never duplicates the text.
+VI_LINE_MAX             EQU 128
+
+vi_p903_init:
+    ld hl,(vi_buffer_len)
+    ld (vi_gap_start),hl
+    ld hl,VI_LOAD_CAPACITY
+    ld (vi_gap_end),hl
+    xor a
+    ld (vi_undo_kind),a
+    ld (vi_fail_gap_alloc),a
+    ld (vi_fail_index_alloc),a
+    jp vi_p903_reindex
+
+; Insert A at logical offset HL.  All failure decisions precede gap motion, so
+; allocation/index failure leaves text, index, dirty state and gap byte-identical.
+vi_p903_insert_byte:
+    ld (vi_edit_pos),hl
+    ld (vi_edit_byte),a
+    ld a,(vi_fail_gap_alloc)
+    or a
+    jr nz,vi_p903_nomem
+    ld a,(vi_fail_index_alloc)
+    or a
+    jr nz,vi_p903_nomem
+    ld de,(vi_buffer_len)
+    push hl
+    or a
+    sbc hl,de
+    pop hl
+    jr c,vi_p903_insert_pos_ok
+    jr z,vi_p903_insert_pos_ok
+    ld a,E_INVAL
+    scf
+    ret
+vi_p903_insert_pos_ok:
+    ld de,(vi_gap_end)
+    ld bc,(vi_gap_start)
+    push hl
+    ex de,hl
+    or a
+    sbc hl,bc
+    pop hl
+    jr z,vi_p903_nomem
+    ld a,(vi_edit_byte)
+    cp 10
+    jr nz,vi_p903_insert_ready
+    ld a,(vi_line_count)
+    cp VI_LINE_MAX
+    jr nc,vi_p903_nomem
+vi_p903_insert_ready:
+    ld hl,(vi_edit_pos)
+    call vi_p903_move_gap
+    ld hl,(vi_gap_start)
+    ld de,vi_buffer
+    add hl,de
+    ld a,(vi_edit_byte)
+    ld (hl),a
+    ld hl,(vi_gap_start)
+    inc hl
+    ld (vi_gap_start),hl
+    ld hl,(vi_buffer_len)
+    inc hl
+    ld (vi_buffer_len),hl
+    ld a,1
+    ld (vi_undo_kind),a
+    ld hl,(vi_edit_pos)
+    ld (vi_undo_pos),hl
+    ld a,(vi_edit_byte)
+    ld (vi_undo_byte),a
+    jp vi_p903_reindex
+
+; Delete one byte at logical offset HL.
+vi_p903_delete_byte:
+    ld (vi_edit_pos),hl
+    ld a,(vi_fail_index_alloc)
+    or a
+    jr nz,vi_p903_nomem
+    ld de,(vi_buffer_len)
+    push hl
+    or a
+    sbc hl,de
+    pop hl
+    jr nc,vi_p903_badpos
+    call vi_p903_move_gap
+    ld hl,(vi_gap_end)
+    ld de,vi_buffer
+    add hl,de
+    ld a,(hl)
+    ld (vi_undo_byte),a
+    ld hl,(vi_gap_end)
+    inc hl
+    ld (vi_gap_end),hl
+    ld hl,(vi_buffer_len)
+    dec hl
+    ld (vi_buffer_len),hl
+    ld a,2
+    ld (vi_undo_kind),a
+    ld hl,(vi_edit_pos)
+    ld (vi_undo_pos),hl
+    jp vi_p903_reindex
+vi_p903_badpos:
+    ld a,E_INVAL
+    scf
+    ret
+vi_p903_nomem:
+    ld a,E_NOMEM
+    scf
+    ret
+
+; Move the physical gap to logical offset HL without changing logical bytes.
+vi_p903_move_gap:
+    ld (vi_gap_target),hl
+vi_p903_move_again:
+    ld hl,(vi_gap_start)
+    ld de,(vi_gap_target)
+    or a
+    sbc hl,de
+    ret z
+    jr c,vi_p903_move_right
+    ld hl,(vi_gap_start)
+    dec hl
+    ld (vi_gap_start),hl
+    push hl
+    ld de,vi_buffer
+    add hl,de
+    ld a,(hl)
+    ld (vi_move_byte),a
+    pop hl
+    ld hl,(vi_gap_end)
+    dec hl
+    ld (vi_gap_end),hl
+    ld de,vi_buffer
+    add hl,de
+    ld a,(vi_move_byte)
+    ld (hl),a
+    jr vi_p903_move_again
+vi_p903_move_right:
+    ld hl,(vi_gap_end)
+    ld de,vi_buffer
+    add hl,de
+    ld a,(hl)
+    ld (vi_move_byte),a
+    ld hl,(vi_gap_start)
+    ld de,vi_buffer
+    add hl,de
+    ld a,(vi_move_byte)
+    ld (hl),a
+    ld hl,(vi_gap_start)
+    inc hl
+    ld (vi_gap_start),hl
+    ld hl,(vi_gap_end)
+    inc hl
+    ld (vi_gap_end),hl
+    jr vi_p903_move_again
+
+; Return logical byte HL in A.
+vi_p903_get_byte:
+    push hl
+    ld de,(vi_gap_start)
+    or a
+    sbc hl,de
+    pop hl
+    jr c,vi_p903_get_physical
+    push hl
+    ld hl,(vi_gap_end)
+    or a
+    sbc hl,de
+    ld b,h
+    ld c,l
+    pop hl
+    add hl,bc
+vi_p903_get_physical:
+    ld de,vi_buffer
+    add hl,de
+    ld a,(hl)
+    ret
+
+; Build into a compact staging index and publish only after complete success.
+vi_p903_reindex:
+    ld a,(vi_fail_index_alloc)
+    or a
+    jr nz,vi_p903_nomem
+    xor a
+    ld (vi_line_stage),a
+    ld (vi_line_stage+1),a
+    ld a,1
+    ld (vi_stage_line_count),a
+    ld hl,0
+    ld (vi_scan_pos),hl
+vi_p903_reindex_loop:
+    ld hl,(vi_scan_pos)
+    ld de,(vi_buffer_len)
+    push hl
+    or a
+    sbc hl,de
+    pop hl
+    jr z,vi_p903_reindex_commit
+    call vi_p903_get_byte
+    cp 10
+    jr nz,vi_p903_reindex_next
+    ld a,(vi_stage_line_count)
+    cp VI_LINE_MAX
+    jr nc,vi_p903_nomem
+    ld e,a
+    ld d,0
+    sla e
+    rl d
+    push hl
+    ld hl,vi_line_stage
+    add hl,de
+    ex de,hl
+    pop hl
+    inc hl
+    ld a,l
+    ld (de),a
+    inc de
+    ld a,h
+    ld (de),a
+    ld a,(vi_stage_line_count)
+    inc a
+    ld (vi_stage_line_count),a
+    dec hl
+vi_p903_reindex_next:
+    ld hl,(vi_scan_pos)
+    inc hl
+    ld (vi_scan_pos),hl
+    jr vi_p903_reindex_loop
+vi_p903_reindex_commit:
+    ld a,(vi_stage_line_count)
+    ld (vi_line_count),a
+    add a,a
+    ld c,a
+    ld b,0
+    ld hl,vi_line_stage
+    ld de,vi_line_index
+    ldir
+    xor a
+    ret
+
+vi_gap_start: dw 0
+vi_gap_end: dw 0
+vi_line_count: db 0
+vi_stage_line_count: db 0
+vi_fail_gap_alloc: db 0
+vi_fail_index_alloc: db 0
+vi_undo_kind: db 0
+vi_undo_pos: dw 0
+vi_undo_byte: db 0
+vi_edit_pos: dw 0
+vi_edit_byte: db 0
+vi_gap_target: dw 0
+vi_move_byte: db 0
+vi_scan_pos: dw 0
+vi_line_stage: defs VI_LINE_MAX*2,0
+vi_line_index: defs VI_LINE_MAX*2,0
     ENDM
