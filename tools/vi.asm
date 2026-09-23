@@ -1085,7 +1085,7 @@ vi_p907_w:
     call vi_p907_class
     ld (vi_word_class),a
     cp 0
-    jr z,vi_p907_w_skip_space
+    jr z,vi_p907_w_from_space
     ld hl,(vi_cursor_off)
     inc hl
 vi_p907_w_same:
@@ -1102,10 +1102,10 @@ vi_p907_w_same:
     pop hl
     ld a,(vi_word_class)
     cp b
-    jr nz,vi_p907_w_skip_space
+    jr nz,vi_p907_w_space_loop
     inc hl
     jr vi_p907_w_same
-vi_p907_w_skip_space:
+vi_p907_w_from_space:
     ld hl,(vi_cursor_off)
     inc hl
 vi_p907_w_space_loop:
