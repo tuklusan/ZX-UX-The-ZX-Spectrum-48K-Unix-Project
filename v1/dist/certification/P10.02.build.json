@@ -1,0 +1,78 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "native-symbol-size-frozen",
+      "passed": true
+    },
+    {
+      "name": "native-symbol-field-offsets-frozen",
+      "passed": true
+    },
+    {
+      "name": "native-symbol-name-validation-present",
+      "passed": true
+    },
+    {
+      "name": "native-symbol-section-validation-present",
+      "passed": true
+    },
+    {
+      "name": "doc-assembly-grammar-exact",
+      "passed": true
+    },
+    {
+      "name": "doc-c48-grammar-exact",
+      "passed": true
+    },
+    {
+      "name": "doc-no-silent-truncation",
+      "passed": true
+    },
+    {
+      "name": "one-byte-name",
+      "passed": true
+    },
+    {
+      "name": "fifteen-byte-name",
+      "passed": true
+    },
+    {
+      "name": "assembly-punctuation-name",
+      "passed": true
+    },
+    {
+      "name": "abs-full-u16-value",
+      "passed": true
+    },
+    {
+      "name": "c48-identifier-subset",
+      "passed": true
+    },
+    {
+      "name": "boundary-text-and-bss-values",
+      "passed": true
+    }
+  ],
+  "commands": [],
+  "hashes": {
+    "tools/as.asm": "72bd411e223c7b7291c22b8d08653dc234e5f14c435ce503067837ae4fb1ef50",
+    "v1/dist/certification/P10.01.build.json": "b5359faaee34900b19c9214e9617085634b465f3039b214a1df7d9fb53a6e0f0",
+    "v1/dist/certification/P10.01.test.json": "91915fa2c7e54721101cfbc8a6418e203820cb960fc93c49f694f4a3801df9c1",
+    "v1/docs/obj1.md": "f2db3a361b1c8f12dba446609687306f2b05c4a69ca3285027d8a85d9f43e931",
+    "v1/include/obj1.inc": "acb62936905a4cfae7bd6b9fc9f2ed9b1a9208aca5feaf15346ae47c17fa2ef0",
+    "v1/tools-host/test-driver/phase10_obj1_symbol.py": "fe6508a46cef7bcdd2ab91788779d9eeba3bff4b710632666c7c2a87eac30105",
+    "v1/tools-host/test-driver/run.py": "e094796afc7127112d9adb6ddaec885b70446fb3350a3a46001903785bc1fe3c"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P10.01": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "f640cd1e833ca33922ddf82b83e01770c1b2308e",
+  "status": "PASS",
+  "step": "P10.02",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
