@@ -713,6 +713,8 @@ vi_p905_normal_key:
     ld a,b
     cp 'i'
     jr z,vi_p905_enter_insert
+    cp 'a'
+    jr z,vi_p909_enter_append
     cp ':'
     jr z,vi_p905_enter_command
     ; A future multi-key normal command may stage here. ESC must cancel it.
@@ -722,10 +724,9 @@ vi_p905_normal_key:
     ret
 
 vi_p905_insert_key:
-    ; Text insertion is introduced by the later canonical editing steps.
-    ; P9.05 proves that non-ESC input does not masquerade as editor escape.
-    xor a
-    ret
+    ; P9.09 inserts the literal byte at the current insertion offset.
+    ld a,b
+    jp vi_p909_insert_byte
 
 vi_p905_command_key:
     ld a,(vi_command_len)
@@ -1305,6 +1306,32 @@ vi_p908_last:
     jr z,vi_p908_first
     dec a
     call vi_p906_line_start
+    ld (vi_cursor_off),hl
+    xor a
+    ret
+
+; P9.09 i/a insertion over the allocation-safe P9.03 gap primitives.
+vi_p909_enter_append:
+    ld hl,(vi_buffer_len)
+    ld a,h
+    or l
+    jr z,vi_p909_append_ready
+    ld hl,(vi_cursor_off)
+    inc hl
+    ld (vi_cursor_off),hl
+vi_p909_append_ready:
+    jp vi_p905_enter_insert
+
+; A=byte.  On failure P9.03 guarantees the buffer is byte-identical and the
+; cursor remains unchanged.  On success the insertion offset advances by one.
+vi_p909_insert_byte:
+    push af
+    ld hl,(vi_cursor_off)
+    pop af
+    call vi_p903_insert_byte
+    ret c
+    ld hl,(vi_cursor_off)
+    inc hl
     ld (vi_cursor_off),hl
     xor a
     ret
