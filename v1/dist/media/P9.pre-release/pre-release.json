@@ -9,22 +9,23 @@
     "kernel_address": 57344,
     "kernel_name": "kernel",
     "kernel_size": 8192,
-    "login_reached_address": 24615,
-    "preview_address": 24576,
+    "preview_address": 24832,
     "preview_name": "p9preview",
     "screen_address": 16384,
     "screen_name": "zx48uxscr",
-    "screen_size": 6912
+    "screen_size": 6912,
+    "success_marker_address": 25033,
+    "success_marker_value": 165
   },
   "files": [
     {
       "path": "README.txt",
-      "sha256": "8ef0004ad47b6114d9268c61e18eb2873699ddea97f4195c7935c8431394bdcd",
+      "sha256": "74439dc90e344b157c8fd812314f8ebf8f3c966dba5e402c880a3a97da98d4a3",
       "size": 1161
     },
     {
       "path": "kernel-phase9-pre-release.bin",
-      "sha256": "fe43476740c3552dda01f6a434481da23cfc1ea46aa0873e2e71c83c5d2c1983",
+      "sha256": "cca0b95cd281d29f7630a7e33e860439e14ae1296dcd9c94270a6b48963b5b6b",
       "size": 8192
     },
     {
@@ -34,18 +35,18 @@
     },
     {
       "path": "phase9-pre-release-fuse-test.sna",
-      "sha256": "ecbc9ce5f63ed90b87659183bd9402708a05cfda0ff6533f8a5dc48f9e3be39a",
+      "sha256": "aa8a8fbfbe4ec92ffa237a85af9075d67fc3ccb21933987dd060f4700851a586",
       "size": 49179
     },
     {
       "path": "phase9-preview.bin",
-      "sha256": "9bfcd0870cb9ce6c2c1fde1e06334bad8b6166be28d0bb0d7f09501278bf92a8",
-      "size": 196
+      "sha256": "7b148d8ca7a0ed88d329ce2feeb1a67880e4a2f072ac1439038bd726d6ab11f9",
+      "size": 202
     },
     {
       "path": "zx-ux-phase9-pre-release.tap",
-      "sha256": "659491771b3f8e188462c48913ae7f50c51484a3190c440bfbe76989d762b93a",
-      "size": 15510
+      "sha256": "e27a6a47f3e12903502371423f22b3a53f2b6a1717e9665bf7de97000657eb4e",
+      "size": 15516
     }
   ],
   "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
@@ -56,6 +57,7 @@
     "deterministic_tap_rebuild": "PASS",
     "fuse_boot_gateway_to_login": "PASS",
     "fuse_tap_load_to_login": "PASS",
-    "tap_header_and_basic_sequence": "PASS"
+    "tap_header_and_basic_sequence": "PASS",
+    "udg_preview_nonoverlap": "PASS"
   }
 }
