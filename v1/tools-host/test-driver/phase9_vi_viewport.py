@@ -158,6 +158,12 @@ gate_end:
           "vi_cursor_off","vi_view_xoff","vi_p922_scan_off","vi_p922_logical_col","vi_option_number","vi_view_gutter","vi_view_width","E_INVAL",
         ))
         gate=(build/"p922-gateway.bin").read_bytes()
+        raise P922Error(
+            "P9.22 layout "
+            f"size={len(image)} cursor=0x{sy['vi_cursor_off']:04x} "
+            f"scan=0x{sy['vi_p922_scan_off']:04x} logical=0x{sy['vi_p922_logical_col']:04x} "
+            f"column_fn=0x{sy['vi_p922_cursor_column']:04x} buffer=0x{sy['vi_buffer']:04x}"
+        )
 
         # TAB is one file byte yet advances display column to the next multiple of eight.
         data=b"a\tb"
