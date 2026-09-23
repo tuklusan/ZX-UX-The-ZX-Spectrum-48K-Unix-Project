@@ -1388,6 +1388,8 @@ vi_p911_x:
     sbc hl,de
     jp z,vi_p911_safe
     jp c,vi_p911_safe
+    xor a
+    ld (vi_yank_linewise),a
     ld hl,(vi_cursor_off)
     ld bc,1
     call vi_p911_yank_range
@@ -1417,6 +1419,8 @@ vi_p911_D:
     ld a,b
     or c
     jp z,vi_p911_safe
+    xor a
+    ld (vi_yank_linewise),a
     ld hl,(vi_cursor_off)
     call vi_p911_yank_range
     ret c
@@ -1465,6 +1469,8 @@ vi_p911_dd_have_end:
     sbc hl,de
     ld b,h
     ld c,l
+    ld a,1
+    ld (vi_yank_linewise),a
     ld hl,(vi_delete_start)
     call vi_p911_yank_range
     ret c
@@ -1546,5 +1552,151 @@ vi_p911_clamp_nonempty:
 
 vi_delete_start: dw 0
 vi_yank_len: dw 0
+vi_yank_linewise: db 0
 vi_yank_buf: defs VI_YANK_CAPACITY,0
+
+; P9.12 yy/p/P using the single P9.11 yank buffer.
+vi_p912_yy:
+    ld hl,(vi_buffer_len)
+    ld a,h
+    or l
+    jr z,vi_p912_yy_empty
+    call vi_p906_locate_line
+    ld hl,(vi_motion_start)
+    ld (vi_put_start),hl
+    ld a,(vi_motion_line)
+    inc a
+    ld b,a
+    ld a,(vi_line_count)
+    cp b
+    jr z,vi_p912_yy_last
+    jr c,vi_p912_yy_last
+    ld a,b
+    call vi_p906_line_start
+    jr vi_p912_yy_have_end
+vi_p912_yy_last:
+    ld hl,(vi_buffer_len)
+vi_p912_yy_have_end:
+    ld de,(vi_put_start)
+    or a
+    sbc hl,de
+    ld b,h
+    ld c,l
+    ld a,1
+    ld (vi_yank_linewise),a
+    ld hl,(vi_put_start)
+    jp vi_p911_yank_range
+vi_p912_yy_empty:
+    xor a
+    ld (vi_yank_len),a
+    ld (vi_yank_len+1),a
+    ld (vi_yank_linewise),a
+    ret
+
+; A='p' or 'P'. Puts are fully preflighted before the first byte is inserted.
+vi_p912_put:
+    ld (vi_put_cmd),a
+    call vi_p912_preflight
+    ret c
+    ld hl,(vi_yank_len)
+    ld a,h
+    or l
+    ret z
+    ld a,(vi_yank_linewise)
+    or a
+    jr z,vi_p912_char_position
+    call vi_p906_locate_line
+    ld a,(vi_put_cmd)
+    cp 'P'
+    jr z,vi_p912_line_above
+    ; linewise p starts at the next line boundary, or EOF for final line.
+    ld a,(vi_motion_line)
+    inc a
+    ld b,a
+    ld a,(vi_line_count)
+    cp b
+    jr z,vi_p912_line_eof
+    jr c,vi_p912_line_eof
+    ld a,b
+    call vi_p906_line_start
+    jr vi_p912_position_ready
+vi_p912_line_eof:
+    ld hl,(vi_buffer_len)
+    jr vi_p912_position_ready
+vi_p912_line_above:
+    ld hl,(vi_motion_start)
+    jr vi_p912_position_ready
+vi_p912_char_position:
+    ld hl,(vi_cursor_off)
+    ld a,(vi_put_cmd)
+    cp 'P'
+    jr z,vi_p912_position_ready
+    ld de,(vi_buffer_len)
+    push hl
+    or a
+    sbc hl,de
+    pop hl
+    jr nc,vi_p912_position_ready
+    inc hl
+vi_p912_position_ready:
+    ld (vi_put_start),hl
+    ld de,vi_yank_buf
+    ld bc,(vi_yank_len)
+vi_p912_put_loop:
+    ld a,b
+    or c
+    jr z,vi_p912_put_done
+    ld a,(de)
+    push bc
+    push de
+    push hl
+    call vi_p903_insert_byte
+    pop hl
+    pop de
+    pop bc
+    ret c
+    inc hl
+    inc de
+    dec bc
+    jr vi_p912_put_loop
+vi_p912_put_done:
+    ld hl,(vi_put_start)
+    ld (vi_cursor_off),hl
+    ld a,1
+    ld (vi_dirty),a
+    xor a
+    ret
+
+; Prove the whole insertion can succeed before mutating the gap.
+vi_p912_preflight:
+    ld a,(vi_fail_gap_alloc)
+    or a
+    jr nz,vi_p912_nomem
+    ld a,(vi_fail_index_alloc)
+    or a
+    jr nz,vi_p912_nomem
+    ld hl,(vi_gap_end)
+    ld de,(vi_gap_start)
+    or a
+    sbc hl,de
+    ld de,(vi_yank_len)
+    or a
+    sbc hl,de
+    jr c,vi_p912_nomem
+    ; A linewise yank can contribute at most one LF/line boundary.
+    ld a,(vi_yank_linewise)
+    or a
+    ret z
+    ld a,(vi_line_count)
+    cp VI_LINE_MAX
+    jr nc,vi_p912_nomem
+    xor a
+    ret
+vi_p912_nomem:
+    ld a,E_NOMEM
+    scf
+    ret
+
+vi_put_cmd: db 0
+vi_put_start: dw 0
     ENDM
