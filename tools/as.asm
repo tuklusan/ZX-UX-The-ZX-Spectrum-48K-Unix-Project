@@ -281,3 +281,144 @@ as_obj1_reloc_text_tmp:    dw 0
 as_obj1_reloc_symbols_tmp: dw 0
 as_obj1_reloc_offset_tmp:  dw 0
     ENDM
+
+
+; P10.05 native assembler lexer/line parser.
+    MACRO EMIT_P10_AS_LEXER_ROUTINES
+; HL -> NUL-terminated source line.
+; Carry clear: lexically acceptable line prefix/operand tail for later stages.
+; Carry set, A=E_FORMAT: malformed token or forbidden INCLUDE directive.
+as_p1005_parse_line:
+    call as_p1005_skip_ws
+    ld a,(hl)
+    or a
+    ret z
+    cp ';'
+    ret z
+    ld (as_p1005_token_start),hl
+    call as_p1005_first_char
+    jr c,as_p1005_bad
+    ld b,0
+as_p1005_token_loop:
+    inc b
+    inc hl
+    ld a,(hl)
+    or a
+    jr z,as_p1005_token_end
+    cp ':'
+    jr z,as_p1005_label
+    cp ' '
+    jr z,as_p1005_token_end
+    cp 9
+    jr z,as_p1005_token_end
+    cp ';'
+    jr z,as_p1005_token_end
+    call as_p1005_next_char
+    jr nc,as_p1005_token_loop
+    jr as_p1005_bad
+
+as_p1005_label:
+    inc hl
+    call as_p1005_skip_ws
+    ld a,(hl)
+    or a
+    ret z
+    cp ';'
+    ret z
+    ld (as_p1005_token_start),hl
+    call as_p1005_first_char
+    jr c,as_p1005_bad
+    ld b,0
+as_p1005_mnemonic_loop:
+    inc b
+    inc hl
+    ld a,(hl)
+    or a
+    jr z,as_p1005_token_end
+    cp ' '
+    jr z,as_p1005_token_end
+    cp 9
+    jr z,as_p1005_token_end
+    cp ';'
+    jr z,as_p1005_token_end
+    call as_p1005_next_char
+    jr nc,as_p1005_mnemonic_loop
+    jr as_p1005_bad
+
+as_p1005_token_end:
+    push hl
+    push bc
+    call as_p1005_is_include
+    pop bc
+    pop hl
+    jr c,as_p1005_bad
+    ; Operand grammar is frozen by later directive/expression/opcode steps.
+    ; P10.05 only requires the line/token boundary to be deterministic.
+    xor a
+    ret
+
+as_p1005_skip_ws:
+    ld a,(hl)
+    cp ' '
+    jr z,as_p1005_skip_one
+    cp 9
+    ret nz
+as_p1005_skip_one:
+    inc hl
+    jr as_p1005_skip_ws
+
+as_p1005_first_char:
+    cp 'A'
+    jr c,as_p1005_first_punct
+    cp 'Z'+1
+    jr c,as_p1005_char_ok
+    cp 'a'
+    jr c,as_p1005_first_punct
+    cp 'z'+1
+    jr c,as_p1005_char_ok
+as_p1005_first_punct:
+    cp '_'
+    jr z,as_p1005_char_ok
+    cp '.'
+    jr z,as_p1005_char_ok
+    cp '$'
+    jr z,as_p1005_char_ok
+    scf
+    ret
+as_p1005_next_char:
+    cp '0'
+    jr c,as_p1005_first_char
+    cp '9'+1
+    jr c,as_p1005_char_ok
+    jp as_p1005_first_char
+as_p1005_char_ok:
+    or a
+    ret
+
+; B=token length, saved start pointer. Reject INCLUDE case-insensitively.
+as_p1005_is_include:
+    ld a,b
+    cp 7
+    ret nz
+    ld hl,(as_p1005_token_start)
+    ld de,as_p1005_include_word
+    ld b,7
+as_p1005_include_loop:
+    ld a,(hl)
+    or $20
+    cp (de)
+    ret nz
+    inc hl
+    inc de
+    djnz as_p1005_include_loop
+    scf
+    ret
+
+as_p1005_bad:
+    ld a,E_FORMAT
+    scf
+    ret
+
+as_p1005_include_word: db 'include'
+as_p1005_token_start: dw 0
+    ENDM
