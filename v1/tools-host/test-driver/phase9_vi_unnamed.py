@@ -19,6 +19,7 @@ from driver_core import DriverError
 from fuse_harness import FAIL_PC, PASS_PC, run_sna
 from phase8_common import arg1, inspect_mex, make_tap, mex1, word
 
+# Exact P9.04 candidate driver.
 BASE=0xC000
 GATE=0xE000
 ARG=0xA000
