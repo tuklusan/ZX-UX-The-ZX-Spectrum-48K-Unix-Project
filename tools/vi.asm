@@ -2745,4 +2745,46 @@ vi_write_stat_req: defs 4,0
 vi_write_stat_out: defs 10,0
 vi_rename_req: defs 4,0
 vi_temp_name: db '/','t','m','p','/','.','v','i','0','.','0',0
+
+; P9.18 exact :w, :w path and :wq state transitions.
+; Successful writes clear dirty. A named-target change is published only after
+; vi_p917_write_path has committed the atomic rename.
+vi_p918_w_current:
+    call vi_p904_require_target
+    ret c
+    ld hl,vi_target
+    call vi_p917_write_path
+    ret c
+    xor a
+    ld (vi_dirty),a
+    ret
+
+; HL=explicit path. Retarget only after the complete transaction commits.
+vi_p918_w_path:
+    ld (vi_p918_path),hl
+    call vi_p917_write_path
+    ret c
+    ld a,(vi_write_type)
+    ld hl,(vi_p918_path)
+    jp vi_p904_commit_target
+
+; :wq has no implicit name for an unnamed buffer and never exits on save error.
+vi_p918_wq:
+    xor a
+    ld (vi_should_exit),a
+    call vi_p918_w_current
+    ret c
+    ld a,1
+    ld (vi_should_exit),a
+    xor a
+    ret
+
+; Entry helper used when an editor session begins.
+vi_p918_session_init:
+    xor a
+    ld (vi_should_exit),a
+    ret
+
+vi_should_exit: db 0
+vi_p918_path: dw 0
     ENDM
