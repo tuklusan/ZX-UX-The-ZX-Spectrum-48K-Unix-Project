@@ -142,7 +142,7 @@ gate_end:
         # TAB is one file byte yet advances display column to the next multiple of eight.
         data=b"a\tb"
         # Cursor starts at supplied offset 2; expected display column is 8.
-        code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC)+phase1._call(sy["vi_p922_cursor_column"]))
+        code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC)+b"\x21\x02\x00\x22"+word(sy["vi_cursor_off"])+phase1._call(sy["vi_p922_cursor_column"]))
         code+=b"\x7C\xB7"+phase1._jp_nz(FAIL_PC)+b"\x7D\xFE\x08"+phase1._jp_nz(FAIL_PC)+phase1._jp(PASS_PC)
         run_case(root,"tab-column-value",code,patch(image,gate,sy,data,cursor=2))
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC))
@@ -151,7 +151,7 @@ gate_end:
 
         # Unnumbered: logical column 69 scrolls to xoff 6, landing at screen column 63.
         data=b"x"*70
-        code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC)+phase1._call(sy["vi_p922_follow_cursor"])+phase1._jp_c(FAIL_PC))
+        code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC)+b"\x21\x45\x00\x22"+word(sy["vi_cursor_off"])+phase1._call(sy["vi_p922_follow_cursor"])+phase1._jp_c(FAIL_PC))
         code+=expect_word(sy["vi_view_xoff"],6)+phase1._ld_hl(69)+phase1._call(sy["vi_p922_screen_col"])+phase1._jp_c(FAIL_PC)
         code+=b"\x7D\xFE\x3F"+phase1._jp_nz(FAIL_PC)+phase1._jp(PASS_PC)
         run_case(root,"unnumbered-follow",code,patch(image,gate,sy,data,cursor=69))
