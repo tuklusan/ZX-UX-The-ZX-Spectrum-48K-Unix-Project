@@ -110,16 +110,21 @@ jobs:
 
           screen=(root/'v1/assets/loading.scr').read_bytes()
           issue=(root/'v1/assets/issue.txt').read_bytes()
+          font=(root/'v1/assets/font4x8-zxux.bin').read_bytes()
           assert len(screen)==6912
           assert len(issue)==144
+          assert len(font)==392
           prompt=b'login: '
 
           sy=phase3_open_descriptions._symbols(
               root/'v1/build/kernel.sym',
-              ('zx48_idle_loop','zx48_console_write','ARENA_START','UDG_BANK_SIZE'),
+              ('zx48_idle_loop','zx48_console_write','zx48_console_clear',
+               'zx48_tty64_install_font','ARENA_START','UDG_BANK_SIZE'),
           )
           idle=sy['zx48_idle_loop']
           conwrite=sy['zx48_console_write']
+          conclear=sy['zx48_console_clear']
+          font_install=sy['zx48_tty64_install_font']
           arena_start=sy['ARENA_START']
           udg_bank_size=sy['UDG_BANK_SIZE']
           assert 0xE000 <= idle <= 0xFAFD
@@ -143,13 +148,19 @@ jobs:
           for addr,value in ((idle,original_idle[0]),(idle+1,original_idle[1]),(idle+2,original_idle[2])):
               preview += bytes((0x3E,value,0x32,addr&0xFF,(addr>>8)&0xFF))
 
-          code_size=50
+          code_size=65
           issue_addr=base+code_size
           prompt_addr=issue_addr+len(issue)
           marker_addr=prompt_addr+len(prompt)
-          marker_write_pc=base+41
-          finish=base+47
+          font_addr=marker_addr+1
+          finish=base+62
+          success_pc=base+59
 
+          preview += bytes((0x21,font_addr&0xFF,(font_addr>>8)&0xFF))
+          preview += bytes((0x01,len(font)&0xFF,(len(font)>>8)&0xFF))
+          preview += bytes((0xCD,font_install&0xFF,(font_install>>8)&0xFF))
+          preview += bytes((0xDA,finish&0xFF,(finish>>8)&0xFF))
+          preview += bytes((0xCD,conclear&0xFF,(conclear>>8)&0xFF))
           preview += bytes((0x21,issue_addr&0xFF,(issue_addr>>8)&0xFF))
           preview += bytes((0x01,len(issue)&0xFF,(len(issue)>>8)&0xFF))
           preview += bytes((0xCD,conwrite&0xFF,(conwrite>>8)&0xFF))
@@ -158,16 +169,14 @@ jobs:
           preview += bytes((0x01,len(prompt),0x00))
           preview += bytes((0xCD,conwrite&0xFF,(conwrite>>8)&0xFF))
           preview += bytes((0xDA,finish&0xFF,(finish>>8)&0xFF))
-          assert base+len(preview)==base+39
           preview += bytes((0x3E,0xA5))
-          assert base+len(preview)==marker_write_pc
           preview += bytes((0x32,marker_addr&0xFF,(marker_addr>>8)&0xFF))
+          assert base+len(preview)==success_pc
           preview += bytes((0xC3,idle&0xFF,(idle>>8)&0xFF))
           assert base+len(preview)==finish
           preview += bytes((0xC3,idle&0xFF,(idle>>8)&0xFF))
           assert len(preview)==code_size
-          preview += issue+prompt+b'\x00'
-
+          preview += issue+prompt+b'\x00'+font
           n0=maketap._integer_number(0)
           n7=maketap._integer_number(7)
           n24575=maketap._integer_number(24575)
@@ -236,8 +245,9 @@ jobs:
               'resident kernel at 0xE000, and a small fixed-address preview payload at\n'
               '0x6100, then transfers control through the real ZX-UX boot gateway at\n'
               '0xE003. After normal kernel initialization, the preview payload displays\n'
-              'the frozen Phase-9 /etc/issue text and exact "login: " prompt, then enters\n'
-              'the normal PID0 idle scheduler.\n\n'
+              'the frozen Phase-9 F4X8 font into the live 64-column console, clears the\n'
+              'ROM loader messages, displays /etc/issue and exact "login: " prompt, then\n'
+              'enters the normal PID0 idle scheduler.\n\n'
               'This is intentionally a Phase-9 development preview, not the Phase-12 final\n'
               'release tape. Phase-9 shell/vi behavior is qualified in staged target\n'
               'fixtures, but the admitted resident boot image does not yet compose those\n'
@@ -275,6 +285,9 @@ jobs:
                   'expected_prompt':'login: ',
                   'success_marker_address':marker_addr,
                   'success_marker_value':165,
+                  'success_pc':success_pc,
+                  'font_address':font_addr,
+                  'font_size':len(font),
               },
               'tests':{
                   'deterministic_tap_rebuild':'PASS',
@@ -297,7 +310,7 @@ jobs:
         run: |
           set -euo pipefail
           cat > /tmp/p9-prerelease/fuse-tap-login.txt <<'EOF'
-          breakpoint write 0x61c9
+          breakpoint 0x613b
           commands 1
           exit 0
           end
@@ -327,7 +340,7 @@ jobs:
         run: |
           set -euo pipefail
           cat > /tmp/p9-prerelease/fuse-login.txt <<'EOF'
-          breakpoint write 0x61c9
+          breakpoint 0x613b
           commands 1
           exit 0
           end
