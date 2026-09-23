@@ -57,8 +57,10 @@ jobs:
           from pathlib import Path
           p=Path('v1/src/kernel/syscall.asm')
           s=p.read_text(encoding='utf-8')
-          assert s.count('zx48_time_set_handler')==2
-          p.write_text(s.replace('zx48_time_set_handler','zx48_sys_time_set'),encoding='utf-8',newline='\n')
+          old='dw zx48_sys_mem_info,zx48_sys_proc_info,zx48_sys_ticks,zx48_sys_time_get,zx48_time_set_handler'
+          new='dw zx48_sys_mem_info,zx48_sys_proc_info,zx48_sys_ticks,zx48_sys_time_get,zx48_sys_time_get+36'
+          assert s.count(old)==1
+          p.write_text(s.replace(old,new),encoding='utf-8',newline='\n')
           PY
           (cd v1/src/kernel && "$GITHUB_WORKSPACE/tools/runtime/sjasmplus/bin/sjasmplus" --nologo --lst=../../build/kernel.lst kernel.asm)
           git checkout -- v1/src/kernel/syscall.asm
