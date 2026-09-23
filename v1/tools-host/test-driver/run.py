@@ -279,7 +279,6 @@ import phase10_obj1_symbol
 import phase10_obj1_reloc
 import phase10_obj1_inspector
 import phase10_as_parser
-import phase10_as_parser
 import phase10_as_symbols
 # Phase-9 vi qualification dispatch.
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
