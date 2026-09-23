@@ -127,7 +127,7 @@ gate_end:
     if action=="test":
         sy=phase3_open_descriptions._symbols(build/"p909-vi.sym",(
             "vi_p903_init","vi_p903_get_byte","vi_p905_init_mode","vi_p905_key",
-            "vi_buffer","vi_buffer_len","vi_cursor_off","vi_fail_gap_alloc","vi_editor_mode",
+            "vi_handle","vi_buffer","vi_buffer_len","vi_cursor_off","vi_fail_gap_alloc","vi_editor_mode",
         ))
         gateway=(build/"p909-gateway.bin").read_bytes()
 
