@@ -36,10 +36,10 @@ jobs:
         run: |
           set -euo pipefail
           git diff --name-only "$P1007_BASE" HEAD | sort > /tmp/changed
-          printf '%s\n' \\
-            .github/workflows/p1007-qualification.yml \\
-            tools/as.asm \\
-            v1/tools-host/test-driver/phase10_as_directives.py \\
+          printf '%s\n' \
+            .github/workflows/p1007-qualification.yml \
+            tools/as.asm \
+            v1/tools-host/test-driver/phase10_as_directives.py \
             v1/tools-host/test-driver/run.py | sort > /tmp/expected
           diff -u /tmp/expected /tmp/changed
           git diff --check "$P1007_BASE" HEAD
