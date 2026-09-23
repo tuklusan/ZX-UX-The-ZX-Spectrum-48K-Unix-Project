@@ -1387,7 +1387,8 @@ vi_open_cmd: db 0
 vi_open_pos: dw 0
 
 ; P9.11 x/dd/D deletions with exact yank-buffer effects.
-VI_YANK_CAPACITY        EQU 256
+; The bounded transient yank/undo payload is 128 bytes; larger edits fail atomically.
+VI_YANK_CAPACITY        EQU 128
 
 ; x: yank and delete the byte under the cursor. Empty/end is a safe no-op.
 vi_p911_x:
