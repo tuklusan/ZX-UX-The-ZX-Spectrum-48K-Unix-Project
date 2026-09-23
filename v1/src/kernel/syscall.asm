@@ -649,7 +649,8 @@ zx48_sys_time_get:
     ld hl,(syscall_arg_hl)
     xor a
     ret
-; P8.39 TIME1 set revision contract: every successful set increments revision.\nzx48_time_set_handler:
+; P8.39 TIME1 set revision contract: every successful set increments revision.
+zx48_time_set_handler:
     ld a,(current_pid)
     cp 1
     jp nz,zx48_sys_perm
