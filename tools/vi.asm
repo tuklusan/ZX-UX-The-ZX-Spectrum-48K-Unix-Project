@@ -866,32 +866,32 @@ vi_p906_left:
     ld de,(vi_motion_start)
     or a
     sbc hl,de
-    jr z,vi_p906_ok
+    jp z,vi_p906_ok
     ld hl,(vi_cursor_off)
     dec hl
     ld (vi_cursor_off),hl
-    jr vi_p906_ok
+    jp vi_p906_ok
 
 vi_p906_right:
     call vi_p906_current_end
     ld de,(vi_motion_start)
     or a
     sbc hl,de
-    jr z,vi_p906_ok
+    jp z,vi_p906_ok
     dec hl
     ld de,(vi_cursor_off)
     or a
     sbc hl,de
-    jr z,vi_p906_ok
+    jp z,vi_p906_ok
     ld hl,(vi_cursor_off)
     inc hl
     ld (vi_cursor_off),hl
-    jr vi_p906_ok
+    jp vi_p906_ok
 
 vi_p906_zero:
     ld hl,(vi_motion_start)
     ld (vi_cursor_off),hl
-    jr vi_p906_ok
+    jp vi_p906_ok
 
 vi_p906_dollar:
     call vi_p906_current_end
@@ -903,11 +903,11 @@ vi_p906_dollar:
     jr z,vi_p906_dollar_empty
     dec hl
     ld (vi_cursor_off),hl
-    jr vi_p906_ok
+    jp vi_p906_ok
 vi_p906_dollar_empty:
     ld hl,(vi_motion_start)
     ld (vi_cursor_off),hl
-    jr vi_p906_ok
+    jp vi_p906_ok
 
 vi_p906_down:
     ld a,(vi_motion_line)
@@ -915,15 +915,15 @@ vi_p906_down:
     ld b,a
     ld a,(vi_line_count)
     cp b
-    jr z,vi_p906_ok
-    jr c,vi_p906_ok
+    jp z,vi_p906_ok
+    jp c,vi_p906_ok
     ld a,b
     jr vi_p906_vertical
 
 vi_p906_up:
     ld a,(vi_motion_line)
     or a
-    jr z,vi_p906_ok
+    jp z,vi_p906_ok
     dec a
 vi_p906_vertical:
     ld (vi_motion_target_line),a
@@ -962,7 +962,7 @@ vi_p906_vertical_apply:
     ld (vi_motion_line),a
     ld hl,(vi_motion_target_start)
     ld (vi_motion_start),hl
-    jr vi_p906_ok
+    jp vi_p906_ok
 vi_p906_vertical_empty:
     ld hl,(vi_motion_target_start)
     ld (vi_cursor_off),hl
