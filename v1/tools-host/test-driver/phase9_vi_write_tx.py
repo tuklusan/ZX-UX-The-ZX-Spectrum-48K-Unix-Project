@@ -97,19 +97,19 @@ fixture_end:
     ORG $E000
 gate:
     cp SYS_STAT
-    jr z,g_stat
+    jp z,g_stat
     cp SYS_GETPID
-    jr z,g_pid
+    jp z,g_pid
     cp SYS_OPEN
-    jr z,g_open
+    jp z,g_open
     cp SYS_WRITE
-    jr z,g_write
+    jp z,g_write
     cp SYS_CLOSE
-    jr z,g_close
+    jp z,g_close
     cp SYS_RENAME
-    jr z,g_rename
+    jp z,g_rename
     cp SYS_REMOVE
-    jr z,g_remove
+    jp z,g_remove
     ld a,E_NOTSUP
     scf
     ret
