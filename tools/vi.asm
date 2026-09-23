@@ -52,6 +52,7 @@ vi_entry:
     call vi_ioctl
     jp c,vi_unwind_error
 
+; Shared unwind path is deliberately retained for all later editor exits.
 vi_normal_exit:
     xor a
     ld (vi_primary_errno),a
