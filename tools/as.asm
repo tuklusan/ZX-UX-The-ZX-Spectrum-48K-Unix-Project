@@ -297,7 +297,7 @@ as_p1005_parse_line:
     ret z
     ld (as_p1005_token_start),hl
     call as_p1005_first_char
-    jr c,as_p1005_bad
+    jp c,as_p1005_bad
     ld b,0
 as_p1005_token_loop:
     inc b
@@ -315,7 +315,7 @@ as_p1005_token_loop:
     jr z,as_p1005_token_end
     call as_p1005_next_char
     jr nc,as_p1005_token_loop
-    jr as_p1005_bad
+    jp as_p1005_bad
 
 as_p1005_label:
     inc hl
@@ -327,7 +327,7 @@ as_p1005_label:
     ret z
     ld (as_p1005_token_start),hl
     call as_p1005_first_char
-    jr c,as_p1005_bad
+    jp c,as_p1005_bad
     ld b,0
 as_p1005_mnemonic_loop:
     inc b
@@ -343,7 +343,7 @@ as_p1005_mnemonic_loop:
     jr z,as_p1005_token_end
     call as_p1005_next_char
     jr nc,as_p1005_mnemonic_loop
-    jr as_p1005_bad
+    jp as_p1005_bad
 
 as_p1005_token_end:
     push hl
@@ -351,7 +351,7 @@ as_p1005_token_end:
     call as_p1005_is_include
     pop bc
     pop hl
-    jr c,as_p1005_bad
+    jp c,as_p1005_bad
     ; Operand grammar is frozen by later directive/expression/opcode steps.
     ; P10.05 only requires the line/token boundary to be deterministic.
     xor a
@@ -404,9 +404,11 @@ as_p1005_is_include:
     ld de,as_p1005_include_word
     ld b,7
 as_p1005_include_loop:
+    ld a,(de)
+    ld c,a
     ld a,(hl)
     or $20
-    cp (de)
+    cp c
     ret nz
     inc hl
     inc de
