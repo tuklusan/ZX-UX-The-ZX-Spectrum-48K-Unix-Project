@@ -6,8 +6,9 @@ The auto-start BASIC loader loads the ZX-UX loading screen, the Phase-9
 resident kernel at 0xE000, and a small fixed-address preview payload at
 0x6100, then transfers control through the real ZX-UX boot gateway at
 0xE003. After normal kernel initialization, the preview payload displays
-the frozen Phase-9 /etc/issue text and exact "login: " prompt, then enters
-the normal PID0 idle scheduler.
+the frozen Phase-9 F4X8 font into the live 64-column console, clears the
+ROM loader messages, displays /etc/issue and exact "login: " prompt, then
+enters the normal PID0 idle scheduler.
 
 This is intentionally a Phase-9 development preview, not the Phase-12 final
 release tape. Phase-9 shell/vi behavior is qualified in staged target

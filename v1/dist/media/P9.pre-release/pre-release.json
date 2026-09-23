@@ -6,6 +6,8 @@
     "boot_gateway": 57347,
     "entry_command": "LOAD \"\"",
     "expected_prompt": "login: ",
+    "font_address": 25049,
+    "font_size": 392,
     "kernel_address": 57344,
     "kernel_name": "kernel",
     "kernel_size": 8192,
@@ -14,14 +16,15 @@
     "screen_address": 16384,
     "screen_name": "zx48uxscr",
     "screen_size": 6912,
-    "success_marker_address": 25033,
-    "success_marker_value": 165
+    "success_marker_address": 25048,
+    "success_marker_value": 165,
+    "success_pc": 24891
   },
   "files": [
     {
       "path": "README.txt",
-      "sha256": "74439dc90e344b157c8fd812314f8ebf8f3c966dba5e402c880a3a97da98d4a3",
-      "size": 1161
+      "sha256": "62dd843b0c197eb7bb12c8c5609aaec6e995d73bc03b5a538b37d95a7ccde7e6",
+      "size": 1240
     },
     {
       "path": "kernel-phase9-pre-release.bin",
@@ -35,18 +38,18 @@
     },
     {
       "path": "phase9-pre-release-fuse-test.sna",
-      "sha256": "aa8a8fbfbe4ec92ffa237a85af9075d67fc3ccb21933987dd060f4700851a586",
+      "sha256": "3467da491cd09776801403530abea9ef437e8b169e481dc9fb2ccaf6cec1eb3a",
       "size": 49179
     },
     {
       "path": "phase9-preview.bin",
-      "sha256": "7b148d8ca7a0ed88d329ce2feeb1a67880e4a2f072ac1439038bd726d6ab11f9",
-      "size": 202
+      "sha256": "e9953e07f7070436492cbd800e2307dc7209b3730d79009dd7e092a68e57ce8a",
+      "size": 609
     },
     {
       "path": "zx-ux-phase9-pre-release.tap",
-      "sha256": "e27a6a47f3e12903502371423f22b3a53f2b6a1717e9665bf7de97000657eb4e",
-      "size": 15516
+      "sha256": "f11a80150bb8dd1697e316b4c4640190567efb0d1c1caab7c490c73420bbf2d9",
+      "size": 15923
     }
   ],
   "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
