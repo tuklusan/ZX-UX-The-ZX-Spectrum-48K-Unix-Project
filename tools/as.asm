@@ -1591,3 +1591,165 @@ as_p1013_error:
     scf
     ret
     ENDM
+
+
+; P10.14 documented rotate/shift/bit encoder primitives.
+; Portable baseline deliberately omits undocumented SLL and indexed-result aliases.
+    MACRO EMIT_P10_AS_BIT_ENCODER
+; A=logical rotate/shift family 0 RLC,1 RRC,2 RL,3 RR,4 SLA,5 SRA,6 SRL.
+; B=register field B,C,D,E,H,L,(HL),A = 0..7. Returns H=$CB,L=opcode.
+as_p1014_cb_shift:
+    cp 7
+    jp nc,as_p1014_error
+    ld hl,as_p1014_shift_bases
+    ld e,a
+    ld d,0
+    add hl,de
+    ld a,(hl)
+    ld l,a
+    ld a,b
+    cp 8
+    jp nc,as_p1014_error
+    or l
+    ld l,a
+    ld h,$CB
+    xor a
+    ret
+
+; A=0 BIT / 1 RES / 2 SET, B=bit 0..7, C=register field 0..7.
+; Returns H=$CB,L=opcode.
+as_p1014_bitop:
+    cp 3
+    jp nc,as_p1014_error
+    ld e,a
+    ld a,b
+    cp 8
+    jp nc,as_p1014_error
+    add a,a
+    add a,a
+    add a,a
+    ld l,a
+    ld a,e
+    or a
+    jr z,as_p1014_bit_base
+    cp 1
+    jr z,as_p1014_res_base
+    ld a,l
+    add a,$C0
+    jr as_p1014_bit_reg
+as_p1014_res_base:
+    ld a,l
+    add a,$80
+    jr as_p1014_bit_reg
+as_p1014_bit_base:
+    ld a,l
+    add a,$40
+as_p1014_bit_reg:
+    ld l,a
+    ld a,c
+    cp 8
+    jp nc,as_p1014_error
+    or l
+    ld l,a
+    ld h,$CB
+    xor a
+    ret
+
+; D=index selector 0 IX/1 IY. A=0 BIT/1 RES/2 SET, B=bit.
+; Returns H=DD/FD, L=CB-family memory opcode (register field fixed at 6).
+as_p1014_index_bitop:
+    ld c,a
+    ld a,d
+    cp 2
+    jp nc,as_p1014_error
+    ld h,$DD
+    or a
+    jr z,as_p1014_index_bit_prefix
+    ld h,$FD
+as_p1014_index_bit_prefix:
+    ld a,c
+    cp 3
+    jp nc,as_p1014_error
+    ld e,a
+    ld a,b
+    cp 8
+    jp nc,as_p1014_error
+    add a,a
+    add a,a
+    add a,a
+    add a,6
+    ld l,a
+    ld a,e
+    or a
+    jr z,as_p1014_index_bit
+    cp 1
+    jr z,as_p1014_index_res
+    ld a,l
+    add a,$C0
+    ld l,a
+    xor a
+    ret
+as_p1014_index_res:
+    ld a,l
+    add a,$80
+    ld l,a
+    xor a
+    ret
+as_p1014_index_bit:
+    ld a,l
+    add a,$40
+    ld l,a
+    xor a
+    ret
+
+; D=index selector 0 IX/1 IY. Documented indexed RL memory form only.
+; Returns H=DD/FD,L=$16. The final encoded stream is prefix,CB,d,opcode.
+as_p1014_index_rl:
+    ld a,d
+    cp 2
+    jp nc,as_p1014_error
+    ld h,$DD
+    or a
+    jr z,as_p1014_index_rl_done
+    ld h,$FD
+as_p1014_index_rl_done:
+    ld l,$16
+    xor a
+    ret
+
+; HL=parsed displacement. Accept only exact -128..127.
+as_p1014_disp8:
+    ld a,h
+    or a
+    jr z,as_p1014_disp_pos
+    cp $FF
+    jp nz,as_p1014_error
+    ld a,l
+    cp $80
+    jp c,as_p1014_error
+    or a
+    ret
+as_p1014_disp_pos:
+    ld a,l
+    cp $80
+    jp nc,as_p1014_error
+    or a
+    ret
+
+; A=$30 identifies the undocumented CB SLL family and must fail.
+as_p1014_reject_undocumented:
+    cp $30
+    jp z,as_p1014_error
+    jp as_p1014_error
+
+as_p1014_shift_bases:
+    db $00,$08,$10,$18,$20,$28,$38
+as_p1014_fixed:
+    db $07,$0F,$17,$1F      ; RLCA,RRCA,RLA,RRA
+as_p1014_fixed_end:
+
+as_p1014_error:
+    ld a,E_FORMAT
+    scf
+    ret
+    ENDM
