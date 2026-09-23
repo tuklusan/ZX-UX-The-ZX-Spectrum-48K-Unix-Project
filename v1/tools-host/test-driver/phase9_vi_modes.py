@@ -40,6 +40,13 @@ def expect_byte(address,value):
     return b"\x3A"+word(address)+bytes((0xFE,value&0xFF))+phase1._jp_nz(FAIL_PC)
 
 
+def run_case(root,name,code,patcher):
+    try:
+        run_sna(root,bytes(code),patch=patcher)
+    except DriverError as exc:
+        raise P905Error(f"P9.05 {name}: {exc}") from exc
+
+
 def patch(image,gateway,sy,data=b"abc"):
     def apply(ram):
         ram[BASE-0x4000:BASE-0x4000+len(image)]=image
@@ -161,7 +168,7 @@ gate_end:
         for i in range(12): code+=expect_byte(OUT+i,ord(" "))
         for i,v in enumerate(b"abc"): code+=expect_byte(sy["vi_buffer"]+i,v)
         code+=phase1._jp(PASS_PC)
-        run_sna(root,bytes(code),patch=patch(image,gateway,sy))
+        run_case(root,"normal-insert-escape",code,patch(image,gateway,sy))
 
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p905_init_mode"])+phase1._jp_c(FAIL_PC))
         code+=b"\x3E"+bytes((ord(":"),))+phase1._call(sy["vi_p905_key"])+phase1._jp_c(FAIL_PC)
@@ -171,21 +178,21 @@ gate_end:
         code+=expect_byte(sy["vi_editor_mode"],sy["VI_MODE_NORMAL"])+expect_byte(sy["vi_command_len"],0)+expect_byte(CURSOR,2)
         for i in range(12): code+=expect_byte(OUT+i,ord(" "))
         code+=phase1._jp(PASS_PC)
-        run_sna(root,bytes(code),patch=patch(image,gateway,sy))
+        run_case(root,"command-escape",code,patch(image,gateway,sy))
 
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p905_init_mode"])+phase1._jp_c(FAIL_PC))
         code+=b"\x3E"+bytes((ord("d"),))+phase1._call(sy["vi_p905_key"])+phase1._jp_c(FAIL_PC)+expect_byte(sy["vi_normal_pending"],1)
         code+=b"\x3E\x1B"+phase1._call(sy["vi_p905_key"])+phase1._jp_c(FAIL_PC)
         code+=expect_byte(sy["vi_editor_mode"],sy["VI_MODE_NORMAL"])+expect_byte(sy["vi_normal_pending"],0)
         code+=phase1._jp(PASS_PC)
-        run_sna(root,bytes(code),patch=patch(image,gateway,sy))
+        run_case(root,"pending-normal-escape",code,patch(image,gateway,sy))
 
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p905_init_mode"])+phase1._jp_c(FAIL_PC))
         code+=b"\x3E"+bytes((ord("i"),))+phase1._call(sy["vi_p905_key"])+phase1._jp_c(FAIL_PC)
         code+=b"\x3E\x03"+phase1._call(sy["vi_p905_key"])+phase1._jp_c(FAIL_PC)
         code+=expect_byte(sy["vi_editor_mode"],sy["VI_MODE_INSERT"])+expect_byte(CURSOR,1)
         code+=phase1._jp(PASS_PC)
-        run_sna(root,bytes(code),patch=patch(image,gateway,sy))
+        run_case(root,"break-not-escape",code,patch(image,gateway,sy))
 
         assertions += [
             {"name":"fuse-normal-insert-escape-golden","passed":True},
