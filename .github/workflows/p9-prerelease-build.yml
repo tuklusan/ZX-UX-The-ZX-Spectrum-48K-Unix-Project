@@ -22,6 +22,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: zxux-p9-prerelease-build
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
     runs-on: ubuntu-24.04
@@ -189,19 +193,21 @@ jobs:
         run: |
           set -euo pipefail
           cat > /tmp/p9-prerelease/fuse-debugger.txt <<'EOF'
+          set $booted 0
           breakpoint 0xe003
           commands 1
+          set $booted 1
           continue
           end
-          breakpoint 0xe000 if a == 0x02
+          breakpoint 0xe000 if z80:a == 0x02 && $booted == 1
           commands 2
           exit 0
           end
           continue
           EOF
-          timeout 180s env SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
+          timeout -k 5s 300s env SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
             tools/runtime/fuse/bin/fuse \
-            --machine 48 --no-sound --no-confirm-actions --auto-load --detect-loader \
+            --machine 48 --no-sound --no-confirm-actions --auto-load --detect-loader --fastload \
             --debugger-command "$(cat /tmp/p9-prerelease/fuse-debugger.txt)" \
             /tmp/p9-prerelease/P9.pre-release/zx-ux-phase9-pre-release.tap
           tools/runtime/python/bin/python - <<'PY'
