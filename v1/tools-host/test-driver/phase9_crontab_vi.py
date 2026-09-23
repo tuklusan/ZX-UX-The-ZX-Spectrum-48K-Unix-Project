@@ -21,6 +21,7 @@ BASE=0xC000; GATE=0xE000
 MODE=0xA300; SPAWNS=0xA301; RENAMES=0xA302; REMOVES=0xA303; LASTFLAGS=0xA304
 LIVE_DONE=0xA305; TEMP_DONE=0xA306; EXITCODE=0xA307
 # MODE: 0 resident+valid, 1 resident+invalid-then-valid, 2 tape+decline.
+# Final exact candidate after workflow creation.
 
 class P920Error(DriverError): pass
 def require(v,m):
