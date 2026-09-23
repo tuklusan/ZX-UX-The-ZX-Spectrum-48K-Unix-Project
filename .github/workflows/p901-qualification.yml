@@ -41,6 +41,7 @@ jobs:
             .github/workflows/phase9-admission-validation.yml \
             .github/workflows/phase9-step-admission.yml \
             tools/vi.asm \
+            v1/src/kernel/syscall.asm \
             v1/tools-host/test-driver/phase9_vi_skeleton.py \
             v1/tools-host/test-driver/run.py | sort > /tmp/expected
           diff -u /tmp/expected /tmp/changed
@@ -59,6 +60,7 @@ jobs:
             test "$(git rev-parse 'HEAD^{tree}')" = "$tree"
             digest="$(sha256sum \
               tools/vi.asm \
+              v1/src/kernel/syscall.asm \
               v1/tools-host/test-driver/phase9_vi_skeleton.py \
               v1/tools-host/test-driver/run.py \
               .github/workflows/p901-qualification.yml \
