@@ -45,8 +45,10 @@ polynomial `0x1021`, initial value `0xFFFF`, no reflection and final XOR zero.
 Each symbol record is exactly 20 bytes: `name[16]`, value u16, section u8 and
 flags u8. A name has 1..15 visible bytes, then NUL and zero padding; an embedded
 NUL followed by a nonzero byte is invalid. Assembly-visible names match
-`[A-Za-z_.$][A-Za-z0-9_.$]*` and are case-sensitive. Names are unique within one
-module and are never silently truncated.
+`[A-Za-z_.$][A-Za-z0-9_.$]*` and are case-sensitive. C48-generated external
+names use the stricter C48 subset `[A-Za-z_][A-Za-z0-9_]*`, with the same
+1..15 visible-byte limit. Names are unique within one module and are never
+silently truncated.
 
 Sections are UNDEF=0, TEXT=1, BSS=2 and ABS=3. The only flag is bit 0 GLOBAL.
 UNDEF is always GLOBAL and has value zero. TEXT values are at most `text_size`;
