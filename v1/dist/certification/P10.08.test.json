@@ -1,0 +1,113 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "operator-core-present",
+      "passed": true
+    },
+    {
+      "name": "precedence-authority-present",
+      "passed": true
+    },
+    {
+      "name": "unary-ops-present",
+      "passed": true
+    },
+    {
+      "name": "divide-zero-path",
+      "passed": true
+    },
+    {
+      "name": "golden-1",
+      "passed": true
+    },
+    {
+      "name": "golden-2",
+      "passed": true
+    },
+    {
+      "name": "golden-3",
+      "passed": true
+    },
+    {
+      "name": "golden-4",
+      "passed": true
+    },
+    {
+      "name": "golden-5",
+      "passed": true
+    },
+    {
+      "name": "golden-6",
+      "passed": true
+    },
+    {
+      "name": "golden-7",
+      "passed": true
+    },
+    {
+      "name": "golden-8",
+      "passed": true
+    },
+    {
+      "name": "golden-9",
+      "passed": true
+    },
+    {
+      "name": "golden-10",
+      "passed": true
+    },
+    {
+      "name": "divide-zero-rejected",
+      "passed": true
+    },
+    {
+      "name": "fuse-binary-operator-corpus",
+      "passed": true
+    },
+    {
+      "name": "fuse-unary-operator-corpus",
+      "passed": true
+    },
+    {
+      "name": "fuse-divzero-rejection",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p1008-expr.lst",
+        "--sym=p1008-expr.sym",
+        "p1008-expr.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 1352 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/as.asm": "f8410e53f382a1c47b4f135acf462488e52231e9fb9e796ec5c2bb7c94800804",
+    "v1/build/p1008-expr.bin": "c2d70d130a347d2a2ec71a59d5e2defe96333d33528b3b7d965a4fd6ad0aa309",
+    "v1/dist/certification/P10.07.build.json": "bc6ef58fae4cb0335abeccce6a87aa9736b79b49527b7508e9a49f7af49ca57b",
+    "v1/dist/certification/P10.07.test.json": "4b01ec4ded3517780f68bcfb470f5375a5579ead6fc8b288ef571854d6612b9a",
+    "v1/tools-host/test-driver/phase10_as_expressions.py": "51be9b064e912eb81c52d8b1326f789b792d316cdd2cfd0a71af2bd26d2cc70e",
+    "v1/tools-host/test-driver/run.py": "1e675115845f586db0084328b75cf4b441985588e2afabd086bc66665e1ac9f0"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P10.07": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "3d0545a6b272c3f91feaf28e629e05a00a865586",
+  "status": "PASS",
+  "step": "P10.08",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
