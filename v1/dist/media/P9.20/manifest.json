@@ -1,0 +1,55 @@
+{
+  "files": [
+    {
+      "action": "build",
+      "path": "build/build-p920-crontab-e5ace544d03c6cb66232ed5a48abf1d1679124fc74099b0ba68fbcb847f00d83.tap",
+      "sha256": "e5ace544d03c6cb66232ed5a48abf1d1679124fc74099b0ba68fbcb847f00d83",
+      "size": 6962
+    },
+    {
+      "action": "test",
+      "path": "test/build-p920-crontab-e5ace544d03c6cb66232ed5a48abf1d1679124fc74099b0ba68fbcb847f00d83.tap",
+      "sha256": "e5ace544d03c6cb66232ed5a48abf1d1679124fc74099b0ba68fbcb847f00d83",
+      "size": 6962
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-3b20c4b7b54b5863a8c6af75ec352134632b55b41c37dd3171aee0c13604fbfb.sna",
+      "sha256": "3b20c4b7b54b5863a8c6af75ec352134632b55b41c37dd3171aee0c13604fbfb",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-49dd7870fcfbe72c7f5875b437a8796ae9d6d8eebc3958daf6db91367b537ff7.sna",
+      "sha256": "49dd7870fcfbe72c7f5875b437a8796ae9d6d8eebc3958daf6db91367b537ff7",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-4c9b24c112ca0bffc4a63a18ce1d0b1936786be16e03b7bdb4a28c98bb5f89ca.sna",
+      "sha256": "4c9b24c112ca0bffc4a63a18ce1d0b1936786be16e03b7bdb4a28c98bb5f89ca",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-4ee282eb84207f3bb93155ea3661e7dade07df1fc9434429640c6bc33ea2b032.sna",
+      "sha256": "4ee282eb84207f3bb93155ea3661e7dade07df1fc9434429640c6bc33ea2b032",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-79e8a84ed743b6c784af578353c20e092980f55e598f371de50fef37fecbae26.sna",
+      "sha256": "79e8a84ed743b6c784af578353c20e092980f55e598f371de50fef37fecbae26",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-cf4ca392ad58b82b7ffbf33ea210bcb80b125a389e993a118ef0c70bbc1353bb.sna",
+      "sha256": "cf4ca392ad58b82b7ffbf33ea210bcb80b125a389e993a118ef0c70bbc1353bb",
+      "size": 49179
+    }
+  ],
+  "schema": 1,
+  "source_commit": "525d2ff45dfcc0569598d58bdc79eed837d9aac6",
+  "step": "P9.20"
+}

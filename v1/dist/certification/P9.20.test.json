@@ -1,0 +1,136 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p920-present",
+      "passed": true
+    },
+    {
+      "name": "real-bin-vi",
+      "passed": true
+    },
+    {
+      "name": "vi-tape-state-probed",
+      "passed": true
+    },
+    {
+      "name": "explicit-consent-before-spawn",
+      "passed": true
+    },
+    {
+      "name": "decline-before-spawn",
+      "passed": true
+    },
+    {
+      "name": "invalid-edit-reenters-vi",
+      "passed": true
+    },
+    {
+      "name": "validation-before-rename",
+      "passed": true
+    },
+    {
+      "name": "actual-vi-cfg-contract",
+      "passed": true
+    },
+    {
+      "name": "vi-cfg-load-supported",
+      "passed": true
+    },
+    {
+      "name": "fuse-real-vi-valid-cfg-commits",
+      "passed": true
+    },
+    {
+      "name": "fuse-invalid-cfg-reenters-editor-before-commit",
+      "passed": true
+    },
+    {
+      "name": "fuse-declined-tape-consent-no-spawn-no-rename",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p920-crontab.lst",
+        "--sym=p920-crontab.sym",
+        "p920-crontab.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 7,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2929 lines, work time: 0.007 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p920-crontab.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 26,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 25604, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 24204, \"image_size\": 6846, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 6870, \"relocations\": [], \"stored_length\": 6870, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p920-vi.lst",
+        "--sym=p920-vi.sym",
+        "p920-vi.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 12,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 5914 lines, work time: 0.011 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p920-gateway.lst",
+        "--sym=p920-gateway.sym",
+        "p920-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 2,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 473 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/vi.asm": "71e6cf2a5b9ec2218dc1df684dde572243170a1fbfcead74ee956190a8e9d88f",
+    "v1/build/p920-crontab.mex1": "dc5a01da310562c8d15baee5491e31ca9b7477bd04aab7ef3f5179d65a5bf81a",
+    "v1/build/p920-crontab.tap": "e5ace544d03c6cb66232ed5a48abf1d1679124fc74099b0ba68fbcb847f00d83",
+    "v1/build/p920-vi.bin": "f37e81cdaeefcdee94c3f7afde60588051fe7482cbd22c60647fce2c5145ae74",
+    "v1/dist/certification/P9.19.test.json": "e3721b862e5d431238d687dd62fa8b6817c8a6073c15c958b811a334c81fb0d2",
+    "v1/src/utils/crontab.asm": "98a3acf962bb8346001a4e3f701aa525f2915f288e81765c2e4ada160e77b3dd",
+    "v1/tools-host/test-driver/phase9_crontab_vi.py": "1e25f61f13b5d9d6a6bd3a27cdeeac7595ad0ec608d4897007b45e234c5fed7c",
+    "v1/tools-host/test-driver/run.py": "ec0d4bf9c645103eee952ae208c2b91af83bf7171b86696790f4bc7be6416461"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P9.19": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "525d2ff45dfcc0569598d58bdc79eed837d9aac6",
+  "status": "PASS",
+  "step": "P9.20",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
