@@ -19,6 +19,7 @@ from phase8_common import inspect_mex, make_tap, mex1, word
 
 BASE=0xC000; GATE=0xE000
 # Exact P9.17 qualification candidate.
+# Branch-range repair candidate.
 C_PATH=0xA100; A_PATH=0xA120; T_PATH=0xA140; G_PATH=0xA160
 NC_PATH=0xA180; NA_PATH=0xA190; NU_PATH=0xA1A0
 COLL=0xA300; FAILW=0xA301; FAILR=0xA302; REMOVES=0xA303; RENAMES=0xA304
