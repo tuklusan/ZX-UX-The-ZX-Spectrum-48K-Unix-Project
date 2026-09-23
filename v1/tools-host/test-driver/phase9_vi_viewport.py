@@ -133,7 +133,7 @@ gate_end:
 
     if action=="test":
         sy=phase3_open_descriptions._symbols(build/"p922-vi.sym",(
-          "vi_p903_init","vi_p922_cursor_column","vi_p922_follow_cursor","vi_p922_screen_col",
+          "vi_p903_init","vi_p903_get_byte","vi_p922_cursor_column","vi_p922_follow_cursor","vi_p922_screen_col",
           "vi_p922_emit_at","vi_p922_render_cell","vi_p922_probe_col64","vi_buffer","vi_buffer_len",
           "vi_cursor_off","vi_view_xoff","vi_option_number","vi_view_gutter","vi_view_width","E_INVAL",
         ))
@@ -141,6 +141,11 @@ gate_end:
 
         # TAB is one file byte yet advances display column to the next multiple of eight.
         data=b"a\tb"
+        # Confirm the logical-byte prerequisite seen by the column scanner.
+        for off,val,label in ((0,ord("a"),"tab-byte0"),(1,9,"tab-byte1")):
+            code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC)+phase1._ld_hl(off)+phase1._call(sy["vi_p903_get_byte"])+bytes((0xFE,val))+phase1._jp_nz(FAIL_PC)+phase1._jp(PASS_PC))
+            run_case(root,label,code,patch(image,gate,sy,data,cursor=2))
+
         # Cursor starts at supplied offset 2; expected display column is exactly 8.
         for label,address,value in (("tab-logical-low",0xA310,8),("tab-logical-high",0xA311,0)):
             code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC)+b"\x21\x02\x00\x22"+word(sy["vi_cursor_off"])+phase1._call(sy["vi_p922_cursor_column"]))
