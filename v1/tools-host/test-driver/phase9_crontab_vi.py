@@ -28,6 +28,12 @@ def require(v,m):
     if not v: raise P920Error(m)
 def expect_byte(a,v): return b"\x3A"+word(a)+bytes((0xFE,v&255))+phase1._jp_nz(FAIL_PC)
 
+def run_case(root,name,code,patcher):
+    try:
+        run_sna(root,bytes(code),patch=patcher)
+    except DriverError as exc:
+        raise P920Error(f"P9.20 {name}: {exc}") from exc
+
 def patch(image,gate,mode):
     def apply(ram):
         ram[BASE-0x4000:BASE-0x4000+len(image)]=image
@@ -304,15 +310,15 @@ gate_end:
         # Resident vi, valid first edit: one editor run, one validated atomic commit.
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["crontab_edit"]))
         code+=expect_byte(SPAWNS,1)+expect_byte(RENAMES,1)+expect_byte(LASTFLAGS,0)+expect_byte(EXITCODE,0)+phase1._jp(PASS_PC)
-        run_sna(root,bytes(code),patch=patch(image,gate,0))
+        run_case(root,"resident-valid",code,patch(image,gate,0))
         # First edited CFG is invalid: no rename then; editor runs again; only valid retry commits.
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["crontab_edit"]))
         code+=expect_byte(SPAWNS,2)+expect_byte(RENAMES,1)+expect_byte(LASTFLAGS,0)+expect_byte(EXITCODE,0)+phase1._jp(PASS_PC)
-        run_sna(root,bytes(code),patch=patch(image,gate,1))
+        run_case(root,"invalid-then-valid",code,patch(image,gate,1))
         # Tape-backed vi declined: no SYS_SPAWN, hence no tape movement and no live rename.
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["crontab_edit"]))
         code+=expect_byte(SPAWNS,0)+expect_byte(RENAMES,0)+expect_byte(LASTFLAGS,0)+expect_byte(EXITCODE,sy["E_AGAIN"]&255)+phase1._jp(PASS_PC)
-        run_sna(root,bytes(code),patch=patch(image,gate,2))
+        run_case(root,"tape-decline",code,patch(image,gate,2))
         assertions += [
           {"name":"fuse-real-vi-valid-cfg-commits","passed":True},
           {"name":"fuse-invalid-cfg-reenters-editor-before-commit","passed":True},
