@@ -168,12 +168,12 @@ gate_end:
         # Instrumented column64 attempt must be rejected before either terminal syscall.
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p922_probe_col64"]))
         code+=b"\xD2"+word(FAIL_PC)+b"\xFE"+bytes((sy["E_INVAL"]&255,))+phase1._jp_nz(FAIL_PC)+expect_byte(CALLS,0)+expect_byte(CANARY0,0xA5)+expect_byte(CANARY1,0x5A)+phase1._jp(PASS_PC)
-        run_sna(root,bytes(code),patch=patch(image,gate,sy,b""))
+        run_case(root,"col64-negative",code,patch(image,gate,sy,b""))
 
         # Row23 is status-only and cannot be reached by edit rendering.
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+b"\x16\x17\x1E\x00\x3E\x58"+phase1._call(sy["vi_p922_emit_at"]))
         code+=b"\xD2"+word(FAIL_PC)+expect_byte(CALLS,0)+phase1._jp(PASS_PC)
-        run_sna(root,bytes(code),patch=patch(image,gate,sy,b""))
+        run_case(root,"row23-negative",code,patch(image,gate,sy,b""))
 
         # Rendering a TAB emits a space but does not rewrite stored 0x09.
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._ld_hl(8)+b"\x16\x00\x3E\x09"+phase1._call(sy["vi_p922_render_cell"])+phase1._jp_c(FAIL_PC))
