@@ -1246,6 +1246,28 @@ as_p1011_fixed:
     db $ED,$4F    ; ld r,a
 as_p1011_fixed_end:
 
+; BC -> six-byte relocation record, HL=TEXT word offset, DE=symbol index.
+; Used by symbolic absolute LD operands that are not assembly-time absolute.
+as_p1011_abs16_reloc:
+    ld a,l
+    ld (bc),a
+    inc bc
+    ld a,h
+    ld (bc),a
+    inc bc
+    ld a,e
+    ld (bc),a
+    inc bc
+    ld a,d
+    ld (bc),a
+    inc bc
+    ld a,AS_OBJ1_RELOC_ABS16
+    ld (bc),a
+    inc bc
+    xor a
+    ld (bc),a
+    ret
+
 as_p1011_error:
     ld a,E_FORMAT
     scf
