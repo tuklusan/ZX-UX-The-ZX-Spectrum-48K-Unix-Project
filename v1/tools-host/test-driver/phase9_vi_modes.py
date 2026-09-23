@@ -153,7 +153,7 @@ gate_end:
 
     if action=="test":
         sy=phase3_open_descriptions._symbols(build/"p905-vi.sym",(
-            "vi_p905_init_mode","vi_p905_key","vi_editor_mode","vi_normal_pending","vi_command_len",
+            "vi_p903_init","vi_p905_init_mode","vi_p905_key","vi_editor_mode","vi_normal_pending","vi_command_len",
             "vi_handle","vi_buffer","vi_buffer_len","VI_MODE_NORMAL","VI_MODE_INSERT","VI_MODE_COMMAND",
         ))
         gateway=(build/"p905-gateway.bin").read_bytes()
@@ -187,7 +187,7 @@ gate_end:
         code+=phase1._jp(PASS_PC)
         run_case(root,"pending-normal-escape",code,patch(image,gateway,sy))
 
-        code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p905_init_mode"])+phase1._jp_c(FAIL_PC))
+        code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC)+phase1._call(sy["vi_p905_init_mode"])+phase1._jp_c(FAIL_PC))
         code+=b"\x3E"+bytes((ord("i"),))+phase1._call(sy["vi_p905_key"])+phase1._jp_c(FAIL_PC)
         code+=b"\x3E\x03"+phase1._call(sy["vi_p905_key"])+phase1._jp_c(FAIL_PC)
         code+=expect_byte(sy["vi_editor_mode"],sy["VI_MODE_INSERT"])+expect_byte(CURSOR,1)
