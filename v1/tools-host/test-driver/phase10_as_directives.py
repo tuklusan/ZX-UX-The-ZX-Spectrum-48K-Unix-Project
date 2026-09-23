@@ -13,7 +13,7 @@
 
 from __future__ import annotations
 
-# P10.07 qualification retrigger marker.
+# P10.07 qualification retrigger marker, normalized guard.
 
 import phase1
 import phase3_open_descriptions
