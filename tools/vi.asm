@@ -1979,4 +1979,245 @@ vi_undo_len: dw 0
 vi_undo_dirty: db 0
 vi_undo_cursor: dw 0
 vi_undo_data: defs VI_YANK_CAPACITY,0
+
+; P9.15 case-sensitive literal /text search with n/N repeat.
+VI_SEARCH_CAPACITY      EQU 31
+
+; Normal-mode search dispatch. '?' is deliberately unsupported in version 1.
+vi_p915_normal_key:
+    cp '/'
+    jp z,vi_p915_begin
+    cp 'n'
+    jp z,vi_p915_repeat_same
+    cp 'N'
+    jp z,vi_p915_repeat_opposite
+    cp '?'
+    jr z,vi_p915_unsupported
+vi_p915_unsupported:
+    ld a,E_NOTSUP
+    scf
+    ret
+
+; Begin interactive / entry without touching the previous committed search.
+vi_p915_begin:
+    xor a
+    ld (vi_search_edit_len),a
+    ld a,1
+    ld (vi_search_entry),a
+    call vi_p905_cursor_underline
+    ret c
+    call vi_p905_status_pos
+    ret c
+    ld hl,vi_search_prompt
+    ld bc,1
+    ld a,SYS_CON_WRITE
+    call SYSCALL_GATEWAY
+    ret c
+    ld a,VI_MODE_COMMAND
+    ld (vi_editor_mode),a
+    xor a
+    ret
+
+; A=input byte. EDIT supplies exactly 0x1B and cancels unfinished search.
+; BREAK is not mapped here and remains a separate cancellation source.
+vi_p915_input:
+    cp VI_ESC
+    jp z,vi_p915_cancel
+    cp 10
+    jp z,vi_p915_commit
+    cp 13
+    jp z,vi_p915_commit
+    ld b,a
+    ld a,(vi_search_edit_len)
+    cp VI_SEARCH_CAPACITY
+    jr nc,vi_p915_nomem
+    ld e,a
+    ld d,0
+    ld hl,vi_search_edit_buf
+    add hl,de
+    ld a,b
+    ld (hl),a
+    ld a,(vi_search_edit_len)
+    inc a
+    ld (vi_search_edit_len),a
+    xor a
+    ret
+
+vi_p915_cancel:
+    xor a
+    ld (vi_search_entry),a
+    ; p905 escape returns to normal, clears transient command-line state and
+    ; status, but does not touch vi_search_pattern/len/dir or file bytes.
+    jp vi_p905_escape
+
+vi_p915_commit:
+    ld a,(vi_search_edit_len)
+    or a
+    jr z,vi_p915_invalid
+    ld (vi_search_len),a
+    ld c,a
+    ld b,0
+    ld hl,vi_search_edit_buf
+    ld de,vi_search_pattern
+    ldir
+    ld a,1
+    ld (vi_search_dir),a
+    xor a
+    ld (vi_search_entry),a
+    ld a,VI_MODE_NORMAL
+    ld (vi_editor_mode),a
+    call vi_p905_clear_status
+    ret c
+    call vi_p905_cursor_block
+    ret c
+    jp vi_p915_search_forward
+
+vi_p915_repeat_same:
+    ld a,(vi_search_len)
+    or a
+    jr z,vi_p915_unsupported
+    ld a,(vi_search_dir)
+    or a
+    jp z,vi_p915_search_backward
+    jp vi_p915_search_forward
+
+vi_p915_repeat_opposite:
+    ld a,(vi_search_len)
+    or a
+    jr z,vi_p915_unsupported
+    ld a,(vi_search_dir)
+    or a
+    jp z,vi_p915_search_forward
+    jp vi_p915_search_backward
+
+vi_p915_search_forward:
+    call vi_p915_last_start
+    ret c
+    ld (vi_search_last),hl
+    ld hl,(vi_cursor_off)
+    inc hl
+    ld (vi_search_candidate),hl
+vi_p915_forward_loop:
+    ld hl,(vi_search_last)
+    ld de,(vi_search_candidate)
+    or a
+    sbc hl,de
+    jr c,vi_p915_notfound
+    ld hl,(vi_search_candidate)
+    call vi_p915_match_at
+    jr nc,vi_p915_found
+    ld hl,(vi_search_candidate)
+    inc hl
+    ld (vi_search_candidate),hl
+    jr vi_p915_forward_loop
+
+vi_p915_search_backward:
+    call vi_p915_last_start
+    ret c
+    ld (vi_search_last),hl
+    ld hl,(vi_cursor_off)
+    ld a,h
+    or l
+    jr z,vi_p915_notfound
+    dec hl
+    ld (vi_search_candidate),hl
+vi_p915_backward_loop:
+    ; candidates beyond the last full-pattern start cannot match.
+    ld hl,(vi_search_last)
+    ld de,(vi_search_candidate)
+    or a
+    sbc hl,de
+    jr c,vi_p915_backward_next
+    ld hl,(vi_search_candidate)
+    call vi_p915_match_at
+    jr nc,vi_p915_found
+vi_p915_backward_next:
+    ld hl,(vi_search_candidate)
+    ld a,h
+    or l
+    jr z,vi_p915_notfound
+    dec hl
+    ld (vi_search_candidate),hl
+    jr vi_p915_backward_loop
+
+; Return HL=last legal start; carry if pattern cannot fit.
+vi_p915_last_start:
+    ld a,(vi_search_len)
+    or a
+    jr z,vi_p915_unsupported
+    ld e,a
+    ld d,0
+    ld hl,(vi_buffer_len)
+    or a
+    sbc hl,de
+    ret nc
+    ld a,E_NOENT
+    scf
+    ret
+
+; HL=candidate. Carry clear only for an exact byte-for-byte match.
+vi_p915_match_at:
+    ld (vi_search_match_pos),hl
+    xor a
+    ld (vi_search_match_index),a
+vi_p915_match_loop:
+    ld a,(vi_search_match_index)
+    ld b,a
+    ld a,(vi_search_len)
+    cp b
+    jr z,vi_p915_match_yes
+    ld e,b
+    ld d,0
+    ld hl,(vi_search_match_pos)
+    add hl,de
+    call vi_p903_get_byte
+    ld c,a
+    ld a,(vi_search_match_index)
+    ld e,a
+    ld d,0
+    ld hl,vi_search_pattern
+    add hl,de
+    ld a,(hl)
+    cp c
+    jr nz,vi_p915_match_no
+    ld a,(vi_search_match_index)
+    inc a
+    ld (vi_search_match_index),a
+    jr vi_p915_match_loop
+vi_p915_match_yes:
+    xor a
+    ret
+vi_p915_match_no:
+    scf
+    ret
+
+vi_p915_found:
+    ld hl,(vi_search_candidate)
+    ld (vi_cursor_off),hl
+    xor a
+    ret
+vi_p915_notfound:
+    ld a,E_NOENT
+    scf
+    ret
+vi_p915_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+vi_p915_nomem:
+    ld a,E_NOMEM
+    scf
+    ret
+
+vi_search_entry: db 0
+vi_search_edit_len: db 0
+vi_search_edit_buf: defs VI_SEARCH_CAPACITY,0
+vi_search_len: db 0
+vi_search_dir: db 1
+vi_search_pattern: defs VI_SEARCH_CAPACITY,0
+vi_search_candidate: dw 0
+vi_search_last: dw 0
+vi_search_match_pos: dw 0
+vi_search_match_index: db 0
+vi_search_prompt: db '/'
     ENDM
