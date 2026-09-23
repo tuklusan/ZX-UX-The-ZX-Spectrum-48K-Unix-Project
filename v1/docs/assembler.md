@@ -28,3 +28,18 @@ memory forms use signed displacements and later encoder steps enforce the exact
 
 Inventory comparison is case-insensitive for mnemonic spelling only. ZX-UX symbols,
 object names, and link-visible names remain case-sensitive.
+
+
+## P10.17 opcode coverage closure
+
+The durable coverage map is `v1/tests/compiler/as-opcode-coverage`. It contains
+exactly one row for every row in the frozen P10.10 opcode inventory and binds that
+row to the qualified encoder step P10.11 through P10.16. P10.17 requires zero
+missing inventory rows, zero duplicate rows, zero extra undocumented rows, and no
+portable-baseline SLL or undocumented indexed-result aliases.
+
+The native aggregate `EMIT_P10_AS_OPCODE_COVERAGE` expands all six qualified
+encoder families. P10.17 validates the complete row mapping against the frozen
+inventory, reassembles representative bytes with the certified SjASMPlus oracle,
+and executes one target-side checkpoint from every encoder family. This closes
+documented opcode/addressing coverage before OBJ1 writer and lifecycle work.
