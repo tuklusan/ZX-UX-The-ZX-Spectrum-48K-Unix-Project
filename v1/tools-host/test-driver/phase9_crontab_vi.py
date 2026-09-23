@@ -308,9 +308,15 @@ gate_end:
         sy=phase3_open_descriptions._symbols(build/"p920-crontab.sym",("crontab_edit","E_AGAIN"))
         gate=(build/"p920-gateway.bin").read_bytes()
         # Resident vi, valid first edit: one editor run, one validated atomic commit.
-        code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["crontab_edit"]))
-        code+=expect_byte(SPAWNS,1)+expect_byte(RENAMES,1)+expect_byte(LASTFLAGS,0)+expect_byte(EXITCODE,0)+phase1._jp(PASS_PC)
-        run_case(root,"resident-valid",code,patch(image,gate,0))
+        for check_name,address,value in (
+            ("resident-valid-spawns",SPAWNS,1),
+            ("resident-valid-renames",RENAMES,1),
+            ("resident-valid-flags",LASTFLAGS,0),
+            ("resident-valid-exit",EXITCODE,0),
+        ):
+            code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["crontab_edit"]))
+            code+=expect_byte(address,value)+phase1._jp(PASS_PC)
+            run_case(root,check_name,code,patch(image,gate,0))
         # First edited CFG is invalid: no rename then; editor runs again; only valid retry commits.
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["crontab_edit"]))
         code+=expect_byte(SPAWNS,2)+expect_byte(RENAMES,1)+expect_byte(LASTFLAGS,0)+expect_byte(EXITCODE,0)+phase1._jp(PASS_PC)
