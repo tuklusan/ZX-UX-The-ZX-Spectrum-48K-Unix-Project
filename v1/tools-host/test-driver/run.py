@@ -250,6 +250,7 @@ import phase8_echo_regression
 import phase8_pipe_matrix
 import phase8_cron_transaction
 import phase8_acceptance
+import phase9_vi_skeleton
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
 from media_retention import (
     capture_project_media,
@@ -637,6 +638,10 @@ def dispatch(root: Path, action: str, step: str):
         return phase8_acceptance.dispatch(root, action, step, **kwargs)
     if step.startswith("P8."):
         raise DriverError(f"numbered Phase-8 step is not registered: {step}")
+    if step == "P9.01":
+        return phase9_vi_skeleton.dispatch(root, action, step, **kwargs)
+    if step.startswith("P9."):
+        raise DriverError(f"numbered Phase-9 step is not registered: {step}")
     module = E0_MODULE.get(step)
     if module is not None:
         return module.dispatch(root, action, step, **kwargs)
@@ -797,6 +802,10 @@ def prerequisite_statuses(step: str) -> dict[str, str]:
         number = int(step.split(".", 1)[1])
         if 1 <= number <= 40:
             return {"P7.21": "PASS"} if number == 1 else {f"P8.{number - 1:02d}": "PASS"}
+    if step.startswith("P9."):
+        number = int(step.split(".", 1)[1])
+        if 1 <= number <= 24:
+            return {"P8.40": "PASS"} if number == 1 else {f"P9.{number - 1:02d}": "PASS"}
     return {}
 
 
