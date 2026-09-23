@@ -1961,3 +1961,16 @@ as_p1016_error:
     scf
     ret
     ENDM
+
+
+; P10.17 complete documented opcode coverage closure.
+; This aggregate expands every encoder family qualified by P10.11-P10.16.
+; The machine-readable row authority is v1/tests/compiler/as-opcode-coverage.
+    MACRO EMIT_P10_AS_OPCODE_COVERAGE
+    EMIT_P10_AS_LD_ENCODER
+    EMIT_P10_AS_ALU_ENCODER
+    EMIT_P10_AS_CONTROL_ENCODER
+    EMIT_P10_AS_BIT_ENCODER
+    EMIT_P10_AS_SPECIAL_ENCODER
+    EMIT_P10_AS_BLOCK_IO_ENCODER
+    ENDM
