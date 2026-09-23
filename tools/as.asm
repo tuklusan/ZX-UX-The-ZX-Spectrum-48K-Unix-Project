@@ -581,3 +581,116 @@ as_p1006_name_arg: dw 0
 as_p1006_value_arg: dw 0
 as_p1006_table: defs AS_P1006_MAX_SYMBOLS*AS_P1006_RECORD_SIZE,0
     ENDM
+
+
+; P10.07 DB/DW/DS directive emission primitives.
+    MACRO EMIT_P10_AS_DIRECTIVE_ROUTINES
+AS_P1007_BUFFER_LIMIT    EQU 32768
+
+as_p1007_reset:
+    ld (as_p1007_base),hl
+    ld (as_p1007_cursor),hl
+    ld (as_p1007_limit),de
+    xor a
+    ret
+
+; A=byte. Transactionally append one DB byte.
+as_p1007_db:
+    push af
+    call as_p1007_reserve_one
+    jr c,as_p1007_db_fail
+    pop af
+    ld hl,(as_p1007_cursor)
+    ld (hl),a
+    inc hl
+    ld (as_p1007_cursor),hl
+    xor a
+    ret
+as_p1007_db_fail:
+    pop af
+    ld a,E_FORMAT
+    scf
+    ret
+
+; DE=word. Append little-endian DW.
+as_p1007_dw:
+    push de
+    ld bc,2
+    call as_p1007_reserve
+    jr c,as_p1007_dw_fail
+    pop de
+    ld hl,(as_p1007_cursor)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    inc hl
+    ld (as_p1007_cursor),hl
+    xor a
+    ret
+as_p1007_dw_fail:
+    pop de
+    ld a,E_FORMAT
+    scf
+    ret
+
+; BC=count. Reserve DS bytes, deterministically zero-filled.
+as_p1007_ds:
+    push bc
+    call as_p1007_reserve
+    jr c,as_p1007_ds_fail
+    pop bc
+    ld hl,(as_p1007_cursor)
+    ld a,b
+    or c
+    jr z,as_p1007_ds_done
+    xor a
+as_p1007_ds_loop:
+    ld (hl),a
+    inc hl
+    dec bc
+    ld a,b
+    or c
+    jr nz,as_p1007_ds_loop
+as_p1007_ds_done:
+    ld (as_p1007_cursor),hl
+    xor a
+    ret
+as_p1007_ds_fail:
+    pop bc
+    ld a,E_FORMAT
+    scf
+    ret
+
+as_p1007_reserve_one:
+    ld bc,1
+as_p1007_reserve:
+    ld hl,(as_p1007_cursor)
+    push hl
+    add hl,bc
+    jr c,as_p1007_reserve_fail_pop
+    ld de,(as_p1007_limit)
+    or a
+    sbc hl,de
+    jr c,as_p1007_reserve_ok_pop
+    jr z,as_p1007_reserve_ok_pop
+as_p1007_reserve_fail_pop:
+    pop hl
+    ld a,E_FORMAT
+    scf
+    ret
+as_p1007_reserve_ok_pop:
+    pop hl
+    xor a
+    ret
+
+as_p1007_size:
+    ld hl,(as_p1007_cursor)
+    ld de,(as_p1007_base)
+    or a
+    sbc hl,de
+    ret
+
+as_p1007_base:   dw 0
+as_p1007_cursor: dw 0
+as_p1007_limit:  dw 0
+    ENDM
