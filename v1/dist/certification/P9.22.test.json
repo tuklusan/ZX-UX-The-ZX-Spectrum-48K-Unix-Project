@@ -1,0 +1,127 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p922-present",
+      "passed": true
+    },
+    {
+      "name": "edit-rows-0-22",
+      "passed": true
+    },
+    {
+      "name": "hard-col63",
+      "passed": true
+    },
+    {
+      "name": "central-safe-emitter",
+      "passed": true
+    },
+    {
+      "name": "tab-storage-independent",
+      "passed": true
+    },
+    {
+      "name": "horizontal-offset-state",
+      "passed": true
+    },
+    {
+      "name": "negative-col64-oracle",
+      "passed": true
+    },
+    {
+      "name": "fuse-tab-logical-column-exact",
+      "passed": true
+    },
+    {
+      "name": "fuse-horizontal-follow-64-columns",
+      "passed": true
+    },
+    {
+      "name": "fuse-number-gutter-exact-five-columns",
+      "passed": true
+    },
+    {
+      "name": "fuse-row22-col63-safe-canaries",
+      "passed": true
+    },
+    {
+      "name": "fuse-instrumented-col64-rejected-before-write",
+      "passed": true
+    },
+    {
+      "name": "fuse-row23-edit-write-rejected",
+      "passed": true
+    },
+    {
+      "name": "fuse-tab-render-does-not-mutate-byte",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p922-vi.lst",
+        "--sym=p922-vi.sym",
+        "p922-vi.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 21,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 6442 lines, work time: 0.020 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p922-vi.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 43,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 44920, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 13204, \"image_size\": 8165, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 8189, \"relocations\": [], \"stored_length\": 8189, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p922-gateway.lst",
+        "--sym=p922-gateway.sym",
+        "p922-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 313 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/vi.asm": "89f8d9a090b7830ecf8c80528e341359c98247446c1124596ca07f674e053456",
+    "v1/build/p922-vi.mex1": "23e4536dc87c0aee1b5ab51aeb3777297f021c68000daa74827aa0868ecedc5d",
+    "v1/build/p922-vi.tap": "771ff3caaa287c01c815eea305b3fbc76be888b7a877d9d53406176b22ff4b5a",
+    "v1/dist/certification/P9.21.test.json": "15f74fce2e8de573620e0567da2500ba776848b07aa6e4ec7be65550c513ad9f",
+    "v1/tools-host/test-driver/phase9_vi_viewport.py": "5a41508dc0592877935909c07b2c68e6eadbdf72513dfa0bdd0ea84e8e80992b",
+    "v1/tools-host/test-driver/run.py": "eb6ae45a388d8251b50778cfbdc198d280ef396cab4866f08780c7b314472605"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P9.21": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "5262995a96c5b44028ba2dd4a0c21cd72b03f351",
+  "status": "PASS",
+  "step": "P9.22",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
