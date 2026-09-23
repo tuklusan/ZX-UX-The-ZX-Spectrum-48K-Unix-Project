@@ -21,6 +21,7 @@ from phase8_common import inspect_mex, make_tap, mex1, word
 
 BASE=0xC000
 # Exact branch-repair candidate.
+# Final repaired qualification head.
 GATE=0xE000
 CURSOR=0xA300
 ROW=0xA301
