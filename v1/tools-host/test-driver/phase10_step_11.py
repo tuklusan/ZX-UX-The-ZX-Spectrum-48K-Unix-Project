@@ -166,7 +166,7 @@ fixture_end:
 
         # Emit one relocation and validate all six bytes in target RAM.
         rb=syms["relocbuf"]
-        code=(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._ld_bc(rb)+phase1._ld_hl(0x1234)+phase1._ld_de(0x0002)
+        code=(b"\xF3"+phase1._ld_sp(0xBFC0)+b"\x01"+phase1._word(rb)+phase1._ld_hl(0x1234)+phase1._ld_de(0x0002)
               +phase1._call(syms["as_p1011_abs16_reloc"])
               +phase1._ld_hl(rb)+bytes((0x7E,0xFE,0x34))+phase1._jp_nz(FAIL_PC)
               +bytes((0x23,0x7E,0xFE,0x12))+phase1._jp_nz(FAIL_PC)
