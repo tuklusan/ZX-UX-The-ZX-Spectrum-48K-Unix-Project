@@ -447,7 +447,7 @@ as_p1006_define:
     ld (as_p1006_name_arg),hl
     ld (as_p1006_value_arg),de
     call as_p1006_validate_name
-    jr c,as_p1006_error
+    jp c,as_p1006_error
     ld a,(as_p1006_count)
     ld b,a
     ld ix,as_p1006_table
@@ -463,14 +463,14 @@ as_p1006_dup_loop:
     call as_p1006_name_equal
     pop ix
     pop bc
-    jr z,as_p1006_error
+    jp z,as_p1006_error
     ld de,AS_P1006_RECORD_SIZE
     add ix,de
     djnz as_p1006_dup_loop
 as_p1006_store:
     ld a,(as_p1006_count)
     cp AS_P1006_MAX_SYMBOLS
-    jr nc,as_p1006_error
+    jp nc,as_p1006_error
     ld hl,(as_p1006_name_arg)
     push ix
     pop de
@@ -483,7 +483,7 @@ as_p1006_copy_name:
     or a
     jr z,as_p1006_zero_tail
     djnz as_p1006_copy_name
-    jr as_p1006_error
+    jp as_p1006_error
 as_p1006_zero_tail:
     dec b
     jr z,as_p1006_store_value
@@ -494,9 +494,11 @@ as_p1006_zero_loop:
     djnz as_p1006_zero_loop
 as_p1006_store_value:
     ld hl,(as_p1006_value_arg)
-    ld (de),l
+    ld a,l
+    ld (de),a
     inc de
-    ld (de),h
+    ld a,h
+    ld (de),a
     ld a,(as_p1006_count)
     inc a
     ld (as_p1006_count),a
@@ -562,7 +564,7 @@ as_p1006_validate_loop:
     inc b
     ld a,b
     cp 16
-    jr nc,as_p1006_error
+    jp nc,as_p1006_error
     inc hl
     ld a,(hl)
     or a
