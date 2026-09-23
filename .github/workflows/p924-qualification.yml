@@ -45,6 +45,7 @@ jobs:
             tools/finalize_phase9_evidence.py \
             tools/test_phase9_evidence_negative.py \
             v1/tools-host/test-driver/phase9_acceptance.py \
+            v1/tools-host/test-driver/phase9_vi_modes.py \
             v1/tools-host/test-driver/run.py | sort > /tmp/expected
           diff -u /tmp/expected /tmp/changed
           git diff --check "$P924_BASE" HEAD
@@ -57,6 +58,7 @@ jobs:
           for scan in 1 2 3; do
             python3 -m py_compile \
               v1/tools-host/test-driver/phase9_acceptance.py \
+              v1/tools-host/test-driver/phase9_vi_modes.py \
               v1/tools-host/test-driver/run.py \
               tools/check_phase9_evidence.py \
               tools/finalize_phase9_evidence.py \
@@ -74,6 +76,7 @@ jobs:
               tools/finalize_phase9_evidence.py \
               tools/test_phase9_evidence_negative.py \
               v1/tools-host/test-driver/phase9_acceptance.py \
+              v1/tools-host/test-driver/phase9_vi_modes.py \
               v1/tools-host/test-driver/run.py \
               v1/dist/certification/P9.23.test.json | sha256sum | awk '{print $1}')"
             if test -z "$baseline"; then baseline="$digest"; else test "$baseline" = "$digest"; fi
