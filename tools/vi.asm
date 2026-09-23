@@ -1330,10 +1330,15 @@ vi_p909_append_ready:
 ; cursor remains unchanged.  On success the insertion offset advances by one.
 vi_p909_insert_byte:
     push af
+    call vi_p914_stage_state
     ld hl,(vi_cursor_off)
+    ld (vi_edit_pos),hl
     pop af
     call vi_p903_insert_byte
     ret c
+    ld hl,(vi_edit_pos)
+    ld bc,1
+    call vi_p914_commit_insert
     ld hl,(vi_cursor_off)
     inc hl
     ld (vi_cursor_off),hl
@@ -1361,10 +1366,14 @@ vi_p910_above:
     ld (vi_open_pos),hl
 
 vi_p910_insert:
+    call vi_p914_stage_state
     ld a,10
     ld hl,(vi_open_pos)
     call vi_p903_insert_byte
     ret c
+    ld hl,(vi_open_pos)
+    ld bc,1
+    call vi_p914_commit_insert
     ld hl,(vi_open_pos)
     ld a,(vi_open_cmd)
     cp 'o'
@@ -1388,6 +1397,7 @@ vi_p911_x:
     sbc hl,de
     jp z,vi_p911_safe
     jp c,vi_p911_safe
+    call vi_p914_stage_state
     xor a
     ld (vi_yank_linewise),a
     ld hl,(vi_cursor_off)
@@ -1397,6 +1407,8 @@ vi_p911_x:
     ld hl,(vi_cursor_off)
     call vi_p903_delete_byte
     ret c
+    ld hl,(vi_cursor_off)
+    call vi_p914_commit_delete_from_yank
     call vi_p911_clamp_cursor
     xor a
     ret
@@ -1419,6 +1431,7 @@ vi_p911_D:
     ld a,b
     or c
     jp z,vi_p911_safe
+    call vi_p914_stage_state
     xor a
     ld (vi_yank_linewise),a
     ld hl,(vi_cursor_off)
@@ -1437,6 +1450,8 @@ vi_p911_D_loop:
     dec hl
     jr vi_p911_D_loop
 vi_p911_D_done:
+    ld hl,(vi_edit_prev_cursor)
+    call vi_p914_commit_delete_from_yank
     call vi_p911_clamp_cursor
     xor a
     ret
@@ -1444,6 +1459,7 @@ vi_p911_D_done:
 ; dd: delete/yank one complete logical line. If an LF terminates the line it
 ; is included. For the final unterminated line only content bytes are removed.
 vi_p911_dd:
+    call vi_p914_stage_state
     ld hl,(vi_buffer_len)
     ld a,h
     or l
@@ -1487,6 +1503,8 @@ vi_p911_dd_loop:
     dec hl
     jr vi_p911_dd_loop
 vi_p911_dd_done:
+    ld hl,(vi_delete_start)
+    call vi_p914_commit_delete_from_yank
     ld hl,(vi_delete_start)
     ld (vi_cursor_off),hl
     call vi_p911_clamp_cursor
@@ -1598,6 +1616,7 @@ vi_p912_put:
     ld (vi_put_cmd),a
     call vi_p912_preflight
     ret c
+    call vi_p914_stage_state
     ld hl,(vi_yank_len)
     ld a,h
     or l
@@ -1660,6 +1679,9 @@ vi_p912_put_loop:
     dec bc
     jr vi_p912_put_loop
 vi_p912_put_done:
+    ld hl,(vi_put_start)
+    ld bc,(vi_yank_len)
+    call vi_p914_commit_insert
     ld hl,(vi_put_start)
     ld (vi_cursor_off),hl
     ld a,1
@@ -1726,10 +1748,19 @@ vi_p913_r_char:
     jr z,vi_p913_r_missing
     xor a
     ld (vi_replace_pending),a
+    call vi_p914_stage_state
+    ld hl,(vi_cursor_off)
+    push bc
+    call vi_p903_get_byte
+    ld (vi_replace_old),a
+    pop bc
     ld hl,(vi_cursor_off)
     ld a,b
     call vi_p913_set_byte
     ret c
+    ld hl,(vi_cursor_off)
+    ld a,(vi_replace_old)
+    call vi_p914_commit_replace
     ld a,1
     ld (vi_dirty),a
     xor a
@@ -1755,6 +1786,8 @@ vi_p913_J:
     ret z
     ret c
     call vi_p906_current_end
+    ld (vi_join_pos),hl
+    call vi_p914_stage_state
     ; current_end points at the LF for every non-final logical line.
     ld a,' '
     call vi_p913_set_byte
@@ -1762,6 +1795,9 @@ vi_p913_J:
     ; Removing the LF line boundary requires a fresh compact index.
     call vi_p903_reindex
     ret c
+    ld hl,(vi_join_pos)
+    ld a,10
+    call vi_p914_commit_replace
     ld a,1
     ld (vi_dirty),a
     xor a
@@ -1794,4 +1830,153 @@ vi_p913_set_physical:
 
 vi_replace_pending: db 0
 vi_replace_byte: db 0
+vi_replace_old: db 0
+vi_join_pos: dw 0
+
+; P9.14 exact one-level undo.  This is a bounded delta record, never a full
+; duplicate file image. kind 1 deletes prior insertion, kind 2 reinserts prior
+; deletion bytes, kind 3 restores one replaced byte.
+VI_UNDO_INSERT          EQU 1
+VI_UNDO_DELETE          EQU 2
+VI_UNDO_REPLACE         EQU 3
+
+vi_p914_stage_state:
+    ld a,(vi_dirty)
+    ld (vi_edit_prev_dirty),a
+    ld hl,(vi_cursor_off)
+    ld (vi_edit_prev_cursor),hl
+    ret
+
+; HL insertion start, BC insertion length.
+vi_p914_commit_insert:
+    ld (vi_undo_pos),hl
+    ld (vi_undo_len),bc
+    ld a,(vi_edit_prev_dirty)
+    ld (vi_undo_dirty),a
+    ld hl,(vi_edit_prev_cursor)
+    ld (vi_undo_cursor),hl
+    ld a,VI_UNDO_INSERT
+    ld (vi_undo_kind),a
+    ret
+
+; HL deletion start; source bytes are the single yank buffer.
+vi_p914_commit_delete_from_yank:
+    ld (vi_undo_pos),hl
+    ld bc,(vi_yank_len)
+    ld (vi_undo_len),bc
+    ld a,(vi_edit_prev_dirty)
+    ld (vi_undo_dirty),a
+    ld hl,(vi_edit_prev_cursor)
+    ld (vi_undo_cursor),hl
+    ld hl,vi_yank_buf
+    ld de,vi_undo_data
+    ldir
+    ld a,VI_UNDO_DELETE
+    ld (vi_undo_kind),a
+    ret
+
+; HL replacement offset, A prior byte.
+vi_p914_commit_replace:
+    ld (vi_undo_pos),hl
+    ld (vi_undo_data),a
+    ld hl,1
+    ld (vi_undo_len),hl
+    ld a,(vi_edit_prev_dirty)
+    ld (vi_undo_dirty),a
+    ld hl,(vi_edit_prev_cursor)
+    ld (vi_undo_cursor),hl
+    ld a,VI_UNDO_REPLACE
+    ld (vi_undo_kind),a
+    ret
+
+vi_p914_undo:
+    ld a,(vi_undo_kind)
+    cp VI_UNDO_INSERT
+    jp z,vi_p914_undo_insert
+    cp VI_UNDO_DELETE
+    jp z,vi_p914_undo_delete
+    cp VI_UNDO_REPLACE
+    jp z,vi_p914_undo_replace
+    ld a,E_NOTSUP
+    scf
+    ret
+
+vi_p914_undo_insert:
+    ld hl,(vi_undo_len)
+vi_p914_undo_insert_loop:
+    ld a,h
+    or l
+    jr z,vi_p914_finish
+    push hl
+    ld hl,(vi_undo_pos)
+    call vi_p903_delete_byte
+    pop hl
+    ret c
+    dec hl
+    jr vi_p914_undo_insert_loop
+
+vi_p914_undo_delete:
+    ; Preflight the complete inverse before changing the buffer.
+    ld a,(vi_fail_gap_alloc)
+    or a
+    jr nz,vi_p914_nomem
+    ld a,(vi_fail_index_alloc)
+    or a
+    jr nz,vi_p914_nomem
+    ld hl,(vi_gap_end)
+    ld de,(vi_gap_start)
+    or a
+    sbc hl,de
+    ld de,(vi_undo_len)
+    or a
+    sbc hl,de
+    jr c,vi_p914_nomem
+    ld hl,(vi_undo_pos)
+    ld de,vi_undo_data
+    ld bc,(vi_undo_len)
+vi_p914_undo_delete_loop:
+    ld a,b
+    or c
+    jr z,vi_p914_finish
+    ld a,(de)
+    push bc
+    push de
+    push hl
+    call vi_p903_insert_byte
+    pop hl
+    pop de
+    pop bc
+    ret c
+    inc hl
+    inc de
+    dec bc
+    jr vi_p914_undo_delete_loop
+
+vi_p914_undo_replace:
+    ld hl,(vi_undo_pos)
+    ld a,(vi_undo_data)
+    call vi_p913_set_byte
+    ret c
+    call vi_p903_reindex
+
+vi_p914_finish:
+    ld hl,(vi_undo_cursor)
+    ld (vi_cursor_off),hl
+    ld a,(vi_undo_dirty)
+    ld (vi_dirty),a
+    xor a
+    ld (vi_undo_kind),a
+    ret
+
+vi_p914_nomem:
+    ld a,E_NOMEM
+    scf
+    ret
+
+vi_edit_prev_dirty: db 0
+vi_edit_prev_cursor: dw 0
+vi_undo_len: dw 0
+vi_undo_dirty: db 0
+vi_undo_cursor: dw 0
+vi_undo_data: defs VI_YANK_CAPACITY,0
     ENDM
