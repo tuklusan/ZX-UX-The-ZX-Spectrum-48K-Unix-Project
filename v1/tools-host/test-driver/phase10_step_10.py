@@ -17,7 +17,7 @@ import re
 from pathlib import Path
 from driver_core import DriverError
 
-# P10.10 exact-candidate marker.
+# P10.10 exact-candidate marker; dispatch retry.
 class P1010Error(DriverError):
     pass
 
