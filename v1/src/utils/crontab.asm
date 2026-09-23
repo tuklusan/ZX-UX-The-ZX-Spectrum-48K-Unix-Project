@@ -271,6 +271,8 @@ crontab_spawn_vi:
     ld (crontab_proc1+13),a
     ld (crontab_proc1+14),a
     ld (crontab_proc1+15),a
+    call crontab_authorize_vi_tape
+    ret c
     ld hl,crontab_proc1
     ld a,SYS_SPAWN
     call SYSCALL_GATEWAY
@@ -281,6 +283,54 @@ crontab_spawn_vi:
     ld hl,crontab_wait
     ld a,SYS_WAIT
     jp SYSCALL_GATEWAY
+
+crontab_authorize_vi_tape:
+    ; Resolve /bin/vi first.  A tape-backed editor is authorized only after
+    ; explicit foreground consent; declining returns E_AGAIN before SYS_SPAWN.
+    ld hl,crontab_vi_path
+    ld (crontab_vi_stat_req),hl
+    ld hl,crontab_vi_stat_out
+    ld (crontab_vi_stat_req+2),hl
+    ld hl,crontab_vi_stat_req
+    ld a,SYS_STAT
+    call SYSCALL_GATEWAY
+    ret c
+    xor a
+    ld (crontab_proc1+13),a
+    ld a,(crontab_vi_stat_out+7)
+    cp STATE_TAPE_BACKED
+    ret nz
+    ld hl,crontab_tape_prompt
+    ld bc,52
+    ld a,SYS_CON_WRITE
+    call SYSCALL_GATEWAY
+    ret c
+    ld de,0
+    ld hl,crontab_tape_reply
+    ld bc,1
+    ld a,SYS_READ
+    call SYSCALL_GATEWAY
+    ret c
+    ld a,h
+    or a
+    jr nz,crontab_tape_decline
+    ld a,l
+    cp 1
+    jr nz,crontab_tape_decline
+    ld a,(crontab_tape_reply)
+    cp 'y'
+    jr z,crontab_tape_accept
+    cp 'Y'
+    jr nz,crontab_tape_decline
+crontab_tape_accept:
+    ld a,1
+    ld (crontab_proc1+13),a
+    xor a
+    ret
+crontab_tape_decline:
+    ld a,E_AGAIN
+    scf
+    ret
 
 crontab_start_cron:
     ld hl,crontab_cron_path
@@ -464,6 +514,13 @@ crontab_exit_a:
 
 crontab_live: db '/etc/crontab',0
 crontab_vi_path: db '/bin/vi',0
+crontab_vi_stat_req: defs 4,0
+crontab_vi_stat_out: defs 10,0
+crontab_tape_prompt:
+    db 'c','a','s','s','e','t','t','e',' ','r','e','q','u','i','r','e','d',';',' '
+    db 'p','o','s','i','t','i','o','n',' ','t','a','p','e','/','P','L','A','Y'
+    db ',',' ','t','h','e','n',' ','p','r','e','s','s',' ','y',':',' '
+crontab_tape_reply: db 0
 crontab_cron_path: db '/bin/cron',0
 crontab_temp_prefix: db '/tmp/.ct'
 crontab_temp: defs 24,0
