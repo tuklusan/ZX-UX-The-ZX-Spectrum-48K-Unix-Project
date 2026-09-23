@@ -511,11 +511,10 @@ vi_p903_reindex_loop:
     ld d,0
     sla e
     rl d
-    push hl
     ld hl,vi_line_stage
     add hl,de
     ex de,hl
-    pop hl
+    ld hl,(vi_scan_pos)
     inc hl
     ld a,l
     ld (de),a
@@ -525,7 +524,6 @@ vi_p903_reindex_loop:
     ld a,(vi_stage_line_count)
     inc a
     ld (vi_stage_line_count),a
-    dec hl
 vi_p903_reindex_next:
     ld hl,(vi_scan_pos)
     inc hl
