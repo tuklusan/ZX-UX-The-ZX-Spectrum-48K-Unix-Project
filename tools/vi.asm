@@ -1256,7 +1256,7 @@ vi_word_cmd: db 0
 vi_word_class: db 0
 vi_word_end: dw 0
 
-; P9.08 case-sensitive gg / G line motions.
+; P9.08 case-sensitive gg / G line motions (exact candidate).
 ; Single 'g' only arms the pending state.  A second lowercase 'g' selects
 ; the first logical line.  Uppercase 'G' independently selects the last.
 vi_p908_key:
