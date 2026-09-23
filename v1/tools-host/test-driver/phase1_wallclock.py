@@ -93,7 +93,7 @@ def _contracts(root: Path) -> list[dict[str, object]]:
     boot = _asm(root / "v1/src/boot/entry.asm")
     architecture = " ".join((root / "docs/01-ZX-UX-ARCHITECTURE-REV12.md").read_text(encoding="utf-8").lower().split())
     wall = _block(interrupt, "zx48_interrupt_wall:", "zx48_interrupt_break:")
-    time_get = _block(syscall, "zx48_sys_time_get:", "zx48_sys_time_set:")
+    time_get = _block(syscall, "zx48_sys_time_get:", "zx48_time_set_handler:")
     boot_impl = _block(boot, "zx48_boot_main_impl:", "    endm")
     assertions = [
         {"name": "cold-init-exact", "passed": _init_ok(interrupt)},
