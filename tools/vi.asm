@@ -2822,4 +2822,94 @@ vi_p919_exit_if_requested:
 ; P9.20 real crontab -e integration contract. CFG is an editable object type;
 ; crontab launches this same /bin/vi image and validates the saved CFG itself.
 VI_P920_CFG_TYPE        EQU OBJ_CFG
+
+; P9.21 :set, :set number and :set nonumber.
+; HL points to the exact argument bytes following "set"; BC is the argument
+; length.  BC=0 reports the current supported option state.
+vi_p921_set_cmd:
+    ld a,b
+    or a
+    jp nz,vi_p921_bad
+    ld a,c
+    or a
+    jr z,vi_p921_report
+    cp 6
+    jr z,vi_p921_try_number
+    cp 8
+    jr z,vi_p921_try_nonumber
+    jp vi_p921_bad
+
+vi_p921_try_number:
+    ld de,vi_p921_number_word
+    ld b,6
+    call vi_p921_match
+    jp c,vi_p921_bad
+    ld a,1
+    ld (vi_option_number),a
+    ld a,5
+    ld (vi_view_gutter),a
+    ld a,59
+    ld (vi_view_width),a
+    xor a
+    ret
+
+vi_p921_try_nonumber:
+    ld de,vi_p921_nonumber_word
+    ld b,8
+    call vi_p921_match
+    jp c,vi_p921_bad
+    xor a
+    ld (vi_option_number),a
+    ld (vi_view_gutter),a
+    ld a,64
+    ld (vi_view_width),a
+    xor a
+    ret
+
+vi_p921_report:
+    call vi_p905_status_pos
+    ret c
+    ld a,(vi_option_number)
+    or a
+    jr z,vi_p921_report_off
+    ld hl,vi_p921_number_word
+    ld bc,6
+    ld a,SYS_CON_WRITE
+    jp SYSCALL_GATEWAY
+vi_p921_report_off:
+    ld hl,vi_p921_nonumber_word
+    ld bc,8
+    ld a,SYS_CON_WRITE
+    jp SYSCALL_GATEWAY
+
+; HL input, DE literal, B exact length. Carry set on mismatch.
+vi_p921_match:
+    ld a,b
+    or a
+    jr z,vi_p921_match_ok
+vi_p921_match_loop:
+    ld a,(de)
+    cp (hl)
+    jr nz,vi_p921_match_fail
+    inc de
+    inc hl
+    djnz vi_p921_match_loop
+vi_p921_match_ok:
+    xor a
+    ret
+vi_p921_match_fail:
+    ld a,E_INVAL
+    scf
+    ret
+
+vi_p921_bad:
+    ld a,E_INVAL
+    scf
+    ret
+
+vi_option_number: db 0
+vi_view_gutter: db 0
+vi_view_width: db 64
+vi_p921_number_word: db 'n','u','m','b','e','r'
+vi_p921_nonumber_word: db 'n','o','n','u','m','b','e','r'
     ENDM
