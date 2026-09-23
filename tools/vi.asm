@@ -2818,4 +2818,8 @@ vi_p919_exit_if_requested:
     or a
     ret z
     jp vi_normal_exit
+
+; P9.20 real crontab -e integration contract. CFG is an editable object type;
+; crontab launches this same /bin/vi image and validates the saved CFG itself.
+VI_P920_CFG_TYPE        EQU OBJ_CFG
     ENDM
