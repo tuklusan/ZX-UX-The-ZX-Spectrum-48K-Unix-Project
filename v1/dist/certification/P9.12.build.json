@@ -1,0 +1,76 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p912-present",
+      "passed": true
+    },
+    {
+      "name": "single-yank-buffer",
+      "passed": true
+    },
+    {
+      "name": "yy-entry",
+      "passed": true
+    },
+    {
+      "name": "distinct-p-P",
+      "passed": true
+    },
+    {
+      "name": "preflight-before-insert",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p912-vi.lst",
+        "--sym=p912-vi.sym",
+        "p912-vi.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 13,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 3668 lines, work time: 0.012 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p912-vi.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 39,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 42911, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 31282, \"image_size\": 4746, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 4770, \"relocations\": [], \"stored_length\": 4770, \"version\": 1}\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/vi.asm": "73c411aa8dd8dfe796c27ea1787d5b3b624ef9a1ae345ab2bd5ecfb37072230c",
+    "v1/build/p912-vi.mex1": "62a3dc9dcc02f9cc8b09960a422ef5c2c3af73d5a4698c7681184224880a0bbc",
+    "v1/build/p912-vi.tap": "4550eb961321948490d66572152c53df3e35a1db79b0c6177febc05c4387fa9c",
+    "v1/dist/certification/P9.11.test.json": "83b5d3811eb0528f65f318ea7371d17ffe2d12b019b523825ab7cd784deebb3d",
+    "v1/tools-host/test-driver/phase9_vi_yank_put.py": "127148093e61628d506ea3dc736f81e173284242401fccf110bb997e686a1110",
+    "v1/tools-host/test-driver/run.py": "3622b19f0201d562fd1cc82510bb8f942ff8883c1d12c14d272bafe09865ee4a"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P9.11": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "8fe86e2a297aa3eca945477dc102d53986c782a5",
+  "status": "PASS",
+  "step": "P9.12",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
