@@ -251,6 +251,7 @@ import phase8_pipe_matrix
 import phase8_cron_transaction
 import phase8_acceptance
 import phase9_vi_skeleton
+import phase9_vi_load
 # Phase-9 vi qualification dispatch.
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
 from media_retention import (
@@ -641,6 +642,8 @@ def dispatch(root: Path, action: str, step: str):
         raise DriverError(f"numbered Phase-8 step is not registered: {step}")
     if step == "P9.01":
         return phase9_vi_skeleton.dispatch(root, action, step, **kwargs)
+    if step == "P9.02":
+        return phase9_vi_load.dispatch(root, action, step, **kwargs)
     if step.startswith("P9."):
         raise DriverError(f"numbered Phase-9 step is not registered: {step}")
     module = E0_MODULE.get(step)
