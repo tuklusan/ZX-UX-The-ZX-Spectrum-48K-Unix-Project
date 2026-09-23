@@ -1,0 +1,53 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "inventory-nonempty",
+      "passed": true
+    },
+    {
+      "name": "all-scanned-source-mnemonics-covered",
+      "passed": true
+    },
+    {
+      "name": "every-row-positive-vector",
+      "passed": true
+    },
+    {
+      "name": "undocumented-sll-absent",
+      "passed": true
+    },
+    {
+      "name": "portable-inventory-bound-in-assembler",
+      "passed": true
+    },
+    {
+      "name": "negative-missing-used-mnemonic-detected",
+      "passed": true
+    },
+    {
+      "name": "negative-undocumented-form-detected",
+      "passed": true
+    }
+  ],
+  "commands": [],
+  "hashes": {
+    "tools/as.asm": "80824e38e3d14f3a28c657776aaec659cd34402fd6780f146c789b2919d42ce1",
+    "v1/dist/certification/P10.09.build.json": "2c88ef09f188406175cf93ec091a1d79b38c2010b5ece082adf9f9b92e5204e6",
+    "v1/dist/certification/P10.09.test.json": "ddaf82c65e8d00b88eaa9e8aa91c44bfb0a507a502622b1a3fb24420a9c53278",
+    "v1/docs/assembler.md": "e3a347196875868c53c9bfa9805d79c1e913c3279b31236ee62d7a61a29ffa7e",
+    "v1/tests/compiler/as-opcode-inventory": "9052d2f727116ab9d332b32b86683c14f0cda3b4ef11445a8e1d1f5aed7a9f9b",
+    "v1/tools-host/test-driver/phase10_step_10.py": "f2fec1bfa73128d012107e94420991f902c428b13a95eef2055cd3894839b337"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P10.09": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "f9fb14620d9d667cc079e61f300981bb6ebe22c5",
+  "status": "PASS",
+  "step": "P10.10",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
