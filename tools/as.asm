@@ -1044,3 +1044,210 @@ as_p1009_table: defs AS_P1009_MAX_BINDINGS*AS_P1009_RECORD_SIZE,0
 ; The exact portable documented-Z80 inventory is frozen in
 ; v1/tests/compiler/as-opcode-inventory. SLL and undocumented indexed-result
 ; aliases are deliberately outside the portable baseline.
+
+
+; P10.11 documented load/store encoder primitives.
+; Register codes follow the Z80 opcode fields: B,C,D,E,H,L,(HL),A = 0..7.
+; Pair codes: BC,DE,HL,SP = 0..3. Index selector: IX=0, IY=1.
+    MACRO EMIT_P10_AS_LD_ENCODER
+AS_P1011_REG_MEM EQU 6
+AS_P1011_REG_A   EQU 7
+AS_P1011_PAIR_SP EQU 3
+AS_P1011_IX      EQU 0
+AS_P1011_IY      EQU 1
+
+; B=destination r field, C=source r field. A=opcode.
+as_p1011_ld_r_r:
+    ld a,b
+    cp 8
+    jr nc,as_p1011_error
+    ld a,c
+    cp 8
+    jr nc,as_p1011_error
+    ld a,b
+    add a,a
+    add a,a
+    add a,a
+    or c
+    or $40
+    cp $76
+    jr z,as_p1011_error
+    or a
+    ret
+
+; B=destination r field. A=opcode for LD r,n.
+as_p1011_ld_r_n:
+    ld a,b
+    cp 8
+    jr nc,as_p1011_error
+    add a,a
+    add a,a
+    add a,a
+    or $06
+    or a
+    ret
+
+; B=rr field 0..3. A=opcode for LD rr,nn.
+as_p1011_ld_rr_nn:
+    ld a,b
+    cp 4
+    jr nc,as_p1011_error
+    rlca
+    rlca
+    rlca
+    rlca
+    or $01
+    or a
+    ret
+
+; B=rr field. C=0 means LD rr,(nn), C=1 means LD (nn),rr.
+; HL returns prefix/opcode: H=0 for unprefixed HL pair, otherwise H=$ED.
+as_p1011_ld_rr_mem:
+    ld a,b
+    cp 4
+    jr nc,as_p1011_error
+    ld a,c
+    cp 2
+    jr nc,as_p1011_error
+    ld a,b
+    cp 2
+    jr nz,as_p1011_ld_rr_mem_ed
+    ld h,0
+    ld a,c
+    or a
+    ld l,$2A
+    ret z
+    ld l,$22
+    ret
+as_p1011_ld_rr_mem_ed:
+    ld h,$ED
+    ld a,b
+    rlca
+    rlca
+    rlca
+    rlca
+    add a,$43
+    ld l,a
+    ld a,c
+    or a
+    ret nz
+    ld a,l
+    add a,8
+    ld l,a
+    xor a
+    ret
+
+; D=index selector 0 IX/1 IY, B=register, C=0 load r,(idx+d),
+; C=1 store (idx+d),r. Returns H=prefix, L=opcode.
+as_p1011_ld_index_r:
+    ld a,d
+    cp 2
+    jr nc,as_p1011_error
+    ld h,$DD
+    or a
+    jr z,as_p1011_index_prefix_done
+    ld h,$FD
+as_p1011_index_prefix_done:
+    ld a,b
+    cp 8
+    jr nc,as_p1011_error
+    cp AS_P1011_REG_MEM
+    jr z,as_p1011_error
+    ld a,c
+    cp 2
+    jr nc,as_p1011_error
+    or a
+    jr nz,as_p1011_index_store
+    ld a,b
+    add a,a
+    add a,a
+    add a,a
+    or $46
+    ld l,a
+    xor a
+    ret
+as_p1011_index_store:
+    ld a,b
+    or $70
+    ld l,a
+    xor a
+    ret
+
+; A=index selector 0 IX/1 IY. Returns H=prefix, L=$21 for LD IX/IY,nn.
+as_p1011_ld_index_nn:
+    cp 2
+    jr nc,as_p1011_error
+    ld h,$DD
+    or a
+    jr z,as_p1011_index_nn_done
+    ld h,$FD
+as_p1011_index_nn_done:
+    ld l,$21
+    xor a
+    ret
+
+; A=index selector. Returns H=prefix,L=$F9 for LD SP,IX/IY.
+as_p1011_ld_sp_index:
+    cp 2
+    jr nc,as_p1011_error
+    ld h,$DD
+    or a
+    jr z,as_p1011_sp_index_done
+    ld h,$FD
+as_p1011_sp_index_done:
+    ld l,$F9
+    xor a
+    ret
+
+; HL=parsed displacement. Accept exact mathematical -128..127 represented as
+; 16-bit two's complement; A receives encoded displacement byte.
+as_p1011_disp8:
+    ld a,h
+    or a
+    jr z,as_p1011_disp_positive
+    cp $FF
+    jr nz,as_p1011_error
+    ld a,l
+    cp $80
+    jr c,as_p1011_error
+    or a
+    ret
+as_p1011_disp_positive:
+    ld a,l
+    cp $80
+    jr nc,as_p1011_error
+    or a
+    ret
+
+; HL=parsed 8-bit immediate. A receives byte.
+as_p1011_imm8:
+    ld a,h
+    or a
+    jr nz,as_p1011_error
+    ld a,l
+    or a
+    ret
+
+; Fixed documented load/store encodings used by the parser dispatcher.
+; Each row is prefix, opcode; prefix 0 means one-byte opcode before operands.
+as_p1011_fixed:
+    db 0,$0A      ; ld a,(bc)
+    db 0,$1A      ; ld a,(de)
+    db 0,$02      ; ld (bc),a
+    db 0,$12      ; ld (de),a
+    db 0,$3A      ; ld a,(nn)
+    db 0,$32      ; ld (nn),a
+    db 0,$2A      ; ld hl,(nn)
+    db 0,$22      ; ld (nn),hl
+    db 0,$F9      ; ld sp,hl
+    db $ED,$57    ; ld a,i
+    db $ED,$5F    ; ld a,r
+    db $ED,$47    ; ld i,a
+    db $ED,$4F    ; ld r,a
+as_p1011_fixed_end:
+
+as_p1011_error:
+    ld a,E_FORMAT
+    scf
+    ret
+    ENDM
