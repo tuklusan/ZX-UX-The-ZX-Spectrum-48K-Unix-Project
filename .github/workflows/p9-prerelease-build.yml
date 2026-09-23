@@ -135,7 +135,7 @@ jobs:
               return bytes(data)
           tape1=build(); tape2=build(); assert tape1==tape2
 
-          files=cassette.assert_bootstrap_prefix(tape1)
+          files=cassette.assert_bootstrap_prefix(prefix)
           assert [f.name for f in files[:3]]==['zx48ux','zx48uxscr','kernel']
           assert files[0].file_type==0 and files[0].param1==10
           assert files[1].file_type==3 and files[1].param1==0x4000 and files[1].length==6912
