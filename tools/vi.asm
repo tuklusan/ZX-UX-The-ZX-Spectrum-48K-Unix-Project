@@ -2047,7 +2047,7 @@ vi_p915_cancel:
     xor a
     ld (vi_search_entry),a
     ; p905 escape returns to normal, clears transient command-line state and
-    ; status, but does not touch vi_search_pattern/len/dir or file bytes.
+    ; status, but does not touch the committed search state or file bytes.
     jp vi_p905_escape
 
 vi_p915_commit:
