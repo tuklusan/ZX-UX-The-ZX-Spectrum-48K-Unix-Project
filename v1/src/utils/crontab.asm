@@ -164,6 +164,7 @@ crontab_copy_done:
     call crontab_close_tmp
     jp c,crontab_cleanup_error
 
+crontab_edit_again:
     call crontab_spawn_vi
     jp c,crontab_cleanup_error
     ld a,(crontab_child_status)
@@ -212,15 +213,16 @@ crontab_validate_read:
     ld (crontab_loaded),hl
     jp crontab_validate_read
 crontab_too_long:
-    ld a,E_TOOLONG
-    jp crontab_cleanup_error
+    call crontab_close_tmp
+    jp c,crontab_cleanup_error
+    jp crontab_edit_again
 crontab_validate_done_read:
     call crontab_close_tmp
     jp c,crontab_cleanup_error
     ld hl,crontab_cfg
     ld bc,(crontab_loaded)
     call cron_validate
-    jp c,crontab_cleanup_error
+    jp c,crontab_edit_again
     ld (crontab_active),a
 
     ld hl,crontab_temp
