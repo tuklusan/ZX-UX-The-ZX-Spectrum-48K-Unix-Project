@@ -2787,4 +2787,35 @@ vi_p918_session_init:
 
 vi_should_exit: db 0
 vi_p918_path: dw 0
+
+; P9.19 exact :q / :q! dirty-state rules.
+; :q refuses a dirty buffer. :q! is the only forced-quit form here.
+vi_p919_q:
+    xor a
+    ld (vi_should_exit),a
+    ld a,(vi_dirty)
+    or a
+    jr z,vi_p919_allow_quit
+    ld a,E_BUSY
+    scf
+    ret
+vi_p919_allow_quit:
+    ld a,1
+    ld (vi_should_exit),a
+    xor a
+    ret
+
+vi_p919_q_force:
+    ld a,1
+    ld (vi_should_exit),a
+    xor a
+    ret
+
+; Canonical command dispatcher calls this only after q/q!/wq state succeeds.
+; The shared P9.01 unwind restores tty mode/cursor before SYS_EXIT.
+vi_p919_exit_if_requested:
+    ld a,(vi_should_exit)
+    or a
+    ret z
+    jp vi_normal_exit
     ENDM
