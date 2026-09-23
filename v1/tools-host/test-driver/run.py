@@ -274,6 +274,7 @@ import phase9_vi_set
 import phase9_vi_viewport
 import phase9_vi_docs
 import phase9_acceptance
+import phase10_obj1_header
 # Phase-9 vi qualification dispatch.
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
 from media_retention import (
@@ -712,6 +713,10 @@ def dispatch(root: Path, action: str, step: str):
         return phase9_acceptance.dispatch(root, action, step, **kwargs)
     if step.startswith("P9."):
         raise DriverError(f"numbered Phase-9 step is not registered: {step}")
+    if step == "P10.01":
+        return phase10_obj1_header.dispatch(root, action, step, **kwargs)
+    if step.startswith("P10."):
+        raise DriverError(f"numbered Phase-10 step is not registered: {step}")
     module = E0_MODULE.get(step)
     if module is not None:
         return module.dispatch(root, action, step, **kwargs)
@@ -876,6 +881,10 @@ def prerequisite_statuses(step: str) -> dict[str, str]:
         number = int(step.split(".", 1)[1])
         if 1 <= number <= 24:
             return {"P8.40": "PASS"} if number == 1 else {f"P9.{number - 1:02d}": "PASS"}
+    if step.startswith("P10."):
+        number = int(step.split(".", 1)[1])
+        if 1 <= number <= 36:
+            return {"P9.24": "PASS"} if number == 1 else {f"P10.{number - 1:02d}": "PASS"}
     return {}
 
 
