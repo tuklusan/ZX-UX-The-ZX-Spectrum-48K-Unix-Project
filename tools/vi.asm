@@ -1340,7 +1340,7 @@ vi_p909_insert_byte:
     xor a
     ret
 
-; P9.10 case-sensitive o/O open-line commands.
+; P9.10 case-sensitive o/O open-line commands (exact candidate).
 ; Entry A is 'o' (below) or 'O' (above).  The LF insertion is delegated to
 ; P9.03 so allocation failure is atomic.
 vi_p910_open:
