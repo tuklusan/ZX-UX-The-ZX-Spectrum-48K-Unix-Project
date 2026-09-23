@@ -1,0 +1,73 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "obj1-binding-record-size",
+      "passed": true
+    },
+    {
+      "name": "global-flag-frozen",
+      "passed": true
+    },
+    {
+      "name": "export-sections-frozen",
+      "passed": true
+    },
+    {
+      "name": "undefined-import-zero",
+      "passed": true
+    },
+    {
+      "name": "case-sensitive-search",
+      "passed": true
+    },
+    {
+      "name": "duplicate-binding-rejected",
+      "passed": true
+    },
+    {
+      "name": "fuse-export-import-records",
+      "passed": true
+    },
+    {
+      "name": "fuse-case-and-duplicate-rejection",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p1009-bindings.lst",
+        "--sym=p1009-bindings.sym",
+        "p1009-bindings.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 10,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 1470 lines, work time: 0.009 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/as.asm": "d25383041a908987517dcac8f14f75ba403c533708c8357659e13643f98e1824",
+    "v1/build/p1009-bindings.bin": "15e402b2ac22f7ef1af4b486ee145fa4eabbdc6c38736a9e23e9f10b638b3dab",
+    "v1/dist/certification/P10.08.build.json": "16b0cc963fecb37b31985d65e16f3662bb5d3d45db585d881238c2d3069621b6",
+    "v1/dist/certification/P10.08.test.json": "2b4282cf94821ea654904d1b7333f9b04d95780fa7caa6bac5eb86c0dc701651",
+    "v1/tools-host/test-driver/phase10_as_bindings.py": "d45b94521af0eeb8b8280849b0f472114b627439b074c73e7a6b075de97ecc95",
+    "v1/tools-host/test-driver/run.py": "6908e88c904932d58c28426f6bae1566c5951948a1c51236d04e76f493fc4aa7"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P10.08": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "0ff9e2f954dee331aae49ad01bffb4753321b403",
+  "status": "PASS",
+  "step": "P10.09",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
