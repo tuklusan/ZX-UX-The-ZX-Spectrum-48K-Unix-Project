@@ -1,0 +1,65 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "db-native",
+      "passed": true
+    },
+    {
+      "name": "dw-native-little-endian",
+      "passed": true
+    },
+    {
+      "name": "ds-native-zero-fill",
+      "passed": true
+    },
+    {
+      "name": "transactional-reserve",
+      "passed": true
+    },
+    {
+      "name": "fuse-golden-db-dw-ds",
+      "passed": true
+    },
+    {
+      "name": "fuse-overflow-rejected-transactionally",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p1007-directives.lst",
+        "--sym=p1007-directives.sym",
+        "p1007-directives.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 1085 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/as.asm": "3b8457294a52dc7d3dfa340a9cfc506d92b947215dae4751a06c8048a68027b9",
+    "v1/build/p1007-directives.bin": "218908581db904a963528324b45e28dc6c3f31d255d39ff33101e9caad762856",
+    "v1/dist/certification/P10.06.build.json": "e3d5ac61c2a5c10114d31481f7b43b2da97d114cb79771fc287f6f04930e0cdd",
+    "v1/dist/certification/P10.06.test.json": "e0b1966dced7baddd6d0d2f06d444bdd2135065168d5f27e6fa8068ed65bbae9",
+    "v1/tools-host/test-driver/phase10_as_directives.py": "0385c31247e1c1ec930f7a6ef037207f1ceedf6d71a37cdc54a8e028f2ff5335",
+    "v1/tools-host/test-driver/run.py": "baab56fcd522ddce7648a2d7d6a6c094a52d95fef9d3146f0b743f541e4d7040"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P10.06": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "bd7bd25dc54ccc58ff1a416151a8c963fb7f712f",
+  "status": "PASS",
+  "step": "P10.07",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
