@@ -1,0 +1,81 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "symbol-table-native",
+      "passed": true
+    },
+    {
+      "name": "case-sensitive-compare-native",
+      "passed": true
+    },
+    {
+      "name": "duplicate-reject-native",
+      "passed": true
+    },
+    {
+      "name": "equ-u16-contract",
+      "passed": true
+    },
+    {
+      "name": "host-case-sensitive-symbols",
+      "passed": true
+    },
+    {
+      "name": "host-known-equ-expression",
+      "passed": true
+    },
+    {
+      "name": "host-forward-unknown-defers-errors",
+      "passed": true
+    },
+    {
+      "name": "fuse-case-sensitive-distinct-symbols",
+      "passed": true
+    },
+    {
+      "name": "fuse-duplicate-symbol-rejected",
+      "passed": true
+    },
+    {
+      "name": "fuse-missing-forward-symbol-unresolved",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p1006-symbols.lst",
+        "--sym=p1006-symbols.sym",
+        "p1006-symbols.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 6,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 1158 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/as.asm": "19f5584f9653edb9ee012c9718dea5cfe1bd41add3aad7b00a5e9ebc2306e345",
+    "v1/build/p1006-symbols.bin": "71d8c3a8b4c8f31be4a5a430caa091fab007b7b2725a2ffce8f7e37b6a185b04",
+    "v1/dist/certification/P10.05.build.json": "a72ad9990611aedcee58dc07c5ac54f151ac35e1ba8ef5b8cb246574786cb2c1",
+    "v1/dist/certification/P10.05.test.json": "c7cec768b782440d556617dcf366585aa4888469acc300d7e086d74d57d72003",
+    "v1/tools-host/test-driver/phase10_as_symbols.py": "ba4e918ea29c478fa91d85efb76c333ddb120130524248037266f3adc95cc20a",
+    "v1/tools-host/test-driver/run.py": "a3f53345d0e645b0fb9193e34c1bc7984a1b921fffd917021307e1c8b030d302"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P10.05": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "5a3c7a2fe267e63c91d7754748edc4d8ffac1c67",
+  "status": "PASS",
+  "step": "P10.06",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
