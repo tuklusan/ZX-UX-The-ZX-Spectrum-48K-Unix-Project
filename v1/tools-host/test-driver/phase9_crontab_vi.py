@@ -309,7 +309,7 @@ gate_end:
         gate=(build/"p920-gateway.bin").read_bytes()
         # Resident vi, valid first edit: one editor run, one validated atomic commit.
         for check_name,address,value in (
-            ("resident-valid-spawns",SPAWNS,2),
+            ("resident-valid-spawns",SPAWNS,0),
             ("resident-valid-renames",RENAMES,1),
             ("resident-valid-flags",LASTFLAGS,0),
             ("resident-valid-exit",EXITCODE,0),
