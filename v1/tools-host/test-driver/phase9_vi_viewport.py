@@ -166,7 +166,11 @@ gate_end:
             code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC)+phase1._ld_hl(off)+phase1._call(sy["vi_p903_get_byte"])+bytes((0xFE,val))+phase1._jp_nz(FAIL_PC)+phase1._jp(PASS_PC))
             run_case(root,label,code,patch(image,gate,sy,data,cursor=2))
 
-        # Cursor starts at supplied offset 2; diagnose the exact returned low byte.
+        # Cursor starts at supplied offset 2; prove state before and after the column scan.
+        code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC)+b"\x21\x02\x00\x22"+word(sy["vi_cursor_off"])+expect_word(sy["vi_cursor_off"],2)+phase1._jp(PASS_PC))
+        run_case(root,"cursor-before-column-scan",code,patch(image,gate,sy,data,cursor=2))
+        code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC)+b"\x21\x02\x00\x22"+word(sy["vi_cursor_off"])+phase1._call(sy["vi_p922_cursor_column"])+expect_word(sy["vi_cursor_off"],2)+phase1._jp(PASS_PC))
+        run_case(root,"cursor-after-column-scan",code,patch(image,gate,sy,data,cursor=2))
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC)+b"\x21\x02\x00\x22"+word(sy["vi_cursor_off"])+phase1._call(sy["vi_p922_cursor_column"]))
         code+=b"\x5D\x16\x00\x21\x00\xB1\x19\xE9"
         probe_low(root,code,patch(image,gate,sy,data,cursor=2),run_command)
