@@ -13,6 +13,8 @@
 
 from __future__ import annotations
 
+# P10.06 normalized qualification marker.
+
 import phase1
 import phase3_open_descriptions
 from driver_core import DriverError
