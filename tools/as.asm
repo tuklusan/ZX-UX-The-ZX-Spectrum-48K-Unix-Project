@@ -430,3 +430,152 @@ as_p1005_bad:
 as_p1005_include_word: db 'include'
 as_p1005_token_start: dw 0
     ENDM
+
+
+; P10.06 case-sensitive symbols and EQU binding.
+    MACRO EMIT_P10_AS_SYMBOL_ROUTINES
+AS_P1006_MAX_SYMBOLS     EQU 8
+AS_P1006_RECORD_SIZE     EQU 18
+
+as_p1006_reset:
+    xor a
+    ld (as_p1006_count),a
+    ret
+
+; HL -> NUL name, DE=value. Carry set on malformed/duplicate/full.
+as_p1006_define:
+    ld (as_p1006_name_arg),hl
+    ld (as_p1006_value_arg),de
+    call as_p1006_validate_name
+    jr c,as_p1006_error
+    ld a,(as_p1006_count)
+    ld b,a
+    ld ix,as_p1006_table
+as_p1006_dup_loop:
+    ld a,b
+    or a
+    jr z,as_p1006_store
+    push bc
+    push ix
+    ld hl,(as_p1006_name_arg)
+    push ix
+    pop de
+    call as_p1006_name_equal
+    pop ix
+    pop bc
+    jr z,as_p1006_error
+    ld de,AS_P1006_RECORD_SIZE
+    add ix,de
+    djnz as_p1006_dup_loop
+as_p1006_store:
+    ld a,(as_p1006_count)
+    cp AS_P1006_MAX_SYMBOLS
+    jr nc,as_p1006_error
+    ld hl,(as_p1006_name_arg)
+    push ix
+    pop de
+    ld b,16
+as_p1006_copy_name:
+    ld a,(hl)
+    ld (de),a
+    inc hl
+    inc de
+    or a
+    jr z,as_p1006_zero_tail
+    djnz as_p1006_copy_name
+    jr as_p1006_error
+as_p1006_zero_tail:
+    dec b
+    jr z,as_p1006_store_value
+    xor a
+as_p1006_zero_loop:
+    ld (de),a
+    inc de
+    djnz as_p1006_zero_loop
+as_p1006_store_value:
+    ld hl,(as_p1006_value_arg)
+    ld (de),l
+    inc de
+    ld (de),h
+    ld a,(as_p1006_count)
+    inc a
+    ld (as_p1006_count),a
+    xor a
+    ret
+
+; HL -> name. Carry clear + DE=value on exact case-sensitive match.
+as_p1006_lookup:
+    ld (as_p1006_name_arg),hl
+    ld a,(as_p1006_count)
+    ld b,a
+    ld ix,as_p1006_table
+as_p1006_lookup_loop:
+    ld a,b
+    or a
+    jr z,as_p1006_not_found
+    push bc
+    push ix
+    ld hl,(as_p1006_name_arg)
+    push ix
+    pop de
+    call as_p1006_name_equal
+    pop ix
+    pop bc
+    jr z,as_p1006_lookup_hit
+    ld de,AS_P1006_RECORD_SIZE
+    add ix,de
+    djnz as_p1006_lookup_loop
+as_p1006_not_found:
+    ld a,E_FORMAT
+    scf
+    ret
+as_p1006_lookup_hit:
+    push ix
+    pop hl
+    ld de,16
+    add hl,de
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    xor a
+    ret
+
+; HL/DE NUL names. Z on exact byte-for-byte match; NZ otherwise.
+as_p1006_name_equal:
+as_p1006_name_equal_loop:
+    ld a,(de)
+    cp (hl)
+    ret nz
+    or a
+    ret z
+    inc hl
+    inc de
+    jr as_p1006_name_equal_loop
+
+as_p1006_validate_name:
+    ld hl,(as_p1006_name_arg)
+    ld b,0
+    ld a,(hl)
+    call as_p1005_first_char
+    ret c
+as_p1006_validate_loop:
+    inc b
+    ld a,b
+    cp 16
+    jr nc,as_p1006_error
+    inc hl
+    ld a,(hl)
+    or a
+    ret z
+    call as_p1005_next_char
+    jr nc,as_p1006_validate_loop
+as_p1006_error:
+    ld a,E_FORMAT
+    scf
+    ret
+
+as_p1006_count: db 0
+as_p1006_name_arg: dw 0
+as_p1006_value_arg: dw 0
+as_p1006_table: defs AS_P1006_MAX_SYMBOLS*AS_P1006_RECORD_SIZE,0
+    ENDM
