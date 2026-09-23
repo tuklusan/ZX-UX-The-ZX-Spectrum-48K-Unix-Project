@@ -55,6 +55,7 @@
   "tests": {
     "deterministic_tap_rebuild": "PASS",
     "fuse_boot_gateway_to_login": "PASS",
+    "fuse_tap_load_to_login": "PASS",
     "tap_header_and_basic_sequence": "PASS"
   }
 }
