@@ -1,0 +1,69 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "native-line-parser-present",
+      "passed": true
+    },
+    {
+      "name": "include-rejected",
+      "passed": true
+    },
+    {
+      "name": "comment-and-label-paths",
+      "passed": true
+    },
+    {
+      "name": "no-source-inclusion-contract",
+      "passed": true
+    },
+    {
+      "name": "fuse-empty-comment-label-token-accept",
+      "passed": true
+    },
+    {
+      "name": "fuse-include-reject",
+      "passed": true
+    },
+    {
+      "name": "fuse-malformed-token-reject",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p1005-parser.lst",
+        "--sym=p1005-parser.sym",
+        "p1005-parser.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 862 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/as.asm": "5da902ad6a9fc9dbfe437da8e5a5941e2d7df9a28d8e0adb03e53b79266c4798",
+    "v1/build/p1005-parser.bin": "07e8e5cf3073ed6d4dfa770fa4056f7eb93ec1821a0d012a299ecc19d3d4edaf",
+    "v1/dist/certification/P10.04.build.json": "dd9e1c26de404972619edcf0c16624537b788adc10c386cbbc71c65e92acd635",
+    "v1/dist/certification/P10.04.test.json": "aec22be578b5f66e2e269dc169cae1d770f6b8c7c64f630b2473464870d92d35",
+    "v1/tools-host/test-driver/phase10_as_parser.py": "9f05533500927f8b5646746ac0e4fef88f9ab217d3a41d75b99b8a3bca7f043e",
+    "v1/tools-host/test-driver/run.py": "4a77722f74f16f45e1455567979fa73c3bbb601664018b1a74fb7b688c5ef523"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P10.04": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "2efe583e0d8156e4641f560f93ba33b13fc6608d",
+  "status": "PASS",
+  "step": "P10.05",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
