@@ -116,30 +116,39 @@ jobs:
 
           sy=phase3_open_descriptions._symbols(
               root/'v1/build/kernel.sym',
-              ('zx48_idle_loop','zx48_console_write'),
+              ('zx48_idle_loop','zx48_console_write','ARENA_START','UDG_BANK_SIZE'),
           )
           idle=sy['zx48_idle_loop']
           conwrite=sy['zx48_console_write']
+          arena_start=sy['ARENA_START']
+          udg_bank_size=sy['UDG_BANK_SIZE']
           assert 0xE000 <= idle <= 0xFAFD
           assert 0xE000 <= conwrite <= 0xFAFF
+          assert arena_start==0x6000 and udg_bank_size==0x0100
+
+          # Boot's UDG initializer is the first arena allocator and owns
+          # 0x6000..0x60ff. The previous preview incorrectly lived at 0x6000,
+          # so a real boot zeroed it before PID0 reached the redirect.
+          base=arena_start+udg_bank_size
+          assert base==0x6100
 
           kernel=bytearray((root/'v1/build/kernel.bin').read_bytes())
           idle_off=idle-0xE000
           original_idle=bytes(kernel[idle_off:idle_off+3])
           assert original_idle==b'\xfb\x76\xcd'
-          kernel[idle_off:idle_off+3]=bytes((0xC3,0x00,0x60))
+          kernel[idle_off:idle_off+3]=bytes((0xC3,base&0xFF,(base>>8)&0xFF))
           kernel=bytes(kernel)
 
-          base=0x6000
           preview=bytearray()
           for addr,value in ((idle,original_idle[0]),(idle+1,original_idle[1]),(idle+2,original_idle[2])):
               preview += bytes((0x3E,value,0x32,addr&0xFF,(addr>>8)&0xFF))
 
-          code_size=45
+          code_size=50
           issue_addr=base+code_size
           prompt_addr=issue_addr+len(issue)
-          finish=base+42
-          login_reached=base+39
+          marker_addr=prompt_addr+len(prompt)
+          marker_write_pc=base+41
+          finish=base+47
 
           preview += bytes((0x21,issue_addr&0xFF,(issue_addr>>8)&0xFF))
           preview += bytes((0x01,len(issue)&0xFF,(len(issue)>>8)&0xFF))
@@ -149,12 +158,15 @@ jobs:
           preview += bytes((0x01,len(prompt),0x00))
           preview += bytes((0xCD,conwrite&0xFF,(conwrite>>8)&0xFF))
           preview += bytes((0xDA,finish&0xFF,(finish>>8)&0xFF))
-          assert base+len(preview)==login_reached
+          assert base+len(preview)==base+39
+          preview += bytes((0x3E,0xA5))
+          assert base+len(preview)==marker_write_pc
+          preview += bytes((0x32,marker_addr&0xFF,(marker_addr>>8)&0xFF))
           preview += bytes((0xC3,idle&0xFF,(idle>>8)&0xFF))
           assert base+len(preview)==finish
           preview += bytes((0xC3,idle&0xFF,(idle>>8)&0xFF))
           assert len(preview)==code_size
-          preview += issue+prompt
+          preview += issue+prompt+b'\x00'
 
           n0=maketap._integer_number(0)
           n7=maketap._integer_number(7)
@@ -222,7 +234,7 @@ jobs:
               'Real 48K Spectrum loading command: LOAD ""\n\n'
               'The auto-start BASIC loader loads the ZX-UX loading screen, the Phase-9\n'
               'resident kernel at 0xE000, and a small fixed-address preview payload at\n'
-              '0x6000, then transfers control through the real ZX-UX boot gateway at\n'
+              '0x6100, then transfers control through the real ZX-UX boot gateway at\n'
               '0xE003. After normal kernel initialization, the preview payload displays\n'
               'the frozen Phase-9 /etc/issue text and exact "login: " prompt, then enters\n'
               'the normal PID0 idle scheduler.\n\n'
@@ -258,14 +270,16 @@ jobs:
                   'kernel_address':57344,
                   'kernel_size':8192,
                   'preview_name':'p9preview',
-                  'preview_address':24576,
+                  'preview_address':base,
                   'boot_gateway':57347,
                   'expected_prompt':'login: ',
-                  'login_reached_address':login_reached,
+                  'success_marker_address':marker_addr,
+                  'success_marker_value':165,
               },
               'tests':{
                   'deterministic_tap_rebuild':'PASS',
                   'tap_header_and_basic_sequence':'PASS',
+                  'udg_preview_nonoverlap':'PASS',
                   'fuse_tap_load_to_login':'PENDING',
                   'fuse_boot_gateway_to_login':'PENDING',
               },
@@ -283,7 +297,7 @@ jobs:
         run: |
           set -euo pipefail
           cat > /tmp/p9-prerelease/fuse-tap-login.txt <<'EOF'
-          breakpoint 0x6027
+          breakpoint write 0x61c9
           commands 1
           exit 0
           end
@@ -313,7 +327,7 @@ jobs:
         run: |
           set -euo pipefail
           cat > /tmp/p9-prerelease/fuse-login.txt <<'EOF'
-          breakpoint 0x6027
+          breakpoint write 0x61c9
           commands 1
           exit 0
           end
@@ -346,6 +360,7 @@ jobs:
           assert meta['tests']=={
               'deterministic_tap_rebuild':'PASS',
               'tap_header_and_basic_sequence':'PASS',
+              'udg_preview_nonoverlap':'PASS',
               'fuse_tap_load_to_login':'PASS',
               'fuse_boot_gateway_to_login':'PASS',
           }
