@@ -677,6 +677,7 @@ vi_target: defs VI_TARGET_MAX+1,0
 vi_no_name_msg: db 'v','i',':',' ','n','o',' ','f','i','l','e',' ','n','a','m','e',10
 
 ; P9.05 exact three-mode state machine.
+; The state byte is the sole authoritative editor mode.
 VI_MODE_NORMAL          EQU 0
 VI_MODE_INSERT          EQU 1
 VI_MODE_COMMAND         EQU 2
