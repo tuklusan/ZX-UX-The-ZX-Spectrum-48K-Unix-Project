@@ -1310,7 +1310,7 @@ vi_p908_last:
     xor a
     ret
 
-; P9.09 i/a insertion over the allocation-safe P9.03 gap primitives.
+; P9.09 i/a insertion over the allocation-safe P9.03 gap primitives (exact candidate).
 vi_p909_enter_append:
     ld hl,(vi_buffer_len)
     ld a,h
