@@ -57,9 +57,9 @@ def main():
                 rs=r.get("source_commit")
                 if not isinstance(rs,str) or subprocess.run(["git","merge-base","--is-ancestor",rs,source],cwd=root,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode:
                     raise E(f"{name}: source ancestry")
-                if n==40 and rs!=source: raise E(f"{name}: P9.24 source mismatch")
+                if n==24 and rs!=source: raise E(f"{name}: P9.24 source mismatch")
                 if not isinstance(r.get("toolchain_lock_sha256"),str): raise E(f"{name}: toolchain provenance")
-                if n==40 and r.get("toolchain_lock_sha256")!=phase_lock: raise E(f"{name}: P9.24 toolchain")
+                if n==24 and r.get("toolchain_lock_sha256")!=phase_lock: raise E(f"{name}: P9.24 toolchain")
                 names.append(name); manifest[name]=sha(p)
         names.append("P9.24.result.json")
         manifest["P9.24.result.json"]=sha(cert/"P9.24.result.json")
@@ -74,7 +74,7 @@ def main():
                 {"name":"rev16-rev07-authority-pass","passed":True},
                 {"name":"phase9-record-manifest-byte-exact","passed":True},
                 {"name":"phase9-acceptance-bullets-pass","passed":True},
-                {"name":"phase9-gate-stops-before-phase9","passed":True},
+                {"name":"phase9-gate-stops-before-phase10","passed":True},
             ],
         }
         out.parent.mkdir(parents=True,exist_ok=True)
