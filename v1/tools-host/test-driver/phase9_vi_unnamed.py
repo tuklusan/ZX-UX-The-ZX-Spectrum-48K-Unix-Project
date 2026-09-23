@@ -59,6 +59,7 @@ def patch(image,gateway,args,type_id=1):
         ram[BASE-0x4000:BASE-0x4000+len(image)]=image
         ram[GATE-0x4000:GATE-0x4000+len(gateway)]=gateway
         ram[ARG-0x4000:ARG-0x4000+len(block)]=block
+        ram[ARG+32-0x4000:ARG+38-0x4000]=b"new.c\0"
         ram[TYPE-0x4000]=type_id
         ram[OUT-0x4000:OUT-0x4000+64]=b"\xA5"*64
         ram[READ_DONE-0x4000]=0
@@ -225,9 +226,9 @@ gate_end:
         code+=b"\x3E"+bytes((sy["E_IO"]&0xFF,))+phase1._call(sy["vi_p904_failed_write"])
         code+=b"\xD2"+word(FAIL_PC)+b"\xFE"+bytes((sy["E_IO"]&0xFF,))+phase1._jp_nz(FAIL_PC)
         code+=expect_byte(sy["vi_named"],0)+expect_byte(sy["vi_dirty"],1)
-        code+=phase1._ld_hl(ARG+8+3)+b"\x3E"+bytes((sy["OBJ_C"]&0xFF,))+phase1._call(sy["vi_p904_commit_target"])+phase1._jp_c(FAIL_PC)
+        code+=phase1._ld_hl(ARG+32)+b"\x3E"+bytes((sy["OBJ_C"]&0xFF,))+phase1._call(sy["vi_p904_commit_target"])+phase1._jp_c(FAIL_PC)
         code+=expect_byte(sy["vi_named"],1)+expect_byte(sy["vi_target_type"],sy["OBJ_C"])+expect_byte(sy["vi_dirty"],0)+phase1._jp(PASS_PC)
-        run_case(root,"retarget-transaction",code,patch(image,gateway,[b"vi",b"new.c"],sy["OBJ_TXT"]))
+        run_case(root,"retarget-transaction",code,patch(image,gateway,[b"vi"],sy["OBJ_TXT"]))
 
         assertions += [
             {"name":"fuse-unnamed-empty-txt","passed":True},
