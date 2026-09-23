@@ -100,7 +100,12 @@ jobs:
               if dst.exists(): raise SystemExit(f"immutable evidence already exists: {dst}")
               dst.write_bytes(p.read_bytes())
           PY
+          if test -d "/tmp/qualification/media-staging/$STEP" && find "/tmp/qualification/media-staging/$STEP" -type f ! -name manifest.json -print -quit | grep -q .; then
+            python3 tools/finalize_step_media.py --step "$STEP" --evidence-dir /tmp/qualification
+          fi
           git add "v1/dist/certification/$STEP.build.json" "v1/dist/certification/$STEP.test.json"
+          if test -d "v1/dist/media/$STEP"; then git add "v1/dist/media/$STEP"; fi
+          test -n "$(git diff --cached --name-only)"
           ./tools/check_license_headers.sh
           ./tools/check_project_policy.py
       - name: Admit exact evidence-only commit
@@ -108,7 +113,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "$STEP: admit qualification evidence"
+          git commit -m "$STEP: admit qualification evidence and media"
           test "$(git rev-parse HEAD^)" = "$SOURCE_COMMIT"
           git push origin HEAD:main
       - name: Dispatch exact admission validation
