@@ -714,7 +714,7 @@ vi_p905_normal_key:
     cp 'i'
     jr z,vi_p905_enter_insert
     cp 'a'
-    jr z,vi_p909_enter_append
+    jp z,vi_p909_enter_append
     cp ':'
     jr z,vi_p905_enter_command
     ; A future multi-key normal command may stage here. ESC must cancel it.
