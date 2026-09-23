@@ -1,0 +1,144 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "inventory-frozen-row-count",
+      "passed": true
+    },
+    {
+      "name": "coverage-exact-one-to-one",
+      "passed": true
+    },
+    {
+      "name": "coverage-qualified-step-range",
+      "passed": true
+    },
+    {
+      "name": "portable-undocumented-opcodes-absent",
+      "passed": true
+    },
+    {
+      "name": "native-aggregate-expands-all-encoders",
+      "passed": true
+    },
+    {
+      "name": "coverage-documentation-present",
+      "passed": true
+    },
+    {
+      "name": "prior-P10.11-build-pass",
+      "passed": true
+    },
+    {
+      "name": "prior-P10.11-test-pass",
+      "passed": true
+    },
+    {
+      "name": "prior-P10.12-build-pass",
+      "passed": true
+    },
+    {
+      "name": "prior-P10.12-test-pass",
+      "passed": true
+    },
+    {
+      "name": "prior-P10.13-build-pass",
+      "passed": true
+    },
+    {
+      "name": "prior-P10.13-test-pass",
+      "passed": true
+    },
+    {
+      "name": "prior-P10.14-build-pass",
+      "passed": true
+    },
+    {
+      "name": "prior-P10.14-test-pass",
+      "passed": true
+    },
+    {
+      "name": "prior-P10.15-build-pass",
+      "passed": true
+    },
+    {
+      "name": "prior-P10.15-test-pass",
+      "passed": true
+    },
+    {
+      "name": "prior-P10.16-build-pass",
+      "passed": true
+    },
+    {
+      "name": "prior-P10.16-test-pass",
+      "passed": true
+    },
+    {
+      "name": "all-137-sjasmplus-vectors-byte-identical",
+      "passed": true
+    },
+    {
+      "name": "negative-missing-row-detected",
+      "passed": true
+    },
+    {
+      "name": "negative-extra-undocumented-row-detected",
+      "passed": true
+    },
+    {
+      "name": "fuse-all-six-native-encoder-families",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "p1017-coverage.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 143 lines, work time: 0.001 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1017-native.sym",
+        "p1017-native.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 8,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 3151 lines, work time: 0.007 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/as.asm": "839c5d712b0cc489c617c0412da85d83134ff65b6253e165bd80f63295800287",
+    "v1/build/p1017-coverage.bin": "ebb1a3ea72b8dbf6c99c34f48bccd345c8f5500fb2d715ba603cccd0b2fb30cb",
+    "v1/build/p1017-native.bin": "4a1a8ebd584810cb7cfbc1627b1bcb1c0d7ac282a534dc9b223bd035d260f4f2",
+    "v1/dist/certification/P10.16.build.json": "200c2e00893e5199da893a72168c87d4a4331684a78e557438298f11739756ec",
+    "v1/dist/certification/P10.16.test.json": "22d01a56af2b87f6cf7c468df805365711ca7eab5205a6310bc87b50cd69efde",
+    "v1/docs/assembler.md": "88c273414f2a0536ba8020c49383dcafa29c559c63e961ae3f311de5975ff994",
+    "v1/tests/compiler/as-opcode-coverage": "9d06ae4a7ed9ab197bec4be2a21e8f095cdcbf72803a24a0ed65ae4e226ac338",
+    "v1/tests/compiler/as-opcode-inventory": "9052d2f727116ab9d332b32b86683c14f0cda3b4ef11445a8e1d1f5aed7a9f9b",
+    "v1/tools-host/test-driver/phase10_step_17.py": "6eb0619f7c054e55156ce233a67c2d62e6891672b93f54fd66f28a9b11256fdf"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P10.16": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "a1a726f76c138ebbb63a594844ff00638eb15ed0",
+  "status": "PASS",
+  "step": "P10.17",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
