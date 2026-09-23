@@ -12,11 +12,9 @@
 # patent, trademark, and governing-law provisions.
 
 from __future__ import annotations
-import tempfile
-from pathlib import Path
 import phase1, phase3_open_descriptions
 from driver_core import DriverError
-from fuse_harness import FAIL_PC, PASS_PC, run_sna, make_sna
+from fuse_harness import FAIL_PC, PASS_PC, run_sna
 from phase8_common import inspect_mex, make_tap, mex1, word
 
 BASE=0xC000; GATE=0xE000
@@ -34,24 +32,6 @@ def run_case(root,name,code,patcher):
         run_sna(root,bytes(code),patch=patcher)
     except DriverError as exc:
         raise P922Error(f"P9.22 {name}: {exc}") from exc
-
-def probe_low(root,code,patcher,run_command):
-    fuse=root/"tools/runtime/fuse/bin/fuse"
-    with tempfile.TemporaryDirectory(prefix="zxux-p922-probe-") as td:
-        sna=Path(td)/"probe.sna"
-        sna.write_bytes(make_sna(bytes(code),patch=patcher))
-        lines=[]
-        for value in range(16):
-            lines += [f"breakpoint 0x{0xB100+value:04x}",f"commands {value+1}",f"exit {10+value}","end"]
-        lines.append("continue")
-        result=run_command([
-            "/usr/bin/env","SDL_VIDEODRIVER=dummy","SDL_AUDIODRIVER=dummy",fuse,
-            "--machine","48","--no-sound","--no-confirm-actions",
-            "--debugger-command","\n".join(lines),sna,
-        ],cwd=root,timeout_seconds=15)
-        if result.exit_code is not None and 10 <= result.exit_code < 26:
-            raise P922Error(f"P9.22 diagnostic cursor column={result.exit_code-10}")
-        raise P922Error(f"P9.22 diagnostic probe failed exit={result.exit_code} timeout={result.timed_out}")
 
 def patch(image,gate,sy,data,cursor=0,xoff=0,number=0):
     def apply(ram):
@@ -158,12 +138,8 @@ gate_end:
           "vi_cursor_off","vi_view_xoff","vi_p922_scan_off","vi_p922_logical_col","vi_option_number","vi_view_gutter","vi_view_width","E_INVAL",
         ))
         gate=(build/"p922-gateway.bin").read_bytes()
-        raise P922Error(
-            "P9.22 layout "
-            f"size={len(image)} cursor=0x{sy['vi_cursor_off']:04x} "
-            f"scan=0x{sy['vi_p922_scan_off']:04x} logical=0x{sy['vi_p922_logical_col']:04x} "
-            f"column_fn=0x{sy['vi_p922_cursor_column']:04x} buffer=0x{sy['vi_buffer']:04x}"
-        )
+        require(len(image) <= 8192, f"P9.22 vi image exceeds 8192 bytes: {len(image)}")
+
 
         # TAB is one file byte yet advances display column to the next multiple of eight.
         data=b"a\tb"
@@ -179,9 +155,10 @@ gate_end:
         run_case(root,"cursor-after-column-scan",code,patch(image,gate,sy,data,cursor=2))
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC)+expect_word(sy["vi_buffer_len"],3)+phase1._jp(PASS_PC))
         run_case(root,"buffer-len-after-init",code,patch(image,gate,sy,data,cursor=2))
-        code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC)+b"\x21\x02\x00\x22"+word(sy["vi_cursor_off"])+phase1._call(sy["vi_p922_cursor_column"])+b"\x2A"+word(sy["vi_p922_scan_off"]))
-        code+=b"\x5D\x16\x00\x21\x00\xB1\x19\xE9"
-        probe_low(root,code,patch(image,gate,sy,data,cursor=2),run_command)
+        code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC)+b"\x21\x02\x00\x22"+word(sy["vi_cursor_off"])+phase1._call(sy["vi_p922_cursor_column"]))
+        code+=expect_word(sy["vi_p922_scan_off"],2)+expect_word(sy["vi_p922_logical_col"],8)+b"\x7C\xB5"+phase1._jp_z(FAIL_PC)+expect_byte(sy["vi_p922_logical_col"],8)+phase1._jp(PASS_PC)
+        run_case(root,"tab-column-scan",code,patch(image,gate,sy,data,cursor=2))
+
         code=bytearray(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(sy["vi_p903_init"])+phase1._jp_c(FAIL_PC))
         code+=expect_byte(sy["vi_buffer"]+1,9)+phase1._jp(PASS_PC)
         run_case(root,"tab-byte-preserved",code,patch(image,gate,sy,data,cursor=2))
