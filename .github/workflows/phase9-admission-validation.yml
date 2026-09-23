@@ -76,9 +76,12 @@ jobs:
                   assert r["architecture_sha256"]=="24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c"
                   assert r["implementation_plan_sha256"]=="840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc"
               mp=media/step/"manifest.json"
-              if not mp.is_file(): raise SystemExit(f"missing retained media: {step}")
-              md=json.loads(mp.read_text())
-              assert md["step"]==step and md["source_commit"]==source and md["files"]
+              if step=="P9.23":
+                  if mp.exists(): raise SystemExit("host-only P9.23 must not publish Spectrum media")
+              else:
+                  if not mp.is_file(): raise SystemExit(f"missing retained media: {step}")
+                  md=json.loads(mp.read_text())
+                  assert md["step"]==step and md["source_commit"]==source and md["files"]
               latest=step
           if latest is None: raise SystemExit("no admitted Phase-9 evidence")
           if latest=="P9.24":
