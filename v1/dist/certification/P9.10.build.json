@@ -1,0 +1,87 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p910-present",
+      "passed": true
+    },
+    {
+      "name": "case-sensitive-o-O",
+      "passed": true
+    },
+    {
+      "name": "open-uses-gap-insert",
+      "passed": true
+    },
+    {
+      "name": "allocation-failure-before-cursor",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p910-vi.lst",
+        "--sym=p910-vi.sym",
+        "p910-vi.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 11,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 3022 lines, work time: 0.009 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p910-vi.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 37,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 21767, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 822, \"image_size\": 3962, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 3986, \"relocations\": [], \"stored_length\": 3986, \"version\": 1}\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p910-gateway.lst",
+        "--sym=p910-gateway.sym",
+        "p910-gateway.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 3,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 288 lines, work time: 0.002 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/vi.asm": "763cadd7d18b65f69eb8ff05828f34f69a33c6df9049a88e60efb385a38aa653",
+    "v1/build/p910-vi.mex1": "b4500db487623cbc465b943678098ff33c2652e73c94b17bdd9cfa29120da709",
+    "v1/build/p910-vi.tap": "cac34e93869f40d0fe94386200058a01d7597fc5e00abc7917902b1f46491989",
+    "v1/dist/certification/P9.09.test.json": "7b46aa3a464bb9a324ee1fd0b56cc9894f6fd29b4bba611c1ca8f081000aa3e7",
+    "v1/tools-host/test-driver/phase9_vi_open.py": "8a01b5a2ffc7024a00931ab661e6b97dd792366e8d5b6014e59f7c705da22007",
+    "v1/tools-host/test-driver/run.py": "2cd18c787310bd75030a8110d5ce3a8f3ea77475cd1129dcd42f32911d940454"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P9.09": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "62d13fff7d2ecd9176179b371518f04b2350b8b0",
+  "status": "PASS",
+  "step": "P9.10",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
