@@ -321,10 +321,10 @@ vi_p903_insert_byte:
     ld (vi_edit_byte),a
     ld a,(vi_fail_gap_alloc)
     or a
-    jr nz,vi_p903_nomem
+    jp nz,vi_p903_nomem
     ld a,(vi_fail_index_alloc)
     or a
-    jr nz,vi_p903_nomem
+    jp nz,vi_p903_nomem
     ld de,(vi_buffer_len)
     push hl
     or a
@@ -343,13 +343,13 @@ vi_p903_insert_pos_ok:
     or a
     sbc hl,bc
     pop hl
-    jr z,vi_p903_nomem
+    jp z,vi_p903_nomem
     ld a,(vi_edit_byte)
     cp 10
     jr nz,vi_p903_insert_ready
     ld a,(vi_line_count)
     cp VI_LINE_MAX
-    jr nc,vi_p903_nomem
+    jp nc,vi_p903_nomem
 vi_p903_insert_ready:
     ld hl,(vi_edit_pos)
     call vi_p903_move_gap
@@ -378,7 +378,7 @@ vi_p903_delete_byte:
     ld (vi_edit_pos),hl
     ld a,(vi_fail_index_alloc)
     or a
-    jr nz,vi_p903_nomem
+    jp nz,vi_p903_nomem
     ld de,(vi_buffer_len)
     push hl
     or a
@@ -485,7 +485,7 @@ vi_p903_get_physical:
 vi_p903_reindex:
     ld a,(vi_fail_index_alloc)
     or a
-    jr nz,vi_p903_nomem
+    jp nz,vi_p903_nomem
     xor a
     ld (vi_line_stage),a
     ld (vi_line_stage+1),a
@@ -506,7 +506,7 @@ vi_p903_reindex_loop:
     jr nz,vi_p903_reindex_next
     ld a,(vi_stage_line_count)
     cp VI_LINE_MAX
-    jr nc,vi_p903_nomem
+    jp nc,vi_p903_nomem
     ld e,a
     ld d,0
     sla e
