@@ -251,6 +251,7 @@ import phase8_pipe_matrix
 import phase8_cron_transaction
 import phase8_acceptance
 import phase9_vi_skeleton
+# Phase-9 vi qualification dispatch.
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
 from media_retention import (
     capture_project_media,
