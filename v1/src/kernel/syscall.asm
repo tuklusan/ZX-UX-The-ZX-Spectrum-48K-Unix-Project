@@ -649,7 +649,7 @@ zx48_sys_time_get:
     ld hl,(syscall_arg_hl)
     xor a
     ret
-; P8.39 TIME1 set revision contract: every successful set increments revision.\nzx48_sys_time_set:
+; P8.39 TIME1 set revision contract: every successful set increments revision.\nzx48_time_set_handler:
     ld a,(current_pid)
     cp 1
     jp nz,zx48_sys_perm
@@ -735,7 +735,7 @@ zx48_sys_console_table:
     dw zx48_sys_con_getkey,zx48_sys_con_putchar,zx48_sys_con_write
     dw zx48_sys_con_clear,zx48_sys_con_getpos,zx48_sys_con_setpos
 zx48_sys_info_table:
-    dw zx48_sys_mem_info,zx48_sys_proc_info,zx48_sys_ticks,zx48_sys_time_get,zx48_sys_time_set
+    dw zx48_sys_mem_info,zx48_sys_proc_info,zx48_sys_ticks,zx48_sys_time_get,zx48_time_set_handler
 
     ENDM
 
