@@ -1386,8 +1386,8 @@ vi_p911_x:
     ld de,(vi_cursor_off)
     or a
     sbc hl,de
-    jr z,vi_p911_safe
-    jr c,vi_p911_safe
+    jp z,vi_p911_safe
+    jp c,vi_p911_safe
     ld hl,(vi_cursor_off)
     ld bc,1
     call vi_p911_yank_range
@@ -1405,8 +1405,8 @@ vi_p911_D:
     ld de,(vi_cursor_off)
     or a
     sbc hl,de
-    jr z,vi_p911_safe
-    jr c,vi_p911_safe
+    jp z,vi_p911_safe
+    jp c,vi_p911_safe
     call vi_p906_locate_line
     call vi_p906_current_end
     ld de,(vi_cursor_off)
@@ -1416,7 +1416,7 @@ vi_p911_D:
     ld c,l
     ld a,b
     or c
-    jr z,vi_p911_safe
+    jp z,vi_p911_safe
     ld hl,(vi_cursor_off)
     call vi_p911_yank_range
     ret c
@@ -1443,7 +1443,7 @@ vi_p911_dd:
     ld hl,(vi_buffer_len)
     ld a,h
     or l
-    jr z,vi_p911_safe
+    jp z,vi_p911_safe
     call vi_p906_locate_line
     ld hl,(vi_motion_start)
     ld (vi_delete_start),hl
