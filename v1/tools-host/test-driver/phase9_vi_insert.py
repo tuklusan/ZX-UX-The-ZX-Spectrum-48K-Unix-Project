@@ -157,7 +157,7 @@ gate_end:
         code+=b"\x21"+word(1)+b"\x22"+word(sy["vi_cursor_off"])
         code+=b"\x3E"+bytes((ord("i"),))+phase1._call(sy["vi_p905_key"])+phase1._jp_c(FAIL_PC)
         code+=b"\x3E\x01\x32"+word(sy["vi_fail_gap_alloc"])
-        code+=b"\x3E"+bytes((ord("Z"),))+phase1._call(sy["vi_p905_key"])+phase1._jp_nc(FAIL_PC)
+        code+=b"\x3E"+bytes((ord("Z"),))+phase1._call(sy["vi_p905_key"])+b"\xD2"+word(FAIL_PC)
         for pos,val in enumerate(b"abc"): code+=logical_expect(sy,pos,val)
         code+=expect_byte(sy["vi_buffer_len"],3)+phase1._jp(PASS_PC)
         run_sna(root,bytes(code),patch=patch(image,gateway,sy,b"abc"))
