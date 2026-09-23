@@ -78,7 +78,7 @@ fixture_end:
         code2=(b"\xF3"+phase1._ld_sp(0xBFC0)
           +phase1._ld_hl(buf)+phase1._ld_de(buf+2)+phase1._call(syms["as_p1007_reset"])
           +phase1._ld_de(0xBEEF)+phase1._call(syms["as_p1007_dw"])+phase1._jp_c(FAIL_PC)
-          +b"\x3E\x77"+phase1._call(syms["as_p1007_db"])+phase1._jp_nc(FAIL_PC)
+          +b"\x3E\x77"+phase1._call(syms["as_p1007_db"])+b"\xD2"+phase1._word(FAIL_PC)
           +phase1._call(syms["as_p1007_size"])+b"\x7D\xFE\x02"+phase1._jp_nz(FAIL_PC)
           +phase1._jp(PASS_PC))
         run_sna(root,code2,patch=patch)
