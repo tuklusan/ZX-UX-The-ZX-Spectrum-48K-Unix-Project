@@ -44,6 +44,7 @@ jobs:
             tools/check_phase9_evidence.py \
             tools/finalize_phase9_evidence.py \
             tools/test_phase9_evidence_negative.py \
+            tools/vi.asm \
             v1/tools-host/test-driver/phase9_acceptance.py \
             v1/tools-host/test-driver/phase9_vi_modes.py \
             v1/tools-host/test-driver/phase9_vi_replace_join.py \
@@ -77,6 +78,7 @@ jobs:
               tools/check_phase9_evidence.py \
               tools/finalize_phase9_evidence.py \
               tools/test_phase9_evidence_negative.py \
+              tools/vi.asm \
               v1/tools-host/test-driver/phase9_acceptance.py \
               v1/tools-host/test-driver/phase9_vi_modes.py \
               v1/tools-host/test-driver/run.py \
