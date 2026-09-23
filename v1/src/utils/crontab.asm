@@ -301,7 +301,10 @@ crontab_authorize_vi_tape:
     ld (crontab_proc1+13),a
     ld a,(crontab_vi_stat_out+7)
     cp STATE_TAPE_BACKED
-    ret nz
+    jr z,crontab_tape_consent
+    xor a
+    ret
+crontab_tape_consent:
     ld hl,crontab_tape_prompt
     ld bc,52
     ld a,SYS_CON_WRITE
