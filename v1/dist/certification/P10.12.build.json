@@ -1,0 +1,82 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "arithmetic-inventory-family-coverage",
+      "passed": true
+    },
+    {
+      "name": "native-alu-register-and-immediate",
+      "passed": true
+    },
+    {
+      "name": "native-incdec",
+      "passed": true
+    },
+    {
+      "name": "native-16bit-arithmetic",
+      "passed": true
+    },
+    {
+      "name": "native-index-arithmetic",
+      "passed": true
+    },
+    {
+      "name": "documented-fixed-only",
+      "passed": true
+    },
+    {
+      "name": "sjasmplus-arithmetic-golden",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "p1012-golden.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 2,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 37 lines, work time: 0.001 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1012-native.sym",
+        "p1012-native.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 1850 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/as.asm": "ebd38d8b6ac1e3ded81e1d2e1960b0e7c6085117714b99ae66783aa98bbf05c3",
+    "v1/build/p1012-golden.bin": "855435a8742dffc154d791bce251ddd4c2ffd0755c42603157661c03fd5010b0",
+    "v1/build/p1012-native.bin": "d41293bda0443538dd6f8d53faa4e66bf5e186264d4dcc87cc9eb338f47fa83d",
+    "v1/dist/certification/P10.11.build.json": "45e712cedf7f4e9b75bbd91a889633db84023d6e0d6381e6f8c9bad74762ec1f",
+    "v1/dist/certification/P10.11.test.json": "151006a68c5e9520cd7b7c4db2ef145e231e71c15dc6411d9d88957316a59434",
+    "v1/tests/compiler/as-opcode-inventory": "9052d2f727116ab9d332b32b86683c14f0cda3b4ef11445a8e1d1f5aed7a9f9b",
+    "v1/tools-host/test-driver/phase10_step_12.py": "a66422516a9a254c086060d2e8eb0fc7ad64d9e8e30e0c8530cc6a0f206530c9"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P10.11": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "759345367419c2b66430e8d18cb81f61b6b80963",
+  "status": "PASS",
+  "step": "P10.12",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
