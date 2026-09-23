@@ -13,6 +13,8 @@
 
 from __future__ import annotations
 
+# P10.07 qualification retrigger marker.
+
 import phase1
 import phase3_open_descriptions
 from driver_core import DriverError
