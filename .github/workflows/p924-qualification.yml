@@ -46,6 +46,7 @@ jobs:
             tools/test_phase9_evidence_negative.py \
             v1/tools-host/test-driver/phase9_acceptance.py \
             v1/tools-host/test-driver/phase9_vi_modes.py \
+            v1/tools-host/test-driver/phase9_vi_replace_join.py \
             v1/tools-host/test-driver/run.py | sort > /tmp/expected
           diff -u /tmp/expected /tmp/changed
           git diff --check "$P924_BASE" HEAD
@@ -59,6 +60,7 @@ jobs:
             python3 -m py_compile \
               v1/tools-host/test-driver/phase9_acceptance.py \
               v1/tools-host/test-driver/phase9_vi_modes.py \
+              v1/tools-host/test-driver/phase9_vi_replace_join.py \
               v1/tools-host/test-driver/run.py \
               tools/check_phase9_evidence.py \
               tools/finalize_phase9_evidence.py \
