@@ -38,11 +38,11 @@ def validate():
     a=load(CERT/"phase-9.json")
     for k,v in {"schema":2,"phase":9,"action":"phase-result","status":"PASS","pass_marker":PHASE,
                 "worktree_clean":True,"architecture_sha256":ARCH,"implementation_plan_sha256":PLAN}.items():
-        if a.get(k)!=v: raise E(f"phase-8 {k}")
+        if a.get(k)!=v: raise E(f"phase-9 {k}")
     source=a.get("source_commit"); lock=a.get("toolchain_lock_sha256")
     if not isinstance(source,str) or len(source)!=40 or not isinstance(lock,str) or len(lock)!=64:
         raise E("phase identity")
-    names=[f"P8.{n:02d}.{action}.json" for n in range(1,25) for action in ("build","test")]+["P9.24.result.json"]
+    names=[f"P9.{n:02d}.{action}.json" for n in range(1,25) for action in ("build","test")]+["P9.24.result.json"]
     if a.get("required_records")!=names: raise E("required-record ordering")
     manifest=a.get("record_sha256")
     if not isinstance(manifest,dict) or set(manifest)!=set(names): raise E("manifest keys")
@@ -57,11 +57,11 @@ def validate():
             if r.get("architecture_sha256")!=ARCH or r.get("implementation_plan_sha256")!=PLAN or r.get("prerequisites")!=pre(n):
                 raise E(f"{name}: identity")
             if not isinstance(r.get("toolchain_lock_sha256"),str): raise E(f"{name}: toolchain provenance")
-            if n==40 and r.get("toolchain_lock_sha256")!=lock: raise E(f"{name}: P9.24 toolchain")
+            if n==24 and r.get("toolchain_lock_sha256")!=lock: raise E(f"{name}: P9.24 toolchain")
             rs=r.get("source_commit")
             if not isinstance(rs,str) or subprocess.run(["git","merge-base","--is-ancestor",rs,source],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode:
                 raise E(f"{name}: ancestry")
-            if n==40 and rs!=source: raise E(f"{name}: source")
+            if n==24 and rs!=source: raise E(f"{name}: source")
             if manifest.get(name)!=sha(p): raise E(f"{name}: bytes")
     res=load(CERT/"P9.24.result.json")
     for k,v in {"step":"P9.24","action":"result","status":"PASS","pass_marker":P924,"source_commit":source,
@@ -71,7 +71,7 @@ def validate():
     if manifest.get("P9.24.result.json")!=sha(CERT/"P9.24.result.json"): raise E("P9.24.result bytes")
     req={"p9-24-build-test-result-pass","all-p9-01-through-p9-24-durable-evidence-pass",
          "rev16-rev07-authority-pass","phase9-record-manifest-byte-exact",
-         "phase9-acceptance-bullets-pass","phase9-gate-stops-before-phase9"}
+         "phase9-acceptance-bullets-pass","phase9-gate-stops-before-phase10"}
     got={x.get("name") for x in a.get("assertions",[]) if isinstance(x,dict) and x.get("passed") is True}
     if not req.issubset(got): raise E("aggregate assertions")
     return a
