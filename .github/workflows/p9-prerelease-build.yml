@@ -273,7 +273,7 @@ jobs:
           meta=json.loads((d/'pre-release.json').read_text())
           assert meta['kind']=='phase9-development-pre-release'
           assert meta['source_commit']=='6811d6f936851a67c7870ded34038133fa6a820a'
-          assert meta['tests']=={'bootstrap_structure':'PASS','deterministic_rebuild':'PASS','fuse_boot_to_login':'PASS','mex1_inspection':'PASS'}
+          assert meta['tests']=={'bootstrap_structure':'PASS','deterministic_rebuild':'PASS','fuse_basic_to_boot_gateway':'PASS','fuse_boot_to_login':'PASS'}
           for item in meta['files']:
               p=d/item['path']; data=p.read_bytes()
               assert len(data)==item['size'] and hashlib.sha256(data).hexdigest()==item['sha256']
@@ -286,10 +286,10 @@ jobs:
               for v in b[:-1]: x^=v
               assert b[-1]==x
               blocks.append(b)
-          assert off==len(tap) and len(blocks)>=6
+          assert off==len(tap) and len(blocks)==8
           loader=(d/'loader.bas').read_text()
-          assert loader=='10 BORDER 0: PAPER 0: INK 7: CLS\n20 CLEAR 24575\n30 LOAD "" SCREEN$\n40 LOAD "" CODE\n50 RANDOMIZE USR 57347\n'
-          assert (d/'README.txt').read_bytes().endswith(b'toolchain.\n')
+          assert loader=='10 BORDER 0: PAPER 0: INK 7: CLS\n20 CLEAR 24575\n30 LOAD "" SCREEN$\n40 LOAD "" CODE\n45 LOAD "" CODE\n50 RANDOMIZE USR 57347\n'
+          assert (d/'README.txt').read_bytes().endswith(b'certification evidence.\n')
           PY
             digest="$(find "$dir" -maxdepth 1 -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')"
             if test -z "$baseline"; then baseline="$digest"; else test "$digest" = "$baseline"; fi
