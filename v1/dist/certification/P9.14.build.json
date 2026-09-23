@@ -1,0 +1,76 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p914-present",
+      "passed": true
+    },
+    {
+      "name": "bounded-delta-not-file-copy",
+      "passed": true
+    },
+    {
+      "name": "exact-three-inverse-kinds",
+      "passed": true
+    },
+    {
+      "name": "successful-u-consumes-history",
+      "passed": true
+    },
+    {
+      "name": "edit-hooks-installed",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=p914-vi.lst",
+        "--sym=p914-vi.sym",
+        "p914-vi.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 15,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 4228 lines, work time: 0.014 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/inspect-mex/inspect.py",
+        "v1/build/p914-vi.mex1",
+        "--base",
+        "0x6000"
+      ],
+      "cwd": ".",
+      "duration_ms": 39,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "{\"body_crc\": 20513, \"bss_size\": 0, \"entry_offset\": 0, \"header_crc\": 30004, \"image_size\": 5491, \"magic\": \"MEX1\", \"minimum_stack_size\": 256, \"relocation_count\": 0, \"relocation_table_offset\": 5515, \"relocations\": [], \"stored_length\": 5515, \"version\": 1}\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/vi.asm": "585e79148dd4f09041af2a21dc91e2cab13664dcd7ff0463d69f43e6c50d2663",
+    "v1/build/p914-vi.mex1": "cb3d455d3bd26687722942cf09a51e65638e3d2dd0916f5daab1dff6b8ca40b4",
+    "v1/build/p914-vi.tap": "9712d6e8493b6c2cd48ce8490749b12236ca51f46f5f93fbf98f6275eed37e4f",
+    "v1/dist/certification/P9.13.test.json": "b1ef5603bba7e0a537e1b1c5c3ad14e79f0a9f89aa5e86083c2d02b032690073",
+    "v1/tools-host/test-driver/phase9_vi_undo.py": "7a34d3324a00ed84ab34adc7e1e0124e5bc551591a5767f356ce2027d05d121e",
+    "v1/tools-host/test-driver/run.py": "310d333dd7c40eb41df71705a2a53dba1d69f3571f265a9ca981d647b9246268"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P9.13": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "3292b137bd958281f6a201bd9836804fdf3b5ecc",
+  "status": "PASS",
+  "step": "P9.14",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
