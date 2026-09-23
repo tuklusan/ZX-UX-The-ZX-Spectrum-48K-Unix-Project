@@ -21,6 +21,7 @@ from driver_core import DriverError
 
 RELOC_SIZE=6
 ABS16=1
+# Qualification source marker: P10.03 exact candidate.
 
 
 class Obj1RelocError(DriverError):
