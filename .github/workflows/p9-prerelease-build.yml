@@ -40,9 +40,15 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse PHASE-9-COMPLETE)" = "6811d6f936851a67c7870ded34038133fa6a820a"
           git merge-base --is-ancestor PHASE-9-COMPLETE HEAD
-          git diff --name-only PHASE-9-COMPLETE HEAD | sort > /tmp/changed
-          printf '%s\n'             .github/workflows/p9-prerelease-build.yml             tools/check_media_retention.py | sort > /tmp/expected
-          diff -u /tmp/expected /tmp/changed
+          git diff --name-only PHASE-9-COMPLETE HEAD > /tmp/changed
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/p9-prerelease-build.yml|tools/check_media_retention.py|v1/dist/media/P9.pre-release/*) ;;
+              *) echo "unexpected post-Phase-9 path: $path" >&2; exit 1 ;;
+            esac
+          done < /tmp/changed
+          grep -qx '.github/workflows/p9-prerelease-build.yml' /tmp/changed
+          grep -qx 'tools/check_media_retention.py' /tmp/changed
           test "$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV16.md | awk '{print $1}')" = "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c"
           test "$(sha256sum docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md | awk '{print $1}')" = "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc"
           python3 tools/check_phase9_evidence.py --require-active
