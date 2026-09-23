@@ -273,6 +273,7 @@ import phase9_crontab_vi
 import phase9_vi_set
 import phase9_vi_viewport
 import phase9_vi_docs
+import phase9_acceptance
 # Phase-9 vi qualification dispatch.
 # Phase-3 current-head certification dispatch remains intentionally runner-visible.
 from media_retention import (
@@ -707,6 +708,8 @@ def dispatch(root: Path, action: str, step: str):
         return phase9_vi_viewport.dispatch(root, action, step, **kwargs)
     if step == "P9.23":
         return phase9_vi_docs.dispatch(root, action, step, **kwargs)
+    if step == "P9.24":
+        return phase9_acceptance.dispatch(root, action, step, **kwargs)
     if step.startswith("P9."):
         raise DriverError(f"numbered Phase-9 step is not registered: {step}")
     module = E0_MODULE.get(step)
@@ -928,6 +931,36 @@ def main() -> int:
         )
         if failed_assertions:
             raise DriverError(f"{len(failed_assertions)} assertion(s) failed")
+        if args.step == "P9.24" and args.action == "test":
+            build_path = evidence_dir / "P9.24.build.json"
+            if not build_path.is_file():
+                raise DriverError("P9.24 result requires matching build evidence")
+            build_record = json.loads(build_path.read_text(encoding="utf-8"))
+            test_record = json.loads(evidence_path.read_text(encoding="utf-8"))
+            for record in (build_record, test_record):
+                if record.get("status") != "PASS" or record.get("source_commit") != source_state.source_commit:
+                    raise DriverError("P9.24 source-candidate mismatch")
+                if record.get("architecture_sha256") != source_state.architecture_sha256:
+                    raise DriverError("P9.24 architecture identity mismatch")
+                if record.get("implementation_plan_sha256") != source_state.implementation_plan_sha256:
+                    raise DriverError("P9.24 plan identity mismatch")
+            result = {
+                "schema": 2, "step": "P9.24", "action": "result", "status": "PASS",
+                "pass_marker": phase9_acceptance.PASS_MARKER,
+                "source_commit": source_state.source_commit,
+                "toolchain_lock_sha256": source_state.toolchain_lock_sha256,
+                "architecture_sha256": source_state.architecture_sha256,
+                "implementation_plan_sha256": source_state.implementation_plan_sha256,
+                "worktree_clean": True, "prerequisites": {"P9.23": "PASS"},
+                "commands": test_record["commands"], "hashes": test_record["hashes"],
+                "assertions": test_record["assertions"] + [
+                    {"name":"same-clean-phase9-acceptance-source-candidate-all-records","passed":True}
+                ],
+            }
+            result_path = evidence_dir / "P9.24.result.json"
+            result_path.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+            print(phase9_acceptance.PASS_MARKER)
+            print(f"result={result_path}")
         if args.step == "P8.40" and args.action == "test":
             build_path = evidence_dir / "P8.40.build.json"
             if not build_path.is_file():
