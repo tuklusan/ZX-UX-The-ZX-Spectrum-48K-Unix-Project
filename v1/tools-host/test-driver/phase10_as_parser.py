@@ -31,6 +31,10 @@ def require(ok, msg):
         raise P1005Error(msg)
 
 
+def jp_nc(address: int) -> bytes:
+    return b"\xD2" + phase1._word(address)
+
+
 def dispatch(root, action, step, *, sha256_file, run_command, require_project_tool):
     if step != "P10.05":
         raise DriverError(step)
@@ -102,7 +106,7 @@ fixture_end:
                 + phase1._ld_sp(0xBFC0)
                 + phase1._ld_hl(symbols[name])
                 + phase1._call(symbols["as_p1005_parse_line"])
-                + phase1._jp_nc(FAIL_PC)
+                + jp_nc(FAIL_PC)
                 + phase1._jp(PASS_PC)
             )
             run_sna(root, code, patch=patch)
