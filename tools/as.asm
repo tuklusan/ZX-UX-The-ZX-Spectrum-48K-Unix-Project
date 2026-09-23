@@ -886,3 +886,155 @@ as_p1008_error:
 as_p1008_precedence:
     db 5,5,6,6,6,3,1,2,4,4
     ENDM
+
+
+; P10.09 global/export and extern/import OBJ1 binding records.
+    MACRO EMIT_P10_AS_BINDING_ROUTINES
+AS_P1009_MAX_BINDINGS EQU 8
+AS_P1009_RECORD_SIZE  EQU 20
+AS_P1009_UNDEF        EQU 0
+AS_P1009_TEXT         EQU 1
+AS_P1009_BSS          EQU 2
+AS_P1009_ABS          EQU 3
+AS_P1009_GLOBAL       EQU 1
+
+as_p1009_reset:
+    xor a
+    ld (as_p1009_count),a
+    ret
+
+; HL=name, DE=value, A=section. Adds a defined GLOBAL export.
+as_p1009_export:
+    cp AS_P1009_TEXT
+    jr z,as_p1009_add_common
+    cp AS_P1009_BSS
+    jr z,as_p1009_add_common
+    cp AS_P1009_ABS
+    jp nz,as_p1009_error
+as_p1009_add_common:
+    ld (as_p1009_section_arg),a
+    ld (as_p1009_name_arg),hl
+    ld (as_p1009_value_arg),de
+    jp as_p1009_add
+
+; HL=name. Adds an undefined GLOBAL import with value zero.
+as_p1009_import:
+    xor a
+    ld (as_p1009_section_arg),a
+    ld (as_p1009_value_arg),a
+    ld (as_p1009_value_arg+1),a
+    ld (as_p1009_name_arg),hl
+
+as_p1009_add:
+    ld a,(as_p1009_count)
+    cp AS_P1009_MAX_BINDINGS
+    jp nc,as_p1009_error
+    ld b,a
+    ld ix,as_p1009_table
+as_p1009_dup_scan:
+    ld a,b
+    or a
+    jr z,as_p1009_store
+    push bc
+    push ix
+    ld hl,(as_p1009_name_arg)
+    push ix
+    pop de
+    call as_p1009_name_equal
+    pop ix
+    pop bc
+    jp z,as_p1009_error
+    ld de,AS_P1009_RECORD_SIZE
+    add ix,de
+    djnz as_p1009_dup_scan
+
+as_p1009_store:
+    ld hl,(as_p1009_name_arg)
+    push ix
+    pop de
+    ld b,16
+as_p1009_copy:
+    ld a,(hl)
+    ld (de),a
+    inc de
+    inc hl
+    or a
+    jr z,as_p1009_pad
+    djnz as_p1009_copy
+    jp as_p1009_error
+as_p1009_pad:
+    dec b
+    jr z,as_p1009_fields
+    xor a
+as_p1009_pad_loop:
+    ld (de),a
+    inc de
+    djnz as_p1009_pad_loop
+as_p1009_fields:
+    ld hl,(as_p1009_value_arg)
+    ld a,l
+    ld (de),a
+    inc de
+    ld a,h
+    ld (de),a
+    inc de
+    ld a,(as_p1009_section_arg)
+    ld (de),a
+    inc de
+    ld a,AS_P1009_GLOBAL
+    ld (de),a
+    ld a,(as_p1009_count)
+    inc a
+    ld (as_p1009_count),a
+    xor a
+    ret
+
+; HL=name. Carry clear, IX=matching binding record. Carry set if absent.
+as_p1009_find:
+    ld (as_p1009_name_arg),hl
+    ld a,(as_p1009_count)
+    ld b,a
+    ld ix,as_p1009_table
+as_p1009_find_loop:
+    ld a,b
+    or a
+    jr z,as_p1009_error
+    push bc
+    push ix
+    ld hl,(as_p1009_name_arg)
+    push ix
+    pop de
+    call as_p1009_name_equal
+    pop ix
+    pop bc
+    jr z,as_p1009_found
+    ld de,AS_P1009_RECORD_SIZE
+    add ix,de
+    djnz as_p1009_find_loop
+    jp as_p1009_error
+as_p1009_found:
+    xor a
+    ret
+
+as_p1009_name_equal:
+as_p1009_name_equal_loop:
+    ld a,(de)
+    cp (hl)
+    ret nz
+    or a
+    ret z
+    inc hl
+    inc de
+    jr as_p1009_name_equal_loop
+
+as_p1009_error:
+    ld a,E_FORMAT
+    scf
+    ret
+
+as_p1009_count:       db 0
+as_p1009_name_arg:    dw 0
+as_p1009_value_arg:   dw 0
+as_p1009_section_arg: db 0
+as_p1009_table: defs AS_P1009_MAX_BINDINGS*AS_P1009_RECORD_SIZE,0
+    ENDM
