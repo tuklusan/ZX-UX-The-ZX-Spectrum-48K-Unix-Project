@@ -105,7 +105,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          test ! -e v1/dist/certification/phase-8.json
+          test ! -e v1/dist/certification/phase-9.json
           python3 - <<'PY'
           import json, os, urllib.request
           payload=json.dumps({"ref":"main","inputs":{"admitted_commit":os.environ["ADMITTED_COMMIT"]}}).encode()
