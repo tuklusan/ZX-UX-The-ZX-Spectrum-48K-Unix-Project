@@ -776,9 +776,11 @@ as_p1008_xor:
 ; 16-bit multiply modulo 65536.
 as_p1008_mul:
     push bc
-    push de
-    ld b,16
-    ld bc,0
+    push af
+    push hl
+    pop bc
+    ld hl,0
+    ld a,16
 as_p1008_mul_loop:
     bit 0,e
     jr z,as_p1008_mul_skip
@@ -788,8 +790,9 @@ as_p1008_mul_skip:
     rl d
     sla c
     rl b
-    djnz as_p1008_mul_loop
-    pop de
+    dec a
+    jr nz,as_p1008_mul_loop
+    pop af
     pop bc
     xor a
     ret
@@ -809,11 +812,12 @@ as_p1008_udiv_loop:
     jr as_p1008_udiv_loop
 as_p1008_udiv_done:
     add hl,de
-    ex de,hl
-    ld h,b
-    ld l,c
-    ex de,hl
+    push hl
+    push bc
+    pop de
+    pop hl
     ; DE=quotient, HL=remainder
+    or a
     ret
 
 as_p1008_div:
