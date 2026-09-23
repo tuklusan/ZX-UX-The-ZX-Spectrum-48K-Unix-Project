@@ -1,0 +1,43 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: Phase-9 validation repair dispatch
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/phase9-validation-repair-dispatch.yml
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Dispatch repaired P9.23 admission validation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, urllib.request
+          payload=json.dumps({"ref":"main","inputs":{"admitted_commit":"68c896008a28804802a42ff797e3b6fbfc5f481c"}}).encode()
+          req=urllib.request.Request(
+              f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}/actions/workflows/phase9-admission-validation.yml/dispatches",
+              data=payload,method="POST",
+              headers={"Authorization":f"Bearer {os.environ['GH_TOKEN']}","Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","Content-Type":"application/json"})
+          with urllib.request.urlopen(req,timeout=30) as r:
+              if r.status!=204: raise SystemExit(f"dispatch failed: {r.status}")
+          PY
