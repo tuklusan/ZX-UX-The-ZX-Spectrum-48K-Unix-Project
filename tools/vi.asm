@@ -1122,7 +1122,7 @@ vi_p907_w_space_loop:
     pop hl
     ld a,b
     or a
-    jr nz,vi_p907_set
+    jp nz,vi_p907_set
     inc hl
     jr vi_p907_w_space_loop
 
