@@ -1273,3 +1273,153 @@ as_p1011_error:
     scf
     ret
     ENDM
+
+
+; P10.12 documented arithmetic/logical encoder primitives.
+    MACRO EMIT_P10_AS_ALU_ENCODER
+; A=family 0..7 for ADD,ADC,SUB,SBC,AND,XOR,OR,CP; B=register field.
+; Returns A=opcode, carry clear.
+as_p1012_alu_r:
+    cp 8
+    jp nc,as_p1012_error
+    ld c,a
+    ld a,b
+    cp 8
+    jp nc,as_p1012_error
+    ld a,c
+    add a,a
+    add a,a
+    add a,a
+    add a,$80
+    or b
+    or a
+    ret
+
+; A=family 0..7; returns immediate opcode.
+as_p1012_alu_n:
+    cp 8
+    jp nc,as_p1012_error
+    ld hl,as_p1012_imm_table
+    ld e,a
+    ld d,0
+    add hl,de
+    ld a,(hl)
+    or a
+    ret
+
+; B=register field, C=0 INC / 1 DEC.
+as_p1012_incdec_r:
+    ld a,b
+    cp 8
+    jp nc,as_p1012_error
+    add a,a
+    add a,a
+    add a,a
+    add a,$04
+    ld b,a
+    ld a,c
+    cp 2
+    jp nc,as_p1012_error
+    or a
+    ld a,b
+    ret z
+    inc a
+    or a
+    ret
+
+; B=pair field 0..3, C=0 INC / 1 DEC.
+as_p1012_incdec_rr:
+    ld a,b
+    cp 4
+    jp nc,as_p1012_error
+    rlca
+    rlca
+    rlca
+    rlca
+    add a,$03
+    ld b,a
+    ld a,c
+    cp 2
+    jp nc,as_p1012_error
+    or a
+    ld a,b
+    ret z
+    add a,8
+    or a
+    ret
+
+; B=rr 0..3. Returns A=ADD HL,rr opcode.
+as_p1012_add_hl_rr:
+    ld a,b
+    cp 4
+    jp nc,as_p1012_error
+    rlca
+    rlca
+    rlca
+    rlca
+    add a,$09
+    or a
+    ret
+
+; B=rr 0..3, C=0 ADC HL,rr / 1 SBC HL,rr. Returns H=$ED,L=opcode.
+as_p1012_adc_sbc_hl_rr:
+    ld a,b
+    cp 4
+    jp nc,as_p1012_error
+    rlca
+    rlca
+    rlca
+    rlca
+    ld l,a
+    ld a,c
+    cp 2
+    jp nc,as_p1012_error
+    or a
+    ld a,l
+    jr nz,as_p1012_sbc_hl
+    add a,$4A
+    jr as_p1012_ed_done
+as_p1012_sbc_hl:
+    add a,$42
+as_p1012_ed_done:
+    ld l,a
+    ld h,$ED
+    xor a
+    ret
+
+; A=0 IX / 1 IY, B=pair field 0..3. Returns H=prefix,L=ADD idx,rr opcode.
+as_p1012_add_index_rr:
+    cp 2
+    jp nc,as_p1012_error
+    ld h,$DD
+    or a
+    jr z,as_p1012_add_index_prefix
+    ld h,$FD
+as_p1012_add_index_prefix:
+    ld a,b
+    cp 4
+    jp nc,as_p1012_error
+    rlca
+    rlca
+    rlca
+    rlca
+    add a,$09
+    ld l,a
+    xor a
+    ret
+
+as_p1012_imm_table:
+    db $C6,$CE,$D6,$DE,$E6,$EE,$F6,$FE
+as_p1012_fixed:
+    db $ED,$44      ; NEG
+    db 0,$27        ; DAA
+    db 0,$2F        ; CPL
+    db 0,$3F        ; CCF
+    db 0,$37        ; SCF
+as_p1012_fixed_end:
+
+as_p1012_error:
+    ld a,E_FORMAT
+    scf
+    ret
+    ENDM
