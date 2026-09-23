@@ -190,6 +190,24 @@ def self_test() -> None:
     else:
         raise ObjError("trailing byte unexpectedly accepted")
 
+    # Adversarial count arithmetic must be widened, never 16-bit wrapped.
+    wrap = bytearray(HEADER_SIZE)
+    wrap[:4] = b"OBJ1"
+    wrap[4] = 1
+    struct.pack_into("<H", wrap, 6, HEADER_SIZE)
+    struct.pack_into("<H", wrap, 12, 0x4000)
+    struct.pack_into("<H", wrap, 16, HEADER_SIZE)
+    struct.pack_into("<H", wrap, 18, HEADER_SIZE)
+    struct.pack_into("<H", wrap, 20, crc16_ccitt_false(b""))
+    struct.pack_into("<H", wrap, 22, 0)
+    struct.pack_into("<H", wrap, 22, crc16_ccitt_false(bytes(wrap)))
+    try:
+        inspect_bytes(bytes(wrap))
+    except ObjError:
+        pass
+    else:
+        raise ObjError("symbol-count wrap vector unexpectedly accepted")
+
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description="Inspect a ZX-UX OBJ1 object")
