@@ -399,7 +399,10 @@ as_p1005_char_ok:
 as_p1005_is_include:
     ld a,b
     cp 7
-    ret nz
+    jr z,as_p1005_include_compare
+    or a
+    ret
+as_p1005_include_compare:
     ld hl,(as_p1005_token_start)
     ld de,as_p1005_include_word
     ld b,7
@@ -409,7 +412,10 @@ as_p1005_include_loop:
     ld a,(hl)
     or $20
     cp c
-    ret nz
+    jr z,as_p1005_include_match
+    or a
+    ret
+as_p1005_include_match:
     inc hl
     inc de
     djnz as_p1005_include_loop
