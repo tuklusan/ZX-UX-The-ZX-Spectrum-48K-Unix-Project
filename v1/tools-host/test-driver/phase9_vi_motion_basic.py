@@ -20,6 +20,7 @@ from fuse_harness import FAIL_PC, PASS_PC, run_sna
 from phase8_common import inspect_mex, make_tap, mex1, word
 
 BASE=0xC000
+# Exact P9.06 qualification candidate.
 
 
 class P906Error(DriverError):
