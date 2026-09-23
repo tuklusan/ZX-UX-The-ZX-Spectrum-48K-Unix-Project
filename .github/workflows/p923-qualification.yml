@@ -38,6 +38,7 @@ jobs:
           git diff --name-only "$P923_BASE" HEAD | sort > /tmp/changed
           printf '%s\n' \
             .github/workflows/p923-qualification.yml \
+            .github/workflows/phase9-step-admission.yml \
             v1/docs/vi.md \
             v1/tools-host/test-driver/phase9_vi_docs.py \
             v1/tools-host/test-driver/run.py | sort > /tmp/expected
@@ -60,6 +61,7 @@ jobs:
               v1/tools-host/test-driver/phase9_vi_docs.py \
               v1/tools-host/test-driver/run.py \
               .github/workflows/p923-qualification.yml \
+              .github/workflows/phase9-step-admission.yml \
               v1/dist/certification/P9.22.test.json | sha256sum | awk '{print $1}')"
             if test -z "$baseline"; then baseline="$digest"; else test "$baseline" = "$digest"; fi
           done
