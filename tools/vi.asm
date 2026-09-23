@@ -2944,13 +2944,11 @@ vi_p922_col_loop:
     jr vi_p922_col_next
 vi_p922_col_tab:
     ld hl,(vi_p922_logical_col)
+    ld de,8
+    add hl,de
     ld a,l
-    add a,8
     and $F8
     ld l,a
-    jr nc,vi_p922_col_tab_store
-    inc h
-vi_p922_col_tab_store:
     ld (vi_p922_logical_col),hl
 vi_p922_col_next:
     ld hl,(vi_p922_scan_off)
