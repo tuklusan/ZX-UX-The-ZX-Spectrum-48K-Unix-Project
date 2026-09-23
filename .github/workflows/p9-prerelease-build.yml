@@ -346,6 +346,7 @@ jobs:
           assert meta['tests']=={
               'deterministic_tap_rebuild':'PASS',
               'tap_header_and_basic_sequence':'PASS',
+              'fuse_tap_load_to_login':'PASS',
               'fuse_boot_gateway_to_login':'PASS',
           }
           for item in meta['files']:
