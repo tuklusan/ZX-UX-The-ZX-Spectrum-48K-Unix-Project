@@ -1376,4 +1376,175 @@ vi_p910_cursor_ready:
 
 vi_open_cmd: db 0
 vi_open_pos: dw 0
+
+; P9.11 x/dd/D deletions with exact yank-buffer effects.
+VI_YANK_CAPACITY        EQU 256
+
+; x: yank and delete the byte under the cursor. Empty/end is a safe no-op.
+vi_p911_x:
+    ld hl,(vi_buffer_len)
+    ld de,(vi_cursor_off)
+    or a
+    sbc hl,de
+    jr z,vi_p911_safe
+    jr c,vi_p911_safe
+    ld hl,(vi_cursor_off)
+    ld bc,1
+    call vi_p911_yank_range
+    ret c
+    ld hl,(vi_cursor_off)
+    call vi_p903_delete_byte
+    ret c
+    call vi_p911_clamp_cursor
+    xor a
+    ret
+
+; D: delete/yank cursor through end-of-line, never consuming LF.
+vi_p911_D:
+    ld hl,(vi_buffer_len)
+    ld de,(vi_cursor_off)
+    or a
+    sbc hl,de
+    jr z,vi_p911_safe
+    jr c,vi_p911_safe
+    call vi_p906_locate_line
+    call vi_p906_current_end
+    ld de,(vi_cursor_off)
+    or a
+    sbc hl,de
+    ld b,h
+    ld c,l
+    ld a,b
+    or c
+    jr z,vi_p911_safe
+    ld hl,(vi_cursor_off)
+    call vi_p911_yank_range
+    ret c
+    ld hl,(vi_yank_len)
+vi_p911_D_loop:
+    ld a,h
+    or l
+    jr z,vi_p911_D_done
+    push hl
+    ld hl,(vi_cursor_off)
+    call vi_p903_delete_byte
+    pop hl
+    ret c
+    dec hl
+    jr vi_p911_D_loop
+vi_p911_D_done:
+    call vi_p911_clamp_cursor
+    xor a
+    ret
+
+; dd: delete/yank one complete logical line. If an LF terminates the line it
+; is included. For the final unterminated line only content bytes are removed.
+vi_p911_dd:
+    ld hl,(vi_buffer_len)
+    ld a,h
+    or l
+    jr z,vi_p911_safe
+    call vi_p906_locate_line
+    ld hl,(vi_motion_start)
+    ld (vi_delete_start),hl
+    ld a,(vi_motion_line)
+    inc a
+    ld b,a
+    ld a,(vi_line_count)
+    cp b
+    jr z,vi_p911_dd_last
+    jr c,vi_p911_dd_last
+    ld a,b
+    call vi_p906_line_start
+    jr vi_p911_dd_have_end
+vi_p911_dd_last:
+    ld hl,(vi_buffer_len)
+vi_p911_dd_have_end:
+    ld de,(vi_delete_start)
+    or a
+    sbc hl,de
+    ld b,h
+    ld c,l
+    ld hl,(vi_delete_start)
+    call vi_p911_yank_range
+    ret c
+    ld hl,(vi_yank_len)
+vi_p911_dd_loop:
+    ld a,h
+    or l
+    jr z,vi_p911_dd_done
+    push hl
+    ld hl,(vi_delete_start)
+    call vi_p903_delete_byte
+    pop hl
+    ret c
+    dec hl
+    jr vi_p911_dd_loop
+vi_p911_dd_done:
+    ld hl,(vi_delete_start)
+    ld (vi_cursor_off),hl
+    call vi_p911_clamp_cursor
+    xor a
+    ret
+
+vi_p911_safe:
+    xor a
+    ld (vi_yank_len),a
+    ld (vi_yank_len+1),a
+    ret
+
+; HL=start, BC=len. Copy logical bytes into a bounded yank buffer.
+vi_p911_yank_range:
+    push hl
+    ld hl,VI_YANK_CAPACITY
+    or a
+    sbc hl,bc
+    pop hl
+    jr c,vi_p911_nomem
+    ld (vi_yank_len),bc
+    ld de,vi_yank_buf
+vi_p911_yank_loop:
+    ld a,b
+    or c
+    ret z
+    push bc
+    push de
+    push hl
+    call vi_p903_get_byte
+    pop hl
+    pop de
+    ld (de),a
+    inc de
+    inc hl
+    pop bc
+    dec bc
+    jr vi_p911_yank_loop
+vi_p911_nomem:
+    ld a,E_NOMEM
+    scf
+    ret
+
+; Keep the normal-mode cursor in-range after destructive edits.
+vi_p911_clamp_cursor:
+    ld hl,(vi_buffer_len)
+    ld a,h
+    or l
+    jr nz,vi_p911_clamp_nonempty
+    ld hl,0
+    ld (vi_cursor_off),hl
+    ret
+vi_p911_clamp_nonempty:
+    dec hl
+    ld de,(vi_cursor_off)
+    push hl
+    or a
+    sbc hl,de
+    pop hl
+    ret nc
+    ld (vi_cursor_off),hl
+    ret
+
+vi_delete_start: dw 0
+vi_yank_len: dw 0
+vi_yank_buf: defs VI_YANK_CAPACITY,0
     ENDM
