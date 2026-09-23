@@ -21,6 +21,7 @@ from phase8_common import inspect_mex, make_tap, mex1, word
 
 BASE=0xC000
 # Exact P9.07 qualification candidate.
+# Word positions are logical offsets within one LF-delimited line.
 
 
 class P907Error(DriverError):
