@@ -1,0 +1,39 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "canonical-p923-present",
+      "passed": true
+    },
+    {
+      "name": "vi-document-contract-complete",
+      "passed": true
+    },
+    {
+      "name": "exact-eight-deferred-families",
+      "passed": true
+    },
+    {
+      "name": "no-unsupported-question-command",
+      "passed": true
+    }
+  ],
+  "commands": [],
+  "hashes": {
+    "v1/dist/certification/P9.22.test.json": "0964685b9f00909f9a8619120280f2c294fd15fb2b62175584187688af1aaf91",
+    "v1/docs/vi.md": "b5dfbadc974b3c684d8fe0c4011efa2832c0e2bbfb3e77be1550fc4bd701c894",
+    "v1/tools-host/test-driver/phase9_vi_docs.py": "6ae123d25df7f302c5d112f6689b1ebb4a7a3c36e0b7e1af06cf86d55b359329",
+    "v1/tools-host/test-driver/run.py": "6c0e15a211354ec2879e3bcdcb60a85add4e9e1bfa2e8ab1efa093c608502a85"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P9.22": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "c67dae5cfe011357e7665d0495cef2d5635ed731",
+  "status": "PASS",
+  "step": "P9.23",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
