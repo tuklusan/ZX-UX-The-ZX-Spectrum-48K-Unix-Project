@@ -2511,10 +2511,10 @@ vi_p917_write_path:
     ret c
     ld a,h
     or a
-    jr nz,vi_p917_format
+    jp nz,vi_p917_format
     ld a,l
     cp 10
-    jr nc,vi_p917_format
+    jp nc,vi_p917_format
     add a,'0'
     ld (vi_temp_name+8),a
     xor a
@@ -2534,7 +2534,7 @@ vi_p917_open_retry:
     ret nz
     ld a,(vi_temp_n)
     cp 9
-    jr z,vi_p917_exist
+    jp z,vi_p917_exist
     inc a
     ld (vi_temp_n),a
     jr vi_p917_open_retry
@@ -2542,16 +2542,16 @@ vi_p917_open_retry:
 vi_p917_opened:
     ld a,h
     or a
-    jr nz,vi_p917_format_created
+    jp nz,vi_p917_format_created
     ld a,l
     ld (vi_temp_handle),a
     ld a,1
     ld (vi_temp_owned),a
     ld (vi_temp_open),a
     call vi_p917_write_all
-    jr c,vi_p917_cleanup_error
+    jp c,vi_p917_cleanup_error
     call vi_p917_close_temp
-    jr c,vi_p917_cleanup_error
+    jp c,vi_p917_cleanup_error
     ld hl,vi_temp_name
     ld (vi_rename_req),hl
     ld hl,(vi_write_dest)
@@ -2559,7 +2559,7 @@ vi_p917_opened:
     ld hl,vi_rename_req
     ld a,SYS_RENAME
     call SYSCALL_GATEWAY
-    jr c,vi_p917_cleanup_error
+    jp c,vi_p917_cleanup_error
     xor a
     ld (vi_temp_owned),a
     ret
