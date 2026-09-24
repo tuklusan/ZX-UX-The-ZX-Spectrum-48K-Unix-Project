@@ -223,7 +223,9 @@ def main() -> int:
     unexpected = [p for p in changed if p and not any(p.startswith(prefix) for prefix in ALLOWED_HISTORICAL_DIFFS)]
     require(not unexpected, f"historical certification/media changed unexpectedly: {unexpected}")
 
-    lock_path = ROOT / "tools/manifest/toolchain.lock.json"\n    require(lock_path.is_file(), "shared toolchain lock missing")\n    lock_text = lock_path.read_text(encoding="utf-8")
+    lock_path = ROOT / "tools/manifest/toolchain.lock.json"
+    require(lock_path.is_file(), "shared toolchain lock missing")
+    lock_text = lock_path.read_text(encoding="utf-8")
     setup_text = (ROOT / ".github/actions/setup-zxux-runtime/action.yml").read_text(encoding="utf-8")
     require("pasmo" not in lock_text.lower(), "Pasmo entered shared certified toolchain lock")
     require("pasmo" not in setup_text.lower(), "Pasmo entered shared runtime setup")
