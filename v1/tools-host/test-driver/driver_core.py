@@ -242,9 +242,9 @@ def write_evidence(
         "hashes": dict(sorted(hashes.items())),
         "assertions": assertions,
     }
-    if step == "R16.00" or (step.startswith("P") and step.split(".", 1)[0][1:].isdigit() and int(step.split(".", 1)[0][1:]) >= 3):
+    if step in ("R16.00", "R17.00") or (step.startswith("P") and step.split(".", 1)[0][1:].isdigit() and int(step.split(".", 1)[0][1:]) >= 3):
         payload["implementation_plan_sha256"] = source_state.implementation_plan_sha256
-    if step == "R16.00":
+    if step in ("R16.00", "R17.00"):
         payload["bridge_source_commit"] = source_state.source_commit
     destination.write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n",
