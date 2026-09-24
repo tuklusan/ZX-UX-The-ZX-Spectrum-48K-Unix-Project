@@ -11,6 +11,7 @@
 # patent, trademark, and governing-law provisions.
 
 name: Dispatch release TZX qualification once
+# Retrigger after exact text-padding CI exemption.
 
 on:
   push:
