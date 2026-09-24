@@ -12,6 +12,8 @@
 
 # H01 Documentation-Only Trigger Probe
 
+**Status:** HISTORICAL — closed documentation-trigger probe; retained for workflow-policy provenance only.
+
 This file is a deliberate documentation-only push probe for H01.
 
 Its check-in changes only a Markdown artifact under `scratch/`. The expected result is that no push-triggered ZX-UX workflow run is created for that check-in.
