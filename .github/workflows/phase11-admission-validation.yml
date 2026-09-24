@@ -1,0 +1,87 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: Phase-11 admission validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      admitted_commit:
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      ADMITTED_COMMIT: ${{ inputs.admitted_commit }}
+      ZXUX_REV16_SHA256: 24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c
+      ZXUX_REV07_SHA256: 840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc
+      ZXUX_TOOLCHAIN_LOCK_SHA256: 1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244
+      ZXUX_EVIDENCE_DIR: /tmp/zxux-phase11-admission-validation
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.admitted_commit }}
+      - name: Validate durable Phase-11 admission chain
+        id: chain
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$ADMITTED_COMMIT"
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+          test "$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV16.md | awk '{print $1}')" = "$ZXUX_REV16_SHA256"
+          test "$(sha256sum docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md | awk '{print $1}')" = "$ZXUX_REV07_SHA256"
+          test "$(sha256sum tools/manifest/toolchain.lock.json | awk '{print $1}')" = "$ZXUX_TOOLCHAIN_LOCK_SHA256"
+          python3 tools/check_phase10_evidence.py --require-active
+          python3 tools/check_media_retention.py
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+          cert=Path("v1/dist/certification")
+          latest=None
+          for n in range(1,49):
+              step=f"P11.{n:02d}"
+              pair=[cert/f"{step}.{a}.json" for a in ("build","test")]
+              present=[p.is_file() for p in pair]
+              if any(present) and not all(present): raise SystemExit(f"partial admitted evidence: {step}")
+              if not any(present):
+                  for m in range(n+1,49):
+                      if (cert/f"P11.{m:02d}.build.json").exists() or (cert/f"P11.{m:02d}.test.json").exists():
+                          raise SystemExit("non-contiguous Phase-11 admission")
+                  break
+              expected={"P10.36":"PASS"} if n==1 else {f"P11.{n-1:02d}":"PASS"}
+              records=[json.loads(p.read_text()) for p in pair]
+              source=records[0]["source_commit"]
+              for action,r in zip(("build","test"),records):
+                  assert r["schema"]==2 and r["step"]==step and r["action"]==action
+                  assert r["status"]=="PASS" and r["worktree_clean"] is True
+                  assert r["source_commit"]==source and r["prerequisites"]==expected
+                  assert r["architecture_sha256"]=="24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c"
+                  assert r["implementation_plan_sha256"]=="840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc"
+              latest=step
+          if latest is None: raise SystemExit("no admitted Phase-11 evidence")
+          print(f"latest={latest}")
+          PY
+      - name: Restore or build certified ZX-UX runtime
+        uses: ./.github/actions/setup-zxux-runtime
+      - name: Revalidate latest admitted Phase-11 step
+        run: |
+          set -euo pipefail
+          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step "${{ steps.chain.outputs.latest }}"
+          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step "${{ steps.chain.outputs.latest }}"
