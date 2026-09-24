@@ -24,7 +24,7 @@ LD_P1021_REL_ABS16   EQU 1
 ld_p1021_require_inputs:
     ld a,c
     or a
-    jr z,ld_p1021_format
+    jp z,ld_p1021_format
     xor a
     ret
 
@@ -378,30 +378,30 @@ ld_p1021_name_loop:
     jr z,ld_p1021_name_zero
     ld a,c
     cp 15
-    jr nc,ld_p1021_sym_bad
+    jp nc,ld_p1021_sym_bad
     ld a,c
     or a
     ld a,(hl)
     jr nz,ld_p1021_name_tail
     call ld_p1021_name_first
-    jr c,ld_p1021_sym_bad
+    jp c,ld_p1021_sym_bad
     jr ld_p1021_name_accept
 ld_p1021_name_tail:
     call ld_p1021_name_next
-    jr c,ld_p1021_sym_bad
+    jp c,ld_p1021_sym_bad
 ld_p1021_name_accept:
     inc c
     inc hl
     djnz ld_p1021_name_loop
-    jr ld_p1021_sym_bad
+    jp ld_p1021_sym_bad
 ld_p1021_name_zero:
     ld a,c
     or a
-    jr z,ld_p1021_sym_bad
+    jp z,ld_p1021_sym_bad
 ld_p1021_zero_tail:
     ld a,(hl)
     or a
-    jr nz,ld_p1021_sym_bad
+    jp nz,ld_p1021_sym_bad
     inc hl
     djnz ld_p1021_zero_tail
 
@@ -410,12 +410,12 @@ ld_p1021_zero_tail:
     add hl,de
     ld a,(hl)
     cp 4
-    jr nc,ld_p1021_sym_bad
+    jp nc,ld_p1021_sym_bad
     ld (ld_p1021_section),a
     inc hl
     ld a,(hl)
     and $FE
-    jr nz,ld_p1021_sym_bad
+    jp nz,ld_p1021_sym_bad
     ld a,(hl)
     ld (ld_p1021_flags),a
 
@@ -440,10 +440,10 @@ ld_p1021_sym_undef:
     ld hl,(ld_p1021_value)
     ld a,h
     or l
-    jr nz,ld_p1021_sym_bad
+    jp nz,ld_p1021_sym_bad
     ld a,(ld_p1021_flags)
     cp 1
-    jr nz,ld_p1021_sym_bad
+    jp nz,ld_p1021_sym_bad
     xor a
     ret
 ld_p1021_sym_text:
@@ -453,7 +453,7 @@ ld_p1021_sym_text:
     sbc hl,de
     jr c,ld_p1021_sym_good
     jr z,ld_p1021_sym_good
-    jr ld_p1021_sym_bad
+    jp ld_p1021_sym_bad
 ld_p1021_sym_bss:
     ld hl,(ld_p1021_value)
     ld de,(ld_p1021_bss)
