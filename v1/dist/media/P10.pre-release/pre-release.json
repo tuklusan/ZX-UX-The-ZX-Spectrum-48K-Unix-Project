@@ -78,7 +78,7 @@
     "tap_sha256": "1a71207314514f6c7a7ff83f08e029c06b734db1e49b6f1b9e91c7cff2d13ae2",
     "tzx_sha256": "e003f2e4abe4366fb466c0a22d00c0473e26dfe885a0f049f5229702883f6dde"
   },
-  "packaging_workflow_sha256": "aa7ea81cf1de3cb13a2a795df857ed030dad90d5e924fc873ca8fb5e9935e39b",
+  "packaging_workflow_sha256": "54bd6d6c6d91440b7b08dd1932058a26e301953f81d68151e2eb6b7fc719b705",
   "phase10_acceptance_sha256": "934b60e7861e9df5c16275a9f2016b8f1965890b80c5c360e1bbf7b4f399d711",
   "phase10_aggregate_sha256": "fea4c3246fd982f32d0a9fef89f93605c0965b2357ebc4e4bfca70636cd45060",
   "schema": 1,
