@@ -11,6 +11,7 @@
 # patent, trademark, and governing-law provisions.
 
 name: REV17 native kernel rebuild probe once
+# Retry after stage-isolation diagnostics.
 
 on:
   push:
