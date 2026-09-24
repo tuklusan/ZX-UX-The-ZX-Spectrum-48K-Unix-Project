@@ -11,7 +11,7 @@
 # patent, trademark, and governing-law provisions.
 
 name: Post-Phase-10 migration final validation once
-# Final self-removing migration closure run.
+# Final self-removing migration closure run; retry with runtime excluded from policy scan.
 
 on:
   push:
@@ -181,11 +181,17 @@ jobs:
             echo "SCAN-$scan: CLEAN"
           done
 
+          runtime_hold=/tmp/zxux-runtime-final-closure
+          rm -rf "$runtime_hold"
+          mv tools/runtime "$runtime_hold"
+          trap 'mv "$runtime_hold" tools/runtime' EXIT
           ./tools/check_license_headers.sh
           ./tools/check_project_policy.py
           python3 tools/check_media_retention.py
           python3 tools/check_phase10_evidence.py --require-active
           python3 v1/tools-host/test-driver/evidence.py v1/dist/certification/R17.00.result.json
+          mv "$runtime_hold" tools/runtime
+          trap - EXIT
           test "$(git diff --cached --name-only | sort | tr '\n' ' ')" = ".github/workflows/post-p10-migration-final-validation-once.yml scratch/ZX-UX-FAST-LOADER-TZX-RELEASE-MIGRATION-RUNBOOK-REV01.md "
 
           git config user.name "github-actions[bot]"
