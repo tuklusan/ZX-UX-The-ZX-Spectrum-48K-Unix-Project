@@ -2201,7 +2201,9 @@ as_p1018_reloc_order:
     ld de,(as_p1018_cur_off)
     or a
     sbc hl,de
-    jp nc,as_p1018_error_carry
+    jr c,as_p1018_reloc_store_prev
+    jr z,as_p1018_reloc_store_prev
+    jp as_p1018_error_carry
 as_p1018_reloc_store_prev:
     ld hl,(as_p1018_cur_off)
     ld (as_p1018_prev),hl
@@ -2273,25 +2275,15 @@ as_p1018_emit:
     ldir
 
     ; CRC-16/CCITT-FALSE of exact body.
-    ld hl,(as_p1018_dest)
-    ld de,AS_P1018_HEADER_SIZE
-    add hl,de
-    ld bc,(as_p1018_total)
+    ld hl,(as_p1018_total)
     ld de,AS_P1018_HEADER_SIZE
     or a
     sbc hl,de
-    ; restore body pointer; BC becomes total-24.
+    ld b,h
+    ld c,l
     ld hl,(as_p1018_dest)
     ld de,AS_P1018_HEADER_SIZE
     add hl,de
-    ld de,(as_p1018_total)
-    ex de,hl
-    ld bc,AS_P1018_HEADER_SIZE
-    or a
-    sbc hl,bc
-    ld b,h
-    ld c,l
-    ex de,hl
     call as_p1018_crc16
     ld ix,(as_p1018_dest)
     ld (ix+20),e
