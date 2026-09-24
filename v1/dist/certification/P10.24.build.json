@@ -1,0 +1,63 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "normal-order-crt0-first",
+      "passed": true
+    },
+    {
+      "name": "user-then-archive-order",
+      "passed": true
+    },
+    {
+      "name": "even-text-and-bss-layout",
+      "passed": true
+    },
+    {
+      "name": "even-final-image-and-heap-base",
+      "passed": true
+    },
+    {
+      "name": "zero-padding-gate",
+      "passed": true
+    },
+    {
+      "name": "image-bss-32768-bound",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1024-layout.sym",
+        "p1024-layout.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 7,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 1850 lines, work time: 0.006 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/ld.asm": "44e52dcb821e7eb075e5bd1a6a5d34c6a41ad400a8ea514ccecf1c9e6d14c613",
+    "v1/build/p1024-main.bin": "c079af4c76c9d4b92ee4909399ec93751dcc6d0007f756cac59a32cbba219100",
+    "v1/dist/certification/P10.23.build.json": "5426fcc3bb12b740b478f7bd33993c9580436833cc0298a111a71dd1273fa355",
+    "v1/dist/certification/P10.23.test.json": "10fc695852f210d4801bef550ec3bbf85999d4fd15bd3e7d1cc308696d868338",
+    "v1/tools-host/test-driver/phase10_step_24.py": "f512c5fd621a82e03b0da6f0584bcab8a4ca926e17fa557881b189daad34718d"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P10.23": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "19f8ccd24e52d61114fee2d73d5c3e96e3534387",
+  "status": "PASS",
+  "step": "P10.24",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
