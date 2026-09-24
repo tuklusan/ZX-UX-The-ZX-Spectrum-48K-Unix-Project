@@ -26,7 +26,7 @@ MEDIA = ROOT / "v1/dist/media"
 ALLOWED_SUFFIXES = frozenset({".sna", ".tap", ".tzx", ".scr", ".fmf", ".wav", ".flac", ".png"})
 STEP_RE = re.compile(r"^P(?:[6-9]|1[0-2])\.\d{2}$")
 LEGACY_MEDIA_DIRS = frozenset({"P0", "P5"})
-NON_CERTIFICATION_MEDIA_DIRS = frozenset({"P9.pre-release"})
+NON_CERTIFICATION_MEDIA_DIRS = frozenset({"P9.pre-release", "P10.pre-release"})
 HEADING_RE = re.compile(r"^## (P(?:[6-9]|1[0-2])\.\d{2}) - ")
 ARTIFACT_PREFIX = "6. **Emulator test artifact:** "
 
