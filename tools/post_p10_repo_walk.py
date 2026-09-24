@@ -32,6 +32,7 @@ REV17 = "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8"
 REV08 = "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c"
 LOADER_ZIP = "4c83a681f718192db9ebb32f0c8bc565baf2e68eb85de480322a1102d32f00c7"
 ALLOWED_HISTORICAL_DIFFS = (
+    "v1/dist/certification/README.md",
     "v1/dist/certification/R17.00.",
     "v1/dist/media/P10.pre-release/",
     "v1/dist/media/P9.pre-release/",
