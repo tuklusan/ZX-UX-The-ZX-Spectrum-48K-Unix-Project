@@ -127,8 +127,22 @@ def classify(path: str) -> str:
         if Path(path).name.lower().startswith("readme"):
             return "current"
         return "historical"
-    if path.startswith(("tools/", "v1/tools-host/")):
+    if path.startswith("v1/tools-host/test-driver/"):
+        name = Path(path).name
+        if re.match(r"phase(?:0|[1-9]|10)(?:_|\.|$)", name) or name == "revision16_bridge.py":
+            return "replay-only"
+        return "current"
+    if path.startswith("v1/tools-host/"):
         if path.startswith("v1/tools-host/maketap/"):
+            return "replay-only"
+        return "current"
+    if path.startswith("tools/"):
+        name = Path(path).name
+        if name == "generate_phase0_resources.py":
+            return "replay-only"
+        if re.match(r"(?:finalize|test)_phase(?:0|[1-9])", name):
+            return "replay-only"
+        if re.match(r"check_phase(?:0|[1-9])_evidence\.py$", name):
             return "replay-only"
         return "current"
     return "unrelated"
