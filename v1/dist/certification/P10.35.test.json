@@ -1,0 +1,77 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "host-golden-order-symbols-layout",
+      "passed": true
+    },
+    {
+      "name": "host-golden-mex1-byte-exact",
+      "passed": true
+    },
+    {
+      "name": "host-golden-mex1-sha256",
+      "passed": true
+    },
+    {
+      "name": "host-inspector-accepts-golden",
+      "passed": true
+    },
+    {
+      "name": "perturbed-input-order-differs",
+      "passed": true
+    },
+    {
+      "name": "fuse-target-golden-byte-exact",
+      "passed": true
+    },
+    {
+      "name": "fuse-target-archive-fixed-point",
+      "passed": true
+    },
+    {
+      "name": "fuse-target-layout-symbol-relocation-entry",
+      "passed": true
+    },
+    {
+      "name": "fuse-perturbed-order-detected",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1035-golden.sym",
+        "p1035-golden.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 14,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 4633 lines, work time: 0.013 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/ld.asm": "559cb8bfe390c5a1bed8934948f51aa0852c29880128a4b06cc6df684ff6f3df",
+    "v1/build/p1035-main.bin": "732c509cdb1baee2bbcdd5eb082e3d504ae5d43f0b8b6e23f0f300b5dc69b395",
+    "v1/dist/certification/P10.34.build.json": "bb07f5501ec00173808bcab2a5dff479ee6622ed2b14991a992c4aa74cf3bfc7",
+    "v1/dist/certification/P10.34.test.json": "0e52969e19178fb7525fea119083044679cac6247064dc38a0b138afe7c6e9e0",
+    "v1/tests/compiler/link_golden/phase10-multimodule.json": "daa8c97566f4dc1b2626abb0a2cf156db6dc62a3850e3e05aa8b6d09979b0d15",
+    "v1/tools-host/inspect-mex/inspect.py": "9ae7d5564675d4dd2017c4605c55c87ae4ca9d6482b451cfbaeb362ab3853b5d",
+    "v1/tools-host/test-driver/phase10_step_35.py": "aa04c8a26d0dfbed76401ff30a11f876d7557fc91d3aaf365fe6dd4bc1e9dfd5"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P10.34": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "0f6c8a9c4a4ac909d2b25aad3d09983e0cea0747",
+  "status": "PASS",
+  "step": "P10.35",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
