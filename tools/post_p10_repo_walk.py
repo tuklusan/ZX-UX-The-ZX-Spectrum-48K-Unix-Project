@@ -261,6 +261,8 @@ def main() -> int:
     for rel in chosen:
         if classify(rel) != "current":
             continue
+        if rel == "tools/post_p10_repo_walk.py":
+            continue
         path = ROOT / rel
         try:
             text = path.read_text(encoding="utf-8")
