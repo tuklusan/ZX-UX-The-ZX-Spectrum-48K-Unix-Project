@@ -2358,3 +2358,150 @@ as_p1018_error:
     scf
     ret
     ENDM
+
+
+; P10.19 exact assembler input/output-name resolution.
+; Inputs: C=input count, A=kernel object type, HL=input base name,
+; DE=explicit output name or 0 for default, IX=11-byte result buffer.
+; Success: result is exact/case-sensitive, A=OBJ_OBJ, carry clear.
+; No suffix spelling is used to infer kernel object type.
+    MACRO EMIT_P10_AS_NAME_ROUTINES
+AS_P1019_MAX_OUTPUT EQU 10
+AS_P1019_MAX_INPUT_SCAN EQU 31
+
+as_p1019_names:
+    ld (as_p1019_input),hl
+    ld (as_p1019_explicit),de
+    ld (as_p1019_output),ix
+    ld b,a
+    ld a,c
+    cp 1
+    jp nz,as_p1019_error
+    ld a,b
+    cp OBJ_ASM
+    jp nz,as_p1019_error
+
+    ld hl,(as_p1019_explicit)
+    ld a,h
+    or l
+    jr z,as_p1019_default
+
+    ; Explicit -o is an exact base name: 1..10 bytes, no case folding.
+    call as_p1019_measure_output
+    jp c,as_p1019_error
+    ld hl,(as_p1019_explicit)
+    jr as_p1019_copy_exact
+
+as_p1019_default:
+    ; Measure input without silently accepting an unterminated/huge name.
+    ld hl,(as_p1019_input)
+    ld b,0
+as_p1019_measure_input:
+    ld a,(hl)
+    or a
+    jr z,as_p1019_input_measured
+    inc b
+    ld a,b
+    cp AS_P1019_MAX_INPUT_SCAN+1
+    jp nc,as_p1019_error
+    inc hl
+    jr as_p1019_measure_input
+as_p1019_input_measured:
+    ld a,b
+    cp 4
+    jp c,as_p1019_error
+    cp AS_P1019_MAX_OUTPUT+1
+    jp nc,as_p1019_error
+
+    ; Exact lower-case final suffix ".asm" only.
+    ld hl,(as_p1019_input)
+    ld d,0
+    ld e,b
+    add hl,de
+    dec hl
+    ld a,(hl)
+    cp 'm'
+    jp nz,as_p1019_error
+    dec hl
+    ld a,(hl)
+    cp 's'
+    jp nz,as_p1019_error
+    dec hl
+    ld a,(hl)
+    cp 'a'
+    jp nz,as_p1019_error
+    dec hl
+    ld a,(hl)
+    cp '.'
+    jp nz,as_p1019_error
+
+    ; Copy stem, then exact ".obj"; result length equals input length.
+    ld hl,(as_p1019_input)
+    push ix
+    pop de
+    ld a,b
+    sub 4
+    ld b,a
+as_p1019_copy_stem:
+    ld a,b
+    or a
+    jr z,as_p1019_append_obj
+    ld a,(hl)
+    ld (de),a
+    inc hl
+    inc de
+    djnz as_p1019_copy_stem
+as_p1019_append_obj:
+    ld hl,as_p1019_obj_suffix
+    ld bc,5
+    ldir
+    ld a,OBJ_OBJ
+    or a
+    ret
+
+as_p1019_measure_output:
+    ld b,0
+as_p1019_measure_output_loop:
+    ld a,(hl)
+    or a
+    jr z,as_p1019_measure_output_done
+    inc b
+    ld a,b
+    cp AS_P1019_MAX_OUTPUT+1
+    jr nc,as_p1019_measure_output_bad
+    inc hl
+    jr as_p1019_measure_output_loop
+as_p1019_measure_output_done:
+    ld a,b
+    or a
+    jr z,as_p1019_measure_output_bad
+    or a
+    ret
+as_p1019_measure_output_bad:
+    scf
+    ret
+
+as_p1019_copy_exact:
+    push ix
+    pop de
+as_p1019_copy_exact_loop:
+    ld a,(hl)
+    ld (de),a
+    inc hl
+    inc de
+    or a
+    jr nz,as_p1019_copy_exact_loop
+    ld a,OBJ_OBJ
+    or a
+    ret
+
+as_p1019_obj_suffix: db '.obj',0
+as_p1019_input:    dw 0
+as_p1019_explicit: dw 0
+as_p1019_output:   dw 0
+
+as_p1019_error:
+    ld a,E_FORMAT
+    scf
+    ret
+    ENDM
