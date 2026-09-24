@@ -1945,3 +1945,304 @@ ld_p1031_mex1_bss_size:   dw 0
 ld_p1031_heap_start:      dw 0
 ld_p1031_heap_end:        dw 0
     ENDM
+
+
+; P10.32 deterministic final MEX1 memory writer.
+    MACRO EMIT_P10_LD_MEX1_WRITER_ROUTINES
+LD_P1032_HEADER_SIZE EQU 24
+LD_P1032_MAX_STORED EQU 32768
+
+; State inputs:
+; image/image_size, bss_size, entry, stack, relocs/reloc_count, output/capacity.
+; Success stores exact stored length and complete MEX1 bytes.
+ld_p1032_write:
+    call ld_p1032_validate
+    ret c
+
+    ld hl,(ld_p1032_output)
+    ld (hl),'M'
+    inc hl
+    ld (hl),'E'
+    inc hl
+    ld (hl),'X'
+    inc hl
+    ld (hl),'1'
+    inc hl
+    ld (hl),1
+    inc hl
+    ld (hl),0
+    inc hl
+    ld (hl),LD_P1032_HEADER_SIZE
+    inc hl
+    ld (hl),0
+    inc hl
+    ld de,(ld_p1032_image_size)
+    call ld_p1032_put_de
+    ld de,(ld_p1032_bss_size)
+    call ld_p1032_put_de
+    ld de,(ld_p1032_entry)
+    call ld_p1032_put_de
+    ld de,(ld_p1032_stack)
+    call ld_p1032_put_de
+    ld de,(ld_p1032_reloc_count)
+    call ld_p1032_put_de
+    ld de,(ld_p1032_reloc_offset)
+    call ld_p1032_put_de
+    xor a
+    ld (hl),a
+    inc hl
+    ld (hl),a
+    inc hl
+    ld (hl),a
+    inc hl
+    ld (hl),a
+
+    ld hl,(ld_p1032_image)
+    ld de,(ld_p1032_output)
+    push hl
+    ld hl,LD_P1032_HEADER_SIZE
+    add hl,de
+    ex de,hl
+    pop hl
+    ld bc,(ld_p1032_image_size)
+    ldir
+
+    ld hl,(ld_p1032_relocs)
+    ld de,(ld_p1032_output)
+    push hl
+    ld hl,(ld_p1032_reloc_offset)
+    add hl,de
+    ex de,hl
+    pop hl
+    ld bc,(ld_p1032_reloc_bytes)
+    ldir
+
+    ; Body CRC covers image+relocation table.
+    ld hl,(ld_p1032_output)
+    ld de,LD_P1032_HEADER_SIZE
+    add hl,de
+    ld bc,(ld_p1032_stored_length)
+    ld de,LD_P1032_HEADER_SIZE
+    push hl
+    ld h,b
+    ld l,c
+    or a
+    sbc hl,de
+    ld b,h
+    ld c,l
+    pop hl
+    call ld_p1032_crc16
+    ld hl,(ld_p1032_output)
+    ld bc,20
+    add hl,bc
+    ld (hl),e
+    inc hl
+    ld (hl),d
+
+    ; Header CRC is calculated with bytes 22..23 still zero.
+    ld hl,(ld_p1032_output)
+    ld bc,LD_P1032_HEADER_SIZE
+    call ld_p1032_crc16
+    ld hl,(ld_p1032_output)
+    ld bc,22
+    add hl,bc
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    xor a
+    ret
+
+ld_p1032_put_de:
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    inc hl
+    ret
+
+ld_p1032_validate:
+    ld hl,(ld_p1032_image_size)
+    ld a,h
+    or l
+    jp z,ld_p1032_format
+    ld de,(ld_p1032_bss_size)
+    add hl,de
+    jp c,ld_p1032_format
+    ld (ld_p1032_image_bss),hl
+    ld de,$8001
+    or a
+    sbc hl,de
+    jp nc,ld_p1032_format
+
+    ld hl,(ld_p1032_entry)
+    ld de,(ld_p1032_image_size)
+    or a
+    sbc hl,de
+    jp nc,ld_p1032_format
+
+    ld hl,(ld_p1032_stack)
+    ld de,64
+    or a
+    sbc hl,de
+    jp c,ld_p1032_format
+    ld hl,(ld_p1032_stack)
+    ld de,4096
+    or a
+    sbc hl,de
+    jp c,ld_p1032_stack_ok
+    jp z,ld_p1032_stack_ok
+    jp ld_p1032_format
+ld_p1032_stack_ok:
+
+    ld hl,(ld_p1032_reloc_count)
+    add hl,hl
+    jp c,ld_p1032_format
+    ld (ld_p1032_reloc_bytes),hl
+
+    ld hl,(ld_p1032_image_size)
+    ld de,LD_P1032_HEADER_SIZE
+    add hl,de
+    jp c,ld_p1032_format
+    ld (ld_p1032_reloc_offset),hl
+    ld de,(ld_p1032_reloc_bytes)
+    add hl,de
+    jp c,ld_p1032_format
+    ld (ld_p1032_stored_length),hl
+    ld de,LD_P1032_MAX_STORED+1
+    or a
+    sbc hl,de
+    jp nc,ld_p1032_format
+
+    ld hl,(ld_p1032_capacity)
+    ld de,(ld_p1032_stored_length)
+    or a
+    sbc hl,de
+    jp c,ld_p1032_nospc
+
+    ld hl,(ld_p1032_reloc_count)
+    ld a,h
+    or l
+    jp z,ld_p1032_valid
+    ld hl,(ld_p1032_image_size)
+    ld de,2
+    or a
+    sbc hl,de
+    jp c,ld_p1032_format
+
+    ld hl,(ld_p1032_relocs)
+    ld (ld_p1032_rel_cur),hl
+    ld hl,(ld_p1032_reloc_count)
+    ld (ld_p1032_rel_left),hl
+    xor a
+    ld (ld_p1032_have_prev),a
+ld_p1032_rel_loop:
+    ld hl,(ld_p1032_rel_left)
+    ld a,h
+    or l
+    jp z,ld_p1032_valid
+    ld hl,(ld_p1032_rel_cur)
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (ld_p1032_rel_value),de
+
+    ld hl,(ld_p1032_image_size)
+    dec hl
+    dec hl
+    or a
+    sbc hl,de
+    jp c,ld_p1032_format
+
+    ld a,(ld_p1032_have_prev)
+    or a
+    jp z,ld_p1032_rel_word
+    ld hl,(ld_p1032_prev)
+    inc hl
+    inc hl
+    or a
+    sbc hl,de
+    jp nc,ld_p1032_format
+
+ld_p1032_rel_word:
+    ld hl,(ld_p1032_image)
+    add hl,de
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld hl,(ld_p1032_image_bss)
+    or a
+    sbc hl,de
+    jp c,ld_p1032_format
+
+    ld hl,(ld_p1032_rel_value)
+    ld (ld_p1032_prev),hl
+    ld a,1
+    ld (ld_p1032_have_prev),a
+    ld hl,(ld_p1032_rel_cur)
+    inc hl
+    inc hl
+    ld (ld_p1032_rel_cur),hl
+    ld hl,(ld_p1032_rel_left)
+    dec hl
+    ld (ld_p1032_rel_left),hl
+    jp ld_p1032_rel_loop
+
+ld_p1032_valid:
+    xor a
+    ret
+
+ld_p1032_crc16:
+    ld de,$FFFF
+ld_p1032_crc_byte:
+    ld a,b
+    or c
+    ret z
+    ld a,(hl)
+    xor d
+    ld d,a
+    inc hl
+    push bc
+    ld b,8
+ld_p1032_crc_bit:
+    sla e
+    rl d
+    jp nc,ld_p1032_crc_no_poly
+    ld a,d
+    xor $10
+    ld d,a
+    ld a,e
+    xor $21
+    ld e,a
+ld_p1032_crc_no_poly:
+    djnz ld_p1032_crc_bit
+    pop bc
+    dec bc
+    jp ld_p1032_crc_byte
+
+ld_p1032_nospc:
+    ld a,E_NOSPC
+    scf
+    ret
+ld_p1032_format:
+    ld a,E_FORMAT
+    scf
+    ret
+
+ld_p1032_image:         dw 0
+ld_p1032_image_size:    dw 0
+ld_p1032_bss_size:      dw 0
+ld_p1032_entry:         dw 0
+ld_p1032_stack:         dw 0
+ld_p1032_relocs:        dw 0
+ld_p1032_reloc_count:   dw 0
+ld_p1032_output:        dw 0
+ld_p1032_capacity:      dw 0
+ld_p1032_reloc_bytes:   dw 0
+ld_p1032_reloc_offset:  dw 0
+ld_p1032_stored_length: dw 0
+ld_p1032_image_bss:     dw 0
+ld_p1032_rel_cur:       dw 0
+ld_p1032_rel_left:      dw 0
+ld_p1032_rel_value:     dw 0
+ld_p1032_prev:          dw 0
+ld_p1032_have_prev:     db 0
+    ENDM
