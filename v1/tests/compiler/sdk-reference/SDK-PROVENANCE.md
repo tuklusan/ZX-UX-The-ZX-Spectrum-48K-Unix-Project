@@ -91,3 +91,13 @@ omission, contradiction, ambiguity, or stale language rule.
 No unresolved REV16/DOCX/SDK discrepancy is admitted by P11.01. Any newly found
 difference becomes an explicit blocking record before dependent native behavior
 is accepted.
+
+## P11.02 target architecture mapping
+
+The native target compiler now maps the pinned SDK decomposition onto a bounded
+streaming Z80 core rather than copying Python object graphs. The target keeps a
+64-byte source window, independent fixed-capacity global/extern, local, and label
+tables, and an eight-node expression bound. These choices preserve the SDK's
+separation of preprocessing, lexing, parsing, type/semantic checking, limits and
+errors while satisfying REV16's incremental-emission and <=20 KiB residency
+constraints. Host C48B1/VM memory structures remain reference behavior only.
