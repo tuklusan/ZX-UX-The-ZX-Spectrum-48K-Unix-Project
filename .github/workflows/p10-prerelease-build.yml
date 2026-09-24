@@ -44,7 +44,7 @@ jobs:
           git diff --name-only PHASE-10-COMPLETE HEAD > /tmp/changed
           while IFS= read -r path; do
             case "$path" in
-              .github/workflows/p10-prerelease-build.yml|tools/check_media_retention.py|v1/dist/media/P10.pre-release/*) ;;
+              .github/workflows/p10-prerelease-build.yml|tools/check_media_retention.py|v1/tools-host/maketap/maketap.py|v1/dist/media/P10.pre-release/*) ;;
               *) echo "unexpected post-Phase-10 path: $path" >&2; exit 1 ;;
             esac
           done < /tmp/changed
@@ -223,34 +223,31 @@ jobs:
           assert len(preview)==code_size
           preview+=issue+prompt+b'\x00'+font
 
-          n0=maketap._integer_number(0)
-          n7=maketap._integer_number(7)
-          n24575=maketap._integer_number(24575)
-          n57347=maketap._integer_number(57347)
-          loader_bytes=b''.join((
-              maketap._basic_line(10,bytes((maketap.TOK_BORDER,0x20))+n0+b': '+bytes((maketap.TOK_PAPER,0x20))+n0+b': '+bytes((maketap.TOK_INK,0x20))+n7+b': '+bytes((maketap.TOK_CLS,))),
-              maketap._basic_line(20,bytes((maketap.TOK_CLEAR,0x20))+n24575),
-              maketap._basic_line(30,bytes((maketap.TOK_LOAD,0x20,0x22,0x22,0x20,maketap.TOK_SCREEN))),
-              maketap._basic_line(40,bytes((maketap.TOK_LOAD,0x20,0x22,0x22,0x20,maketap.TOK_CODE))),
-              maketap._basic_line(45,bytes((maketap.TOK_LOAD,0x20,0x22,0x22,0x20,maketap.TOK_CODE))),
-              maketap._basic_line(50,bytes((maketap.TOK_RANDOMIZE,0x20,maketap.TOK_USR,0x20))+n57347),
-          ))
-          loader_text=(
-              '10 BORDER 0: PAPER 0: INK 7: CLS\n'
-              '20 CLEAR 24575\n'
-              '30 LOAD "" SCREEN$\n'
-              '40 LOAD "" CODE\n'
-              '45 LOAD "" CODE\n'
-              '50 RANDOMIZE USR 57347\n'
+          loader_source=(root/'v1/src/boot/loader.bas').read_text(encoding='utf-8')
+          preview_load_lines=(45,)
+          loader_text=maketap.loader_with_extra_code_loads(
+              loader_source,
+              preview_load_lines,
           )
-          logical=(
-              maketap.LogicalFile('zx48ux',maketap.PROGRAM_TYPE,loader_bytes,10,len(loader_bytes)),
-              maketap.LogicalFile('zx48uxscr',maketap.CODE_TYPE,screen,0x4000,0x8000),
-              maketap.LogicalFile('kernel',maketap.CODE_TYPE,kernel,0xE000,0x8000),
-              maketap.LogicalFile('p10preview',maketap.CODE_TYPE,bytes(preview),base,0x8000),
+          prefix=maketap.build_bootstrap_prefix(
+              loader_source=loader_source,
+              screen=screen,
+              kernel=kernel,
+              extra_code_load_lines=preview_load_lines,
+          )
+          preview_file=maketap.LogicalFile(
+              'p10preview',
+              maketap.CODE_TYPE,
+              bytes(preview),
+              base,
+              0x8000,
           )
           def build_tap():
-              return b''.join(maketap.logical_file_blocks(x) for x in logical)
+              return maketap.append_logical_files(prefix,(preview_file,))
+          loader_bytes=maketap.tokenized_loader(
+              loader_source,
+              extra_code_load_lines=preview_load_lines,
+          )
           tap1=build_tap()
           tap2=build_tap()
           assert tap1==tap2
@@ -301,7 +298,10 @@ jobs:
               'images built from the exact PHASE-10-COMPLETE source lineage. They load\n'
               'the canonical screen, the Phase-10-complete resident kernel, and a small\n'
               'fixed preview payload, then enter the real boot gateway at 0xE003. The\n'
-              'preview displays the frozen 64-column issue/login screen and then idles.\n\n'
+              'preview displays the frozen 64-column issue/login screen and then idles.\n'
+              'Its bootstrap prefix is built by the canonical maketap production path\n'
+              'from v1/src/boot/loader.bas, with one explicit extra CODE load for the\n'
+              'post-certification preview payload.\n\n'
               'phase10-native-lifecycle.tap and .tzx are exact byte copies of the\n'
               'admitted P10.34 retained cassette media. They preserve the certified\n'
               'MEX1/case-sensitive cassette roundtrip used by the native as/ld lifecycle\n'
@@ -337,6 +337,9 @@ jobs:
                   'kernel_size':8192,
                   'preview_name':'p10preview',
                   'preview_address':base,
+                  'canonical_loader_path':'v1/src/boot/loader.bas',
+                  'canonical_loader_sha256':sha_path(root/'v1/src/boot/loader.bas'),
+                  'preview_extra_code_load_lines':[45],
                   'boot_gateway':57347,
                   'expected_prompt':'login: ',
                   'success_marker_address':marker_addr,

@@ -116,7 +116,10 @@ def _basic_line(line_number: int, body: bytes) -> bytes:
     return struct.pack(">H", line_number) + _u16(len(content)) + content
 
 
-def tokenized_loader(source: str) -> bytes:
+def loader_with_extra_code_loads(
+    source: str,
+    line_numbers: tuple[int, ...] = (),
+) -> str:
     expected = (
         "10 BORDER 0: PAPER 0: INK 7: CLS\n"
         "20 CLEAR 24575\n"
@@ -125,12 +128,31 @@ def tokenized_loader(source: str) -> bytes:
         "50 RANDOMIZE USR 57347\n"
     )
     _require(source == expected, "canonical five-line loader text mismatch")
+    _require(
+        line_numbers == tuple(sorted(set(line_numbers))),
+        "extra CODE-load line numbers must be unique and ascending",
+    )
+    _require(
+        all(41 <= line_number <= 49 for line_number in line_numbers),
+        "extra CODE-load line number must be between 41 and 49",
+    )
+    lines = source.splitlines()
+    extras = tuple(f'{line_number} LOAD \"\" CODE' for line_number in line_numbers)
+    return "\n".join((*lines[:-1], *extras, lines[-1])) + "\n"
+
+
+def tokenized_loader(
+    source: str,
+    *,
+    extra_code_load_lines: tuple[int, ...] = (),
+) -> bytes:
+    loader_with_extra_code_loads(source, extra_code_load_lines)
 
     n0 = _integer_number(0)
     n7 = _integer_number(7)
     n24575 = _integer_number(24575)
     n57347 = _integer_number(BOOT_GATEWAY_DECIMAL)
-    return b"".join((
+    lines = [
         _basic_line(
             10,
             bytes((TOK_BORDER, 0x20)) + n0 + b": "
@@ -141,8 +163,18 @@ def tokenized_loader(source: str) -> bytes:
         _basic_line(20, bytes((TOK_CLEAR, 0x20)) + n24575),
         _basic_line(30, bytes((TOK_LOAD, 0x20, 0x22, 0x22, 0x20, TOK_SCREEN))),
         _basic_line(40, bytes((TOK_LOAD, 0x20, 0x22, 0x22, 0x20, TOK_CODE))),
-        _basic_line(50, bytes((TOK_RANDOMIZE, 0x20, TOK_USR, 0x20)) + n57347),
-    ))
+    ]
+    lines.extend(
+        _basic_line(
+            line_number,
+            bytes((TOK_LOAD, 0x20, 0x22, 0x22, 0x20, TOK_CODE)),
+        )
+        for line_number in extra_code_load_lines
+    )
+    lines.append(
+        _basic_line(50, bytes((TOK_RANDOMIZE, 0x20, TOK_USR, 0x20)) + n57347)
+    )
+    return b"".join(lines)
 
 
 def _checksum(payload_without_checksum: bytes) -> int:
@@ -260,13 +292,17 @@ def validate_bootstrap_contract(
     *, loader_source: str, screen: bytes, kernel: bytes,
     kernel_start: int = KERNEL_START, boot_gateway: int = BOOT_GATEWAY,
     names: tuple[str, str, str] = ("zx48ux", "zx48uxscr", "kernel"),
+    extra_code_load_lines: tuple[int, ...] = (),
 ) -> tuple[LogicalFile, LogicalFile, LogicalFile]:
     _require(len(screen) == SCREEN_SIZE, "loading screen must be exactly 6912 bytes")
     _require(len(kernel) == KERNEL_SIZE, "kernel image must be exactly 8192 bytes")
     _require(kernel_start == KERNEL_START, "kernel CODE start must be E000")
     _require(boot_gateway == BOOT_GATEWAY, "loader boot gateway must be E003")
     _require(names == ("zx48ux", "zx48uxscr", "kernel"), "bootstrap native-file name/order mismatch")
-    program = tokenized_loader(loader_source)
+    program = tokenized_loader(
+        loader_source,
+        extra_code_load_lines=extra_code_load_lines,
+    )
     return (
         LogicalFile("zx48ux", PROGRAM_TYPE, program, 10, len(program)),
         LogicalFile("zx48uxscr", CODE_TYPE, screen, SCREEN_START, 0x8000),
@@ -278,10 +314,12 @@ def build_bootstrap_prefix(
     *, loader_source: str, screen: bytes, kernel: bytes,
     kernel_start: int = KERNEL_START, boot_gateway: int = BOOT_GATEWAY,
     names: tuple[str, str, str] = ("zx48ux", "zx48uxscr", "kernel"),
+    extra_code_load_lines: tuple[int, ...] = (),
 ) -> bytes:
     files = validate_bootstrap_contract(
         loader_source=loader_source, screen=screen, kernel=kernel,
         kernel_start=kernel_start, boot_gateway=boot_gateway, names=names,
+        extra_code_load_lines=extra_code_load_lines,
     )
     return b"".join(logical_file_blocks(item) for item in files)
 
