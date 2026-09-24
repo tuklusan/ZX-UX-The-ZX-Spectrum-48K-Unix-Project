@@ -38,7 +38,7 @@ def dispatch(root, action, step, *, sha256_file, run_command, require_project_to
         {"name":"abs-no-runtime-reloc","passed":"ABS: fixed absolute, no runtime relocation." in source},
         {"name":"text-bss-runtime-reloc","passed":"ld_p1026_emit_runtime:" in source},
         {"name":"sorted-runtime-table","passed":"ld_p1026_sort_i:" in source and "ld_p1026_sort_j:" in source},
-        {"name":"unique-nonoverlap-bounds","passed":"equal or one-byte overlap is forbidden." in source and "ld_p1026_validate_patch:" in source},
+        {"name":"unique-nonoverlap-bounds","passed":"duplicate or one-byte overlap is forbidden." in source and "ld_p1026_validate_patch:" in source},
     ]
     require(all(a["passed"] for a in assertions), "P10.26 static relocation contract failure")
 
