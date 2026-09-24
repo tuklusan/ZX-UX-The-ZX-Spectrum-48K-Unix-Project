@@ -1,0 +1,45 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: One-shot stale fast-loader branch cleanup
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/delete-stale-fast-loader-branch-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - name: Verify preserved package then delete stale branch and self-remove
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected=4c83a681f718192db9ebb32f0c8bc565baf2e68eb85de480322a1102d32f00c7
+          test "$(sha256sum scratch/ZX-UX-LOADER-1.0.0-portable.zip | awk '{print $1}')" = "$expected"
+          git fetch --quiet origin fast-loader-migration-scratch
+          git show origin/fast-loader-migration-scratch:scratch/ZX-UX-LOADER-1.0.0-portable.zip > /tmp/loader.zip
+          test "$(sha256sum /tmp/loader.zip | awk '{print $1}')" = "$expected"
+          git push origin --delete fast-loader-migration-scratch
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/delete-stale-fast-loader-branch-once.yml
+          git commit -m "infra: remove one-shot stale branch cleanup"
+          git push origin HEAD:main
