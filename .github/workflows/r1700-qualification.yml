@@ -13,10 +13,6 @@
 name: R17.00 authority qualification
 # One-shot push trigger is retired to workflow_dispatch after bridge admission. Final repaired trigger.
 on:
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/r1700-qualification.yml
   workflow_dispatch: {}
 permissions:
   actions: write
@@ -43,6 +39,7 @@ jobs:
             .github/workflows/qualification-auto-dispatch.yml \
             .github/workflows/r1700-activation-validation.yml \
             .github/workflows/r1700-authority-admission.yml \
+            .github/workflows/r1700-dispatch-once.yml \
             .github/workflows/r1700-qualification.yml \
             docs/01-ZX-UX-ARCHITECTURE-REV17.md \
             docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV08.md \
@@ -91,6 +88,7 @@ jobs:
               .github/workflows/qualification-auto-dispatch.yml \
               .github/workflows/r1700-authority-admission.yml \
               .github/workflows/r1700-activation-validation.yml \
+              .github/workflows/r1700-dispatch-once.yml \
               .github/workflows/r1700-qualification.yml | sha256sum | awk '{print $1}')"
             if test -z "$baseline"; then baseline="$digest"; else test "$baseline" = "$digest"; fi
           done
