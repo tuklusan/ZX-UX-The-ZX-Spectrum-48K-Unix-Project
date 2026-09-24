@@ -28,7 +28,9 @@ jobs:
       SOURCE_COMMIT: ${{ inputs.source_commit }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:\n          fetch-depth: 0\n          ref: ${{ inputs.source_commit }}
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.source_commit }}
       - name: Guard exact qualified head
         run: |
           set -euo pipefail
@@ -41,7 +43,8 @@ jobs:
           ./tools/check_project_policy.py
           python3 tools/check_media_retention.py
       - name: Download exact qualification artifact
-        env:\n          GH_TOKEN: ${{ github.token }}
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -100,7 +103,8 @@ jobs:
           test "$(git rev-parse HEAD^)" = "$SOURCE_COMMIT"
           git push origin HEAD:main
       - name: Dispatch R17 activation validation
-        env:\n          GH_TOKEN: ${{ github.token }}
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           admitted="$(git rev-parse HEAD)"
