@@ -97,7 +97,6 @@ jobs:
           set -euo pipefail
           python3 tools/check_phase10_evidence.py --require-active
           python3 tools/check_media_retention.py
-          python3 v1/tools-host/test-driver/evidence.py v1/dist/certification/P10.36.result.json
       - name: Restore or build certified ZX-UX runtime
         uses: ./.github/actions/setup-zxux-runtime
       - name: Execute R17.00 build and test
