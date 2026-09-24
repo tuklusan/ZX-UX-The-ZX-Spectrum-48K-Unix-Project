@@ -23,6 +23,7 @@ from driver_core import DriverError
 from fuse_harness import PASS_PC, FAIL_PC, run_sna
 
 
+ # P10.22 exact qualification candidate.
 class P1022Error(DriverError):
     pass
 
