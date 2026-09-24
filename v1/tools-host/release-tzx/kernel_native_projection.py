@@ -108,6 +108,11 @@ def symbols(path:Path)->dict[str,int]:
 def eval_expr(expr:str, syms:dict[str,int], pc:int)->int:
     expr=expr.strip()
     if not expr: raise ProjectionError("empty expression")
+    if len(expr) >= 2 and expr[0] in "'\"" and expr[-1] == expr[0]:
+        value = ast.literal_eval(expr)
+        if isinstance(value, str) and len(value) == 1:
+            return ord(value)
+        raise ProjectionError(f"character literal required: {expr!r}")
     expr=re.sub(r"\$([0-9a-fA-F]+)",lambda m:"0x"+m.group(1),expr)
     expr=re.sub(r"%([01]+)",lambda m:"0b"+m.group(1),expr)
     expr=expr.replace("$",str(pc))
