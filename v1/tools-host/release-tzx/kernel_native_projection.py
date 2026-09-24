@@ -46,7 +46,7 @@ LD_INDEX_R=19; LD_INDEX_N8=20; ALU_R=21; ALU_N=22; ALU_INDEX=23
 INCDEC_R=24; INCDEC_RR=25; ADD_HL_RR=26; ADC_SBC_HL_RR=27
 ADD_INDEX_RR=28; JP_CALL=29; JR=30; DJNZ=31; RET=32; BITOP=33
 BITOP_INDEX=34; SHIFT=35; PUSHPOP=36; EX=37; IM=38; INOUT=39
-DB=40; DW=41; DS=42; RST=43
+DB=40; DW=41; DS=42; RST=43; OUT_N_A=44
 
 REG8={"b":0,"c":1,"d":2,"e":3,"h":4,"l":5,"(hl)":6,"a":7}
 PAIR={"bc":0,"de":1,"hl":2,"sp":3}
@@ -165,7 +165,7 @@ def rec(kind:int,*values:int)->bytes:
          ADD_HL_RR:"BB",ADC_SBC_HL_RR:"BBB",ADD_INDEX_RR:"BBB",JP_CALL:"BBBH",
          JR:"BBH",DJNZ:"BH",RET:"BB",BITOP:"BBBB",BITOP_INDEX:"BBBBB",
          SHIFT:"BBB",PUSHPOP:"BBB",EX:"BB",IM:"BB",INOUT:"BB",DB:"BH",
-         DW:"BH",DS:"BHH",RST:"BH"}[kind]
+         DW:"BH",DS:"BHH",RST:"BH",OUT_N_A:"BB"}[kind]
     return struct.pack("<"+fmt,kind,*values)
 
 def u8(v:int)->int:
@@ -297,7 +297,10 @@ def encode_source(src:str,address:int,syms:dict[str,int])->list[bytes]:
         if tail.lower().replace(" ","")=="a,(c)":return [rec(INOUT,0)]
         raise ProjectionError(src)
     if mn=="out":
-        if tail.lower().replace(" ","")=="(c),a":return [rec(INOUT,1)]
+        compact=tail.lower().replace(" ","")
+        if compact=="(c),a":return [rec(INOUT,1)]
+        m=re.fullmatch(r"\((.+)\),a",tail.strip(),re.I)
+        if m:return [rec(OUT_N_A,u8(eval_expr(m.group(1),syms,address)))]
         raise ProjectionError(src)
     raise ProjectionError(f"unsupported emitting source at {address:#06x}: {src}")
 
@@ -362,7 +365,7 @@ def encode_record(record:bytes,pc:int)->bytes:
         return bytes([0xDD if pair==4 else 0xFD,0xE1 if pop else 0xE5])
     if k==EX:return (b"\xeb",b"\xe3",b"\x08")[record[1]]
     if k==IM:return b"\xed"+bytes([{0:0x46,1:0x56,2:0x5e}[record[1]]])
-    if k==INOUT:return b"\xed"+bytes([0x78 if record[1]==0 else 0x79])
+    if k==INOUT:return b"\xed"+bytes([0x78 if record[1]==0 else 0x79])\n    if k==OUT_N_A:return bytes([0xD3,record[1]])
     if k==DB:return bytes([record[1]])
     if k==DW:
         v=struct.unpack_from("<H",record,1)[0];return struct.pack("<H",v)
@@ -382,7 +385,7 @@ def record_length(blob:bytes,pos:int)->int:
       LD_SP_INDEX:2,LD_SPECIAL:2,LD_INDEX_R:5,LD_INDEX_N8:4,ALU_R:3,ALU_N:4,
       ALU_INDEX:4,INCDEC_R:3,INCDEC_RR:3,ADD_HL_RR:2,ADC_SBC_HL_RR:3,
       ADD_INDEX_RR:3,JP_CALL:5,JR:4,DJNZ:3,RET:2,BITOP:4,BITOP_INDEX:5,
-      SHIFT:3,PUSHPOP:3,EX:2,IM:2,INOUT:2,DB:3,DW:3,DS:5,RST:3}
+      SHIFT:3,PUSHPOP:3,EX:2,IM:2,INOUT:2,DB:3,DW:3,DS:5,RST:3,OUT_N_A:2}
     return sizes[k]
 
 def build_projection(listing:Path,sym:Path)->tuple[bytes,bytes,list[dict]]:
