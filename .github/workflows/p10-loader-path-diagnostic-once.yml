@@ -86,7 +86,7 @@ jobs:
           c=["base 16",
              "breakpoint 0x5ce7",
              "breakpoint 0x0556",
-             "breakpoint 0x5e55 if [0x5ef7] == 1",
+             "breakpoint 0x5e55",
              "breakpoint 0x5eb4",
              "breakpoint 0x5f2a",
              "breakpoint 0x03b5 if [z80:sp] + 256 * [z80:sp+1] == 0x5f35",
@@ -94,19 +94,17 @@ jobs:
              "breakpoint time 0 if spectrum:frames > 6500"]
 
           c.extend(["commands 1","print 0x61616161","continue","end",
-                    "commands 2","print 0x62626262","continue","end"])
-          stages={
-              3: dump(1, ("print z80:pc","print [0x5ef5]","print [0x5ef6]","print [0x5ef7]")),
-              4: dump(2, ("print z80:pc",)),
-              5: dump(3, ("print z80:pc",)),
-              6: dump(4, ("print z80:pc","print z80:de","print z80:hl","print z80:sp","print [z80:sp]","print [z80:sp+1]")),
-              7: dump(5, ("print z80:pc",)),
-          }
-          for bp,stage in stages.items():
-              c.append(f"commands {bp}")
-              c.extend(stage)
-              c.append("exit 0" if bp==7 else "continue")
-              c.append("end")
+                    "commands 2","print 0x62626262","continue","end",
+                    "commands 3","print 0x710003","print [0x5ef7]","print [0x5ef8]",
+                    "print [0x5ef5]","print [0x5ef6]","continue","end",
+                    "commands 4","print 0x720004","continue","end",
+                    "commands 5","print 0x720005","continue","end",
+                    "commands 6","print 0x720006","print z80:de","print z80:hl",
+                    "print z80:sp","print [z80:sp]","print [z80:sp+1]","continue","end"])
+          c.append("commands 7")
+          c.extend(dump(5, ("print z80:pc","print [0x5ef7]","print [0x5ef8]",
+                            "print [0x5ef5]","print [0x5ef6]")))
+          c.extend(["exit 0","end"])
           c.extend(["commands 8","print 0x7f0008","print z80:pc","print spectrum:frames","exit 3","end","continue"])
           Path("/tmp/p10-loader-path/debugger.txt").write_text("\n".join(c)+"\n")
           PY
@@ -166,12 +164,24 @@ jobs:
           test "$result" = E003_REACHED
 
           python3 - <<'PY'
-          import json,re
+          import json,re,struct
           from pathlib import Path
 
           diag=Path("/tmp/p10-loader-path")
           text=(diag/"fuse-state.log").read_text(errors="replace")
           vals=[int(x,16) for x in re.findall(r"0x([0-9a-fA-F]+)",text)]
+
+          hook=[]
+          for i,v in enumerate(vals):
+              if v==0x710003:
+                  hook.append({
+                      "lines_left":vals[i+1],
+                      "line_index":vals[i+2],
+                      "text_ptr":vals[i+3] | (vals[i+4]<<8),
+                  })
+
+          def count(value):
+              return sum(v==value for v in vals)
 
           def unique_index(value):
               hits=[i for i,v in enumerate(vals) if v==value]
@@ -179,72 +189,73 @@ jobs:
                   raise SystemExit(f"marker {value:#x} count={len(hits)}")
               return hits[0]
 
-          stages={}
-          for stage,name in [(1,"hook24_before"),(2,"final_hold"),(3,"startup_beep"),(4,"rom_beeper"),(5,"e003")]:
-              si=unique_index(0x610000+stage)
-              ri=unique_index(0x620000+stage)
-              ai=unique_index(0x630000+stage)
-              ei=unique_index(0x6f0000+stage)
-              row23=vals[ri+1:ai]
-              attrs23=vals[ai+1:ei]
-              if len(row23)!=256 or len(attrs23)!=32:
-                  raise SystemExit(f"stage {stage} bad dump lengths row={len(row23)} attrs={len(attrs23)}")
-              stages[name]={"index":si,"row23":row23,"attrs23":attrs23}
+          s5=unique_index(0x610005)
+          r5=unique_index(0x620005)
+          a5=unique_index(0x630005)
+          e5=unique_index(0x6f0005)
+          meta=vals[s5+1:r5]
+          if len(meta)!=5:
+              raise SystemExit(f"E003 metadata length={len(meta)}")
+          pc,lines_left,line_index,ptr_lo,ptr_hi=meta
+          row23=vals[r5+1:a5]
+          attrs23=vals[a5+1:e5]
+          if len(row23)!=256 or len(attrs23)!=32:
+              raise SystemExit("bad E003 row/attribute dump length")
 
-          order=[stages[n]["index"] for n in ("hook24_before","final_hold","startup_beep","rom_beeper","e003")]
-          if order != sorted(order):
-              raise SystemExit(f"stage order wrong: {order}")
-
-          s1=unique_index(0x610001); r1=unique_index(0x620001)
-          meta1=vals[s1+1:r1]
-          if len(meta1)!=4:
-              raise SystemExit(f"hook24 metadata length={len(meta1)}")
-          pc,ptr_lo,ptr_hi,lines_left=meta1
-
-          s4=unique_index(0x610004); r4=unique_index(0x620004)
-          meta4=vals[s4+1:r4]
-          if len(meta4)!=6:
-              raise SystemExit(f"beeper metadata length={len(meta4)}")
-          bpc,de,hl,sp,ret_lo,ret_hi=meta4
-
-          rom=Path("tools/runtime/fuse/roms/48.rom").read_bytes()
-          line=Path("v1/tools-host/release-tzx/text-lines.txt").read_text(encoding="ascii").splitlines()[-1]
-          expected=[rom[0x3c00+ord(ch)*8+scan] for scan in range(8) for ch in line]
-          expected_attrs=[0x07]*32
-
-          def mismatch(actual,expected):
-              return [i for i,(a,b) in enumerate(zip(actual,expected)) if a!=b]
+          # Confirm the finished TZX final loader header remains the special final
+          # dispatch tuple: temp 0x9000, logical destination 0xFEAB, after=0xE003.
+          import importlib.util,sys
+          ip=Path("v1/tools-host/release-tzx/inspect_tzx.py")
+          spec=importlib.util.spec_from_file_location("zxux_inspect_diag",ip)
+          mod=importlib.util.module_from_spec(spec); sys.modules[spec.name]=mod; spec.loader.exec_module(mod)
+          data=Path("v1/dist/media/P10.pre-release/zx-ux-phase10-pre-release.tzx").read_bytes()
+          gen=[mod.generalized_data(b[3]) for b in mod.parse_tzx(data) if b[0]==0x19]
+          final_header=gen[-2]
+          length,load_addr,dest_addr,zero,check,after,*rest=struct.unpack("<HHHBBHHBHBB",final_header)
 
           report={
-              "path_order":["hook24_before","final_hold","startup_beep","rom_beeper","e003"],
-              "hook24":{"pc":pc,"text_ptr":ptr_lo | (ptr_hi<<8),"lines_left":lines_left,
-                        "row23_nonzero_before":sum(v!=0 for v in stages["hook24_before"]["row23"])},
-              "final_hold":{"row23_matches_expected":stages["final_hold"]["row23"]==expected,
-                            "row23_mismatch_offsets":mismatch(stages["final_hold"]["row23"],expected)[:32],
-                            "attrs_match_white_on_black":stages["final_hold"]["attrs23"]==expected_attrs},
-              "startup_beep":{"row23_matches_expected":stages["startup_beep"]["row23"]==expected,
-                              "attrs_match_white_on_black":stages["startup_beep"]["attrs23"]==expected_attrs},
-              "rom_beeper":{"pc":bpc,"de":de,"hl":hl,"sp":sp,
-                            "return_address":ret_lo | (ret_hi<<8),
-                            "row23_matches_expected":stages["rom_beeper"]["row23"]==expected},
-              "e003":{"row23_matches_expected":stages["e003"]["row23"]==expected,
-                      "row23_mismatch_offsets":mismatch(stages["e003"]["row23"],expected)[:32],
-                      "attrs_match_white_on_black":stages["e003"]["attrs23"]==expected_attrs},
-              "expected_last_line":line,
+              "hook_invocation_count":len(hook),
+              "hook_lines_left":[x["lines_left"] for x in hook],
+              "hook_line_indices":[x["line_index"] for x in hook],
+              "hook_text_ptrs":[x["text_ptr"] for x in hook],
+              "24th_display_invocation_reached":any(x["lines_left"]==1 for x in hook),
+              "final_hold_hits":count(0x720004),
+              "startup_beep_hits":count(0x720005),
+              "loader_rom_beeper_hits":count(0x720006),
+              "e003":{
+                  "pc":pc,
+                  "lines_left":lines_left,
+                  "line_index":line_index,
+                  "text_ptr":ptr_lo | (ptr_hi<<8),
+                  "row23_nonzero_bytes":sum(v!=0 for v in row23),
+                  "attrs_unique":sorted(set(attrs23)),
+              },
+              "final_turbo_header":{
+                  "length":length,
+                  "load_addr":load_addr,
+                  "dest_addr":dest_addr,
+                  "after":after,
+                  "check":check,
+              },
           }
           report["conclusion"]={
-              "24th_display_invocation_reached":pc==0x5e55 and lines_left==1,
-              "24th_text_pointer_correct":report["hook24"]["text_ptr"]==0x6272,
-              "last_line_rendered_before_final_hold":report["final_hold"]["row23_matches_expected"],
-              "startup_beep_reached":True,
-              "rom_beeper_called_by_startup_beep":bpc==0x03b5 and report["rom_beeper"]["return_address"]==0x5f35,
-              "beeper_registers_expected":de==224 and hl==458,
-              "row23_intact_at_e003":report["e003"]["row23_matches_expected"],
+              "exactly_23_display_calls":len(hook)==23,
+              "calls_enter_with_lines_left_24_through_2":report["hook_lines_left"]==list(range(24,1,-1)),
+              "line_indices_0_through_22":report["hook_line_indices"]==list(range(23)),
+              "24th_call_missing":report["24th_display_invocation_reached"] is False,
+              "final_hold_bypassed":report["final_hold_hits"]==0,
+              "startup_beep_bypassed":report["startup_beep_hits"]==0,
+              "loader_beeper_bypassed":report["loader_rom_beeper_hits"]==0,
+              "e003_reached_with_one_line_remaining":pc==0xe003 and lines_left==1 and line_index==23,
+              "e003_text_ptr_at_final_line":report["e003"]["text_ptr"]==0x6272,
+              "row23_blank_at_e003":report["e003"]["row23_nonzero_bytes"]==0,
+              "row23_attributes_white_on_black":report["e003"]["attrs_unique"]==[7],
+              "final_header_dispatches_directly_to_e003":(length,load_addr,dest_addr,after)==(341,0x9000,0xfeab,0xe003),
           }
           (diag/"report.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
           print(json.dumps(report,indent=2,sort_keys=True))
           if not all(report["conclusion"].values()):
-              raise SystemExit("loader final-block diagnostic found a divergence")
+              raise SystemExit("final-block trace did not match the observed skip model")
           PY
 
       - name: Final fixed-state guard
