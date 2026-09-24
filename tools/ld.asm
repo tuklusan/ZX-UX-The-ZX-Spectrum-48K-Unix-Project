@@ -670,3 +670,164 @@ ld_p1021_cur_off:    dw 0
 ld_p1021_have_prev:  db 0
 ld_p1021_header_copy: defs LD_P1021_HEADER_SIZE,0
     ENDM
+
+; P10.23 built-in archive fixed-point selection.
+; Runtime member order is frozen as write(1), puts(2), exit(3). This compact
+; selector state is the native linker's unresolved-set engine for that archive:
+; selecting puts introduces write after write's slot has already been scanned,
+; forcing another fixed-order pass. Reserved heap globals are satisfiable
+; without selecting an archive member.
+    MACRO EMIT_P10_LD_ARCHIVE_SELECT_ROUTINES
+LD_P1023_NEED_WRITE      EQU 1
+LD_P1023_NEED_PUTS       EQU 2
+LD_P1023_NEED_EXIT       EQU 4
+LD_P1023_NEED_HEAP_START EQU 8
+LD_P1023_NEED_HEAP_END   EQU 16
+LD_P1023_NEED_OTHER      EQU 32
+
+ld_p1023_select:
+    ld (ld_p1023_need),a
+    xor a
+    ld (ld_p1023_selected_mask),a
+    ld (ld_p1023_selected_count),a
+    call ld_p1023_validate_order
+    ret c
+ld_p1023_fixed_point:
+    xor a
+    ld (ld_p1023_changed),a
+    call ld_p1023_scan_write
+    call ld_p1023_scan_puts
+    call ld_p1023_scan_exit
+    ld a,(ld_p1023_changed)
+    or a
+    jp nz,ld_p1023_fixed_point
+
+    ; Only the two linker-defined heap globals are satisfiable without a member.
+    ld a,(ld_p1023_need)
+    and ~(LD_P1023_NEED_HEAP_START|LD_P1023_NEED_HEAP_END)
+    ld (ld_p1023_need),a
+    or a
+    jp nz,ld_p1023_unresolved
+    xor a
+    ret
+
+; One frozen-order scan, exposed only for the negative qualification oracle.
+ld_p1023_select_one_pass:
+    ld (ld_p1023_need),a
+    xor a
+    ld (ld_p1023_selected_mask),a
+    ld (ld_p1023_selected_count),a
+    call ld_p1023_validate_order
+    ret c
+    xor a
+    ld (ld_p1023_changed),a
+    call ld_p1023_scan_write
+    call ld_p1023_scan_puts
+    call ld_p1023_scan_exit
+    xor a
+    ret
+
+ld_p1023_validate_order:
+    ld a,(ld_p1023_member_order+0)
+    cp 1
+    jp nz,ld_p1023_format
+    ld a,(ld_p1023_member_order+1)
+    cp 2
+    jp nz,ld_p1023_format
+    ld a,(ld_p1023_member_order+2)
+    cp 3
+    jp nz,ld_p1023_format
+    xor a
+    ret
+
+ld_p1023_scan_write:
+    ld a,(ld_p1023_selected_mask)
+    bit 0,a
+    ret nz
+    ld a,(ld_p1023_need)
+    bit 0,a
+    ret z
+    res 0,a
+    ld (ld_p1023_need),a
+    ld a,1
+    call ld_p1023_append
+    ld a,(ld_p1023_selected_mask)
+    set 0,a
+    ld (ld_p1023_selected_mask),a
+    ld a,1
+    ld (ld_p1023_changed),a
+    ret
+
+ld_p1023_scan_puts:
+    ld a,(ld_p1023_selected_mask)
+    bit 1,a
+    ret nz
+    ld a,(ld_p1023_need)
+    bit 1,a
+    ret z
+    res 1,a
+    set 0,a                  ; puts imports write
+    ld (ld_p1023_need),a
+    ld a,2
+    call ld_p1023_append
+    ld a,(ld_p1023_selected_mask)
+    set 1,a
+    ld (ld_p1023_selected_mask),a
+    ld a,1
+    ld (ld_p1023_changed),a
+    ret
+
+ld_p1023_scan_exit:
+    ld a,(ld_p1023_selected_mask)
+    bit 2,a
+    ret nz
+    ld a,(ld_p1023_need)
+    bit 2,a
+    ret z
+    res 2,a
+    ld (ld_p1023_need),a
+    ld a,3
+    call ld_p1023_append
+    ld a,(ld_p1023_selected_mask)
+    set 2,a
+    ld (ld_p1023_selected_mask),a
+    ld a,1
+    ld (ld_p1023_changed),a
+    ret
+
+ld_p1023_append:
+    push af
+    ld a,(ld_p1023_selected_count)
+    cp 3
+    jp nc,ld_p1023_append_overflow
+    ld e,a
+    ld d,0
+    ld hl,ld_p1023_selected_order
+    add hl,de
+    pop af
+    ld (hl),a
+    ld a,(ld_p1023_selected_count)
+    inc a
+    ld (ld_p1023_selected_count),a
+    xor a
+    ret
+ld_p1023_append_overflow:
+    pop af
+    jp ld_p1023_format
+
+ld_p1023_unresolved:
+    ld a,E_NOENT
+    scf
+    ret
+ld_p1023_format:
+    ld a,E_FORMAT
+    scf
+    ret
+
+ld_p1023_member_order:   db 1,2,3
+ld_p1023_need:           db 0
+ld_p1023_selected_mask:  db 0
+ld_p1023_selected_count: db 0
+ld_p1023_selected_order: defs 3,0
+ld_p1023_changed:        db 0
+    ENDM
