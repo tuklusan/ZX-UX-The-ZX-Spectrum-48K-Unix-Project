@@ -11,7 +11,7 @@
 # patent, trademark, and governing-law provisions.
 
 name: Post-Phase-10 migration final validation once
-# Retry after deterministic kernel build-directory repair.
+# Final self-removing migration closure run.
 
 on:
   push:
@@ -20,7 +20,7 @@ on:
       - '.github/workflows/post-p10-migration-final-validation-once.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: zxux-post-p10-migration-final-validation
@@ -106,3 +106,97 @@ jobs:
           path: /tmp/post-p10-repo-walk.json
           retention-days: 90
           if-no-files-found: warn
+
+      - name: Close runbook, remove one-shot finalizer, and stop before Phase 11
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --quiet origin main
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
+          test "$(git rev-parse refs/tags/PHASE-10-COMPLETE)" = 8360b0c5817738b01dc4b75bb64b12d77341adcd
+          test ! -n "$(git ls-files | grep -Ei '(^|/)(P11(\.|/)|p11[^/]*qualification|phase-?11)' || true)"
+
+          report_sha="$(sha256sum /tmp/post-p10-repo-walk.json | awk '{print $1}')"
+          export REPORT_SHA="$report_sha"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+
+          path=Path("scratch/ZX-UX-FAST-LOADER-TZX-RELEASE-MIGRATION-RUNBOOK-REV01.md")
+          text=path.read_text(encoding="utf-8")
+          old="**Status:** OPEN — one-shot coordination plan. This scratch document is not canonical authority."
+          new="**Status:** CLOSED — post-Phase-10/pre-Phase-11 fast-loader TZX release migration complete. STOP before P11.01."
+          if old not in text:
+              raise SystemExit("runbook OPEN status marker missing")
+          if "## 20. Closure record" in text:
+              raise SystemExit("closure record already present")
+          text=text.replace(old,new,1)
+
+          report=json.loads(Path("/tmp/post-p10-repo-walk.json").read_text(encoding="utf-8"))
+          meta=json.loads(Path("v1/dist/media/P10.pre-release/pre-release.json").read_text(encoding="utf-8"))
+          counts=report["counts"]
+          classes=counts["classifications"]
+          closure=f"""
+
+          ## 20. Closure record
+
+          **Closure state:** CLOSED. The post-Phase-10/pre-Phase-11 release migration is complete. No Phase-11 work is authorized or started by this closure.
+
+          Durable anchors:
+
+          - final validated migration source head: `{os.environ["GITHUB_SHA"]}`;
+          - final validation workflow run: `{os.environ["GITHUB_RUN_ID"]}`, attempt `{os.environ["GITHUB_RUN_ATTEMPT"]}`;
+          - validated source tree: `{report["head_tree"]}`;
+          - final repository-walk report SHA-256: `{os.environ["REPORT_SHA"]}`;
+          - replacement Phase-10 fast-loader pre-release validation/publication run: `36059493045` at source head `5db0345ebb14f90508af46681eb1957ae9ea4eed`;
+          - target-native kernel self-rebuild proof run: `36057095331` at source head `c1bbd8e4ef85522a617b94a2b788b29ee3564dac`;
+          - replacement TZX SHA-256: `{meta["tzx"]["sha256"]}`, size `{meta["tzx"]["size"]}`;
+          - exact three-way 8192-byte kernel SHA-256: `{meta["kernel_identity"]["host_built_sha256"]}`;
+          - preserved loader package SHA-256: `4c83a681f718192db9ebb32f0c8bc565baf2e68eb85de480322a1102d32f00c7`;
+          - fixed `PHASE-10-COMPLETE`: `8360b0c5817738b01dc4b75bb64b12d77341adcd`.
+
+          Final repository walk classified `{counts["walk_files"]}` requested-surface files, including `{counts["workflows"]}` workflows and `{counts["actions"]}` composite actions: current=`{classes["current"]}`, historical=`{classes["historical"]}`, replay-only=`{classes["replay-only"]}`, obsolete=`{classes["obsolete"]}`, disposable=`{classes["disposable"]}`, unrelated=`{classes["unrelated"]}`.
+
+          All report gates PASS: fixed Phase-10 checkpoint, immutable historical REV16/REV07, active immutable REV17/REV08, preserved loader ZIP, compact TZX-only pre-release, deterministic build, independent structural reconstruction, real-time E003 loader proof with shortcuts disabled, genuine native source→as→OBJ1→ld→run, exact three-way 8192-byte identity, controlled mismatch-negative, release-scoped Pasmo, historical evidence/media retention, superseded-candidate dispatch hardening, complete repository classification, and absence of Phase-11 state.
+
+          The one-shot final validation workflow removes itself in the closure commit. The migration stops here. **Do not begin P11.01.**
+          """
+          path.write_text(text.rstrip()+closure+"\n",encoding="utf-8",newline="\n")
+          PY
+
+          git rm .github/workflows/post-p10-migration-final-validation-once.yml
+          git add scratch/ZX-UX-FAST-LOADER-TZX-RELEASE-MIGRATION-RUNBOOK-REV01.md
+
+          # Three consecutive unchanged-byte closure scans.
+          baseline=""
+          for scan in 1 2 3; do
+            test "$(git rev-parse refs/tags/PHASE-10-COMPLETE)" = 8360b0c5817738b01dc4b75bb64b12d77341adcd
+            test ! -n "$(git ls-files | grep -Ei '(^|/)(P11(\.|/)|p11[^/]*qualification|phase-?11)' || true)"
+            grep -q '^\*\*Status:\*\* CLOSED' scratch/ZX-UX-FAST-LOADER-TZX-RELEASE-MIGRATION-RUNBOOK-REV01.md
+            grep -q '^## 20. Closure record' scratch/ZX-UX-FAST-LOADER-TZX-RELEASE-MIGRATION-RUNBOOK-REV01.md
+            test ! -e .github/workflows/post-p10-migration-final-validation-once.yml
+            digest="$(git diff --cached --binary | sha256sum | awk '{print $1}')"
+            if test -z "$baseline"; then baseline="$digest"; else test "$digest" = "$baseline"; fi
+            echo "SCAN-$scan: CLEAN"
+          done
+
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+          python3 tools/check_media_retention.py
+          python3 tools/check_phase10_evidence.py --require-active
+          python3 v1/tools-host/test-driver/evidence.py v1/dist/certification/R17.00.result.json
+          test "$(git diff --cached --name-only | sort | tr '\n' ' ')" = ".github/workflows/post-p10-migration-final-validation-once.yml scratch/ZX-UX-FAST-LOADER-TZX-RELEASE-MIGRATION-RUNBOOK-REV01.md "
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "migration: close post-Phase-10 TZX release migration"
+          git push origin HEAD:main
+
+          git fetch --quiet origin main
+          test "$(git rev-parse origin/main)" = "$(git rev-parse HEAD)"
+          test "$(git rev-parse refs/tags/PHASE-10-COMPLETE)" = 8360b0c5817738b01dc4b75bb64b12d77341adcd
+          test ! -n "$(git ls-tree -r --name-only HEAD | grep -Ei '(^|/)(P11(\.|/)|p11[^/]*qualification|phase-?11)' || true)"
+          test ! -e .github/workflows/post-p10-migration-final-validation-once.yml
+          test -z "$(git status --porcelain)"
+          echo "ZX-UX POST-PHASE10 MIGRATION CLOSED; STOP BEFORE P11.01"
