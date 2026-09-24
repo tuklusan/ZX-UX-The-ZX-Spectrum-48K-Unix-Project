@@ -23,7 +23,7 @@ from typing import Any
 SCHEMA = 2
 HEX40 = re.compile(r"^[0-9a-f]{40}$")
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
-STEP_ID = re.compile(r"^(?:R16|E0|P(?:0|[1-9]|1[0-2]))\.[0-9]{2}$")
+STEP_ID = re.compile(r"^(?:R(?:16|17)|E0|P(?:0|[1-9]|1[0-2]))\.[0-9]{2}$")
 COMMON_FIELDS = (
     "schema",
     "step",
@@ -137,18 +137,23 @@ def validate_prerequisites(prerequisites: Any, status: str) -> None:
 
 
 def _prospective_step(step: str) -> bool:
-    if step == "R16.00":
-        return True
-    if not step.startswith("P"):
-        return False
-    phase = step.split(".", 1)[0][1:]
-    return phase.isdigit() and int(phase) >= 3
+    return step in ("R16.00", "R17.00") or (
+        step.startswith("P") and step.split(".", 1)[0][1:].isdigit() and int(step.split(".", 1)[0][1:]) >= 3
+    )
 
 
-def _canonical_plan_sha256() -> str:
+def _authority_for_step(step: str) -> tuple[str, str, str | None]:
+    if step == "R16.00" or (step.startswith("P") and step.split(".", 1)[0][1:].isdigit() and 3 <= int(step.split(".", 1)[0][1:]) <= 10):
+        return ("docs/01-ZX-UX-ARCHITECTURE-REV16.md", "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md", "R16.00")
+    if step == "R17.00" or (step.startswith("P") and step.split(".", 1)[0][1:].isdigit() and int(step.split(".", 1)[0][1:]) >= 11):
+        return ("docs/01-ZX-UX-ARCHITECTURE-REV17.md", "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV08.md", "R17.00")
+    return ("docs/01-ZX-UX-ARCHITECTURE-REV12.md", "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV03.md", None)
+
+
+def _canonical_hash(path: str) -> str:
     import hashlib
     root = Path(__file__).resolve().parents[3]
-    return hashlib.sha256((root / "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md").read_bytes()).hexdigest()
+    return hashlib.sha256((root / path).read_bytes()).hexdigest()
 
 
 def validate_common(record: Any) -> None:
@@ -168,22 +173,24 @@ def validate_common(record: Any) -> None:
     validate_hash(record["toolchain_lock_sha256"], "toolchain_lock_sha256")
     validate_hash(record["architecture_sha256"], "architecture_sha256")
     if _prospective_step(record["step"]):
-        require("implementation_plan_sha256" in record, "implementation_plan_sha256 required for R16.00/P3-P12 evidence")
+        require("implementation_plan_sha256" in record, "implementation_plan_sha256 required for bridge/P3-P12 evidence")
         validate_hash(record["implementation_plan_sha256"], "implementation_plan_sha256")
-        require(record["implementation_plan_sha256"] == _canonical_plan_sha256(), "implementation_plan_sha256 does not match canonical REV07")
-        if record["step"] == "R16.00":
-            require(record.get("bridge_source_commit") == record.get("source_commit"), "R16.00 bridge_source_commit must equal source_commit")
-        else:
+        arch_path, plan_path, bridge_step = _authority_for_step(record["step"])
+        require(record["architecture_sha256"] == _canonical_hash(arch_path), f"architecture_sha256 does not match canonical {arch_path}")
+        require(record["implementation_plan_sha256"] == _canonical_hash(plan_path), f"implementation_plan_sha256 does not match canonical {plan_path}")
+        if record["step"] in ("R16.00", "R17.00"):
+            require(record.get("bridge_source_commit") == record.get("source_commit"), f"{record['step']} bridge_source_commit must equal source_commit")
+        elif bridge_step is not None:
             root = Path(__file__).resolve().parents[3]
-            bridge_path = root / "v1/dist/certification/R16.00.result.json"
-            require(bridge_path.is_file(), "P3-P12 evidence requires admitted R16.00.result.json")
+            bridge_path = root / f"v1/dist/certification/{bridge_step}.result.json"
+            require(bridge_path.is_file(), f"{record['step']} evidence requires admitted {bridge_step}.result.json")
             try:
                 bridge = json.loads(bridge_path.read_text(encoding="utf-8"))
             except (OSError, json.JSONDecodeError) as exc:
-                raise EvidenceError(f"invalid admitted R16.00.result.json: {exc}") from exc
-            require(bridge.get("step") == "R16.00" and bridge.get("action") == "result" and bridge.get("status") == "PASS", "admitted R16.00 PASS result required")
-            require(bridge.get("architecture_sha256") == record.get("architecture_sha256"), "P3-P12 architecture identity must match admitted R16.00")
-            require(bridge.get("implementation_plan_sha256") == record.get("implementation_plan_sha256"), "P3-P12 implementation-plan identity must match admitted R16.00")
+                raise EvidenceError(f"invalid admitted {bridge_step}.result.json: {exc}") from exc
+            require(bridge.get("step") == bridge_step and bridge.get("action") == "result" and bridge.get("status") == "PASS", f"admitted {bridge_step} PASS result required")
+            require(bridge.get("architecture_sha256") == record.get("architecture_sha256"), f"{record['step']} architecture identity must match admitted {bridge_step}")
+            require(bridge.get("implementation_plan_sha256") == record.get("implementation_plan_sha256"), f"{record['step']} plan identity must match admitted {bridge_step}")
     require(isinstance(record["worktree_clean"], bool), "worktree_clean must be Boolean")
     if record["status"] == "PASS":
         require(record["worktree_clean"] is True, "dirty-worktree PASS certification is forbidden")
@@ -204,10 +211,9 @@ def validate_final_record(record: Any) -> None:
     require(record.get("action") == "result", "final result action must be result")
     marker = record.get("pass_marker")
     if record["step"] == "R16.00":
-        require(
-            marker == "ZX-UX REV16 PHASE-3 BASELINE BRIDGE PASS",
-            "valid R16.00 PASS marker required",
-        )
+        require(marker == "ZX-UX REV16 PHASE-3 BASELINE BRIDGE PASS", "valid R16.00 PASS marker required")
+    elif record["step"] == "R17.00":
+        require(marker == "ZX-UX REV17 POST-PHASE10 AUTHORITY BRIDGE PASS", "valid R17.00 PASS marker required")
     else:
         require(
             isinstance(marker, str)
@@ -228,7 +234,7 @@ def valid_fixture(step: str = "E0.04") -> dict[str, Any]:
         "pass_marker": (
             "ZX-UX REV16 PHASE-3 BASELINE BRIDGE PASS"
             if step == "R16.00"
-            else f"ZX-UX {step} CERTIFICATION PASS"
+            else ("ZX-UX REV17 POST-PHASE10 AUTHORITY BRIDGE PASS" if step == "R17.00" else f"ZX-UX {step} CERTIFICATION PASS")
         ),
         "source_commit": "0" * 40,
         "toolchain_lock_sha256": "1" * 64,
