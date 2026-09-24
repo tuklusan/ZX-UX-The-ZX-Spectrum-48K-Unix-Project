@@ -12,6 +12,8 @@
 
 # ZX-UX Runner Cache Session
 
+**Status:** HISTORICAL — retained for Phase-2 cache provenance only; not a current runtime-cache authority.
+
 Stable Phase-2 runner cache session ID: `phase2-20260916-01`.
 
 This ID names the reusable GitHub Actions cache lineage used while closing Phase 2.
