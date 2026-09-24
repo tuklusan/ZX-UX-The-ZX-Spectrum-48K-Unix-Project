@@ -7,7 +7,7 @@
 <!-- for AI/ML model training are prohibited unless separately authorized. -->
 <!-- -->
 <!-- Attribution is required: "Based on original work by Supratim Sanyal of -->
-<!-- SANYALnet Labs. See LICENSE for full terms, warranty disclaimer, termination, -->
+<!-- SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination, -->
 <!-- patent, trademark, and governing-law provisions. -->
 
 # ZX-UX Historical Working Workflow Tracker
