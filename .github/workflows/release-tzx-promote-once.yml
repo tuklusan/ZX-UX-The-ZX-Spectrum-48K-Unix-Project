@@ -1,0 +1,164 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: Promote reviewed release TZX tooling once
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/release-tzx-promote-once.yml
+permissions:
+  contents: write
+jobs:
+  promote:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - name: Verify authority and preserved package
+        run: |
+          set -euo pipefail
+          test -f v1/dist/certification/R17.00.result.json
+          test "$(git rev-parse refs/tags/PHASE-10-COMPLETE)" = 8360b0c5817738b01dc4b75bb64b12d77341adcd
+          test ! -n "$(git ls-files | grep -Ei '(^|/)(P11(\.|/)|p11[^/]*qualification|phase-?11)' || true)"
+          test "$(sha256sum scratch/ZX-UX-LOADER-1.0.0-portable.zip | awk '{print $1}')" = 4c83a681f718192db9ebb32f0c8bc565baf2e68eb85de480322a1102d32f00c7
+          rm -rf /tmp/zxux-loader
+          mkdir -p /tmp/zxux-loader
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile
+          z=Path("scratch/ZX-UX-LOADER-1.0.0-portable.zip")
+          with zipfile.ZipFile(z) as f:
+              for info in f.infolist():
+                  p=Path(info.filename)
+                  if p.is_absolute() or ".." in p.parts:
+                      raise SystemExit("unsafe zip member")
+              f.extractall("/tmp/zxux-loader")
+          PY
+          cd /tmp/zxux-loader/ZX-UX-LOADER-1.0.0
+          sha256sum -c PORTABLE-MANIFEST.sha256
+      - name: Promote reviewed source without executing package
+        run: |
+          set -euo pipefail
+          src=/tmp/zxux-loader/ZX-UX-LOADER-1.0.0/projects/zx-fast-loader
+          dst=v1/tools-host/release-tzx
+          test ! -e "$dst"
+          mkdir -p "$dst/src" "$dst/input"
+          python3 - "$src" "$dst" <<'PY'
+          from pathlib import Path
+          import sys
+          src,dst=map(Path,sys.argv[1:])
+          py_header='''# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+          # Proprietary rights reserved except as expressly licensed herein.
+          #
+          # ZX-UX Sinclair ZX Spectrum Unix
+          # This file is governed by the SANYALnet Labs Non-Commercial License in the
+          # root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+          # for AI/ML model training are prohibited unless separately authorized.
+          #
+          # Attribution is required: "Based on original work by Supratim Sanyal of
+          # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+          # patent, trademark, and governing-law provisions.
+          #
+          # Reviewed fast-loader source promoted from the preserved portable package.
+          '''
+          asm_header='''; Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+          ; Proprietary rights reserved except as expressly licensed herein.
+          ;
+          ; ZX-UX Sinclair ZX Spectrum Unix
+          ; This file is governed by the SANYALnet Labs Non-Commercial License in the
+          ; root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+          ; for AI/ML model training are prohibited unless separately authorized.
+          ;
+          ; Attribution is required: "Based on original work by Supratim Sanyal of
+          ; SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+          ; patent, trademark, and governing-law provisions.
+          ;
+          ; Reviewed fast-loader source promoted from the preserved portable package.
+          '''
+          # Remove indentation introduced by YAML literal layout.
+          py_header="\n".join(x.strip() if x.startswith("          ") else x for x in py_header.splitlines())+"\n"
+          asm_header="\n".join(x.strip() if x.startswith("          ") else x for x in asm_header.splitlines())+"\n"
+          (dst/"build.py").write_text(py_header+(src/"build.py").read_text(encoding="utf-8"),encoding="utf-8",newline="\n")
+          (dst/"src/print_hook.asm").write_text(asm_header+(src/"src/print_hook.asm").read_text(encoding="utf-8"),encoding="utf-8",newline="\n")
+          (dst/"text-lines.txt").write_bytes((src/"text-lines.txt").read_bytes())
+          (dst/"input/known-good-white-on-black-e003.tzx.b64").write_bytes((src/"input/known-good-white-on-black-e003.tzx.b64").read_bytes())
+          PY
+          cat > "$dst/UPSTREAM-PROVENANCE.md" <<'EOF'
+          <!-- Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs. -->
+          <!-- Proprietary rights reserved except as expressly licensed herein. -->
+          <!-- -->
+          <!-- ZX-UX Sinclair ZX Spectrum Unix -->
+          <!-- This file is governed by the SANYALnet Labs Non-Commercial License in the -->
+          <!-- root LICENSE file. Non-Commercial use is permitted; Commercial Use and use -->
+          <!-- for AI/ML model training are prohibited unless separately authorized. -->
+          <!-- -->
+          <!-- Attribution is required: "Based on original work by Supratim Sanyal of -->
+          <!-- SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination, -->
+          <!-- patent, trademark, and governing-law provisions. -->
+
+          # Reviewed ZX-UX fast-loader provenance
+
+          Preserved package: `scratch/ZX-UX-LOADER-1.0.0-portable.zip`
+
+          Outer SHA-256: `4c83a681f718192db9ebb32f0c8bc565baf2e68eb85de480322a1102d32f00c7`
+
+          Portable release: `ZX-UX-LOADER-1.0.0`
+
+          Recorded source commit: `99c948feb2893e369055879ddf82aa0105bfe541`
+
+          Recorded source tree: `44d4a388bb300032c10c0c3813431ddbddcfe542`
+
+          Seed TZX SHA-256: `7ffe2f90b58e87a19a090ca0e0f1323605754af7d8809f3f051662f9faaec6f1`
+
+          Demonstration TZX SHA-256: `9a77617b16d04c767c5895261ca9a823b57060e642adadffa58b34cbfcd7d642`
+
+          Known dummy 8192-byte payload SHA-256: `0e59ef9290ffc4391b0ae999177cd9d7d9eafb6fcd86a45b13f9a4bd0b08c9ce`
+
+          Reviewed hook SHA-256: `f1c6b88998488c552bbf5358cfcf32494de4687a2f0cfb7bcbe37a71cf6c00ef`
+
+          Construction assembler reference: Pasmo `0.5.3-7`, release-scoped only.
+
+          The exact display text and base64 seed are promoted byte-for-byte. `build.py`
+          and `src/print_hook.asm` carry only the project license/provenance header ahead
+          of their reviewed source. The preserved ZIP remains the immutable upstream input.
+          EOF
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("tools/check_license_headers.sh")
+          s=p.read_text()
+          marker='  ["scratch/ZX-UX-LOADER-1.0.0-portable.zip"]="Binary owner-supplied fast-loader release migration source package cannot carry the plaintext project header; its exact SHA-256 is frozen by the adjacent migration runbook."\n'
+          add=marker+'  ["v1/tools-host/release-tzx/text-lines.txt"]="Exact reviewed 24x32 loader display text is a byte-significant release input and cannot carry a project header."\n'+'  ["v1/tools-host/release-tzx/input/known-good-white-on-black-e003.tzx.b64"]="Exact reviewed base64 seed TZX is a byte-significant release input and cannot carry a project header."\n'
+          if marker not in s: raise SystemExit("license exemption insertion marker missing")
+          p.write_text(s.replace(marker,add),encoding="utf-8",newline="\n")
+          PY
+          sha256sum "$dst/build.py" "$dst/src/print_hook.asm" "$dst/text-lines.txt" "$dst/input/known-good-white-on-black-e003.tzx.b64"
+      - name: Validate promoted current tree
+        run: |
+          set -euo pipefail
+          python3 -m py_compile v1/tools-host/release-tzx/build.py
+          rm -rf v1/tools-host/release-tzx/__pycache__
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+          python3 tools/check_media_retention.py
+          test ! -n "$(git ls-files | grep -Ei '(^|/)(P11(\.|/)|p11[^/]*qualification|phase-?11)' || true)"
+      - name: Commit reviewed release tooling
+        run: |
+          set -euo pipefail
+          git add v1/tools-host/release-tzx tools/check_license_headers.sh
+          test -n "$(git diff --cached --name-only)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "release: promote reviewed fast-loader tooling"
+          git push origin HEAD:main
