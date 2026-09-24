@@ -26,9 +26,11 @@ from typing import Sequence
 ROOT_MARKER = b"ZX-UX project root"
 DEFAULT_TIMEOUT_SECONDS = 30.0
 TOOLCHAIN_LOCK = Path("tools/manifest/toolchain.lock.json")
-ARCHITECTURE = Path("docs/01-ZX-UX-ARCHITECTURE-REV16.md")
+ARCHITECTURE = Path("docs/01-ZX-UX-ARCHITECTURE-REV17.md")
+REV16_ARCHITECTURE = Path("docs/01-ZX-UX-ARCHITECTURE-REV16.md")
 HISTORICAL_ARCHITECTURE = Path("docs/01-ZX-UX-ARCHITECTURE-REV12.md")
-IMPLEMENTATION_PLAN = Path("docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md")
+IMPLEMENTATION_PLAN = Path("docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV08.md")
+REV07_IMPLEMENTATION_PLAN = Path("docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md")
 
 
 class DriverError(RuntimeError):
@@ -145,12 +147,23 @@ def read_source_state(root: Path) -> SourceState:
     if len(source_commit) != 40 or any(ch not in "0123456789abcdef" for ch in source_commit):
         raise DriverError(f"invalid source commit identity: {source_commit!r}")
     status = _git(root, "status", "--porcelain=v1", "--untracked-files=all")
-    architecture = HISTORICAL_ARCHITECTURE if os.environ.get("ZXUX_SOURCE_EPOCH") == "historical" else ARCHITECTURE
+    epoch = os.environ.get("ZXUX_SOURCE_EPOCH", "current")
+    if epoch == "historical":
+        architecture = HISTORICAL_ARCHITECTURE
+        plan = REV07_IMPLEMENTATION_PLAN
+    elif epoch == "rev16":
+        architecture = REV16_ARCHITECTURE
+        plan = REV07_IMPLEMENTATION_PLAN
+    elif epoch == "current":
+        architecture = ARCHITECTURE
+        plan = IMPLEMENTATION_PLAN
+    else:
+        raise DriverError(f"unknown ZXUX_SOURCE_EPOCH: {epoch}")
     return SourceState(
         source_commit=source_commit,
         toolchain_lock_sha256=sha256_file(root_path(root, TOOLCHAIN_LOCK)),
         architecture_sha256=sha256_file(root_path(root, architecture)),
-        implementation_plan_sha256=sha256_file(root_path(root, IMPLEMENTATION_PLAN)),
+        implementation_plan_sha256=sha256_file(root_path(root, plan)),
         worktree_clean=(status == ""),
     )
 
