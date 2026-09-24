@@ -3616,9 +3616,11 @@ r17_as_h_ld_special:
     ld d,0
     ld hl,r17_as_special_table
     add hl,de
+    ld a,(hl)
+    ld (r17_as_v0),a
     ld a,$ED
     call r17_as_put8
-    ld a,(hl)
+    ld a,(r17_as_v0)
     call r17_as_put8
     jp r17_as_record_done
 
@@ -4086,9 +4088,11 @@ r17_as_h_im:
     ld d,0
     ld hl,r17_as_im_table
     add hl,de
+    ld a,(hl)
+    ld (r17_as_v0),a
     ld a,$ED
     call r17_as_put8
-    ld a,(hl)
+    ld a,(r17_as_v0)
     call r17_as_put8
     jp r17_as_record_done
 
