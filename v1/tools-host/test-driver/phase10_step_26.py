@@ -319,6 +319,8 @@ fixture_end:
         def patch(ram):
             ram[0xC000-0x4000:0xC000-0x4000+len(main)] = main
 
+        failures = []
+
         def run_case(name, expect_carry):
             if expect_carry:
                 code = b"\\xF3" + phase1._ld_sp(0xBFC0) + phase1._call(syms[name]) + b"\\xD2" + phase1._word(FAIL_PC) + phase1._jp(PASS_PC)
@@ -326,13 +328,14 @@ fixture_end:
                 code = b"\\xF3" + phase1._ld_sp(0xBFC0) + phase1._call(syms[name]) + phase1._jp_c(FAIL_PC) + phase1._jp(PASS_PC)
             try:
                 run_sna(root, code, patch=patch)
-            except Exception as exc:
-                raise P1026Error(f"P10.26 FUSE case {name}: {exc}") from exc
+            except Exception:
+                failures.append(name)
 
-        for name in ("p1026_apply_negative","p1026_apply_positive","p1026_apply_abs","p1026_sort_only","p1026_positive"):
+        for name in ("p1026_apply_abs","p1026_apply_positive","p1026_apply_negative","p1026_sort_only","p1026_positive"):
             run_case(name, False)
         for name in ("p1026_underflow","p1026_overflow","p1026_oob","p1026_overlap","p1026_duplicate","p1026_abs_runtime"):
             run_case(name, True)
+        require(not failures, "P10.26 FUSE cases failed: " + ",".join(failures))
         assertions += [
             {"name":"fuse-signed-addend-boundaries","passed":True},
             {"name":"fuse-abs-versus-text-bss","passed":True},
