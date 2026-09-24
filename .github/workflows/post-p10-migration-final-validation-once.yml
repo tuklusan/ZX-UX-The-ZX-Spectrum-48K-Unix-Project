@@ -11,7 +11,7 @@
 # patent, trademark, and governing-law provisions.
 
 name: Post-Phase-10 migration final validation once
-# Retry after repository-walk detector self-exclusion.
+# Retry after deterministic kernel build-directory repair.
 
 on:
   push:
@@ -67,7 +67,7 @@ jobs:
         run: |
           set -euo pipefail
           tools/runtime/python/bin/python tools/scripts/verify-environment.py
-          mkdir -p /tmp/final-kernel-a /tmp/final-kernel-b
+          mkdir -p /tmp/final-kernel-a /tmp/final-kernel-b v1/build
           (
             cd v1/src/kernel
             "$GITHUB_WORKSPACE/tools/runtime/sjasmplus/bin/sjasmplus" --nologo kernel.asm
@@ -75,6 +75,7 @@ jobs:
           test "$(wc -c < v1/build/kernel.bin)" -eq 8192
           cp v1/build/kernel.bin /tmp/final-kernel-a/kernel.bin
           rm -f v1/build/kernel.bin
+          mkdir -p v1/build
           (
             cd v1/src/kernel
             "$GITHUB_WORKSPACE/tools/runtime/sjasmplus/bin/sjasmplus" --nologo kernel.asm
