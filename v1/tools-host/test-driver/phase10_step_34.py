@@ -293,7 +293,10 @@ p1034_gateway_end:
         require(not any(name == "HELLO" for name, _, _, _ in decoded), "wrong-case reload must miss")
         image = phase5_roundtrip.validate_mex(maketap, decoded[0][3])
         require(image == b"\xC9", "reloaded executable image")
-        commands.append(run_sna(root, image))
+        def patch_reload(ram):
+            ram[0xA000-0x4000:0xA000-0x4000+len(image)] = image
+        reload_code = b"\xF3" + phase1._ld_sp(0xBFC0) + phase1._call(0xA000) + phase1._jp(PASS_PC)
+        commands.append(run_sna(root, reload_code, patch=patch_reload))
         assertions += [
             {"name":"fuse-on-target-source-as-ld-run-lifecycle","passed":True},
             {"name":"cassette-save-reload-exact-case","passed":True},
