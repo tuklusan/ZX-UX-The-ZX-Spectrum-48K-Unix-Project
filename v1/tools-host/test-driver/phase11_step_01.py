@@ -22,6 +22,7 @@ from driver_core import DriverError
 SDK_COMMIT = "84d144de2721cda5075c3a6610a422663b5e2f77"
 SDK_TREE = "1c6b5bae84035ee853be9142b440792881c9ca9f"
 DOCX = Path("docs/04-C48 Language Specification Rev 0.11.docx")
+DOCX_GIT_BLOB = "5744e9f2c440b4ef11f7ffcd7dad7d218f3ba44d"
 
 class P1101Error(DriverError):
     pass
@@ -91,6 +92,7 @@ def source_assertions(root: Path):
     assertions=[
         {"name":"working-contract-explicit-version1-surface","passed":all(x in contract for x in required_contract)},
         {"name":"sdk-reference-commit-pinned","passed":SDK_COMMIT in prov and SDK_TREE in prov},
+        {"name":"project-docx-git-blob-recorded","passed":DOCX_GIT_BLOB in prov},
         {"name":"sdk-python-implementation-surface-reviewed","passed":all(x in prov for x in required_sdk_paths)},
         {"name":"rev16-overrides-sdk-recorded","passed":"REV16 controls" in prov and "reference oracles only" in prov},
         {"name":"sdk-c48b1-not-native-obj1","passed":"C48B1 host executables" in prov and "emit OBJ1 Z80 code" in prov},

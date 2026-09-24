@@ -58,6 +58,9 @@ verification.
 
 ## DOCX review
 
+Checked-in project DOCX Git blob: `5744e9f2c440b4ef11f7ffcd7dad7d218f3ba44d`
+
+
 `docs/04-C48 Language Specification Rev 0.11.docx` was reviewed end-to-end
 against REV16 Section 25 and the pinned SDK implementation above. The P11.01
 qualification mechanically inspects the checked-in DOCX container and records
