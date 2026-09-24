@@ -153,22 +153,22 @@ p1020_success:
     ret c
     ld a,(p1020_dest_marker)
     cp $5A
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     ld a,(p1020_open_calls)
     cp 1
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     ld a,(p1020_write_calls)
     cp 1
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     ld a,(p1020_close_calls)
     cp 1
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     ld a,(p1020_rename_calls)
     cp 1
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     ld a,(p1020_remove_calls)
     or a
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     xor a
     ret
 
@@ -180,16 +180,16 @@ p1020_collision:
     ret c
     ld a,(p1020_open_calls)
     cp 2
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     ld a,(as_p1020_temp_name+10)
     cp '1'
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     ld a,(p1020_remove_calls)
     or a
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     ld a,(p1020_dest_marker)
     cp $5A
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     xor a
     ret
 
@@ -198,19 +198,19 @@ p1020_write_fail:
     ld a,2
     ld (p1020_mode),a
     call p1020_call
-    jr nc,p1020_fail
+    jp nc,p1020_fail
     ld (p1020_saved_errno),a
     cp E_NOSPC
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     ld a,(p1020_dest_marker)
     cp $A5
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     ld a,(p1020_rename_calls)
     or a
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     ld a,(p1020_remove_calls)
     cp 1
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     xor a
     ret
 
@@ -219,18 +219,18 @@ p1020_rename_fail:
     ld a,3
     ld (p1020_mode),a
     call p1020_call
-    jr nc,p1020_fail
+    jp nc,p1020_fail
     cp E_BUSY
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     ld a,(p1020_dest_marker)
     cp $A5
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     ld a,(p1020_rename_calls)
     cp 1
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     ld a,(p1020_remove_calls)
     cp 1
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     xor a
     ret
 
@@ -239,18 +239,18 @@ p1020_postvalidate_fail:
     ld a,4
     ld (p1020_mode),a
     call p1020_call
-    jr nc,p1020_fail
+    jp nc,p1020_fail
     cp E_FORMAT
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     ld a,(p1020_dest_marker)
     cp $A5
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     ld a,(p1020_rename_calls)
     or a
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     ld a,(p1020_remove_calls)
     cp 1
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     xor a
     ret
 
@@ -259,24 +259,24 @@ p1020_alloc_fail:
     ld a,5
     ld (p1020_mode),a
     call p1020_call
-    jr nc,p1020_fail
+    jp nc,p1020_fail
     cp E_NOSPC
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     ld a,(p1020_dest_marker)
     cp $A5
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     ld a,(p1020_write_calls)
     or a
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     ld a,(p1020_close_calls)
     or a
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     ld a,(p1020_rename_calls)
     or a
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     ld a,(p1020_remove_calls)
     or a
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     xor a
     ret
 
@@ -285,17 +285,17 @@ p1020_preflight_fail:
     ld a,2
     ld (p1020_candidate+4),a
     call p1020_call
-    jr nc,p1020_fail
+    jp nc,p1020_fail
     cp E_FORMAT
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     ld a,1
     ld (p1020_candidate+4),a
     ld a,(p1020_open_calls)
     or a
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     ld a,(p1020_dest_marker)
     cp $A5
-    jr nz,p1020_fail
+    jp nz,p1020_fail
     xor a
     ret
 
