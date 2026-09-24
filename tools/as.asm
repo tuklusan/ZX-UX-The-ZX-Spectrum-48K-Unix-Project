@@ -3008,3 +3008,1232 @@ as_p1020_rename_req: defs 4,0
 as_p1020_header_copy: defs AS_P1020_HEADER_SIZE,0
 as_p1020_temp_name: db '/','t','m','p','/','.','a','s','0','.','0',0
     ENDM
+
+
+; REV17 native semantic-source kernel assembler.
+; This prospective routine consumes the deterministic NSP1 source projection
+; generated from canonical kernel source and emits a real OBJ1 object. NSP1
+; contains semantic Z80 operations/operands and source data directives only;
+; it never contains preassembled kernel machine-code payload bytes.
+;
+; Interface:
+;   HL = NSP1 source pointer
+;   DE = exact NSP1 source length
+;   BC = OBJ1 destination pointer (capacity >= 24 + text size)
+; Success:
+;   HL = exact OBJ1 stored length, carry clear
+; Failure:
+;   A = E_FORMAT, carry set
+    MACRO EMIT_R17_AS_NSP1_OBJ1
+R17_NSP1_HEADER_SIZE EQU 16
+R17_OBJ1_HEADER_SIZE EQU 24
+R17_KERNEL_BASE      EQU $E000
+R17_MAX_TEXT         EQU 8192
+
+r17_as_nsp1_obj1:
+    ld (r17_as_source),hl
+    ld (r17_as_source_len),de
+    ld (r17_as_obj),bc
+
+    ; Exact NSP1 framing.
+    ld h,d
+    ld l,e
+    ld bc,R17_NSP1_HEADER_SIZE
+    or a
+    sbc hl,bc
+    jp c,r17_as_error
+    ld ix,(r17_as_source)
+    ld a,(ix+0)
+    cp 'N'
+    jp nz,r17_as_error
+    ld a,(ix+1)
+    cp 'S'
+    jp nz,r17_as_error
+    ld a,(ix+2)
+    cp 'P'
+    jp nz,r17_as_error
+    ld a,(ix+3)
+    cp '1'
+    jp nz,r17_as_error
+    ld a,(ix+4)
+    cp 1
+    jp nz,r17_as_error
+    ld a,(ix+5)
+    or a
+    jp nz,r17_as_error
+
+    ld l,(ix+6)
+    ld h,(ix+7)
+    ld (r17_as_records_left),hl
+    ld a,h
+    or l
+    jp z,r17_as_error
+
+    ld l,(ix+8)
+    ld h,(ix+9)
+    ld (r17_as_text_size),hl
+    ld a,h
+    or l
+    jp z,r17_as_error
+    ld de,R17_MAX_TEXT+1
+    or a
+    sbc hl,de
+    jp nc,r17_as_error
+
+    ld e,(ix+10)
+    ld d,(ix+11)
+    ld (r17_as_body_len),de
+    ld hl,R17_NSP1_HEADER_SIZE
+    add hl,de
+    jp c,r17_as_error
+    ld de,(r17_as_source_len)
+    or a
+    sbc hl,de
+    jp nz,r17_as_error
+
+    ; Body CRC-16/CCITT-FALSE.
+    ld hl,(r17_as_source)
+    ld de,R17_NSP1_HEADER_SIZE
+    add hl,de
+    ld bc,(r17_as_body_len)
+    call r17_as_crc16
+    ld ix,(r17_as_source)
+    ld a,(ix+12)
+    cp e
+    jp nz,r17_as_error
+    ld a,(ix+13)
+    cp d
+    jp nz,r17_as_error
+
+    ; Header CRC with bytes 14..15 zero, exactly as the NSP1 producer.
+    ld hl,(r17_as_source)
+    ld de,r17_as_header_copy
+    ld bc,R17_NSP1_HEADER_SIZE
+    ldir
+    xor a
+    ld (r17_as_header_copy+14),a
+    ld (r17_as_header_copy+15),a
+    ld hl,r17_as_header_copy
+    ld bc,R17_NSP1_HEADER_SIZE
+    call r17_as_crc16
+    ld ix,(r17_as_source)
+    ld a,(ix+14)
+    cp e
+    jp nz,r17_as_error
+    ld a,(ix+15)
+    cp d
+    jp nz,r17_as_error
+
+    ld hl,(r17_as_source)
+    ld de,R17_NSP1_HEADER_SIZE
+    add hl,de
+    ld (r17_as_cur),hl
+    ld de,(r17_as_body_len)
+    add hl,de
+    jp c,r17_as_error
+    ld (r17_as_end),hl
+
+    ld hl,(r17_as_obj)
+    ld de,R17_OBJ1_HEADER_SIZE
+    add hl,de
+    ld (r17_as_out),hl
+    xor a
+    ld h,a
+    ld l,a
+    ld (r17_as_produced),hl
+    ld hl,R17_KERNEL_BASE
+    ld (r17_as_pc),hl
+
+r17_as_record_loop:
+    ld hl,(r17_as_records_left)
+    ld a,h
+    or l
+    jp z,r17_as_records_done
+    dec hl
+    ld (r17_as_records_left),hl
+
+    call r17_as_get8
+    dec a
+    cp 44
+    jp nc,r17_as_error
+    add a,a
+    ld e,a
+    ld d,0
+    ld hl,r17_as_handlers
+    add hl,de
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    push de
+    ret
+
+r17_as_record_done:
+    jp r17_as_record_loop
+
+r17_as_records_done:
+    ld hl,(r17_as_cur)
+    ld de,(r17_as_end)
+    or a
+    sbc hl,de
+    jp nz,r17_as_error
+    ld hl,(r17_as_produced)
+    ld de,(r17_as_text_size)
+    or a
+    sbc hl,de
+    jp nz,r17_as_error
+
+    ; Serialize an exact no-symbol/no-relocation OBJ1 around emitted TEXT.
+    ld hl,(r17_as_obj)
+    ld de,r17_as_obj_header_zero
+    ex de,hl
+    ; HL=template, DE=obj
+    ld bc,R17_OBJ1_HEADER_SIZE
+    ldir
+    ld ix,(r17_as_obj)
+    ld (ix+0),'O'
+    ld (ix+1),'B'
+    ld (ix+2),'J'
+    ld (ix+3),'1'
+    ld (ix+4),1
+    xor a
+    ld (ix+5),a
+    ld (ix+6),R17_OBJ1_HEADER_SIZE
+    ld (ix+7),a
+    ld hl,(r17_as_text_size)
+    ld (ix+8),l
+    ld (ix+9),h
+    xor a
+    ld (ix+10),a
+    ld (ix+11),a
+    ld (ix+12),a
+    ld (ix+13),a
+    ld (ix+14),a
+    ld (ix+15),a
+    ld de,R17_OBJ1_HEADER_SIZE
+    add hl,de
+    ld (ix+16),l
+    ld (ix+17),h
+    ld (ix+18),l
+    ld (ix+19),h
+    xor a
+    ld (ix+20),a
+    ld (ix+21),a
+    ld (ix+22),a
+    ld (ix+23),a
+
+    ld hl,(r17_as_obj)
+    ld de,R17_OBJ1_HEADER_SIZE
+    add hl,de
+    ld bc,(r17_as_text_size)
+    call r17_as_crc16
+    ld ix,(r17_as_obj)
+    ld (ix+20),e
+    ld (ix+21),d
+
+    ld hl,(r17_as_obj)
+    ld bc,R17_OBJ1_HEADER_SIZE
+    call r17_as_crc16
+    ld ix,(r17_as_obj)
+    ld (ix+22),e
+    ld (ix+23),d
+
+    ld hl,(r17_as_text_size)
+    ld de,R17_OBJ1_HEADER_SIZE
+    add hl,de
+    or a
+    ret
+
+; Read one source byte with an exact body-end fence.
+r17_as_get8:
+    push de
+    ld hl,(r17_as_cur)
+    ld de,(r17_as_end)
+    or a
+    sbc hl,de
+    pop de
+    jp nc,r17_as_error
+    ld hl,(r17_as_cur)
+    ld a,(hl)
+    inc hl
+    ld (r17_as_cur),hl
+    ret
+
+; Read little-endian u16 into DE.
+r17_as_get16:
+    call r17_as_get8
+    ld e,a
+    call r17_as_get8
+    ld d,a
+    ret
+
+; Write one target byte, bounded by declared TEXT size, and advance logical PC.
+r17_as_put8:
+    push af
+    push de
+    ld hl,(r17_as_produced)
+    ld de,(r17_as_text_size)
+    or a
+    sbc hl,de
+    jr c,r17_as_put_room
+    pop de
+    pop af
+    jp r17_as_error
+r17_as_put_room:
+    pop de
+    pop af
+    ld hl,(r17_as_out)
+    ld (hl),a
+    inc hl
+    ld (r17_as_out),hl
+    ld hl,(r17_as_produced)
+    inc hl
+    ld (r17_as_produced),hl
+    ld hl,(r17_as_pc)
+    inc hl
+    ld (r17_as_pc),hl
+    ret
+
+r17_as_put_de:
+    ld a,e
+    call r17_as_put8
+    ld a,d
+    jp r17_as_put8
+
+; Validate A <= B. Returns unchanged A or fails.
+r17_as_le_b:
+    cp b
+    ret c
+    ret z
+    jp r17_as_error
+
+; Indexed prefix from A=0/1.
+r17_as_index_prefix:
+    or a
+    jr z,r17_as_index_dd
+    cp 1
+    jp nz,r17_as_error
+    ld a,$FD
+    ret
+r17_as_index_dd:
+    ld a,$DD
+    ret
+
+; Compute A = target - (logical PC + 2), requiring signed 8-bit range.
+; DE=absolute target.
+r17_as_relative:
+    ld (r17_as_w0),de
+    ld hl,(r17_as_pc)
+    inc hl
+    inc hl
+    ex de,hl
+    ld hl,(r17_as_w0)
+    or a
+    sbc hl,de
+    ld a,h
+    or a
+    jr z,r17_as_rel_positive
+    cp $FF
+    jp nz,r17_as_error
+    bit 7,l
+    jp z,r17_as_error
+    ld a,l
+    ret
+r17_as_rel_positive:
+    bit 7,l
+    jp nz,r17_as_error
+    ld a,l
+    ret
+
+; Handler table for semantic record kinds 1..44.
+r17_as_handlers:
+    dw r17_as_h_fixed,r17_as_h_ld_rr,r17_as_h_ld_r_n,r17_as_h_ld_r_memhl
+    dw r17_as_h_ld_memhl_r,r17_as_h_ld_memhl_n,r17_as_h_ld_a_mempair,r17_as_h_ld_mempair_a
+    dw r17_as_h_ld_a_memabs,r17_as_h_ld_memabs_a,r17_as_h_ld_rr_n,r17_as_h_ld_rr_mem
+    dw r17_as_h_ld_memabs_rr,r17_as_h_ld_index_n,r17_as_h_ld_index_mem,r17_as_h_ld_memabs_index
+    dw r17_as_h_ld_sp_index,r17_as_h_ld_special,r17_as_h_ld_index_r,r17_as_h_ld_index_n8
+    dw r17_as_h_alu_r,r17_as_h_alu_n,r17_as_h_alu_index,r17_as_h_incdec_r
+    dw r17_as_h_incdec_rr,r17_as_h_add_hl_rr,r17_as_h_adc_sbc_hl_rr,r17_as_h_add_index_rr
+    dw r17_as_h_jp_call,r17_as_h_jr,r17_as_h_djnz,r17_as_h_ret
+    dw r17_as_h_bitop,r17_as_h_bitop_index,r17_as_h_shift,r17_as_h_pushpop
+    dw r17_as_h_ex,r17_as_h_im,r17_as_h_inout,r17_as_h_db
+    dw r17_as_h_dw,r17_as_h_ds,r17_as_h_rst,r17_as_h_out_n_a
+
+r17_as_h_fixed:
+    call r17_as_get8
+    ld b,24
+    call r17_as_le_b
+    ld (r17_as_v0),a
+    cp 13
+    jr c,r17_as_h_fixed_one
+    cp 23
+    jr nc,r17_as_h_fixed_one
+    sub 13
+    ld e,a
+    ld d,0
+    ld hl,r17_as_fixed_ed_second
+    add hl,de
+    ld a,(hl)
+    ld (r17_as_v1),a
+    ld a,$ED
+    call r17_as_put8
+    ld a,(r17_as_v1)
+    call r17_as_put8
+    jp r17_as_record_done
+r17_as_h_fixed_one:
+    ld a,(r17_as_v0)
+    ld e,a
+    ld d,0
+    ld hl,r17_as_fixed_table
+    add hl,de
+    ld a,(hl)
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_ld_rr:
+    call r17_as_get8
+    ld b,7
+    call r17_as_le_b
+    ld (r17_as_v0),a
+    call r17_as_get8
+    ld b,7
+    call r17_as_le_b
+    ld b,a
+    ld a,(r17_as_v0)
+    add a,a
+    add a,a
+    add a,a
+    add a,$40
+    add a,b
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_ld_r_n:
+    call r17_as_get8
+    ld b,7
+    call r17_as_le_b
+    ld (r17_as_v0),a
+    call r17_as_get8
+    ld (r17_as_v1),a
+    ld a,(r17_as_v0)
+    add a,a
+    add a,a
+    add a,a
+    add a,$06
+    call r17_as_put8
+    ld a,(r17_as_v1)
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_ld_r_memhl:
+    call r17_as_get8
+    ld b,7
+    call r17_as_le_b
+    add a,a
+    add a,a
+    add a,a
+    add a,$46
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_ld_memhl_r:
+    call r17_as_get8
+    ld b,7
+    call r17_as_le_b
+    add a,$70
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_ld_memhl_n:
+    call r17_as_get8
+    ld (r17_as_v0),a
+    ld a,$36
+    call r17_as_put8
+    ld a,(r17_as_v0)
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_ld_a_mempair:
+    call r17_as_get8
+    or a
+    jr z,r17_as_h_ld_a_bc
+    cp 1
+    jp nz,r17_as_error
+    ld a,$1A
+    jr r17_as_h_ld_pair_emit
+r17_as_h_ld_a_bc:
+    ld a,$0A
+r17_as_h_ld_pair_emit:
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_ld_mempair_a:
+    call r17_as_get8
+    or a
+    jr z,r17_as_h_ld_bc_a
+    cp 1
+    jp nz,r17_as_error
+    ld a,$12
+    jr r17_as_h_ld_pair_a_emit
+r17_as_h_ld_bc_a:
+    ld a,$02
+r17_as_h_ld_pair_a_emit:
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_ld_a_memabs:
+    call r17_as_get16
+    ld a,$3A
+    call r17_as_put8
+    call r17_as_put_de
+    jp r17_as_record_done
+
+r17_as_h_ld_memabs_a:
+    call r17_as_get16
+    ld a,$32
+    call r17_as_put8
+    call r17_as_put_de
+    jp r17_as_record_done
+
+r17_as_h_ld_rr_n:
+    call r17_as_get8
+    ld b,3
+    call r17_as_le_b
+    rlca
+    rlca
+    rlca
+    rlca
+    add a,$01
+    ld (r17_as_v0),a
+    call r17_as_get16
+    ld a,(r17_as_v0)
+    call r17_as_put8
+    call r17_as_put_de
+    jp r17_as_record_done
+
+r17_as_h_ld_rr_mem:
+    call r17_as_get8
+    ld b,3
+    call r17_as_le_b
+    ld (r17_as_v0),a
+    call r17_as_get16
+    ld a,(r17_as_v0)
+    cp 2
+    jr nz,r17_as_h_ld_rr_mem_ed
+    ld a,$2A
+    call r17_as_put8
+    call r17_as_put_de
+    jp r17_as_record_done
+r17_as_h_ld_rr_mem_ed:
+    add a,a
+    add a,a
+    add a,a
+    add a,a
+    add a,$4B
+    ld (r17_as_v0),a
+    ld a,$ED
+    call r17_as_put8
+    ld a,(r17_as_v0)
+    call r17_as_put8
+    call r17_as_put_de
+    jp r17_as_record_done
+
+r17_as_h_ld_memabs_rr:
+    call r17_as_get8
+    ld b,3
+    call r17_as_le_b
+    ld (r17_as_v0),a
+    call r17_as_get16
+    ld a,(r17_as_v0)
+    cp 2
+    jr nz,r17_as_h_ld_memabs_rr_ed
+    ld a,$22
+    call r17_as_put8
+    call r17_as_put_de
+    jp r17_as_record_done
+r17_as_h_ld_memabs_rr_ed:
+    add a,a
+    add a,a
+    add a,a
+    add a,a
+    add a,$43
+    ld (r17_as_v0),a
+    ld a,$ED
+    call r17_as_put8
+    ld a,(r17_as_v0)
+    call r17_as_put8
+    call r17_as_put_de
+    jp r17_as_record_done
+
+r17_as_h_ld_index_n:
+    call r17_as_get8
+    call r17_as_index_prefix
+    ld (r17_as_v0),a
+    call r17_as_get16
+    ld a,(r17_as_v0)
+    call r17_as_put8
+    ld a,$21
+    call r17_as_put8
+    call r17_as_put_de
+    jp r17_as_record_done
+
+r17_as_h_ld_index_mem:
+    call r17_as_get8
+    call r17_as_index_prefix
+    ld (r17_as_v0),a
+    call r17_as_get16
+    ld a,(r17_as_v0)
+    call r17_as_put8
+    ld a,$2A
+    call r17_as_put8
+    call r17_as_put_de
+    jp r17_as_record_done
+
+r17_as_h_ld_memabs_index:
+    call r17_as_get8
+    call r17_as_index_prefix
+    ld (r17_as_v0),a
+    call r17_as_get16
+    ld a,(r17_as_v0)
+    call r17_as_put8
+    ld a,$22
+    call r17_as_put8
+    call r17_as_put_de
+    jp r17_as_record_done
+
+r17_as_h_ld_sp_index:
+    call r17_as_get8
+    call r17_as_index_prefix
+    call r17_as_put8
+    ld a,$F9
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_ld_special:
+    call r17_as_get8
+    ld b,3
+    call r17_as_le_b
+    ld e,a
+    ld d,0
+    ld hl,r17_as_special_table
+    add hl,de
+    ld a,$ED
+    call r17_as_put8
+    ld a,(hl)
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_ld_index_r:
+    call r17_as_get8
+    call r17_as_index_prefix
+    ld (r17_as_v0),a
+    call r17_as_get8
+    ld (r17_as_v1),a
+    call r17_as_get8
+    cp 2
+    jp nc,r17_as_error
+    ld (r17_as_v2),a
+    call r17_as_get8
+    ld b,7
+    call r17_as_le_b
+    ld (r17_as_v3),a
+    ld a,(r17_as_v0)
+    call r17_as_put8
+    ld a,(r17_as_v2)
+    or a
+    jr z,r17_as_h_ld_index_load
+    ld a,(r17_as_v3)
+    add a,$70
+    jr r17_as_h_ld_index_opcode
+r17_as_h_ld_index_load:
+    ld a,(r17_as_v3)
+    add a,a
+    add a,a
+    add a,a
+    add a,$46
+r17_as_h_ld_index_opcode:
+    call r17_as_put8
+    ld a,(r17_as_v1)
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_ld_index_n8:
+    call r17_as_get8
+    call r17_as_index_prefix
+    ld (r17_as_v0),a
+    call r17_as_get8
+    ld (r17_as_v1),a
+    call r17_as_get8
+    ld (r17_as_v2),a
+    ld a,(r17_as_v0)
+    call r17_as_put8
+    ld a,$36
+    call r17_as_put8
+    ld a,(r17_as_v1)
+    call r17_as_put8
+    ld a,(r17_as_v2)
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_alu_r:
+    call r17_as_get8
+    ld b,7
+    call r17_as_le_b
+    ld (r17_as_v0),a
+    call r17_as_get8
+    ld b,7
+    call r17_as_le_b
+    ld b,a
+    ld a,(r17_as_v0)
+    add a,a
+    add a,a
+    add a,a
+    add a,$80
+    add a,b
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_alu_n:
+    call r17_as_get8
+    ld b,7
+    call r17_as_le_b
+    ld e,a
+    ld d,0
+    ld hl,r17_as_alu_imm_table
+    add hl,de
+    ld a,(hl)
+    ld (r17_as_v0),a
+    call r17_as_get8
+    ld (r17_as_v1),a
+    ld a,(r17_as_v0)
+    call r17_as_put8
+    ld a,(r17_as_v1)
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_alu_index:
+    call r17_as_get8
+    ld b,7
+    call r17_as_le_b
+    ld (r17_as_v0),a
+    call r17_as_get8
+    call r17_as_index_prefix
+    ld (r17_as_v1),a
+    call r17_as_get8
+    ld (r17_as_v2),a
+    ld a,(r17_as_v1)
+    call r17_as_put8
+    ld a,(r17_as_v0)
+    add a,a
+    add a,a
+    add a,a
+    add a,$86
+    call r17_as_put8
+    ld a,(r17_as_v2)
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_incdec_r:
+    call r17_as_get8
+    ld b,7
+    call r17_as_le_b
+    ld (r17_as_v0),a
+    call r17_as_get8
+    cp 2
+    jp nc,r17_as_error
+    ld b,a
+    ld a,(r17_as_v0)
+    add a,a
+    add a,a
+    add a,a
+    add a,$04
+    add a,b
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_incdec_rr:
+    call r17_as_get8
+    ld b,3
+    call r17_as_le_b
+    rlca
+    rlca
+    rlca
+    rlca
+    ld (r17_as_v0),a
+    call r17_as_get8
+    cp 2
+    jp nc,r17_as_error
+    or a
+    jr z,r17_as_h_incdec_rr_inc
+    ld a,(r17_as_v0)
+    add a,8
+    jr r17_as_h_incdec_rr_emit
+r17_as_h_incdec_rr_inc:
+    ld a,(r17_as_v0)
+r17_as_h_incdec_rr_emit:
+    add a,$03
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_add_hl_rr:
+    call r17_as_get8
+    ld b,3
+    call r17_as_le_b
+    rlca
+    rlca
+    rlca
+    rlca
+    add a,$09
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_adc_sbc_hl_rr:
+    call r17_as_get8
+    cp 2
+    jp nc,r17_as_error
+    or a
+    ld a,$4A
+    jr z,r17_as_h_adc_sbc_base
+    ld a,$42
+r17_as_h_adc_sbc_base:
+    ld (r17_as_v0),a
+    call r17_as_get8
+    ld b,3
+    call r17_as_le_b
+    rlca
+    rlca
+    rlca
+    rlca
+    ld b,a
+    ld a,$ED
+    call r17_as_put8
+    ld a,(r17_as_v0)
+    add a,b
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_add_index_rr:
+    call r17_as_get8
+    call r17_as_index_prefix
+    ld (r17_as_v0),a
+    call r17_as_get8
+    ld b,3
+    call r17_as_le_b
+    rlca
+    rlca
+    rlca
+    rlca
+    add a,$09
+    ld (r17_as_v1),a
+    ld a,(r17_as_v0)
+    call r17_as_put8
+    ld a,(r17_as_v1)
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_jp_call:
+    call r17_as_get8
+    cp 2
+    jp nc,r17_as_error
+    ld (r17_as_v0),a
+    call r17_as_get8
+    ld (r17_as_v1),a
+    cp $FF
+    jr z,r17_as_h_jp_call_cond_ok
+    ld b,7
+    call r17_as_le_b
+r17_as_h_jp_call_cond_ok:
+    call r17_as_get16
+    ld a,(r17_as_v1)
+    cp $FF
+    jr nz,r17_as_h_jp_call_cond
+    ld a,(r17_as_v0)
+    or a
+    ld a,$C3
+    jr z,r17_as_h_jp_call_emit
+    ld a,$CD
+    jr r17_as_h_jp_call_emit
+r17_as_h_jp_call_cond:
+    add a,a
+    add a,a
+    add a,a
+    ld b,a
+    ld a,(r17_as_v0)
+    or a
+    ld a,$C2
+    jr z,r17_as_h_jp_call_cond_base
+    ld a,$C4
+r17_as_h_jp_call_cond_base:
+    add a,b
+r17_as_h_jp_call_emit:
+    call r17_as_put8
+    call r17_as_put_de
+    jp r17_as_record_done
+
+r17_as_h_jr:
+    call r17_as_get8
+    ld (r17_as_v0),a
+    cp $FF
+    jr z,r17_as_h_jr_cond_ok
+    ld b,3
+    call r17_as_le_b
+r17_as_h_jr_cond_ok:
+    call r17_as_get16
+    call r17_as_relative
+    ld (r17_as_v1),a
+    ld a,(r17_as_v0)
+    cp $FF
+    ld a,$18
+    jr z,r17_as_h_jr_emit_op
+    ld a,(r17_as_v0)
+    add a,a
+    add a,a
+    add a,a
+    add a,$20
+r17_as_h_jr_emit_op:
+    call r17_as_put8
+    ld a,(r17_as_v1)
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_djnz:
+    call r17_as_get16
+    call r17_as_relative
+    ld (r17_as_v0),a
+    ld a,$10
+    call r17_as_put8
+    ld a,(r17_as_v0)
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_ret:
+    call r17_as_get8
+    cp $FF
+    ld a,$C9
+    jr z,r17_as_h_ret_emit
+    ld a,(r17_as_cur)
+    ; Reload consumed condition from previous source byte.
+    ld hl,(r17_as_cur)
+    dec hl
+    ld a,(hl)
+    ld b,7
+    call r17_as_le_b
+    add a,a
+    add a,a
+    add a,a
+    add a,$C0
+r17_as_h_ret_emit:
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_bitop:
+    call r17_as_get8
+    ld b,2
+    call r17_as_le_b
+    ld (r17_as_v0),a
+    call r17_as_get8
+    ld b,7
+    call r17_as_le_b
+    ld (r17_as_v1),a
+    call r17_as_get8
+    ld b,7
+    call r17_as_le_b
+    ld (r17_as_v2),a
+    ld a,$CB
+    call r17_as_put8
+    ld a,(r17_as_v0)
+    or a
+    ld a,$40
+    jr z,r17_as_h_bitop_base
+    ld a,(r17_as_v0)
+    cp 1
+    ld a,$80
+    jr z,r17_as_h_bitop_base
+    ld a,$C0
+r17_as_h_bitop_base:
+    ld b,a
+    ld a,(r17_as_v1)
+    add a,a
+    add a,a
+    add a,a
+    add a,b
+    ld b,a
+    ld a,(r17_as_v2)
+    add a,b
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_bitop_index:
+    call r17_as_get8
+    ld b,2
+    call r17_as_le_b
+    ld (r17_as_v0),a
+    call r17_as_get8
+    ld b,7
+    call r17_as_le_b
+    ld (r17_as_v1),a
+    call r17_as_get8
+    call r17_as_index_prefix
+    ld (r17_as_v2),a
+    call r17_as_get8
+    ld (r17_as_v3),a
+    ld a,(r17_as_v2)
+    call r17_as_put8
+    ld a,$CB
+    call r17_as_put8
+    ld a,(r17_as_v3)
+    call r17_as_put8
+    ld a,(r17_as_v0)
+    or a
+    ld a,$40
+    jr z,r17_as_h_bitop_index_base
+    ld a,(r17_as_v0)
+    cp 1
+    ld a,$80
+    jr z,r17_as_h_bitop_index_base
+    ld a,$C0
+r17_as_h_bitop_index_base:
+    ld b,a
+    ld a,(r17_as_v1)
+    add a,a
+    add a,a
+    add a,a
+    add a,b
+    add a,6
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_shift:
+    call r17_as_get8
+    ld b,6
+    call r17_as_le_b
+    ld e,a
+    ld d,0
+    ld hl,r17_as_shift_table
+    add hl,de
+    ld a,(hl)
+    ld (r17_as_v0),a
+    call r17_as_get8
+    ld b,7
+    call r17_as_le_b
+    ld (r17_as_v1),a
+    ld a,$CB
+    call r17_as_put8
+    ld a,(r17_as_v0)
+    ld b,a
+    ld a,(r17_as_v1)
+    add a,b
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_pushpop:
+    call r17_as_get8
+    cp 2
+    jp nc,r17_as_error
+    ld (r17_as_v0),a
+    call r17_as_get8
+    ld b,5
+    call r17_as_le_b
+    ld (r17_as_v1),a
+    cp 4
+    jr nc,r17_as_h_pushpop_index
+    add a,a
+    add a,a
+    add a,a
+    add a,a
+    ld b,a
+    ld a,(r17_as_v0)
+    or a
+    ld a,$C5
+    jr z,r17_as_h_pushpop_base
+    ld a,$C1
+r17_as_h_pushpop_base:
+    add a,b
+    call r17_as_put8
+    jp r17_as_record_done
+r17_as_h_pushpop_index:
+    cp 4
+    ld a,$DD
+    jr z,r17_as_h_pushpop_prefix
+    ld a,$FD
+r17_as_h_pushpop_prefix:
+    call r17_as_put8
+    ld a,(r17_as_v0)
+    or a
+    ld a,$E5
+    jr z,r17_as_h_pushpop_idx_emit
+    ld a,$E1
+r17_as_h_pushpop_idx_emit:
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_ex:
+    call r17_as_get8
+    ld b,2
+    call r17_as_le_b
+    ld e,a
+    ld d,0
+    ld hl,r17_as_ex_table
+    add hl,de
+    ld a,(hl)
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_im:
+    call r17_as_get8
+    ld b,2
+    call r17_as_le_b
+    ld e,a
+    ld d,0
+    ld hl,r17_as_im_table
+    add hl,de
+    ld a,$ED
+    call r17_as_put8
+    ld a,(hl)
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_inout:
+    call r17_as_get8
+    cp 2
+    jp nc,r17_as_error
+    or a
+    ld a,$78
+    jr z,r17_as_h_inout_emit
+    ld a,$79
+r17_as_h_inout_emit:
+    ld (r17_as_v0),a
+    ld a,$ED
+    call r17_as_put8
+    ld a,(r17_as_v0)
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_db:
+    call r17_as_get16
+    ld a,d
+    or a
+    jp nz,r17_as_error
+    ld a,e
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_dw:
+    call r17_as_get16
+    call r17_as_put_de
+    jp r17_as_record_done
+
+r17_as_h_ds:
+    call r17_as_get16
+    ld (r17_as_w0),de
+    call r17_as_get16
+    ld a,d
+    or a
+    jp nz,r17_as_error
+    ld (r17_as_v0),a
+    ld a,e
+    ld (r17_as_v0),a
+    ld bc,(r17_as_w0)
+    ld a,b
+    or c
+    jr z,r17_as_h_ds_done
+r17_as_h_ds_loop:
+    ld a,(r17_as_v0)
+    call r17_as_put8
+    dec bc
+    ld a,b
+    or c
+    jr nz,r17_as_h_ds_loop
+r17_as_h_ds_done:
+    jp r17_as_record_done
+
+r17_as_h_rst:
+    call r17_as_get16
+    ld a,d
+    or a
+    jp nz,r17_as_error
+    ld a,e
+    cp $39
+    jp nc,r17_as_error
+    and 7
+    jp nz,r17_as_error
+    ld a,e
+    or $C7
+    call r17_as_put8
+    jp r17_as_record_done
+
+r17_as_h_out_n_a:
+    call r17_as_get8
+    ld (r17_as_v0),a
+    ld a,$D3
+    call r17_as_put8
+    ld a,(r17_as_v0)
+    call r17_as_put8
+    jp r17_as_record_done
+
+; CRC-16/CCITT-FALSE, HL bytes, BC length -> DE CRC.
+r17_as_crc16:
+    ld de,$FFFF
+r17_as_crc_byte:
+    ld a,b
+    or c
+    ret z
+    ld a,(hl)
+    xor d
+    ld d,a
+    inc hl
+    push bc
+    ld b,8
+r17_as_crc_bit:
+    sla e
+    rl d
+    jr nc,r17_as_crc_no_poly
+    ld a,d
+    xor $10
+    ld d,a
+    ld a,e
+    xor $21
+    ld e,a
+r17_as_crc_no_poly:
+    djnz r17_as_crc_bit
+    pop bc
+    dec bc
+    jr r17_as_crc_byte
+
+r17_as_error:
+    ld a,E_FORMAT
+    scf
+    ret
+
+r17_as_fixed_table:
+    db $00,$07,$0F,$17,$1F,$27,$2F,$37,$3F,$76,$F3,$FB,$D9
+    db $ED,$ED,$ED,$ED,$ED,$ED,$ED,$ED,$ED,$ED,$E9,$F9
+; Fixed IDs 13..22 are two-byte ED instructions and are handled specially below.
+; Patch handler dispatch for those IDs by recognizing the table's ED marker.
+; The second bytes correspond to RETI, NEG, LDI, LDIR, LDD, LDDR, CPI, CPIR, CPD, CPDR.
+r17_as_fixed_ed_second:
+    db $4D,$44,$A0,$B0,$A8,$B8,$A1,$B1,$A9,$B9
+r17_as_special_table: db $57,$5F,$47,$4F
+r17_as_alu_imm_table: db $C6,$CE,$D6,$DE,$E6,$EE,$F6,$FE
+r17_as_shift_table: db $00,$08,$10,$18,$20,$28,$38
+r17_as_ex_table: db $EB,$E3,$08
+r17_as_im_table: db $46,$56,$5E
+r17_as_obj_header_zero: defs R17_OBJ1_HEADER_SIZE,0
+r17_as_header_copy: defs R17_NSP1_HEADER_SIZE,0
+
+r17_as_source:       dw 0
+r17_as_source_len:   dw 0
+r17_as_obj:          dw 0
+r17_as_body_len:     dw 0
+r17_as_text_size:    dw 0
+r17_as_records_left: dw 0
+r17_as_cur:          dw 0
+r17_as_end:          dw 0
+r17_as_out:          dw 0
+r17_as_produced:     dw 0
+r17_as_pc:           dw 0
+r17_as_w0:           dw 0
+r17_as_v0:           db 0
+r17_as_v1:           db 0
+r17_as_v2:           db 0
+r17_as_v3:           db 0
+    ENDM
