@@ -1,0 +1,53 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "lower-case-source-fixture",
+      "passed": true
+    },
+    {
+      "name": "native-as-stage-obj1",
+      "passed": true
+    },
+    {
+      "name": "native-ld-stage-mex1",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1034-lifecycle.sym",
+        "p1034-lifecycle.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 69,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 7112 lines, work time: 0.068 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/as.asm": "2eec326a18df28133ba1f57e5d0b64c42cc7853cbcd649880ecd045767c4ca30",
+    "tools/ld.asm": "559cb8bfe390c5a1bed8934948f51aa0852c29880128a4b06cc6df684ff6f3df",
+    "v1/build/p1034-gateway.bin": "ebbb8f0fcab92cefa0b29a038f9565f95ad5cbdf3601f6b9f86f36903a665ad0",
+    "v1/build/p1034-main.bin": "73b37fe4b0cefc51fd54811184ec229e148b711a53e0f448dfd6360d36146fad",
+    "v1/dist/certification/P10.33.build.json": "5d6ddcda144330ed43f92117f2b6ce77be4bbd4712fb6b0783d1cbcefe7d3bec",
+    "v1/dist/certification/P10.33.test.json": "136ffbb2e4b351232fda84cec40c11300970fa9600d57ae05c1ebd9019a1c8cc",
+    "v1/tools-host/test-driver/phase10_step_34.py": "78753b3ed807258645d9aa95b0b64c37ef96826cd4d8de5ea454e0b91040c65d"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P10.33": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "095dc251c9cfaedccf3950738a495309ac69d0a4",
+  "status": "PASS",
+  "step": "P10.34",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
