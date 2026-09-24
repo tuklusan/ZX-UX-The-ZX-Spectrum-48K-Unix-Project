@@ -2937,11 +2937,13 @@ as_p1020_mul_loop:
 
 ; Carry set iff HL > 32768.
 as_p1020_bound:
+    push hl
     push de
     ld de,$8001
     or a
     sbc hl,de
     pop de
+    pop hl
     ccf
     ret
 
