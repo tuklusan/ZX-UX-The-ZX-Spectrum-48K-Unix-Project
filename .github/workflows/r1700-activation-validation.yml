@@ -26,7 +26,9 @@ jobs:
       ZXUX_SOURCE_EPOCH: current
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:\n          fetch-depth: 0\n          ref: ${{ inputs.admitted_commit }}
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.admitted_commit }}
       - name: Validate exact R17 activation state
         run: |
           set -euo pipefail
