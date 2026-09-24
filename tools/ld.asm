@@ -831,3 +831,286 @@ ld_p1023_selected_count: db 0
 ld_p1023_selected_order: defs 3,0
 ld_p1023_changed:        db 0
     ENDM
+
+; P10.24 deterministic final module order, even layout, and zero-padding gates.
+    MACRO EMIT_P10_LD_LAYOUT_ROUTINES
+LD_P1024_MAX_MODULES EQU 8
+
+; A=nostart (0 normal, nonzero development-only), HL=user ID bytes, B=user count,
+; DE=selected archive ID bytes, C=selected count. Output frozen order/count.
+ld_p1024_build_order:
+    ld (ld_p1024_user_ids),hl
+    ld (ld_p1024_archive_ids),de
+    ld a,b
+    ld (ld_p1024_user_count),a
+    ld a,c
+    ld (ld_p1024_archive_count),a
+    xor a
+    ld (ld_p1024_order_count),a
+    ; nostart flag is recovered from caller through the saved byte below.
+    ; Caller stores it before entry using ld_p1024_nostart.
+    ld a,(ld_p1024_nostart)
+    or a
+    jp nz,ld_p1024_order_users
+    xor a                       ; crt0 ID is always zero and first
+    call ld_p1024_order_append
+    ret c
+ld_p1024_order_users:
+    xor a
+    ld (ld_p1024_index),a
+ld_p1024_order_user_loop:
+    ld a,(ld_p1024_index)
+    ld b,a
+    ld a,(ld_p1024_user_count)
+    cp b
+    jp z,ld_p1024_order_archive_start
+    ld hl,(ld_p1024_user_ids)
+    ld e,b
+    ld d,0
+    add hl,de
+    ld a,(hl)
+    call ld_p1024_order_append
+    ret c
+    ld a,(ld_p1024_index)
+    inc a
+    ld (ld_p1024_index),a
+    jp ld_p1024_order_user_loop
+ld_p1024_order_archive_start:
+    xor a
+    ld (ld_p1024_index),a
+ld_p1024_order_archive_loop:
+    ld a,(ld_p1024_index)
+    ld b,a
+    ld a,(ld_p1024_archive_count)
+    cp b
+    jp z,ld_p1024_order_ok
+    ld hl,(ld_p1024_archive_ids)
+    ld e,b
+    ld d,0
+    add hl,de
+    ld a,(hl)
+    call ld_p1024_order_append
+    ret c
+    ld a,(ld_p1024_index)
+    inc a
+    ld (ld_p1024_index),a
+    jp ld_p1024_order_archive_loop
+ld_p1024_order_ok:
+    xor a
+    ret
+ld_p1024_order_append:
+    push af
+    ld a,(ld_p1024_order_count)
+    cp LD_P1024_MAX_MODULES
+    jp nc,ld_p1024_order_overflow
+    ld e,a
+    ld d,0
+    ld hl,ld_p1024_order
+    add hl,de
+    pop af
+    ld (hl),a
+    ld a,(ld_p1024_order_count)
+    inc a
+    ld (ld_p1024_order_count),a
+    xor a
+    ret
+ld_p1024_order_overflow:
+    pop af
+    jp ld_p1024_format
+
+; HL=table of count records {text_size dw,bss_size dw}, B=count, DE=heap bytes.
+; Output TEXT/BSS bases, even image_size, even heap base, exact final_bss_size.
+ld_p1024_layout:
+    ld (ld_p1024_table),hl
+    ld (ld_p1024_heap_size),de
+    ld a,b
+    cp LD_P1024_MAX_MODULES+1
+    jp nc,ld_p1024_format
+    ld (ld_p1024_count),a
+    xor a
+    ld (ld_p1024_index),a
+    ld hl,0
+    ld (ld_p1024_cursor),hl
+ld_p1024_text_loop:
+    ld a,(ld_p1024_index)
+    ld b,a
+    ld a,(ld_p1024_count)
+    cp b
+    jp z,ld_p1024_text_done
+    ld hl,(ld_p1024_cursor)
+    bit 0,l
+    jp z,ld_p1024_text_aligned
+    inc hl
+    jp z,ld_p1024_nospc
+ld_p1024_text_aligned:
+    ld (ld_p1024_cursor),hl
+    ld a,(ld_p1024_index)
+    ld de,ld_p1024_text_bases
+    call ld_p1024_store_indexed_word
+    call ld_p1024_record_ptr
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld hl,(ld_p1024_cursor)
+    add hl,de
+    jp c,ld_p1024_nospc
+    ld (ld_p1024_cursor),hl
+    ld a,(ld_p1024_index)
+    inc a
+    ld (ld_p1024_index),a
+    jp ld_p1024_text_loop
+ld_p1024_text_done:
+    ld hl,(ld_p1024_cursor)
+    bit 0,l
+    jp z,ld_p1024_text_final_even
+    inc hl
+    jp z,ld_p1024_nospc
+ld_p1024_text_final_even:
+    ld (ld_p1024_image_size),hl
+    xor a
+    ld (ld_p1024_index),a
+    ld hl,0
+    ld (ld_p1024_cursor),hl
+ld_p1024_bss_loop:
+    ld a,(ld_p1024_index)
+    ld b,a
+    ld a,(ld_p1024_count)
+    cp b
+    jp z,ld_p1024_bss_done
+    ld hl,(ld_p1024_cursor)
+    bit 0,l
+    jp z,ld_p1024_bss_aligned
+    inc hl
+    jp z,ld_p1024_nospc
+ld_p1024_bss_aligned:
+    ld (ld_p1024_cursor),hl
+    ld a,(ld_p1024_index)
+    ld de,ld_p1024_bss_bases
+    call ld_p1024_store_indexed_word
+    call ld_p1024_record_ptr
+    inc hl
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld hl,(ld_p1024_cursor)
+    add hl,de
+    jp c,ld_p1024_nospc
+    ld (ld_p1024_cursor),hl
+    ld a,(ld_p1024_index)
+    inc a
+    ld (ld_p1024_index),a
+    jp ld_p1024_bss_loop
+ld_p1024_bss_done:
+    ld hl,(ld_p1024_cursor)
+    bit 0,l
+    jp z,ld_p1024_heap_even
+    inc hl
+    jp z,ld_p1024_nospc
+ld_p1024_heap_even:
+    ld (ld_p1024_heap_base),hl
+    ld de,(ld_p1024_heap_size)
+    add hl,de
+    jp c,ld_p1024_nospc
+    ld (ld_p1024_final_bss),hl
+
+    ld de,(ld_p1024_image_size)
+    add hl,de
+    jp c,ld_p1024_nospc
+    ld de,$8001
+    or a
+    sbc hl,de
+    jp nc,ld_p1024_nospc
+    xor a
+    ret
+
+ld_p1024_record_ptr:
+    ld a,(ld_p1024_index)
+    ld l,a
+    ld h,0
+    add hl,hl
+    add hl,hl
+    ld de,(ld_p1024_table)
+    add hl,de
+    ret
+
+; A=index, HL=value, DE=word-array base. Restores HL=value.
+ld_p1024_store_indexed_word:
+    push hl
+    ld l,a
+    ld h,0
+    add hl,hl
+    add hl,de
+    pop de
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    ex de,hl
+    ret
+
+; HL=image, DE=list of u16 padding offsets, B=count. Every named pad byte is zero.
+ld_p1024_check_zero_offsets:
+    ld (ld_p1024_pad_image),hl
+    ld (ld_p1024_pad_list),de
+    ld a,b
+    ld (ld_p1024_pad_count),a
+    xor a
+    ld (ld_p1024_index),a
+ld_p1024_pad_loop:
+    ld a,(ld_p1024_index)
+    ld b,a
+    ld a,(ld_p1024_pad_count)
+    cp b
+    jp z,ld_p1024_pad_ok
+    ld hl,(ld_p1024_pad_list)
+    ld a,(ld_p1024_index)
+    add a,a
+    ld e,a
+    ld d,0
+    add hl,de
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld hl,(ld_p1024_pad_image)
+    add hl,de
+    ld a,(hl)
+    or a
+    jp nz,ld_p1024_format
+    ld a,(ld_p1024_index)
+    inc a
+    ld (ld_p1024_index),a
+    jp ld_p1024_pad_loop
+ld_p1024_pad_ok:
+    xor a
+    ret
+
+ld_p1024_nospc:
+    ld a,E_NOSPC
+    scf
+    ret
+ld_p1024_format:
+    ld a,E_FORMAT
+    scf
+    ret
+
+ld_p1024_nostart:       db 0
+ld_p1024_user_ids:      dw 0
+ld_p1024_user_count:    db 0
+ld_p1024_archive_ids:   dw 0
+ld_p1024_archive_count: db 0
+ld_p1024_order_count:   db 0
+ld_p1024_order:         defs LD_P1024_MAX_MODULES,0
+ld_p1024_table:         dw 0
+ld_p1024_count:         db 0
+ld_p1024_index:         db 0
+ld_p1024_cursor:        dw 0
+ld_p1024_heap_size:     dw 0
+ld_p1024_image_size:    dw 0
+ld_p1024_heap_base:     dw 0
+ld_p1024_final_bss:     dw 0
+ld_p1024_text_bases:    defs LD_P1024_MAX_MODULES*2,0
+ld_p1024_bss_bases:     defs LD_P1024_MAX_MODULES*2,0
+ld_p1024_pad_image:     dw 0
+ld_p1024_pad_list:      dw 0
+ld_p1024_pad_count:     db 0
+    ENDM
