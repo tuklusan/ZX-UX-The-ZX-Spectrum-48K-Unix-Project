@@ -89,8 +89,9 @@ def source_assertions(root: Path):
         "compiler/run_tests.py","compiler/verify_release.py",
     ]
     failures=contract_failures(doc)
+    compact_contract=" ".join(contract.split())
     assertions=[
-        {"name":"working-contract-explicit-version1-surface","passed":all(x in contract for x in required_contract)},
+        {"name":"working-contract-explicit-version1-surface","passed":all(x in compact_contract for x in required_contract)},
         {"name":"sdk-reference-commit-pinned","passed":SDK_COMMIT in prov and SDK_TREE in prov},
         {"name":"project-docx-git-blob-recorded","passed":DOCX_GIT_BLOB in prov},
         {"name":"sdk-python-implementation-surface-reviewed","passed":all(x in prov for x in required_sdk_paths)},
