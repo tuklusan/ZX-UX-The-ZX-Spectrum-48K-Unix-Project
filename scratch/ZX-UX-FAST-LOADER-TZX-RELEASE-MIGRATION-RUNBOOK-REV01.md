@@ -542,17 +542,17 @@ Do not delete historical qualification/admission workflows merely because they a
 
 The pre-goal audit has already found several current/stale surfaces that the final walk must resolve:
 
-- `docs/03-ZX-UX-DEVELOPMENT-WORKFLOW.md` currently names REV16/REV07 as active and must name the admitted REV17/REV08 epoch after R17 activation while preserving the historical epoch record.
-- `docs/--W-A-R-N-I-N-G--.md` currently describes REV16/REV07 as the active pair and must be synchronized to the new immutable-authority history after activation.
-- `v1/dist/certification/README.md` currently describes R16.00 as the latest bridge and must document R17.00 and the P10/P11 epoch boundary without reinterpreting old evidence.
-- `scratch/WORKFLOW.md` is already stale today: it still calls REV12/REV03 active and says to resume at P1.14. Replace that misleading live-status wording with an explicitly historical/closed description or retire the file if repository policy permits.
-- `scratch/README.md` must list this runbook/package accurately if it maintains a contents list.
-- `v1/docs/test-plan.md` and any other current operational documentation must agree with the active authority pair and TZX-only product release path.
-- `tools/check_media_retention.py` currently points directly at REV07 and must use the correct epoch-aware/current-plan requirements without weakening checks on admitted P6-P10 media.
-- `v1/tools-host/test-driver/driver_core.py` and `evidence.py` currently encode the REV16/REV07 prospective epoch and must implement the explicit historical-versus-R17 routing defined in Stage B.
-- `tools/scripts/verify-environment.py` currently pins REV16 as its architecture identity and must be reconciled with the new active authority without invalidating historical certification records.
-- `tools/check_license_headers.sh` must no longer carry a dead `v1/assets/loading.scr` exemption once that file has been removed.
-- root `README.md` must be checked for release/boot wording, but changed only if it actually becomes stale.
+- RESOLVED: `docs/03-ZX-UX-DEVELOPMENT-WORKFLOW.md` names admitted REV17/REV08 as active, preserves REV16/REV07 as historical P3-P10 authority, and explicitly records frozen-authority transport precedence.
+- RESOLVED: `docs/--W-A-R-N-I-N-G--.md` records REV17/REV08 as active, REV16/REV07 as immutable history, and forbids editing frozen authorities merely to remove retained superseded transport wording.
+- RESOLVED: `v1/dist/certification/README.md` documents R17.00 and epoch-aware evidence routing without reinterpreting historical records.
+- RESOLVED: `scratch/WORKFLOW.md` is explicitly historical/closed and no longer advertises a live resume point.
+- RESOLVED: `scratch/README.md` was checked; no stale live-status contradiction remains.
+- RESOLVED: `v1/docs/test-plan.md` and current operational documentation agree with REV17/REV08 and the TZX-only release path.
+- RESOLVED: `tools/check_media_retention.py` uses the active REV08 plan while retaining validation of admitted historical media.
+- RESOLVED: `driver_core.py` and `evidence.py` route historical, REV16/P3-P10, and REV17/future epochs explicitly.
+- RESOLVED: `tools/scripts/verify-environment.py` is epoch-aware and validates active REV17 without invalidating historical identities.
+- RESOLVED: the dead `v1/assets/loading.scr` license exemption is removed.
+- RESOLVED: root `README.md` was checked and required no release/boot synchronization change.
 
 ### 16.3 Stale-contract scan
 
@@ -570,6 +570,8 @@ Perform repository-wide text/path scans for at least:
 - any P11 source/workflow/evidence/media, which must still be absent.
 
 A textual hit is not automatically wrong. Classify historical citations and frozen documents as historical and leave them untouched. Every non-historical hit must either be synchronized or explicitly justified as still current.
+
+Closure classification note: admitted REV17/REV08 are immutable. Their revision-level transition clauses explicitly supersede inherited SCREEN$/TAP-era wording for current/future release transport. `docs/03-ZX-UX-DEVELOPMENT-WORKFLOW.md` and `docs/--W-A-R-N-I-N-G--.md` now make that precedence explicit, so retained inherited wording inside the frozen authority bytes is classified as superseded historical context rather than a competing active release mechanism.
 
 ### 16.4 Workflow sanity
 
