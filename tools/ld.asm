@@ -2585,3 +2585,207 @@ ld_p1033_rename_req:  defs 4,0
 ld_p1033_header_copy: defs LD_P1033_HEADER_SIZE,0
 ld_p1033_temp_name: db '/','t','m','p','/','.','l','d','0','.','0',0
     ENDM
+
+
+; REV17 fixed/absolute raw-image linker.
+; Prospective release acceptance uses this narrow facility to consume an OBJ1
+; produced by the native assembler and materialize its TEXT at a caller-owned
+; non-executing address. It does not change historical MEX1 semantics.
+;
+; Interface:
+;   HL = complete OBJ1 pointer
+;   BC = exact OBJ1 stored length
+;   DE = raw output destination
+; Success:
+;   HL = raw image size, carry clear
+; Failure:
+;   A = E_FORMAT, carry set
+    MACRO EMIT_R17_LD_ABSOLUTE_OBJ1
+R17_LD_OBJ1_HEADER EQU 24
+R17_LD_MAX_IMAGE   EQU 8192
+R17_LD_KERNEL_BASE EQU $E000
+R17_LD_RAM_BASE    EQU $4000
+
+r17_ld_obj1_absolute:
+    ld (r17_ld_obj),hl
+    ld (r17_ld_len),bc
+    ld (r17_ld_dest),de
+
+    ld h,b
+    ld l,c
+    ld de,R17_LD_OBJ1_HEADER
+    or a
+    sbc hl,de
+    jp c,r17_ld_error
+
+    ld ix,(r17_ld_obj)
+    ld a,(ix+0)
+    cp 'O'
+    jp nz,r17_ld_error
+    ld a,(ix+1)
+    cp 'B'
+    jp nz,r17_ld_error
+    ld a,(ix+2)
+    cp 'J'
+    jp nz,r17_ld_error
+    ld a,(ix+3)
+    cp '1'
+    jp nz,r17_ld_error
+    ld a,(ix+4)
+    cp 1
+    jp nz,r17_ld_error
+    ld a,(ix+5)
+    or a
+    jp nz,r17_ld_error
+    ld a,(ix+6)
+    cp R17_LD_OBJ1_HEADER
+    jp nz,r17_ld_error
+    ld a,(ix+7)
+    or a
+    jp nz,r17_ld_error
+
+    ld l,(ix+8)
+    ld h,(ix+9)
+    ld (r17_ld_text),hl
+    ld a,h
+    or l
+    jp z,r17_ld_error
+    ld de,R17_LD_MAX_IMAGE+1
+    or a
+    sbc hl,de
+    jp nc,r17_ld_error
+
+    ; Fixed-image mode accepts TEXT only: no BSS, symbols, or relocations.
+    ld a,(ix+10)
+    or (ix+11)
+    jp nz,r17_ld_error
+    ld a,(ix+12)
+    or (ix+13)
+    jp nz,r17_ld_error
+    ld a,(ix+14)
+    or (ix+15)
+    jp nz,r17_ld_error
+
+    ld hl,(r17_ld_text)
+    ld de,R17_LD_OBJ1_HEADER
+    add hl,de
+    jp c,r17_ld_error
+    ld a,(ix+16)
+    cp l
+    jp nz,r17_ld_error
+    ld a,(ix+17)
+    cp h
+    jp nz,r17_ld_error
+    ld a,(ix+18)
+    cp l
+    jp nz,r17_ld_error
+    ld a,(ix+19)
+    cp h
+    jp nz,r17_ld_error
+    ld de,(r17_ld_len)
+    or a
+    sbc hl,de
+    jp nz,r17_ld_error
+
+    ; Full body CRC.
+    ld hl,(r17_ld_obj)
+    ld de,R17_LD_OBJ1_HEADER
+    add hl,de
+    ld bc,(r17_ld_text)
+    call r17_ld_crc16
+    ld ix,(r17_ld_obj)
+    ld a,(ix+20)
+    cp e
+    jp nz,r17_ld_error
+    ld a,(ix+21)
+    cp d
+    jp nz,r17_ld_error
+
+    ; Header CRC with bytes 22..23 zero.
+    ld hl,(r17_ld_obj)
+    ld de,r17_ld_header_copy
+    ld bc,R17_LD_OBJ1_HEADER
+    ldir
+    xor a
+    ld (r17_ld_header_copy+22),a
+    ld (r17_ld_header_copy+23),a
+    ld hl,r17_ld_header_copy
+    ld bc,R17_LD_OBJ1_HEADER
+    call r17_ld_crc16
+    ld ix,(r17_ld_obj)
+    ld a,(ix+22)
+    cp e
+    jp nz,r17_ld_error
+    ld a,(ix+23)
+    cp d
+    jp nz,r17_ld_error
+
+    ; Destination must be normal RAM and the complete image must end at/below
+    ; 0xE000. This prevents the native self-rebuild from overwriting the
+    ; executing resident kernel at 0xE000-0xFFFF.
+    ld hl,(r17_ld_dest)
+    ld de,R17_LD_RAM_BASE
+    or a
+    sbc hl,de
+    jp c,r17_ld_error
+    ld hl,(r17_ld_dest)
+    ld de,(r17_ld_text)
+    add hl,de
+    jp c,r17_ld_error
+    ld de,R17_LD_KERNEL_BASE
+    or a
+    sbc hl,de
+    jp c,r17_ld_dest_ok
+    jp z,r17_ld_dest_ok
+    jp r17_ld_error
+
+r17_ld_dest_ok:
+    ld hl,(r17_ld_obj)
+    ld bc,R17_LD_OBJ1_HEADER
+    add hl,bc
+    ld de,(r17_ld_dest)
+    ld bc,(r17_ld_text)
+    ldir
+    ld hl,(r17_ld_text)
+    or a
+    ret
+
+r17_ld_crc16:
+    ld de,$FFFF
+r17_ld_crc_byte:
+    ld a,b
+    or c
+    ret z
+    ld a,(hl)
+    xor d
+    ld d,a
+    inc hl
+    push bc
+    ld b,8
+r17_ld_crc_bit:
+    sla e
+    rl d
+    jr nc,r17_ld_crc_no_poly
+    ld a,d
+    xor $10
+    ld d,a
+    ld a,e
+    xor $21
+    ld e,a
+r17_ld_crc_no_poly:
+    djnz r17_ld_crc_bit
+    pop bc
+    dec bc
+    jr r17_ld_crc_byte
+
+r17_ld_error:
+    ld a,E_FORMAT
+    scf
+    ret
+
+r17_ld_obj:         dw 0
+r17_ld_len:         dw 0
+r17_ld_dest:        dw 0
+r17_ld_text:        dw 0
+r17_ld_header_copy: defs R17_LD_OBJ1_HEADER,0
+    ENDM
