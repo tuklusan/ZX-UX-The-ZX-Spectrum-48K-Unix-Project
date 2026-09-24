@@ -26,8 +26,9 @@ ZX-UX preserves authority and certification history across revision epochs.
 2. REV13 / REV04, REV14 / REV05, and REV15 / REV06 are frozen, never-activated historical prospective pairs and MUST NOT be edited or activated.
 3. `docs/01-ZX-UX-ARCHITECTURE-REV17.md` and `docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV08.md` are the active authorities. Their frozen identities are REV17 SHA-256 `d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8` and REV08 SHA-256 `97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c`. They became active only after admitted `R17.00` bridge evidence and its mandatory validations PASSed. REV16/REV07 remain immutable historical authority for R16.00 and P3-P10 evidence.
 4. Current phase and step position are determined from durable certification/admission records together with the active canonical REV08 sequence. This workflow does not duplicate or predict the next phase or step.
-5. Previously admitted certification evidence is immutable. Historical certification workflows may re-run regression logic, but they must not regenerate, rewrite, relabel, or recommit admitted historical evidence.
-6. Updating this workflow document is procedural only. It never changes canonical architecture/implementation requirements or reinterprets earlier certification.
+5. Within the frozen REV17/REV08 bytes, the revision-level R17 transport-transition clauses control current and future release transport. Retained SCREEN$/TAP wording inherited from earlier epochs is historical/superseded context, not a competing active release path; the frozen authority files must not be edited in place merely to remove that retained wording.
+6. Previously admitted certification evidence is immutable. Historical certification workflows may re-run regression logic, but they must not regenerate, rewrite, relabel, or recommit admitted historical evidence.
+7. Updating this workflow document is procedural only. It never changes canonical architecture/implementation requirements or reinterprets earlier certification.
 
 
 ## 2. Standard project quality procedure — SoP Scan
