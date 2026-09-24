@@ -1,0 +1,85 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "fixed-point-loop-native",
+      "passed": true
+    },
+    {
+      "name": "frozen-member-order-native",
+      "passed": true
+    },
+    {
+      "name": "transitive-puts-write-dependency",
+      "passed": true
+    },
+    {
+      "name": "reserved-heap-symbols-satisfiable",
+      "passed": true
+    },
+    {
+      "name": "nonheap-unresolved-hard-error",
+      "passed": true
+    },
+    {
+      "name": "fuse-transitive-fixed-point-order-2-3-1",
+      "passed": true
+    },
+    {
+      "name": "fuse-repeat-link-deterministic",
+      "passed": true
+    },
+    {
+      "name": "fuse-reserved-heap-only-needs-no-member",
+      "passed": true
+    },
+    {
+      "name": "fuse-single-pass-proven-insufficient",
+      "passed": true
+    },
+    {
+      "name": "fuse-unresolved-nonheap-global-rejected",
+      "passed": true
+    },
+    {
+      "name": "fuse-altered-member-order-rejected",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1023-select.sym",
+        "p1023-select.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 1351 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/ld.asm": "e4867275263cebc338a13c011c1f5924f2b86b93e20266d06a7345b480685fa9",
+    "v1/build/p1023-main.bin": "d8aed124e07cd4f03b22b90806ba0f576c1340b5bbadef0a1e193e4d1132f1a2",
+    "v1/dist/certification/P10.22.build.json": "ce539ceb0471282f48ffda16fb7a27b52cd7ad6831da87ba0f0e365a5a50cec5",
+    "v1/dist/certification/P10.22.test.json": "843ebf5694f42d43cb72d6587ba2a62491e4ddd8988fb09076557deb794e23ef",
+    "v1/src/libc48/crt0.asm": "871e1158d90a1141ebbf896ae53633d77b1b8090090a8443ae6d0b265808664b",
+    "v1/src/libc48/runtime_archive.asm": "2dbbce010f6c0d66f027cb7cc20723ee44221f37b51f173f85f743bd84ed6cf7",
+    "v1/tools-host/test-driver/phase10_step_23.py": "e94993bb66e4da6267ac91ac9851afa090ae4d815aae65e81a5204546b66872b"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P10.22": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "68232b7c09138c25fa3ff4a3e0a88ad82f33fe24",
+  "status": "PASS",
+  "step": "P10.23",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
