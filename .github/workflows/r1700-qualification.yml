@@ -1,0 +1,138 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: R17.00 authority qualification
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/r1700-qualification.yml
+  workflow_dispatch: {}
+permissions:
+  actions: write
+  contents: read
+concurrency:
+  group: zxux-r1700-qualification
+  cancel-in-progress: true
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      ZXUX_EVIDENCE_DIR: /tmp/zxux-r1700-qualification
+      ZXUX_SOURCE_EPOCH: current
+      R1700_BASE: db2a1353d504485305a4ba20f4a243432004e192
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: {fetch-depth: 0}
+      - name: Guard exact R17 candidate diff and no P11
+        run: |
+          set -euo pipefail
+          git diff --name-only "$R1700_BASE" HEAD | sort > /tmp/changed
+          printf '%s\n' \
+            .github/workflows/qualification-auto-dispatch.yml \
+            .github/workflows/r1700-activation-validation.yml \
+            .github/workflows/r1700-authority-admission.yml \
+            .github/workflows/r1700-qualification.yml \
+            docs/01-ZX-UX-ARCHITECTURE-REV17.md \
+            docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV08.md \
+            tools/check_media_retention.py \
+            tools/scripts/verify-environment.py \
+            v1/tools-host/test-driver/driver_core.py \
+            v1/tools-host/test-driver/evidence.py \
+            v1/tools-host/test-driver/revision17_bridge.py \
+            v1/tools-host/test-driver/run.py | sort > /tmp/expected
+          diff -u /tmp/expected /tmp/changed
+          git diff --check "$R1700_BASE" HEAD
+          test "$(git rev-parse refs/tags/PHASE-10-COMPLETE)" = 8360b0c5817738b01dc4b75bb64b12d77341adcd
+          test ! -n "$(git ls-files | grep -Ei '(^|/)(P11(\.|/)|p11[^/]*qualification|phase-?11)' || true)"
+          test -z "$(git status --porcelain)"
+      - name: Three unchanged candidate scans
+        run: |
+          set -euo pipefail
+          baseline=""; tree="$(git rev-parse 'HEAD^{tree}')"
+          for scan in 1 2 3; do
+            python3 -m py_compile \
+              tools/scripts/verify-environment.py \
+              tools/check_media_retention.py \
+              v1/tools-host/test-driver/driver_core.py \
+              v1/tools-host/test-driver/evidence.py \
+              v1/tools-host/test-driver/revision17_bridge.py \
+              v1/tools-host/test-driver/run.py
+            find . -type d -name __pycache__ -prune -exec rm -rf {} +
+            ./tools/check_license_headers.sh
+            ./tools/check_project_policy.py
+            test "$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV17.md | awk '{print $1}')" = d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8
+            test "$(sha256sum docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV08.md | awk '{print $1}')" = 97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c
+            test "$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV16.md | awk '{print $1}')" = 24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c
+            test "$(sha256sum docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md | awk '{print $1}')" = 840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc
+            test ! -n "$(git ls-files | grep -Ei '(^|/)(P11(\.|/)|p11[^/]*qualification|phase-?11)' || true)"
+            test -z "$(git status --porcelain)"
+            test "$(git rev-parse 'HEAD^{tree}')" = "$tree"
+            digest="$(sha256sum \
+              docs/01-ZX-UX-ARCHITECTURE-REV17.md \
+              docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV08.md \
+              v1/tools-host/test-driver/revision17_bridge.py \
+              v1/tools-host/test-driver/driver_core.py \
+              v1/tools-host/test-driver/evidence.py \
+              v1/tools-host/test-driver/run.py \
+              tools/scripts/verify-environment.py \
+              tools/check_media_retention.py \
+              .github/workflows/qualification-auto-dispatch.yml \
+              .github/workflows/r1700-authority-admission.yml \
+              .github/workflows/r1700-activation-validation.yml \
+              .github/workflows/r1700-qualification.yml | sha256sum | awk '{print $1}')"
+            if test -z "$baseline"; then baseline="$digest"; else test "$baseline" = "$digest"; fi
+          done
+      - name: Mandatory authority and historical gates
+        run: |
+          set -euo pipefail
+          python3 tools/check_phase10_evidence.py --require-active
+          python3 tools/check_media_retention.py
+          python3 v1/tools-host/test-driver/evidence.py v1/dist/certification/P10.36.result.json
+      - name: Restore or build certified ZX-UX runtime
+        uses: ./.github/actions/setup-zxux-runtime
+      - name: Execute R17.00 build and test
+        run: |
+          set -euo pipefail
+          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step R17.00
+          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step R17.00
+          tools/runtime/python/bin/python v1/tools-host/test-driver/evidence.py "$ZXUX_EVIDENCE_DIR/R17.00.result.json"
+      - name: Collect exact evidence
+        if: always()
+        run: |
+          mkdir -p "$ZXUX_EVIDENCE_DIR/meta"
+          git rev-parse HEAD > "$ZXUX_EVIDENCE_DIR/meta/candidate-commit.txt"
+          git rev-parse 'HEAD^{tree}' > "$ZXUX_EVIDENCE_DIR/meta/candidate-tree.txt"
+          git status --porcelain > "$ZXUX_EVIDENCE_DIR/meta/worktree-status.txt"
+      - name: Upload exact evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: zxux-r1700-qualification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: /tmp/zxux-r1700-qualification/
+          retention-days: 90
+          if-no-files-found: error
+      - name: Final exact-head check and dispatch admission
+        env: {GH_TOKEN: ${{ github.token }}}
+        run: |
+          set -euo pipefail
+          git fetch --quiet origin main
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
+          test ! -n "$(git ls-files | grep -Ei '(^|/)(P11(\.|/)|p11[^/]*qualification|phase-?11)' || true)"
+          python3 - <<'PY'
+          import json,os,urllib.request
+          payload=json.dumps({"ref":"main","inputs":{"run_id":os.environ["GITHUB_RUN_ID"],"source_commit":os.environ["GITHUB_SHA"]}}).encode()
+          req=urllib.request.Request(f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}/actions/workflows/r1700-authority-admission.yml/dispatches",data=payload,method="POST",headers={"Authorization":f"Bearer {os.environ['GH_TOKEN']}","Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","Content-Type":"application/json"})
+          with urllib.request.urlopen(req,timeout=30) as r: assert r.status==204
+          PY
