@@ -1,0 +1,97 @@
+{
+  "schema": 1,
+  "module_order": [
+    "crt0",
+    "user_a",
+    "user_b",
+    "puts",
+    "exit",
+    "write"
+  ],
+  "module_ids": [
+    0,
+    10,
+    11,
+    2,
+    3,
+    1
+  ],
+  "archive_selection": [
+    2,
+    3,
+    1
+  ],
+  "module_sizes": [
+    {
+      "name": "crt0",
+      "text": 3,
+      "bss": 1
+    },
+    {
+      "name": "user_a",
+      "text": 4,
+      "bss": 2
+    },
+    {
+      "name": "user_b",
+      "text": 5,
+      "bss": 3
+    },
+    {
+      "name": "puts",
+      "text": 3,
+      "bss": 0
+    },
+    {
+      "name": "exit",
+      "text": 2,
+      "bss": 1
+    },
+    {
+      "name": "write",
+      "text": 3,
+      "bss": 0
+    }
+  ],
+  "text_bases": [
+    0,
+    4,
+    8,
+    14,
+    18,
+    20
+  ],
+  "bss_bases": [
+    0,
+    2,
+    4,
+    8,
+    8,
+    10
+  ],
+  "image_size": 24,
+  "raw_bss_size": 10,
+  "heap_size": 8,
+  "final_bss_size": 18,
+  "heap_start": 34,
+  "heap_end": 42,
+  "symbols": {
+    "_start": 0,
+    "main": 5,
+    "global_bss": 29,
+    "CONST": 4660
+  },
+  "patched_words": {
+    "4": 28,
+    "10": 6,
+    "18": 4662
+  },
+  "runtime_relocations": [
+    4,
+    10
+  ],
+  "entry": 0,
+  "minimum_stack": 512,
+  "mex1_hex": "4d455831010018001800120000000002020030009af62250000000001c0000000000060000000000000036120000000004000a00",
+  "mex1_sha256": "a2b33d243645274ff8e701ca974ed5e6b80ca3c8fad1f6acb5b2092ec812f65d"
+}
