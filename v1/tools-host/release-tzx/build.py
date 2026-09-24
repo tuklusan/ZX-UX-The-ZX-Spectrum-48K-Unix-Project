@@ -19,8 +19,9 @@
 The immutable reviewed seed supplies only the BASIC/fast-loader timing template.
 Product mode requires an explicit freshly rebuilt 8192-byte kernel. The known
 seed dummy payload is forbidden. All 24 turbo payload chunks and their loader
-check bytes are regenerated from that kernel while every unrelated seed timing
-byte remains unchanged.
+check bytes are regenerated from that kernel. Product mode also converts the final
+block to the ordinary loader continuation so the 24th display callback can render the last row and execute
+the startup beep before the hook performs the exact 0xE003 handoff.
 """
 
 from __future__ import annotations
@@ -43,7 +44,7 @@ HOOK_ASM = ROOT / "src" / "print_hook.asm"
 
 SEED_SHA256 = "7ffe2f90b58e87a19a090ca0e0f1323605754af7d8809f3f051662f9faaec6f1"
 DUMMY_PAYLOAD_SHA256 = "0e59ef9290ffc4391b0ae999177cd9d7d9eafb6fcd86a45b13f9a4bd0b08c9ce"
-HOOK_SHA256 = "f1c6b88998488c552bbf5358cfcf32494de4687a2f0cfb7bcbe37a71cf6c00ef"
+HOOK_SHA256 = "8de7a5a325c4976760c172b367ee230f9d1014db2915bbde3f94eade0d686046"
 
 PROG_BASE = 0x5CCB
 HOOK_ADDR = 0x5E4F
@@ -54,6 +55,8 @@ TEXT_WIDTH = 32
 KERNEL_BASE = 0xE000
 KERNEL_SIZE = 8192
 PAYLOAD_ENTRY = 0xE003
+FINAL_LOADER_AFTER = 0x0100
+FINAL_ROW_DISPATCH_ADDR = 0x5EAD
 FINAL_HOLD_ADDR = 0x5EB4
 INIT_SCREEN_ADDR = 0x5EC2
 BEEP_ADDR = 0x5F2A
@@ -189,7 +192,7 @@ def assemble_hook(output: Path, pasmo: str) -> bytes:
     subprocess.run([resolved, "--bin", str(HOOK_ASM), str(output)], check=True)
     hook = bytearray(output.read_bytes())
     if sha256(hook) != HOOK_SHA256:
-        raise AssertionError("reviewed hook hash drifted")
+        raise AssertionError("ZX-UX integration hook hash drifted")
     sentinel = struct.pack("<H", TEXT_BUFFER_SENTINEL)
     if hook.count(sentinel) != 1:
         raise AssertionError("print_hook.asm must contain exactly one TEXT_BUFFER sentinel")
@@ -203,10 +206,19 @@ def assemble_hook(output: Path, pasmo: str) -> bytes:
     )
     if hook[screen_off:screen_off+len(screen_prefix)] != screen_prefix:
         raise AssertionError("turbo screen initializer drifted")
+    dispatch_off = FINAL_ROW_DISPATCH_ADDR - HOOK_ADDR
     hold_off = FINAL_HOLD_ADDR - HOOK_ADDR
     beep_off = BEEP_ADDR - HOOK_ADDR
-    if hook[hold_off:hold_off+3] != bytes([0xC3, BEEP_ADDR & 0xFF, BEEP_ADDR >> 8]):
-        raise AssertionError("final_hold no longer jumps to startup_beep")
+    if hook[dispatch_off:dispatch_off+3] != bytes(
+        [0xC3, FINAL_HOLD_ADDR & 0xFF, FINAL_HOLD_ADDR >> 8]
+    ):
+        raise AssertionError("final row no longer tail-jumps to final_hold")
+    expected_hold = bytes(
+        [0xCD, BEEP_ADDR & 0xFF, BEEP_ADDR >> 8,
+         0xC3, PAYLOAD_ENTRY & 0xFF, PAYLOAD_ENTRY >> 8]
+    ) + bytes(8)
+    if hook[hold_off:hold_off+14] != expected_hold:
+        raise AssertionError("final_hold beep/E003 dispatch drifted")
     if hook[beep_off:] != bytes.fromhex("dde511e00021ca01cdb503f3dde1c9"):
         raise AssertionError("startup beep drifted")
     return bytes(hook)
@@ -361,6 +373,8 @@ def inject_kernel(tzx: bytearray, kernel: bytes) -> None:
         if struct.unpack_from("<H", header, 0)[0] != p_count:
             raise AssertionError(f"header {i} length does not match payload")
         header[7] = loader_check(chunk)
+        if i == len(payloads) - 1:
+            header[8:10] = struct.pack("<H", FINAL_LOADER_AFTER)
         hz = hb[4] + h_start
         pz = pb[4] + p_start
         tzx[hz:hz+h_count] = header
@@ -388,8 +402,8 @@ def reconstruct_kernel(tzx: bytes) -> bytes:
         logical_dest = dest_addr or load_addr
         if logical_dest != KERNEL_BASE + offset:
             raise AssertionError(f"kernel destination coverage mismatch at pair {i}")
-        if i == 23 and after != PAYLOAD_ENTRY:
-            raise AssertionError("final handoff is not 0xE003")
+        if after != FINAL_LOADER_AFTER:
+            raise AssertionError(f"loader continuation mismatch at pair {i}")
         offset += len(chunk)
     payload = b"".join(chunks)
     if len(payload) != KERNEL_SIZE:
@@ -439,6 +453,8 @@ def main(argv: list[str] | None = None) -> int:
         "payload_chunk_count": len(CHUNK_LENGTHS),
         "kernel_range": "0xE000-0xFFFF",
         "handoff": "0xE003",
+        "final_loader_after": "0x0100",
+        "handoff_path": "24th display callback -> startup beep -> 0xE003",
         "screen_file": None,
         "release_tap": None,
         "loader_display": "24x32 loader-owned",

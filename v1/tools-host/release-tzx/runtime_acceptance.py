@@ -1,0 +1,298 @@
+#!/usr/bin/env python3
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+"""Generate and verify the real-time REV17 fast-loader acceptance trace."""
+
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+import re
+
+DISPLAY_HOOK = 0x5E55
+FINAL_HOLD = 0x5EB4
+STARTUP_BEEP = 0x5F2A
+ROM_BEEPER = 0x03B5
+HANDOFF = 0xE003
+LINES_LEFT = 0x5EF7
+LINE_INDEX = 0x5EF8
+TEXT_PTR = 0x5EF5
+
+M_ROM_BASIC = 0xA00001
+M_ROM_LOAD = 0xA00002
+M_HOOK = 0xA10001
+M_HOLD = 0xA20001
+M_HOLD_ROW = 0xA21001
+M_HOLD_ATTR = 0xA22001
+M_HOLD_END = 0xA2FF01
+M_BEEP = 0xA30001
+M_BEEPER = 0xA40001
+M_E003 = 0xA50001
+M_E003_ROW = 0xA51001
+M_E003_ATTR = 0xA52001
+M_E003_END = 0xA5FF01
+M_TIMEOUT = 0xAF0001
+
+ROW23 = [0x50E0 + scan * 0x100 + col for scan in range(8) for col in range(32)]
+ATTR23 = list(range(0x5AE0, 0x5B00))
+
+
+def _state_lines(marker: int) -> list[str]:
+    return [
+        f"print 0x{marker:x}",
+        f"print [0x{LINES_LEFT:04x}]",
+        f"print [0x{LINE_INDEX:04x}]",
+        f"print [0x{TEXT_PTR:04x}]",
+        f"print [0x{TEXT_PTR + 1:04x}]",
+    ]
+
+
+def _screen_dump(row_marker: int, attr_marker: int, end_marker: int) -> list[str]:
+    out = [f"print 0x{row_marker:x}"]
+    out.extend(f"print [0x{addr:04x}]" for addr in ROW23)
+    out.append(f"print 0x{attr_marker:x}")
+    out.extend(f"print [0x{addr:04x}]" for addr in ATTR23)
+    out.append(f"print 0x{end_marker:x}")
+    return out
+
+
+def debugger_text() -> str:
+    lines = [
+        "base 16",
+        "breakpoint 0x5ce7",
+        "breakpoint 0x0556",
+        f"breakpoint 0x{DISPLAY_HOOK:04x}",
+        f"breakpoint 0x{FINAL_HOLD:04x}",
+        f"breakpoint 0x{STARTUP_BEEP:04x}",
+        f"breakpoint 0x{ROM_BEEPER:04x} if [z80:sp] + 0x100 * [z80:sp+1] == 0x5f35",
+        f"breakpoint 0x{HANDOFF:04x}",
+        "breakpoint time 0 if spectrum:frames > 0x1964",
+        "commands 1",
+        f"print 0x{M_ROM_BASIC:x}",
+        "continue",
+        "end",
+        "commands 2",
+        f"print 0x{M_ROM_LOAD:x}",
+        "continue",
+        "end",
+        "commands 3",
+    ]
+    lines.extend(_state_lines(M_HOOK))
+    lines.extend(["continue", "end", "commands 4"])
+    lines.extend(_state_lines(M_HOLD))
+    lines.extend(_screen_dump(M_HOLD_ROW, M_HOLD_ATTR, M_HOLD_END))
+    lines.extend(["continue", "end", "commands 5", f"print 0x{M_BEEP:x}", "continue", "end"])
+    lines.extend(
+        [
+            "commands 6",
+            f"print 0x{M_BEEPER:x}",
+            "print z80:de",
+            "print z80:hl",
+            "print z80:sp",
+            "print [z80:sp]",
+            "print [z80:sp+1]",
+            "continue",
+            "end",
+            "commands 7",
+        ]
+    )
+    lines.extend(_state_lines(M_E003))
+    lines.extend(_screen_dump(M_E003_ROW, M_E003_ATTR, M_E003_END))
+    lines.extend(
+        [
+            "exit 0",
+            "end",
+            "commands 8",
+            f"print 0x{M_TIMEOUT:x}",
+            "print z80:pc",
+            "print spectrum:frames",
+            "exit 3",
+            "end",
+            "continue",
+        ]
+    )
+    return "\n".join(lines) + "\n"
+
+
+def _values(path: Path) -> list[int]:
+    text = path.read_text(encoding="utf-8", errors="replace")
+    return [int(x, 16) for x in re.findall(r"0x([0-9a-fA-F]+)", text)]
+
+
+def _indices(values: list[int], marker: int) -> list[int]:
+    return [i for i, value in enumerate(values) if value == marker]
+
+
+def _unique(values: list[int], marker: int) -> int:
+    found = _indices(values, marker)
+    if len(found) != 1:
+        raise ValueError(f"marker {marker:#x} count={len(found)}")
+    return found[0]
+
+
+def _state(values: list[int], marker: int, occurrence: int = 0) -> tuple[int, int, int, int]:
+    found = _indices(values, marker)
+    if occurrence >= len(found):
+        raise ValueError(f"marker {marker:#x} occurrence {occurrence} missing")
+    i = found[occurrence]
+    return values[i + 1], values[i + 2], values[i + 3] | (values[i + 4] << 8), i
+
+
+def _dump(values: list[int], start_marker: int, next_marker: int, expected: int) -> list[int]:
+    a = _unique(values, start_marker)
+    b = _unique(values, next_marker)
+    result = values[a + 1:b]
+    if len(result) != expected:
+        raise ValueError(f"dump {start_marker:#x} length={len(result)} expected={expected}")
+    return result
+
+
+def verify(log: Path, rom_path: Path, text_path: Path) -> dict:
+    values = _values(log)
+    hook_hits = _indices(values, M_HOOK)
+    hooks = [_state(values, M_HOOK, i) for i in range(len(hook_hits))]
+    hook_states = [(left, line, ptr) for left, line, ptr, _ in hooks]
+
+    hold_left, hold_line, hold_ptr, hold_index = _state(values, M_HOLD)
+    e003_left, e003_line, e003_ptr, e003_index = _state(values, M_E003)
+    beep_index = _unique(values, M_BEEP)
+    beeper_index = _unique(values, M_BEEPER)
+
+    rom_basic_hits = len(_indices(values, M_ROM_BASIC))
+    rom_load_hits = len(_indices(values, M_ROM_LOAD))
+    timeout_hits = len(_indices(values, M_TIMEOUT))
+
+    beeper_meta = values[beeper_index + 1:beeper_index + 6]
+    if len(beeper_meta) != 5:
+        raise ValueError("ROM BEEPER metadata truncated")
+    de, hl, sp, ret_lo, ret_hi = beeper_meta
+    return_addr = ret_lo | (ret_hi << 8)
+
+    hold_row = _dump(values, M_HOLD_ROW, M_HOLD_ATTR, 256)
+    hold_attr = _dump(values, M_HOLD_ATTR, M_HOLD_END, 32)
+    e003_row = _dump(values, M_E003_ROW, M_E003_ATTR, 256)
+    e003_attr = _dump(values, M_E003_ATTR, M_E003_END, 32)
+
+    lines = text_path.read_text(encoding="ascii").splitlines()
+    if len(lines) != 24 or any(len(line) != 32 for line in lines):
+        raise ValueError("text-lines.txt is not exactly 24x32")
+    final_line = lines[-1]
+    rom = rom_path.read_bytes()
+    if len(rom) != 16384:
+        raise ValueError("48K ROM must be exactly 16384 bytes")
+    expected_row = [
+        rom[0x3C00 + ord(ch) * 8 + scan]
+        for scan in range(8)
+        for ch in final_line
+    ]
+    expected_attr = [0x07] * 32
+
+    first_ptr = hook_states[0][2] if hook_states else -1
+    expected_hook_states = [(24 - i, i, first_ptr + 32 * i) for i in range(24)]
+    order = [
+        hooks[-1][3] if hooks else -1,
+        hold_index,
+        beep_index,
+        beeper_index,
+        e003_index,
+    ]
+
+    assertions = {
+        "real_rom_basic_path_seen": rom_basic_hits >= 1,
+        "real_rom_ld_bytes_seen": rom_load_hits >= 1,
+        "no_timeout": timeout_hits == 0,
+        "exactly_24_display_callbacks": len(hooks) == 24,
+        "display_callback_state_sequence": hook_states == expected_hook_states,
+        "final_hold_after_24th_callback": (
+            hold_left == 0 and hold_line == 24 and hold_ptr == first_ptr + 24 * 32
+        ),
+        "final_row_rendered_before_beep": hold_row == expected_row,
+        "final_row_attributes_correct_before_beep": hold_attr == expected_attr,
+        "startup_beep_reached_once": len(_indices(values, M_BEEP)) == 1,
+        "rom_beeper_reached_once": len(_indices(values, M_BEEPER)) == 1,
+        "rom_beeper_parameters_exact": de == 224 and hl == 458,
+        "rom_beeper_returns_to_startup_beep": return_addr == 0x5F35,
+        "handoff_reached_once": len(_indices(values, M_E003)) == 1,
+        "handoff_state_complete": (
+            e003_left == 0 and e003_line == 24 and e003_ptr == first_ptr + 24 * 32
+        ),
+        "final_row_intact_at_handoff": e003_row == expected_row,
+        "final_row_attributes_intact_at_handoff": e003_attr == expected_attr,
+        "ordered_final_path": order == sorted(order),
+    }
+    report = {
+        "schema": 1,
+        "hook_count": len(hooks),
+        "hook_states": [
+            {"lines_left": left, "line_index": line, "text_ptr": ptr}
+            for left, line, ptr in hook_states
+        ],
+        "final_hold": {
+            "lines_left": hold_left,
+            "line_index": hold_line,
+            "text_ptr": hold_ptr,
+        },
+        "rom_beeper": {
+            "de": de,
+            "hl": hl,
+            "sp": sp,
+            "return_address": return_addr,
+        },
+        "handoff": {
+            "address": HANDOFF,
+            "lines_left": e003_left,
+            "line_index": e003_line,
+            "text_ptr": e003_ptr,
+        },
+        "expected_final_line": final_line,
+        "assertions": {name: "PASS" if ok else "FAIL" for name, ok in assertions.items()},
+    }
+    if not all(assertions.values()):
+        failed = [name for name, ok in assertions.items() if not ok]
+        raise ValueError("runtime acceptance failed: " + ", ".join(failed))
+    return report
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    sub = ap.add_subparsers(dest="command", required=True)
+
+    dbg = sub.add_parser("debugger")
+    dbg.add_argument("--output", type=Path, required=True)
+
+    check = sub.add_parser("verify")
+    check.add_argument("--log", type=Path, required=True)
+    check.add_argument("--rom", type=Path, required=True)
+    check.add_argument("--text", type=Path, required=True)
+    check.add_argument("--report", type=Path, required=True)
+
+    args = ap.parse_args()
+    if args.command == "debugger":
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(debugger_text(), encoding="ascii", newline="\n")
+        return 0
+
+    report = verify(args.log, args.rom, args.text)
+    args.report.parent.mkdir(parents=True, exist_ok=True)
+    args.report.write_text(
+        json.dumps(report, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    print("ZX-UX RELEASE TZX RUNTIME ACCEPTANCE PASS")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

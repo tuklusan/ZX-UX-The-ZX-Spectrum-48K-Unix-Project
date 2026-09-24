@@ -72,7 +72,7 @@ jobs:
             "$GITHUB_WORKSPACE/tools/runtime/sjasmplus/bin/sjasmplus"               --nologo --lst=../../build/kernel.lst --sym=../../build/kernel.sym kernel.asm
           )
           test "$(wc -c < v1/build/kernel.bin)" -eq 8192
-          tools/runtime/python/bin/python -m py_compile             v1/tools-host/release-tzx/build.py             v1/tools-host/release-tzx/inspect_tzx.py
+          tools/runtime/python/bin/python -m py_compile             v1/tools-host/release-tzx/build.py             v1/tools-host/release-tzx/inspect_tzx.py             v1/tools-host/release-tzx/runtime_acceptance.py
           tools/runtime/python/bin/python v1/tools-host/release-tzx/build.py             --kernel v1/build/kernel.bin             --output /tmp/release-tzx/a/release.tzx             --hook-output /tmp/release-tzx/a/hook.bin             --manifest /tmp/release-tzx/a/build.json
           tools/runtime/python/bin/python v1/tools-host/release-tzx/build.py             --kernel v1/build/kernel.bin             --output /tmp/release-tzx/b/release.tzx             --hook-output /tmp/release-tzx/b/hook.bin             --manifest /tmp/release-tzx/b/build.json
           cmp /tmp/release-tzx/a/release.tzx /tmp/release-tzx/b/release.tzx
@@ -131,44 +131,26 @@ jobs:
           PY
           ! tools/runtime/python/bin/python v1/tools-host/release-tzx/inspect_tzx.py             /tmp/release-tzx/bad-check.tzx
 
-      - name: Real-time Fuse proof to E003 with loader shortcuts disabled
+      - name: Real-time Fuse final-row beep and E003 proof with loader shortcuts disabled
         shell: bash
         run: |
           set -euo pipefail
           diag=/tmp/release-tzx/realtime
           mkdir -p "$diag"
+          tools/runtime/python/bin/python v1/tools-host/release-tzx/runtime_acceptance.py \
+            debugger --output "$diag/debugger.txt"
           Xvfb :99 -screen 0 1280x900x24 >"$diag/xvfb.log" 2>&1 &
           xvfb_pid=$!
+          fuse_pid=""
+          trap 'kill "$fuse_pid" "$xvfb_pid" 2>/dev/null || true' EXIT
           sleep 1
-          cat >"$diag/debugger.txt" <<'EOF'
-          breakpoint 0xe003
-          breakpoint 0x5ce7
-          breakpoint 0x0556
-          breakpoint time 0 if spectrum:frames > 6500
-          commands 1
-          print 0x51515151
-          print z80:pc
-          print [0xe000]
-          print [0xffff]
-          exit 0
-          end
-          commands 2
-          print 0x61616161
-          continue
-          end
-          commands 3
-          print 0x62626262
-          continue
-          end
-          commands 4
-          print 0x52525252
-          print z80:pc
-          print spectrum:frames
-          exit 3
-          end
-          continue
-          EOF
-          stdbuf -oL -eL tools/runtime/fuse/bin/fuse --machine 48             --rom-48 tools/runtime/fuse/roms/48.rom             --tape /tmp/release-tzx/a/release.tzx             --no-accelerate-loader --no-fastload --no-traps --no-detect-loader             --no-confirm-actions --no-sound             --debugger-command "$(cat "$diag/debugger.txt")"             >"$diag/fuse-state.log" 2>&1 &
+          stdbuf -oL -eL tools/runtime/fuse/bin/fuse --machine 48 \
+            --rom-48 tools/runtime/fuse/roms/48.rom \
+            --tape /tmp/release-tzx/a/release.tzx \
+            --no-accelerate-loader --no-fastload --no-traps --no-detect-loader \
+            --no-confirm-actions --no-sound \
+            --debugger-command "$(cat "$diag/debugger.txt")" \
+            >"$diag/fuse-state.log" 2>&1 &
           fuse_pid=$!
           window=""
           for i in $(seq 1 40); do
@@ -187,7 +169,7 @@ jobs:
           xdotool keydown Return; sleep 0.45; xdotool keyup Return
           rom_waiting=""
           for i in $(seq 1 40); do
-            if grep -q '0x62626262' "$diag/fuse-state.log"; then rom_waiting=yes; break; fi
+            if grep -q '0xa00002' "$diag/fuse-state.log"; then rom_waiting=yes; break; fi
             kill -0 "$fuse_pid" 2>/dev/null || break
             sleep 0.25
           done
@@ -196,17 +178,24 @@ jobs:
           xdotool key F8
           result=""
           for i in $(seq 1 130); do
-            if grep -q '0x51515151' "$diag/fuse-state.log"; then result=E003_REACHED; break; fi
-            if grep -q '0x52525252' "$diag/fuse-state.log"; then result=TIMEOUT; break; fi
+            if grep -q '0xa50001' "$diag/fuse-state.log"; then result=E003_REACHED; break; fi
+            if grep -q '0xaf0001' "$diag/fuse-state.log"; then result=TIMEOUT; break; fi
             kill -0 "$fuse_pid" 2>/dev/null || { result=FUSE_EXITED; break; }
             sleep 1
           done
-          kill "$fuse_pid" 2>/dev/null || true
+          wait "$fuse_pid" || true
+          fuse_pid=""
           kill "$xvfb_pid" 2>/dev/null || true
-          grep -q '0x61616161' "$diag/fuse-state.log"
-          grep -q '0x62626262' "$diag/fuse-state.log"
+          xvfb_pid=""
+          trap - EXIT
           test "$result" = E003_REACHED
-          echo "ZX-UX RELEASE TZX REAL-TIME E003 PASS"
+          tools/runtime/python/bin/python v1/tools-host/release-tzx/runtime_acceptance.py \
+            verify \
+            --log "$diag/fuse-state.log" \
+            --rom tools/runtime/fuse/roms/48.rom \
+            --text v1/tools-host/release-tzx/text-lines.txt \
+            --report "$diag/runtime-acceptance.json"
+          echo "ZX-UX RELEASE TZX FINAL-ROW/BEEP/E003 PASS"
 
       - name: Final exact-head and clean-state gate
         shell: bash

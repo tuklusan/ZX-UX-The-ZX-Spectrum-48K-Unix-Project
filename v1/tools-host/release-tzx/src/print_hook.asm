@@ -103,10 +103,11 @@ glyph_loop:
         ld (lines_left),a
         jr nz,restore
 
-        ; Last row: tape payload is complete. Play exactly one short
-        ; startup beep, then return to the loader's normal after-block
-        ; dispatch, whose final block reaches payload entry 0xE003.
-        call final_hold
+        ; Last row: tape payload is complete. The product TZX deliberately
+        ; uses the loader's ordinary 0x0100 continuation for its final block
+        ; so this 24th callback runs. Tail-dispatch through final_hold: render
+        ; is already complete, then beep exactly once and hand off to 0xE003.
+        jp final_hold
 
 restore:
         pop de
@@ -117,10 +118,10 @@ restore:
 final_hold:
         ; Keep this block exactly 14 bytes so init_screen remains at 0x5EC2.
         ; The beep follows the data tables and may move when init_screen grows.
-        jp startup_beep
-        nop
-        nop
-        nop
+        ; The kernel entry is permanent and resets SP, so no loader return is
+        ; required after the final callback.
+        call startup_beep
+        jp 0xE003
         nop
         nop
         nop

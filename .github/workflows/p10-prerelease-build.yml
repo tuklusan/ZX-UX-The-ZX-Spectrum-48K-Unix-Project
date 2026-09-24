@@ -94,6 +94,7 @@ jobs:
           tools/runtime/python/bin/python -m py_compile \
             v1/tools-host/release-tzx/build.py \
             v1/tools-host/release-tzx/inspect_tzx.py \
+            v1/tools-host/release-tzx/runtime_acceptance.py \
             v1/tools-host/release-tzx/kernel_native_projection.py \
             v1/tools-host/release-tzx/native_rebuild_test.py
           pasmo="$(cat /tmp/pasmo-path)"
@@ -130,6 +131,7 @@ jobs:
           embedded_sha="$(sha256sum /tmp/p10-prerelease/embedded-kernel.bin | awk '{print $1}')"
           test "$host_sha" = "$embedded_sha"
           test "$host_sha" != 0e59ef9290ffc4391b0ae999177cd9d7d9eafb6fcd86a45b13f9a4bd0b08c9ce
+          grep -q '^final_loader_after=0x0100$' /tmp/p10-prerelease/inspection.txt
           grep -q '^handoff=0xE003$' /tmp/p10-prerelease/inspection.txt
           grep -q '^kernel_size=8192$' /tmp/p10-prerelease/inspection.txt
           grep -q '^standard_speed_blocks=2$' /tmp/p10-prerelease/inspection.txt
@@ -178,45 +180,19 @@ jobs:
           assert all(v=='PASS' for v in native['assertions'].values())
           PY
 
-      - name: Real-time Fuse boot to E003 with every loader shortcut disabled
+      - name: Real-time Fuse final-row beep and E003 proof with every loader shortcut disabled
         shell: bash
         run: |
           set -euo pipefail
           diag=/tmp/p10-prerelease/realtime
           mkdir -p "$diag"
+          tools/runtime/python/bin/python v1/tools-host/release-tzx/runtime_acceptance.py \
+            debugger --output "$diag/debugger.txt"
           Xvfb :99 -screen 0 1280x900x24 >"$diag/xvfb.log" 2>&1 &
           xvfb_pid=$!
           fuse_pid=""
           trap 'kill "$fuse_pid" "$xvfb_pid" 2>/dev/null || true' EXIT
           sleep 1
-          cat >"$diag/debugger.txt" <<'EOF'
-          breakpoint 0xe003
-          breakpoint 0x5ce7
-          breakpoint 0x0556
-          breakpoint time 0 if spectrum:frames > 6500
-          commands 1
-          print 0x51515151
-          print z80:pc
-          print [0xe000]
-          print [0xffff]
-          exit 0
-          end
-          commands 2
-          print 0x61616161
-          continue
-          end
-          commands 3
-          print 0x62626262
-          continue
-          end
-          commands 4
-          print 0x52525252
-          print z80:pc
-          print spectrum:frames
-          exit 3
-          end
-          continue
-          EOF
           stdbuf -oL -eL tools/runtime/fuse/bin/fuse --machine 48 \
             --rom-48 tools/runtime/fuse/roms/48.rom \
             --tape /tmp/p10-prerelease/P10.pre-release/zx-ux-phase10-pre-release.tzx \
@@ -242,7 +218,7 @@ jobs:
           xdotool keydown Return; sleep 0.45; xdotool keyup Return
           rom_waiting=""
           for i in $(seq 1 40); do
-            if grep -q '0x62626262' "$diag/fuse-state.log"; then rom_waiting=yes; break; fi
+            if grep -q '0xa00002' "$diag/fuse-state.log"; then rom_waiting=yes; break; fi
             kill -0 "$fuse_pid" 2>/dev/null || break
             sleep 0.25
           done
@@ -251,18 +227,24 @@ jobs:
           xdotool key F8
           result=""
           for i in $(seq 1 130); do
-            if grep -q '0x51515151' "$diag/fuse-state.log"; then result=E003_REACHED; break; fi
-            if grep -q '0x52525252' "$diag/fuse-state.log"; then result=TIMEOUT; break; fi
+            if grep -q '0xa50001' "$diag/fuse-state.log"; then result=E003_REACHED; break; fi
+            if grep -q '0xaf0001' "$diag/fuse-state.log"; then result=TIMEOUT; break; fi
             kill -0 "$fuse_pid" 2>/dev/null || { result=FUSE_EXITED; break; }
             sleep 1
           done
-          kill "$fuse_pid" 2>/dev/null || true
+          wait "$fuse_pid" || true
+          fuse_pid=""
           kill "$xvfb_pid" 2>/dev/null || true
+          xvfb_pid=""
           trap - EXIT
-          grep -q '0x61616161' "$diag/fuse-state.log"
-          grep -q '0x62626262' "$diag/fuse-state.log"
           test "$result" = E003_REACHED
-          echo "ZX-UX PHASE-10 PRE-RELEASE REAL-TIME E003 PASS"
+          tools/runtime/python/bin/python v1/tools-host/release-tzx/runtime_acceptance.py \
+            verify \
+            --log "$diag/fuse-state.log" \
+            --rom tools/runtime/fuse/roms/48.rom \
+            --text v1/tools-host/release-tzx/text-lines.txt \
+            --report "$diag/runtime-acceptance.json"
+          echo "ZX-UX PHASE-10 PRE-RELEASE FINAL-ROW/BEEP/E003 PASS"
 
       - name: Emit compact pre-release manifest and README
         shell: bash
@@ -279,6 +261,8 @@ jobs:
           build=json.loads((work/'a/build.json').read_text())
           projection=json.loads((work/'projection.json').read_text())
           native=json.loads((work/'native-rebuild.json').read_text())
+          runtime=json.loads((work/'realtime/runtime-acceptance.json').read_text())
+          assert all(v=='PASS' for v in runtime['assertions'].values())
           host_sha=sha(root/'v1/build/kernel.bin')
           embedded_sha=sha(work/'embedded-kernel.bin')
           assert host_sha==embedded_sha==native['native_rebuilt_kernel_sha256']
@@ -290,8 +274,9 @@ jobs:
               'This is the REV17/REV08 TZX-only pre-release path. The loader owns the\n'
               '24x32 loading display; there is no SCREEN$ file and no release TAP.\n'
               'The TZX embeds the freshly rebuilt exact 8192-byte kernel at E000-FFFF\n'
-              'and hands off at E003. Real-time Fuse acceptance disables fastload,\n'
-              'loader detection, acceleration and tape traps.\n\n'
+              'and hands off at E003. The final row and exact startup BEEPER call\n'
+              'are runtime-verified before that handoff. Real-time Fuse acceptance\n'
+              'disables fastload, loader detection, acceleration and tape traps.\n\n'
               'This Phase-10 pre-release intentionally contains no post-kernel M48O\n'
               'system stream. It proves the fast-loader/kernel handoff only; it is not\n'
               'the final Phase-12 system tape. No Phase-11 work is present or started.\n'
@@ -325,6 +310,7 @@ jobs:
               'text_lines_sha256':sha(root/'v1/tools-host/release-tzx/text-lines.txt'),
               'builder_sha256':sha(root/'v1/tools-host/release-tzx/build.py'),
               'inspector_sha256':sha(root/'v1/tools-host/release-tzx/inspect_tzx.py'),
+              'runtime_acceptance_sha256':sha(root/'v1/tools-host/release-tzx/runtime_acceptance.py'),
               'pasmo_version':pasmo_version,
               'pasmo_path':pasmo_path,
               'pasmo_executable_sha256':sha(pasmo_path),
@@ -338,6 +324,8 @@ jobs:
               'kernel_size':8192,
               'kernel_end':'0xFFFF',
               'handoff':'0xE003',
+              'final_loader_after':'0x0100',
+              'handoff_path':'24th display callback -> startup beep -> 0xE003',
               'payload_chunk_count':24,
               'generalized_block_count':48,
               'standard_speed_block_count':2,
@@ -360,6 +348,14 @@ jobs:
               'resident_kernel_overwritten':False,
               'assertions':native['assertions'],
             },
+            'runtime_acceptance':{
+              'hook_count':runtime['hook_count'],
+              'final_hold':runtime['final_hold'],
+              'rom_beeper':runtime['rom_beeper'],
+              'handoff':runtime['handoff'],
+              'expected_final_line':runtime['expected_final_line'],
+              'assertions':runtime['assertions'],
+            },
             'tzx':{
               'path':'zx-ux-phase10-pre-release.tzx',
               'size':build['tzx_size'],
@@ -373,8 +369,10 @@ jobs:
               'exact_8192_byte_host_tzx_compare':'PASS',
               'real_time_rom_basic_loader_path':'PASS',
               'real_time_fast_loader_to_e003_no_shortcuts':'PASS',
-              'startup_beep_path_structurally_verified':'PASS',
-              'loader_owned_24x32_display_contract':'PASS',
+              'loader_24th_display_callback_runtime_verified':'PASS',
+              'loader_final_row_bitmap_runtime_verified':'PASS',
+              'startup_beep_runtime_verified':'PASS',
+              'e003_after_startup_beep_runtime_verified':'PASS',
               'native_source_projection_no_preassembled_kernel':'PASS',
               'native_as_real_obj1':'PASS',
               'native_ld_consumes_native_obj1':'PASS',
@@ -412,6 +410,9 @@ jobs:
           assert meta['boot_contract']['screen_file'] is None
           assert meta['boot_contract']['zx48uxscr'] is False
           assert meta['kernel_identity']['size']==8192
+          assert meta['boot_contract']['final_loader_after']=='0x0100'
+          assert meta['runtime_acceptance']['hook_count']==24
+          assert all(v=='PASS' for v in meta['runtime_acceptance']['assertions'].values())
           assert len(set((meta['kernel_identity']['host_built_sha256'],
                           meta['kernel_identity']['tzx_embedded_sha256'],
                           meta['kernel_identity']['native_rebuilt_sha256'])))==1
