@@ -1974,3 +1974,395 @@ as_p1016_error:
     EMIT_P10_AS_SPECIAL_ENCODER
     EMIT_P10_AS_BLOCK_IO_ENCODER
     ENDM
+
+
+; P10.18 deterministic OBJ1 serializer.
+; HL -> 16-byte descriptor:
+; +0 destination, +2 TEXT pointer, +4 text_size, +6 bss_size,
+; +8 symbol-table pointer, +10 symbol_count,
+; +12 relocation-table pointer, +14 relocation_count.
+; The source tables are the fully validated assembler result. This serializer
+; still rejects widened layout overflow and malformed relocation ordering before
+; producing a candidate. Publication is intentionally left to P10.20.
+    MACRO EMIT_P10_AS_OBJ1_WRITER
+AS_P1018_HEADER_SIZE     EQU 24
+AS_P1018_SYMBOL_SIZE     EQU 20
+AS_P1018_RELOC_SIZE      EQU 6
+AS_P1018_RELOC_ABS16     EQU 1
+AS_P1018_MAX_OBJECT      EQU $8000
+
+as_p1018_write:
+    ld (as_p1018_desc),hl
+    call as_p1018_load_desc
+    jp c,as_p1018_error
+    call as_p1018_layout
+    jp c,as_p1018_error
+    call as_p1018_validate_relocs
+    jp c,as_p1018_error
+    call as_p1018_emit
+    jp c,as_p1018_error
+    xor a
+    ret
+
+as_p1018_load_desc:
+    ld hl,(as_p1018_desc)
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (as_p1018_dest),de
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (as_p1018_text_ptr),de
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (as_p1018_text_size),de
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (as_p1018_bss_size),de
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (as_p1018_sym_ptr),de
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (as_p1018_sym_count),de
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (as_p1018_rel_ptr),de
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (as_p1018_rel_count),de
+    or a
+    ret
+
+; Multiply DE by A using widened 16-bit additions. Carry means overflow.
+as_p1018_mul_small:
+    ld hl,0
+    ld b,a
+as_p1018_mul_small_loop:
+    ld a,b
+    or a
+    ret z
+    add hl,de
+    ret c
+    djnz as_p1018_mul_small_loop
+    or a
+    ret
+
+; Require HL <= 32768.
+as_p1018_bound:
+    push de
+    ld de,$8001
+    or a
+    sbc hl,de
+    pop de
+    ccf
+    ret
+
+as_p1018_layout:
+    ; text+bss <=32768, with no 16-bit wrap.
+    ld hl,(as_p1018_text_size)
+    ld de,(as_p1018_bss_size)
+    add hl,de
+    jr c,as_p1018_layout_bad
+    call as_p1018_bound
+    jr c,as_p1018_layout_bad
+
+    ; symbol bytes = count*20 in widened arithmetic.
+    ld de,(as_p1018_sym_count)
+    ld a,AS_P1018_SYMBOL_SIZE
+    call as_p1018_mul_small
+    jr c,as_p1018_layout_bad
+    ld (as_p1018_sym_bytes),hl
+
+    ; relocation bytes = count*6 in widened arithmetic.
+    ld de,(as_p1018_rel_count)
+    ld a,AS_P1018_RELOC_SIZE
+    call as_p1018_mul_small
+    jr c,as_p1018_layout_bad
+    ld (as_p1018_rel_bytes),hl
+
+    ; symbol offset = 24 + text size.
+    ld hl,(as_p1018_text_size)
+    ld de,AS_P1018_HEADER_SIZE
+    add hl,de
+    jr c,as_p1018_layout_bad
+    ld (as_p1018_sym_off),hl
+
+    ; relocation offset = symbol offset + symbol bytes.
+    ld de,(as_p1018_sym_bytes)
+    add hl,de
+    jr c,as_p1018_layout_bad
+    ld (as_p1018_rel_off),hl
+
+    ; exact total = relocation offset + relocation bytes <=32768.
+    ld de,(as_p1018_rel_bytes)
+    add hl,de
+    jr c,as_p1018_layout_bad
+    ld (as_p1018_total),hl
+    call as_p1018_bound
+    jr c,as_p1018_layout_bad
+
+    ; Nonzero relocation count requires at least one full TEXT word.
+    ld hl,(as_p1018_rel_count)
+    ld a,h
+    or l
+    jr z,as_p1018_layout_ok
+    ld hl,(as_p1018_text_size)
+    ld a,h
+    or a
+    jr nz,as_p1018_layout_ok
+    ld a,l
+    cp 2
+    jr c,as_p1018_layout_bad
+as_p1018_layout_ok:
+    or a
+    ret
+as_p1018_layout_bad:
+    scf
+    ret
+
+; Validate exact relocation type/reserved, symbol range, text range, and
+; strictly increasing non-overlapping offsets before candidate serialization.
+as_p1018_validate_relocs:
+    ld hl,(as_p1018_rel_count)
+    ld (as_p1018_left),hl
+    ld hl,$FFFF
+    ld (as_p1018_prev),hl
+    ld hl,(as_p1018_rel_ptr)
+as_p1018_reloc_loop:
+    ld de,(as_p1018_left)
+    ld a,d
+    or e
+    jr z,as_p1018_reloc_ok
+    ld (as_p1018_cur_rel),hl
+
+    ; offset <= text_size-2
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (as_p1018_cur_off),de
+    ld hl,(as_p1018_text_size)
+    dec hl
+    dec hl
+    or a
+    sbc hl,de
+    jp c,as_p1018_error_carry
+
+    ; symbol index < symbol_count
+    ld hl,(as_p1018_cur_rel)
+    inc hl
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld hl,(as_p1018_sym_count)
+    or a
+    sbc hl,de
+    jp z,as_p1018_error_carry
+    jp c,as_p1018_error_carry
+
+    ; type/reserved exact.
+    ld hl,(as_p1018_cur_rel)
+    ld de,4
+    add hl,de
+    ld a,(hl)
+    cp AS_P1018_RELOC_ABS16
+    jp nz,as_p1018_error_carry
+    inc hl
+    ld a,(hl)
+    or a
+    jp nz,as_p1018_error_carry
+
+    ; after first relocation, current >= previous+2.
+    ld hl,(as_p1018_prev)
+    ld a,h
+    cp $FF
+    jr nz,as_p1018_reloc_order
+    ld a,l
+    cp $FF
+    jr z,as_p1018_reloc_store_prev
+as_p1018_reloc_order:
+    inc hl
+    inc hl
+    ld de,(as_p1018_cur_off)
+    or a
+    sbc hl,de
+    jp nc,as_p1018_error_carry
+as_p1018_reloc_store_prev:
+    ld hl,(as_p1018_cur_off)
+    ld (as_p1018_prev),hl
+
+    ld hl,(as_p1018_cur_rel)
+    ld de,AS_P1018_RELOC_SIZE
+    add hl,de
+    ld de,(as_p1018_left)
+    dec de
+    ld (as_p1018_left),de
+    jr as_p1018_reloc_loop
+as_p1018_reloc_ok:
+    or a
+    ret
+as_p1018_error_carry:
+    scf
+    ret
+
+as_p1018_emit:
+    ; Start with a zeroed 24-byte header template.
+    ld hl,as_p1018_header_template
+    ld de,(as_p1018_dest)
+    ld bc,AS_P1018_HEADER_SIZE
+    ldir
+
+    ld ix,(as_p1018_dest)
+    ld (ix+0),'O'
+    ld (ix+1),'B'
+    ld (ix+2),'J'
+    ld (ix+3),'1'
+    ld (ix+4),1
+    xor a
+    ld (ix+5),a
+    ld (ix+6),AS_P1018_HEADER_SIZE
+    ld (ix+7),a
+
+    ld hl,(as_p1018_text_size)
+    ld (ix+8),l
+    ld (ix+9),h
+    ld hl,(as_p1018_bss_size)
+    ld (ix+10),l
+    ld (ix+11),h
+    ld hl,(as_p1018_sym_count)
+    ld (ix+12),l
+    ld (ix+13),h
+    ld hl,(as_p1018_rel_count)
+    ld (ix+14),l
+    ld (ix+15),h
+    ld hl,(as_p1018_sym_off)
+    ld (ix+16),l
+    ld (ix+17),h
+    ld hl,(as_p1018_rel_off)
+    ld (ix+18),l
+    ld (ix+19),h
+
+    ; Body is deterministic source order: TEXT, symbol records, relocations.
+    ld hl,(as_p1018_dest)
+    ld de,AS_P1018_HEADER_SIZE
+    add hl,de
+    ex de,hl
+    ld hl,(as_p1018_text_ptr)
+    ld bc,(as_p1018_text_size)
+    ldir
+    ld hl,(as_p1018_sym_ptr)
+    ld bc,(as_p1018_sym_bytes)
+    ldir
+    ld hl,(as_p1018_rel_ptr)
+    ld bc,(as_p1018_rel_bytes)
+    ldir
+
+    ; CRC-16/CCITT-FALSE of exact body.
+    ld hl,(as_p1018_dest)
+    ld de,AS_P1018_HEADER_SIZE
+    add hl,de
+    ld bc,(as_p1018_total)
+    ld de,AS_P1018_HEADER_SIZE
+    or a
+    sbc hl,de
+    ; restore body pointer; BC becomes total-24.
+    ld hl,(as_p1018_dest)
+    ld de,AS_P1018_HEADER_SIZE
+    add hl,de
+    ld de,(as_p1018_total)
+    ex de,hl
+    ld bc,AS_P1018_HEADER_SIZE
+    or a
+    sbc hl,bc
+    ld b,h
+    ld c,l
+    ex de,hl
+    call as_p1018_crc16
+    ld ix,(as_p1018_dest)
+    ld (ix+20),e
+    ld (ix+21),d
+    xor a
+    ld (ix+22),a
+    ld (ix+23),a
+
+    ; Header CRC uses bytes 22..23 as zero.
+    ld hl,(as_p1018_dest)
+    ld bc,AS_P1018_HEADER_SIZE
+    call as_p1018_crc16
+    ld ix,(as_p1018_dest)
+    ld (ix+22),e
+    ld (ix+23),d
+    or a
+    ret
+
+; HL=bytes, BC=length. Returns DE CRC-16/CCITT-FALSE.
+as_p1018_crc16:
+    ld de,$FFFF
+as_p1018_crc_byte:
+    ld a,b
+    or c
+    ret z
+    ld a,(hl)
+    xor d
+    ld d,a
+    inc hl
+    push bc
+    ld b,8
+as_p1018_crc_bit:
+    sla e
+    rl d
+    jr nc,as_p1018_crc_no_poly
+    ld a,d
+    xor $10
+    ld d,a
+    ld a,e
+    xor $21
+    ld e,a
+as_p1018_crc_no_poly:
+    djnz as_p1018_crc_bit
+    pop bc
+    dec bc
+    jr as_p1018_crc_byte
+
+as_p1018_header_template:
+    defs AS_P1018_HEADER_SIZE,0
+
+as_p1018_desc:       dw 0
+as_p1018_dest:       dw 0
+as_p1018_text_ptr:   dw 0
+as_p1018_text_size:  dw 0
+as_p1018_bss_size:   dw 0
+as_p1018_sym_ptr:    dw 0
+as_p1018_sym_count:  dw 0
+as_p1018_rel_ptr:    dw 0
+as_p1018_rel_count:  dw 0
+as_p1018_sym_bytes:  dw 0
+as_p1018_rel_bytes:  dw 0
+as_p1018_sym_off:    dw 0
+as_p1018_rel_off:    dw 0
+as_p1018_total:      dw 0
+as_p1018_left:       dw 0
+as_p1018_prev:       dw 0
+as_p1018_cur_rel:    dw 0
+as_p1018_cur_off:    dw 0
+
+as_p1018_error:
+    ld a,E_FORMAT
+    scf
+    ret
+    ENDM
