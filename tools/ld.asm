@@ -1493,7 +1493,9 @@ ld_p1026_validate_loc:
     ld de,(ld_p1026_patch_loc)
     or a
     sbc hl,de
-    jp nc,ld_p1026_format       ; equal or one-byte overlap is forbidden.
+    jp c,ld_p1026_validate_advance
+    jp z,ld_p1026_validate_advance
+    jp ld_p1026_format          ; duplicate or one-byte overlap is forbidden.
 ld_p1026_validate_advance:
     ld a,(ld_p1026_i)
     inc a

@@ -70,6 +70,98 @@ p1026_apply_state:
     ld (ld_p1026_symbol_section),a
     jp ld_p1026_apply
 
+p1026_apply_negative:
+    call p1026_setup
+    ld hl,8
+    ld de,10
+    ld bc,$FFFB
+    ld a,2
+    call p1026_apply_state
+    ret c
+    ld hl,(p1026_image+8)
+    ld de,5
+    or a
+    sbc hl,de
+    jp nz,p1026_fail
+    ld a,(ld_p1026_rel_count)
+    cp 1
+    jp nz,p1026_fail
+    xor a
+    ret
+
+p1026_apply_positive:
+    call p1026_setup
+    ld hl,4
+    ld de,10
+    ld bc,5
+    ld a,1
+    call p1026_apply_state
+    ret c
+    ld hl,(p1026_image+4)
+    ld de,15
+    or a
+    sbc hl,de
+    jp nz,p1026_fail
+    xor a
+    ret
+
+p1026_apply_abs:
+    call p1026_setup
+    ld hl,0
+    ld de,1
+    ld bc,$FFFF
+    ld a,3
+    call p1026_apply_state
+    ret c
+    ld hl,2
+    ld de,$FFFE
+    ld bc,1
+    ld a,3
+    call p1026_apply_state
+    ret c
+    ld a,(ld_p1026_rel_count)
+    or a
+    jp nz,p1026_fail
+    ld hl,(p1026_image+0)
+    ld de,0
+    or a
+    sbc hl,de
+    jp nz,p1026_fail
+    ld hl,(p1026_image+2)
+    ld de,$FFFF
+    or a
+    sbc hl,de
+    jp nz,p1026_fail
+    xor a
+    ret
+
+p1026_sort_only:
+    call p1026_setup
+    ld a,2
+    ld (ld_p1026_rel_count),a
+    ld hl,8
+    ld (ld_p1026_rel_locs+0),hl
+    ld hl,4
+    ld (ld_p1026_rel_locs+2),hl
+    ld a,2
+    ld (ld_p1026_rel_sections+0),a
+    ld a,1
+    ld (ld_p1026_rel_sections+1),a
+    call ld_p1026_finalize
+    ret c
+    ld hl,(ld_p1026_rel_locs+0)
+    ld de,4
+    or a
+    sbc hl,de
+    jp nz,p1026_fail
+    ld hl,(ld_p1026_rel_locs+2)
+    ld de,8
+    or a
+    sbc hl,de
+    jp nz,p1026_fail
+    xor a
+    ret
+
 p1026_positive:
     call p1026_setup
     ; Deliberately emit 8 before 4: finalizer must sort.
@@ -220,7 +312,7 @@ fixture_end:
     result = run_command([assembler, "--nologo", "--sym=p1026-relocs.sym", fixture.name], cwd=build, timeout_seconds=30)
     require(not result.timed_out and result.exit_code == 0, f"P10.26 assemble: {result.stderr or result.stdout}")
     main = (build / "p1026-main.bin").read_bytes()
-    names = ("p1026_positive","p1026_underflow","p1026_overflow","p1026_oob","p1026_overlap","p1026_duplicate","p1026_abs_runtime")
+    names = ("p1026_apply_negative","p1026_apply_positive","p1026_apply_abs","p1026_sort_only","p1026_positive","p1026_underflow","p1026_overflow","p1026_oob","p1026_overlap","p1026_duplicate","p1026_abs_runtime")
     syms = phase3_open_descriptions._symbols(build / "p1026-relocs.sym", names)
 
     if action == "test":
@@ -237,7 +329,8 @@ fixture_end:
             except Exception as exc:
                 raise P1026Error(f"P10.26 FUSE case {name}: {exc}") from exc
 
-        run_case("p1026_positive", False)
+        for name in ("p1026_apply_negative","p1026_apply_positive","p1026_apply_abs","p1026_sort_only","p1026_positive"):
+            run_case(name, False)
         for name in ("p1026_underflow","p1026_overflow","p1026_oob","p1026_overlap","p1026_duplicate","p1026_abs_runtime"):
             run_case(name, True)
         assertions += [
