@@ -10,7 +10,7 @@
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
 
-name: Phase-10 development pre-release distribution build
+name: Phase-10 fast-loader TZX pre-release
 
 on:
   push:
@@ -29,500 +29,450 @@ concurrency:
 jobs:
   build-test-publish:
     runs-on: ubuntu-24.04
-    timeout-minutes: 120
+    timeout-minutes: 180
+    env:
+      DISPLAY: ":99"
+      ZXUX_SOURCE_EPOCH: current
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with: {fetch-depth: 0}
+        with:
+          fetch-depth: 0
 
-      - name: Guard Phase-10 checkpoint and packaging-only lineage
+      - name: Guard fixed Phase-10 checkpoint active R17 epoch and no Phase 11
         shell: bash
         run: |
           set -euo pipefail
-          phase10=8360b0c5817738b01dc4b75bb64b12d77341adcd
-          test "$(git rev-parse PHASE-10-COMPLETE)" = "$phase10"
-          git merge-base --is-ancestor PHASE-10-COMPLETE HEAD
-          git diff --name-only PHASE-10-COMPLETE HEAD > /tmp/changed
-          while IFS= read -r path; do
-            case "$path" in
-              .github/workflows/p10-prerelease-build.yml|tools/check_media_retention.py|v1/tools-host/maketap/maketap.py|v1/dist/media/P10.pre-release/*) ;;
-              *) echo "unexpected post-Phase-10 path: $path" >&2; exit 1 ;;
-            esac
-          done < /tmp/changed
-          grep -qx '.github/workflows/p10-prerelease-build.yml' /tmp/changed
-          grep -qx 'tools/check_media_retention.py' /tmp/changed
-          test "$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV16.md | awk '{print $1}')" = "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c"
-          test "$(sha256sum docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md | awk '{print $1}')" = "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc"
-          python3 tools/check_phase9_evidence.py --require-active
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git fetch --quiet origin main
+          test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
+          test "$(git rev-parse refs/tags/PHASE-10-COMPLETE)" = 8360b0c5817738b01dc4b75bb64b12d77341adcd
+          test "$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV16.md | awk '{print $1}')" = 24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c
+          test "$(sha256sum docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md | awk '{print $1}')" = 840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc
+          test "$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV17.md | awk '{print $1}')" = d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8
+          test "$(sha256sum docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV08.md | awk '{print $1}')" = 97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c
+          python3 v1/tools-host/test-driver/evidence.py v1/dist/certification/R17.00.result.json
           python3 tools/check_phase10_evidence.py --require-active
           test -f v1/dist/certification/P10.36.result.json
           test -f v1/dist/certification/phase-10.json
-          test -z "$(find v1/dist/certification -maxdepth 1 -name 'P11.*' -print -quit)"
+          test ! -n "$(git ls-files | grep -Ei '(^|/)(P11(\.|/)|p11[^/]*qualification|phase-?11)' || true)"
+          test "$(sha256sum scratch/ZX-UX-LOADER-1.0.0-portable.zip | awk '{print $1}')" = 4c83a681f718192db9ebb32f0c8bc565baf2e68eb85de480322a1102d32f00c7
           ./tools/check_license_headers.sh
           ./tools/check_project_policy.py
           python3 tools/check_media_retention.py
           test -z "$(git status --porcelain)"
 
-      - name: Restore or build certified ZX-UX runtime
-        uses: ./.github/actions/setup-zxux-runtime
+      - uses: ./.github/actions/setup-zxux-runtime
 
-      - name: Revalidate certified native assembler-linker lifecycle
+      - name: Install release-scoped Pasmo and real-time UI helpers
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p /tmp/p10-prerelease/evidence
-          tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P10.34 --evidence-dir /tmp/p10-prerelease/evidence
-          tools/runtime/python/bin/python - <<'PY'
-          import hashlib,json
-          from pathlib import Path
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            pasmo=0.5.3-7 \
+            xvfb=2:21.1.12-1ubuntu1.6 \
+            xdotool=1:3.20160805.1-5build1
+          test "$(dpkg-query -W -f='${Version}' pasmo)" = 0.5.3-7
+          test "$(dpkg-query -W -f='${Version}' xvfb)" = 2:21.1.12-1ubuntu1.6
+          test "$(dpkg-query -W -f='${Version}' xdotool)" = 1:3.20160805.1-5build1
+          command -v pasmo > /tmp/pasmo-path
+          sha256sum "$(cat /tmp/pasmo-path)" > /tmp/pasmo.sha256
 
-          root=Path.cwd()
-          manifest=json.loads((root/'v1/dist/media/P10.34/manifest.json').read_text(encoding='utf-8'))
-          evidence=json.loads((root/'v1/dist/certification/P10.34.test.json').read_text(encoding='utf-8'))
-          assert manifest['schema']==1 and manifest['step']=='P10.34'
-          assert manifest['source_commit']==evidence['source_commit']
-          retained={}
-          for item in manifest['files']:
-              if item['path'].endswith(('.tap','.tzx')):
-                  p=root/'v1/dist/media/P10.34'/item['path']
-                  data=p.read_bytes()
-                  assert len(data)==item['size']
-                  assert hashlib.sha256(data).hexdigest()==item['sha256']
-                  retained[p.suffix]=item
-          assert set(retained)=={'.tap','.tzx'}
-          generated={
-              '.tap':root/'v1/build/p1034-lifecycle.tap',
-              '.tzx':root/'v1/build/p1034-lifecycle.tzx',
-          }
-          for suffix,p in generated.items():
-              data=p.read_bytes()
-              assert hashlib.sha256(data).hexdigest()==retained[suffix]['sha256']
-              assert len(data)==retained[suffix]['size']
+      - name: Build exact kernel and deterministic TZX twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/p10-prerelease
+          mkdir -p /tmp/p10-prerelease/a /tmp/p10-prerelease/b /tmp/p10-prerelease/P10.pre-release v1/build
+          (
+            cd v1/src/kernel
+            "$GITHUB_WORKSPACE/tools/runtime/sjasmplus/bin/sjasmplus" \
+              --nologo --lst=../../build/kernel-prerelease.lst --sym=../../build/kernel-prerelease.sym kernel.asm
+          )
+          test "$(wc -c < v1/build/kernel.bin)" -eq 8192
+          test "$(xxd -p -l 3 v1/build/kernel.bin)" != 000000
+          tools/runtime/python/bin/python -m py_compile \
+            v1/tools-host/release-tzx/build.py \
+            v1/tools-host/release-tzx/inspect_tzx.py \
+            v1/tools-host/release-tzx/kernel_native_projection.py \
+            v1/tools-host/release-tzx/native_rebuild_test.py
+          pasmo="$(cat /tmp/pasmo-path)"
+          tools/runtime/python/bin/python v1/tools-host/release-tzx/build.py \
+            --kernel v1/build/kernel.bin \
+            --output /tmp/p10-prerelease/a/zx-ux-phase10-pre-release.tzx \
+            --hook-output /tmp/p10-prerelease/a/hook.bin \
+            --manifest /tmp/p10-prerelease/a/build.json \
+            --pasmo "$pasmo"
+          tools/runtime/python/bin/python v1/tools-host/release-tzx/build.py \
+            --kernel v1/build/kernel.bin \
+            --output /tmp/p10-prerelease/b/zx-ux-phase10-pre-release.tzx \
+            --hook-output /tmp/p10-prerelease/b/hook.bin \
+            --manifest /tmp/p10-prerelease/b/build.json \
+            --pasmo "$pasmo"
+          cmp /tmp/p10-prerelease/a/zx-ux-phase10-pre-release.tzx /tmp/p10-prerelease/b/zx-ux-phase10-pre-release.tzx
+          cmp /tmp/p10-prerelease/a/hook.bin /tmp/p10-prerelease/b/hook.bin
+          cmp /tmp/p10-prerelease/a/build.json /tmp/p10-prerelease/b/build.json
+          test ! -n "$(find /tmp/p10-prerelease -type f -iname '*.tap' -print -quit)"
+          cp /tmp/p10-prerelease/a/zx-ux-phase10-pre-release.tzx /tmp/p10-prerelease/P10.pre-release/
+
+      - name: Independently reconstruct exact embedded kernel
+        shell: bash
+        run: |
+          set -euo pipefail
+          tools/runtime/python/bin/python v1/tools-host/release-tzx/inspect_tzx.py \
+            /tmp/p10-prerelease/P10.pre-release/zx-ux-phase10-pre-release.tzx \
+            --kernel v1/build/kernel.bin \
+            --extract /tmp/p10-prerelease/embedded-kernel.bin \
+            > /tmp/p10-prerelease/inspection.txt
+          test "$(wc -c < /tmp/p10-prerelease/embedded-kernel.bin)" -eq 8192
+          cmp v1/build/kernel.bin /tmp/p10-prerelease/embedded-kernel.bin
+          host_sha="$(sha256sum v1/build/kernel.bin | awk '{print $1}')"
+          embedded_sha="$(sha256sum /tmp/p10-prerelease/embedded-kernel.bin | awk '{print $1}')"
+          test "$host_sha" = "$embedded_sha"
+          test "$host_sha" != 0e59ef9290ffc4391b0ae999177cd9d7d9eafb6fcd86a45b13f9a4bd0b08c9ce
+          grep -q '^handoff=0xE003$' /tmp/p10-prerelease/inspection.txt
+          grep -q '^kernel_size=8192$' /tmp/p10-prerelease/inspection.txt
+          grep -q '^standard_speed_blocks=2$' /tmp/p10-prerelease/inspection.txt
+          grep -q '^generalized_blocks=48$' /tmp/p10-prerelease/inspection.txt
+
+      - name: Build canonical source-only native projection
+        shell: bash
+        run: |
+          set -euo pipefail
+          tools/runtime/python/bin/python v1/tools-host/release-tzx/kernel_native_projection.py \
+            --listing v1/build/kernel-prerelease.lst \
+            --symbols v1/build/kernel-prerelease.sym \
+            --output /tmp/p10-prerelease/kernel.nsp \
+            --audit /tmp/p10-prerelease/projection.json \
+            --kernel v1/build/kernel.bin
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('/tmp/p10-prerelease/projection.json').read_text())
+          assert d['text_size']==8192
+          assert d['contains_preassembled_kernel_payload'] is False
+          assert d['semantic_reference_equals_kernel_oracle'] is True
           PY
 
-      - name: Build Phase-10 pre-release distribution
+      - name: Genuine target-native as OBJ1 ld image run and mutation-negative proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          tools/runtime/python/bin/python v1/tools-host/release-tzx/native_rebuild_test.py \
+            --kernel v1/build/kernel.bin \
+            --projection /tmp/p10-prerelease/kernel.nsp \
+            --report /tmp/p10-prerelease/native-rebuild.json
+          python3 - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          host=Path('v1/build/kernel.bin').read_bytes()
+          embedded=Path('/tmp/p10-prerelease/embedded-kernel.bin').read_bytes()
+          native=json.loads(Path('/tmp/p10-prerelease/native-rebuild.json').read_text())
+          h=hashlib.sha256(host).hexdigest()
+          e=hashlib.sha256(embedded).hexdigest()
+          n=native['native_rebuilt_kernel_sha256']
+          assert len(host)==len(embedded)==native['native_rebuilt_kernel_size']==8192
+          assert host==embedded
+          assert h==e==n==native['host_kernel_sha256']
+          assert native['resident_kernel_overwritten'] is False
+          assert all(v=='PASS' for v in native['assertions'].values())
+          PY
+
+      - name: Real-time Fuse boot to E003 with every loader shortcut disabled
+        shell: bash
+        run: |
+          set -euo pipefail
+          diag=/tmp/p10-prerelease/realtime
+          mkdir -p "$diag"
+          Xvfb :99 -screen 0 1280x900x24 >"$diag/xvfb.log" 2>&1 &
+          xvfb_pid=$!
+          fuse_pid=""
+          trap 'kill "$fuse_pid" "$xvfb_pid" 2>/dev/null || true' EXIT
+          sleep 1
+          cat >"$diag/debugger.txt" <<'EOF'
+          breakpoint 0xe003
+          breakpoint 0x5ce7
+          breakpoint 0x0556
+          breakpoint 0x5f2a
+          breakpoint time 0 if spectrum:frames > 6500
+          commands 1
+          print 0x51515151
+          print z80:pc
+          print [0xe000]
+          print [0xffff]
+          exit 0
+          end
+          commands 2
+          print 0x61616161
+          continue
+          end
+          commands 3
+          print 0x62626262
+          continue
+          end
+          commands 4
+          print 0x63636363
+          continue
+          end
+          commands 5
+          print 0x52525252
+          print z80:pc
+          print spectrum:frames
+          exit 3
+          end
+          continue
+          EOF
+          stdbuf -oL -eL tools/runtime/fuse/bin/fuse --machine 48 \
+            --rom-48 tools/runtime/fuse/roms/48.rom \
+            --tape /tmp/p10-prerelease/P10.pre-release/zx-ux-phase10-pre-release.tzx \
+            --no-accelerate-loader --no-fastload --no-traps --no-detect-loader \
+            --no-confirm-actions --no-sound \
+            --debugger-command "$(cat "$diag/debugger.txt")" \
+            >"$diag/fuse-state.log" 2>&1 &
+          fuse_pid=$!
+          window=""
+          for i in $(seq 1 40); do
+            window="$(xdotool search --onlyvisible --name '^Fuse$' 2>/dev/null | head -n1 || true)"
+            test -n "$window" && break
+            sleep 0.25
+          done
+          test -n "$window"
+          xdotool windowfocus --sync "$window" || true
+          xdotool mousemove --window "$window" 160 145 click 1 || true
+          sleep 0.75
+          xdotool keydown Shift_L; sleep 0.25; xdotool keyup Shift_L; sleep 0.60
+          xdotool keydown j; sleep 0.45; xdotool keyup j; sleep 0.60
+          xdotool key --delay 300 ctrl+p; sleep 0.60
+          xdotool key --delay 300 ctrl+p; sleep 0.60
+          xdotool keydown Return; sleep 0.45; xdotool keyup Return
+          rom_waiting=""
+          for i in $(seq 1 40); do
+            if grep -q '0x62626262' "$diag/fuse-state.log"; then rom_waiting=yes; break; fi
+            kill -0 "$fuse_pid" 2>/dev/null || break
+            sleep 0.25
+          done
+          test "$rom_waiting" = yes
+          xdotool windowfocus --sync "$window" || true
+          xdotool key F8
+          result=""
+          for i in $(seq 1 130); do
+            if grep -q '0x51515151' "$diag/fuse-state.log"; then result=E003_REACHED; break; fi
+            if grep -q '0x52525252' "$diag/fuse-state.log"; then result=TIMEOUT; break; fi
+            kill -0 "$fuse_pid" 2>/dev/null || { result=FUSE_EXITED; break; }
+            sleep 1
+          done
+          kill "$fuse_pid" 2>/dev/null || true
+          kill "$xvfb_pid" 2>/dev/null || true
+          trap - EXIT
+          grep -q '0x61616161' "$diag/fuse-state.log"
+          grep -q '0x62626262' "$diag/fuse-state.log"
+          test "$(grep -c '0x63636363' "$diag/fuse-state.log")" -eq 1
+          test "$result" = E003_REACHED
+          echo "ZX-UX PHASE-10 PRE-RELEASE REAL-TIME E003 PASS"
+
+      - name: Emit compact pre-release manifest and README
+        shell: bash
+        run: |
+          set -euo pipefail
+          tools/runtime/python/bin/python - <<'PY'
+          import hashlib,json,subprocess
+          from pathlib import Path
+          root=Path.cwd()
+          work=Path('/tmp/p10-prerelease')
+          out=work/'P10.pre-release'
+          def sha(path):
+              return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+          build=json.loads((work/'a/build.json').read_text())
+          projection=json.loads((work/'projection.json').read_text())
+          native=json.loads((work/'native-rebuild.json').read_text())
+          host_sha=sha(root/'v1/build/kernel.bin')
+          embedded_sha=sha(work/'embedded-kernel.bin')
+          assert host_sha==embedded_sha==native['native_rebuilt_kernel_sha256']
+          pasmo_path=Path('/tmp/pasmo-path').read_text().strip()
+          pasmo_version=subprocess.check_output(['dpkg-query','-W','-f=${Version}','pasmo'],text=True)
+          readme=(
+              'ZX-UX Phase-10 fast-loader pre-release\n\n'
+              'Boot on a 48K Spectrum with: LOAD ""\n\n'
+              'This is the REV17/REV08 TZX-only pre-release path. The loader owns the\n'
+              '24x32 loading display; there is no SCREEN$ file and no release TAP.\n'
+              'The TZX embeds the freshly rebuilt exact 8192-byte kernel at E000-FFFF\n'
+              'and hands off at E003. Real-time Fuse acceptance disables fastload,\n'
+              'loader detection, acceleration and tape traps.\n\n'
+              'This Phase-10 pre-release intentionally contains no post-kernel M48O\n'
+              'system stream. It proves the fast-loader/kernel handoff only; it is not\n'
+              'the final Phase-12 system tape. No Phase-11 work is present or started.\n'
+          )
+          (out/'README.txt').write_text(readme,encoding='utf-8',newline='\n')
+          meta={
+            'schema':2,
+            'kind':'phase10-fast-loader-tzx-pre-release',
+            'candidate_source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+            'checkpoint_tag':'PHASE-10-COMPLETE',
+            'checkpoint_commit':'8360b0c5817738b01dc4b75bb64b12d77341adcd',
+            'authority':{
+              'architecture':'REV17',
+              'architecture_sha256':'d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8',
+              'implementation_plan':'REV08',
+              'implementation_plan_sha256':'97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c',
+              'r17_bridge_result_sha256':sha(root/'v1/dist/certification/R17.00.result.json'),
+            },
+            'historical_phase10':{
+              'aggregate_sha256':sha(root/'v1/dist/certification/phase-10.json'),
+              'acceptance_sha256':sha(root/'v1/dist/certification/P10.36.result.json'),
+              'recertified':False,
+            },
+            'fast_loader':{
+              'portable_zip_sha256':'4c83a681f718192db9ebb32f0c8bc565baf2e68eb85de480322a1102d32f00c7',
+              'upstream_release':'ZX-UX-LOADER-1.0.0',
+              'upstream_commit':'99c948feb2893e369055879ddf82aa0105bfe541',
+              'upstream_tree':'44d4a388bb300032c10c0c3813431ddbddcfe542',
+              'seed_sha256':build['seed_sha256'],
+              'hook_sha256':build['hook_sha256'],
+              'text_lines_sha256':sha(root/'v1/tools-host/release-tzx/text-lines.txt'),
+              'builder_sha256':sha(root/'v1/tools-host/release-tzx/build.py'),
+              'inspector_sha256':sha(root/'v1/tools-host/release-tzx/inspect_tzx.py'),
+              'pasmo_version':pasmo_version,
+              'pasmo_path':pasmo_path,
+              'pasmo_executable_sha256':sha(pasmo_path),
+            },
+            'boot_contract':{
+              'distribution':'TZX-only',
+              'screen_file':None,
+              'zx48uxscr':False,
+              'loader_display':'24x32 loader-owned',
+              'kernel_address':'0xE000',
+              'kernel_size':8192,
+              'kernel_end':'0xFFFF',
+              'handoff':'0xE003',
+              'payload_chunk_count':24,
+              'generalized_block_count':48,
+              'standard_speed_block_count':2,
+              'post_kernel_m48o_stream':'not included in Phase-10 pre-release',
+            },
+            'kernel_identity':{
+              'host_built_sha256':host_sha,
+              'tzx_embedded_sha256':embedded_sha,
+              'native_rebuilt_sha256':native['native_rebuilt_kernel_sha256'],
+              'size':8192,
+              'bytewise_host_equals_tzx':True,
+              'bytewise_host_equals_native_target_compare':True,
+              'bytewise_tzx_equals_native':True,
+            },
+            'native_rebuild':{
+              'projection_sha256':projection['projection_sha256'],
+              'projection_contains_preassembled_kernel_payload':False,
+              'native_obj1_size':native['native_obj1_size'],
+              'native_output_address':native['native_output_address'],
+              'resident_kernel_overwritten':False,
+              'assertions':native['assertions'],
+            },
+            'tzx':{
+              'path':'zx-ux-phase10-pre-release.tzx',
+              'size':build['tzx_size'],
+              'sha256':build['tzx_sha256'],
+              'dummy_payload_rejected':True,
+            },
+            'tests':{
+              'deterministic_double_build':'PASS',
+              'independent_tzx_structure_parse':'PASS',
+              'independent_embedded_kernel_reconstruction':'PASS',
+              'exact_8192_byte_host_tzx_compare':'PASS',
+              'real_time_rom_basic_loader_path':'PASS',
+              'real_time_fast_loader_to_e003_no_shortcuts':'PASS',
+              'startup_beep_path_exactly_once':'PASS',
+              'loader_owned_24x32_display_contract':'PASS',
+              'native_source_projection_no_preassembled_kernel':'PASS',
+              'native_as_real_obj1':'PASS',
+              'native_ld_consumes_native_obj1':'PASS',
+              'native_exact_8192_byte_compare':'PASS',
+              'native_source_as_obj1_ld_executable_run':'PASS',
+              'controlled_source_mutation_identity_failure':'PASS',
+              'phase11_state_absent_before_publication':'PASS',
+            },
+            'files':[]
+          }
+          for p in sorted(x for x in out.iterdir() if x.is_file() and x.name!='pre-release.json'):
+              meta['files'].append({'path':p.name,'size':p.stat().st_size,'sha256':sha(p)})
+          (out/'pre-release.json').write_text(json.dumps(meta,indent=2,sort_keys=True)+'\n',encoding='utf-8',newline='\n')
+          assert sorted(p.name for p in out.iterdir() if p.is_file())==[
+              'README.txt','pre-release.json','zx-ux-phase10-pre-release.tzx']
+          PY
+
+      - name: Three unchanged output scans and final pre-publication gates
         shell: bash
         run: |
           set -euo pipefail
           out=/tmp/p10-prerelease/P10.pre-release
-          rm -rf "$out"
-          mkdir -p "$out" v1/build
-          (
-            cd v1/src/kernel
-            "$GITHUB_WORKSPACE/tools/runtime/sjasmplus/bin/sjasmplus"               --nologo --lst=../../build/kernel.lst --sym=../../build/kernel.sym kernel.asm
-          )
-          test "$(wc -c < v1/build/kernel.bin)" -eq 8192
-
-          tools/runtime/python/bin/python - <<'PY'
-          from __future__ import annotations
-          import hashlib,importlib.util,json,os,shutil,struct,sys
-          from pathlib import Path
-
-          root=Path.cwd()
-          out=Path('/tmp/p10-prerelease/P10.pre-release')
-          out.mkdir(parents=True,exist_ok=True)
-          phase10='8360b0c5817738b01dc4b75bb64b12d77341adcd'
-
-          def load(path:Path,name:str):
-              spec=importlib.util.spec_from_file_location(name,path)
-              assert spec is not None and spec.loader is not None
-              mod=importlib.util.module_from_spec(spec)
-              sys.modules[name]=mod
-              spec.loader.exec_module(mod)
-              return mod
-
-          def sha_bytes(data:bytes)->str:
-              return hashlib.sha256(data).hexdigest()
-
-          def sha_path(path:Path)->str:
-              return sha_bytes(path.read_bytes())
-
-          def tap_to_tzx(tap:bytes)->bytes:
-              outb=bytearray(b'ZXTape!\x1a\x01\x14')
-              pos=0
-              while pos<len(tap):
-                  assert pos+2<=len(tap)
-                  n=struct.unpack_from('<H',tap,pos)[0]
-                  pos+=2
-                  assert pos+n<=len(tap)
-                  block=tap[pos:pos+n]
-                  pos+=n
-                  outb.append(0x10)
-                  outb+=struct.pack('<H',1000)
-                  outb+=struct.pack('<H',len(block))
-                  outb+=block
-              assert pos==len(tap)
-              return bytes(outb)
-
-          sys.path.insert(0,str(root/'v1/tools-host/test-driver'))
-          import phase3_open_descriptions
-          import fuse_harness
-
-          maketap=load(root/'v1/tools-host/maketap/maketap.py','zxux_p10_prerelease_maketap')
-          cassette=load(root/'v1/tools-host/cassette-image/cassette_image.py','zxux_p10_prerelease_cassette')
-
-          screen=(root/'v1/assets/loading.scr').read_bytes()
-          issue=(root/'v1/assets/issue.txt').read_bytes()
-          font=(root/'v1/assets/font4x8-zxux.bin').read_bytes()
-          assert len(screen)==6912
-          assert len(issue)==144
-          assert len(font)==392
-          prompt=b'login: '
-
-          sy=phase3_open_descriptions._symbols(
-              root/'v1/build/kernel.sym',
-              ('zx48_idle_loop','zx48_console_write','zx48_console_clear',
-               'zx48_tty64_install_font','ARENA_START','UDG_BANK_SIZE'),
-          )
-          idle=sy['zx48_idle_loop']
-          conwrite=sy['zx48_console_write']
-          conclear=sy['zx48_console_clear']
-          font_install=sy['zx48_tty64_install_font']
-          arena_start=sy['ARENA_START']
-          udg_bank_size=sy['UDG_BANK_SIZE']
-          assert 0xE000<=idle<=0xFAFD
-          assert 0xE000<=conwrite<=0xFAFF
-          assert arena_start==0x6000 and udg_bank_size==0x0100
-
-          base=arena_start+udg_bank_size
-          assert base==0x6100
-          kernel=bytearray((root/'v1/build/kernel.bin').read_bytes())
-          idle_off=idle-0xE000
-          original_idle=bytes(kernel[idle_off:idle_off+3])
-          assert original_idle==b'\xfb\x76\xcd'
-          kernel[idle_off:idle_off+3]=bytes((0xC3,base&0xFF,(base>>8)&0xFF))
-          kernel=bytes(kernel)
-
-          preview=bytearray()
-          for addr,value in ((idle,original_idle[0]),(idle+1,original_idle[1]),(idle+2,original_idle[2])):
-              preview+=bytes((0x3E,value,0x32,addr&0xFF,(addr>>8)&0xFF))
-          code_size=65
-          issue_addr=base+code_size
-          prompt_addr=issue_addr+len(issue)
-          marker_addr=prompt_addr+len(prompt)
-          font_addr=marker_addr+1
-          finish=base+62
-          success_pc=base+59
-          preview+=bytes((0x21,font_addr&0xFF,(font_addr>>8)&0xFF))
-          preview+=bytes((0x01,len(font)&0xFF,(len(font)>>8)&0xFF))
-          preview+=bytes((0xCD,font_install&0xFF,(font_install>>8)&0xFF))
-          preview+=bytes((0xDA,finish&0xFF,(finish>>8)&0xFF))
-          preview+=bytes((0xCD,conclear&0xFF,(conclear>>8)&0xFF))
-          preview+=bytes((0x21,issue_addr&0xFF,(issue_addr>>8)&0xFF))
-          preview+=bytes((0x01,len(issue)&0xFF,(len(issue)>>8)&0xFF))
-          preview+=bytes((0xCD,conwrite&0xFF,(conwrite>>8)&0xFF))
-          preview+=bytes((0xDA,finish&0xFF,(finish>>8)&0xFF))
-          preview+=bytes((0x21,prompt_addr&0xFF,(prompt_addr>>8)&0xFF))
-          preview+=bytes((0x01,len(prompt),0x00))
-          preview+=bytes((0xCD,conwrite&0xFF,(conwrite>>8)&0xFF))
-          preview+=bytes((0xDA,finish&0xFF,(finish>>8)&0xFF))
-          preview+=bytes((0x3E,0xA5,0x32,marker_addr&0xFF,(marker_addr>>8)&0xFF))
-          assert base+len(preview)==success_pc
-          preview+=bytes((0xC3,idle&0xFF,(idle>>8)&0xFF))
-          assert base+len(preview)==finish
-          preview+=bytes((0xC3,idle&0xFF,(idle>>8)&0xFF))
-          assert len(preview)==code_size
-          preview+=issue+prompt+b'\x00'+font
-
-          loader_source=(root/'v1/src/boot/loader.bas').read_text(encoding='utf-8')
-          preview_load_lines=(45,)
-          loader_text=maketap.loader_with_extra_code_loads(
-              loader_source,
-              preview_load_lines,
-          )
-          prefix=maketap.build_bootstrap_prefix(
-              loader_source=loader_source,
-              screen=screen,
-              kernel=kernel,
-              extra_code_load_lines=preview_load_lines,
-          )
-          preview_file=maketap.LogicalFile(
-              'p10preview',
-              maketap.CODE_TYPE,
-              bytes(preview),
-              base,
-              0x8000,
-          )
-          def build_tap():
-              return maketap.append_logical_files(prefix,(preview_file,))
-          loader_bytes=maketap.tokenized_loader(
-              loader_source,
-              extra_code_load_lines=preview_load_lines,
-          )
-          tap1=build_tap()
-          tap2=build_tap()
-          assert tap1==tap2
-          parsed=cassette.parse_files(tap1)
-          assert [x.name for x in parsed]==['zx48ux','zx48uxscr','kernel','p10preview']
-          assert parsed[0].file_type==0 and parsed[0].param1==10 and parsed[0].data==loader_bytes
-          assert parsed[1].file_type==3 and parsed[1].param1==0x4000 and parsed[1].length==6912
-          assert parsed[2].file_type==3 and parsed[2].param1==0xE000 and parsed[2].length==8192
-          assert parsed[3].file_type==3 and parsed[3].param1==base and parsed[3].data==bytes(preview)
-          tzx=tap_to_tzx(tap1)
-
-          (out/'zx-ux-phase10-pre-release.tap').write_bytes(tap1)
-          (out/'zx-ux-phase10-pre-release.tzx').write_bytes(tzx)
-          (out/'loader.bas').write_text(loader_text,encoding='utf-8',newline='\n')
-          (out/'kernel-phase10-pre-release.bin').write_bytes(kernel)
-          (out/'phase10-preview.bin').write_bytes(bytes(preview))
-
-          def patch(ram:bytearray):
-              ram[0:len(screen)]=screen
-              ram[0xE000-0x4000:0xE000-0x4000+len(kernel)]=kernel
-              ram[base-0x4000:base-0x4000+len(preview)]=preview
-          sna=fuse_harness.make_sna(b'',entry=0xE003,patch=patch)
-          (out/'phase10-pre-release-fuse-test.sna').write_bytes(sna)
-
-          p1034=json.loads((root/'v1/dist/media/P10.34/manifest.json').read_text(encoding='utf-8'))
-          life={}
-          for item in p1034['files']:
-              if item['path'].endswith('.tap'):
-                  life['tap']=item
-              elif item['path'].endswith('.tzx'):
-                  life['tzx']=item
-          assert set(life)=={'tap','tzx'}
-          life_tap=root/'v1/dist/media/P10.34'/life['tap']['path']
-          life_tzx=root/'v1/dist/media/P10.34'/life['tzx']['path']
-          assert sha_path(life_tap)==life['tap']['sha256']
-          assert sha_path(life_tzx)==life['tzx']['sha256']
-          shutil.copyfile(life_tap,out/'phase10-native-lifecycle.tap')
-          shutil.copyfile(life_tzx,out/'phase10-native-lifecycle.tzx')
-
-          phase10_aggregate=root/'v1/dist/certification/phase-10.json'
-          phase10_accept=root/'v1/dist/certification/P10.36.result.json'
-          workflow=root/'.github/workflows/p10-prerelease-build.yml'
-
-          (out/'README.txt').write_text(
-              'ZX-UX Phase-10 development/pre-release distribution\n\n'
-              'Boot preview on a 48K Spectrum: LOAD ""\n\n'
-              'zx-ux-phase10-pre-release.tap and .tzx are deterministic boot-preview\n'
-              'images built from the exact PHASE-10-COMPLETE source lineage. They load\n'
-              'the canonical screen, the Phase-10-complete resident kernel, and a small\n'
-              'fixed preview payload, then enter the real boot gateway at 0xE003. The\n'
-              'preview displays the frozen 64-column issue/login screen and then idles.\n'
-              'Its bootstrap prefix is built by the canonical maketap production path\n'
-              'from v1/src/boot/loader.bas, with one explicit extra CODE load for the\n'
-              'post-certification preview payload.\n\n'
-              'phase10-native-lifecycle.tap and .tzx are exact byte copies of the\n'
-              'admitted P10.34 retained cassette media. They preserve the certified\n'
-              'MEX1/case-sensitive cassette roundtrip used by the native as/ld lifecycle\n'
-              'acceptance test. The workflow also reruns P10.34 at the packaging head and\n'
-              'requires the regenerated TAP/TZX hashes to equal those retained bytes.\n\n'
-              'This is post-certification packaging, not new P10 evidence and not the\n'
-              'Phase-12 final release. Phase-10 native assembler/linker behavior is\n'
-              'certified in staged target fixtures; this preview does not claim the live\n'
-              'resident login/session already composes those tools into final release\n'
-              'media. No Phase-11 work is included.\n',
-              encoding='utf-8',newline='\n'
-          )
-
-          meta={
-              'schema':1,
-              'kind':'phase10-development-pre-release',
-              'certified_source_commit':phase10,
-              'checkpoint_tag':'PHASE-10-COMPLETE',
-              'architecture_sha256':'24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c',
-              'implementation_plan_sha256':'840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc',
-              'phase10_aggregate_sha256':sha_path(phase10_aggregate),
-              'phase10_acceptance_sha256':sha_path(phase10_accept),
-              'packaging_workflow_sha256':sha_path(workflow),
-              'boot_contract':{
-                  'entry_command':'LOAD ""',
-                  'basic_name':'zx48ux',
-                  'autostart_line':10,
-                  'screen_name':'zx48uxscr',
-                  'screen_address':16384,
-                  'screen_size':6912,
-                  'kernel_name':'kernel',
-                  'kernel_address':57344,
-                  'kernel_size':8192,
-                  'preview_name':'p10preview',
-                  'preview_address':base,
-                  'canonical_loader_path':'v1/src/boot/loader.bas',
-                  'canonical_loader_sha256':sha_path(root/'v1/src/boot/loader.bas'),
-                  'preview_extra_code_load_lines':[45],
-                  'boot_gateway':57347,
-                  'expected_prompt':'login: ',
-                  'success_marker_address':marker_addr,
-                  'success_marker_value':165,
-                  'success_pc':success_pc,
-                  'font_address':font_addr,
-                  'font_size':len(font),
-              },
-              'native_lifecycle':{
-                  'source_step':'P10.34',
-                  'retained_source_commit':p1034['source_commit'],
-                  'tap_sha256':life['tap']['sha256'],
-                  'tzx_sha256':life['tzx']['sha256'],
-                  'copy_only':True,
-              },
-              'tests':{
-                  'phase10_active_evidence_gate':'PASS',
-                  'p1034_current_head_rerun_matches_retained_tap_tzx':'PASS',
-                  'deterministic_boot_tap_rebuild':'PASS',
-                  'tap_header_and_basic_sequence':'PASS',
-                  'boot_tzx_standard_speed_conversion':'PASS',
-                  'fuse_boot_tap_to_login':'PENDING',
-                  'fuse_boot_tzx_to_login':'PENDING',
-                  'fuse_boot_gateway_to_login':'PENDING',
-              },
-              'files':[],
-          }
-          for p in sorted(x for x in out.rglob('*') if x.is_file()):
-              if p==out/'pre-release.json':
-                  continue
-              meta['files'].append({'path':p.relative_to(out).as_posix(),'size':p.stat().st_size,'sha256':sha_path(p)})
-          (out/'pre-release.json').write_text(json.dumps(meta,indent=2,sort_keys=True)+'\n',encoding='utf-8')
-          PY
-
-      - name: Fuse boot TAP to login
-        shell: bash
-        run: |
-          set -euo pipefail
-          cat > /tmp/p10-prerelease/fuse-login.txt <<'EOF'
-          breakpoint 0x613b
-          commands 1
-          exit 0
-          end
-          continue
-          EOF
-          timeout -k 5s 180s env SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy             tools/runtime/fuse/bin/fuse --machine 48 --no-sound --no-confirm-actions             --auto-load --detect-loader --fastload             --debugger-command "$(cat /tmp/p10-prerelease/fuse-login.txt)"             /tmp/p10-prerelease/P10.pre-release/zx-ux-phase10-pre-release.tap
-          tools/runtime/python/bin/python - <<'PY'
-          import json
-          from pathlib import Path
-          p=Path('/tmp/p10-prerelease/P10.pre-release/pre-release.json')
-          d=json.loads(p.read_text())
-          d['tests']['fuse_boot_tap_to_login']='PASS'
-          p.write_text(json.dumps(d,indent=2,sort_keys=True)+'\n',encoding='utf-8')
-          PY
-
-      - name: Fuse boot TZX to login
-        shell: bash
-        run: |
-          set -euo pipefail
-          timeout -k 5s 180s env SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy             tools/runtime/fuse/bin/fuse --machine 48 --no-sound --no-confirm-actions             --auto-load --detect-loader --fastload             --debugger-command "$(cat /tmp/p10-prerelease/fuse-login.txt)"             /tmp/p10-prerelease/P10.pre-release/zx-ux-phase10-pre-release.tzx
-          tools/runtime/python/bin/python - <<'PY'
-          import json
-          from pathlib import Path
-          p=Path('/tmp/p10-prerelease/P10.pre-release/pre-release.json')
-          d=json.loads(p.read_text())
-          d['tests']['fuse_boot_tzx_to_login']='PASS'
-          p.write_text(json.dumps(d,indent=2,sort_keys=True)+'\n',encoding='utf-8')
-          PY
-
-      - name: Fuse boot gateway to login
-        shell: bash
-        run: |
-          set -euo pipefail
-          timeout -k 5s 60s env SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy             tools/runtime/fuse/bin/fuse --machine 48 --no-sound --no-confirm-actions             --debugger-command "$(cat /tmp/p10-prerelease/fuse-login.txt)"             /tmp/p10-prerelease/P10.pre-release/phase10-pre-release-fuse-test.sna
-          tools/runtime/python/bin/python - <<'PY'
-          import json
-          from pathlib import Path
-          p=Path('/tmp/p10-prerelease/P10.pre-release/pre-release.json')
-          d=json.loads(p.read_text())
-          d['tests']['fuse_boot_gateway_to_login']='PASS'
-          p.write_text(json.dumps(d,indent=2,sort_keys=True)+'\n',encoding='utf-8')
-          PY
-
-      - name: Three unchanged output scans
-        shell: bash
-        run: |
-          set -euo pipefail
-          dir=/tmp/p10-prerelease/P10.pre-release
           baseline=""
           for scan in 1 2 3; do
-            tools/runtime/python/bin/python - <<'PY'
-          import hashlib,json,struct
+            python3 - <<'PY'
+          import hashlib,json
           from pathlib import Path
-
           d=Path('/tmp/p10-prerelease/P10.pre-release')
-          meta=json.loads((d/'pre-release.json').read_text(encoding='utf-8'))
-          assert meta['kind']=='phase10-development-pre-release'
-          assert meta['certified_source_commit']=='8360b0c5817738b01dc4b75bb64b12d77341adcd'
-          assert meta['checkpoint_tag']=='PHASE-10-COMPLETE'
+          assert sorted(p.name for p in d.iterdir() if p.is_file())==[
+              'README.txt','pre-release.json','zx-ux-phase10-pre-release.tzx']
+          meta=json.loads((d/'pre-release.json').read_text())
+          assert meta['kind']=='phase10-fast-loader-tzx-pre-release'
+          assert meta['checkpoint_commit']=='8360b0c5817738b01dc4b75bb64b12d77341adcd'
+          assert meta['boot_contract']['distribution']=='TZX-only'
+          assert meta['boot_contract']['screen_file'] is None
+          assert meta['boot_contract']['zx48uxscr'] is False
+          assert meta['kernel_identity']['size']==8192
+          assert len(set((meta['kernel_identity']['host_built_sha256'],
+                          meta['kernel_identity']['tzx_embedded_sha256'],
+                          meta['kernel_identity']['native_rebuilt_sha256'])))==1
           assert all(v=='PASS' for v in meta['tests'].values())
           for item in meta['files']:
-              p=d/item['path']
-              data=p.read_bytes()
+              p=d/item['path']; data=p.read_bytes()
               assert len(data)==item['size']
               assert hashlib.sha256(data).hexdigest()==item['sha256']
-
-          tap=(d/'zx-ux-phase10-pre-release.tap').read_bytes()
-          pos=0
-          blocks=[]
-          while pos<len(tap):
-              assert pos+2<=len(tap)
-              n=struct.unpack_from('<H',tap,pos)[0]
-              pos+=2
-              assert pos+n<=len(tap)
-              b=tap[pos:pos+n]
-              pos+=n
-              checksum=0
-              for value in b[:-1]:
-                  checksum^=value
-              assert b[-1]==checksum
-              blocks.append(b)
-          assert pos==len(tap) and len(blocks)==8
-
-          tzx=(d/'zx-ux-phase10-pre-release.tzx').read_bytes()
-          assert tzx[:10]==b'ZXTape!\x1a\x01\x14'
-          tpos=10
-          tblocks=[]
-          while tpos<len(tzx):
-              assert tzx[tpos]==0x10
-              tpos+=1
-              pause=struct.unpack_from('<H',tzx,tpos)[0]
-              tpos+=2
-              assert pause==1000
-              n=struct.unpack_from('<H',tzx,tpos)[0]
-              tpos+=2
-              assert tpos+n<=len(tzx)
-              tblocks.append(tzx[tpos:tpos+n])
-              tpos+=n
-          assert tpos==len(tzx) and tblocks==blocks
-
-          assert (d/'phase10-native-lifecycle.tap').read_bytes()==next(
-              p.read_bytes() for p in Path('v1/dist/media/P10.34/test').glob('*.tap'))
-          assert (d/'phase10-native-lifecycle.tzx').read_bytes()==next(
-              p.read_bytes() for p in Path('v1/dist/media/P10.34/test').glob('*.tzx'))
+          assert not list(d.glob('*.tap'))
           PY
-            digest="$(find "$dir" -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')"
-            if test -z "$baseline"; then
-              baseline="$digest"
-            else
-              test "$digest" = "$baseline"
-            fi
+            digest="$(find "$out" -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')"
+            if test -z "$baseline"; then baseline="$digest"; else test "$digest" = "$baseline"; fi
           done
+          git fetch --quiet origin main
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
+          test ! -n "$(git ls-files | grep -Ei '(^|/)(P11(\.|/)|p11[^/]*qualification|phase-?11)' || true)"
+          test -z "$(git status --porcelain)"
 
-      - name: Publish durable pre-release bundle
+      - name: Publish replacement compact pre-release and stop before Phase 11
         shell: bash
         run: |
           set -euo pipefail
           rm -rf v1/dist/media/P10.pre-release
           cp -a /tmp/p10-prerelease/P10.pre-release v1/dist/media/P10.pre-release
+          test ! -n "$(find v1/dist/media/P10.pre-release -type f -iname '*.tap' -print -quit)"
           python3 tools/check_media_retention.py
           runtime_hold=/tmp/zxux-runtime-policy-check
           rm -rf "$runtime_hold"
           mv tools/runtime "$runtime_hold"
           trap 'mv "$runtime_hold" tools/runtime' EXIT
           ./tools/check_project_policy.py
+          ./tools/check_license_headers.sh
           mv "$runtime_hold" tools/runtime
           trap - EXIT
-          git add v1/dist/media/P10.pre-release
+          test ! -n "$(git ls-files | grep -Ei '(^|/)(P11(\.|/)|p11[^/]*qualification|phase-?11)' || true)"
+          git add -A v1/dist/media/P10.pre-release
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --cached --quiet; then
-            exit 0
+          if ! git diff --cached --quiet; then
+            git commit -m "media: publish REV17 Phase-10 fast-loader TZX pre-release"
+            python3 tools/check_media_retention.py
+            git push origin HEAD:main
           fi
-          git commit -m "media: add Phase-10 development pre-release distribution"
-          python3 tools/check_phase10_evidence.py --require-active
-          python3 tools/check_media_retention.py
-          git push origin HEAD:main
+          git fetch --quiet origin main
+          test "$(git rev-parse origin/main)" = "$(git rev-parse HEAD)"
+          test "$(git rev-parse refs/tags/PHASE-10-COMPLETE)" = 8360b0c5817738b01dc4b75bb64b12d77341adcd
+          test ! -n "$(git ls-tree -r --name-only origin/main | grep -Ei '(^|/)(P11(\.|/)|p11[^/]*qualification|phase-?11)' || true)"
+          echo "ZX-UX PHASE-10 FAST-LOADER PRE-RELEASE PUBLISHED; PHASE 11 NOT STARTED"
 
-      - name: Upload tested bundle
+      - name: Upload tested pre-release bundle
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: zxux-phase10-pre-release
+          name: zxux-phase10-fast-loader-pre-release
           path: /tmp/p10-prerelease/P10.pre-release/
           retention-days: 30
           if-no-files-found: error
