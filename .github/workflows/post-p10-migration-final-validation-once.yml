@@ -11,7 +11,7 @@
 # patent, trademark, and governing-law provisions.
 
 name: Post-Phase-10 migration final validation once
-# Retry after repository-walk historical-document allowance.
+# Retry after repository-walk detector self-exclusion.
 
 on:
   push:
