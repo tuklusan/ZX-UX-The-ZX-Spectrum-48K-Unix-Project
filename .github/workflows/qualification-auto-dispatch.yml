@@ -35,16 +35,20 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - name: Require exact current main head
+        id: head
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
           git fetch --quiet origin main
           if test "$(git rev-parse origin/main)" != "$CANDIDATE_SHA"; then
             echo "ZX-UX QUALIFICATION AUTO-DISPATCH SKIP superseded=$CANDIDATE_SHA current=$(git rev-parse origin/main)"
+            echo "current=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          echo "current=true" >> "$GITHUB_OUTPUT"
       - name: Detect exactly one due qualification
         id: detect
+        if: steps.head.outputs.current == 'true'
         run: |
           set -euo pipefail
           python3 - <<'PY' > /tmp/zxux-qualification-detect.json
@@ -112,7 +116,7 @@ jobs:
           print(f"due={'true' if d['due'] else 'false'}"); print(f"step={d['step']}"); print(f"workflow={d['workflow']}"); print(f"head={d['head']}")
           PY
       - name: Dispatch exact candidate qualification
-        if: steps.detect.outputs.due == 'true'
+        if: steps.head.outputs.current == 'true' && steps.detect.outputs.due == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           QUALIFICATION_STEP: ${{ steps.detect.outputs.step }}
