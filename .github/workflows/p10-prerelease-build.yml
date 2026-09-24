@@ -439,6 +439,7 @@ jobs:
           cp -a /tmp/p10-prerelease/P10.pre-release v1/dist/media/P10.pre-release
           test ! -n "$(find v1/dist/media/P10.pre-release -type f -iname '*.tap' -print -quit)"
           python3 tools/check_media_retention.py
+          rm -rf v1/build
           runtime_hold=/tmp/zxux-runtime-policy-check
           rm -rf "$runtime_hold"
           mv tools/runtime "$runtime_hold"
