@@ -12,7 +12,7 @@
 
 # ZX-UX Version-1 Test Plan
 
-This plan defines the deterministic host-side test contract. Revision 12 / Revision 03 remain historical through Phase 2. R16.00 alone admits Revision 16 / Revision 07 for Phase 3 and later work.
+This plan defines the deterministic host-side test contract. Revision 12 / Revision 03 remain historical through Phase 2. R16.00 admitted Revision 16 / Revision 07 for Phase 3 through Phase 10. R17.00 admitted Revision 17 / Revision 08 as the active authority pair for post-Phase-10 work.
 
 ## Root and tool resolution
 
@@ -48,7 +48,7 @@ The relocation test depends only on the copied root marker, never the original c
 
 Certification starts from an already-committed clean source checkout. Build and test records are written first to an external staging directory, never into the source worktree. Every E0.01-E0.06 and P0.01-P0.34 step requires `<STEP-ID>.build.json` and `<STEP-ID>.test.json`. E0.04 and P0.34 additionally require `<STEP-ID>.result.json`; Phase 0 additionally requires `phase-0.json`.
 
-Every schema-2 record includes exact `source_commit`, `toolchain_lock_sha256`, `architecture_sha256`, Boolean `worktree_clean`, prerequisite states, command data, stable root-relative hashes, and named assertions. R16.00 and every new P3-P12 record additionally require `implementation_plan_sha256` matching canonical Revision 07. R16.00 build/test/result also identify the same `bridge_source_commit`. Result records also include their exact PASS marker. A missing or malformed field, failed assertion, wrong source/digest, false clean-state claim, or missing prerequisite is a hard failure.
+Every schema-2 record includes exact `source_commit`, `toolchain_lock_sha256`, `architecture_sha256`, Boolean `worktree_clean`, prerequisite states, command data, stable root-relative hashes, and named assertions. R16.00 and P3-P10 records require `implementation_plan_sha256` matching frozen Revision 07. R17.00 and future P11-P12 records require the field to match frozen Revision 08. R16.00 build/test/result also identify the same `bridge_source_commit`. Result records also include their exact PASS marker. A missing or malformed field, failed assertion, wrong source/digest, false clean-state claim, or missing prerequisite is a hard failure.
 
 R16.00 first certifies one clean bridge source-candidate commit into external scratch. Only after all bridge gates pass are the frozen R16.00 build/test/result bytes copied unchanged into `v1/dist/certification/` in a separate evidence-only admission commit. Other result boundaries retain the same anti-self-reference rule. Durable records continue to name the certified source commit. GitHub Actions artifacts are transport/diagnostics only and cannot replace committed evidence.
 
@@ -58,7 +58,7 @@ Static checks cover symbol uniqueness, section bounds, fixed kernel ranges, IM2 
 
 Deterministic emulator tests use SNA for the fast inner loop and TAP/TZX when boot or cassette semantics matter. Tests assert registers, RAM, process state, object state, or format bytes directly; screenshots are supplemental. Synthetic programs that call ROM routines establish a known writable stack first.
 
-Release-critical emulator behavior is repeated on a second independent Spectrum emulator where practical. Physical cassette robustness requires real compatible hardware with an audio path, or a hardware-faithful EAR/MIC loop; emulator tape traps and container parsing alone do not prove that claim.
+Release-critical emulator behavior is repeated on a second independent Spectrum emulator where practical. Under REV17/REV08 the active product release path is TZX-only, with no production SCREEN$ block: acceptance reconstructs the embedded 8192-byte kernel independently and exercises the real loader to 0xE003 with fast-load, loader-detection, acceleration, and tape-trap shortcuts disabled. Physical cassette robustness still requires real compatible hardware with an audio path, or a hardware-faithful EAR/MIC loop; emulator container parsing alone does not prove that claim.
 
 ## Timeout and process discipline
 
