@@ -65,7 +65,7 @@ FIXED_BYTES={
     6:b"\x2f",7:b"\x37",8:b"\x3f",9:b"\x76",10:b"\xf3",11:b"\xfb",
     12:b"\xd9",13:b"\xed\x4d",14:b"\xed\x44",15:b"\xed\xa0",
     16:b"\xed\xb0",17:b"\xed\xa8",18:b"\xed\xb8",19:b"\xed\xa1",
-    20:b"\xed\xb1",21:b"\xed\xa9",22:b"\xed\xb9",
+    20:b"\xed\xb1",21:b"\xed\xa9",22:b"\xed\xb9",23:b"\xe9",24:b"\xf9",
 }
 IMM_ALU=(0xC6,0xCE,0xD6,0xDE,0xE6,0xEE,0xF6,0xFE)
 SHIFT_BASE=(0x00,0x08,0x10,0x18,0x20,0x28,0x38)
@@ -226,13 +226,14 @@ def encode_source(src:str,address:int,syms:dict[str,int])->list[bytes]:
                 return [rec(LD_A_MEMABS,u16(eval_expr(s[1:-1],syms,address)))]
             return [rec(LD_R_N,REG8[d],u8(eval_expr(s,syms,address)))]
         if d in ("i","r") and s=="a":return [rec(LD_SPECIAL,2 if d=="i" else 3)]
+        if d=="sp" and s=="hl":return [rec(FIXED,24)]
+        if d=="sp" and s in INDEX:return [rec(LD_SP_INDEX,INDEX[s])]
         if d in PAIR:
             if s.startswith("(") and s.endswith(")"):return [rec(LD_RR_MEM,PAIR[d],u16(eval_expr(s[1:-1],syms,address)))]
             return [rec(LD_RR_N,PAIR[d],u16(eval_expr(s,syms,address)))]
         if d in INDEX:
             if s.startswith("(") and s.endswith(")"):return [rec(LD_INDEX_MEM,INDEX[d],u16(eval_expr(s[1:-1],syms,address)))]
             return [rec(LD_INDEX_N,INDEX[d],u16(eval_expr(s,syms,address)))]
-        if d=="sp" and s in INDEX:return [rec(LD_SP_INDEX,INDEX[s])]
         if d.startswith("(") and d.endswith(")"):
             inner=d[1:-1]
             if s=="a":
@@ -303,7 +304,6 @@ def encode_record(record:bytes,pc:int)->bytes:
     k=record[0]
     if k==FIXED:
         i=record[1]
-        if i==23:return b"\xe9"
         return FIXED_BYTES[i]
     if k==LD_R_R:return bytes([0x40+record[1]*8+record[2]])
     if k==LD_R_N:return bytes([0x06+record[1]*8,record[2]])
