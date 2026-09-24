@@ -2246,3 +2246,342 @@ ld_p1032_rel_value:     dw 0
 ld_p1032_prev:          dw 0
 ld_p1032_have_prev:     db 0
     ENDM
+
+
+; P10.33 transactional linker output.
+; HL=exact output name, DE=complete MEX1 candidate, BC=exact stored length.
+; Destination is never opened/truncated: publish only by atomic rename.
+    MACRO EMIT_P10_LD_TRANSACTION_ROUTINES
+LD_P1033_HEADER_SIZE EQU 24
+
+ld_p1033_publish:
+    ld (ld_p1033_dest),hl
+    ld (ld_p1033_candidate),de
+    ld (ld_p1033_length),bc
+    xor a
+    ld (ld_p1033_owned),a
+    ld (ld_p1033_open),a
+
+    call ld_p1033_validate_name
+    ret c
+    call ld_p1033_validate_mex1
+    ret c
+
+    ld a,SYS_GETPID
+    call SYSCALL_GATEWAY
+    ret c
+    ld a,h
+    or a
+    jp nz,ld_p1033_format
+    ld a,l
+    cp 10
+    jp nc,ld_p1033_format
+    add a,'0'
+    ld (ld_p1033_temp_name+8),a
+    xor a
+    ld (ld_p1033_temp_n),a
+
+ld_p1033_open_retry:
+    ld a,(ld_p1033_temp_n)
+    add a,'0'
+    ld (ld_p1033_temp_name+10),a
+    ld hl,ld_p1033_temp_name
+    ld c,O_WRITE|O_CREATE|O_EXCL
+    ld b,OBJ_BIN
+    ld a,SYS_OPEN
+    call SYSCALL_GATEWAY
+    jr nc,ld_p1033_opened
+    cp E_EXIST
+    ret nz
+    ld a,(ld_p1033_temp_n)
+    cp 9
+    jp z,ld_p1033_exist
+    inc a
+    ld (ld_p1033_temp_n),a
+    jr ld_p1033_open_retry
+
+ld_p1033_opened:
+    ld a,h
+    or a
+    jp nz,ld_p1033_format_created
+    ld a,l
+    ld (ld_p1033_handle),a
+    ld a,1
+    ld (ld_p1033_owned),a
+    ld (ld_p1033_open),a
+
+    ld e,l
+    ld d,0
+    ld hl,(ld_p1033_candidate)
+    ld bc,(ld_p1033_length)
+    ld a,SYS_WRITE
+    call SYSCALL_GATEWAY
+    jp c,ld_p1033_cleanup_error
+    ld de,(ld_p1033_length)
+    or a
+    sbc hl,de
+    jr z,ld_p1033_write_complete
+    ld a,E_IO
+    jp ld_p1033_cleanup_error
+
+ld_p1033_write_complete:
+    call ld_p1033_close_temp
+    jp c,ld_p1033_cleanup_error
+    ; Revalidate the exact bytes after the complete-write/close barrier.
+    call ld_p1033_validate_mex1
+    jr nc,ld_p1033_ready_rename
+    ld a,E_FORMAT
+    jp ld_p1033_cleanup_error
+
+ld_p1033_ready_rename:
+    ld hl,ld_p1033_temp_name
+    ld (ld_p1033_rename_req),hl
+    ld hl,(ld_p1033_dest)
+    ld (ld_p1033_rename_req+2),hl
+    ld hl,ld_p1033_rename_req
+    ld a,SYS_RENAME
+    call SYSCALL_GATEWAY
+    jp c,ld_p1033_cleanup_error
+    xor a
+    ld (ld_p1033_owned),a
+    ret
+
+ld_p1033_close_temp:
+    ld a,(ld_p1033_open)
+    or a
+    ret z
+    ld a,(ld_p1033_handle)
+    ld l,a
+    ld h,0
+    ld a,SYS_CLOSE
+    call SYSCALL_GATEWAY
+    ret c
+    xor a
+    ld (ld_p1033_open),a
+    ret
+
+ld_p1033_cleanup_error:
+    ld (ld_p1033_errno),a
+    call ld_p1033_close_temp
+    ld a,(ld_p1033_owned)
+    or a
+    jr z,ld_p1033_return_primary
+    xor a
+    ld (ld_p1033_owned),a
+    ld hl,ld_p1033_temp_name
+    ld a,SYS_REMOVE
+    call SYSCALL_GATEWAY
+ld_p1033_return_primary:
+    ld a,(ld_p1033_errno)
+    scf
+    ret
+
+; Exact user-facing output name: nonempty and at most 10 bytes, no case folding.
+ld_p1033_validate_name:
+    ld hl,(ld_p1033_dest)
+    ld b,0
+ld_p1033_name_loop:
+    ld a,(hl)
+    or a
+    jp z,ld_p1033_name_end
+    inc b
+    ld a,b
+    cp 11
+    jp nc,ld_p1033_format
+    inc hl
+    jp ld_p1033_name_loop
+ld_p1033_name_end:
+    ld a,b
+    or a
+    jp z,ld_p1033_format
+    xor a
+    ret
+
+; Complete serialized MEX1 framing/CRC validation before any output mutation.
+ld_p1033_validate_mex1:
+    ld hl,(ld_p1033_length)
+    ld de,LD_P1033_HEADER_SIZE
+    or a
+    sbc hl,de
+    jp c,ld_p1033_format
+    ld ix,(ld_p1033_candidate)
+    ld a,(ix+0)
+    cp 'M'
+    jp nz,ld_p1033_format
+    ld a,(ix+1)
+    cp 'E'
+    jp nz,ld_p1033_format
+    ld a,(ix+2)
+    cp 'X'
+    jp nz,ld_p1033_format
+    ld a,(ix+3)
+    cp '1'
+    jp nz,ld_p1033_format
+    ld a,(ix+4)
+    cp 1
+    jp nz,ld_p1033_format
+    ld a,(ix+5)
+    or a
+    jp nz,ld_p1033_format
+    ld a,(ix+6)
+    cp LD_P1033_HEADER_SIZE
+    jp nz,ld_p1033_format
+    ld a,(ix+7)
+    or a
+    jp nz,ld_p1033_format
+
+    ld l,(ix+8)
+    ld h,(ix+9)
+    ld (ld_p1033_image_size),hl
+    ld a,h
+    or l
+    jp z,ld_p1033_format
+    ld l,(ix+10)
+    ld h,(ix+11)
+    ld (ld_p1033_bss_size),hl
+    ld de,(ld_p1033_image_size)
+    add hl,de
+    jp c,ld_p1033_format
+    ld de,$8001
+    or a
+    sbc hl,de
+    jp nc,ld_p1033_format
+
+    ld l,(ix+12)
+    ld h,(ix+13)
+    ld de,(ld_p1033_image_size)
+    or a
+    sbc hl,de
+    jp nc,ld_p1033_format
+
+    ld l,(ix+14)
+    ld h,(ix+15)
+    ld de,64
+    or a
+    sbc hl,de
+    jp c,ld_p1033_format
+    ld l,(ix+14)
+    ld h,(ix+15)
+    ld de,4096
+    or a
+    sbc hl,de
+    jp c,ld_p1033_stack_ok
+    jp z,ld_p1033_stack_ok
+    jp ld_p1033_format
+ld_p1033_stack_ok:
+
+    ld l,(ix+16)
+    ld h,(ix+17)
+    add hl,hl
+    jp c,ld_p1033_format
+    ld (ld_p1033_reloc_bytes),hl
+    ld e,(ix+18)
+    ld d,(ix+19)
+    ld hl,(ld_p1033_image_size)
+    ld bc,LD_P1033_HEADER_SIZE
+    add hl,bc
+    or a
+    sbc hl,de
+    jp nz,ld_p1033_format
+    ex de,hl
+    ld de,(ld_p1033_reloc_bytes)
+    add hl,de
+    jp c,ld_p1033_format
+    ld de,(ld_p1033_length)
+    or a
+    sbc hl,de
+    jp nz,ld_p1033_format
+
+    ld hl,(ld_p1033_length)
+    ld de,LD_P1033_HEADER_SIZE
+    or a
+    sbc hl,de
+    ld b,h
+    ld c,l
+    ld hl,(ld_p1033_candidate)
+    ld de,LD_P1033_HEADER_SIZE
+    add hl,de
+    call ld_p1033_crc16
+    ld ix,(ld_p1033_candidate)
+    ld a,(ix+20)
+    cp e
+    jp nz,ld_p1033_format
+    ld a,(ix+21)
+    cp d
+    jp nz,ld_p1033_format
+
+    ld hl,(ld_p1033_candidate)
+    ld de,ld_p1033_header_copy
+    ld bc,LD_P1033_HEADER_SIZE
+    ldir
+    xor a
+    ld (ld_p1033_header_copy+22),a
+    ld (ld_p1033_header_copy+23),a
+    ld hl,ld_p1033_header_copy
+    ld bc,LD_P1033_HEADER_SIZE
+    call ld_p1033_crc16
+    ld ix,(ld_p1033_candidate)
+    ld a,(ix+22)
+    cp e
+    jp nz,ld_p1033_format
+    ld a,(ix+23)
+    cp d
+    jp nz,ld_p1033_format
+    xor a
+    ret
+
+ld_p1033_crc16:
+    ld de,$FFFF
+ld_p1033_crc_byte:
+    ld a,b
+    or c
+    ret z
+    ld a,(hl)
+    xor d
+    ld d,a
+    inc hl
+    push bc
+    ld b,8
+ld_p1033_crc_bit:
+    sla e
+    rl d
+    jp nc,ld_p1033_crc_no_poly
+    ld a,d
+    xor $10
+    ld d,a
+    ld a,e
+    xor $21
+    ld e,a
+ld_p1033_crc_no_poly:
+    djnz ld_p1033_crc_bit
+    pop bc
+    dec bc
+    jp ld_p1033_crc_byte
+
+ld_p1033_format_created:
+    ld a,1
+    ld (ld_p1033_owned),a
+ld_p1033_format:
+    ld a,E_FORMAT
+    scf
+    ret
+ld_p1033_exist:
+    ld a,E_EXIST
+    scf
+    ret
+
+ld_p1033_dest:        dw 0
+ld_p1033_candidate:   dw 0
+ld_p1033_length:      dw 0
+ld_p1033_handle:      db 0
+ld_p1033_open:        db 0
+ld_p1033_owned:       db 0
+ld_p1033_temp_n:      db 0
+ld_p1033_errno:       db 0
+ld_p1033_image_size:  dw 0
+ld_p1033_bss_size:    dw 0
+ld_p1033_reloc_bytes: dw 0
+ld_p1033_rename_req:  defs 4,0
+ld_p1033_header_copy: defs LD_P1033_HEADER_SIZE,0
+ld_p1033_temp_name: db '/','t','m','p','/','.','l','d','0','.','0',0
+    ENDM
