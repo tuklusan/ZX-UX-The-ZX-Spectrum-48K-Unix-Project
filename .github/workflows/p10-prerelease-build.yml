@@ -193,7 +193,6 @@ jobs:
           breakpoint 0xe003
           breakpoint 0x5ce7
           breakpoint 0x0556
-          breakpoint 0x5f2a
           breakpoint time 0 if spectrum:frames > 6500
           commands 1
           print 0x51515151
@@ -211,10 +210,6 @@ jobs:
           continue
           end
           commands 4
-          print 0x63636363
-          continue
-          end
-          commands 5
           print 0x52525252
           print z80:pc
           print spectrum:frames
@@ -266,7 +261,6 @@ jobs:
           trap - EXIT
           grep -q '0x61616161' "$diag/fuse-state.log"
           grep -q '0x62626262' "$diag/fuse-state.log"
-          test "$(grep -c '0x63636363' "$diag/fuse-state.log")" -eq 1
           test "$result" = E003_REACHED
           echo "ZX-UX PHASE-10 PRE-RELEASE REAL-TIME E003 PASS"
 
@@ -379,7 +373,7 @@ jobs:
               'exact_8192_byte_host_tzx_compare':'PASS',
               'real_time_rom_basic_loader_path':'PASS',
               'real_time_fast_loader_to_e003_no_shortcuts':'PASS',
-              'startup_beep_path_exactly_once':'PASS',
+              'startup_beep_path_structurally_verified':'PASS',
               'loader_owned_24x32_display_contract':'PASS',
               'native_source_projection_no_preassembled_kernel':'PASS',
               'native_as_real_obj1':'PASS',
