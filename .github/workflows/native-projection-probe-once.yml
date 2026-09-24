@@ -11,7 +11,7 @@
 # patent, trademark, and governing-law provisions.
 
 name: Native projection listing probe once
-# Retry semantic projection with mismatch diagnostics.
+# Retry semantic projection after ALU literal-case fix.
 on:
   push:
     branches: [main]
