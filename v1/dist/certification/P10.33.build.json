@@ -1,0 +1,60 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "exclusive-bin-temp",
+      "passed": true
+    },
+    {
+      "name": "only-eexist-retried",
+      "passed": true
+    },
+    {
+      "name": "write-close-revalidate-rename",
+      "passed": true
+    },
+    {
+      "name": "owned-temp-cleanup",
+      "passed": true
+    },
+    {
+      "name": "output-name-1-to-10-case-exact",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1033-transaction.sym",
+        "p1033-transaction.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 9,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 3435 lines, work time: 0.007 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/ld.asm": "559cb8bfe390c5a1bed8934948f51aa0852c29880128a4b06cc6df684ff6f3df",
+    "v1/build/p1033-gateway.bin": "d7b9fa991929a997df1d268e45a40fc3b56662037b1f6a7d023e3b60a3063ce6",
+    "v1/build/p1033-main.bin": "7a4a3513778970b935b8b91523546db52f5a0d2e3fad106474ee53b8590aa500",
+    "v1/dist/certification/P10.32.build.json": "a4e2cb90e0fc625bb9c484afc88524c506b499b1ddaf18f3e61be5462e4f2888",
+    "v1/dist/certification/P10.32.test.json": "ca01100cde194a51682d572e79d8b8898334a81a1b2dbb8f46f5254b9990116a",
+    "v1/tools-host/test-driver/phase10_step_33.py": "57bdd9a305eb9ddf338b423aa2bb146c87a471958e710ba858d08a405597112a"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P10.32": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "11e08c38e461be89e192d6df9f8f9fbe0174817b",
+  "status": "PASS",
+  "step": "P10.33",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
