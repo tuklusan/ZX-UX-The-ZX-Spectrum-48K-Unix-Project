@@ -12,7 +12,7 @@
 
 # ZX-UX Fast-Loader TZX Release/Pre-Release Migration Runbook REV01
 
-**Status:** OPEN — one-shot coordination plan. This scratch document is not canonical authority.
+**Status:** CLOSED — post-Phase-10/pre-Phase-11 fast-loader TZX release migration complete. STOP before P11.01.
 
 **Phase isolation:** Complete only the release/pre-release tape-generation migration and its authority transition. This runbook MUST NOT implement or advance a Phase-11 step. The accidental P11.01/P11.02 start was rolled back before this runbook became the proposed goal; execution therefore begins from a no-Phase-11 baseline. Any new P11 workflow, source, evidence, media, admission or activation appearing during this migration is a blocker and must be removed/reverted before work continues.
 
@@ -651,3 +651,27 @@ This runbook is DONE only when all of the following are simultaneously true:
 - no Phase-11 implementation, qualification, evidence, media, admission or activation state exists.
 
 At that point mark this scratch runbook CLOSED with final commit/run/hash anchors, and stop.
+
+## 20. Closure record
+
+**Closure state:** CLOSED. The post-Phase-10/pre-Phase-11 release migration is complete. No Phase-11 work is authorized or started by this closure.
+
+Durable anchors:
+
+- final validated migration source head: `dab9a626873b0bfd2ba3595f9a3a7320075a60d1`;
+- final validation workflow run: `36069092981`, attempt `1`;
+- validated source tree: `a0de5bbe744307fab74bf5f5959206f20a44cf90`;
+- final repository-walk report SHA-256: `0d057dba5b8e2e22a7ff613f3fc469c35eb504342211e9bbf3d2dd1105578368`;
+- replacement Phase-10 fast-loader pre-release validation/publication run: `36059493045` at source head `5db0345ebb14f90508af46681eb1957ae9ea4eed`;
+- target-native kernel self-rebuild proof run: `36057095331` at source head `c1bbd8e4ef85522a617b94a2b788b29ee3564dac`;
+- replacement TZX SHA-256: `41257362e2de40375aa2ecd30db2ad7808624634e8554ddcb93a8ba390483070`, size `11954`;
+- exact three-way 8192-byte kernel SHA-256: `ae3c54f9cd50eade1e543d9ac3c6ff58c83d63d6951c707b192ef5f9e26d4806`;
+- preserved loader package SHA-256: `4c83a681f718192db9ebb32f0c8bc565baf2e68eb85de480322a1102d32f00c7`;
+- fixed `PHASE-10-COMPLETE`: `8360b0c5817738b01dc4b75bb64b12d77341adcd`.
+
+Final repository walk classified `2582` requested-surface files, including `250` workflows and `1` composite actions: current=`67`, historical=`1943`, replay-only=`571`, obsolete=`0`, disposable=`1`, unrelated=`0`.
+
+All report gates PASS: fixed Phase-10 checkpoint, immutable historical REV16/REV07, active immutable REV17/REV08, preserved loader ZIP, compact TZX-only pre-release, deterministic build, independent structural reconstruction, real-time E003 loader proof with shortcuts disabled, genuine native source→as→OBJ1→ld→run, exact three-way 8192-byte identity, controlled mismatch-negative, release-scoped Pasmo, historical evidence/media retention, superseded-candidate dispatch hardening, complete repository classification, and absence of Phase-11 state.
+
+The one-shot final validation workflow removes itself in the closure commit. The migration stops here. **Do not begin P11.01.**
+
