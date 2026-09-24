@@ -54,7 +54,6 @@ declare -A explicit_header_exemptions=(
   [".zxux-root"]="Exact root-marker bytes are fixed by the implementation contract."
   ["tools/manifest/toolchain.lock.json"]="JSON does not permit comments; this exact manifest path is required by E0.01."
   ["v1/src/boot/loader.bas"]="The P0.07 production loader is exactly five semantic Sinclair BASIC lines; an added comment line would violate the frozen bootstrap contract."
-  ["v1/assets/loading.scr"]="P0.08 requires an exact native 6912-byte Spectrum screen image."
   ["scratch/ZX-UX-LOADER-1.0.0-portable.zip"]="Binary owner-supplied fast-loader release migration source package cannot carry the plaintext project header; its exact SHA-256 is frozen by the adjacent migration runbook."
   ["v1/tools-host/release-tzx/text-lines.txt"]="Exact reviewed 24x32 loader display text is a byte-significant release input and cannot carry a project header."
   ["v1/tools-host/release-tzx/input/known-good-white-on-black-e003.tzx.b64"]="Exact reviewed base64 seed TZX is a byte-significant release input and cannot carry a project header."
