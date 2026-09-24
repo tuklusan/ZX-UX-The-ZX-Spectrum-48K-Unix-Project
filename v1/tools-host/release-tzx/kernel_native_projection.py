@@ -192,12 +192,13 @@ def encode_source(src:str,address:int,syms:dict[str,int])->list[bytes]:
     if mn in ("db","defb"):
         out=[]
         for arg in split_args(tail):
-            if len(arg)>=2 and arg[0] in "'\"" and arg[-1]==arg[0] and len(arg)>3:
-                # String literal: source data, not preassembled payload.
+            if len(arg)>=2 and arg[0] in "'\"" and arg[-1]==arg[0]:
+                # Character/string literal: source data, not preassembled payload.
                 value=ast.literal_eval(arg)
                 if not isinstance(value,str):raise ProjectionError(arg)
                 out.extend(rec(DB,ord(ch)) for ch in value)
-            else: out.append(rec(DB,u8(eval_expr(arg,syms,address))))
+            else:
+                out.append(rec(DB,u8(eval_expr(arg,syms,address))))
         return out
     if mn in ("dw","defw"):
         return [rec(DW,u16(eval_expr(a,syms,address))) for a in split_args(tail)]
