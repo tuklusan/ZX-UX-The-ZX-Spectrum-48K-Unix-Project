@@ -139,6 +139,10 @@ The new production bootstrap contract must state:
 10. The lower-case/case-sensitive ZX-UX object namespace remains unchanged. If the fast loader retains the Spectrum BASIC header label `ZX-UX Unix`, REV17 must explicitly classify it as a ROM/BASIC bootstrap label, not a ZX-UX object-name case-folding exception.
 11. Real-time release validation must disable emulator fast-load/trap shortcuts for the fast-loader path.
 12. Historical P0-P10 certifications remain valid under their original authority identities; the new release transport does not retroactively rewrite them.
+13. The release acceptance proof must establish exact three-way kernel identity for all 8192 bytes: `host-built kernel == TZX-embedded kernel == native-rebuilt kernel`.
+14. The native rebuild must be genuine ZX-UX execution: canonical kernel source (or a deterministic source-only native-buildable projection) -> native `as` -> real OBJ1 -> native `ld` -> fixed 8192-byte kernel image -> executable/run proof. No host-preconstructed OBJ1, MEX1, or kernel payload may satisfy this proof.
+15. Native rebuilding must occur away from the executing kernel image. Every byte offset `0..8191` must be compared, all three SHA-256 values recorded, and a controlled source/input mutation must make the equality proof fail.
+16. REV17 may add only the assembler/linker facilities required for this proof, including fixed/absolute kernel output if necessary. Any deterministic projection from canonical source must contain no preassembled kernel payload and must itself be genuinely assembled and linked natively.
 
 REV17 must remove/update all current normative statements that require:
 
@@ -161,6 +165,8 @@ Recommended sequence:
 5. Keep final M48O order/content requirements unchanged unless a transport-only wording change is necessary.
 6. Explicitly state that deletion of the current loading-screen source asset after R17.00 is a release-transport cleanup, not retroactive invalidation of P0.08 evidence.
 7. Define the exact acceptance requirements for the canonical fast-loader builder so the post-authority migration can be validated without inventing an extra Phase-11 step.
+8. Add the prospective native self-rebuild acceptance contract: build the canonical kernel with the pinned host path and require exactly 8192 bytes; embed those exact bytes in TZX and reconstruct them independently from the finished TZX; boot through the real-time acceptance path; then use ZX-UX native `as` and `ld` to assemble/link source into a second kernel image outside the executing kernel range. Require exact bytewise equality across host-built, TZX-embedded, and native-rebuilt images, record all three SHA-256 values, and require a controlled mutation negative that breaks equality.
+9. Require a separate genuine native lifecycle proof `source -> native as -> OBJ1 -> native ld -> executable -> run`, with native `as` parsing source and emitting real OBJ1 and native `ld` consuming that OBJ1. Historical P10.34 evidence remains immutable and does not satisfy or get rewritten by this new prospective proof.
 
 ### 6.4 Authority transition machinery
 
@@ -301,7 +307,20 @@ The package's fixed demonstration TZX hash is a fixture identity, not the produc
 
 Building twice from unchanged inputs must produce byte-identical TZX files.
 
-**Gate E:** Independent reparse proves output TZX contains the exact rebuilt kernel and zero seed-dummy substitution; deterministic double-build PASSes.
+### 9.7 Native self-rebuild and three-way identity proof
+
+After the finished TZX has independently reconstructed the host-built kernel and the real-time acceptance boot has reached the legitimate Phase-10 execution checkpoint, perform a native rebuild inside ZX-UX without overwriting the executing kernel:
+
+1. Build the canonical host kernel through the pinned host path and require exactly 8192 bytes.
+2. Reconstruct the embedded kernel independently from the finished TZX and compare every byte `0..8191` with the host-built image.
+3. Feed canonical kernel source directly to ZX-UX native `as` where possible. If SjASMPlus-only constructs make that impossible, deterministically generate a source-only native-buildable projection from canonical source; it must contain no preassembled kernel bytes or host-preconstructed object payloads.
+4. Native `as` must parse that source and emit a real OBJ1 file. Native `ld` must consume that native OBJ1 and emit a fixed/absolute kernel image in non-executing storage. Add only the assembler/linker facilities prospectively authorized by REV17/REV08 to make this possible.
+5. Require the native image to be exactly 8192 bytes and compare every byte against both the host-built image and the independently reconstructed TZX image. Hash equality alone is insufficient. Record all three SHA-256 values.
+6. Separately execute a genuine native lifecycle chain `source -> native as -> OBJ1 -> native ld -> executable -> run`; host-preconstructed OBJ1/MEX1 inputs are forbidden for this proof.
+7. Perform a controlled source/input mutation that must cause the three-way equality check to fail. The negative proof must demonstrate that stale/preassembled substitution cannot silently pass.
+8. Preserve historical P10.34 evidence byte-for-byte; this new proof is prospective R17/pre-release evidence and never retroactively recertifies Phase 10.
+
+**Gate E:** Independent reparse proves output TZX contains the exact rebuilt kernel and zero seed-dummy substitution; deterministic double-build PASSes; the genuine native lifecycle proof PASSes; exact 8192-byte host/TZX/native bytewise identity PASSes; controlled mismatch-negative proof PASSes.
 
 ## 10. Stage F — integrate the post-kernel ZX-UX distribution stream
 
@@ -340,9 +359,13 @@ The new workflow must:
 13. prove execution reaches `0xE003` with the exact rebuilt kernel resident;
 14. continue to the strongest legitimate Phase-10 post-handoff checkpoint available without faking Phase-11/12 functionality;
 15. if post-kernel M48O content is included, prove the first object is consumed correctly;
-16. perform three unchanged output scans;
-17. run project-policy/media-retention/relevant evidence gates;
-18. publish only the new durable pre-release bundle when every gate passes.
+18. using the booted ZX-UX environment, genuinely rebuild the kernel from source through native `as` -> real OBJ1 -> native `ld` into non-executing storage, require exactly 8192 bytes, and compare every byte with both the host-built kernel and independently reconstructed TZX kernel;
+19. record the host-built, TZX-embedded, and native-rebuilt SHA-256 values and require all three images to be byte-identical;
+20. execute a separate genuine `source -> native as -> OBJ1 -> native ld -> executable -> run` proof with no host-preconstructed OBJ1/MEX1;
+21. execute a controlled mutation negative and require the three-way equality gate to fail;
+22. perform three unchanged output scans;
+23. run project-policy/media-retention/relevant evidence gates;
+24. publish only the new durable pre-release bundle when every gate passes, then explicitly re-check that no Phase-11 state exists and terminate without dispatching or creating any Phase-11 work.
 
 Do not use Fuse `--fastload`, tape traps or automatic loader shortcuts as the acceptance proof for this workflow.
 
@@ -381,7 +404,11 @@ The new manifest must include at least:
 - independent embedded-kernel reconstruction PASS;
 - real-time loader-to-E003 PASS;
 - dummy-payload rejection PASS;
-- post-kernel/M48O checks applicable to the pre-release.
+- post-kernel/M48O checks applicable to the pre-release;
+- host-built kernel SHA-256, TZX-embedded kernel SHA-256, and native-rebuilt kernel SHA-256;
+- exact 8192-byte three-way bytewise identity PASS;
+- genuine native `source -> as -> OBJ1 -> ld -> executable -> run` PASS;
+- controlled mutation/mismatch-negative PASS.
 
 ## 13. Stage I — remove obsolete non-certification release/pre-release material
 
@@ -451,7 +478,13 @@ Before calling the migration complete, all of these must PASS against one unchan
 - coverage exactly `0xE000-0xFFFF`;
 - final handoff exactly `0xE003`;
 - per-block check/CRC algorithm independently verified;
-- deterministic double-build byte identity.
+- deterministic double-build byte identity;
+- host-built kernel, independently reconstructed TZX kernel, and native-rebuilt kernel are each exactly 8192 bytes and identical at every byte offset `0..8191`;
+- all three kernel SHA-256 values are recorded and equal;
+- native `as` genuinely parses source and emits real OBJ1, native `ld` genuinely consumes native OBJ1 and emits the fixed kernel image away from the executing kernel;
+- no host-preconstructed OBJ1/MEX1/kernel payload participates in the new native proof;
+- genuine `source -> native as -> OBJ1 -> native ld -> executable -> run` PASS;
+- controlled source/input mutation causes the equality proof to fail.
 
 ### Real-time execution
 
@@ -610,6 +643,7 @@ This runbook is DONE only when all of the following are simultaneously true:
 - obsolete P9/P10 non-certification distribution artifacts/workflows are removed;
 - historical certification evidence and retained step media remain immutable;
 - all mandatory repository, toolchain, deterministic-build, TZX-structure and real-time execution validations PASS;
+- genuine native `source -> as -> OBJ1 -> ld -> executable -> run` PASSes using native-produced OBJ1, and host-built, TZX-embedded, and native-rebuilt kernels are exactly identical for all 8192 bytes with a controlled mismatch-negative PASS;
 - `PHASE-10-COMPLETE` remains unchanged;
 - Stage L's full infrastructure/document repository walk is complete with all current-state contradictions resolved or explicitly classified as historical; and
 - no Phase-11 implementation, qualification, evidence, media, admission or activation state exists.
