@@ -11,6 +11,7 @@
 # patent, trademark, and governing-law provisions.
 
 name: R17.00 one-shot qualification dispatch
+# Retry after qualification gate repair.
 on:
   push:
     branches: [main]
