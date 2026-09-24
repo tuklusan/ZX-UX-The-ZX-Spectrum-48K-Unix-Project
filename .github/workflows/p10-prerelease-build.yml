@@ -497,6 +497,13 @@ jobs:
           rm -rf v1/dist/media/P10.pre-release
           cp -a /tmp/p10-prerelease/P10.pre-release v1/dist/media/P10.pre-release
           python3 tools/check_media_retention.py
+          runtime_hold=/tmp/zxux-runtime-policy-check
+          rm -rf "$runtime_hold"
+          mv tools/runtime "$runtime_hold"
+          trap 'mv "$runtime_hold" tools/runtime' EXIT
+          ./tools/check_project_policy.py
+          mv "$runtime_hold" tools/runtime
+          trap - EXIT
           git add v1/dist/media/P10.pre-release
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
