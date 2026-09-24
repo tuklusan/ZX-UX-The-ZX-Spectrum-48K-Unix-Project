@@ -1661,3 +1661,103 @@ ld_p1028_format:
 
 ld_p1028_entry: dw 0
     ENDM
+
+
+; P10.29 linker-reserved heap symbols.
+    MACRO EMIT_P10_LD_HEAP_SYMBOL_ROUTINES
+LD_P1029_DEF_SIZE EQU 23
+
+; DE=defined-global table, B=count. Exact reserved names may never be user-defined.
+ld_p1029_reject_reserved_defs:
+    ld (ld_p1029_defs),de
+    ld a,b
+    ld (ld_p1029_count),a
+    xor a
+    ld (ld_p1029_index),a
+ld_p1029_scan:
+    ld a,(ld_p1029_index)
+    ld c,a
+    ld a,(ld_p1029_count)
+    cp c
+    jp z,ld_p1029_scan_ok
+    ld a,c
+    call ld_p1029_record_ptr
+    push hl
+    ld de,ld_p1029_heap_start_name
+    call ld_p1029_name_equal
+    pop hl
+    jp z,ld_p1029_reserved
+    ld de,ld_p1029_heap_end_name
+    call ld_p1029_name_equal
+    jp z,ld_p1029_reserved
+    ld a,(ld_p1029_index)
+    inc a
+    ld (ld_p1029_index),a
+    jp ld_p1029_scan
+ld_p1029_scan_ok:
+    xor a
+    ret
+
+; HL=image_size, DE=heap base relative to BSS start, BC=heap size.
+; The synthesized globals are final link-base-zero values.
+ld_p1029_assign_heap:
+    add hl,de
+    jp c,ld_p1029_nospc
+    ld (ld_p1029_heap_start),hl
+    add hl,bc
+    jp c,ld_p1029_nospc
+    ld (ld_p1029_heap_end),hl
+    xor a
+    ret
+
+ld_p1029_record_ptr:
+    ld b,a
+    ld hl,0
+    ld de,LD_P1029_DEF_SIZE
+ld_p1029_record_mul:
+    ld a,b
+    or a
+    jp z,ld_p1029_record_add
+    add hl,de
+    djnz ld_p1029_record_mul
+ld_p1029_record_add:
+    ld de,(ld_p1029_defs)
+    add hl,de
+    ret
+
+; HL/DE point at exact 16-byte names; case-sensitive.
+ld_p1029_name_equal:
+    ld b,16
+ld_p1029_name_loop:
+    ld a,(de)
+    cp (hl)
+    jp nz,ld_p1029_name_ne
+    inc hl
+    inc de
+    djnz ld_p1029_name_loop
+    xor a
+    ret
+ld_p1029_name_ne:
+    ld a,1
+    or a
+    ret
+
+ld_p1029_reserved:
+    ld a,E_FORMAT
+    scf
+    ret
+ld_p1029_nospc:
+    ld a,E_NOSPC
+    scf
+    ret
+
+ld_p1029_heap_start_name:
+    db "__heap_start",0,0,0,0
+ld_p1029_heap_end_name:
+    db "__heap_end",0,0,0,0,0,0
+ld_p1029_defs:       dw 0
+ld_p1029_count:      db 0
+ld_p1029_index:      db 0
+ld_p1029_heap_start: dw 0
+ld_p1029_heap_end:   dw 0
+    ENDM
