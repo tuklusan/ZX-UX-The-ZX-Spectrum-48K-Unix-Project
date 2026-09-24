@@ -445,7 +445,14 @@ def main()->int:
         if len(kernel)!=KERNEL_SIZE:raise ProjectionError("kernel oracle size")
         if reference!=kernel:
             n=min(len(reference),len(kernel));off=next((i for i in range(n) if reference[i]!=kernel[i]),n)
-            raise ProjectionError(f"semantic source projection differs from kernel oracle at offset {off:#x}")
+            addr=KERNEL_BASE+off
+            owner=next((x for x in audit if x["address"] <= addr < x["address"]+x["length"]),None)
+            got=reference[off] if off < len(reference) else None
+            want=kernel[off] if off < len(kernel) else None
+            raise ProjectionError(
+                f"semantic source projection differs from kernel oracle at offset {off:#x} "
+                f"address {addr:#06x}: semantic={got!r} kernel={want!r} record={owner!r}"
+            )
         report["kernel_oracle_sha256"]=hashlib.sha256(kernel).hexdigest()
         report["semantic_reference_equals_kernel_oracle"]=True
     args.audit.write_text(json.dumps(report,indent=2,sort_keys=True)+"\n",encoding="utf-8")
