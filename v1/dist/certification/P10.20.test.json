@@ -1,0 +1,98 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "exclusive-temp-create-contract",
+      "passed": true
+    },
+    {
+      "name": "only-eexist-retried",
+      "passed": true
+    },
+    {
+      "name": "complete-write-close-validate-rename-order",
+      "passed": true
+    },
+    {
+      "name": "owned-temp-only-cleanup",
+      "passed": true
+    },
+    {
+      "name": "destination-never-opened",
+      "passed": true
+    },
+    {
+      "name": "full-obj1-revalidation",
+      "passed": true
+    },
+    {
+      "name": "host-golden-valid-obj1",
+      "passed": true
+    },
+    {
+      "name": "fuse-success-commit-after-close-validation",
+      "passed": true
+    },
+    {
+      "name": "fuse-temp-collision-retry-without-removal",
+      "passed": true
+    },
+    {
+      "name": "fuse-write-failure-preserves-destination",
+      "passed": true
+    },
+    {
+      "name": "fuse-rename-failure-preserves-destination",
+      "passed": true
+    },
+    {
+      "name": "fuse-postwrite-format-failure-blocks-rename",
+      "passed": true
+    },
+    {
+      "name": "fuse-allocation-failure-preserves-destination",
+      "passed": true
+    },
+    {
+      "name": "fuse-preflight-format-failure-has-no-output-side-effect",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1020-transaction.sym",
+        "p1020-transaction.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 7,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 4355 lines, work time: 0.006 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/as.asm": "2eec326a18df28133ba1f57e5d0b64c42cc7853cbcd649880ecd045767c4ca30",
+    "v1/build/p1020-gateway.bin": "ee525b71ebe5b7ae80b878d220755c14965880a4687419b6ebf0b799f0ad72b8",
+    "v1/build/p1020-main.bin": "10b69dd97eac9c2d44dd12cb202e811fe40e5953db60c1fa111aa4e05927e07d",
+    "v1/dist/certification/P10.19.build.json": "0bac984aa5ed43deb0217fefc7ee6b14d6da229248174662726369b4edc92cb6",
+    "v1/dist/certification/P10.19.test.json": "73dadf37138a1d8308ef205d327742e22a75b56db454ba5feac62bfa50bb9eff",
+    "v1/include/zx48ux.inc": "3238f36ca591f64dbdcb9aba95c6037675d7d27b326472e594651619c87f39fb",
+    "v1/tools-host/inspect-obj/inspect.py": "29b4eb6094ef4204486c6be044c4db799c982692e3aa3278849c60273d540566",
+    "v1/tools-host/test-driver/phase10_step_20.py": "57886d4e6fe5affa7cf768bddf576e0cabc455f7b7e6798ccf72d3500d4b2738"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P10.19": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "1841350a9017bf297bb0158c5a82bf750a03fce1",
+  "status": "PASS",
+  "step": "P10.20",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
