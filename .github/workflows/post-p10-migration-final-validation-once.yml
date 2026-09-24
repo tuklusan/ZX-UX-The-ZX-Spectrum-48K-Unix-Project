@@ -1,0 +1,106 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: Post-Phase-10 migration final validation once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/post-p10-migration-final-validation-once.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zxux-post-p10-migration-final-validation
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      ZXUX_SOURCE_EPOCH: current
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Exact-head and immutable-boundary guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git fetch --quiet origin main
+          test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
+          test "$(git rev-parse refs/tags/PHASE-10-COMPLETE)" = 8360b0c5817738b01dc4b75bb64b12d77341adcd
+          test ! -n "$(git ls-files | grep -Ei '(^|/)(P11(\.|/)|p11[^/]*qualification|phase-?11)' || true)"
+          test -z "$(git status --porcelain)"
+
+      - name: Repository policy and evidence gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+          python3 tools/check_media_retention.py
+          python3 tools/check_phase10_evidence.py --require-active
+          python3 v1/tools-host/test-driver/evidence.py v1/dist/certification/R17.00.result.json
+          python3 -m py_compile tools/post_p10_repo_walk.py
+          python3 tools/post_p10_repo_walk.py --report /tmp/post-p10-repo-walk.json
+
+      - uses: ./.github/actions/setup-zxux-runtime
+
+      - name: Certified environment and canonical kernel reproducibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          tools/runtime/python/bin/python tools/scripts/verify-environment.py
+          mkdir -p /tmp/final-kernel-a /tmp/final-kernel-b
+          (
+            cd v1/src/kernel
+            "$GITHUB_WORKSPACE/tools/runtime/sjasmplus/bin/sjasmplus" --nologo kernel.asm
+          )
+          test "$(wc -c < v1/build/kernel.bin)" -eq 8192
+          cp v1/build/kernel.bin /tmp/final-kernel-a/kernel.bin
+          rm -f v1/build/kernel.bin
+          (
+            cd v1/src/kernel
+            "$GITHUB_WORKSPACE/tools/runtime/sjasmplus/bin/sjasmplus" --nologo kernel.asm
+          )
+          test "$(wc -c < v1/build/kernel.bin)" -eq 8192
+          cp v1/build/kernel.bin /tmp/final-kernel-b/kernel.bin
+          cmp /tmp/final-kernel-a/kernel.bin /tmp/final-kernel-b/kernel.bin
+          test "$(sha256sum /tmp/final-kernel-a/kernel.bin | awk '{print $1}')" = ae3c54f9cd50eade1e543d9ac3c6ff58c83d63d6951c707b192ef5f9e26d4806
+          rm -rf v1/build
+          test -z "$(git status --porcelain)"
+
+      - name: Final exact-head and no-Phase-11 gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --quiet origin main
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
+          test "$(git rev-parse refs/tags/PHASE-10-COMPLETE)" = 8360b0c5817738b01dc4b75bb64b12d77341adcd
+          test ! -n "$(git ls-files | grep -Ei '(^|/)(P11(\.|/)|p11[^/]*qualification|phase-?11)' || true)"
+          test -z "$(git status --porcelain)"
+          echo "ZX-UX POST-PHASE10 MIGRATION FINAL VALIDATION PASS"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        if: always()
+        with:
+          name: zxux-post-p10-repo-walk-${{ github.run_id }}-${{ github.run_attempt }}
+          path: /tmp/post-p10-repo-walk.json
+          retention-days: 90
+          if-no-files-found: warn
