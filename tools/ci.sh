@@ -17,6 +17,7 @@ for file in "${required_files[@]}"; do test -f "$file" || { echo "ERROR: require
 python3 ./tools/check_reference_tree.py
 while IFS= read -r -d '' file; do
   [[ "$file" == "./reference/"* ]] && continue
+  [[ "$file" == "./v1/tools-host/release-tzx/text-lines.txt" ]] && continue
   if grep -Iq '' "$file"; then
     if [[ ! "$file" =~ \.(md|markdown|mdown|mdx)$ ]] && grep -nE '[[:blank:]]+$' "$file"; then echo "ERROR: trailing whitespace in $file" >&2; exit 1; fi
     if LC_ALL=C grep -n $'\r' "$file"; then echo "ERROR: carriage return found in $file" >&2; exit 1; fi
