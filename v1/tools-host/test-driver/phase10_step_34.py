@@ -86,6 +86,24 @@ def db(data):
     return ",".join(f"$%02X" % b for b in data)
 
 
+def tap_to_tzx(tap):
+    out = bytearray(b"ZXTape!\x1a\x01\x14")
+    pos = 0
+    while pos < len(tap):
+        require(pos + 2 <= len(tap), "truncated TAP length")
+        size = struct.unpack_from("<H", tap, pos)[0]
+        pos += 2
+        require(pos + size <= len(tap), "truncated TAP block")
+        block = tap[pos:pos + size]
+        pos += size
+        out.append(0x10)
+        out += struct.pack("<H", 1000)
+        out += struct.pack("<H", len(block))
+        out += block
+    require(pos == len(tap), "TAP trailing parse mismatch")
+    return bytes(out)
+
+
 def load_module(path, name):
     spec = importlib.util.spec_from_file_location(name, path)
     require(spec is not None and spec.loader is not None, f"cannot load {path}")
@@ -287,6 +305,10 @@ p1034_gateway_end:
         ))
         tape = build / "p1034-lifecycle.tap"
         tape.write_bytes(tape_bytes)
+        tzx = build / "p1034-lifecycle.tzx"
+        tzx_bytes = tap_to_tzx(tape_bytes)
+        tzx.write_bytes(tzx_bytes)
+        require(tzx_bytes.startswith(b"ZXTape!\x1a\x01\x14\x10"), "TZX standard-speed header")
         decoded = phase5_roundtrip.parse_stream(maketap, tape_bytes)
         require(decoded == [("hello", maketap.M48O_BIN, maketap.DIR_BIN, mex)], "cassette reload exact bytes")
         require(crc16(decoded[0][3]) == crc16(mex), "cassette roundtrip CRC")
@@ -301,6 +323,7 @@ p1034_gateway_end:
             {"name":"fuse-on-target-source-as-ld-run-lifecycle","passed":True},
             {"name":"cassette-save-reload-exact-case","passed":True},
             {"name":"cassette-output-crc-exact","passed":True},
+            {"name":"tap-and-tzx-retained","passed":True},
             {"name":"reloaded-executable-runs-cleanly","passed":True},
             {"name":"wrong-case-reload-miss","passed":True},
         ]
@@ -315,4 +338,6 @@ p1034_gateway_end:
     }
     if (build / "p1034-lifecycle.tap").is_file():
         hashes["v1/build/p1034-lifecycle.tap"] = sha256_file(build / "p1034-lifecycle.tap")
+    if (build / "p1034-lifecycle.tzx").is_file():
+        hashes["v1/build/p1034-lifecycle.tzx"] = sha256_file(build / "p1034-lifecycle.tzx")
     return commands, hashes, assertions
