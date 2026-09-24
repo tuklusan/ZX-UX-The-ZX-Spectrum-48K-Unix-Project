@@ -1,0 +1,64 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "exact-one-input-gate",
+      "passed": true
+    },
+    {
+      "name": "explicit-asm-type-gate",
+      "passed": true
+    },
+    {
+      "name": "exact-lowercase-default-suffix",
+      "passed": true
+    },
+    {
+      "name": "default-obj-suffix",
+      "passed": true
+    },
+    {
+      "name": "explicit-name-max-ten",
+      "passed": true
+    },
+    {
+      "name": "output-type-is-obj",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1019-names.sym",
+        "p1019-names.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 7,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 3042 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/as.asm": "c8387256252fd4cc285324ccb59c29ac08cf7ed8589f58b3af1781465aa5be6e",
+    "v1/build/p1019-names.bin": "e03d12c381678270e70d4360ee604d9b1b1fd96cbd9c88d52ae106c6b31cee9d",
+    "v1/dist/certification/P10.18.build.json": "1423fea281447be3928c2e8973c81b7ad6181a5007ef7cd241bc608216c151e1",
+    "v1/dist/certification/P10.18.test.json": "7e857c3ba54e1d7c5b7e329af9e0b1307719d8a24a4c8b455521527269a003e0",
+    "v1/include/zx48ux.inc": "3238f36ca591f64dbdcb9aba95c6037675d7d27b326472e594651619c87f39fb",
+    "v1/tools-host/test-driver/phase10_step_19.py": "d39ab691ebf4beacfc9d570b190874749f138045eff9a6b78b014978ccd1ac13"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P10.18": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "2d18ff01667bda36a69de55f83d94c43b8b72071",
+  "status": "PASS",
+  "step": "P10.19",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
