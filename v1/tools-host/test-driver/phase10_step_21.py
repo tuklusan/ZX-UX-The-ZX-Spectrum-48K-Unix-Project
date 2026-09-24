@@ -218,13 +218,13 @@ fixture_end:
     ORG $E000
 p1021_gateway:
     cp SYS_STAT
-    jr z,p1021_sys_stat
+    jp z,p1021_sys_stat
     cp SYS_OPEN
-    jr z,p1021_sys_open
+    jp z,p1021_sys_open
     cp SYS_READ
-    jr z,p1021_sys_read
+    jp z,p1021_sys_read
     cp SYS_CLOSE
-    jr z,p1021_sys_close
+    jp z,p1021_sys_close
     ld a,E_NOTSUP
     scf
     ret
@@ -241,7 +241,7 @@ p1021_sys_stat:
     ld a,(p1021_mode)
     cp 1
     ld a,OBJ_TXT
-    jr z,p1021_stat_store
+    jp z,p1021_stat_store
     ld a,OBJ_OBJ
 p1021_stat_store:
     ld (de),a
@@ -254,10 +254,10 @@ p1021_sys_open:
     ld (p1021_open_calls),a
     ld a,c
     cp O_READ
-    jr nz,p1021_sys_format
+    jp nz,p1021_sys_format
     ld a,b
     or a
-    jr nz,p1021_sys_format
+    jp nz,p1021_sys_format
     ld hl,4
     xor a
     ret
@@ -268,23 +268,23 @@ p1021_sys_read:
     ld (p1021_read_calls),a
     ld a,d
     or a
-    jr nz,p1021_sys_format
+    jp nz,p1021_sys_format
     ld a,e
     cp 4
-    jr nz,p1021_sys_format
+    jp nz,p1021_sys_format
     ld a,(p1021_mode)
     cp 3
-    jr z,p1021_read_overflow
+    jp z,p1021_read_overflow
     ld a,(p1021_read_done)
     or a
-    jr nz,p1021_read_eof
+    jp nz,p1021_read_eof
     ld a,1
     ld (p1021_read_done),a
     ex de,hl
     ld a,(p1021_mode)
     cp 2
     ld hl,p1021_source
-    jr nz,p1021_read_copy
+    jp nz,p1021_read_copy
     ld hl,p1021_bad_source
 p1021_read_copy:
     ld bc,p1021_source_end-p1021_source
@@ -300,7 +300,7 @@ p1021_read_eof:
 p1021_read_overflow:
     ld a,(p1021_read_done)
     or a
-    jr nz,p1021_read_extra
+    jp nz,p1021_read_extra
     ld a,1
     ld (p1021_read_done),a
     ex de,hl
