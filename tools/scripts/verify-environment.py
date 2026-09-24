@@ -25,8 +25,11 @@ import sys
 
 ROOT_MARKER = b"ZX-UX project root"
 CANONICAL_LOCK = Path("tools/manifest/toolchain.lock.json")
-ARCHITECTURE = Path("docs/01-ZX-UX-ARCHITECTURE-REV16.md")
-ARCHITECTURE_SHA256 = "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c"
+ARCHITECTURES = {
+    "historical": (Path("docs/01-ZX-UX-ARCHITECTURE-REV12.md"), "a90d523f62a95e8cba6af0312b596a2d5f6bc1aa2ef92f39bb391509b7c15e1b"),
+    "rev16": (Path("docs/01-ZX-UX-ARCHITECTURE-REV16.md"), "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c"),
+    "current": (Path("docs/01-ZX-UX-ARCHITECTURE-REV17.md"), "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8"),
+}
 FINAL_MARKER = "ZX-UX DEVELOPMENT ENVIRONMENT CERTIFICATION PASS"
 REQUIRED_ARTIFACTS = {
     "python": ("source", "tools/runtime/python"),
@@ -135,14 +138,10 @@ def load_manifest(root: Path, requested: str | None) -> tuple[Path, dict, dict[s
     return candidate_path, candidate, by_id
 
 
-def verify_architecture(path: Path) -> str:
+def verify_architecture(path: Path, expected: str) -> str:
     require(path.is_file() and not path.is_symlink(), "canonical architecture file missing")
     actual = digest(path)
-    require(
-        actual == ARCHITECTURE_SHA256,
-        "canonical architecture SHA-256 mismatch: "
-        f"expected={ARCHITECTURE_SHA256} actual={actual}",
-    )
+    require(actual == expected, f"canonical architecture SHA-256 mismatch: expected={expected} actual={actual}")
     return actual
 
 
@@ -196,8 +195,11 @@ def main() -> int:
     try:
         root = find_root(Path(__file__).resolve())
         manifest_path, _, artifacts = load_manifest(root, args.manifest)
-        architecture = root / ARCHITECTURE
-        architecture_sha256 = verify_architecture(architecture)
+        epoch = os.environ.get("ZXUX_SOURCE_EPOCH", "current")
+        require(epoch in ARCHITECTURES, f"unknown ZXUX_SOURCE_EPOCH: {epoch}")
+        architecture_rel, architecture_expected = ARCHITECTURES[epoch]
+        architecture = root / architecture_rel
+        architecture_sha256 = verify_architecture(architecture, architecture_expected)
         if not args.metadata_only:
             validate_runtime(root, artifacts)
         print(f"root={root}")
