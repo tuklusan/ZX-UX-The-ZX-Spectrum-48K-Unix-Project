@@ -1,0 +1,71 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "default-name-exact-start",
+      "passed": true
+    },
+    {
+      "name": "uses-case-sensitive-resolver",
+      "passed": true
+    },
+    {
+      "name": "entry-must-be-text",
+      "passed": true
+    },
+    {
+      "name": "resolved-entry-published",
+      "passed": true
+    },
+    {
+      "name": "fuse-normal-start-entry-exact",
+      "passed": true
+    },
+    {
+      "name": "fuse-missing-start-rejected",
+      "passed": true
+    },
+    {
+      "name": "fuse-duplicate-start-rejected",
+      "passed": true
+    },
+    {
+      "name": "fuse-nontext-start-rejected",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1027-entry.sym",
+        "p1027-entry.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 6,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2248 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/ld.asm": "18914faaa85131fa7d184f994ec74218d9936bf5a8384a8cc25438be7da8c748",
+    "v1/build/p1027-main.bin": "6a8a73c89f1c2292741b84fc2a8aca25c7ac727751cab4c167d0ea03be5b1d26",
+    "v1/dist/certification/P10.26.build.json": "efc51e4230a5cc0717741f0ee2e7d9cd84c8156e014bff5c31e891749243dd19",
+    "v1/dist/certification/P10.26.test.json": "657cd71238676883033a46daf121c68e25f22718705b5d548df8a3afc3cd14ce",
+    "v1/tools-host/test-driver/phase10_step_27.py": "51200b536041f11d11b8cb65f5a4441152b74c0562bed67aea4a606ef1816d4d"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P10.26": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "da0fe86f946d6dece8a2fe476719ed03ea930f6a",
+  "status": "PASS",
+  "step": "P10.27",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
