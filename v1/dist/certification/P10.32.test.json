@@ -1,0 +1,72 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "mex1-magic-version-header",
+      "passed": true
+    },
+    {
+      "name": "deterministic-image-reloc-layout",
+      "passed": true
+    },
+    {
+      "name": "body-and-header-crc",
+      "passed": true
+    },
+    {
+      "name": "reloc-valid-before-write",
+      "passed": true
+    },
+    {
+      "name": "host-inspect-base-6000",
+      "passed": true
+    },
+    {
+      "name": "host-inspect-base-7000",
+      "passed": true
+    },
+    {
+      "name": "fuse-native-writer-byte-exact",
+      "passed": true
+    },
+    {
+      "name": "fuse-invalid-relocation-rejected-before-commit",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1032-mex1.sym",
+        "p1032-mex1.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2893 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/ld.asm": "6e31c672068cf688143adcef1e31ea8babff949b1a958b6fa85274d489b87386",
+    "v1/build/p1032-main.bin": "7a00bc7d097bf3d72197f16b5475545f91743f11ae97403e26d99d6dc0d625e6",
+    "v1/dist/certification/P10.31.build.json": "7a6926534b37a12acb28d4cb0f66eedc703aa98fb4d0ba8bcc5e9d6875bd7ac0",
+    "v1/dist/certification/P10.31.test.json": "e6f06cb5c38c55af60ba36d8635fb304138c682bc012318328380281983436b4",
+    "v1/tools-host/inspect-mex/inspect.py": "9ae7d5564675d4dd2017c4605c55c87ae4ca9d6482b451cfbaeb362ab3853b5d",
+    "v1/tools-host/test-driver/phase10_step_32.py": "f21f06be58d0991115ccfa0cc65056198736978a7dcd09780010f91a052d70d2"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P10.31": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "c375413329b83094527d64952b284a3b3747066e",
+  "status": "PASS",
+  "step": "P10.32",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
