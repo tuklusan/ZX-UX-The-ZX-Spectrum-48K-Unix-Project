@@ -144,7 +144,7 @@ def main() -> int:
     try:
         requirements = plan_requirements()
         if not requirements:
-            raise MediaError("no P6-P12 emulator-artifact requirements parsed from REV07")
+            raise MediaError("no P6-P12 emulator-artifact requirements parsed from active REV08 plan")
 
         existing_steps: set[str] = set()
         if MEDIA.exists():
