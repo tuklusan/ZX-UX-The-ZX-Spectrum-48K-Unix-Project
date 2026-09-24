@@ -1,0 +1,229 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: Release TZX tooling qualification
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zxux-release-tzx-qualification
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      DISPLAY: ":99"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Guard authority checkpoint and no Phase 11
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f v1/dist/certification/R17.00.result.json
+          python3 v1/tools-host/test-driver/evidence.py v1/dist/certification/R17.00.result.json
+          test "$(git rev-parse refs/tags/PHASE-10-COMPLETE)" = 8360b0c5817738b01dc4b75bb64b12d77341adcd
+          test "$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV17.md | awk '{print $1}')" = d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8
+          test "$(sha256sum docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV08.md | awk '{print $1}')" = 97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c
+          test ! -n "$(git ls-files | grep -Ei '(^|/)(P11(\.|/)|p11[^/]*qualification|phase-?11)' || true)"
+          test "$(sha256sum scratch/ZX-UX-LOADER-1.0.0-portable.zip | awk '{print $1}')" = 4c83a681f718192db9ebb32f0c8bc565baf2e68eb85de480322a1102d32f00c7
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+          python3 tools/check_media_retention.py
+          test -z "$(git status --porcelain)"
+
+      - name: Restore certified ZX-UX runtime
+        uses: ./.github/actions/setup-zxux-runtime
+
+      - name: Install release-scoped Pasmo and UI-only validation helpers
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends             pasmo=0.5.3-7             xvfb=2:21.1.12-1ubuntu1.6             xdotool=1:3.20160805.1-5build1
+          test "$(dpkg-query -W -f='${Version}' pasmo)" = 0.5.3-7
+          test "$(dpkg-query -W -f='${Version}' xvfb)" = 2:21.1.12-1ubuntu1.6
+          test "$(dpkg-query -W -f='${Version}' xdotool)" = 1:3.20160805.1-5build1
+
+      - name: Build canonical kernel and deterministic TZX twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p v1/build /tmp/release-tzx/a /tmp/release-tzx/b
+          (
+            cd v1/src/kernel
+            "$GITHUB_WORKSPACE/tools/runtime/sjasmplus/bin/sjasmplus"               --nologo --lst=../../build/kernel.lst --sym=../../build/kernel.sym kernel.asm
+          )
+          test "$(wc -c < v1/build/kernel.bin)" -eq 8192
+          tools/runtime/python/bin/python -m py_compile             v1/tools-host/release-tzx/build.py             v1/tools-host/release-tzx/inspect_tzx.py
+          tools/runtime/python/bin/python v1/tools-host/release-tzx/build.py             --kernel v1/build/kernel.bin             --output /tmp/release-tzx/a/release.tzx             --hook-output /tmp/release-tzx/a/hook.bin             --manifest /tmp/release-tzx/a/build.json
+          tools/runtime/python/bin/python v1/tools-host/release-tzx/build.py             --kernel v1/build/kernel.bin             --output /tmp/release-tzx/b/release.tzx             --hook-output /tmp/release-tzx/b/hook.bin             --manifest /tmp/release-tzx/b/build.json
+          cmp /tmp/release-tzx/a/release.tzx /tmp/release-tzx/b/release.tzx
+          cmp /tmp/release-tzx/a/hook.bin /tmp/release-tzx/b/hook.bin
+          cmp /tmp/release-tzx/a/build.json /tmp/release-tzx/b/build.json
+          tools/runtime/python/bin/python v1/tools-host/release-tzx/inspect_tzx.py             /tmp/release-tzx/a/release.tzx             --kernel v1/build/kernel.bin             --extract /tmp/release-tzx/a/reconstructed-kernel.bin
+          cmp v1/build/kernel.bin /tmp/release-tzx/a/reconstructed-kernel.bin
+          test "$(wc -c < /tmp/release-tzx/a/reconstructed-kernel.bin)" -eq 8192
+          test "$(sha256sum v1/build/kernel.bin | awk '{print $1}')" =                "$(sha256sum /tmp/release-tzx/a/reconstructed-kernel.bin | awk '{print $1}')"
+
+      - name: Independently prove loader check and negative rejection
+        shell: bash
+        run: |
+          set -euo pipefail
+          tools/runtime/python/bin/python - <<'PY'
+          import base64,hashlib,importlib.util,sys,zipfile
+          from pathlib import Path
+
+          root=Path.cwd()
+          p=root/'v1/tools-host/release-tzx/inspect_tzx.py'
+          spec=importlib.util.spec_from_file_location('zxux_release_inspect',p)
+          mod=importlib.util.module_from_spec(spec); sys.modules[spec.name]=mod; spec.loader.exec_module(mod)
+
+          seed=base64.b64decode((root/'v1/tools-host/release-tzx/input/known-good-white-on-black-e003.tzx.b64').read_bytes(),validate=False)
+          assert hashlib.sha256(seed).hexdigest()=='7ffe2f90b58e87a19a090ca0e0f1323605754af7d8809f3f051662f9faaec6f1'
+          blocks=mod.parse_tzx(seed)
+          gen=[mod.generalized_data(b[3]) for b in blocks if b[0]==0x19]
+          assert len(gen)==48
+          headers,chunks=gen[0::2],gen[1::2]
+          assert hashlib.sha256(b''.join(chunks)).hexdigest()=='0e59ef9290ffc4391b0ae999177cd9d7d9eafb6fcd86a45b13f9a4bd0b08c9ce'
+          for i,(h,c) in enumerate(zip(headers,chunks)):
+              assert len(h)==17
+              assert h[7]==mod.loader_check(c), i
+
+          with zipfile.ZipFile(root/'scratch/ZX-UX-LOADER-1.0.0-portable.zip') as z:
+              dummy=z.read('ZX-UX-LOADER-1.0.0/projects/zx-fast-loader/output/dummy_e000_8k_idle.bin')
+          assert hashlib.sha256(dummy).hexdigest()=='0e59ef9290ffc4391b0ae999177cd9d7d9eafb6fcd86a45b13f9a4bd0b08c9ce'
+          Path('/tmp/release-tzx/dummy.bin').write_bytes(dummy)
+          PY
+          ! tools/runtime/python/bin/python v1/tools-host/release-tzx/build.py             --kernel /tmp/release-tzx/dummy.bin             --output /tmp/release-tzx/forbidden.tzx
+
+          cp /tmp/release-tzx/a/release.tzx /tmp/release-tzx/bad-check.tzx
+          tools/runtime/python/bin/python - <<'PY'
+          import importlib.util,sys
+          from pathlib import Path
+          p=Path('v1/tools-host/release-tzx/build.py')
+          spec=importlib.util.spec_from_file_location('zxux_release_build',p)
+          mod=importlib.util.module_from_spec(spec); sys.modules[spec.name]=mod; spec.loader.exec_module(mod)
+          path=Path('/tmp/release-tzx/bad-check.tzx')
+          data=bytearray(path.read_bytes())
+          gen=[b for b in mod.parse_tzx(data) if b[0]==0x19]
+          payload=gen[1]
+          start,count=mod.generalized_data_span(payload[3])
+          data[payload[4]+start] ^= 0x01
+          path.write_bytes(data)
+          PY
+          ! tools/runtime/python/bin/python v1/tools-host/release-tzx/inspect_tzx.py             /tmp/release-tzx/bad-check.tzx
+
+      - name: Real-time Fuse proof to E003 with loader shortcuts disabled
+        shell: bash
+        run: |
+          set -euo pipefail
+          diag=/tmp/release-tzx/realtime
+          mkdir -p "$diag"
+          Xvfb :99 -screen 0 1280x900x24 >"$diag/xvfb.log" 2>&1 &
+          xvfb_pid=$!
+          sleep 1
+          cat >"$diag/debugger.txt" <<'EOF'
+          breakpoint 0xe003
+          breakpoint 0x5ce7
+          breakpoint 0x0556
+          breakpoint time 0 if spectrum:frames > 6500
+          commands 1
+          print 0x51515151
+          print z80:pc
+          print [0xe000]
+          print [0xffff]
+          exit 0
+          end
+          commands 2
+          print 0x61616161
+          continue
+          end
+          commands 3
+          print 0x62626262
+          continue
+          end
+          commands 4
+          print 0x52525252
+          print z80:pc
+          print spectrum:frames
+          exit 3
+          end
+          continue
+          EOF
+          stdbuf -oL -eL tools/runtime/fuse/bin/fuse --machine 48             --rom-48 tools/runtime/fuse/roms/48.rom             --tape /tmp/release-tzx/a/release.tzx             --no-accelerate-loader --no-fastload --no-traps --no-detect-loader             --no-confirm-actions --no-sound             --debugger-command "$(cat "$diag/debugger.txt")"             >"$diag/fuse-state.log" 2>&1 &
+          fuse_pid=$!
+          window=""
+          for i in $(seq 1 40); do
+            window="$(xdotool search --onlyvisible --name '^Fuse$' 2>/dev/null | head -n1 || true)"
+            test -n "$window" && break
+            sleep 0.25
+          done
+          test -n "$window"
+          xdotool windowfocus --sync "$window" || true
+          xdotool mousemove --window "$window" 160 145 click 1 || true
+          sleep 0.75
+          xdotool keydown Shift_L; sleep 0.25; xdotool keyup Shift_L; sleep 0.60
+          xdotool keydown j; sleep 0.45; xdotool keyup j; sleep 0.60
+          xdotool key --delay 300 ctrl+p; sleep 0.60
+          xdotool key --delay 300 ctrl+p; sleep 0.60
+          xdotool keydown Return; sleep 0.45; xdotool keyup Return
+          rom_waiting=""
+          for i in $(seq 1 40); do
+            if grep -q '0x62626262' "$diag/fuse-state.log"; then rom_waiting=yes; break; fi
+            kill -0 "$fuse_pid" 2>/dev/null || break
+            sleep 0.25
+          done
+          test "$rom_waiting" = yes
+          xdotool windowfocus --sync "$window" || true
+          xdotool key F8
+          result=""
+          for i in $(seq 1 130); do
+            if grep -q '0x51515151' "$diag/fuse-state.log"; then result=E003_REACHED; break; fi
+            if grep -q '0x52525252' "$diag/fuse-state.log"; then result=TIMEOUT; break; fi
+            kill -0 "$fuse_pid" 2>/dev/null || { result=FUSE_EXITED; break; }
+            sleep 1
+          done
+          kill "$fuse_pid" 2>/dev/null || true
+          kill "$xvfb_pid" 2>/dev/null || true
+          grep -q '0x61616161' "$diag/fuse-state.log"
+          grep -q '0x62626262' "$diag/fuse-state.log"
+          test "$result" = E003_REACHED
+          echo "ZX-UX RELEASE TZX REAL-TIME E003 PASS"
+
+      - name: Final exact-head and clean-state gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --quiet origin main
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
+          test ! -n "$(git ls-files | grep -Ei '(^|/)(P11(\.|/)|p11[^/]*qualification|phase-?11)' || true)"
+          test -z "$(git status --porcelain)"
+          echo "ZX-UX RELEASE TZX TOOLING QUALIFICATION PASS"
+
+      - name: Upload qualification outputs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: zxux-release-tzx-qualification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: /tmp/release-tzx/
+          retention-days: 30
+          if-no-files-found: warn
