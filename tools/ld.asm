@@ -1761,3 +1761,47 @@ ld_p1029_index:      db 0
 ld_p1029_heap_start: dw 0
 ld_p1029_heap_end:   dw 0
     ENDM
+
+
+; P10.30 -stack option validation and MEX1 minimum FAST stack value.
+    MACRO EMIT_P10_LD_STACK_OPTION_ROUTINES
+LD_P1030_STACK_DEFAULT EQU 512
+LD_P1030_STACK_MIN     EQU 64
+LD_P1030_STACK_MAX     EQU 4096
+
+; Reset to the frozen default.
+ld_p1030_stack_default:
+    ld hl,LD_P1030_STACK_DEFAULT
+    ld (ld_p1030_min_fast_stack),hl
+    xor a
+    ret
+
+; HL=requested byte count. Accept only even 64..4096 inclusive.
+ld_p1030_stack_set:
+    bit 0,l
+    jp nz,ld_p1030_format
+    push hl
+    ld de,LD_P1030_STACK_MIN
+    or a
+    sbc hl,de
+    pop hl
+    jp c,ld_p1030_format
+    push hl
+    ld de,LD_P1030_STACK_MAX
+    or a
+    sbc hl,de
+    pop hl
+    jp c,ld_p1030_store
+    jp z,ld_p1030_store
+    jp ld_p1030_format
+ld_p1030_store:
+    ld (ld_p1030_min_fast_stack),hl
+    xor a
+    ret
+ld_p1030_format:
+    ld a,E_FORMAT
+    scf
+    ret
+
+ld_p1030_min_fast_stack: dw LD_P1030_STACK_DEFAULT
+    ENDM
