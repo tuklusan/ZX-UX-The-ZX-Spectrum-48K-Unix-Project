@@ -1,0 +1,87 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "normal-default-1024",
+      "passed": true
+    },
+    {
+      "name": "nostart-default-0",
+      "passed": true
+    },
+    {
+      "name": "heap-max-8192",
+      "passed": true
+    },
+    {
+      "name": "even-only",
+      "passed": true
+    },
+    {
+      "name": "decimal-parse-rejection",
+      "passed": true
+    },
+    {
+      "name": "exact-bss-and-symbol-placement",
+      "passed": true
+    },
+    {
+      "name": "combined-32768-bound",
+      "passed": true
+    },
+    {
+      "name": "fuse-normal-default-1024",
+      "passed": true
+    },
+    {
+      "name": "fuse-nostart-default-0",
+      "passed": true
+    },
+    {
+      "name": "fuse-explicit-0-2-1024-8192",
+      "passed": true
+    },
+    {
+      "name": "fuse-odd-negative-nonnumeric-high-rejected",
+      "passed": true
+    },
+    {
+      "name": "fuse-combined-allocation-overflow-rejected",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1031-heap.sym",
+        "p1031-heap.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 6,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2514 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/ld.asm": "0f2805fc34e244a7c9fff103dfaf5bcfc5ac3352b8e688cc84255bbb6c8fc5f9",
+    "v1/build/p1031-main.bin": "daafe72d385efdf994da5e1ccc9ccea2e5a81b84be8ce82617018237f78aa1eb",
+    "v1/dist/certification/P10.30.build.json": "6e7af539d2fd1fa41313ee664007b7a3297aec31480b831a4f926bba2cf6654d",
+    "v1/dist/certification/P10.30.test.json": "98b86837c2f342ec4a43dc823c2e41bfdcce38646ad8a7c142f7ea7cb2b446fa",
+    "v1/tools-host/test-driver/phase10_step_31.py": "b5878bb1747b59dd9c05ad9fc7fb06cd4a308e774c472ab25479a0bc9314cd38"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P10.30": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "77d32c7e38e9f02af350fa06f2ee179cde3e3e22",
+  "status": "PASS",
+  "step": "P10.31",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
