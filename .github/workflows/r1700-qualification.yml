@@ -11,7 +11,7 @@
 # patent, trademark, and governing-law provisions.
 
 name: R17.00 authority qualification
-# One-shot push trigger is retired to workflow_dispatch after bridge admission.
+# One-shot push trigger is retired to workflow_dispatch after bridge admission. Final repaired trigger.
 on:
   push:
     branches: [main]
