@@ -70,7 +70,7 @@ ld_p1021_read_loop:
     ld de,(ld_p1021_used)
     or a
     sbc hl,de
-    jr z,ld_p1021_probe_eof
+    jp z,ld_p1021_probe_eof
     ld b,h
     ld c,l
     ld hl,(ld_p1021_buffer)
@@ -81,25 +81,25 @@ ld_p1021_read_loop:
     ld d,0
     ld a,SYS_READ
     call SYSCALL_GATEWAY
-    jr c,ld_p1021_stream_error
+    jp c,ld_p1021_stream_error
     ld a,h
     or l
-    jr z,ld_p1021_read_eof
+    jp z,ld_p1021_read_eof
     ex de,hl
     ld hl,(ld_p1021_used)
     add hl,de
-    jr c,ld_p1021_nospc_stream
+    jp c,ld_p1021_nospc_stream
     ld de,(ld_p1021_capacity)
     push hl
     or a
     sbc hl,de
     pop hl
-    jr c,ld_p1021_read_store
-    jr z,ld_p1021_read_store
-    jr ld_p1021_nospc_stream
+    jp c,ld_p1021_read_store
+    jp z,ld_p1021_read_store
+    jp ld_p1021_nospc_stream
 ld_p1021_read_store:
     ld (ld_p1021_used),hl
-    jr ld_p1021_read_loop
+    jp ld_p1021_read_loop
 
 ; Exact-capacity candidate: probe one byte without writing beyond caller buffer.
 ld_p1021_probe_eof:
@@ -110,15 +110,15 @@ ld_p1021_probe_eof:
     ld bc,1
     ld a,SYS_READ
     call SYSCALL_GATEWAY
-    jr c,ld_p1021_stream_error
+    jp c,ld_p1021_stream_error
     ld a,h
     or l
-    jr z,ld_p1021_read_eof
-    jr ld_p1021_nospc_stream
+    jp z,ld_p1021_read_eof
+    jp ld_p1021_nospc_stream
 
 ld_p1021_read_eof:
     call ld_p1021_close
-    jr c,ld_p1021_stream_error_closed
+    jp c,ld_p1021_stream_error_closed
     ld hl,(ld_p1021_buffer)
     ld bc,(ld_p1021_used)
     call ld_p1021_validate_memory
@@ -128,7 +128,7 @@ ld_p1021_read_eof:
 
 ld_p1021_nospc_stream:
     ld a,E_NOSPC
-    jr ld_p1021_stream_error
+    jp ld_p1021_stream_error
 ld_p1021_stream_error:
     ld (ld_p1021_errno),a
     call ld_p1021_close
@@ -140,7 +140,7 @@ ld_p1021_stream_error_closed:
     ret
 ld_p1021_bad_handle:
     ld a,E_FORMAT
-    jr ld_p1021_stream_error
+    jp ld_p1021_stream_error
 ld_p1021_close:
     ld a,(ld_p1021_open)
     or a
@@ -258,11 +258,11 @@ ld_p1021_validate_memory:
     ld hl,(ld_p1021_rc)
     ld a,h
     or l
-    jr z,ld_p1021_crc_body
+    jp z,ld_p1021_crc_body
     ld hl,(ld_p1021_text)
     ld a,h
     or a
-    jr nz,ld_p1021_crc_body
+    jp nz,ld_p1021_crc_body
     ld a,l
     cp 2
     jp c,ld_p1021_val_bad
@@ -323,7 +323,7 @@ ld_p1021_sym_loop:
     ld hl,(ld_p1021_left)
     ld a,h
     or l
-    jr z,ld_p1021_sym_ok
+    jp z,ld_p1021_sym_ok
     ld hl,(ld_p1021_sym_cur)
     call ld_p1021_validate_symbol
     ret c
@@ -335,14 +335,14 @@ ld_p1021_dup_loop:
     ld de,(ld_p1021_sym_cur)
     or a
     sbc hl,de
-    jr z,ld_p1021_sym_advance
+    jp z,ld_p1021_sym_advance
     ld hl,(ld_p1021_scan)
     ld de,(ld_p1021_sym_cur)
     ld b,16
 ld_p1021_dup_cmp:
     ld a,(de)
     cp (hl)
-    jr nz,ld_p1021_dup_next
+    jp nz,ld_p1021_dup_next
     inc hl
     inc de
     djnz ld_p1021_dup_cmp
@@ -353,7 +353,7 @@ ld_p1021_dup_next:
     ld de,LD_P1021_SYMBOL_SIZE
     add hl,de
     ld (ld_p1021_scan),hl
-    jr ld_p1021_dup_loop
+    jp ld_p1021_dup_loop
 ld_p1021_sym_advance:
     ld hl,(ld_p1021_sym_cur)
     ld de,LD_P1021_SYMBOL_SIZE
@@ -362,7 +362,7 @@ ld_p1021_sym_advance:
     ld hl,(ld_p1021_left)
     dec hl
     ld (ld_p1021_left),hl
-    jr ld_p1021_sym_loop
+    jp ld_p1021_sym_loop
 ld_p1021_sym_ok:
     xor a
     ret
@@ -375,17 +375,17 @@ ld_p1021_validate_symbol:
 ld_p1021_name_loop:
     ld a,(hl)
     or a
-    jr z,ld_p1021_name_zero
+    jp z,ld_p1021_name_zero
     ld a,c
     cp 15
     jp nc,ld_p1021_sym_bad
     ld a,c
     or a
     ld a,(hl)
-    jr nz,ld_p1021_name_tail
+    jp nz,ld_p1021_name_tail
     call ld_p1021_name_first
     jp c,ld_p1021_sym_bad
-    jr ld_p1021_name_accept
+    jp ld_p1021_name_accept
 ld_p1021_name_tail:
     call ld_p1021_name_next
     jp c,ld_p1021_sym_bad
@@ -429,11 +429,11 @@ ld_p1021_zero_tail:
 
     ld a,(ld_p1021_section)
     or a
-    jr z,ld_p1021_sym_undef
+    jp z,ld_p1021_sym_undef
     cp 1
-    jr z,ld_p1021_sym_text
+    jp z,ld_p1021_sym_text
     cp 2
-    jr z,ld_p1021_sym_bss
+    jp z,ld_p1021_sym_bss
     xor a
     ret
 ld_p1021_sym_undef:
@@ -451,16 +451,16 @@ ld_p1021_sym_text:
     ld de,(ld_p1021_text)
     or a
     sbc hl,de
-    jr c,ld_p1021_sym_good
-    jr z,ld_p1021_sym_good
+    jp c,ld_p1021_sym_good
+    jp z,ld_p1021_sym_good
     jp ld_p1021_sym_bad
 ld_p1021_sym_bss:
     ld hl,(ld_p1021_value)
     ld de,(ld_p1021_bss)
     or a
     sbc hl,de
-    jr c,ld_p1021_sym_good
-    jr z,ld_p1021_sym_good
+    jp c,ld_p1021_sym_good
+    jp z,ld_p1021_sym_good
 ld_p1021_sym_bad:
     scf
     ret
@@ -470,27 +470,27 @@ ld_p1021_sym_good:
 
 ld_p1021_name_first:
     cp 'A'
-    jr c,ld_p1021_name_punct
+    jp c,ld_p1021_name_punct
     cp 'Z'+1
-    jr c,ld_p1021_name_good
+    jp c,ld_p1021_name_good
     cp 'a'
-    jr c,ld_p1021_name_punct
+    jp c,ld_p1021_name_punct
     cp 'z'+1
-    jr c,ld_p1021_name_good
+    jp c,ld_p1021_name_good
 ld_p1021_name_punct:
     cp '_'
-    jr z,ld_p1021_name_good
+    jp z,ld_p1021_name_good
     cp '.'
-    jr z,ld_p1021_name_good
+    jp z,ld_p1021_name_good
     cp '$'
-    jr z,ld_p1021_name_good
+    jp z,ld_p1021_name_good
     scf
     ret
 ld_p1021_name_next:
     cp '0'
-    jr c,ld_p1021_name_first
+    jp c,ld_p1021_name_first
     cp '9'+1
-    jr c,ld_p1021_name_good
+    jp c,ld_p1021_name_good
     jp ld_p1021_name_first
 ld_p1021_name_good:
     or a
@@ -509,7 +509,7 @@ ld_p1021_rel_loop:
     ld hl,(ld_p1021_left)
     ld a,h
     or l
-    jr z,ld_p1021_rel_ok
+    jp z,ld_p1021_rel_ok
     ld hl,(ld_p1021_rel_cur)
     ld e,(hl)
     inc hl
@@ -521,7 +521,7 @@ ld_p1021_rel_loop:
     dec hl
     or a
     sbc hl,de
-    jr c,ld_p1021_rel_bad
+    jp c,ld_p1021_rel_bad
 
     ld hl,(ld_p1021_rel_cur)
     inc hl
@@ -532,32 +532,32 @@ ld_p1021_rel_loop:
     ld hl,(ld_p1021_sc)
     or a
     sbc hl,de
-    jr z,ld_p1021_rel_bad
-    jr c,ld_p1021_rel_bad
+    jp z,ld_p1021_rel_bad
+    jp c,ld_p1021_rel_bad
 
     ld hl,(ld_p1021_rel_cur)
     ld de,4
     add hl,de
     ld a,(hl)
     cp LD_P1021_REL_ABS16
-    jr nz,ld_p1021_rel_bad
+    jp nz,ld_p1021_rel_bad
     inc hl
     ld a,(hl)
     or a
-    jr nz,ld_p1021_rel_bad
+    jp nz,ld_p1021_rel_bad
 
     ld a,(ld_p1021_have_prev)
     or a
-    jr z,ld_p1021_rel_store
+    jp z,ld_p1021_rel_store
     ld hl,(ld_p1021_prev)
     inc hl
     inc hl
     ld de,(ld_p1021_cur_off)
     or a
     sbc hl,de
-    jr c,ld_p1021_rel_store
-    jr z,ld_p1021_rel_store
-    jr ld_p1021_rel_bad
+    jp c,ld_p1021_rel_store
+    jp z,ld_p1021_rel_store
+    jp ld_p1021_rel_bad
 ld_p1021_rel_store:
     ld hl,(ld_p1021_cur_off)
     ld (ld_p1021_prev),hl
@@ -570,7 +570,7 @@ ld_p1021_rel_store:
     ld hl,(ld_p1021_left)
     dec hl
     ld (ld_p1021_left),hl
-    jr ld_p1021_rel_loop
+    jp ld_p1021_rel_loop
 ld_p1021_rel_bad:
     scf
     ret
@@ -617,7 +617,7 @@ ld_p1021_crc_byte:
 ld_p1021_crc_bit:
     sla e
     rl d
-    jr nc,ld_p1021_crc_no_poly
+    jp nc,ld_p1021_crc_no_poly
     ld a,d
     xor $10
     ld d,a
@@ -628,7 +628,7 @@ ld_p1021_crc_no_poly:
     djnz ld_p1021_crc_bit
     pop bc
     dec bc
-    jr ld_p1021_crc_byte
+    jp ld_p1021_crc_byte
 
 ld_p1021_val_bad:
 ld_p1021_format:
