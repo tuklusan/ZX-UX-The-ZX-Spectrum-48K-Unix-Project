@@ -1,0 +1,65 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "working-contract-explicit-version1-surface",
+      "passed": true
+    },
+    {
+      "name": "sdk-reference-commit-pinned",
+      "passed": true
+    },
+    {
+      "name": "project-docx-git-blob-recorded",
+      "passed": true
+    },
+    {
+      "name": "sdk-python-implementation-surface-reviewed",
+      "passed": true
+    },
+    {
+      "name": "rev16-overrides-sdk-recorded",
+      "passed": true
+    },
+    {
+      "name": "sdk-c48b1-not-native-obj1",
+      "passed": true
+    },
+    {
+      "name": "h06-later-pin-separated",
+      "passed": true
+    },
+    {
+      "name": "docx-end-to-end-language-families-present",
+      "passed": true
+    },
+    {
+      "name": "docx-real-office-container",
+      "passed": true
+    },
+    {
+      "name": "zero-unresolved-discrepancy-marker",
+      "passed": true
+    }
+  ],
+  "commands": [],
+  "hashes": {
+    "docs/04-C48 Language Specification Rev 0.11.docx": "bc8dc2231fbc94b163d652116ce94e1e898d78b4a13773e28756330c78700d8f",
+    "v1/dist/certification/phase-10.json": "fea4c3246fd982f32d0a9fef89f93605c0965b2357ebc4e4bfca70636cd45060",
+    "v1/docs/c48.md": "1b6c7687e3d97ec7930dd60e6406fd65552ef3093d66a47f5f588a66b6c9631a",
+    "v1/tests/compiler/sdk-reference/SDK-PROVENANCE.md": "5752f71da54bc7eb1ea8ae949b88a77075b21b79afd891c275996c25ac5cb7c4",
+    "v1/tools-host/test-driver/phase11_step_01.py": "9ca0f9bf2a9d35d250088f701c698929df4b9891200b0dcdd26c81831ba0e5e4",
+    "v1/tools-host/test-driver/run.py": "b1949e20a9710cfae76ed7a21576956d256fd502dcf212c6e0c14c62bf4544d6"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P10.36": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "4deca5f8da2e3d71b757f556c9af807b4f1d49ca",
+  "status": "PASS",
+  "step": "P11.01",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
