@@ -47,9 +47,15 @@ release documentation.
 
 ## Contents
 
-- `WORKFLOW.md` — durable checkbox tracker for the two pending change requests,
-  housekeeping/infrastructure work, rebaseline work, and implementation resumption.
+- `ZX-UX-FAST-LOADER-TZX-RELEASE-MIGRATION-RUNBOOK-REV01.md` — current one-shot
+  post-Phase-10/pre-Phase-11 release-transport migration coordination record.
+- `ZX-UX-LOADER-1.0.0-portable.zip` — immutable reviewed fast-loader provenance
+  package; its required SHA-256 is recorded in the migration runbook.
+- `WORKFLOW.md` — closed historical early-project coordination record; it is not a
+  current phase/next-step tracker.
+- Other runbooks/session notes in this directory are historical, diagnostic, or
+  task-specific scratch material unless their own status line explicitly says
+  otherwise.
 
-This directory may contain additional coordination notes later, but anything that
-becomes normative must be deliberately promoted into the appropriate canonical
-project document through the normal change-control and SoP process.
+Anything that becomes normative must be deliberately promoted into the appropriate
+canonical project document through the normal change-control and SoP process.
