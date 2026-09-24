@@ -1,0 +1,79 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "nostart-omits-crt0-prerequisite",
+      "passed": true
+    },
+    {
+      "name": "explicit-e-mandatory",
+      "passed": true
+    },
+    {
+      "name": "exact-case-resolver",
+      "passed": true
+    },
+    {
+      "name": "entry-must-be-text",
+      "passed": true
+    },
+    {
+      "name": "no-default-entry-state",
+      "passed": true
+    },
+    {
+      "name": "fuse-nostart-explicit-entry",
+      "passed": true
+    },
+    {
+      "name": "fuse-nostart-without-e-rejected",
+      "passed": true
+    },
+    {
+      "name": "fuse-nostart-case-mismatch-unresolved",
+      "passed": true
+    },
+    {
+      "name": "fuse-nostart-duplicate-rejected",
+      "passed": true
+    },
+    {
+      "name": "fuse-nostart-nontext-rejected",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1028-nostart.sym",
+        "p1028-nostart.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 10,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2279 lines, work time: 0.010 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/ld.asm": "9b4b04e80f5cefbb003752d034b60eff6eeab47b74a572da62943840a32c7973",
+    "v1/build/p1028-main.bin": "e48a10ee06f7e7a2ea3a5ef43bba316adfed272c5de1a914c684bf7404f74399",
+    "v1/dist/certification/P10.27.build.json": "f5bf910e9dad335b140c21eced6db53c7f50ae9a4024e66a900d91ad9865a820",
+    "v1/dist/certification/P10.27.test.json": "a64794cbae42f4131942122b0209bbb2044fe598437940f4023cea3409c406c8",
+    "v1/tools-host/test-driver/phase10_step_28.py": "a99c5b50ffcaa1b04932c498a9a00235e00b1835b19e47acc21c624a43d18409"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P10.27": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "41809abe9ea6a3a9dfb3ae4e91a9712141e1c574",
+  "status": "PASS",
+  "step": "P10.28",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
