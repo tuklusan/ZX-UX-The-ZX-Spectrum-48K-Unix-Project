@@ -11,7 +11,7 @@
 # patent, trademark, and governing-law provisions.
 
 name: Native projection listing probe once
-# Retry semantic projection after indexed-record layout fix.
+# Retry semantic projection after character-literal parsing.
 on:
   push:
     branches: [main]
