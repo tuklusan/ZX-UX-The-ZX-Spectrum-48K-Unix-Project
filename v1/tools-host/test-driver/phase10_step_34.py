@@ -222,10 +222,12 @@ p1034_write:
     xor a
     ret
 p1034_rename:
-    ld de,(hl)
     inc hl
     inc hl
-    ld hl,(hl)
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ex de,hl
     ld a,(hl)
     cp 'h'
     jr nz,p1034_gw_format
