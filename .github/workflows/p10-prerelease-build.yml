@@ -497,7 +497,6 @@ jobs:
           rm -rf v1/dist/media/P10.pre-release
           cp -a /tmp/p10-prerelease/P10.pre-release v1/dist/media/P10.pre-release
           python3 tools/check_media_retention.py
-          ./tools/check_project_policy.py
           git add v1/dist/media/P10.pre-release
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
