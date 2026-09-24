@@ -341,10 +341,10 @@ p1021_gateway_end:
         def patch(ram):
             ram[0xC000-0x4000:0xC000-0x4000+len(main)]=main
             ram[0xE000-0x4000:0xE000-0x4000+len(gateway)]=gateway
-        for name in ("p1021_count_good","p1021_load_good","p1021_archive_good"):
+        for name in ("p1021_count_good","p1021_load_good","p1021_archive_good","p1021_wrong_type","p1021_malformed","p1021_overflow"):
             code=b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(syms[name])+phase1._jp_c(FAIL_PC)+phase1._jp(PASS_PC)
             run_sna(root,code,patch=patch)
-        for name in ("p1021_count_bad","p1021_wrong_type","p1021_malformed","p1021_overflow","p1021_archive_bad"):
+        for name in ("p1021_count_bad","p1021_archive_bad"):
             code=b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(syms[name])+b"\xD2"+phase1._word(FAIL_PC)+phase1._jp(PASS_PC)
             run_sna(root,code,patch=patch)
         assertions += [
