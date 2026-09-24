@@ -10,7 +10,8 @@
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
 
-name: Post-Phase-10 migration final validation once\n# Retry after repository-walk syntax repair.
+name: Post-Phase-10 migration final validation once
+# Retry after repository-walk historical-document allowance.
 
 on:
   push:
