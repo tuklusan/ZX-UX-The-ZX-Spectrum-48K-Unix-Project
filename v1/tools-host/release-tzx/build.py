@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
 # Proprietary rights reserved except as expressly licensed herein.
 #
@@ -10,40 +11,39 @@
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
 #
-# Reviewed fast-loader source promoted from the preserved portable package.
-#!/usr/bin/env python3
-"""Deterministically rebuild the current ZX-UX loader TZX.
+# Reviewed fast-loader source promoted from ZX-UX-LOADER-1.0.0 and adapted
+# prospectively under REV17/REV08 for explicit real-kernel injection.
 
-The immutable seed is the tagged, verified white-on-black/E003 loader.
-This builder updates the BASIC-resident display text, removes the seed's final
-BASIC CLS, and installs the hook assembled from src/print_hook.asm. The turbo
-payload/timing tail is preserved byte-for-byte from the seed.
+"""Build the deterministic ZX-UX production/pre-release TZX.
+
+The immutable reviewed seed supplies only the BASIC/fast-loader timing template.
+Product mode requires an explicit freshly rebuilt 8192-byte kernel. The known
+seed dummy payload is forbidden. All 24 turbo payload chunks and their loader
+check bytes are regenerated from that kernel while every unrelated seed timing
+byte remains unchanged.
 """
 
+from __future__ import annotations
+
+import argparse
 import base64
 import functools
 import hashlib
-import pathlib
+import json
+from pathlib import Path
 import shutil
 import struct
 import subprocess
+import sys
 
-ROOT = pathlib.Path(__file__).resolve().parent
-OUT_DIR = ROOT / "output"
-OUT_DIR.mkdir(parents=True, exist_ok=True)
-
+ROOT = Path(__file__).resolve().parent
 SEED_B64 = ROOT / "input" / "known-good-white-on-black-e003.tzx.b64"
 TEXT_FILE = ROOT / "text-lines.txt"
 HOOK_ASM = ROOT / "src" / "print_hook.asm"
 
-OUT_TZX = OUT_DIR / "zx24_loader_idle_demo.tzx"
-OUT_PAYLOAD = OUT_DIR / "dummy_e000_8k_idle.bin"  # legacy filename; exact 8 KiB payload
-OUT_HOOK = OUT_DIR / "print_hook.bin"
-OUT_SUMS = OUT_DIR / "SHA256SUMS"
-
 SEED_SHA256 = "7ffe2f90b58e87a19a090ca0e0f1323605754af7d8809f3f051662f9faaec6f1"
-EXPECTED_TZX_SHA256 = "9a77617b16d04c767c5895261ca9a823b57060e642adadffa58b34cbfcd7d642"
-EXPECTED_PAYLOAD_SHA256 = "0e59ef9290ffc4391b0ae999177cd9d7d9eafb6fcd86a45b13f9a4bd0b08c9ce"
+DUMMY_PAYLOAD_SHA256 = "0e59ef9290ffc4391b0ae999177cd9d7d9eafb6fcd86a45b13f9a4bd0b08c9ce"
+HOOK_SHA256 = "f1c6b88998488c552bbf5358cfcf32494de4687a2f0cfb7bcbe37a71cf6c00ef"
 
 PROG_BASE = 0x5CCB
 HOOK_ADDR = 0x5E4F
@@ -51,23 +51,40 @@ OLD_TEXT_ADDR = 0x5F6A
 TEXT_BUFFER_SENTINEL = 0xBEEF
 TEXT_LINES = 24
 TEXT_WIDTH = 32
+KERNEL_BASE = 0xE000
+KERNEL_SIZE = 8192
 PAYLOAD_ENTRY = 0xE003
 FINAL_HOLD_ADDR = 0x5EB4
 INIT_SCREEN_ADDR = 0x5EC2
 BEEP_ADDR = 0x5F2A
 TEXT_ARRAY_OFFSET = 84
+CHUNK_LENGTHS = (342,) * 8 + (341,) * 16
 
 
-def sha256(data):
+def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def xor_checksum(data):
+def xor_checksum(data: bytes | bytearray) -> int:
     return functools.reduce(int.__xor__, data, 0)
 
 
-def parse_tzx(tz):
-    if tz[:10] != b"ZXTape!\x1a\x01\x14":
+def loader_check(data: bytes) -> int:
+    """Exact loader check independently recovered from the seed loader code.
+
+    The resident routine initializes E=1, then for every received byte performs
+    ADD A,E followed by RLCA and stores the result back in E. Header byte 7 is
+    compared with E after exactly the declared payload length has been received.
+    """
+    value = 1
+    for byte in data:
+        value = (value + byte) & 0xFF
+        value = ((value << 1) | (value >> 7)) & 0xFF
+    return value
+
+
+def parse_tzx(tz: bytes | bytearray):
+    if bytes(tz[:10]) != b"ZXTape!\x1a\x01\x14":
         raise AssertionError("bad TZX header")
     p = 10
     out = []
@@ -77,36 +94,38 @@ def parse_tzx(tz):
         p += 1
         if bid == 0x30:
             n = tz[p]
-            p += 1
-            body = tz[p:p+n]
-            p += n
-            out.append((bid, start, p, body))
+            p += 1 + n
+            body = bytes(tz[start + 2:p])
         elif bid == 0x10:
             pause, n = struct.unpack_from("<HH", tz, p)
             p += 4
-            body = tz[p:p+n]
+            body = (pause, bytes(tz[p:p+n]))
             p += n
-            out.append((bid, start, p, (pause, body)))
         elif bid == 0x20:
             pause = struct.unpack_from("<H", tz, p)[0]
             p += 2
-            out.append((bid, start, p, pause))
+            body = pause
         elif bid == 0x19:
             n = struct.unpack_from("<I", tz, p)[0]
             p += 4
-            body = tz[p:p+n]
+            body_start = p
+            body = bytes(tz[p:p+n])
             p += n
-            out.append((bid, start, p, body))
+            out.append((bid, start, p, body, body_start))
+            if p > len(tz):
+                raise AssertionError("truncated TZX")
+            continue
         else:
             raise AssertionError(f"unexpected TZX block {bid:#x} at {start:#x}")
         if p > len(tz):
             raise AssertionError("truncated TZX")
+        out.append((bid, start, p, body, None))
     if p != len(tz):
         raise AssertionError("TZX parse did not end at EOF")
     return out
 
 
-def generalized_data(body):
+def generalized_data_span(body: bytes) -> tuple[int, int]:
     o = 2
     total_pilot = struct.unpack_from("<I", body, o)[0]
     o += 4
@@ -119,10 +138,18 @@ def generalized_data(body):
     o += (asp or 256) * (1 + npp * 2)
     o += total_pilot * 3
     o += (asd or 256) * (1 + npd * 2)
-    return body[o:o + (total_data_bits + 7) // 8]
+    count = (total_data_bits + 7) // 8
+    if o + count > len(body):
+        raise AssertionError("generalized-data stream overruns block")
+    return o, count
 
 
-def parse_basic(basic):
+def generalized_data(body: bytes) -> bytes:
+    start, count = generalized_data_span(body)
+    return body[start:start+count]
+
+
+def parse_basic(basic: bytes | bytearray):
     q = 0
     lines = []
     while q < len(basic):
@@ -140,7 +167,7 @@ def parse_basic(basic):
     return lines
 
 
-def load_text_lines():
+def load_text_lines() -> list[str]:
     lines = TEXT_FILE.read_text(encoding="ascii").splitlines()
     if len(lines) != TEXT_LINES:
         raise ValueError(f"{TEXT_FILE}: expected {TEXT_LINES} lines, got {len(lines)}")
@@ -154,21 +181,20 @@ def load_text_lines():
     return lines
 
 
-def assemble_hook():
-    pasmo = shutil.which("pasmo")
-    if not pasmo:
-        raise RuntimeError("pasmo is required (pinned CI version: 0.5.3-7)")
-    subprocess.run([pasmo, "--bin", str(HOOK_ASM), str(OUT_HOOK)], check=True)
-    hook = bytearray(OUT_HOOK.read_bytes())
+def assemble_hook(output: Path, pasmo: str) -> bytes:
+    resolved = shutil.which(pasmo) if "/" not in pasmo else pasmo
+    if not resolved:
+        raise RuntimeError("pasmo is required (release-scoped pinned version: 0.5.3-7)")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    subprocess.run([resolved, "--bin", str(HOOK_ASM), str(output)], check=True)
+    hook = bytearray(output.read_bytes())
+    if sha256(hook) != HOOK_SHA256:
+        raise AssertionError("reviewed hook hash drifted")
     sentinel = struct.pack("<H", TEXT_BUFFER_SENTINEL)
     if hook.count(sentinel) != 1:
         raise AssertionError("print_hook.asm must contain exactly one TEXT_BUFFER sentinel")
     if len(hook) != 234:
         raise AssertionError(f"unexpected hook length {len(hook)}; expected 234")
-
-    # Turbo screen ownership is explicit: clear all 6144 bitmap bytes,
-    # initialize all attributes white-on-black, then set row 21 columns
-    # 28-31 to red/yellow/green/cyan PAPER while retaining white INK.
     screen_off = INIT_SCREEN_ADDR - HOOK_ADDR
     screen_prefix = bytes.fromhex(
         "21004011014001ff17af77edb0"
@@ -177,68 +203,63 @@ def assemble_hook():
     )
     if hook[screen_off:screen_off+len(screen_prefix)] != screen_prefix:
         raise AssertionError("turbo screen initializer drifted")
-
-    # Surgical invariants for the single startup beep.
     hold_off = FINAL_HOLD_ADDR - HOOK_ADDR
     beep_off = BEEP_ADDR - HOOK_ADDR
     if hook[hold_off:hold_off+3] != bytes([0xC3, BEEP_ADDR & 0xFF, BEEP_ADDR >> 8]):
         raise AssertionError("final_hold no longer jumps to startup_beep")
-    beep_bytes = bytes.fromhex("dde511e00021ca01cdb503f3dde1c9")
-    if hook[beep_off:] != beep_bytes:
+    if hook[beep_off:] != bytes.fromhex("dde511e00021ca01cdb503f3dde1c9"):
         raise AssertionError("startup beep drifted")
-    return hook
+    return bytes(hook)
 
 
-def extract_payload(blocks):
+def verify_seed_transport(blocks) -> tuple[list[bytes], list[bytes]]:
     gen = [generalized_data(b[3]) for b in blocks if b[0] == 0x19]
     if len(gen) != 48:
         raise AssertionError(f"expected 48 generalized blocks, got {len(gen)}")
-    headers = gen[0::2]
-    chunks = gen[1::2]
-    if len(headers) != 24 or len(chunks) != 24:
-        raise AssertionError("expected 24 header/payload pairs")
-
+    headers, chunks = gen[0::2], gen[1::2]
+    if tuple(map(len, chunks)) != CHUNK_LENGTHS:
+        raise AssertionError("seed chunk lengths drifted")
+    if any(len(h) != 17 for h in headers):
+        raise AssertionError("seed loader-header length drifted")
     payload = b"".join(chunks)
-    if len(payload) != 8192:
-        raise AssertionError(f"payload length {len(payload)}, expected 8192")
-
-    final = struct.unpack("<HHHBBHHBHBB", headers[-1])
-    length, load_addr, dest_addr, _zero, _crc, after, *_ = final
-    if (length, load_addr, dest_addr, after) != (341, 0x9000, 0xFEAB, PAYLOAD_ENTRY):
-        raise AssertionError(
-            f"final dispatch mismatch: len={length}, load={load_addr:#06x}, "
-            f"dest={dest_addr:#06x}, after={after:#06x}"
+    if len(payload) != KERNEL_SIZE or sha256(payload) != DUMMY_PAYLOAD_SHA256:
+        raise AssertionError("seed dummy payload identity drifted")
+    offset = 0
+    for i, (header, chunk) in enumerate(zip(headers, chunks)):
+        length, load_addr, dest_addr, zero, check, after, *_ = struct.unpack(
+            "<HHHBBHHBHBB", header
         )
-    if payload[:3] != bytes.fromhex("b617f6"):
-        raise AssertionError("E000-E002 prefix drifted")
-    if sha256(payload) != EXPECTED_PAYLOAD_SHA256:
-        raise AssertionError("8 KiB payload hash drifted")
-    return payload
+        if length != len(chunk) or zero != 0:
+            raise AssertionError(f"loader header {i} length/zero drifted")
+        if check != loader_check(chunk):
+            raise AssertionError(f"loader header {i} check algorithm mismatch")
+        logical_dest = dest_addr or load_addr
+        if logical_dest != KERNEL_BASE + offset:
+            raise AssertionError(
+                f"loader header {i} destination {logical_dest:#06x} != {KERNEL_BASE + offset:#06x}"
+            )
+        if i < 23 and after != 0x0100:
+            raise AssertionError(f"loader header {i} continuation drifted")
+        if i == 23 and (load_addr, dest_addr, after) != (0x9000, 0xFEAB, PAYLOAD_ENTRY):
+            raise AssertionError("final loader header/handoff drifted")
+        offset += len(chunk)
+    if offset != KERNEL_SIZE:
+        raise AssertionError("loader destination coverage drifted")
+    return headers, chunks
 
 
-def build():
-    seed = base64.b64decode(SEED_B64.read_bytes(), validate=False)
-    if sha256(seed) != SEED_SHA256:
-        raise AssertionError("immutable seed hash mismatch")
-
+def patch_basic(seed: bytes, hook_template: bytes) -> bytearray:
     lines = load_text_lines()
     display = "".join(lines).encode("ascii")
-    if len(display) != 768:
-        raise AssertionError("display array must be exactly 768 bytes")
-
     blocks = parse_tzx(seed)
     if [b[0] for b in blocks[:3]] != [0x30, 0x10, 0x10]:
         raise AssertionError("unexpected seed prefix")
-    if sum(1 for b in blocks if b[0] == 0x19) != 48:
-        raise AssertionError("seed turbo block count drifted")
-
-    payload = extract_payload(blocks)
+    verify_seed_transport(blocks)
 
     pause1, header = blocks[1][3]
     pause2, data = blocks[2][3]
     header = bytearray(header)
     data = bytearray(data)
-
     if len(header) != 19 or header[0] != 0 or header[2:12] != b"ZX-UX Unix":
         raise AssertionError("unexpected BASIC header")
     if data[0] != 0xFF or xor_checksum(data) != 0:
@@ -248,35 +269,27 @@ def build():
     parsed = parse_basic(basic)
     if [x[0] for x in parsed] != [10, 20, 30]:
         raise AssertionError("expected BASIC lines 10,20,30")
-
     _, line20_off, line20_len = parsed[1]
-    _, line30_off, _line30_len = parsed[2]
+    _, line30_off, _ = parsed[2]
     old_eol = line20_off + 4 + line20_len - 1
-
-    if PROG_BASE + line20_off + 5 != 0x5CE7:
-        raise AssertionError("loader entry drifted")
-    if PROG_BASE + old_eol != 0x5F0F:
-        raise AssertionError("seed hook end drifted")
+    if PROG_BASE + line20_off + 5 != 0x5CE7 or PROG_BASE + old_eol != 0x5F0F:
+        raise AssertionError("seed loader layout drifted")
 
     old_hook_start = HOOK_ADDR - PROG_BASE
     old_hook = bytes(basic[old_hook_start:old_eol])
     if len(old_hook) != 192:
         raise AssertionError("seed hook length drifted")
-
     old_ptr = struct.pack("<H", OLD_TEXT_ADDR)
-    ptr_positions = [i for i in range(len(old_hook)-1) if old_hook[i:i+2] == old_ptr]
-    if ptr_positions != [139]:
+    if [i for i in range(len(old_hook)-1) if old_hook[i:i+2] == old_ptr] != [139]:
         raise AssertionError("seed text pointer drifted")
 
-    hook = assemble_hook()
+    hook = bytearray(hook_template)
     delta = len(hook) - len(old_hook)
     if delta != 42:
-        raise AssertionError(f"hook growth is {delta}, expected 42")
-
+        raise AssertionError("hook growth drifted")
     new_line30_off = line30_off + delta
     content = new_line30_off + 4
     new_text_addr = PROG_BASE + content + TEXT_ARRAY_OFFSET
-
     sentinel = struct.pack("<H", TEXT_BUFFER_SENTINEL)
     hook = hook.replace(sentinel, struct.pack("<H", new_text_addr), 1)
 
@@ -285,7 +298,6 @@ def build():
     patched += hook
     patched += basic[old_eol:]
     patched[line20_off+2:line20_off+4] = struct.pack("<H", line20_len + delta)
-
     parsed2 = parse_basic(patched)
     if [x[0] for x in parsed2] != [10, 20, 30] or parsed2[2][1] != new_line30_off:
         raise AssertionError("patched BASIC structure drifted")
@@ -293,85 +305,157 @@ def build():
     content = new_line30_off + 4
     if patched[content+31:content+34] != bytes([0xFB, 0x3A, 0xF5]):
         raise AssertionError("initial BASIC CLS/PRINT layout drifted")
-    if patched[content+33:content+35] != bytes([0xF5, 0x22]):
-        raise AssertionError("PRINT token/string layout drifted")
     if patched[content+67:content+72] != bytes([0x22, 0x3A, 0xFB, 0x3A, 0xF9]):
         raise AssertionError("final BASIC CLS/RANDOMIZE layout drifted")
-
-    # Keep the initial CLS, but remove only the later CLS and its trailing
-    # colon. init_screen now performs the complete handoff-screen clear.
     del patched[content+69:content+71]
-    patched[new_line30_off+2:new_line30_off+4] = struct.pack(
-        "<H", parsed2[2][2] - 2
-    )
-    parsed2 = parse_basic(patched)
-    if [x[0] for x in parsed2] != [10, 20, 30] or parsed2[2][1] != new_line30_off:
-        raise AssertionError("BASIC structure drifted after final CLS removal")
+    patched[new_line30_off+2:new_line30_off+4] = struct.pack("<H", parsed2[2][2] - 2)
+    parse_basic(patched)
     if patched[content+67:content+70] != bytes([0x22, 0x3A, 0xF9]):
         raise AssertionError("final BASIC CLS was not removed")
     if patched[content+83] != 0xEA:
         raise AssertionError("REM/text-array offset drifted")
-
     patched[content+35:content+67] = lines[0].encode("ascii")
     patched[content+TEXT_ARRAY_OFFSET:content+TEXT_ARRAY_OFFSET+768] = display
 
-    if PROG_BASE + content + TEXT_ARRAY_OFFSET != new_text_addr:
-        raise AssertionError("text address calculation drifted")
-    if patched[content+TEXT_ARRAY_OFFSET:content+TEXT_ARRAY_OFFSET+768] != display:
-        raise AssertionError("display array patch failed")
-
     new_data = bytearray([0xFF]) + patched
     new_data.append(xor_checksum(new_data))
-    if xor_checksum(new_data) != 0:
-        raise AssertionError("BASIC data checksum failed")
-
     new_header = bytearray(header)
     n = len(patched)
     new_header[12:14] = struct.pack("<H", n)
     new_header[16:18] = struct.pack("<H", n)
     new_header[18] = xor_checksum(new_header[:18])
-    if xor_checksum(new_header) != 0:
-        raise AssertionError("BASIC header checksum failed")
+    if xor_checksum(new_data) != 0 or xor_checksum(new_header) != 0:
+        raise AssertionError("patched BASIC Spectrum checksum failed")
 
     prefix = seed[:blocks[1][1]]
     turbo_tail = seed[blocks[2][2]:]
-
     out = bytearray(prefix)
     out += bytes([0x10]) + struct.pack("<HH", pause1, len(new_header)) + new_header
     out += bytes([0x10]) + struct.pack("<HH", pause2, len(new_data)) + new_data
     out += turbo_tail
+    return out
 
-    # The entire turbo tail, including the 8 KiB payload and E003 dispatch,
-    # must remain byte-for-byte identical to the immutable seed.
-    out_blocks = parse_tzx(out)
-    if [(b[0], b[3]) for b in out_blocks[3:]] != [(b[0], b[3]) for b in blocks[3:]]:
-        raise AssertionError("turbo tail changed")
 
-    if sha256(out) != EXPECTED_TZX_SHA256:
-        raise AssertionError(
-            f"rebuilt TZX hash {sha256(out)} != expected {EXPECTED_TZX_SHA256}"
+def inject_kernel(tzx: bytearray, kernel: bytes) -> None:
+    if len(kernel) != KERNEL_SIZE:
+        raise ValueError(f"kernel must be exactly {KERNEL_SIZE} bytes")
+    if sha256(kernel) == DUMMY_PAYLOAD_SHA256:
+        raise ValueError("known seed dummy kernel is forbidden in product mode")
+
+    blocks = parse_tzx(tzx)
+    gen = [b for b in blocks if b[0] == 0x19]
+    if len(gen) != 48:
+        raise AssertionError("expected exactly 48 generalized-data blocks")
+    headers = gen[0::2]
+    payloads = gen[1::2]
+    offset = 0
+    for i, (hb, pb) in enumerate(zip(headers, payloads)):
+        h_start, h_count = generalized_data_span(hb[3])
+        p_start, p_count = generalized_data_span(pb[3])
+        if h_count != 17 or p_count != CHUNK_LENGTHS[i]:
+            raise AssertionError(f"generalized-data shape drifted at pair {i}")
+        chunk = kernel[offset:offset+p_count]
+        if len(chunk) != p_count:
+            raise AssertionError("kernel chunk underflow")
+        header = bytearray(generalized_data(hb[3]))
+        if struct.unpack_from("<H", header, 0)[0] != p_count:
+            raise AssertionError(f"header {i} length does not match payload")
+        header[7] = loader_check(chunk)
+        hz = hb[4] + h_start
+        pz = pb[4] + p_start
+        tzx[hz:hz+h_count] = header
+        tzx[pz:pz+p_count] = chunk
+        offset += p_count
+    if offset != KERNEL_SIZE:
+        raise AssertionError("kernel injection did not consume exactly 8192 bytes")
+
+
+def reconstruct_kernel(tzx: bytes) -> bytes:
+    blocks = parse_tzx(tzx)
+    gen = [generalized_data(b[3]) for b in blocks if b[0] == 0x19]
+    if len(gen) != 48:
+        raise AssertionError("expected 48 generalized-data blocks")
+    headers, chunks = gen[0::2], gen[1::2]
+    offset = 0
+    for i, (header, chunk) in enumerate(zip(headers, chunks)):
+        if len(header) != 17 or len(chunk) != CHUNK_LENGTHS[i]:
+            raise AssertionError("generalized-data shape drifted")
+        length, load_addr, dest_addr, zero, check, after, *_ = struct.unpack(
+            "<HHHBBHHBHBB", header
         )
+        if length != len(chunk) or zero != 0 or check != loader_check(chunk):
+            raise AssertionError(f"loader check/header mismatch at pair {i}")
+        logical_dest = dest_addr or load_addr
+        if logical_dest != KERNEL_BASE + offset:
+            raise AssertionError(f"kernel destination coverage mismatch at pair {i}")
+        if i == 23 and after != PAYLOAD_ENTRY:
+            raise AssertionError("final handoff is not 0xE003")
+        offset += len(chunk)
+    payload = b"".join(chunks)
+    if len(payload) != KERNEL_SIZE:
+        raise AssertionError("reconstructed kernel size mismatch")
+    return payload
 
-    OUT_TZX.write_bytes(out)
-    OUT_PAYLOAD.write_bytes(payload)
 
-    sums = [
-        f"{sha256(OUT_TZX.read_bytes())}  {OUT_TZX.name}",
-        f"{sha256(OUT_PAYLOAD.read_bytes())}  {OUT_PAYLOAD.name}",
-        f"{sha256(OUT_HOOK.read_bytes())}  {OUT_HOOK.name}",
-    ]
-    OUT_SUMS.write_text("\n".join(sums) + "\n", encoding="ascii")
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--kernel", type=Path, required=True, help="freshly rebuilt exact 8192-byte kernel")
+    ap.add_argument("--output", type=Path, required=True, help="output TZX path")
+    ap.add_argument("--hook-output", type=Path, help="optional assembled hook output")
+    ap.add_argument("--manifest", type=Path, help="optional JSON build manifest")
+    ap.add_argument("--pasmo", default="pasmo")
+    args = ap.parse_args(argv)
 
-    print(f"seed sha256:    {SEED_SHA256}")
-    print(f"output sha256:  {EXPECTED_TZX_SHA256}")
-    print(f"payload sha256: {EXPECTED_PAYLOAD_SHA256}")
-    print(f"hook sha256:    {sha256(OUT_HOOK.read_bytes())}")
-    print(f"BASIC bytes:    {len(patched)}")
-    print(f"hook bytes:     {len(hook)} at {HOOK_ADDR:#06x}")
-    print(f"text bytes:     768 at {new_text_addr:#06x}")
-    print(f"payload entry:  {PAYLOAD_ENTRY:#06x}")
-    print("turbo tail:     preserved byte-for-byte")
+    seed = base64.b64decode(SEED_B64.read_bytes(), validate=False)
+    if sha256(seed) != SEED_SHA256:
+        raise AssertionError("immutable seed hash mismatch")
+    kernel = args.kernel.read_bytes()
+    if len(kernel) != KERNEL_SIZE:
+        raise SystemExit(f"kernel must be exactly {KERNEL_SIZE} bytes")
+    if sha256(kernel) == DUMMY_PAYLOAD_SHA256:
+        raise SystemExit("known seed dummy payload is forbidden")
+
+    hook_path = args.hook_output or args.output.with_suffix(".hook.bin")
+    hook = assemble_hook(hook_path, args.pasmo)
+    out = patch_basic(seed, hook)
+    inject_kernel(out, kernel)
+    rebuilt = reconstruct_kernel(bytes(out))
+    if rebuilt != kernel:
+        raise AssertionError("post-build embedded kernel differs byte-for-byte")
+
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_bytes(out)
+    manifest = {
+        "schema": 1,
+        "seed_sha256": SEED_SHA256,
+        "dummy_payload_sha256_forbidden": DUMMY_PAYLOAD_SHA256,
+        "hook_sha256": sha256(hook),
+        "kernel_size": len(kernel),
+        "kernel_sha256": sha256(kernel),
+        "embedded_kernel_sha256": sha256(rebuilt),
+        "tzx_size": len(out),
+        "tzx_sha256": sha256(out),
+        "payload_chunks": list(CHUNK_LENGTHS),
+        "payload_chunk_count": len(CHUNK_LENGTHS),
+        "kernel_range": "0xE000-0xFFFF",
+        "handoff": "0xE003",
+        "screen_file": None,
+        "release_tap": None,
+        "loader_display": "24x32 loader-owned",
+        "loader_check": "E=1; E=RLCA((byte+E)&0xff) for each byte",
+    }
+    if args.manifest:
+        args.manifest.parent.mkdir(parents=True, exist_ok=True)
+        args.manifest.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+    print(f"seed_sha256={SEED_SHA256}")
+    print(f"kernel_sha256={manifest['kernel_sha256']}")
+    print(f"embedded_kernel_sha256={manifest['embedded_kernel_sha256']}")
+    print(f"tzx_sha256={manifest['tzx_sha256']}")
+    print(f"tzx_size={manifest['tzx_size']}")
+    print("ZX-UX RELEASE TZX BUILD PASS")
+    return 0
 
 
 if __name__ == "__main__":
-    build()
+    raise SystemExit(main())
