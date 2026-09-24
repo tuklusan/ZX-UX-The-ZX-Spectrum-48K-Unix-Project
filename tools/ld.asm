@@ -1608,3 +1608,30 @@ ld_p1026_ptr_j:          dw 0
 ld_p1026_word_i:         dw 0
 ld_p1026_sec_i:          db 0
     ENDM
+
+
+; P10.27 normal-link default entry selection.
+    MACRO EMIT_P10_LD_DEFAULT_ENTRY_ROUTINES
+; DE=defined-global table, B=count. Uses the P10.25 resolver record format.
+; Normal links always request exact case-sensitive "_start" and require TEXT.
+ld_p1027_default_entry:
+    ld hl,ld_p1027_start_name
+    call ld_p1025_resolve
+    ret c
+    ld a,(ld_p1025_resolved_section)
+    cp 1
+    jp nz,ld_p1027_format
+    ld hl,(ld_p1025_resolved_value)
+    ld (ld_p1027_entry),hl
+    xor a
+    ret
+
+ld_p1027_format:
+    ld a,E_FORMAT
+    scf
+    ret
+
+ld_p1027_start_name:
+    db "_start",0,0,0,0,0,0,0,0,0,0
+ld_p1027_entry: dw 0
+    ENDM
