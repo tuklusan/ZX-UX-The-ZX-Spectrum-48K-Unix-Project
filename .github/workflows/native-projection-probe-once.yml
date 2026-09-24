@@ -44,3 +44,32 @@ jobs:
           grep -E '^[[:space:]]*[0-9]+[[:space:]]+[0-9A-Fa-f]{4}[[:space:]]+[0-9A-Fa-f]{2}' v1/build/kernel-probe.lst | head -n 160 || true
           echo "=== LIST TAIL ==="
           tail -n 120 v1/build/kernel-probe.lst
+          echo "=== EMITTING MNEMONIC/FORMS ==="
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          forms={}
+          mn={}
+          rx=re.compile(r'^\s*\d+\+?\s+[0-9A-Fa-f]{4}\s+((?:[0-9A-Fa-f]{2}(?:\s+|$))+)(?:>\s*)?(.*))
+          for raw in Path('v1/build/kernel-probe.lst').read_text(errors='replace').splitlines():
+              m=rx.match(raw)
+              if not m: continue
+              src=m.group(2).strip()
+              if not src or src.startswith(';'): continue
+              src=src.split(';',1)[0].strip()
+              if not src: continue
+              first=src.split(None,1)[0].lower()
+              mn[first]=mn.get(first,0)+1
+              shape=src.lower()
+              shape=re.sub(r"'[^']*'|\"[^\"]*\"",'<str>',shape)
+              shape=re.sub(r'\$[0-9a-f]+|%[01]+|\b\d+\b','N',shape)
+              # Preserve register/condition/mnemonic words, generalize other identifiers.
+              keep={'a','b','c','d','e','h','l','af','bc','de','hl','sp','ix','iy','i','r',
+                    'nz','z','nc','po','pe','p','m','af\'','db','dw','defs','defb','defw'}
+              toks=re.split(r'([a-z_.$][a-z0-9_.$]*\'?)',shape)
+              shape=''.join(t if (not re.fullmatch(r'[a-z_.$][a-z0-9_.$]*\'?',t) or t in keep or t==first) else 'S' for t in toks)
+              forms[shape]=forms.get(shape,0)+1
+          print('MNEMONICS',sorted(mn.items(),key=lambda x:(x[0])))
+          for form,count in sorted(forms.items()):
+              print(f'{count:5d} {form}')
+          PY
