@@ -148,10 +148,10 @@ def listing_statements(path:Path):
             emitted=bool(re.search(r"(?:^|\s)[0-9A-Fa-f]{2}(?:\s|$)",left))
         else:
             # Normal non-macro listing lines place source after a wide byte column.
-            mm=re.match(r"((?:(?:[0-9A-Fa-f]{2})(?:\s+|$)|\.\.\.|\s)+?)\s{2,}(.*)$",rest)
+            mm=re.match(r"^\s*((?:[0-9A-Fa-f]{2}(?:\s+|\.\.\.))+?)\s{2,}(.*)$",rest)
             if mm:
                 left,src=mm.group(1),mm.group(2).strip()
-                emitted=bool(re.search(r"(?:^|\s)[0-9A-Fa-f]{2}(?:\s|$)",left))
+                emitted=bool(re.search(r"[0-9A-Fa-f]{2}",left))
         if emitted and src:
             src=src.split(";",1)[0].strip()
             if src: yield address,src
