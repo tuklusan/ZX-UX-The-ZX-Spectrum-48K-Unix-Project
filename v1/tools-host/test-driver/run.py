@@ -972,6 +972,36 @@ def main() -> int:
         )
         if failed_assertions:
             raise DriverError(f"{len(failed_assertions)} assertion(s) failed")
+        if args.step == "P10.36" and args.action == "test":
+            build_path = evidence_dir / "P10.36.build.json"
+            if not build_path.is_file():
+                raise DriverError("P10.36 result requires matching build evidence")
+            build_record = json.loads(build_path.read_text(encoding="utf-8"))
+            test_record = json.loads(evidence_path.read_text(encoding="utf-8"))
+            for record in (build_record, test_record):
+                if record.get("status") != "PASS" or record.get("source_commit") != source_state.source_commit:
+                    raise DriverError("P10.36 source-candidate mismatch")
+                if record.get("architecture_sha256") != source_state.architecture_sha256:
+                    raise DriverError("P10.36 architecture identity mismatch")
+                if record.get("implementation_plan_sha256") != source_state.implementation_plan_sha256:
+                    raise DriverError("P10.36 plan identity mismatch")
+            result = {
+                "schema": 2, "step": "P10.36", "action": "result", "status": "PASS",
+                "pass_marker": "ZX-UX PHASE 10 ACCEPTANCE PASS",
+                "source_commit": source_state.source_commit,
+                "toolchain_lock_sha256": source_state.toolchain_lock_sha256,
+                "architecture_sha256": source_state.architecture_sha256,
+                "implementation_plan_sha256": source_state.implementation_plan_sha256,
+                "worktree_clean": True, "prerequisites": {"P10.35": "PASS"},
+                "commands": test_record["commands"], "hashes": test_record["hashes"],
+                "assertions": test_record["assertions"] + [
+                    {"name":"same-clean-phase10-acceptance-source-candidate-all-records","passed":True}
+                ],
+            }
+            result_path = evidence_dir / "P10.36.result.json"
+            result_path.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+            print("ZX-UX PHASE 10 ACCEPTANCE PASS")
+            print(f"result={result_path}")
         if args.step == "P9.24" and args.action == "test":
             build_path = evidence_dir / "P9.24.build.json"
             if not build_path.is_file():
