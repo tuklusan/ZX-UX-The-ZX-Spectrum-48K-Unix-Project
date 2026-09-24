@@ -1635,3 +1635,29 @@ ld_p1027_start_name:
     db "_start",0,0,0,0,0,0,0,0,0,0
 ld_p1027_entry: dw 0
     ENDM
+
+
+; P10.28 development-only -nostart explicit-entry selection.
+    MACRO EMIT_P10_LD_NOSTART_ENTRY_ROUTINES
+; A=explicit -e present (nonzero), HL=exact case-sensitive symbol name[16],
+; DE=defined-global table, B=count. There is deliberately no default under -nostart.
+ld_p1028_nostart_entry:
+    or a
+    jp z,ld_p1028_format
+    call ld_p1025_resolve
+    ret c
+    ld a,(ld_p1025_resolved_section)
+    cp 1
+    jp nz,ld_p1028_format
+    ld hl,(ld_p1025_resolved_value)
+    ld (ld_p1028_entry),hl
+    xor a
+    ret
+
+ld_p1028_format:
+    ld a,E_FORMAT
+    scf
+    ret
+
+ld_p1028_entry: dw 0
+    ENDM
