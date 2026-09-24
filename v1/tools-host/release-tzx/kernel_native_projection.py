@@ -365,7 +365,8 @@ def encode_record(record:bytes,pc:int)->bytes:
         return bytes([0xDD if pair==4 else 0xFD,0xE1 if pop else 0xE5])
     if k==EX:return (b"\xeb",b"\xe3",b"\x08")[record[1]]
     if k==IM:return b"\xed"+bytes([{0:0x46,1:0x56,2:0x5e}[record[1]]])
-    if k==INOUT:return b"\xed"+bytes([0x78 if record[1]==0 else 0x79])\n    if k==OUT_N_A:return bytes([0xD3,record[1]])
+    if k==INOUT:return b"\xed"+bytes([0x78 if record[1]==0 else 0x79])
+    if k==OUT_N_A:return bytes([0xD3,record[1]])
     if k==DB:return bytes([record[1]])
     if k==DW:
         v=struct.unpack_from("<H",record,1)[0];return struct.pack("<H",v)
