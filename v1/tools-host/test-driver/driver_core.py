@@ -31,6 +31,7 @@ REV16_ARCHITECTURE = Path("docs/01-ZX-UX-ARCHITECTURE-REV16.md")
 HISTORICAL_ARCHITECTURE = Path("docs/01-ZX-UX-ARCHITECTURE-REV12.md")
 IMPLEMENTATION_PLAN = Path("docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV08.md")
 REV07_IMPLEMENTATION_PLAN = Path("docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md")
+HISTORICAL_IMPLEMENTATION_PLAN = Path("docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV03.md")
 
 
 class DriverError(RuntimeError):
@@ -150,7 +151,7 @@ def read_source_state(root: Path) -> SourceState:
     epoch = os.environ.get("ZXUX_SOURCE_EPOCH", "current")
     if epoch == "historical":
         architecture = HISTORICAL_ARCHITECTURE
-        plan = REV07_IMPLEMENTATION_PLAN
+        plan = HISTORICAL_IMPLEMENTATION_PLAN
     elif epoch == "rev16":
         architecture = REV16_ARCHITECTURE
         plan = REV07_IMPLEMENTATION_PLAN
