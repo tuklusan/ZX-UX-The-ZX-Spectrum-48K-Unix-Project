@@ -1,0 +1,79 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "native-obj1-writer-present",
+      "passed": true
+    },
+    {
+      "name": "writer-widened-layout-gates",
+      "passed": true
+    },
+    {
+      "name": "writer-relocation-order-gate",
+      "passed": true
+    },
+    {
+      "name": "writer-crc16-ccitt-false",
+      "passed": true
+    },
+    {
+      "name": "independent-inspector-validates-golden",
+      "passed": true
+    },
+    {
+      "name": "identical-source-native-fixture-deterministic",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1018-writer.sym",
+        "p1018-writer.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 8,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 3077 lines, work time: 0.007 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1018-writer.sym",
+        "p1018-writer.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 7,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 3077 lines, work time: 0.006 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/as.asm": "dcb672a93ff04bc38aa46db53dc618d990ac1a650609d0bbda79d3cff860fb73",
+    "v1/build/p1018-writer.bin": "cef92ca53fa42b7f0cc0eca202870b9af6e97727ec930a2819caecbf47221c2b",
+    "v1/dist/certification/P10.17.build.json": "4bb13d28c1467d95a25079af87dde8469ca72018984868afb767811b133d14a5",
+    "v1/dist/certification/P10.17.test.json": "76622b76e5b131d34ddc24652b46d45f1c977def4ac477b23ba03e82d2bcab38",
+    "v1/include/obj1.inc": "acb62936905a4cfae7bd6b9fc9f2ed9b1a9208aca5feaf15346ae47c17fa2ef0",
+    "v1/tools-host/inspect-obj/inspect.py": "29b4eb6094ef4204486c6be044c4db799c982692e3aa3278849c60273d540566",
+    "v1/tools-host/test-driver/phase10_step_18.py": "f40224005a1d40f3a386e37943b321da22ef713e33df8916c749cd9c508b0d27"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P10.17": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "12233aa6eb675d0d18fdfccd0d8eb1767e8ee59a",
+  "status": "PASS",
+  "step": "P10.18",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
