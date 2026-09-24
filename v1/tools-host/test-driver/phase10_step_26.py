@@ -205,7 +205,9 @@ p1026_abs_runtime:
 p1026_expect_format:
     ret nc
     cp E_FORMAT
-    ret z
+    jp nz,p1026_fail
+    scf
+    ret
 p1026_fail:
     ld a,E_FORMAT
     scf
