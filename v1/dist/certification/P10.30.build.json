@@ -1,0 +1,59 @@
+{
+  "action": "build",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "stack-default-512",
+      "passed": true
+    },
+    {
+      "name": "stack-min-64",
+      "passed": true
+    },
+    {
+      "name": "stack-max-4096",
+      "passed": true
+    },
+    {
+      "name": "stack-even-only",
+      "passed": true
+    },
+    {
+      "name": "mex1-fast-stack-value",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1030-stack.sym",
+        "p1030-stack.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 20,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2201 lines, work time: 0.018 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/ld.asm": "d8737f32713360b2a507a13d21b0f4b7a16be7586d772030007796988d9fbf4c",
+    "v1/build/p1030-main.bin": "00ef94cfefd84ce4bdf0fcbe38632b2987a9705e2db253f50db6bfe160d0db86",
+    "v1/dist/certification/P10.29.build.json": "02c4ec3504e5fa330757ecc188750bfc4fe1fd8034c63c8dd5ebc974d9b26bcb",
+    "v1/dist/certification/P10.29.test.json": "c3a5c07f3ee65a07a9c02fe775bc3e3518d60a256119789a1d54f40663b8fd5e",
+    "v1/tools-host/test-driver/phase10_step_30.py": "d7f1287f0cf5ff79f3d3ea178d24b203e88bc24852b459a91e57c6f4b8e73550"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P10.29": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "0449b16802679f686c0db17bce62ff7e3c8b8d12",
+  "status": "PASS",
+  "step": "P10.30",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
