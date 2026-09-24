@@ -1805,3 +1805,143 @@ ld_p1030_format:
 
 ld_p1030_min_fast_stack: dw LD_P1030_STACK_DEFAULT
     ENDM
+
+
+; P10.31 -heap option/defaults, exact BSS heap placement, and allocation bound.
+    MACRO EMIT_P10_LD_HEAP_OPTION_ROUTINES
+LD_P1031_HEAP_NORMAL_DEFAULT  EQU 1024
+LD_P1031_HEAP_NOSTART_DEFAULT EQU 0
+LD_P1031_HEAP_MAX             EQU 8192
+
+; A=nostart (0 normal, nonzero development-only). Stores frozen default.
+ld_p1031_heap_default:
+    or a
+    jp nz,ld_p1031_default_nostart
+    ld hl,LD_P1031_HEAP_NORMAL_DEFAULT
+    jp ld_p1031_store_requested
+ld_p1031_default_nostart:
+    ld hl,LD_P1031_HEAP_NOSTART_DEFAULT
+ld_p1031_store_requested:
+    ld (ld_p1031_requested),hl
+    xor a
+    ret
+
+; HL=explicit requested bytes. Accept only even 0..8192 inclusive.
+ld_p1031_heap_set:
+    bit 0,l
+    jp nz,ld_p1031_format
+    push hl
+    ld de,LD_P1031_HEAP_MAX
+    or a
+    sbc hl,de
+    pop hl
+    jp c,ld_p1031_store_requested
+    jp z,ld_p1031_store_requested
+    jp ld_p1031_format
+
+; HL=ASCII decimal, B=length. Negative/non-numeric/empty/overflow fail.
+ld_p1031_heap_parse:
+    ld a,b
+    or a
+    jp z,ld_p1031_format
+    ld de,0
+ld_p1031_parse_loop:
+    ld a,(hl)
+    cp '0'
+    jp c,ld_p1031_format
+    cp '9'+1
+    jp nc,ld_p1031_format
+    sub '0'
+    ld c,a
+    push hl
+    push bc
+    ex de,hl
+    add hl,hl
+    ld de,hl
+    add hl,hl
+    add hl,hl
+    add hl,de
+    jp c,ld_p1031_parse_overflow_pop
+    ld e,c
+    ld d,0
+    add hl,de
+    jp c,ld_p1031_parse_overflow_pop
+    ld de,LD_P1031_HEAP_MAX
+    push hl
+    or a
+    sbc hl,de
+    pop hl
+    jp nc,ld_p1031_parse_bound_check
+ld_p1031_parse_accept:
+    ex de,hl
+    pop bc
+    pop hl
+    inc hl
+    djnz ld_p1031_parse_loop
+    ex de,hl
+    jp ld_p1031_heap_set
+ld_p1031_parse_bound_check:
+    jp z,ld_p1031_parse_accept
+ld_p1031_parse_overflow_pop:
+    pop bc
+    pop hl
+    jp ld_p1031_format
+
+; HL=image_size, DE=final raw module-BSS size, BC=requested heap bytes.
+; Heap starts at next even BSS offset. MEX1 bss_size includes exact heap bytes.
+ld_p1031_place:
+    ld (ld_p1031_image_size),hl
+    ld (ld_p1031_raw_bss),de
+    ld h,b
+    ld l,c
+    call ld_p1031_heap_set
+    ret c
+    ld hl,(ld_p1031_raw_bss)
+    bit 0,l
+    jp z,ld_p1031_bss_even
+    inc hl
+    jp z,ld_p1031_nospc
+ld_p1031_bss_even:
+    ld (ld_p1031_heap_bss_offset),hl
+    ld de,(ld_p1031_requested)
+    add hl,de
+    jp c,ld_p1031_nospc
+    ld (ld_p1031_mex1_bss_size),hl
+
+    ld de,(ld_p1031_image_size)
+    add hl,de
+    jp c,ld_p1031_nospc
+    ld de,$8001
+    or a
+    sbc hl,de
+    jp nc,ld_p1031_nospc
+
+    ld hl,(ld_p1031_image_size)
+    ld de,(ld_p1031_heap_bss_offset)
+    add hl,de
+    jp c,ld_p1031_nospc
+    ld (ld_p1031_heap_start),hl
+    ld de,(ld_p1031_requested)
+    add hl,de
+    jp c,ld_p1031_nospc
+    ld (ld_p1031_heap_end),hl
+    xor a
+    ret
+
+ld_p1031_nospc:
+    ld a,E_NOSPC
+    scf
+    ret
+ld_p1031_format:
+    ld a,E_FORMAT
+    scf
+    ret
+
+ld_p1031_requested:       dw 0
+ld_p1031_image_size:      dw 0
+ld_p1031_raw_bss:         dw 0
+ld_p1031_heap_bss_offset: dw 0
+ld_p1031_mex1_bss_size:   dw 0
+ld_p1031_heap_start:      dw 0
+ld_p1031_heap_end:        dw 0
+    ENDM
