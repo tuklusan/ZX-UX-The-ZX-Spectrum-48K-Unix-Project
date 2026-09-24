@@ -1,0 +1,25 @@
+{
+  "files": [
+    {
+      "action": "test",
+      "path": "test/build-p1034-lifecycle-1a71207314514f6c7a7ff83f08e029c06b734db1e49b6f1b9e91c7cff2d13ae2.tap",
+      "sha256": "1a71207314514f6c7a7ff83f08e029c06b734db1e49b6f1b9e91c7cff2d13ae2",
+      "size": 65
+    },
+    {
+      "action": "test",
+      "path": "test/build-p1034-lifecycle-e003f2e4abe4366fb466c0a22d00c0473e26dfe885a0f049f5229702883f6dde.tzx",
+      "sha256": "e003f2e4abe4366fb466c0a22d00c0473e26dfe885a0f049f5229702883f6dde",
+      "size": 81
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-afb4586710150aed3c7bce3ee8dce082893c132b5964969221ba70ca3ea148bb.sna",
+      "sha256": "afb4586710150aed3c7bce3ee8dce082893c132b5964969221ba70ca3ea148bb",
+      "size": 49179
+    }
+  ],
+  "schema": 1,
+  "source_commit": "1fae5f18851a286f6e02b40ff378b8b3b51d3a1f",
+  "step": "P10.36"
+}

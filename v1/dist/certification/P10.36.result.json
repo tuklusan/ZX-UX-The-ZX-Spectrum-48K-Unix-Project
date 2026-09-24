@@ -1,0 +1,262 @@
+{
+  "action": "result",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "all-p10-01-through-p10-35-durable-evidence-pass",
+      "passed": true,
+      "record_count": 70
+    },
+    {
+      "basis": "P10.05 P10.20",
+      "name": "assembler-syntax-failure-transaction-pass",
+      "passed": true
+    },
+    {
+      "basis": "P10.25 P10.26 P10.33",
+      "name": "link-symbol-relocation-failure-transaction-pass",
+      "passed": true
+    },
+    {
+      "basis": "P10.20 P10.24 P10.31",
+      "name": "allocation-failure-transaction-pass",
+      "passed": true
+    },
+    {
+      "basis": "P10.20 P10.33",
+      "name": "prior-output-never-mutated-on-failure",
+      "passed": true
+    },
+    {
+      "bytes": 4490,
+      "name": "native-as-size-at-most-12288",
+      "passed": true
+    },
+    {
+      "bytes": 4541,
+      "name": "native-ld-size-at-most-8192",
+      "passed": true
+    },
+    {
+      "basis": "P10.34",
+      "name": "on-target-lifecycle-and-roundtrip-pass",
+      "passed": true
+    },
+    {
+      "basis": "P10.35",
+      "name": "multi-module-golden-link-pass",
+      "passed": true
+    },
+    {
+      "name": "phase10-gate-stops-before-phase11",
+      "passed": true
+    },
+    {
+      "name": "fuse-phase10-acceptance-checkpoint-pass",
+      "passed": true
+    },
+    {
+      "name": "selected-current-head-phase10-acceptance-matrix-pass",
+      "passed": true,
+      "steps": [
+        "P10.05",
+        "P10.20",
+        "P10.24",
+        "P10.25",
+        "P10.31",
+        "P10.33",
+        "P10.34",
+        "P10.35"
+      ]
+    },
+    {
+      "name": "same-clean-phase10-acceptance-source-candidate-all-records",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "p1036-as-size.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 13,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 6200 lines, work time: 0.012 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "p1036-ld-size.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 13,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 5397 lines, work time: 0.011 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P10.05",
+        "--evidence-dir",
+        "/tmp/zxux-p1036-of0wrwr4"
+      ],
+      "cwd": ".",
+      "duration_ms": 878,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P10.05 TEST PASS\nevidence=/tmp/zxux-p1036-of0wrwr4/P10.05.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P10.20",
+        "--evidence-dir",
+        "/tmp/zxux-p1036-of0wrwr4"
+      ],
+      "cwd": ".",
+      "duration_ms": 1046,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P10.20 TEST PASS\nevidence=/tmp/zxux-p1036-of0wrwr4/P10.20.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P10.24",
+        "--evidence-dir",
+        "/tmp/zxux-p1036-of0wrwr4"
+      ],
+      "cwd": ".",
+      "duration_ms": 904,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P10.24 TEST PASS\nevidence=/tmp/zxux-p1036-of0wrwr4/P10.24.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P10.25",
+        "--evidence-dir",
+        "/tmp/zxux-p1036-of0wrwr4"
+      ],
+      "cwd": ".",
+      "duration_ms": 861,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P10.25 TEST PASS\nevidence=/tmp/zxux-p1036-of0wrwr4/P10.25.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P10.31",
+        "--evidence-dir",
+        "/tmp/zxux-p1036-of0wrwr4"
+      ],
+      "cwd": ".",
+      "duration_ms": 1222,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P10.31 TEST PASS\nevidence=/tmp/zxux-p1036-of0wrwr4/P10.31.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P10.33",
+        "--evidence-dir",
+        "/tmp/zxux-p1036-of0wrwr4"
+      ],
+      "cwd": ".",
+      "duration_ms": 941,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P10.33 TEST PASS\nevidence=/tmp/zxux-p1036-of0wrwr4/P10.33.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P10.34",
+        "--evidence-dir",
+        "/tmp/zxux-p1036-of0wrwr4"
+      ],
+      "cwd": ".",
+      "duration_ms": 731,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P10.34 TEST PASS\nevidence=/tmp/zxux-p1036-of0wrwr4/P10.34.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P10.35",
+        "--evidence-dir",
+        "/tmp/zxux-p1036-of0wrwr4"
+      ],
+      "cwd": ".",
+      "duration_ms": 728,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P10.35 TEST PASS\nevidence=/tmp/zxux-p1036-of0wrwr4/P10.35.test.json\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/as.asm": "2eec326a18df28133ba1f57e5d0b64c42cc7853cbcd649880ecd045767c4ca30",
+    "tools/ld.asm": "559cb8bfe390c5a1bed8934948f51aa0852c29880128a4b06cc6df684ff6f3df",
+    "v1/build/p1036-as.bin": "259f7d52545978561fcfd0b5f7d599a8c71f333b011d0f0489261d6f89e8c418",
+    "v1/build/p1036-ld.bin": "42f670cf61216cea7e0d1ca0fad307879724a498517b3d6343d1b472627acdd3",
+    "v1/dist/certification/P10.35.build.json": "f8dbfc6e4f651f929900386c879d1e11666dcf6e53c5a7db3e1c04fbd254bbf1",
+    "v1/dist/certification/P10.35.test.json": "8d2e7517037342763eae66411cbb29ab7963343d085a6318e1e5c405f7e34358",
+    "v1/tools-host/test-driver/phase10_step_36.py": "2b4a7026edc88de36dcb4e7ded4bd3f6081b20052ec9290c64537b06e1c91209",
+    "v1/tools-host/test-driver/run.py": "b0a63544b430dd12a6347c93d4312157a75aa5f3c53a1414f91caacb1b5915d8"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "pass_marker": "ZX-UX PHASE 10 ACCEPTANCE PASS",
+  "prerequisites": {
+    "P10.35": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "1fae5f18851a286f6e02b40ff378b8b3b51d3a1f",
+  "status": "PASS",
+  "step": "P10.36",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
