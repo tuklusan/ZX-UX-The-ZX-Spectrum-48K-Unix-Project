@@ -3412,7 +3412,11 @@ r17_as_h_ld_r_n:
     ld b,7
     call r17_as_le_b
     ld (r17_as_v0),a
-    call r17_as_get8
+    call r17_as_get16
+    ld a,d
+    or a
+    jp nz,r17_as_error
+    ld a,e
     ld (r17_as_v1),a
     ld a,(r17_as_v0)
     add a,a
@@ -3444,7 +3448,11 @@ r17_as_h_ld_memhl_r:
     jp r17_as_record_done
 
 r17_as_h_ld_memhl_n:
-    call r17_as_get8
+    call r17_as_get16
+    ld a,d
+    or a
+    jp nz,r17_as_error
+    ld a,e
     ld (r17_as_v0),a
     ld a,$36
     call r17_as_put8
@@ -3704,7 +3712,11 @@ r17_as_h_alu_n:
     add hl,de
     ld a,(hl)
     ld (r17_as_v0),a
-    call r17_as_get8
+    call r17_as_get16
+    ld a,d
+    or a
+    jp nz,r17_as_error
+    ld a,e
     ld (r17_as_v1),a
     ld a,(r17_as_v0)
     call r17_as_put8
