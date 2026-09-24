@@ -87,6 +87,7 @@ import phase2_spawn_exit_leak
 import phase2_two_base_relocatable
 import phase2_acceptance
 import revision16_bridge
+import revision17_bridge
 import phase3_open_descriptions
 import phase3_handle_table
 import phase3_tty
@@ -334,6 +335,8 @@ def dispatch(root: Path, action: str, step: str):
     }
     if step == "R16.00":
         return revision16_bridge.dispatch(root, action, step, **kwargs)
+    if step == "R17.00":
+        return revision17_bridge.dispatch(root, action, step, **kwargs)
     if step == "P3.01":
         return phase3_open_descriptions.dispatch(root, action, step, **kwargs)
     if step == "P3.02":
@@ -917,6 +920,16 @@ def prerequisite_statuses(step: str) -> dict[str, str]:
         number = int(step.split(".", 1)[1])
         if 1 <= number <= 36:
             return {"P9.24": "PASS"} if number == 1 else {f"P10.{number - 1:02d}": "PASS"}
+    if step == "R17.00":
+        return {"P10.36": "PASS"}
+    if step.startswith("P11."):
+        number = int(step.split(".", 1)[1])
+        if 1 <= number:
+            return {"R17.00": "PASS"} if number == 1 else {f"P11.{number - 1:02d}": "PASS"}
+    if step.startswith("P12."):
+        number = int(step.split(".", 1)[1])
+        if 1 <= number:
+            return {"P11.48": "PASS"} if number == 1 else {f"P12.{number - 1:02d}": "PASS"}
     return {}
 
 
@@ -945,8 +958,10 @@ def main() -> int:
             return 0
         if args.step.startswith(("E0.", "P0.", "P1.", "P2.")):
             os.environ["ZXUX_SOURCE_EPOCH"] = "historical"
+        elif args.step == "R16.00" or args.step.startswith(("P3.", "P4.", "P5.", "P6.", "P7.", "P8.", "P9.", "P10.")):
+            os.environ["ZXUX_SOURCE_EPOCH"] = "rev16"
         else:
-            os.environ.pop("ZXUX_SOURCE_EPOCH", None)
+            os.environ["ZXUX_SOURCE_EPOCH"] = "current"
         source_state = require_clean_source(root)
         evidence_dir = resolve_evidence_dir(root, source_state.source_commit, args.evidence_dir)
         configure_media_stage(evidence_dir, args.step, args.action)
@@ -1181,6 +1196,34 @@ def main() -> int:
             result_path = evidence_dir / "P3.21.result.json"
             result_path.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
             print(phase3_acceptance.PASS_MARKER)
+            print(f"result={result_path}")
+        if args.step == "R17.00" and args.action == "test":
+            build_path = evidence_dir / "R17.00.build.json"
+            if not build_path.is_file():
+                raise DriverError("R17.00 result requires matching build evidence")
+            build_record = json.loads(build_path.read_text(encoding="utf-8"))
+            test_record = json.loads(evidence_path.read_text(encoding="utf-8"))
+            for record in (build_record, test_record):
+                if record.get("status") != "PASS" or record.get("source_commit") != source_state.source_commit:
+                    raise DriverError("R17.00 source-candidate mismatch")
+                if record.get("architecture_sha256") != source_state.architecture_sha256:
+                    raise DriverError("R17.00 architecture identity mismatch")
+                if record.get("implementation_plan_sha256") != source_state.implementation_plan_sha256:
+                    raise DriverError("R17.00 plan identity mismatch")
+            result = {
+                "schema": 2, "step": "R17.00", "action": "result", "status": "PASS",
+                "pass_marker": revision17_bridge.PASS_MARKER,
+                "source_commit": source_state.source_commit, "bridge_source_commit": source_state.source_commit,
+                "toolchain_lock_sha256": source_state.toolchain_lock_sha256,
+                "architecture_sha256": source_state.architecture_sha256,
+                "implementation_plan_sha256": source_state.implementation_plan_sha256,
+                "worktree_clean": True, "prerequisites": {"P10.36": "PASS"},
+                "commands": test_record["commands"], "hashes": test_record["hashes"],
+                "assertions": test_record["assertions"] + [{"name":"same-clean-r17-bridge-source-candidate-all-records","passed":True}],
+            }
+            result_path = evidence_dir / "R17.00.result.json"
+            result_path.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+            print(revision17_bridge.PASS_MARKER)
             print(f"result={result_path}")
         if args.step == "R16.00" and args.action == "test":
             build_path = evidence_dir / "R16.00.build.json"
