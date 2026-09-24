@@ -255,11 +255,12 @@ def encode_source(src:str,address:int,syms:dict[str,int])->list[bytes]:
             return [rec(ADC_SBC_HL_RR,0 if mn=="adc" else 1,PAIR[args[1].lower()])]
         if mn=="add" and len(args)==2 and args[0].lower() in INDEX and args[1].lower() in PAIR:
             return [rec(ADD_INDEX_RR,INDEX[args[0].lower()],PAIR[args[1].lower()])]
-        op=args[-1].lower()
-        ix=indexed(op,syms,address)
+        raw_op=args[-1].strip()
+        op=raw_op.lower()
+        ix=indexed(raw_op,syms,address)
         if ix:return [rec(ALU_INDEX,ALU[mn],ix[0],ix[1])]
         if op in REG8:return [rec(ALU_R,ALU[mn],REG8[op])]
-        return [rec(ALU_N,ALU[mn],u8(eval_expr(op,syms,address)))]
+        return [rec(ALU_N,ALU[mn],u8(eval_expr(raw_op,syms,address)))]
     if mn in ("inc","dec"):
         op=tail.lower()
         if op in REG8:return [rec(INCDEC_R,REG8[op],1 if mn=="dec" else 0)]
