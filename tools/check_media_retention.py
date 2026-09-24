@@ -20,7 +20,7 @@ import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-PLAN = ROOT / "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md"
+PLAN = ROOT / "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV08.md"
 CERTIFICATION = ROOT / "v1/dist/certification"
 MEDIA = ROOT / "v1/dist/media"
 ALLOWED_SUFFIXES = frozenset({".sna", ".tap", ".tzx", ".scr", ".fmf", ".wav", ".flac", ".png"})
