@@ -1,0 +1,24 @@
+ZX-UX 48K UNIX V1               
+(C) 2026 SANYALnet Labs         
+boot entry 0xE003               
+kernel 0xE000-0xFFFF            
+Z80A 3.5MHz, IM2 enabled        
+real mem = 49152                
+kernel mem = 8192               
+screen+rom ws = 8192            
+task arena = 32768              
+cold arena 0x6000-0x7FFF        
+fast arena 0x8000-0xDFFF        
+tty64 at 64x24                  
+tty32 fallback ready            
+kbd0 Spectrum matrix            
+tap0 cassette object store      
+root namespace mounted          
+/bin /dev /etc /home /tmp       
+pid0 idle                       
+pid1 shell                      
+clock 1982-04-23 00:00:00       
+WARNING: no persistent RTC      
+EDIT=ESC BREAK=cancel           
+case-sensitive names            
+starting ZX-UX...               
