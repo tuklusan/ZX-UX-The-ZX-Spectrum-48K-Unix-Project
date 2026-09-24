@@ -1,0 +1,83 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "case-sensitive-name-compare",
+      "passed": true
+    },
+    {
+      "name": "text-formula",
+      "passed": true
+    },
+    {
+      "name": "bss-formula",
+      "passed": true
+    },
+    {
+      "name": "abs-formula",
+      "passed": true
+    },
+    {
+      "name": "duplicate-global-hard-error",
+      "passed": true
+    },
+    {
+      "name": "unresolved-global-hard-error",
+      "passed": true
+    },
+    {
+      "name": "fuse-text-final-formula",
+      "passed": true
+    },
+    {
+      "name": "fuse-bss-final-formula",
+      "passed": true
+    },
+    {
+      "name": "fuse-abs-final-formula",
+      "passed": true
+    },
+    {
+      "name": "fuse-case-mismatch-unresolved",
+      "passed": true
+    },
+    {
+      "name": "fuse-duplicate-defined-global-rejected",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1025-symbols.sym",
+        "p1025-symbols.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 1946 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/ld.asm": "e06b73c728cdc913974f908e7ac69fdeed216db442883ebcd814fcd05f88dd75",
+    "v1/build/p1025-main.bin": "d3c0fd3a801c4aba1f5dc8b3b063be80b17862fce966483d2dbf925c0e22c260",
+    "v1/dist/certification/P10.24.build.json": "3dc81000f563c3bb3d0e52a49d7d3fa687b64d2b740d387f5f9fac9bb4cdc59e",
+    "v1/dist/certification/P10.24.test.json": "e2e81a315cc1bd8e23f56fcb53bfc76e179c5a7c23fa6bd4ee83721dedb23efe",
+    "v1/tools-host/test-driver/phase10_step_25.py": "6e4559ea73a8028dcc1d1a08aeed03fa87b20c8ade821971e6e953948da3c6f7"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P10.24": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "2a0bf8b8ee3e512e1c3df49329c5712ae0819a58",
+  "status": "PASS",
+  "step": "P10.25",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
