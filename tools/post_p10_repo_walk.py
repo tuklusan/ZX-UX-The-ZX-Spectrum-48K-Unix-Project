@@ -79,6 +79,8 @@ def classify(path: str) -> str:
         return "current"
     if path.startswith(".github/workflows/"):
         name = Path(path).name
+        if name == "post-p10-migration-final-validation-once.yml":
+            return "disposable"
         if name in {
             "candidate-kernel.yml",
             "evidence-integrity.yml",
