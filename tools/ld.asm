@@ -1411,6 +1411,8 @@ ld_p1026_apply_ok:
 ld_p1026_validate_patch:
     ld hl,(ld_p1026_patch_loc)
     inc hl
+    ld a,h
+    or l
     jp z,ld_p1026_format
     ld de,(ld_p1026_image_size)
     or a
