@@ -123,7 +123,7 @@ jobs:
           retention-days: 90
           if-no-files-found: error
       - name: Final exact-head check and dispatch admission
-        env: {GH_TOKEN: ${{ github.token }}}
+        env:\n          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           git fetch --quiet origin main
