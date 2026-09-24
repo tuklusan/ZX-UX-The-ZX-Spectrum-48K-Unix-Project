@@ -12,7 +12,7 @@
 
 # ZX-UX Phase 2 — Processes and Loader Implementation and Certification Runbook
 
-**Status:** AUTHORIZED WORKING PLAN — not architecture, implementation, or certification authority.
+**Status:** CLOSED — historical Phase-2 coordination record only; do not resume work from this file.
 
 **Goal:** Implement, certify, durably activate, and close REV12/REV03 Phase 2
 (P2.01-P2.24) so ZX-UX can load and execute genuine relocatable MEX1 user processes
