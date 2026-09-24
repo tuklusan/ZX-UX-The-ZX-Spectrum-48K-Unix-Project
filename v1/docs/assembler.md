@@ -43,3 +43,11 @@ encoder families. P10.17 validates the complete row mapping against the frozen
 inventory, reassembles representative bytes with the certified SjASMPlus oracle,
 and executes one target-side checkpoint from every encoder family. This closes
 documented opcode/addressing coverage before OBJ1 writer and lifecycle work.
+
+## REV17 kernel self-rebuild path
+
+REV17 adds a narrow release-proof path without changing the historical Phase-10 opcode inventory or its admitted evidence. The canonical host kernel build deterministically produces an NSP1 semantic source projection from the canonical kernel listing/symbol source. NSP1 carries semantic operation/operand records and source data directives; it contains no preassembled kernel payload.
+
+The target-native assembler facility `EMIT_R17_AS_NSP1_OBJ1` parses that semantic source on the ZX-UX target and emits a real no-symbol/no-relocation OBJ1 object. The native linker facility `EMIT_R17_LD_ABSOLUTE_OBJ1` consumes that OBJ1 and materializes its exact TEXT bytes only in caller-owned RAM below `0xE000`; it must not overwrite the executing resident kernel.
+
+Release/pre-release acceptance requires the resulting 8192-byte image to match the host-built and independently TZX-reconstructed kernels at every byte offset, plus a separate genuine `source -> native as -> OBJ1 -> native ld -> executable -> run` proof and a controlled source mutation that must break kernel equality.
