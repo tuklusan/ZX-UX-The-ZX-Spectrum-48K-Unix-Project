@@ -2505,3 +2505,504 @@ as_p1019_error:
     scf
     ret
     ENDM
+
+
+; P10.20 assembler transactional output.
+; HL=exact destination path, DE=validated complete OBJ1 candidate, BC=length.
+; Publish through one owned /tmp/.as<pid>.<n> OBJ object only after full write,
+; close, and complete OBJ1 revalidation. Destination is never opened/truncated.
+    MACRO EMIT_P10_AS_TRANSACTION_ROUTINES
+AS_P1020_HEADER_SIZE EQU 24
+AS_P1020_SYMBOL_SIZE EQU 20
+AS_P1020_RELOC_SIZE  EQU 6
+AS_P1020_MAX_STORED  EQU $8000
+
+as_p1020_publish:
+    ld (as_p1020_dest),hl
+    ld (as_p1020_candidate),de
+    ld (as_p1020_length),bc
+    xor a
+    ld (as_p1020_owned),a
+    ld (as_p1020_open),a
+
+    ; Format/syntax failure is decided before any output object exists.
+    call as_p1020_validate_candidate
+    jp c,as_p1020_format
+
+    ld a,SYS_GETPID
+    call SYSCALL_GATEWAY
+    ret c
+    ld a,h
+    or a
+    jp nz,as_p1020_format
+    ld a,l
+    cp 10
+    jp nc,as_p1020_format
+    add a,'0'
+    ld (as_p1020_temp_name+8),a
+    xor a
+    ld (as_p1020_temp_n),a
+
+as_p1020_open_retry:
+    ld a,(as_p1020_temp_n)
+    add a,'0'
+    ld (as_p1020_temp_name+10),a
+    ld hl,as_p1020_temp_name
+    ld c,O_WRITE|O_CREATE|O_EXCL
+    ld b,OBJ_OBJ
+    ld a,SYS_OPEN
+    call SYSCALL_GATEWAY
+    jr nc,as_p1020_opened
+    cp E_EXIST
+    ret nz
+    ld a,(as_p1020_temp_n)
+    cp 9
+    jp z,as_p1020_exist
+    inc a
+    ld (as_p1020_temp_n),a
+    jr as_p1020_open_retry
+
+as_p1020_opened:
+    ld a,h
+    or a
+    jp nz,as_p1020_format_created
+    ld a,l
+    ld (as_p1020_handle),a
+    ld a,1
+    ld (as_p1020_owned),a
+    ld (as_p1020_open),a
+
+    ; RAM-object writes are all-or-error; still require the exact returned count.
+    ld e,l
+    ld d,0
+    ld hl,(as_p1020_candidate)
+    ld bc,(as_p1020_length)
+    ld a,SYS_WRITE
+    call SYSCALL_GATEWAY
+    jp c,as_p1020_cleanup_error
+    ld de,(as_p1020_length)
+    or a
+    sbc hl,de
+    jr z,as_p1020_write_complete
+    ld a,E_IO
+    jp as_p1020_cleanup_error
+
+as_p1020_write_complete:
+    call as_p1020_close_temp
+    jp c,as_p1020_cleanup_error
+
+    ; Revalidate the exact complete candidate after the write/close barrier.
+    call as_p1020_validate_candidate
+    jr nc,as_p1020_ready_rename
+    ld a,E_FORMAT
+    jp as_p1020_cleanup_error
+
+as_p1020_ready_rename:
+    ld hl,as_p1020_temp_name
+    ld (as_p1020_rename_req),hl
+    ld hl,(as_p1020_dest)
+    ld (as_p1020_rename_req+2),hl
+    ld hl,as_p1020_rename_req
+    ld a,SYS_RENAME
+    call SYSCALL_GATEWAY
+    jp c,as_p1020_cleanup_error
+    xor a
+    ld (as_p1020_owned),a
+    ret
+
+as_p1020_close_temp:
+    ld a,(as_p1020_open)
+    or a
+    ret z
+    ld a,(as_p1020_handle)
+    ld l,a
+    ld h,0
+    ld a,SYS_CLOSE
+    call SYSCALL_GATEWAY
+    ret c
+    xor a
+    ld (as_p1020_open),a
+    ret
+
+; Preserve primary errno and remove only a temporary created by this process.
+as_p1020_cleanup_error:
+    ld (as_p1020_errno),a
+    call as_p1020_close_temp
+    ld a,(as_p1020_owned)
+    or a
+    jr z,as_p1020_return_primary
+    xor a
+    ld (as_p1020_owned),a
+    ld hl,as_p1020_temp_name
+    ld a,SYS_REMOVE
+    call SYSCALL_GATEWAY
+as_p1020_return_primary:
+    ld a,(as_p1020_errno)
+    scf
+    ret
+
+as_p1020_format_created:
+    ld a,1
+    ld (as_p1020_owned),a
+    ld a,E_FORMAT
+    jp as_p1020_cleanup_error
+as_p1020_format:
+    ld a,E_FORMAT
+    scf
+    ret
+as_p1020_exist:
+    ld a,E_EXIST
+    scf
+    ret
+
+; Complete OBJ1 validation for the serialized candidate. Symbol and relocation
+; record contracts are the already-qualified P10.02/P10.03 routines.
+as_p1020_validate_candidate:
+    ld hl,(as_p1020_length)
+    ld de,AS_P1020_HEADER_SIZE
+    or a
+    sbc hl,de
+    jp c,as_p1020_val_bad
+
+    ld ix,(as_p1020_candidate)
+    ld a,(ix+0)
+    cp 'O'
+    jp nz,as_p1020_val_bad
+    ld a,(ix+1)
+    cp 'B'
+    jp nz,as_p1020_val_bad
+    ld a,(ix+2)
+    cp 'J'
+    jp nz,as_p1020_val_bad
+    ld a,(ix+3)
+    cp '1'
+    jp nz,as_p1020_val_bad
+    ld a,(ix+4)
+    cp 1
+    jp nz,as_p1020_val_bad
+    ld a,(ix+5)
+    or a
+    jp nz,as_p1020_val_bad
+    ld a,(ix+6)
+    cp AS_P1020_HEADER_SIZE
+    jp nz,as_p1020_val_bad
+    ld a,(ix+7)
+    or a
+    jp nz,as_p1020_val_bad
+
+    ld l,(ix+8)
+    ld h,(ix+9)
+    ld (as_p1020_text_size),hl
+    ld l,(ix+10)
+    ld h,(ix+11)
+    ld (as_p1020_bss_size),hl
+    ld l,(ix+12)
+    ld h,(ix+13)
+    ld (as_p1020_sym_count),hl
+    ld l,(ix+14)
+    ld h,(ix+15)
+    ld (as_p1020_rel_count),hl
+    ld l,(ix+16)
+    ld h,(ix+17)
+    ld (as_p1020_sym_off),hl
+    ld l,(ix+18)
+    ld h,(ix+19)
+    ld (as_p1020_rel_off),hl
+
+    ; text+bss <=32768 with no wrap.
+    ld hl,(as_p1020_text_size)
+    ld de,(as_p1020_bss_size)
+    add hl,de
+    jp c,as_p1020_val_bad
+    call as_p1020_bound
+    jp c,as_p1020_val_bad
+
+    ; exact symbol offset.
+    ld hl,(as_p1020_text_size)
+    ld de,AS_P1020_HEADER_SIZE
+    add hl,de
+    jp c,as_p1020_val_bad
+    ld de,(as_p1020_sym_off)
+    or a
+    sbc hl,de
+    jp nz,as_p1020_val_bad
+
+    ; symbol bytes and exact relocation offset.
+    ld de,(as_p1020_sym_count)
+    ld a,AS_P1020_SYMBOL_SIZE
+    call as_p1020_mul_small
+    jp c,as_p1020_val_bad
+    ld (as_p1020_sym_bytes),hl
+    ld de,(as_p1020_sym_off)
+    add hl,de
+    jp c,as_p1020_val_bad
+    ld de,(as_p1020_rel_off)
+    or a
+    sbc hl,de
+    jp nz,as_p1020_val_bad
+
+    ; relocation bytes and exact total.
+    ld de,(as_p1020_rel_count)
+    ld a,AS_P1020_RELOC_SIZE
+    call as_p1020_mul_small
+    jp c,as_p1020_val_bad
+    ld (as_p1020_rel_bytes),hl
+    ld de,(as_p1020_rel_off)
+    add hl,de
+    jp c,as_p1020_val_bad
+    call as_p1020_bound
+    jp c,as_p1020_val_bad
+    ld (as_p1020_total),hl
+    ld de,(as_p1020_length)
+    or a
+    sbc hl,de
+    jp nz,as_p1020_val_bad
+
+    ; relocation count requires a full TEXT word.
+    ld hl,(as_p1020_rel_count)
+    ld a,h
+    or l
+    jr z,as_p1020_crc_body
+    ld hl,(as_p1020_text_size)
+    ld a,h
+    or a
+    jr nz,as_p1020_crc_body
+    ld a,l
+    cp 2
+    jp c,as_p1020_val_bad
+
+as_p1020_crc_body:
+    ; Body CRC covers every byte after the 24-byte header.
+    ld hl,(as_p1020_total)
+    ld de,AS_P1020_HEADER_SIZE
+    or a
+    sbc hl,de
+    ld b,h
+    ld c,l
+    ld hl,(as_p1020_candidate)
+    ld de,AS_P1020_HEADER_SIZE
+    add hl,de
+    call as_p1020_crc16
+    ld ix,(as_p1020_candidate)
+    ld a,(ix+20)
+    cp e
+    jp nz,as_p1020_val_bad
+    ld a,(ix+21)
+    cp d
+    jp nz,as_p1020_val_bad
+
+    ; Header CRC is over a private copy with bytes 22..23 forced to zero.
+    ld hl,(as_p1020_candidate)
+    ld de,as_p1020_header_copy
+    ld bc,AS_P1020_HEADER_SIZE
+    ldir
+    xor a
+    ld (as_p1020_header_copy+22),a
+    ld (as_p1020_header_copy+23),a
+    ld hl,as_p1020_header_copy
+    ld bc,AS_P1020_HEADER_SIZE
+    call as_p1020_crc16
+    ld ix,(as_p1020_candidate)
+    ld a,(ix+22)
+    cp e
+    jp nz,as_p1020_val_bad
+    ld a,(ix+23)
+    cp d
+    jp nz,as_p1020_val_bad
+
+    call as_p1020_validate_symbols
+    jp c,as_p1020_val_bad
+    call as_p1020_validate_relocs
+    jp c,as_p1020_val_bad
+    xor a
+    ret
+
+as_p1020_validate_symbols:
+    ld hl,(as_p1020_candidate)
+    ld de,(as_p1020_sym_off)
+    add hl,de
+    ld (as_p1020_sym_start),hl
+    ld (as_p1020_sym_cur),hl
+    ld hl,(as_p1020_sym_count)
+    ld (as_p1020_left),hl
+
+as_p1020_sym_loop:
+    ld hl,(as_p1020_left)
+    ld a,h
+    or l
+    jr z,as_p1020_sym_ok
+    ld hl,(as_p1020_sym_cur)
+    ld de,(as_p1020_text_size)
+    ld bc,(as_p1020_bss_size)
+    call as_obj1_symbol_validate
+    ret c
+
+    ; Reject any duplicate 16-byte canonical symbol-name field.
+    ld hl,(as_p1020_sym_start)
+    ld (as_p1020_scan),hl
+as_p1020_sym_dup_loop:
+    ld hl,(as_p1020_scan)
+    ld de,(as_p1020_sym_cur)
+    or a
+    sbc hl,de
+    jr z,as_p1020_sym_advance
+    ld hl,(as_p1020_scan)
+    ld de,(as_p1020_sym_cur)
+    ld b,16
+as_p1020_sym_name_cmp:
+    ld a,(de)
+    cp (hl)
+    jr nz,as_p1020_sym_not_dup
+    inc hl
+    inc de
+    djnz as_p1020_sym_name_cmp
+    scf
+    ret
+as_p1020_sym_not_dup:
+    ld hl,(as_p1020_scan)
+    ld de,AS_P1020_SYMBOL_SIZE
+    add hl,de
+    ld (as_p1020_scan),hl
+    jr as_p1020_sym_dup_loop
+
+as_p1020_sym_advance:
+    ld hl,(as_p1020_sym_cur)
+    ld de,AS_P1020_SYMBOL_SIZE
+    add hl,de
+    ld (as_p1020_sym_cur),hl
+    ld hl,(as_p1020_left)
+    dec hl
+    ld (as_p1020_left),hl
+    jr as_p1020_sym_loop
+as_p1020_sym_ok:
+    or a
+    ret
+
+as_p1020_validate_relocs:
+    ld hl,(as_p1020_candidate)
+    ld de,(as_p1020_rel_off)
+    add hl,de
+    ld (as_p1020_rel_cur),hl
+    ld hl,(as_p1020_rel_count)
+    ld (as_p1020_left),hl
+    xor a
+    ld (as_p1020_have_prev),a
+as_p1020_rel_loop:
+    ld hl,(as_p1020_left)
+    ld a,h
+    or l
+    jr z,as_p1020_rel_ok
+    ld ix,0
+    ld a,(as_p1020_have_prev)
+    or a
+    jr z,as_p1020_rel_call
+    ld ix,as_p1020_prev_off
+as_p1020_rel_call:
+    ld hl,(as_p1020_rel_cur)
+    ld de,(as_p1020_text_size)
+    ld bc,(as_p1020_sym_count)
+    call as_obj1_reloc_validate
+    ret c
+    ld hl,(as_p1020_rel_cur)
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (as_p1020_prev_off),de
+    ld a,1
+    ld (as_p1020_have_prev),a
+    ld hl,(as_p1020_rel_cur)
+    ld de,AS_P1020_RELOC_SIZE
+    add hl,de
+    ld (as_p1020_rel_cur),hl
+    ld hl,(as_p1020_left)
+    dec hl
+    ld (as_p1020_left),hl
+    jr as_p1020_rel_loop
+as_p1020_rel_ok:
+    or a
+    ret
+
+as_p1020_mul_small:
+    ld hl,0
+    ld b,a
+as_p1020_mul_loop:
+    ld a,b
+    or a
+    ret z
+    add hl,de
+    ret c
+    djnz as_p1020_mul_loop
+    or a
+    ret
+
+; Carry set iff HL > 32768.
+as_p1020_bound:
+    push de
+    ld de,$8001
+    or a
+    sbc hl,de
+    pop de
+    ccf
+    ret
+
+; HL=bytes, BC=length; DE=CRC-16/CCITT-FALSE.
+as_p1020_crc16:
+    ld de,$FFFF
+as_p1020_crc_byte:
+    ld a,b
+    or c
+    ret z
+    ld a,(hl)
+    xor d
+    ld d,a
+    inc hl
+    push bc
+    ld b,8
+as_p1020_crc_bit:
+    sla e
+    rl d
+    jr nc,as_p1020_crc_no_poly
+    ld a,d
+    xor $10
+    ld d,a
+    ld a,e
+    xor $21
+    ld e,a
+as_p1020_crc_no_poly:
+    djnz as_p1020_crc_bit
+    pop bc
+    dec bc
+    jr as_p1020_crc_byte
+
+as_p1020_val_bad:
+    scf
+    ret
+
+as_p1020_dest:       dw 0
+as_p1020_candidate:  dw 0
+as_p1020_length:     dw 0
+as_p1020_handle:     db 0
+as_p1020_open:       db 0
+as_p1020_owned:      db 0
+as_p1020_temp_n:     db 0
+as_p1020_errno:      db 0
+as_p1020_text_size:  dw 0
+as_p1020_bss_size:   dw 0
+as_p1020_sym_count:  dw 0
+as_p1020_rel_count:  dw 0
+as_p1020_sym_off:    dw 0
+as_p1020_rel_off:    dw 0
+as_p1020_sym_bytes:  dw 0
+as_p1020_rel_bytes:  dw 0
+as_p1020_total:      dw 0
+as_p1020_sym_start:  dw 0
+as_p1020_sym_cur:    dw 0
+as_p1020_rel_cur:    dw 0
+as_p1020_scan:       dw 0
+as_p1020_left:       dw 0
+as_p1020_prev_off:   dw 0
+as_p1020_have_prev:  db 0
+as_p1020_rename_req: defs 4,0
+as_p1020_header_copy: defs AS_P1020_HEADER_SIZE,0
+as_p1020_temp_name: db '/','t','m','p','/','.','a','s','0','.','0',0
+    ENDM
