@@ -17,7 +17,7 @@ Actions artifacts and scratch directories are diagnostics or transport only and 
 not substitute for committed evidence.
 
 The canonical naming convention is exact: every numbered certification step has
-`<STEP-ID>.build.json` and `<STEP-ID>.test.json`. E0.04, P0.34, and R16.00 are explicit
+`<STEP-ID>.build.json` and `<STEP-ID>.test.json`. E0.04, P0.34, R16.00, and R17.00 are explicit
 certification-result boundaries and additionally require `<STEP-ID>.result.json`.
 Phase aggregates are named `phase-<N>.json`; Phase 0 therefore closes with
 `phase-0.json`. A human-readable `.log` exists only when a step explicitly requires
@@ -34,7 +34,7 @@ Every durable build, test, and result record uses evidence schema 2 and records:
 - exact certified `source_commit`;
 - `toolchain_lock_sha256`;
 - `architecture_sha256`;
-- `implementation_plan_sha256` for R16.00 and every new P3-P12 record;
+- `implementation_plan_sha256` for R16.00/R17.00 and every new P3-P12 record;
 - Boolean `worktree_clean`;
 - prerequisite step statuses;
 - command records;
@@ -53,8 +53,9 @@ The deterministic driver verifies cleanliness before each numbered step and writ
 scratch evidence to a directory outside the source worktree. Generated evidence must
 not make later clean-worktree checks false.
 
-For R16.00, one clean bridge source-candidate commit is certified first and all three staged records name that same `source_commit` and `bridge_source_commit`. Only those frozen records are copied unchanged into `v1/dist/certification` in a subsequent evidence-only admission check-in. The durable records continue to name the earlier source check-in in
-`source_commit`; an evidence check-in never pretends to certify its own hash.
+For R16.00 and R17.00, one clean bridge source-candidate commit is certified first and all three staged records name that bridge's same `source_commit` and `bridge_source_commit`. Only those frozen records are copied unchanged into `v1/dist/certification` in a subsequent evidence-only admission check-in. The durable records continue to name the earlier source check-in in `source_commit`; an evidence check-in never pretends to certify its own hash.
+
+Authority routing is epoch-aware: historical E0/P0/P1/P2 records retain their original authority contract; R16.00 and P3-P10 remain permanently bound to REV16/REV07; R17.00 and future P11-P12 records bind to REV17/REV08. A later bridge never retargets or recertifies earlier evidence.
 
 ## Acceptance rule
 
