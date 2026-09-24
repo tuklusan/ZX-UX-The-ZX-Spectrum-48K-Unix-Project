@@ -1,100 +1,107 @@
 {
-  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
-  "boot_contract": {
-    "autostart_line": 10,
-    "basic_name": "zx48ux",
-    "boot_gateway": 57347,
-    "canonical_loader_path": "v1/src/boot/loader.bas",
-    "canonical_loader_sha256": "b879d39e4015912502efd9c1d35fd5aaf8ba33990a014490717d86dbe0154ac6",
-    "entry_command": "LOAD \"\"",
-    "expected_prompt": "login: ",
-    "font_address": 25049,
-    "font_size": 392,
-    "kernel_address": 57344,
-    "kernel_name": "kernel",
-    "kernel_size": 8192,
-    "preview_address": 24832,
-    "preview_extra_code_load_lines": [
-      45
-    ],
-    "preview_name": "p10preview",
-    "screen_address": 16384,
-    "screen_name": "zx48uxscr",
-    "screen_size": 6912,
-    "success_marker_address": 25048,
-    "success_marker_value": 165,
-    "success_pc": 24891
+  "authority": {
+    "architecture": "REV17",
+    "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+    "implementation_plan": "REV08",
+    "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+    "r17_bridge_result_sha256": "de92b0288343b925de1443bbb5faf882f320a5bc5db427ac1949bf9ceaf65447"
   },
-  "certified_source_commit": "8360b0c5817738b01dc4b75bb64b12d77341adcd",
+  "boot_contract": {
+    "distribution": "TZX-only",
+    "generalized_block_count": 48,
+    "handoff": "0xE003",
+    "kernel_address": "0xE000",
+    "kernel_end": "0xFFFF",
+    "kernel_size": 8192,
+    "loader_display": "24x32 loader-owned",
+    "payload_chunk_count": 24,
+    "post_kernel_m48o_stream": "not included in Phase-10 pre-release",
+    "screen_file": null,
+    "standard_speed_block_count": 2,
+    "zx48uxscr": false
+  },
+  "candidate_source_commit": "5db0345ebb14f90508af46681eb1957ae9ea4eed",
+  "checkpoint_commit": "8360b0c5817738b01dc4b75bb64b12d77341adcd",
   "checkpoint_tag": "PHASE-10-COMPLETE",
+  "fast_loader": {
+    "builder_sha256": "de723404de12795d891754a13e2dfd0a1be905740da460acab5c3b3409a6d06d",
+    "hook_sha256": "f1c6b88998488c552bbf5358cfcf32494de4687a2f0cfb7bcbe37a71cf6c00ef",
+    "inspector_sha256": "0ddd67c1cd34ba71a9c1319e1a6fee5b4a4c64ee5ee606aba1fe57d4b7732157",
+    "pasmo_executable_sha256": "d510ff3942203c010b6b299c7ba138480a55f16297a3bd2f9ee9ed3fb3f76ded",
+    "pasmo_path": "/usr/bin/pasmo",
+    "pasmo_version": "0.5.3-7",
+    "portable_zip_sha256": "4c83a681f718192db9ebb32f0c8bc565baf2e68eb85de480322a1102d32f00c7",
+    "seed_sha256": "7ffe2f90b58e87a19a090ca0e0f1323605754af7d8809f3f051662f9faaec6f1",
+    "text_lines_sha256": "610f0b6d8cadf7ed0c3935fc66b889aee2f89fbb5e278d580813686402c72f10",
+    "upstream_commit": "99c948feb2893e369055879ddf82aa0105bfe541",
+    "upstream_release": "ZX-UX-LOADER-1.0.0",
+    "upstream_tree": "44d4a388bb300032c10c0c3813431ddbddcfe542"
+  },
   "files": [
     {
       "path": "README.txt",
-      "sha256": "cfc9332e6b3659123a7fa040e41467f95603c6262c932f55f6c60a9be91b0635",
-      "size": 1311
-    },
-    {
-      "path": "kernel-phase10-pre-release.bin",
-      "sha256": "cca0b95cd281d29f7630a7e33e860439e14ae1296dcd9c94270a6b48963b5b6b",
-      "size": 8192
-    },
-    {
-      "path": "loader.bas",
-      "sha256": "60b1e3ceb2d3abb513a0db8a33c41b2937b82f81975e8b01a8473c3081d6c59b",
-      "size": 122
-    },
-    {
-      "path": "phase10-native-lifecycle.tap",
-      "sha256": "1a71207314514f6c7a7ff83f08e029c06b734db1e49b6f1b9e91c7cff2d13ae2",
-      "size": 65
-    },
-    {
-      "path": "phase10-native-lifecycle.tzx",
-      "sha256": "e003f2e4abe4366fb466c0a22d00c0473e26dfe885a0f049f5229702883f6dde",
-      "size": 81
-    },
-    {
-      "path": "phase10-pre-release-fuse-test.sna",
-      "sha256": "3467da491cd09776801403530abea9ef437e8b169e481dc9fb2ccaf6cec1eb3a",
-      "size": 49179
-    },
-    {
-      "path": "phase10-preview.bin",
-      "sha256": "e9953e07f7070436492cbd800e2307dc7209b3730d79009dd7e092a68e57ce8a",
-      "size": 609
-    },
-    {
-      "path": "zx-ux-phase10-pre-release.tap",
-      "sha256": "7d2809dfeabebc5745aaf7eb0ca168c25dfb1520883bdae0fa49a52afa0206c6",
-      "size": 15923
+      "sha256": "78b7806f4ab4b99d9753eb0317fc1a4afc15cdb22c63bb05eb38356fb9f14552",
+      "size": 617
     },
     {
       "path": "zx-ux-phase10-pre-release.tzx",
-      "sha256": "e179769fb45c7f6b817014ec0e7c2efadca27bbad2e5e4c2ccbaed1a5a58fafb",
-      "size": 15957
+      "sha256": "41257362e2de40375aa2ecd30db2ad7808624634e8554ddcb93a8ba390483070",
+      "size": 11954
     }
   ],
-  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
-  "kind": "phase10-development-pre-release",
-  "native_lifecycle": {
-    "copy_only": true,
-    "retained_source_commit": "095dc251c9cfaedccf3950738a495309ac69d0a4",
-    "source_step": "P10.34",
-    "tap_sha256": "1a71207314514f6c7a7ff83f08e029c06b734db1e49b6f1b9e91c7cff2d13ae2",
-    "tzx_sha256": "e003f2e4abe4366fb466c0a22d00c0473e26dfe885a0f049f5229702883f6dde"
+  "historical_phase10": {
+    "acceptance_sha256": "934b60e7861e9df5c16275a9f2016b8f1965890b80c5c360e1bbf7b4f399d711",
+    "aggregate_sha256": "fea4c3246fd982f32d0a9fef89f93605c0965b2357ebc4e4bfca70636cd45060",
+    "recertified": false
   },
-  "packaging_workflow_sha256": "1901deca2244ce3ebf983083ea82e53f42505ed13788145f292716da454bcb38",
-  "phase10_acceptance_sha256": "934b60e7861e9df5c16275a9f2016b8f1965890b80c5c360e1bbf7b4f399d711",
-  "phase10_aggregate_sha256": "fea4c3246fd982f32d0a9fef89f93605c0965b2357ebc4e4bfca70636cd45060",
-  "schema": 1,
+  "kernel_identity": {
+    "bytewise_host_equals_native_target_compare": true,
+    "bytewise_host_equals_tzx": true,
+    "bytewise_tzx_equals_native": true,
+    "host_built_sha256": "ae3c54f9cd50eade1e543d9ac3c6ff58c83d63d6951c707b192ef5f9e26d4806",
+    "native_rebuilt_sha256": "ae3c54f9cd50eade1e543d9ac3c6ff58c83d63d6951c707b192ef5f9e26d4806",
+    "size": 8192,
+    "tzx_embedded_sha256": "ae3c54f9cd50eade1e543d9ac3c6ff58c83d63d6951c707b192ef5f9e26d4806"
+  },
+  "kind": "phase10-fast-loader-tzx-pre-release",
+  "native_rebuild": {
+    "assertions": {
+      "controlled_source_mutation_rebuilds_but_identity_fails": "PASS",
+      "exact_8192_byte_target_compare": "PASS",
+      "native_as_emitted_real_obj1": "PASS",
+      "native_as_parsed_semantic_source": "PASS",
+      "native_ld_consumed_native_obj1": "PASS",
+      "native_ld_fixed_absolute_output": "PASS",
+      "source_native_as_obj1_native_ld_executable_run": "PASS"
+    },
+    "native_obj1_size": 8216,
+    "native_output_address": 24576,
+    "projection_contains_preassembled_kernel_payload": false,
+    "projection_sha256": "e6726d5646a91ddd4b237274c47d30d4b550766447633da095e26b019c3a0e67",
+    "resident_kernel_overwritten": false
+  },
+  "schema": 2,
   "tests": {
-    "boot_tzx_standard_speed_conversion": "PASS",
-    "deterministic_boot_tap_rebuild": "PASS",
-    "fuse_boot_gateway_to_login": "PASS",
-    "fuse_boot_tap_to_login": "PASS",
-    "fuse_boot_tzx_to_login": "PASS",
-    "p1034_current_head_rerun_matches_retained_tap_tzx": "PASS",
-    "phase10_active_evidence_gate": "PASS",
-    "tap_header_and_basic_sequence": "PASS"
+    "controlled_source_mutation_identity_failure": "PASS",
+    "deterministic_double_build": "PASS",
+    "exact_8192_byte_host_tzx_compare": "PASS",
+    "independent_embedded_kernel_reconstruction": "PASS",
+    "independent_tzx_structure_parse": "PASS",
+    "loader_owned_24x32_display_contract": "PASS",
+    "native_as_real_obj1": "PASS",
+    "native_exact_8192_byte_compare": "PASS",
+    "native_ld_consumes_native_obj1": "PASS",
+    "native_source_as_obj1_ld_executable_run": "PASS",
+    "native_source_projection_no_preassembled_kernel": "PASS",
+    "phase11_state_absent_before_publication": "PASS",
+    "real_time_fast_loader_to_e003_no_shortcuts": "PASS",
+    "real_time_rom_basic_loader_path": "PASS",
+    "startup_beep_path_structurally_verified": "PASS"
+  },
+  "tzx": {
+    "dummy_payload_rejected": true,
+    "path": "zx-ux-phase10-pre-release.tzx",
+    "sha256": "41257362e2de40375aa2ecd30db2ad7808624634e8554ddcb93a8ba390483070",
+    "size": 11954
   }
 }

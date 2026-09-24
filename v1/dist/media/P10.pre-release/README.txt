@@ -1,24 +1,13 @@
-ZX-UX Phase-10 development/pre-release distribution
+ZX-UX Phase-10 fast-loader pre-release
 
-Boot preview on a 48K Spectrum: LOAD ""
+Boot on a 48K Spectrum with: LOAD ""
 
-zx-ux-phase10-pre-release.tap and .tzx are deterministic boot-preview
-images built from the exact PHASE-10-COMPLETE source lineage. They load
-the canonical screen, the Phase-10-complete resident kernel, and a small
-fixed preview payload, then enter the real boot gateway at 0xE003. The
-preview displays the frozen 64-column issue/login screen and then idles.
-Its bootstrap prefix is built by the canonical maketap production path
-from v1/src/boot/loader.bas, with one explicit extra CODE load for the
-post-certification preview payload.
+This is the REV17/REV08 TZX-only pre-release path. The loader owns the
+24x32 loading display; there is no SCREEN$ file and no release TAP.
+The TZX embeds the freshly rebuilt exact 8192-byte kernel at E000-FFFF
+and hands off at E003. Real-time Fuse acceptance disables fastload,
+loader detection, acceleration and tape traps.
 
-phase10-native-lifecycle.tap and .tzx are exact byte copies of the
-admitted P10.34 retained cassette media. They preserve the certified
-MEX1/case-sensitive cassette roundtrip used by the native as/ld lifecycle
-acceptance test. The workflow also reruns P10.34 at the packaging head and
-requires the regenerated TAP/TZX hashes to equal those retained bytes.
-
-This is post-certification packaging, not new P10 evidence and not the
-Phase-12 final release. Phase-10 native assembler/linker behavior is
-certified in staged target fixtures; this preview does not claim the live
-resident login/session already composes those tools into final release
-media. No Phase-11 work is included.
+This Phase-10 pre-release intentionally contains no post-kernel M48O
+system stream. It proves the fast-loader/kernel handoff only; it is not
+the final Phase-12 system tape. No Phase-11 work is present or started.
