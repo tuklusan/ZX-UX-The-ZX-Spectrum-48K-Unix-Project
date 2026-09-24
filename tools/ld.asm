@@ -1114,3 +1114,215 @@ ld_p1024_pad_image:     dw 0
 ld_p1024_pad_list:      dw 0
 ld_p1024_pad_count:     db 0
     ENDM
+
+
+; P10.25 case-sensitive global resolution and exact final symbol formulas.
+; Defined-global records used by this resolver are 23 bytes:
+; name[16], OBJ1 value u16, section u8, module TEXT base u16, module BSS base u16.
+    MACRO EMIT_P10_LD_SYMBOL_RESOLVE_ROUTINES
+LD_P1025_DEF_SIZE EQU 23
+
+; HL=query name[16], DE=defined-global table, B=count.
+; ld_p1025_image_size must contain the final even image size.
+; Success publishes exact section/value. Unresolved and duplicate globals are hard errors.
+ld_p1025_resolve:
+    ld (ld_p1025_query),hl
+    ld (ld_p1025_defs),de
+    ld a,b
+    ld (ld_p1025_count),a
+    call ld_p1025_validate_unique
+    ret c
+    xor a
+    ld (ld_p1025_index),a
+    ld (ld_p1025_matched),a
+ld_p1025_resolve_loop:
+    ld a,(ld_p1025_index)
+    ld c,a
+    ld a,(ld_p1025_count)
+    cp c
+    jp z,ld_p1025_resolve_done
+    ld a,c
+    call ld_p1025_record_ptr
+    ld (ld_p1025_record),hl
+    ex de,hl
+    ld hl,(ld_p1025_query)
+    call ld_p1025_name_equal
+    jp nz,ld_p1025_resolve_next
+    ld a,(ld_p1025_matched)
+    or a
+    jp nz,ld_p1025_duplicate
+    ld a,1
+    ld (ld_p1025_matched),a
+    call ld_p1025_compute_record_value
+    ret c
+ld_p1025_resolve_next:
+    ld a,(ld_p1025_index)
+    inc a
+    ld (ld_p1025_index),a
+    jp ld_p1025_resolve_loop
+ld_p1025_resolve_done:
+    ld a,(ld_p1025_matched)
+    or a
+    jp z,ld_p1025_unresolved
+    xor a
+    ret
+
+; Reject any duplicate defined global, even when it is not the queried symbol.
+ld_p1025_validate_unique:
+    xor a
+    ld (ld_p1025_i),a
+ld_p1025_unique_i:
+    ld a,(ld_p1025_i)
+    ld c,a
+    ld a,(ld_p1025_count)
+    cp c
+    jp z,ld_p1025_unique_ok
+    ld a,c
+    inc a
+    ld (ld_p1025_j),a
+ld_p1025_unique_j:
+    ld a,(ld_p1025_j)
+    ld c,a
+    ld a,(ld_p1025_count)
+    cp c
+    jp z,ld_p1025_unique_next_i
+    ld a,(ld_p1025_i)
+    call ld_p1025_record_ptr
+    push hl
+    ld a,(ld_p1025_j)
+    call ld_p1025_record_ptr
+    ex de,hl
+    pop hl
+    call ld_p1025_name_equal
+    jp z,ld_p1025_duplicate
+    ld a,(ld_p1025_j)
+    inc a
+    ld (ld_p1025_j),a
+    jp ld_p1025_unique_j
+ld_p1025_unique_next_i:
+    ld a,(ld_p1025_i)
+    inc a
+    ld (ld_p1025_i),a
+    jp ld_p1025_unique_i
+ld_p1025_unique_ok:
+    xor a
+    ret
+
+; HL/DE each point at one exact 16-byte OBJ1 name field. Case is significant.
+ld_p1025_name_equal:
+    ld b,16
+ld_p1025_name_loop:
+    ld a,(de)
+    cp (hl)
+    jp nz,ld_p1025_name_not_equal
+    inc hl
+    inc de
+    djnz ld_p1025_name_loop
+    xor a
+    ret
+ld_p1025_name_not_equal:
+    ld a,1
+    or a
+    ret
+
+; A=index -> HL=record pointer.
+ld_p1025_record_ptr:
+    ld b,a
+    ld hl,0
+    ld de,LD_P1025_DEF_SIZE
+ld_p1025_record_mul:
+    ld a,b
+    or a
+    jp z,ld_p1025_record_add
+    add hl,de
+    djnz ld_p1025_record_mul
+ld_p1025_record_add:
+    ld de,(ld_p1025_defs)
+    add hl,de
+    ret
+
+; Compute the frozen final formula for ld_p1025_record.
+ld_p1025_compute_record_value:
+    ld hl,(ld_p1025_record)
+    ld de,16
+    add hl,de
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (ld_p1025_obj_value),de
+    inc hl
+    ld a,(hl)
+    ld (ld_p1025_resolved_section),a
+    cp 1
+    jp z,ld_p1025_value_text
+    cp 2
+    jp z,ld_p1025_value_bss
+    cp 3
+    jp z,ld_p1025_value_abs
+    jp ld_p1025_format
+
+; TEXT = module_text_base + OBJ1 value.
+ld_p1025_value_text:
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld hl,(ld_p1025_obj_value)
+    add hl,de
+    jp c,ld_p1025_range
+    ld (ld_p1025_resolved_value),hl
+    xor a
+    ret
+
+; BSS = image_size + module_bss_base + OBJ1 value.
+ld_p1025_value_bss:
+    inc hl
+    inc hl
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld hl,(ld_p1025_obj_value)
+    add hl,de
+    jp c,ld_p1025_range
+    ld de,(ld_p1025_image_size)
+    add hl,de
+    jp c,ld_p1025_range
+    ld (ld_p1025_resolved_value),hl
+    xor a
+    ret
+
+; ABS = OBJ1 value.
+ld_p1025_value_abs:
+    ld hl,(ld_p1025_obj_value)
+    ld (ld_p1025_resolved_value),hl
+    xor a
+    ret
+
+ld_p1025_unresolved:
+    ld a,E_NOENT
+    scf
+    ret
+ld_p1025_duplicate:
+ld_p1025_format:
+    ld a,E_FORMAT
+    scf
+    ret
+ld_p1025_range:
+    ld a,E_NOSPC
+    scf
+    ret
+
+ld_p1025_query:            dw 0
+ld_p1025_defs:             dw 0
+ld_p1025_count:            db 0
+ld_p1025_index:            db 0
+ld_p1025_i:                db 0
+ld_p1025_j:                db 0
+ld_p1025_matched:          db 0
+ld_p1025_record:           dw 0
+ld_p1025_obj_value:        dw 0
+ld_p1025_image_size:       dw 0
+ld_p1025_resolved_value:   dw 0
+ld_p1025_resolved_section: db 0
+    ENDM
