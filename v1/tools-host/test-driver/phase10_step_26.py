@@ -323,9 +323,9 @@ fixture_end:
 
         def run_case(name, expect_carry):
             if expect_carry:
-                code = b"\\xF3" + phase1._ld_sp(0xBFC0) + phase1._call(syms[name]) + b"\\xD2" + phase1._word(FAIL_PC) + phase1._jp(PASS_PC)
+                code = b"\xF3" + phase1._ld_sp(0xBFC0) + phase1._call(syms[name]) + b"\xD2" + phase1._word(FAIL_PC) + phase1._jp(PASS_PC)
             else:
-                code = b"\\xF3" + phase1._ld_sp(0xBFC0) + phase1._call(syms[name]) + phase1._jp_c(FAIL_PC) + phase1._jp(PASS_PC)
+                code = b"\xF3" + phase1._ld_sp(0xBFC0) + phase1._call(syms[name]) + phase1._jp_c(FAIL_PC) + phase1._jp(PASS_PC)
             try:
                 run_sna(root, code, patch=patch)
             except Exception:
