@@ -44,32 +44,19 @@ jobs:
           grep -E '^[[:space:]]*[0-9]+[[:space:]]+[0-9A-Fa-f]{4}[[:space:]]+[0-9A-Fa-f]{2}' v1/build/kernel-probe.lst | head -n 160 || true
           echo "=== LIST TAIL ==="
           tail -n 120 v1/build/kernel-probe.lst
-          echo "=== EMITTING MNEMONIC/FORMS ==="
+          echo "=== PROJECTION BUILD ==="
+          tools/runtime/python/bin/python v1/tools-host/release-tzx/kernel_native_projection.py \
+            --listing v1/build/kernel-probe.lst \
+            --symbols v1/build/kernel-probe.sym \
+            --kernel v1/build/kernel.bin \
+            --output v1/build/kernel.nsp \
+            --audit v1/build/kernel-nsp.json
+          wc -c v1/build/kernel.nsp
           python3 - <<'PY'
+          import json
           from pathlib import Path
-          import re
-          forms={}
-          mn={}
-          for raw in Path('v1/build/kernel-probe.lst').read_text(errors='replace').splitlines():
-              if '>' not in raw:
-                  continue
-              src=raw.split('>',1)[1].strip()
-              src=src.split(';',1)[0].strip()
-              if not src or src.endswith(':'):
-                  continue
-              first=src.split(None,1)[0].lower()
-              if first in {'assert','macro','endm','if','else','endif'}:
-                  continue
-              mn[first]=mn.get(first,0)+1
-              shape=src.lower()
-              shape=re.sub(r"'[^']*'",'<str>',shape)
-              shape=re.sub(r'\$[0-9a-f]+|%[01]+|\b\d+\b','N',shape)
-              regs={'a','b','c','d','e','h','l','af','bc','de','hl','sp','ix','iy','i','r',
-                    'nz','z','nc','po','pe','p','m','db','dw','defs'}
-              toks=re.split(r'([a-z_.$][a-z0-9_.$]*)',shape)
-              shape=''.join(t if (not re.fullmatch(r'[a-z_.$][a-z0-9_.$]*',t) or t in regs or t==first) else 'S' for t in toks)
-              forms[shape]=forms.get(shape,0)+1
-          print('MNEMONICS',sorted(mn.items()))
-          for form,count in sorted(forms.items()):
-              print(f'{count:5d} {form}')
+          d=json.loads(Path('v1/build/kernel-nsp.json').read_text())
+          print({k:d[k] for k in ('records','projection_size','text_size','projection_sha256','semantic_reference_sha256','semantic_reference_equals_kernel_oracle')})
+          print('first',d['audit'][:12])
+          print('last',d['audit'][-12:])
           PY
