@@ -1,0 +1,83 @@
+{
+  "action": "test",
+  "architecture_sha256": "24fe9d206c2f05bbc24f11544a5cb5a0b6ab104e9fc52e654a10c2d9734b008c",
+  "assertions": [
+    {
+      "name": "signed-widened-addend",
+      "passed": true
+    },
+    {
+      "name": "abs-no-runtime-reloc",
+      "passed": true
+    },
+    {
+      "name": "text-bss-runtime-reloc",
+      "passed": true
+    },
+    {
+      "name": "sorted-runtime-table",
+      "passed": true
+    },
+    {
+      "name": "unique-nonoverlap-bounds",
+      "passed": true
+    },
+    {
+      "name": "fuse-signed-addend-boundaries",
+      "passed": true
+    },
+    {
+      "name": "fuse-abs-versus-text-bss",
+      "passed": true
+    },
+    {
+      "name": "fuse-runtime-relocs-sorted",
+      "passed": true
+    },
+    {
+      "name": "fuse-underflow-overflow-rejected",
+      "passed": true
+    },
+    {
+      "name": "fuse-duplicate-overlap-oob-rejected",
+      "passed": true
+    },
+    {
+      "name": "fuse-abs-runtime-reloc-rejected",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1026-relocs.sym",
+        "p1026-relocs.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 7,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2420 lines, work time: 0.006 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/ld.asm": "9d6ab047548c6f6038a734190ac6dc8258eefb940a655a9cbdc8008000d8999a",
+    "v1/build/p1026-main.bin": "0de2fe60958ff11408c3072a5e9c2ec37896c3b03b8b8e4c61f3e7950cb3e9e2",
+    "v1/dist/certification/P10.25.build.json": "7ca46dac5ad1252d601a848498cdff2419a441cafd0935effff9f075cf87d642",
+    "v1/dist/certification/P10.25.test.json": "f3fc9f6fab16b4b0a41ed4ef26278cb8405ec17d1109edaaf81a45f414bd5ef3",
+    "v1/tools-host/test-driver/phase10_step_26.py": "2557a7de4d3f7beacb48a2635ceb1454482a1145a2e420ad8ca3b2d8f0ae8d44"
+  },
+  "implementation_plan_sha256": "840a52e55f623d3f5453329838728e9933ee650ac78c4f294acbca7910638fbc",
+  "prerequisites": {
+    "P10.25": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "6aedd676cfc452a02e3649e0d0bd08eaaeae9ddc",
+  "status": "PASS",
+  "step": "P10.26",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
