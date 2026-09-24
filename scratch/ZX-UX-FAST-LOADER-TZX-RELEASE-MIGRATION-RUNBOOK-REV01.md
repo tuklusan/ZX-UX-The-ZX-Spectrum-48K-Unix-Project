@@ -660,6 +660,9 @@ Durable anchors:
 
 - final validated migration source head: `dab9a626873b0bfd2ba3595f9a3a7320075a60d1`;
 - final validation workflow run: `36069092981`, attempt `1`;
+- final validation report artifact: `10837457763`, digest `sha256:a4412cbdffca0819e7f24804b7fa1bcc7791c60844c1961242057876dfbaff3b`;
+- exact-head regression on the final validated migration source: run `36069092950` PASS at `dab9a626873b0bfd2ba3595f9a3a7320075a60d1`;
+- closure commit that marked this runbook CLOSED and removed the disposable finalizer: `07c88550574f1e6b8beee640d54e0b8871cf3b82`;
 - validated source tree: `a0de5bbe744307fab74bf5f5959206f20a44cf90`;
 - final repository-walk report SHA-256: `0d057dba5b8e2e22a7ff613f3fc469c35eb504342211e9bbf3d2dd1105578368`;
 - replacement Phase-10 fast-loader pre-release validation/publication run: `36059493045` at source head `5db0345ebb14f90508af46681eb1957ae9ea4eed`;
