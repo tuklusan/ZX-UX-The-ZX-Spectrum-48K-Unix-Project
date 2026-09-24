@@ -1326,3 +1326,281 @@ ld_p1025_image_size:       dw 0
 ld_p1025_resolved_value:   dw 0
 ld_p1025_resolved_section: db 0
     ENDM
+
+
+; P10.26 final OBJ1 relocation patching and deterministic MEX1 runtime table.
+    MACRO EMIT_P10_LD_RELOCATION_ROUTINES
+LD_P1026_MAX_RELOCS EQU 8
+
+ld_p1026_reset:
+    xor a
+    ld (ld_p1026_rel_count),a
+    ret
+
+; State inputs: image/image_size, patch_loc, symbol_value, signed addend,
+; symbol_section. Applies one ABS16 relocation in widened arithmetic.
+ld_p1026_apply:
+    call ld_p1026_validate_patch
+    ret c
+    ld hl,(ld_p1026_symbol_value)
+    ld de,(ld_p1026_addend)
+    bit 7,d
+    jp nz,ld_p1026_add_negative
+    add hl,de
+    jp c,ld_p1026_arith
+    jp ld_p1026_value_ready
+ld_p1026_add_negative:
+    ; magnitude = -signed(addend), then require symbol >= magnitude.
+    ld a,e
+    cpl
+    ld e,a
+    ld a,d
+    cpl
+    ld d,a
+    inc de
+    or a
+    sbc hl,de
+    jp c,ld_p1026_arith
+ld_p1026_value_ready:
+    ld (ld_p1026_value),hl
+    ld de,(ld_p1026_patch_loc)
+    ld hl,(ld_p1026_image)
+    add hl,de
+    ld de,(ld_p1026_value)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+
+    ld a,(ld_p1026_symbol_section)
+    cp 3
+    jp z,ld_p1026_apply_ok       ; ABS: fixed absolute, no runtime relocation.
+    cp 1
+    jp z,ld_p1026_emit_runtime
+    cp 2
+    jp z,ld_p1026_emit_runtime
+    jp ld_p1026_format
+
+ld_p1026_emit_runtime:
+    ld a,(ld_p1026_rel_count)
+    cp LD_P1026_MAX_RELOCS
+    jp nc,ld_p1026_format
+    ld c,a
+    add a,a
+    ld e,a
+    ld d,0
+    ld hl,ld_p1026_rel_locs
+    add hl,de
+    ld de,(ld_p1026_patch_loc)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    ld a,c
+    ld e,a
+    ld d,0
+    ld hl,ld_p1026_rel_sections
+    add hl,de
+    ld a,(ld_p1026_symbol_section)
+    ld (hl),a
+    ld a,(ld_p1026_rel_count)
+    inc a
+    ld (ld_p1026_rel_count),a
+ld_p1026_apply_ok:
+    xor a
+    ret
+
+ld_p1026_validate_patch:
+    ld hl,(ld_p1026_patch_loc)
+    inc hl
+    jp z,ld_p1026_format
+    ld de,(ld_p1026_image_size)
+    or a
+    sbc hl,de
+    jp nc,ld_p1026_format
+    xor a
+    ret
+
+; Sort runtime relocation locations ascending with source-section metadata.
+; Then require unique, non-overlapping, in-image locations and TEXT/BSS only.
+ld_p1026_finalize:
+    xor a
+    ld (ld_p1026_i),a
+ld_p1026_sort_i:
+    ld a,(ld_p1026_i)
+    ld c,a
+    ld a,(ld_p1026_rel_count)
+    cp c
+    jp z,ld_p1026_validate_sorted
+    ld a,c
+    inc a
+    ld (ld_p1026_j),a
+ld_p1026_sort_j:
+    ld a,(ld_p1026_j)
+    ld c,a
+    ld a,(ld_p1026_rel_count)
+    cp c
+    jp z,ld_p1026_sort_next_i
+    ld a,(ld_p1026_i)
+    call ld_p1026_get_loc
+    ld (ld_p1026_left),hl
+    ld a,(ld_p1026_j)
+    call ld_p1026_get_loc
+    ex de,hl
+    ld hl,(ld_p1026_left)
+    or a
+    sbc hl,de
+    jp c,ld_p1026_sort_j_next
+    jp z,ld_p1026_sort_j_next
+    call ld_p1026_swap_ij
+ld_p1026_sort_j_next:
+    ld a,(ld_p1026_j)
+    inc a
+    ld (ld_p1026_j),a
+    jp ld_p1026_sort_j
+ld_p1026_sort_next_i:
+    ld a,(ld_p1026_i)
+    inc a
+    ld (ld_p1026_i),a
+    jp ld_p1026_sort_i
+
+ld_p1026_validate_sorted:
+    xor a
+    ld (ld_p1026_i),a
+ld_p1026_validate_loop:
+    ld a,(ld_p1026_i)
+    ld c,a
+    ld a,(ld_p1026_rel_count)
+    cp c
+    jp z,ld_p1026_finalize_ok
+    ld a,c
+    call ld_p1026_get_section
+    cp 1
+    jp z,ld_p1026_validate_loc
+    cp 2
+    jp nz,ld_p1026_format
+ld_p1026_validate_loc:
+    ld a,(ld_p1026_i)
+    call ld_p1026_get_loc
+    ld (ld_p1026_patch_loc),hl
+    call ld_p1026_validate_patch
+    ret c
+    ld a,(ld_p1026_i)
+    or a
+    jp z,ld_p1026_validate_advance
+    dec a
+    call ld_p1026_get_loc
+    inc hl
+    inc hl
+    ld de,(ld_p1026_patch_loc)
+    or a
+    sbc hl,de
+    jp nc,ld_p1026_format       ; equal or one-byte overlap is forbidden.
+ld_p1026_validate_advance:
+    ld a,(ld_p1026_i)
+    inc a
+    ld (ld_p1026_i),a
+    jp ld_p1026_validate_loop
+ld_p1026_finalize_ok:
+    xor a
+    ret
+
+; A=index -> HL=runtime relocation location.
+ld_p1026_get_loc:
+    add a,a
+    ld e,a
+    ld d,0
+    ld hl,ld_p1026_rel_locs
+    add hl,de
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ex de,hl
+    ret
+
+; A=index -> A=source section.
+ld_p1026_get_section:
+    ld e,a
+    ld d,0
+    ld hl,ld_p1026_rel_sections
+    add hl,de
+    ld a,(hl)
+    ret
+
+ld_p1026_swap_ij:
+    ld a,(ld_p1026_i)
+    add a,a
+    ld e,a
+    ld d,0
+    ld hl,ld_p1026_rel_locs
+    add hl,de
+    ld (ld_p1026_ptr_i),hl
+    ld a,(ld_p1026_j)
+    add a,a
+    ld e,a
+    ld d,0
+    ld hl,ld_p1026_rel_locs
+    add hl,de
+    ld (ld_p1026_ptr_j),hl
+    ld hl,(ld_p1026_ptr_i)
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (ld_p1026_word_i),de
+    ld hl,(ld_p1026_ptr_j)
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld hl,(ld_p1026_ptr_i)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    ld de,(ld_p1026_word_i)
+    ld hl,(ld_p1026_ptr_j)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+
+    ld a,(ld_p1026_i)
+    call ld_p1026_get_section
+    ld (ld_p1026_sec_i),a
+    ld a,(ld_p1026_j)
+    call ld_p1026_get_section
+    ld c,a
+    ld a,(ld_p1026_i)
+    ld e,a
+    ld d,0
+    ld hl,ld_p1026_rel_sections
+    add hl,de
+    ld (hl),c
+    ld a,(ld_p1026_j)
+    ld e,a
+    ld d,0
+    ld hl,ld_p1026_rel_sections
+    add hl,de
+    ld a,(ld_p1026_sec_i)
+    ld (hl),a
+    ret
+
+ld_p1026_arith:
+ld_p1026_format:
+    ld a,E_FORMAT
+    scf
+    ret
+
+ld_p1026_image:          dw 0
+ld_p1026_image_size:     dw 0
+ld_p1026_patch_loc:      dw 0
+ld_p1026_symbol_value:   dw 0
+ld_p1026_addend:         dw 0
+ld_p1026_symbol_section: db 0
+ld_p1026_value:          dw 0
+ld_p1026_rel_count:      db 0
+ld_p1026_rel_locs:       defs LD_P1026_MAX_RELOCS*2,0
+ld_p1026_rel_sections:   defs LD_P1026_MAX_RELOCS,0
+ld_p1026_i:              db 0
+ld_p1026_j:              db 0
+ld_p1026_left:           dw 0
+ld_p1026_ptr_i:          dw 0
+ld_p1026_ptr_j:          dw 0
+ld_p1026_word_i:         dw 0
+ld_p1026_sec_i:          db 0
+    ENDM
