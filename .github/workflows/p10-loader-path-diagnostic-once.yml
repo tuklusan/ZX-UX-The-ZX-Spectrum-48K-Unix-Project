@@ -84,26 +84,30 @@ jobs:
               return out
 
           c=["base 16",
+             "breakpoint 0x5ce7",
+             "breakpoint 0x0556",
              "breakpoint 0x5e55 if [0x5ef7] == 1",
              "breakpoint 0x5eb4",
              "breakpoint 0x5f2a",
-             "breakpoint 0x03b5",
+             "breakpoint 0x03b5 if [z80:sp] + 256 * [z80:sp+1] == 0x5f35",
              "breakpoint 0xe003",
              "breakpoint time 0 if spectrum:frames > 6500"]
 
+          c.extend(["commands 1","print 0x61616161","continue","end",
+                    "commands 2","print 0x62626262","continue","end"])
           stages={
-              1: dump(1, ("print z80:pc","print [0x5ef5]","print [0x5ef6]","print [0x5ef7]")),
-              2: dump(2, ("print z80:pc",)),
-              3: dump(3, ("print z80:pc",)),
-              4: dump(4, ("print z80:pc","print z80:de","print z80:hl","print z80:sp","print [z80:sp]","print [z80:sp+1]")),
-              5: dump(5, ("print z80:pc",)),
+              3: dump(1, ("print z80:pc","print [0x5ef5]","print [0x5ef6]","print [0x5ef7]")),
+              4: dump(2, ("print z80:pc",)),
+              5: dump(3, ("print z80:pc",)),
+              6: dump(4, ("print z80:pc","print z80:de","print z80:hl","print z80:sp","print [z80:sp]","print [z80:sp+1]")),
+              7: dump(5, ("print z80:pc",)),
           }
           for bp,stage in stages.items():
               c.append(f"commands {bp}")
               c.extend(stage)
-              c.append("exit 0" if bp==5 else "continue")
+              c.append("exit 0" if bp==7 else "continue")
               c.append("end")
-          c.extend(["commands 6","print 0x7f0006","print z80:pc","print spectrum:frames","exit 3","end","continue"])
+          c.extend(["commands 8","print 0x7f0008","print z80:pc","print spectrum:frames","exit 3","end","continue"])
           Path("/tmp/p10-loader-path/debugger.txt").write_text("\n".join(c)+"\n")
           PY
 
@@ -150,7 +154,7 @@ jobs:
           result=""
           for i in $(seq 1 150); do
             if grep -q '0x610005' "$diag/fuse-state.log"; then result=E003_REACHED; break; fi
-            if grep -q '0x7f0006' "$diag/fuse-state.log"; then result=TIMEOUT; break; fi
+            if grep -q '0x7f0008' "$diag/fuse-state.log"; then result=TIMEOUT; break; fi
             kill -0 "$fuse_pid" 2>/dev/null || { result=FUSE_EXITED; break; }
             sleep 1
           done
