@@ -86,35 +86,35 @@ def build_fixture(root,projection_size):
     INCLUDE "../../tools/as.asm"
     INCLUDE "../../tools/ld.asm"
 
-    ORG $\{FIXTURE_BASE:04X}
+    ORG ${FIXTURE_BASE:04X}
 r17_fixture:
     EMIT_R17_AS_NSP1_OBJ1
     EMIT_R17_LD_ABSOLUTE_OBJ1
 
 r17_native_positive:
-    ld hl,$\{SOURCE_BASE:04X}
-    ld de,\{projection_size}
-    ld bc,$\{OBJ_BASE:04X}
+    ld hl,${SOURCE_BASE:04X}
+    ld de,{projection_size}
+    ld bc,${OBJ_BASE:04X}
     call r17_as_nsp1_obj1
     ret c
-    ld de,\{24+KERNEL_SIZE}
+    ld de,{24+KERNEL_SIZE}
     or a
     sbc hl,de
     jp nz,r17_native_fail
 
-    ld hl,$\{OBJ_BASE:04X}
-    ld bc,\{24+KERNEL_SIZE}
-    ld de,$\{RAW_BASE:04X}
+    ld hl,${OBJ_BASE:04X}
+    ld bc,{24+KERNEL_SIZE}
+    ld de,${RAW_BASE:04X}
     call r17_ld_obj1_absolute
     ret c
-    ld de,\{KERNEL_SIZE}
+    ld de,{KERNEL_SIZE}
     or a
     sbc hl,de
     jp nz,r17_native_fail
 
-    ld hl,$\{RAW_BASE:04X}
-    ld de,$\{HOST_BASE:04X}
-    ld bc,\{KERNEL_SIZE}
+    ld hl,${RAW_BASE:04X}
+    ld de,${HOST_BASE:04X}
+    ld bc,{KERNEL_SIZE}
 r17_kernel_compare:
     ld a,(de)
     cp (hl)
@@ -128,40 +128,40 @@ r17_kernel_compare:
 
     ld hl,r17_tiny_source
     ld de,r17_tiny_source_end-r17_tiny_source
-    ld bc,$\{OBJ_BASE:04X}
+    ld bc,${OBJ_BASE:04X}
     call r17_as_nsp1_obj1
     ret c
     ld de,25
     or a
     sbc hl,de
     jp nz,r17_native_fail
-    ld hl,$\{OBJ_BASE:04X}
+    ld hl,${OBJ_BASE:04X}
     ld bc,25
-    ld de,$\{RAW_BASE:04X}
+    ld de,${RAW_BASE:04X}
     call r17_ld_obj1_absolute
     ret c
     ld de,1
     or a
     sbc hl,de
     jp nz,r17_native_fail
-    call $\{RAW_BASE:04X}
+    call ${RAW_BASE:04X}
     xor a
     ret
 
 r17_native_negative:
-    ld hl,$\{SOURCE_BASE:04X}
-    ld de,\{projection_size}
-    ld bc,$\{OBJ_BASE:04X}
+    ld hl,${SOURCE_BASE:04X}
+    ld de,{projection_size}
+    ld bc,${OBJ_BASE:04X}
     call r17_as_nsp1_obj1
     ret c
-    ld hl,$\{OBJ_BASE:04X}
-    ld bc,\{24+KERNEL_SIZE}
-    ld de,$\{RAW_BASE:04X}
+    ld hl,${OBJ_BASE:04X}
+    ld bc,{24+KERNEL_SIZE}
+    ld de,${RAW_BASE:04X}
     call r17_ld_obj1_absolute
     ret c
-    ld hl,$\{RAW_BASE:04X}
-    ld de,$\{HOST_BASE:04X}
-    ld bc,\{KERNEL_SIZE}
+    ld hl,${RAW_BASE:04X}
+    ld de,${HOST_BASE:04X}
+    ld bc,{KERNEL_SIZE}
 r17_negative_compare:
     ld a,(de)
     cp (hl)
@@ -183,12 +183,12 @@ r17_native_fail:
     ret
 
 r17_tiny_source:
-    db \{db(tiny)}
+    db {db(tiny)}
 r17_tiny_source_end:
 r17_fixture_end:
-    ASSERT r17_fixture_end <= $\{SOURCE_BASE:04X}
+    ASSERT r17_fixture_end <= ${SOURCE_BASE:04X}
     SAVEBIN "r17-native-rebuild-fixture.bin",r17_fixture,r17_fixture_end-r17_fixture
-""".replace("\\{","{"),encoding="utf-8",newline="\n")
+""".replace("\{","{"),encoding="utf-8",newline="\n")
     result=run_command([sjasmplus,"--nologo","--sym=r17-native-rebuild-fixture.sym",asm.name],cwd=build,timeout_seconds=60)
     require(not result.timed_out and result.exit_code==0,f"native fixture assemble: {result.stderr or result.stdout}")
     fixture=(build/"r17-native-rebuild-fixture.bin").read_bytes()
