@@ -7,6 +7,9 @@ images built from the exact PHASE-10-COMPLETE source lineage. They load
 the canonical screen, the Phase-10-complete resident kernel, and a small
 fixed preview payload, then enter the real boot gateway at 0xE003. The
 preview displays the frozen 64-column issue/login screen and then idles.
+Its bootstrap prefix is built by the canonical maketap production path
+from v1/src/boot/loader.bas, with one explicit extra CODE load for the
+post-certification preview payload.
 
 phase10-native-lifecycle.tap and .tzx are exact byte copies of the
 admitted P10.34 retained cassette media. They preserve the certified
