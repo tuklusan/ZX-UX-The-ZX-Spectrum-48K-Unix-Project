@@ -65,3 +65,9 @@ linker performs symbol value plus signed addend in widened arithmetic and reject
 results outside 0..65535.
 
 The independent host decoder is `v1/tools-host/inspect-obj/inspect.py`.
+
+## REV17 fixed-image release-proof use
+
+REV17 does not define a new OBJ1 format. The native kernel self-rebuild uses the same OBJ1 header, CRC, and stored-length rules above. For the fixed kernel-image proof, native `as` emits a valid OBJ1 containing TEXT only, with zero BSS, symbols, and relocations; native `ld` validates and consumes that OBJ1 and writes its exact TEXT to non-executing RAM below `0xE000`.
+
+This fixed-image mode is prospective release-proof machinery. It does not alter historical P10.34 evidence or the normal relocatable OBJ1/MEX1 lifecycle.
