@@ -86,6 +86,7 @@ The project has completed its authority transition:
 - REV05 and REV06 remain frozen at their actual bytes despite their stale embedded authority defects; neither may be repaired in place.
 - REV16 / REV07 are immutable historical authorities for `R16.00` and admitted P3-P10 work.
 - REV17 / REV08 are the active authorities following the admitted and validated `R17.00` bridge.
+- REV17/REV08 revision-level transport-transition clauses govern the current/future TZX-only release path; inherited SCREEN$/TAP-era wording elsewhere inside those frozen files is superseded context and must not be "cleaned up" by editing the admitted authority bytes.
 - Current implementation progress is determined from durable certification/admission records and the canonical implementation sequence, not from this guardrail document.
 - After check-in, **REV12, REV03, REV13, REV04, REV14, REV05, REV15, REV06, REV16, REV07, REV17, and REV08 must all remain byte-for-byte unchanged.**
 
