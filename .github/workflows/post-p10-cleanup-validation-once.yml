@@ -1,0 +1,86 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: Post-P10 cleanup validation once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/post-p10-cleanup-validation-once.yml'
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: zxux-post-p10-cleanup-validation-once
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Validate cleanup state
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --force origin main
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
+          test "$(git rev-parse refs/tags/PHASE-10-COMPLETE)" = "8360b0c5817738b01dc4b75bb64b12d77341adcd"
+          test ! -e v1/src/boot/loader.bas
+          test ! -n "$(git ls-files | grep -Ei '(^|/)(P11(\.|/)|p11[^/]*qualification|phase-?11)' || true)"
+          ./tools/check_project_policy.py
+          ./tools/check_license_headers.sh
+          python3 tools/check_media_retention.py
+          python3 tools/post_p10_repo_walk.py --report /tmp/post-p10-cleanup-walk.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path('/tmp/post-p10-cleanup-walk.json').read_text(encoding='utf-8'))
+          assert report['counts']['tracked_files'] == report['counts']['walk_files']
+          assert report['counts']['classifications']['obsolete'] == 0
+          assert report['checks']['no_phase11_state'] == 'PASS'
+          assert report['pre_release']['tzx_sha256'] == 'fdb9dbf3ffb004163567ceda46831c4ee72ade7b1d308e22e45eeb4bd137a0ed'
+          assert report['pre_release']['tzx_size'] == 11993
+          print(json.dumps(report['counts'], sort_keys=True))
+          PY
+          sha256sum /tmp/post-p10-cleanup-walk.json
+
+      - name: Upload cleanup walk report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v6
+        with:
+          name: post-p10-cleanup-walk-${{ github.run_id }}-${{ github.run_attempt }}
+          path: /tmp/post-p10-cleanup-walk.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Dispatch release TZX qualification
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
+          curl --fail-with-body --silent --show-error \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/release-tzx-qualification.yml/dispatches" \
+            -d '{"ref":"main"}'
