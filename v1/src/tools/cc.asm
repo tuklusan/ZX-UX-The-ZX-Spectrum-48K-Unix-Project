@@ -4435,6 +4435,7 @@ cc_store_existing:
     jp nz,cc_store_exist
     call cc_store_allocate
     ret c
+    call cc_store_defined_ptr
     ld a,1
     ld (hl),a
     call cc_store_mark_definition
