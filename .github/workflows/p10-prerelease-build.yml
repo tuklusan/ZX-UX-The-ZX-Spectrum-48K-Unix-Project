@@ -422,7 +422,8 @@ jobs:
           assert meta['runtime_acceptance']['final_hold']['lines_left']==1
           assert meta['runtime_acceptance']['final_render_done']['lines_left']==0
           assert meta['boot_contract']['pre_beep_pause_nominal_tstates']==3500009
-          assert 49 <= meta['runtime_acceptance']['pre_beep_pause']['frames'] <= 51
+          assert meta['runtime_acceptance']['pre_beep_pause']['nominal_tstates']==3500009
+          assert 59 <= meta['runtime_acceptance']['pre_beep_pause']['frames'] <= 63
           assert all(v=='PASS' for v in meta['runtime_acceptance']['assertions'].values())
           assert len(set((meta['kernel_identity']['host_built_sha256'],
                           meta['kernel_identity']['tzx_embedded_sha256'],

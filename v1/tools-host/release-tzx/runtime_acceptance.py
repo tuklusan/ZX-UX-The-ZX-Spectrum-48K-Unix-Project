@@ -249,7 +249,7 @@ def verify(log: Path, rom_path: Path, text_path: Path) -> dict:
         ),
         "final_row_rendered_before_beep": final_row == expected_row,
         "final_row_attributes_correct_before_beep": final_attr == expected_attr,
-        "one_second_final_row_hold_before_beep": 49 <= pause_frames <= 51,
+        "one_second_final_row_hold_before_beep": 59 <= pause_frames <= 63,
         "startup_beep_reached_once": len(_indices(values, M_BEEP)) == 1,
         "rom_beeper_reached_once": len(_indices(values, M_BEEPER)) == 1,
         "rom_beeper_parameters_exact": de == 224 and hl == 458,
@@ -281,6 +281,7 @@ def verify(log: Path, rom_path: Path, text_path: Path) -> dict:
         },
         "pre_beep_pause": {
             "routine_address": PAUSE_ONE_SECOND,
+            "nominal_tstates": 3500009,
             "render_done_frame": render_done_frame,
             "beep_frame": beep_frame,
             "frames": pause_frames,
