@@ -116,7 +116,7 @@ jobs:
           test ! -n "$(find /tmp/p10-prerelease -type f -iname '*.tap' -print -quit)"
           cp /tmp/p10-prerelease/a/zx-ux-phase10-pre-release.tzx /tmp/p10-prerelease/P10.pre-release/
 
-      - name: Independently reconstruct exact embedded kernel
+      - name: Independently reconstruct exact embedded kernel and verify finalizer dispatch
         shell: bash
         run: |
           set -euo pipefail
