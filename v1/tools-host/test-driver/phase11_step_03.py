@@ -18,6 +18,7 @@ import phase3_open_descriptions
 from driver_core import DriverError
 from fuse_harness import FAIL_PC, PASS_PC, run_sna
 
+# P11.03 exact-candidate marker.
 class P1103Error(DriverError):
     pass
 
