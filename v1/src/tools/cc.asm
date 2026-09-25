@@ -5529,6 +5529,7 @@ cc_fp_cast_notsup:
 ; P11.19 float comparison lowering map.
 ; Every floating relational/equality expression uses __fcmp; float truth uses
 ; the same helper against the runtime's exact five-byte zero.
+; Relation ids are compiler-owned here; no libc macro expansion is required.
     MACRO EMIT_P1119_CC_FLOAT_COMPARE
 CC_FP_COMPARE_HELPER_FCMP EQU 1
 CC_FP_COMPARE_CAST_LHS    EQU 1
