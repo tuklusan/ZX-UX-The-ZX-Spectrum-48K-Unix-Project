@@ -63,9 +63,9 @@ jobs:
           print [0x5ef6]
           continue
           end
-          breakpoint 0x5eb7
+          breakpoint 0x5f59
           commands 4
-          print 0xfeed00b7
+          print 0xfeed0059
           print [0x5ef7]
           print [0x5ef8]
           print [0x5ef5]
@@ -117,7 +117,7 @@ jobs:
           xdotool key --delay 300 ctrl+p; sleep 0.60
           xdotool keydown Return; sleep 0.45; xdotool keyup Return
           for i in $(seq 1 1200); do
-            if grep -q '0xfeed00b7' "$diag/fuse-state.log"; then
+            if grep -q '0xfeed0059' "$diag/fuse-state.log"; then
               sleep 0.30
               import -display :99 -window "$window" "$diag/fuse-during-hold.png"
               break
