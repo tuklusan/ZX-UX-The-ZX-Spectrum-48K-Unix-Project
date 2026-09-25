@@ -1,0 +1,66 @@
+{
+  "action": "build",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "c48-float-size-exactly-five",
+      "passed": true
+    },
+    {
+      "name": "c48-float-alignment-exactly-one",
+      "passed": true
+    },
+    {
+      "name": "compiler-literal-conversion-uses-sys-fp-from-text",
+      "passed": true
+    },
+    {
+      "name": "libc48-copy-is-exactly-five-bytes",
+      "passed": true
+    },
+    {
+      "name": "sdk-float5-oracle-mapping-recorded",
+      "passed": true
+    },
+    {
+      "name": "no-ieee-binary32-float-abi",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1114-float5.sym",
+        "p1114-float5.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 7,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 6462 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p1114-gateway.bin": "261cb5c33f672246c5922341cb160de135d0c30106093ae2cfdbd9bfb2d9ff32",
+    "v1/build/p1114-main.bin": "9a569cd5bb172ab4d7bb525687a205d2be5997e2ee86a41dec962f8a55599dd1",
+    "v1/build/p1114-rom.bin": "5b46c9777bbae2ec7e2e18144d5194d4d70f4cd72c1eb4ba70b9f8e334fbb5a1",
+    "v1/dist/certification/P11.13.build.json": "d5d7e06f212815df0b5598358cd2ad4bdd6a8594e3f961f6a4d1f61a2fbb27fc",
+    "v1/dist/certification/P11.13.test.json": "9ac56dc6fae6af6a87de0941032dd26620145ab900b4a7e7ab81e18e2ce14f7f",
+    "v1/src/libc48/float_bridge.asm": "ff6781f921a6bc8ebc6f5db6472078fc9abf81388e556e3d95169e148f3278c4",
+    "v1/src/tools/cc.asm": "ae442007c4ac4ed367af96bb2fa22b0f101c47df88e6c112af302179d4f29aca",
+    "v1/tools-host/test-driver/phase11_step_14.py": "929273ab4885ab8a3a14bc70b05f2f0e2c79ec74f9492428aa7dfa36b1d22c58"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.13": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "0c93dc01144bb9063a8a858ded13c1a437856b0f",
+  "status": "PASS",
+  "step": "P11.14",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
