@@ -22,6 +22,7 @@ import re
 
 DISPLAY_HOOK = 0x5E55
 FINAL_HOLD = 0x5EB4
+FINAL_RENDER_DONE = 0x5EB7
 STARTUP_BEEP = 0x5F2A
 ROM_BEEPER = 0x03B5
 HANDOFF = 0xE003
@@ -33,9 +34,10 @@ M_ROM_BASIC = 0xA00001
 M_ROM_LOAD = 0xA00002
 M_HOOK = 0xA10001
 M_HOLD = 0xA20001
-M_HOLD_ROW = 0xA21001
-M_HOLD_ATTR = 0xA22001
-M_HOLD_END = 0xA2FF01
+M_RENDER_DONE = 0xA21001
+M_RENDER_ROW = 0xA22001
+M_RENDER_ATTR = 0xA23001
+M_RENDER_END = 0xA2FF01
 M_BEEP = 0xA30001
 M_BEEPER = 0xA40001
 M_E003 = 0xA50001
@@ -74,6 +76,7 @@ def debugger_text() -> str:
         "breakpoint 0x0556",
         f"breakpoint 0x{DISPLAY_HOOK:04x}",
         f"breakpoint 0x{FINAL_HOLD:04x}",
+        f"breakpoint 0x{FINAL_RENDER_DONE:04x}",
         f"breakpoint 0x{STARTUP_BEEP:04x}",
         f"breakpoint 0x{ROM_BEEPER:04x} if [z80:sp] + 0x100 * [z80:sp+1] == 0x5f35",
         f"breakpoint 0x{HANDOFF:04x}",
@@ -91,11 +94,13 @@ def debugger_text() -> str:
     lines.extend(_state_lines(M_HOOK))
     lines.extend(["continue", "end", "commands 4"])
     lines.extend(_state_lines(M_HOLD))
-    lines.extend(_screen_dump(M_HOLD_ROW, M_HOLD_ATTR, M_HOLD_END))
-    lines.extend(["continue", "end", "commands 5", f"print 0x{M_BEEP:x}", "continue", "end"])
+    lines.extend(["continue", "end", "commands 5"])
+    lines.extend(_state_lines(M_RENDER_DONE))
+    lines.extend(_screen_dump(M_RENDER_ROW, M_RENDER_ATTR, M_RENDER_END))
+    lines.extend(["continue", "end", "commands 6", f"print 0x{M_BEEP:x}", "continue", "end"])
     lines.extend(
         [
-            "commands 6",
+            "commands 7",
             f"print 0x{M_BEEPER:x}",
             "print z80:de",
             "print z80:hl",
@@ -104,7 +109,7 @@ def debugger_text() -> str:
             "print [z80:sp+1]",
             "continue",
             "end",
-            "commands 7",
+            "commands 8",
         ]
     )
     lines.extend(_state_lines(M_E003))
@@ -113,7 +118,7 @@ def debugger_text() -> str:
         [
             "exit 0",
             "end",
-            "commands 8",
+            "commands 9",
             f"print 0x{M_TIMEOUT:x}",
             "print z80:pc",
             "print spectrum:frames",
@@ -165,6 +170,7 @@ def verify(log: Path, rom_path: Path, text_path: Path) -> dict:
     hook_states = [(left, line, ptr) for left, line, ptr, _ in hooks]
 
     hold_left, hold_line, hold_ptr, hold_index = _state(values, M_HOLD)
+    done_left, done_line, done_ptr, done_index = _state(values, M_RENDER_DONE)
     e003_left, e003_line, e003_ptr, e003_index = _state(values, M_E003)
     beep_index = _unique(values, M_BEEP)
     beeper_index = _unique(values, M_BEEPER)
@@ -179,8 +185,8 @@ def verify(log: Path, rom_path: Path, text_path: Path) -> dict:
     de, hl, sp, ret_lo, ret_hi = beeper_meta
     return_addr = ret_lo | (ret_hi << 8)
 
-    hold_row = _dump(values, M_HOLD_ROW, M_HOLD_ATTR, 256)
-    hold_attr = _dump(values, M_HOLD_ATTR, M_HOLD_END, 32)
+    final_row = _dump(values, M_RENDER_ROW, M_RENDER_ATTR, 256)
+    final_attr = _dump(values, M_RENDER_ATTR, M_RENDER_END, 32)
     e003_row = _dump(values, M_E003_ROW, M_E003_ATTR, 256)
     e003_attr = _dump(values, M_E003_ATTR, M_E003_END, 32)
 
@@ -199,10 +205,11 @@ def verify(log: Path, rom_path: Path, text_path: Path) -> dict:
     expected_attr = [0x07] * 32
 
     first_ptr = hook_states[0][2] if hook_states else -1
-    expected_hook_states = [(24 - i, i, first_ptr + 32 * i) for i in range(24)]
+    expected_hook_states = [(24 - i, i, first_ptr + 32 * i) for i in range(23)]
     order = [
         hooks[-1][3] if hooks else -1,
         hold_index,
+        done_index,
         beep_index,
         beeper_index,
         e003_index,
@@ -212,13 +219,16 @@ def verify(log: Path, rom_path: Path, text_path: Path) -> dict:
         "real_rom_basic_path_seen": rom_basic_hits >= 1,
         "real_rom_ld_bytes_seen": rom_load_hits >= 1,
         "no_timeout": timeout_hits == 0,
-        "exactly_24_display_callbacks": len(hooks) == 24,
-        "display_callback_state_sequence": hook_states == expected_hook_states,
-        "final_hold_after_24th_callback": (
-            hold_left == 0 and hold_line == 24 and hold_ptr == first_ptr + 24 * 32
+        "exactly_23_interblock_display_callbacks": len(hooks) == 23,
+        "interblock_display_callback_state_sequence": hook_states == expected_hook_states,
+        "finalizer_entered_with_row_24_pending": (
+            hold_left == 1 and hold_line == 23 and hold_ptr == first_ptr + 23 * 32
         ),
-        "final_row_rendered_before_beep": hold_row == expected_row,
-        "final_row_attributes_correct_before_beep": hold_attr == expected_attr,
+        "finalizer_rendered_row_24": (
+            done_left == 0 and done_line == 24 and done_ptr == first_ptr + 24 * 32
+        ),
+        "final_row_rendered_before_beep": final_row == expected_row,
+        "final_row_attributes_correct_before_beep": final_attr == expected_attr,
         "startup_beep_reached_once": len(_indices(values, M_BEEP)) == 1,
         "rom_beeper_reached_once": len(_indices(values, M_BEEPER)) == 1,
         "rom_beeper_parameters_exact": de == 224 and hl == 458,
@@ -232,7 +242,7 @@ def verify(log: Path, rom_path: Path, text_path: Path) -> dict:
         "ordered_final_path": order == sorted(order),
     }
     report = {
-        "schema": 1,
+        "schema": 2,
         "hook_count": len(hooks),
         "hook_states": [
             {"lines_left": left, "line_index": line, "text_ptr": ptr}
@@ -242,6 +252,11 @@ def verify(log: Path, rom_path: Path, text_path: Path) -> dict:
             "lines_left": hold_left,
             "line_index": hold_line,
             "text_ptr": hold_ptr,
+        },
+        "final_render_done": {
+            "lines_left": done_left,
+            "line_index": done_line,
+            "text_ptr": done_ptr,
         },
         "rom_beeper": {
             "de": de,
