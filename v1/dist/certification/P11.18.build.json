@@ -1,0 +1,71 @@
+{
+  "action": "build",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "itof1-ftoi1-layout-exact",
+      "passed": true
+    },
+    {
+      "name": "rom-int-store-gateway-used",
+      "passed": true
+    },
+    {
+      "name": "rom-truncate-toward-zero-gateway-used",
+      "passed": true
+    },
+    {
+      "name": "required-helper-names-itof-ftoi-frozen",
+      "passed": true
+    },
+    {
+      "name": "compiler-cast-helper-map-frozen",
+      "passed": true
+    },
+    {
+      "name": "input-copied-before-output-alias-write",
+      "passed": true
+    },
+    {
+      "name": "signed-unsigned-boundary-policy-exact",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1118-fp-casts.sym",
+        "p1118-fp-casts.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 25,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 11647 lines, work time: 0.023 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p1118-main.bin": "011c837c6ae150238628e4ed1a1c48ed792f761acc3c8bfc15ef21c7932c2098",
+    "v1/dist/certification/P11.17.build.json": "4dd6431b75a334d67b4d95ba52af6c0366da84a7b8a401186732133a39ca73ad",
+    "v1/dist/certification/P11.17.test.json": "52c6081687fe8ddbad1c3a0fe6fccc5779c308833eac04584399c67cde68e4a1",
+    "v1/include/zx48ux.inc": "bae3ca1519fd44e1c42ff2ad8ec09fb205ac078bb59158c43d54eee6c323b77c",
+    "v1/src/kernel/rom_services.asm": "47c03de58a0217dfd1056ea54628c5a7f7341140a91c09444b985a2353f29dae",
+    "v1/src/kernel/syscall.asm": "ae11a6dbaf1e2499e64933d861b6c490722d2fe27f48c22ccc4d48886c6cd29a",
+    "v1/src/libc48/float_runtime.asm": "3b5b0192cfe7e081f6cef6360178f89d969332bcbc0b07509adcbf5415bd2bba",
+    "v1/src/tools/cc.asm": "78b50d1476a52eaf9850f2246f2f4ed4e2a781bdc818e98aa62fec48ce6743cd",
+    "v1/tools-host/test-driver/phase11_step_18.py": "446899e79f6cafb4d0c0085367d58e65d216fa347d07f52942a961ef94a889a9"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.17": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "ee8b3b06d353b2e3317708b64c871a2df67492ce",
+  "status": "PASS",
+  "step": "P11.18",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
