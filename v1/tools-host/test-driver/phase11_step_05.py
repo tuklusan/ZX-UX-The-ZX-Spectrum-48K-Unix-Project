@@ -459,7 +459,8 @@ fixture_end:
     main = (build / "p1105-main.bin").read_bytes()
     require(len(main) <= 0x3F00, "P11.05 fixture exceeds 48K high-RAM test budget")
     syms = phase3_open_descriptions._symbols(
-        build / "p1105-parser.sym", ("p1105_all",)
+        build / "p1105-parser.sym",
+        ("p1105_all", "p1105_types", "p1105_functions", "p1105_locals", "p1105_negatives"),
     )
 
     assertions = [
@@ -477,12 +478,16 @@ fixture_end:
         def patch(ram):
             ram[0xC000 - 0x4000:0xC000 - 0x4000 + len(main)] = main
 
-        code = (
-            b"\xF3" + phase1._ld_sp(0xBFC0)
-            + phase1._call(syms["p1105_all"])
-            + phase1._jp_c(FAIL_PC) + phase1._jp(PASS_PC)
-        )
-        commands.append(run_sna(root, code, patch=patch))
+        for name in ("p1105_types", "p1105_functions", "p1105_locals", "p1105_negatives"):
+            code = (
+                b"\xF3" + phase1._ld_sp(0xBFC0)
+                + phase1._call(syms[name])
+                + phase1._jp_c(FAIL_PC) + phase1._jp(PASS_PC)
+            )
+            try:
+                commands.append(run_sna(root, code, patch=patch))
+            except DriverError as exc:
+                raise P1105Error(f"{name} native fixture failed: {exc}") from None
         assertions += [
             {"name": "fuse-golden-declaration-type-corpus", "passed": True},
             {"name": "fuse-prototype-definition-exact-match", "passed": True},
