@@ -4845,6 +4845,7 @@ cc_frame_format:
 CC_REGCALL_MAX_ARGS        EQU 6
 CC_REGCALL_KIND_WORD       EQU 0
 CC_REGCALL_KIND_CHAR       EQU 1
+CC_REGCALL_KIND_FLOAT_PTR  EQU 2
 CC_REGCALL_SLOT_HL         EQU 0
 CC_REGCALL_SLOT_DE         EQU 1
 CC_REGCALL_SLOT_BC         EQU 2
@@ -4878,7 +4879,7 @@ cc_regcall_set_arg:
     jp nc,cc_regcall_inval
     ld (cc_regcall_index),a
     ld a,d
-    cp CC_REGCALL_KIND_CHAR+1
+    cp CC_REGCALL_KIND_FLOAT_PTR+1
     jp nc,cc_regcall_inval
     ld (cc_regcall_kind_tmp),a
     ld a,c
@@ -5212,6 +5213,88 @@ cc_float5_from_text:
 
 cc_float5_format:
     ld a,E_FORMAT
+    scf
+    ret
+    ENDM
+
+
+; P11.15 C48_REGCALL floating arguments.
+; A C48 float value is never packed into an ordinary 16-bit slot. The slot
+; contains only a 16-bit pointer to caller-owned five-byte storage. That pointer
+; consumes the same HL/DE/BC/stack slot sequence frozen by P11.13. Literal and
+; intermediate values are materialized into addressable five-byte caller
+; temporaries before this typed setter is used.
+;
+; Mandatory pinned SDK/reference mapping:
+; 84d144de2721cda5075c3a6610a422663b5e2f77
+; compiler/c48/float5.py -> exact five-byte value storage
+; compiler/c48/semantics.py -> fixed typed function arguments
+; compiler/tests/test_conformance.py -> float-call semantic coverage
+; REV17 §25.3 remains authoritative for the target-native pointer ABI.
+    MACRO EMIT_P11_CC_FLOAT_ARGS
+CC_FLOAT_ARG_TEMP_STRIDE  EQU 5
+
+cc_float_arg_index_tmp:   db 0
+
+; A=zero-based argument index, BC=target address of caller-owned five-byte
+; storage. The complete five-byte object must not wrap the 16-bit address
+; space. Success records a FLOAT_PTR slot for the ordinary REGCALL emitter.
+cc_float_arg_set_pointer:
+    ld (cc_float_arg_index_tmp),a
+    cp CC_REGCALL_MAX_ARGS
+    jp nc,cc_float_arg_inval
+    ld a,b
+    or c
+    jp z,cc_float_arg_inval
+    ld h,b
+    ld l,c
+    ld de,4
+    add hl,de
+    jp c,cc_float_arg_inval
+    ld a,(cc_float_arg_index_tmp)
+    ld d,CC_REGCALL_KIND_FLOAT_PTR
+    jp cc_regcall_set_arg
+
+; A=temporary index 0..5, HL=target base of a caller-owned temporary block.
+; Return HL=address of the indexed five-byte temporary. This is address
+; planning only: generated caller code/materialization writes all five bytes
+; before passing the resulting pointer.
+cc_float_arg_temp_addr:
+    cp CC_REGCALL_MAX_ARGS
+    jp nc,cc_float_arg_inval
+    ld b,a
+    ld de,0
+cc_float_arg_temp_offset:
+    ld a,b
+    or a
+    jp z,cc_float_arg_temp_add_base
+    ld a,e
+    add a,CC_FLOAT_ARG_TEMP_STRIDE
+    ld e,a
+    ld a,d
+    adc a,0
+    ld d,a
+    djnz cc_float_arg_temp_offset
+cc_float_arg_temp_add_base:
+    add hl,de
+    jp c,cc_float_arg_inval
+    push hl
+    ld de,4
+    add hl,de
+    pop hl
+    jp c,cc_float_arg_inval
+    xor a
+    ret
+
+; Explicit negative path for a lowering attempt that tries to pass float bytes
+; inline/by value instead of passing their address.
+cc_float_arg_reject_inline:
+    ld a,E_FORMAT
+    scf
+    ret
+
+cc_float_arg_inval:
+    ld a,E_INVAL
     scf
     ret
     ENDM
