@@ -4850,10 +4850,11 @@ CC_REGCALL_SLOT_HL         EQU 0
 CC_REGCALL_SLOT_DE         EQU 1
 CC_REGCALL_SLOT_BC         EQU 2
 CC_REGCALL_SLOT_STACK      EQU 3
-CC_REGCALL_RET_NONE        EQU 0
-CC_REGCALL_RET_L           EQU 1
-CC_REGCALL_RET_HL          EQU 2
-CC_REGCALL_BUFFER_CAPACITY EQU 32
+CC_REGCALL_RET_NONE         EQU 0
+CC_REGCALL_RET_L            EQU 1
+CC_REGCALL_RET_HL           EQU 2
+CC_REGCALL_RET_FLOAT_HIDDEN EQU 3
+CC_REGCALL_BUFFER_CAPACITY  EQU 32
 
 cc_regcall_args:           defs CC_REGCALL_MAX_ARGS*2,0
 cc_regcall_kinds:          defs CC_REGCALL_MAX_ARGS,0
@@ -4948,8 +4949,8 @@ cc_regcall_no_stack:
     xor a
     ret
 
-; A=C48 base type, E=pointer depth. Success A=return register class.
-; Float return is deliberately deferred to P11.16 hidden-result-pointer ABI.
+; A=C48 base type, E=pointer depth. Success A=return ABI class.
+; A direct float result uses the P11.16 hidden-result-pointer class.
 cc_regcall_return_class:
     ld d,a
     ld a,e
@@ -4971,7 +4972,7 @@ cc_regcall_return_class:
     cp CC_TYPE_UINT
     jp z,cc_regcall_ret_hl
     cp CC_TYPE_FLOAT
-    jp z,cc_regcall_notsup
+    jp z,cc_regcall_ret_float_hidden
     jp cc_regcall_inval
 cc_regcall_ret_none:
     ld a,CC_REGCALL_RET_NONE
@@ -4983,6 +4984,10 @@ cc_regcall_ret_l:
     ret
 cc_regcall_ret_hl:
     ld a,CC_REGCALL_RET_HL
+    or a
+    ret
+cc_regcall_ret_float_hidden:
+    ld a,CC_REGCALL_RET_FLOAT_HIDDEN
     or a
     ret
 
@@ -5298,3 +5303,188 @@ cc_float_arg_inval:
     scf
     ret
     ENDM
+
+; P11.16 C48 floating return hidden-result-pointer ABI.
+; A float-returning function receives a caller-owned five-byte result pointer
+; in HL before every user argument. User argument 0/1 therefore occupy DE/BC;
+; user argument 2+ are pushed right-to-left as 16-bit stack words. The callee
+; writes exactly five bytes and returns the same result pointer in HL.
+;
+; Mandatory pinned SDK/reference mapping:
+; 84d144de2721cda5075c3a6610a422663b5e2f77
+; compiler/c48/semantics.py -> float function return/call source semantics
+; compiler/c48/float5.py -> exact five-byte result object
+; compiler/tests/test_conformance.py -> function return and direct-call coverage
+; REV17 §25.3 remains authoritative for the target-native hidden pointer ABI.
+    MACRO EMIT_P11_CC_FLOAT_RETURN
+CC_FLOAT_RETURN_MAX_USER_ARGS EQU 6
+
+cc_float_return_result_ptr:   dw 0
+cc_float_return_user_count:   db 0
+cc_float_return_target:       dw 0
+
+cc_float_return_set_result:
+    ld a,h
+    or l
+    jp z,cc_float_return_inval
+    push hl
+    ld de,4
+    add hl,de
+    pop hl
+    jp c,cc_float_return_inval
+    ld (cc_float_return_result_ptr),hl
+    xor a
+    ret
+
+; A=user argument index. Hidden result occupies HL, so users shift by one slot.
+cc_float_return_user_location:
+    cp CC_FLOAT_RETURN_MAX_USER_ARGS
+    jp nc,cc_float_return_inval
+    ld e,0
+    or a
+    jp z,cc_float_return_user_de
+    cp 1
+    jp z,cc_float_return_user_bc
+    sub 2
+    ld e,a
+    ld a,CC_REGCALL_SLOT_STACK
+    or a
+    ret
+cc_float_return_user_de:
+    ld a,CC_REGCALL_SLOT_DE
+    or a
+    ret
+cc_float_return_user_bc:
+    ld a,CC_REGCALL_SLOT_BC
+    or a
+    ret
+
+; A=user argument count, HL=callee. User arguments are already recorded at
+; indices 0..count-1 in the ordinary REGCALL argument table.
+cc_float_return_emit_call:
+    ld (cc_float_return_target),hl
+    cp CC_FLOAT_RETURN_MAX_USER_ARGS+1
+    jp nc,cc_float_return_inval
+    ld (cc_float_return_user_count),a
+
+    ld hl,(cc_float_return_result_ptr)
+    ld a,h
+    or l
+    jp z,cc_float_return_inval
+    push hl
+    ld de,4
+    add hl,de
+    pop hl
+    jp c,cc_float_return_inval
+
+    xor a
+    ld (cc_regcall_len),a
+    ld hl,cc_regcall_buffer
+    ld (cc_regcall_emit_ptr),hl
+
+    ld a,(cc_float_return_user_count)
+    cp 3
+    jp c,cc_float_return_emit_registers
+    dec a
+    ld (cc_regcall_index),a
+cc_float_return_emit_stack_loop:
+    call cc_regcall_load_index_bc
+    ret c
+    ld a,$21
+    call cc_regcall_put
+    ret c
+    ld a,c
+    call cc_regcall_put
+    ret c
+    ld a,b
+    call cc_regcall_put
+    ret c
+    ld a,$E5
+    call cc_regcall_put
+    ret c
+    ld a,(cc_regcall_index)
+    cp 2
+    jp z,cc_float_return_emit_registers
+    dec a
+    ld (cc_regcall_index),a
+    jp cc_float_return_emit_stack_loop
+
+cc_float_return_emit_registers:
+    ld a,(cc_float_return_user_count)
+    cp 2
+    jp c,cc_float_return_emit_user0
+    ld a,1
+    ld (cc_regcall_index),a
+    call cc_regcall_load_index_bc
+    ret c
+    ld a,$01
+    call cc_regcall_put
+    ret c
+    ld a,c
+    call cc_regcall_put
+    ret c
+    ld a,b
+    call cc_regcall_put
+    ret c
+
+cc_float_return_emit_user0:
+    ld a,(cc_float_return_user_count)
+    or a
+    jp z,cc_float_return_emit_hidden
+    xor a
+    ld (cc_regcall_index),a
+    call cc_regcall_load_index_bc
+    ret c
+    ld a,$11
+    call cc_regcall_put
+    ret c
+    ld a,c
+    call cc_regcall_put
+    ret c
+    ld a,b
+    call cc_regcall_put
+    ret c
+
+cc_float_return_emit_hidden:
+    ld bc,(cc_float_return_result_ptr)
+    ld a,$21
+    call cc_regcall_put
+    ret c
+    ld a,c
+    call cc_regcall_put
+    ret c
+    ld a,b
+    call cc_regcall_put
+    ret c
+
+    ld bc,(cc_float_return_target)
+    ld a,$CD
+    call cc_regcall_put
+    ret c
+    ld a,c
+    call cc_regcall_put
+    ret c
+    ld a,b
+    call cc_regcall_put
+    ret c
+
+    ld a,(cc_float_return_user_count)
+    cp 3
+    jp c,cc_float_return_emit_done
+    sub 2
+    ld b,a
+cc_float_return_cleanup_loop:
+    ld a,$F1
+    call cc_regcall_put
+    ret c
+    djnz cc_float_return_cleanup_loop
+cc_float_return_emit_done:
+    xor a
+    ret
+
+cc_float_return_inval:
+    ld a,E_INVAL
+    scf
+    ret
+    ENDM
+

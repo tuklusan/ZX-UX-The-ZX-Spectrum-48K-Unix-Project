@@ -1,0 +1,137 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: P11.16 C48 float return hidden pointer qualification
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      ZXUX_EVIDENCE_DIR: /tmp/zxux-p1116-qualification
+      P1116_BASE: 5ce4cdf847e32914081f565f0c7031ed592e2618
+      ZXUX_REV17_SHA256: d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8
+      ZXUX_REV08_SHA256: 97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c
+      ZXUX_TOOLCHAIN_LOCK_SHA256: 1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: {fetch-depth: 0}
+      - name: Guard exact P11.16 candidate diff
+        run: |
+          set -euo pipefail
+          git diff --name-only "$P1116_BASE" HEAD | sort > /tmp/changed
+          printf '%s\n' \
+            .github/workflows/p1116-qualification.yml \
+            v1/src/libc48/float_bridge.asm \
+            v1/src/tools/cc.asm \
+            v1/tools-host/test-driver/phase11_step_16.py | sort > /tmp/expected
+          diff -u /tmp/expected /tmp/changed
+          git diff --check "$P1116_BASE" HEAD
+          test -z "$(git status --porcelain)"
+      - name: Three unchanged candidate scans
+        run: |
+          set -euo pipefail
+          baseline=""
+          tree="$(git rev-parse 'HEAD^{tree}')"
+          for scan in 1 2 3; do
+            python3 -m py_compile v1/tools-host/test-driver/phase11_step_16.py
+            find . -type d -name __pycache__ -prune -exec rm -rf {} +
+            ./tools/check_license_headers.sh
+            ./tools/check_project_policy.py
+            python3 tools/check_media_retention.py
+            test -z "$(git status --porcelain)"
+            test "$(git rev-parse 'HEAD^{tree}')" = "$tree"
+            digest="$(sha256sum \
+              v1/src/libc48/float_bridge.asm \
+              v1/src/tools/cc.asm \
+              v1/tools-host/test-driver/phase11_step_16.py \
+              .github/workflows/p1116-qualification.yml \
+              v1/dist/certification/P11.15.build.json \
+              v1/dist/certification/P11.15.test.json | sha256sum | awk '{print $1}')"
+            if test -z "$baseline"; then baseline="$digest"; else test "$baseline" = "$digest"; fi
+          done
+      - name: Mandatory authority and prerequisite gates
+        run: |
+          set -euo pipefail
+          test "$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV17.md | awk '{print $1}')" = "$ZXUX_REV17_SHA256"
+          test "$(sha256sum docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV08.md | awk '{print $1}')" = "$ZXUX_REV08_SHA256"
+          test "$(sha256sum tools/manifest/toolchain.lock.json | awk '{print $1}')" = "$ZXUX_TOOLCHAIN_LOCK_SHA256"
+          python3 tools/check_phase10_evidence.py --require-active
+          python3 tools/check_media_retention.py
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          cert=Path("v1/dist/certification")
+          for action in ("build","test"):
+              r=json.loads((cert/f"P11.14.{action}.json").read_text())
+              assert r["schema"]==2 and r["step"]=="P11.15" and r["action"]==action
+              assert r["status"]=="PASS" and r["worktree_clean"] is True
+              assert r["prerequisites"]=={"P11.14":"PASS"}
+              assert r["architecture_sha256"]=="d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8"
+              assert r["implementation_plan_sha256"]=="97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c"
+          PY
+      - name: Restore or build certified ZX-UX runtime
+        uses: ./.github/actions/setup-zxux-runtime
+      - name: Execute P11.16 build
+        run: tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P11.16
+      - name: Execute P11.16 test
+        run: tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P11.16
+      - name: Collect exact evidence
+        if: always()
+        run: |
+          mkdir -p "$ZXUX_EVIDENCE_DIR/meta"
+          git rev-parse HEAD > "$ZXUX_EVIDENCE_DIR/meta/candidate-commit.txt"
+          git rev-parse 'HEAD^{tree}' > "$ZXUX_EVIDENCE_DIR/meta/candidate-tree.txt"
+          git status --porcelain > "$ZXUX_EVIDENCE_DIR/meta/worktree-status.txt"
+      - name: Upload exact evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: zxux-p1116-qualification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: /tmp/zxux-p1116-qualification/
+          retention-days: 90
+          if-no-files-found: error
+      - name: Guard final exact current head
+        id: final
+        run: |
+          set -euo pipefail
+          git fetch --quiet origin main
+          if test "$(git rev-parse origin/main)" != "$GITHUB_SHA"; then
+            echo "ZX-UX P11.16 SUPERSEDED candidate=$GITHUB_SHA current=$(git rev-parse origin/main)"
+            echo "current=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          test -z "$(git status --porcelain)"
+          echo "current=true" >> "$GITHUB_OUTPUT"
+      - name: Dispatch exact admission
+        if: steps.final.outputs.current == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, urllib.request
+          payload=json.dumps({"ref":"main","inputs":{"step":"P11.16","run_id":os.environ["GITHUB_RUN_ID"],"source_commit":os.environ["GITHUB_SHA"]}}).encode()
+          req=urllib.request.Request(
+              f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}/actions/workflows/phase11-step-admission.yml/dispatches",
+              data=payload,method="POST",
+              headers={"Authorization":f"Bearer {os.environ['GH_TOKEN']}","Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","Content-Type":"application/json"})
+          with urllib.request.urlopen(req,timeout=30) as response:
+              assert response.status==204
+          PY

@@ -10,7 +10,7 @@
 ; SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 ; patent, trademark, and governing-law provisions.
 ;
-; P11.14 libc48 five-byte floating representation bridge.
+; P11.14/P11.16 libc48 five-byte floating representation/return bridge.
 ; Arithmetic and conversions remain kernel/ROM-backed; this bridge freezes the
 ; in-memory object width/alignment and exact object-copy operation.
 
@@ -34,5 +34,16 @@ c48_float_require_size:
 c48_float_size_bad:
     ld a,E_FORMAT
     scf
+    ret
+
+; P11.16: HL=hidden result pointer, DE=source five-byte value.
+; Copy exactly five bytes and return the original hidden pointer in HL.
+c48_float_return5:
+    push hl
+    ex de,hl
+    ld bc,C48_FLOAT_SIZE
+    ldir
+    pop hl
+    xor a
     ret
     ENDM
