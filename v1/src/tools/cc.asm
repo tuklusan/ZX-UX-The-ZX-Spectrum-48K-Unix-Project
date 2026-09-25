@@ -3144,12 +3144,12 @@ cc_x_eq_loop:
 cc_x_eq_take:
     ld a,CC_X_EQ
 cc_x_eq_take_saved:
-    ld (cc_x_saved_op),a
+    push af
     call cc_parse_next
-    ret c
+    jp c,cc_x_drop_saved_error
     call cc_x_relational
-    ret c
-    ld a,(cc_x_saved_op)
+    jp c,cc_x_drop_saved_error
+    pop af
     call cc_x_emit
     ret c
     jp cc_x_eq_loop
@@ -3181,12 +3181,12 @@ cc_x_rel_le:
 cc_x_rel_ge:
     ld a,CC_X_GE
 cc_x_rel_take:
-    ld (cc_x_saved_op),a
+    push af
     call cc_parse_next
-    ret c
+    jp c,cc_x_drop_saved_error
     call cc_x_shift
-    ret c
-    ld a,(cc_x_saved_op)
+    jp c,cc_x_drop_saved_error
+    pop af
     call cc_x_emit
     ret c
     jp cc_x_rel_loop
@@ -3206,12 +3206,12 @@ cc_x_shift_loop:
 cc_x_shift_left:
     ld a,CC_X_SHL
 cc_x_shift_take:
-    ld (cc_x_saved_op),a
+    push af
     call cc_parse_next
-    ret c
+    jp c,cc_x_drop_saved_error
     call cc_x_additive
-    ret c
-    ld a,(cc_x_saved_op)
+    jp c,cc_x_drop_saved_error
+    pop af
     call cc_x_emit
     ret c
     jp cc_x_shift_loop
@@ -3231,12 +3231,12 @@ cc_x_add_loop:
 cc_x_add_plus:
     ld a,CC_X_ADD
 cc_x_add_take:
-    ld (cc_x_saved_op),a
+    push af
     call cc_parse_next
-    ret c
+    jp c,cc_x_drop_saved_error
     call cc_x_multiplicative
-    ret c
-    ld a,(cc_x_saved_op)
+    jp c,cc_x_drop_saved_error
+    pop af
     call cc_x_emit
     ret c
     jp cc_x_add_loop
@@ -3262,12 +3262,12 @@ cc_x_mul_mul:
 cc_x_mul_div:
     ld a,CC_X_DIV
 cc_x_mul_take:
-    ld (cc_x_saved_op),a
+    push af
     call cc_parse_next
-    ret c
+    jp c,cc_x_drop_saved_error
     call cc_x_unary
-    ret c
-    ld a,(cc_x_saved_op)
+    jp c,cc_x_drop_saved_error
+    pop af
     call cc_x_emit
     ret c
     jp cc_x_mul_loop
@@ -3326,18 +3326,22 @@ cc_x_addr:
 cc_x_deref:
     ld a,CC_X_DEREF
 cc_x_unary_take:
-    ld (cc_x_saved_op),a
+    push af
     call cc_parse_next
-    ret c
+    jp c,cc_x_drop_saved_error
     call cc_x_nest_enter
-    ret c
+    jp c,cc_x_drop_saved_error
     call cc_x_unary
+    jp c,cc_x_unary_nested_error
+    call cc_x_nest_leave
+    jp c,cc_x_drop_saved_error
+    pop af
+    jp cc_x_emit
+cc_x_unary_nested_error:
     push af
     call cc_x_nest_leave
     pop af
-    ret c
-    ld a,(cc_x_saved_op)
-    jp cc_x_emit
+    jp cc_x_drop_saved_error
 
 cc_x_paren_or_cast:
     call cc_parse_next
@@ -3383,21 +3387,28 @@ cc_x_cast:
     ld a,(cc_parse_type)
     cp CC_TYPE_VOID
     jp z,cc_x_notsup
+    push af
     ld a,')'
     call cc_parse_expect_char
-    ret c
+    jp c,cc_x_drop_saved_error
     call cc_x_nest_enter
-    ret c
+    jp c,cc_x_drop_saved_error
     call cc_x_unary
-    push af
+    jp c,cc_x_cast_nested_error
     call cc_x_nest_leave
+    jp c,cc_x_drop_saved_error
     pop af
-    ret c
+    ld b,a
     ld a,CC_X_CAST
     call cc_x_emit
     ret c
-    ld a,(cc_parse_type)
+    ld a,b
     jp cc_x_emit
+cc_x_cast_nested_error:
+    push af
+    call cc_x_nest_leave
+    pop af
+    jp cc_x_drop_saved_error
 
 cc_x_postfix:
     call cc_x_primary
@@ -3420,10 +3431,10 @@ cc_x_post_loop:
 cc_x_postinc:
     ld a,CC_X_POSTINC
 cc_x_post_take:
-    ld (cc_x_saved_op),a
+    push af
     call cc_parse_next
-    ret c
-    ld a,(cc_x_saved_op)
+    jp c,cc_x_drop_saved_error
+    pop af
     call cc_x_emit
     ret c
     jp cc_x_post_loop
@@ -3506,10 +3517,10 @@ cc_x_primary_char:
 cc_x_primary_string:
     ld a,CC_X_STRING
 cc_x_primary_take:
-    ld (cc_x_saved_op),a
+    push af
     call cc_parse_next
-    ret c
-    ld a,(cc_x_saved_op)
+    jp c,cc_x_drop_saved_error
+    pop af
     jp cc_x_emit
 
 cc_x_emit:
@@ -3578,6 +3589,10 @@ cc_x_op_ne:  db "!="
 cc_x_op_land: db "&&"
 cc_x_op_lor:  db "||"
 
+cc_x_drop_saved_error:
+    pop bc
+    scf
+    ret
 cc_x_nospc:
     ld a,E_NOSPC
     scf
