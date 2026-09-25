@@ -19,9 +19,9 @@
 The immutable reviewed seed supplies only the BASIC/fast-loader timing template.
 Product mode requires an explicit freshly rebuilt 8192-byte kernel. The known
 seed dummy payload is forbidden. All 24 turbo payload chunks and their loader
-check bytes are regenerated from that kernel. Product mode also converts the final
-block to the ordinary loader continuation so the 24th display callback can render the last row and execute
-the startup beep before the hook performs the exact 0xE003 handoff.
+check bytes are regenerated from that kernel. Product mode routes the final turbo block's post-copy dispatch to the resident
+finalizer. That finalizer renders row 24 from the loader-owned text buffer, plays
+the startup beep exactly once, then performs the exact 0xE003 handoff.
 """
 
 from __future__ import annotations
@@ -44,7 +44,7 @@ HOOK_ASM = ROOT / "src" / "print_hook.asm"
 
 SEED_SHA256 = "7ffe2f90b58e87a19a090ca0e0f1323605754af7d8809f3f051662f9faaec6f1"
 DUMMY_PAYLOAD_SHA256 = "0e59ef9290ffc4391b0ae999177cd9d7d9eafb6fcd86a45b13f9a4bd0b08c9ce"
-HOOK_SHA256 = "8de7a5a325c4976760c172b367ee230f9d1014db2915bbde3f94eade0d686046"
+HOOK_SHA256 = "0dcc63767005e1140b452d71a326d4b9af9fc39bfb57c9221e776d2957991b08"
 
 PROG_BASE = 0x5CCB
 HOOK_ADDR = 0x5E4F
@@ -55,9 +55,9 @@ TEXT_WIDTH = 32
 KERNEL_BASE = 0xE000
 KERNEL_SIZE = 8192
 PAYLOAD_ENTRY = 0xE003
-FINAL_LOADER_AFTER = 0x0100
-FINAL_ROW_DISPATCH_ADDR = 0x5EAD
+RENDER_ROW_ADDR = 0x5E62
 FINAL_HOLD_ADDR = 0x5EB4
+FINAL_LOADER_AFTER = FINAL_HOLD_ADDR
 INIT_SCREEN_ADDR = 0x5EC2
 BEEP_ADDR = 0x5F2A
 TEXT_ARRAY_OFFSET = 84
@@ -206,19 +206,15 @@ def assemble_hook(output: Path, pasmo: str) -> bytes:
     )
     if hook[screen_off:screen_off+len(screen_prefix)] != screen_prefix:
         raise AssertionError("turbo screen initializer drifted")
-    dispatch_off = FINAL_ROW_DISPATCH_ADDR - HOOK_ADDR
     hold_off = FINAL_HOLD_ADDR - HOOK_ADDR
     beep_off = BEEP_ADDR - HOOK_ADDR
-    if hook[dispatch_off:dispatch_off+3] != bytes(
-        [0xC3, FINAL_HOLD_ADDR & 0xFF, FINAL_HOLD_ADDR >> 8]
-    ):
-        raise AssertionError("final row no longer tail-jumps to final_hold")
     expected_hold = bytes(
-        [0xCD, BEEP_ADDR & 0xFF, BEEP_ADDR >> 8,
+        [0xCD, RENDER_ROW_ADDR & 0xFF, RENDER_ROW_ADDR >> 8,
+         0xCD, BEEP_ADDR & 0xFF, BEEP_ADDR >> 8,
          0xC3, PAYLOAD_ENTRY & 0xFF, PAYLOAD_ENTRY >> 8]
-    ) + bytes(8)
+    ) + bytes(5)
     if hook[hold_off:hold_off+14] != expected_hold:
-        raise AssertionError("final_hold beep/E003 dispatch drifted")
+        raise AssertionError("final_hold render/beep/E003 dispatch drifted")
     if hook[beep_off:] != bytes.fromhex("dde511e00021ca01cdb503f3dde1c9"):
         raise AssertionError("startup beep drifted")
     return bytes(hook)
@@ -402,8 +398,10 @@ def reconstruct_kernel(tzx: bytes) -> bytes:
         logical_dest = dest_addr or load_addr
         if logical_dest != KERNEL_BASE + offset:
             raise AssertionError(f"kernel destination coverage mismatch at pair {i}")
-        if after != FINAL_LOADER_AFTER:
+        if i < 23 and after != 0x0100:
             raise AssertionError(f"loader continuation mismatch at pair {i}")
+        if i == 23 and after != FINAL_LOADER_AFTER:
+            raise AssertionError("final loader finalizer dispatch mismatch")
         offset += len(chunk)
     payload = b"".join(chunks)
     if len(payload) != KERNEL_SIZE:
@@ -453,8 +451,8 @@ def main(argv: list[str] | None = None) -> int:
         "payload_chunk_count": len(CHUNK_LENGTHS),
         "kernel_range": "0xE000-0xFFFF",
         "handoff": "0xE003",
-        "final_loader_after": "0x0100",
-        "handoff_path": "24th display callback -> startup beep -> 0xE003",
+        "final_loader_after": f"0x{FINAL_LOADER_AFTER:04X}",
+        "handoff_path": "final block -> render row 24 -> startup beep -> 0xE003",
         "screen_file": None,
         "release_tap": None,
         "loader_display": "24x32 loader-owned",
