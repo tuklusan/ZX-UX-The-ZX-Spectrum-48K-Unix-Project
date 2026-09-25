@@ -23,6 +23,7 @@ import re
 DISPLAY_HOOK = 0x5E55
 FINAL_HOLD = 0x5EB4
 FINAL_RENDER_DONE = 0x5EB7
+PAUSE_ONE_SECOND = 0x5F39
 STARTUP_BEEP = 0x5F2A
 ROM_BEEPER = 0x03B5
 HANDOFF = 0xE003
@@ -35,10 +36,12 @@ M_ROM_LOAD = 0xA00002
 M_HOOK = 0xA10001
 M_HOLD = 0xA20001
 M_RENDER_DONE = 0xA21001
+M_RENDER_FRAME = 0xA21101
 M_RENDER_ROW = 0xA22001
 M_RENDER_ATTR = 0xA23001
 M_RENDER_END = 0xA2FF01
 M_BEEP = 0xA30001
+M_BEEP_FRAME = 0xA31001
 M_BEEPER = 0xA40001
 M_E003 = 0xA50001
 M_E003_ROW = 0xA51001
@@ -96,8 +99,20 @@ def debugger_text() -> str:
     lines.extend(_state_lines(M_HOLD))
     lines.extend(["continue", "end", "commands 5"])
     lines.extend(_state_lines(M_RENDER_DONE))
+    lines.extend([f"print 0x{M_RENDER_FRAME:x}", "print spectrum:frames"])
     lines.extend(_screen_dump(M_RENDER_ROW, M_RENDER_ATTR, M_RENDER_END))
-    lines.extend(["continue", "end", "commands 6", f"print 0x{M_BEEP:x}", "continue", "end"])
+    lines.extend(
+        [
+            "continue",
+            "end",
+            "commands 6",
+            f"print 0x{M_BEEP:x}",
+            f"print 0x{M_BEEP_FRAME:x}",
+            "print spectrum:frames",
+            "continue",
+            "end",
+        ]
+    )
     lines.extend(
         [
             "commands 7",
@@ -174,6 +189,11 @@ def verify(log: Path, rom_path: Path, text_path: Path) -> dict:
     e003_left, e003_line, e003_ptr, e003_index = _state(values, M_E003)
     beep_index = _unique(values, M_BEEP)
     beeper_index = _unique(values, M_BEEPER)
+    render_frame_index = _unique(values, M_RENDER_FRAME)
+    beep_frame_index = _unique(values, M_BEEP_FRAME)
+    render_done_frame = values[render_frame_index + 1]
+    beep_frame = values[beep_frame_index + 1]
+    pause_frames = beep_frame - render_done_frame
 
     rom_basic_hits = len(_indices(values, M_ROM_BASIC))
     rom_load_hits = len(_indices(values, M_ROM_LOAD))
@@ -229,6 +249,7 @@ def verify(log: Path, rom_path: Path, text_path: Path) -> dict:
         ),
         "final_row_rendered_before_beep": final_row == expected_row,
         "final_row_attributes_correct_before_beep": final_attr == expected_attr,
+        "one_second_final_row_hold_before_beep": 49 <= pause_frames <= 51,
         "startup_beep_reached_once": len(_indices(values, M_BEEP)) == 1,
         "rom_beeper_reached_once": len(_indices(values, M_BEEPER)) == 1,
         "rom_beeper_parameters_exact": de == 224 and hl == 458,
@@ -242,7 +263,7 @@ def verify(log: Path, rom_path: Path, text_path: Path) -> dict:
         "ordered_final_path": order == sorted(order),
     }
     report = {
-        "schema": 2,
+        "schema": 3,
         "hook_count": len(hooks),
         "hook_states": [
             {"lines_left": left, "line_index": line, "text_ptr": ptr}
@@ -257,6 +278,12 @@ def verify(log: Path, rom_path: Path, text_path: Path) -> dict:
             "lines_left": done_left,
             "line_index": done_line,
             "text_ptr": done_ptr,
+        },
+        "pre_beep_pause": {
+            "routine_address": PAUSE_ONE_SECOND,
+            "render_done_frame": render_done_frame,
+            "beep_frame": beep_frame,
+            "frames": pause_frames,
         },
         "rom_beeper": {
             "de": de,

@@ -25,6 +25,8 @@ HOOK_ADDR = 0x5E4F
 RENDER_ROW_ADDR = 0x5E62
 FINAL_HOLD_ADDR = 0x5EB4
 STARTUP_BEEP_ADDR = 0x5F2A
+PAUSE_ONE_SECOND_ADDR = 0x5F39
+PRE_BEEP_PAUSE_TSTATES = 3500009
 KERNEL_BASE = 0xE000
 KERNEL_SIZE = 8192
 HANDOFF = 0xE003
@@ -126,15 +128,20 @@ def inspect(data: bytes) -> dict:
 
     expected_hold = bytes(
         [0xCD, RENDER_ROW_ADDR & 0xFF, RENDER_ROW_ADDR >> 8,
+         0xCD, PAUSE_ONE_SECOND_ADDR & 0xFF, PAUSE_ONE_SECOND_ADDR >> 8,
          0xCD, STARTUP_BEEP_ADDR & 0xFF, STARTUP_BEEP_ADDR >> 8,
          0xC3, HANDOFF & 0xFF, HANDOFF >> 8]
-    ) + bytes(5)
+    ) + bytes(2)
     if basic_bytes(FINAL_HOLD_ADDR, 14) != expected_hold:
-        raise ValueError("final_hold is not final-row render, startup beep, then E003")
+        raise ValueError("final_hold is not render, one-second hold, beep, then E003")
     if basic_bytes(STARTUP_BEEP_ADDR, 15) != bytes.fromhex(
         "dde511e00021ca01cdb503f3dde1c9"
     ):
         raise ValueError("startup BEEPER routine drifted")
+    if basic_bytes(PAUSE_ONE_SECOND_ADDR, 23) != bytes.fromhex(
+        "f316020100000b78b120fb1520f501d40d0b78b120fbc9"
+    ):
+        raise ValueError("one-second pre-beep pause routine drifted")
     if basic_bytes(0x5EF7, 2) != bytes([24, 0]):
         raise ValueError("loader display callback state is not 24 rows from row zero")
 
@@ -194,6 +201,7 @@ def inspect(data: bytes) -> dict:
         "handoff": HANDOFF,
         "handoff_path_verified": True,
         "final_loader_after": FINAL_LOADER_AFTER,
+        "pre_beep_pause_nominal_tstates": PRE_BEEP_PAUSE_TSTATES,
         "standard_speed_blocks": len(std),
         "generalized_blocks": len(gen),
     }
@@ -222,6 +230,7 @@ def main() -> int:
     for key in ("tzx_sha256", "tzx_size", "kernel_sha256", "kernel_size", "standard_speed_blocks", "generalized_blocks"):
         print(f"{key}={result[key]}")
     print(f"final_loader_after=0x{result['final_loader_after']:04X}")
+    print(f"pre_beep_pause_nominal_tstates={result['pre_beep_pause_nominal_tstates']}")
     print("handoff=0xE003")
     print("ZX-UX RELEASE TZX INSPECTION PASS")
     return 0

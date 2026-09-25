@@ -115,15 +115,13 @@ glyph_loop:
 
 final_hold:
         ; The final turbo header dispatches here after the last kernel bytes
-        ; have been copied into place. Render row 24 explicitly, beep exactly
-        ; once, then hand off to the permanent kernel entry at 0xE003.
+        ; have been copied into place. Render row 24 explicitly, hold it visible
+        ; for one nominal second, beep exactly once, then hand off at 0xE003.
         ; Keep this block exactly 14 bytes so init_screen remains at 0x5EC2.
         call render_row
+        call pause_one_second
         call startup_beep
         jp 0xE003
-        nop
-        nop
-        nop
         nop
         nop
 
@@ -189,4 +187,31 @@ startup_beep:
         call 0x03B5
         di
         pop ix
+        ret
+
+pause_one_second:
+        ; Keep the final loader line visible for one nominal second without
+        ; depending on interrupt state. With the two CALLs around this routine,
+        ; the path to startup_beep takes 3,500,009 T-states: about one second
+        ; at the nominal 3.5 MHz Spectrum clock.
+        di
+        ld d,2
+pause_outer:
+        ld bc,0
+pause_inner:
+        dec bc
+        ld a,b
+        or c
+        jr nz,pause_inner
+        dec d
+        jr nz,pause_outer
+
+        ; Fine adjustment: 3540 iterations bring the complete call-to-call
+        ; interval to 3,500,009 T-states.
+        ld bc,3540
+pause_fine:
+        dec bc
+        ld a,b
+        or c
+        jr nz,pause_fine
         ret

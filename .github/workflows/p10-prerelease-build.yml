@@ -132,6 +132,7 @@ jobs:
           test "$host_sha" = "$embedded_sha"
           test "$host_sha" != 0e59ef9290ffc4391b0ae999177cd9d7d9eafb6fcd86a45b13f9a4bd0b08c9ce
           grep -q '^final_loader_after=0x5EB4$' /tmp/p10-prerelease/inspection.txt
+          grep -q '^pre_beep_pause_nominal_tstates=3500009$' /tmp/p10-prerelease/inspection.txt
           grep -q '^handoff=0xE003$' /tmp/p10-prerelease/inspection.txt
           grep -q '^kernel_size=8192$' /tmp/p10-prerelease/inspection.txt
           grep -q '^standard_speed_blocks=2$' /tmp/p10-prerelease/inspection.txt
@@ -244,7 +245,7 @@ jobs:
             --rom tools/runtime/fuse/roms/48.rom \
             --text v1/tools-host/release-tzx/text-lines.txt \
             --report "$diag/runtime-acceptance.json"
-          echo "ZX-UX PHASE-10 PRE-RELEASE FINAL-ROW/BEEP/E003 PASS"
+          echo "ZX-UX PHASE-10 PRE-RELEASE FINAL-ROW/HOLD/BEEP/E003 PASS"
 
       - name: Emit compact pre-release manifest and README
         shell: bash
@@ -274,9 +275,10 @@ jobs:
               'This is the REV17/REV08 TZX-only pre-release path. The loader owns the\n'
               '24x32 loading display; there is no SCREEN$ file and no release TAP.\n'
               'The TZX embeds the freshly rebuilt exact 8192-byte kernel at E000-FFFF\n'
-              'and hands off at E003. The final row and exact startup BEEPER call\n'
-              'are runtime-verified before that handoff. Real-time Fuse acceptance\n'
-              'disables fastload, loader detection, acceleration and tape traps.\n\n'
+              'and hands off at E003. The final row is held visible for about one\n'
+              'second, then the exact startup BEEPER call runs before handoff.\n'
+              'Real-time Fuse acceptance disables fastload, loader detection,\n'
+              'acceleration and tape traps.\n\n'
               'This Phase-10 pre-release intentionally contains no post-kernel M48O\n'
               'system stream. It proves the fast-loader/kernel handoff only; it is not\n'
               'the final Phase-12 system tape. No Phase-11 work is present or started.\n'
@@ -325,7 +327,8 @@ jobs:
               'kernel_end':'0xFFFF',
               'handoff':'0xE003',
               'final_loader_after':'0x5EB4',
-              'handoff_path':'final block -> render row 24 -> startup beep -> 0xE003',
+              'pre_beep_pause_nominal_tstates':build['pre_beep_pause_nominal_tstates'],
+              'handoff_path':'final block -> render row 24 -> ~1 second hold -> startup beep -> 0xE003',
               'payload_chunk_count':24,
               'generalized_block_count':48,
               'standard_speed_block_count':2,
@@ -352,6 +355,7 @@ jobs:
               'hook_count':runtime['hook_count'],
               'final_hold':runtime['final_hold'],
               'final_render_done':runtime['final_render_done'],
+              'pre_beep_pause':runtime['pre_beep_pause'],
               'rom_beeper':runtime['rom_beeper'],
               'handoff':runtime['handoff'],
               'expected_final_line':runtime['expected_final_line'],
@@ -373,6 +377,7 @@ jobs:
               'loader_23_interblock_callbacks_runtime_verified':'PASS',
               'loader_finalizer_row24_runtime_verified':'PASS',
               'loader_final_row_bitmap_runtime_verified':'PASS',
+              'loader_final_row_one_second_hold_runtime_verified':'PASS',
               'startup_beep_runtime_verified':'PASS',
               'e003_after_startup_beep_runtime_verified':'PASS',
               'native_source_projection_no_preassembled_kernel':'PASS',
@@ -416,6 +421,8 @@ jobs:
           assert meta['runtime_acceptance']['hook_count']==23
           assert meta['runtime_acceptance']['final_hold']['lines_left']==1
           assert meta['runtime_acceptance']['final_render_done']['lines_left']==0
+          assert meta['boot_contract']['pre_beep_pause_nominal_tstates']==3500009
+          assert 49 <= meta['runtime_acceptance']['pre_beep_pause']['frames'] <= 51
           assert all(v=='PASS' for v in meta['runtime_acceptance']['assertions'].values())
           assert len(set((meta['kernel_identity']['host_built_sha256'],
                           meta['kernel_identity']['tzx_embedded_sha256'],
