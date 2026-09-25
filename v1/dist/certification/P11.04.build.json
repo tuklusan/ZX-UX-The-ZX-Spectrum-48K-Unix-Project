@@ -1,0 +1,59 @@
+{
+  "action": "build",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "golden-lexer-surface-static",
+      "passed": true
+    },
+    {
+      "name": "case-sensitive-identifiers-static",
+      "passed": true
+    },
+    {
+      "name": "supported-and-unsupported-keyword-tables",
+      "passed": true
+    },
+    {
+      "name": "fixed-version1-operator-table",
+      "passed": true
+    },
+    {
+      "name": "streaming-comment-state",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1104-lexer.sym",
+        "p1104-lexer.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 11,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 3069 lines, work time: 0.010 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p1104-main.bin": "cf961d32e8608acb81ee0e5e01cb813bde01c204200a3543d5e2da868ea4288c",
+    "v1/dist/certification/P11.03.build.json": "0273244b850c16c12e6433f3c039f29ba695a5438e808e22f45bb5162065ba98",
+    "v1/dist/certification/P11.03.test.json": "c93b2089b60b016491bd39e30ef37d2b1f9e588fd378c05b6c15515193cfb6ad",
+    "v1/src/tools/cc.asm": "4b9104ff04d302442b9edff813e5341ca756af7d4da67694dede76b0ab323ddc",
+    "v1/tools-host/test-driver/phase11_step_04.py": "673eb6586b2437af838454d066984459a7371f2c30c96b469920805f6f8a1df0"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.03": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "9402f5416c0bda0d25267ed403666e24544b1f7d",
+  "status": "PASS",
+  "step": "P11.04",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
