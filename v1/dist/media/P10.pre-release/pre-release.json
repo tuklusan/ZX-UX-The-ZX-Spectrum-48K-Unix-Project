@@ -23,7 +23,7 @@
     "standard_speed_block_count": 2,
     "zx48uxscr": false
   },
-  "candidate_source_commit": "8d3a70a50d8241aa6db087509ea6c64f1c46d91c",
+  "candidate_source_commit": "0c3734ed91f263b38a192e618815f1e8f928a10a",
   "checkpoint_commit": "8360b0c5817738b01dc4b75bb64b12d77341adcd",
   "checkpoint_tag": "PHASE-10-COMPLETE",
   "fast_loader": {
@@ -34,7 +34,7 @@
     "pasmo_path": "/usr/bin/pasmo",
     "pasmo_version": "0.5.3-7",
     "portable_zip_sha256": "4c83a681f718192db9ebb32f0c8bc565baf2e68eb85de480322a1102d32f00c7",
-    "runtime_acceptance_sha256": "a1409b9ea83ca2833ecd181b759ef7dd1f25ba2008d16c0c5f18a2b7c7b19074",
+    "runtime_acceptance_sha256": "fba728d51da67c1654a570ab855f174791a589bda5b42a11d322a9c82dac2e58",
     "seed_sha256": "7ffe2f90b58e87a19a090ca0e0f1323605754af7d8809f3f051662f9faaec6f1",
     "text_lines_sha256": "610f0b6d8cadf7ed0c3935fc66b889aee2f89fbb5e278d580813686402c72f10",
     "upstream_commit": "99c948feb2893e369055879ddf82aa0105bfe541",
@@ -108,9 +108,9 @@
     },
     "expected_final_line": "starting ZX-UX...               ",
     "final_hold": {
-      "line_index": 24,
-      "lines_left": 0,
-      "text_ptr": 25273
+      "line_index": 22,
+      "lines_left": 2,
+      "text_ptr": 25209
     },
     "final_render_done": {
       "line_index": 24,
@@ -123,12 +123,13 @@
       "lines_left": 0,
       "text_ptr": 25273
     },
-    "hook_count": 24,
+    "hook_count": 22,
+    "hook_trace_present": true,
     "pre_beep_pause": {
-      "beep_frame": 1931,
-      "frames": 62,
+      "beep_frame": 1748,
+      "frames": 61,
       "nominal_tstates": 3500009,
-      "render_done_frame": 1869,
+      "render_done_frame": 1687,
       "routine_address": 24377
     },
     "rom_beeper": {
@@ -162,9 +163,9 @@
     },
     "expected_final_line": "starting ZX-UX...               ",
     "final_hold": {
-      "line_index": 24,
-      "lines_left": 0,
-      "text_ptr": 25273
+      "line_index": 23,
+      "lines_left": 1,
+      "text_ptr": 25241
     },
     "final_render_done": {
       "line_index": 24,
@@ -177,10 +178,11 @@
       "lines_left": 0,
       "text_ptr": 25273
     },
-    "hook_count": 24,
+    "hook_count": 0,
+    "hook_trace_present": false,
     "pre_beep_pause": {
-      "beep_frame": 1681,
-      "frames": 62,
+      "beep_frame": 1680,
+      "frames": 61,
       "nominal_tstates": 3500009,
       "render_done_frame": 1619,
       "routine_address": 24377
