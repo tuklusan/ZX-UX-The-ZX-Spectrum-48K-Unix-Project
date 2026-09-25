@@ -1,0 +1,63 @@
+{
+  "action": "build",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "pointer-representation-exactly-16-bit-native",
+      "passed": true
+    },
+    {
+      "name": "pointee-size-selection-1-2-5-native",
+      "passed": true
+    },
+    {
+      "name": "pointer-plus-minus-integer-scales-by-sizeof-native",
+      "passed": true
+    },
+    {
+      "name": "same-array-pointer-difference-signed-16-bit-native",
+      "passed": true
+    },
+    {
+      "name": "unrelated-pointer-order-subtraction-not-portable-oracle",
+      "passed": true
+    },
+    {
+      "name": "sdk-pinned-pointer-oracle-mapping-recorded",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1109-pointers.sym",
+        "p1109-pointers.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 19,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 6651 lines, work time: 0.017 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p1109-main.bin": "8e343d3c684e9ba4c763fb6a760481819138f4187a97748065a103bceacb9646",
+    "v1/dist/certification/P11.08.build.json": "73764c146c33148fbb7c960269a8966c690357154f45a202b7ebc21857fd643b",
+    "v1/dist/certification/P11.08.test.json": "9e89629f9899ad3f2ce141a0d51ebc72d43b3b12dfe52dd6bad326aa34086ac7",
+    "v1/src/tools/cc.asm": "ba2fa11895396b37502592b3c4d50150c808debb645c76f507aba266462de459",
+    "v1/tools-host/test-driver/phase11_step_09.py": "0381a8dfea31940b8849d74b517693626919014eea45578aebdb9a8fd527a4f9"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.08": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "c11509bac49f622b02faf4b77672ad6d17efbf82",
+  "status": "PASS",
+  "step": "P11.09",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
