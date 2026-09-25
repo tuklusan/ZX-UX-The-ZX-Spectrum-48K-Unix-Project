@@ -151,16 +151,10 @@ def classify(path: str) -> str:
 
 
 def selected(path: str) -> bool:
-    return (
-        path == "README.md"
-        or path.startswith(".github/workflows/")
-        or path.startswith(".github/actions/")
-        or (path.startswith(("docs/", "v1/docs/", "scratch/")) and (path.endswith(".md") or path.endswith(".txt")))
-        or path.startswith("v1/dist/")
-        or path.startswith("tools/")
-        or path.startswith("v1/tools-host/test-driver/")
-        or path.startswith("v1/tools-host/release-tzx/")
-    )
+    # The post-P10 cleanup walk is intentionally whole-tree. Classification,
+    # not selector omission, decides whether a tracked artifact is current,
+    # historical, replay-only, obsolete, disposable, or unrelated.
+    return True
 
 
 def current_text_hits(paths: list[str]) -> list[dict[str, Any]]:
