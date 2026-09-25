@@ -1,0 +1,63 @@
+{
+  "action": "build",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "if-else-native-parser",
+      "passed": true
+    },
+    {
+      "name": "while-do-for-native-parser",
+      "passed": true
+    },
+    {
+      "name": "break-continue-return-native-parser",
+      "passed": true
+    },
+    {
+      "name": "bounded-recursive-statement-depth",
+      "passed": true
+    },
+    {
+      "name": "deterministic-control-flow-event-output",
+      "passed": true
+    },
+    {
+      "name": "expression-interiors-deferred-to-p1107",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1106-statements.sym",
+        "p1106-statements.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 14,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 5814 lines, work time: 0.013 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p1106-main.bin": "583f1e5a1f018102b0be27ebc503fdb956c903847d9af6b31d2f74d1e4e90594",
+    "v1/dist/certification/P11.05.build.json": "e13b8be9958bc84c71e3654ab0f0384aa1ae784e18886510fb866d47d669f61a",
+    "v1/dist/certification/P11.05.test.json": "6e7d3658f1a1807c6a6cb225f250f0f0ff5f9e72f2a4ae1e1d7985f381ff1c20",
+    "v1/src/tools/cc.asm": "b8d0fbcacecee4cd91b6c37f83e18489a026b77eac605bbd964d938ce34a4d5a",
+    "v1/tools-host/test-driver/phase11_step_06.py": "ce2f3ef45b5edcb19f793020c21a87205dd269cc7705bff470905b6497bcbc2b"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.05": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "af29335d2d17f4f10f449b4ae04a88740ae6289e",
+  "status": "PASS",
+  "step": "P11.06",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
