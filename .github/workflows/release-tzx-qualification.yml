@@ -220,26 +220,7 @@ jobs:
           fuse_pid=$!
           window=""
           for i in $(seq 1 40); do
-            window="$(xdotool search --onlyvisible --name '^Fuse
-        shell: bash
-        run: |
-          set -euo pipefail
-          git fetch --quiet origin main
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
-          test ! -n "$(git ls-files | grep -Ei '(^|/)(P11(\.|/)|p11[^/]*qualification|phase-?11)' || true)"
-          test -z "$(git status --porcelain)"
-          echo "ZX-UX RELEASE TZX TOOLING QUALIFICATION PASS"
-
-      - name: Upload qualification outputs
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: zxux-release-tzx-qualification-${{ github.run_id }}-${{ github.run_attempt }}
-          path: /tmp/release-tzx/
-          retention-days: 30
-          if-no-files-found: warn
- 2>/dev/null | head -n1 || true)"
+            window="$(xdotool search --onlyvisible --name 'Fuse' 2>/dev/null | head -n1 || true)"
             test -n "$window" && break
             sleep 0.25
           done
@@ -272,7 +253,6 @@ jobs:
             --text v1/tools-host/release-tzx/text-lines.txt \
             --report "$diag/runtime-acceptance.json"
           echo "ZX-UX RELEASE TZX DETECT-LOADER COMPATIBILITY PASS"
-
       - name: Final exact-head and clean-state gate
         shell: bash
         run: |
