@@ -752,6 +752,15 @@ def dispatch(root: Path, action: str, step: str):
                 raise DriverError(f"numbered Phase-10 step is not registered: {step}") from exc
             raise
         return module.dispatch(root, action, step, **kwargs)
+    if step.startswith("P11."):
+        suffix = step.split(".", 1)[1]
+        try:
+            module = importlib.import_module(f"phase11_step_{suffix}")
+        except ModuleNotFoundError as exc:
+            if exc.name == f"phase11_step_{suffix}":
+                raise DriverError(f"numbered Phase-11 step is not registered: {step}") from exc
+            raise
+        return module.dispatch(root, action, step, **kwargs)
     module = E0_MODULE.get(step)
     if module is not None:
         return module.dispatch(root, action, step, **kwargs)
