@@ -3379,7 +3379,9 @@ cc_x_group:
     pop af
     ret c
     ld a,')'
-    jp cc_parse_expect_char
+    call cc_parse_expect_char
+    ret c
+    jp cc_x_post_loop
 
 cc_x_cast:
     call cc_parse_type_spec
