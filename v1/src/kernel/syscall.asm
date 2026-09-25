@@ -1637,4 +1637,3 @@ p1119_cmp_invalid:
     scf
     ret
     ENDM
-
