@@ -36,7 +36,7 @@ jobs:
           set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends imagemagick xdotool xvfb
-      - name: Capture live screen during one-second hold
+      - name: Capture default-emulator live screen during one-second hold
         shell: bash
         run: |
           set -euo pipefail
@@ -73,7 +73,6 @@ jobs:
           stdbuf -oL -eL tools/runtime/fuse/bin/fuse --machine 48 \
             --rom-48 tools/runtime/fuse/roms/48.rom \
             --tape v1/dist/media/P10.pre-release/zx-ux-phase10-pre-release.tzx \
-            --no-accelerate-loader --no-fastload --no-traps --no-detect-loader \
             --no-confirm-actions --no-sound \
             --debugger-command "$(cat "$diag/debugger.txt")" \
             >"$diag/fuse-state.log" 2>&1 &
