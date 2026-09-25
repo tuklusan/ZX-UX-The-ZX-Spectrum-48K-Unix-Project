@@ -5092,6 +5092,7 @@ cc_regcall_emit_call_opcode:
     ld a,l
     call cc_regcall_put
     ret c
+    ld hl,(cc_regcall_target)
     ld a,h
     call cc_regcall_put
     ret c
