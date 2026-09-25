@@ -4225,3 +4225,385 @@ cc_lit_format:
     scf
     ret
     ENDM
+
+
+; P11.11 C48 globals/statics/externs and exact OBJ1 symbol/BSS staging.
+; One source-order symbol table is retained. External declarations may precede
+; or follow their single definition; duplicate definitions and linkage/type
+; storage conflicts fail closed. Defined objects receive minimum required BSS
+; alignment. The symbol staging bytes are exact OBJ1 20-byte records.
+;
+; Mandatory pinned SDK/reference mapping:
+; 84d144de2721cda5075c3a6610a422663b5e2f77
+; compiler/c48/semantics.py::_declare_file_symbol -> linkage/definition rules
+; compiler/tests/test_conformance.py::DeclarationCorpus -> extern/static corpus
+    MACRO EMIT_P11_CC_GLOBAL_STORAGE
+CC_STORE_CAPACITY        EQU 16
+CC_STORE_RECORD_SIZE     EQU 20
+CC_STORE_NAME_SIZE       EQU 16
+CC_STORE_LINK_EXTERNAL   EQU 0
+CC_STORE_LINK_INTERNAL   EQU 1
+
+cc_store_records:        defs CC_STORE_CAPACITY*CC_STORE_RECORD_SIZE,0
+cc_store_sizes:          defs CC_STORE_CAPACITY*2,0
+cc_store_aligns:         defs CC_STORE_CAPACITY,0
+cc_store_linkage:        defs CC_STORE_CAPACITY,0
+cc_store_defined:        defs CC_STORE_CAPACITY,0
+cc_store_count:          db 0
+cc_store_bss_size:       dw 0
+cc_store_work_name:      defs CC_STORE_NAME_SIZE,0
+cc_store_work_size:      dw 0
+cc_store_work_align:     db 0
+cc_store_work_storage:   db 0
+cc_store_work_linkage:   db 0
+cc_store_work_index:     db 0
+cc_store_scan_index:     db 0
+cc_store_scan_left:      db 0
+cc_store_work_record:    dw 0
+cc_store_alloc_offset:   dw 0
+
+cc_store_reset:
+    xor a
+    ld (cc_store_count),a
+    ld (cc_store_bss_size),a
+    ld (cc_store_bss_size+1),a
+    ret
+
+; HL=NUL-terminated C48 name, BC=object size, D=alignment (1 or 2),
+; E=CC_STORAGE_NONE/STATIC/EXTERN. Success retains/creates one exact OBJ1
+; record and updates cc_store_bss_size for definitions only.
+cc_store_object:
+    ld (cc_store_work_size),bc
+    ld a,d
+    ld (cc_store_work_align),a
+    ld a,e
+    ld (cc_store_work_storage),a
+    ld (cc_work_name),hl
+
+    ld a,b
+    or c
+    jp z,cc_store_format
+    ld a,(cc_store_work_align)
+    cp 1
+    jp z,cc_store_align_ok
+    cp 2
+    jp nz,cc_store_format
+cc_store_align_ok:
+    ld a,(cc_store_work_storage)
+    cp CC_STORAGE_EXTERN+1
+    jp nc,cc_store_format
+
+    ld hl,(cc_work_name)
+    call cc_ident_validate
+    ret c
+    ld hl,(cc_work_name)
+    ld de,cc_store_work_name
+    xor a
+    ld (cc_copy_zero),a
+    ld b,CC_STORE_NAME_SIZE
+cc_store_name_copy:
+    ld a,(cc_copy_zero)
+    or a
+    jp nz,cc_store_name_zero
+    ld a,(hl)
+    inc hl
+    ld (de),a
+    or a
+    jp nz,cc_store_name_next
+    ld a,1
+    ld (cc_copy_zero),a
+    jp cc_store_name_next
+cc_store_name_zero:
+    xor a
+    ld (de),a
+cc_store_name_next:
+    inc de
+    djnz cc_store_name_copy
+
+    ld a,(cc_store_work_storage)
+    cp CC_STORAGE_STATIC
+    ld a,CC_STORE_LINK_EXTERNAL
+    jp nz,cc_store_link_ready
+    ld a,CC_STORE_LINK_INTERNAL
+cc_store_link_ready:
+    ld (cc_store_work_linkage),a
+
+    call cc_store_find
+    jp z,cc_store_existing
+    jp cc_store_new
+
+; Z when the work name exists; work_index and work_record identify it.
+cc_store_find:
+    ld a,(cc_store_count)
+    ld (cc_store_scan_left),a
+    xor a
+    ld (cc_store_scan_index),a
+    ld hl,cc_store_records
+cc_store_find_loop:
+    ld a,(cc_store_scan_left)
+    or a
+    jp z,cc_store_find_miss
+    ld (cc_store_work_record),hl
+    ld de,cc_store_work_name
+    ld c,CC_STORE_NAME_SIZE
+cc_store_find_cmp:
+    ld a,(de)
+    cp (hl)
+    jp nz,cc_store_find_next
+    inc de
+    inc hl
+    dec c
+    jp nz,cc_store_find_cmp
+    ld a,(cc_store_scan_index)
+    ld (cc_store_work_index),a
+    xor a
+    ret
+cc_store_find_next:
+    ld hl,(cc_store_work_record)
+    ld de,CC_STORE_RECORD_SIZE
+    add hl,de
+    ld a,(cc_store_scan_index)
+    inc a
+    ld (cc_store_scan_index),a
+    ld a,(cc_store_scan_left)
+    dec a
+    ld (cc_store_scan_left),a
+    jp cc_store_find_loop
+cc_store_find_miss:
+    ld a,1
+    or a
+    ret
+
+cc_store_new:
+    ld a,(cc_store_count)
+    cp CC_STORE_CAPACITY
+    jp nc,cc_store_nospc
+    ld (cc_store_work_index),a
+    call cc_store_record_ptr
+    ld (cc_store_work_record),hl
+    ex de,hl
+    ld hl,cc_store_work_name
+    ld b,CC_STORE_NAME_SIZE
+cc_store_new_name:
+    ld a,(hl)
+    ld (de),a
+    inc hl
+    inc de
+    djnz cc_store_new_name
+    xor a
+    ld (de),a
+    inc de
+    ld (de),a
+    inc de
+    ld (de),a
+    inc de
+    ld (de),a
+
+    call cc_store_write_meta
+    ld a,(cc_store_work_storage)
+    cp CC_STORAGE_EXTERN
+    jp z,cc_store_new_extern
+    call cc_store_allocate
+    ret c
+    call cc_store_mark_definition
+    ret c
+    jp cc_store_new_commit
+cc_store_new_extern:
+    ld hl,(cc_store_work_record)
+    ld de,18
+    add hl,de
+    xor a
+    ld (hl),a
+    inc hl
+    ld a,OBJ1_SYM_GLOBAL
+    ld (hl),a
+cc_store_new_commit:
+    ld hl,cc_store_count
+    inc (hl)
+    xor a
+    ret
+
+cc_store_existing:
+    call cc_store_check_meta
+    ret c
+    ld a,(cc_store_work_storage)
+    cp CC_STORAGE_EXTERN
+    jp z,cc_store_existing_ok
+    call cc_store_defined_ptr
+    ld a,(hl)
+    or a
+    jp nz,cc_store_exist
+    call cc_store_allocate
+    ret c
+    ld a,1
+    ld (hl),a
+    call cc_store_mark_definition
+    ret c
+cc_store_existing_ok:
+    xor a
+    ret
+
+cc_store_write_meta:
+    call cc_store_size_ptr
+    ld de,(cc_store_work_size)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    call cc_store_align_ptr
+    ld a,(cc_store_work_align)
+    ld (hl),a
+    call cc_store_link_ptr
+    ld a,(cc_store_work_linkage)
+    ld (hl),a
+    call cc_store_defined_ptr
+    ld a,(cc_store_work_storage)
+    cp CC_STORAGE_EXTERN
+    ld a,0
+    jp z,cc_store_meta_def_ready
+    inc a
+cc_store_meta_def_ready:
+    ld (hl),a
+    ret
+
+cc_store_check_meta:
+    call cc_store_size_ptr
+    ld a,(hl)
+    ld de,(cc_store_work_size)
+    cp e
+    jp nz,cc_store_format
+    inc hl
+    ld a,(hl)
+    cp d
+    jp nz,cc_store_format
+    call cc_store_align_ptr
+    ld a,(cc_store_work_align)
+    cp (hl)
+    jp nz,cc_store_format
+    call cc_store_link_ptr
+    ld a,(cc_store_work_linkage)
+    cp (hl)
+    jp nz,cc_store_format
+    xor a
+    ret
+
+; Allocate one definition in BSS and retain its starting offset.
+cc_store_allocate:
+    ld hl,(cc_store_bss_size)
+    ld a,(cc_store_work_align)
+    cp 2
+    jp nz,cc_store_alloc_aligned
+    bit 0,l
+    jp z,cc_store_alloc_aligned
+    inc hl
+cc_store_alloc_aligned:
+    ld (cc_store_alloc_offset),hl
+    ld de,(cc_store_work_size)
+    add hl,de
+    jp c,cc_store_nospc
+    ld a,h
+    cp $80
+    jp c,cc_store_alloc_bound_ok
+    jp nz,cc_store_nospc
+    ld a,l
+    or a
+    jp nz,cc_store_nospc
+cc_store_alloc_bound_ok:
+    ld (cc_store_bss_size),hl
+    xor a
+    ret
+
+cc_store_mark_definition:
+    ld hl,(cc_store_work_record)
+    ld de,16
+    add hl,de
+    ld de,(cc_store_alloc_offset)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    inc hl
+    ld a,OBJ1_SEC_BSS
+    ld (hl),a
+    inc hl
+    ld a,(cc_store_work_linkage)
+    or a
+    ld a,0
+    jp nz,cc_store_mark_flags
+    ld a,OBJ1_SYM_GLOBAL
+cc_store_mark_flags:
+    ld (hl),a
+    xor a
+    ret
+
+; A-independent pointer helpers use cc_store_work_index.
+cc_store_record_ptr:
+    ld a,(cc_store_work_index)
+    ld b,a
+    ld hl,cc_store_records
+    ld de,CC_STORE_RECORD_SIZE
+cc_store_record_seek:
+    ld a,b
+    or a
+    ret z
+    add hl,de
+    djnz cc_store_record_seek
+    ret
+
+cc_store_size_ptr:
+    ld a,(cc_store_work_index)
+    ld e,a
+    ld d,0
+    sla e
+    rl d
+    ld hl,cc_store_sizes
+    add hl,de
+    ret
+cc_store_align_ptr:
+    ld de,cc_store_aligns
+    jp cc_store_byte_ptr
+cc_store_link_ptr:
+    ld de,cc_store_linkage
+    jp cc_store_byte_ptr
+cc_store_defined_ptr:
+    ld de,cc_store_defined
+cc_store_byte_ptr:
+    ld a,(cc_store_work_index)
+    ld l,a
+    ld h,0
+    add hl,de
+    ret
+
+; Return exact OBJ1 symbol staging: HL=records, BC=byte count, DE=BSS size.
+cc_store_output:
+    ld hl,cc_store_records
+    ld a,(cc_store_count)
+    ld b,a
+    ld c,0
+    ld de,CC_STORE_RECORD_SIZE
+    ld hl,0
+cc_store_output_mul:
+    ld a,b
+    or a
+    jp z,cc_store_output_done
+    add hl,de
+    djnz cc_store_output_mul
+cc_store_output_done:
+    ld b,h
+    ld c,l
+    ld hl,cc_store_records
+    ld de,(cc_store_bss_size)
+    xor a
+    ret
+
+cc_store_exist:
+    ld a,E_EXIST
+    scf
+    ret
+cc_store_nospc:
+    ld a,E_NOSPC
+    scf
+    ret
+cc_store_format:
+    ld a,E_FORMAT
+    scf
+    ret
+    ENDM
