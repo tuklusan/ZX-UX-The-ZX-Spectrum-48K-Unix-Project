@@ -145,3 +145,21 @@ corrected Git blob.
 P11.01 has zero outstanding REV17/DOCX/SDK discrepancies. Any new discrepancy
 found by a later step is blocking until that owning step records and proves its
 resolution.
+
+
+## P11.02 target architecture mapping
+
+The native target compiler maps the pinned SDK decomposition onto a bounded
+streaming Z80 core rather than copying Python object graphs. The target uses a
+64-byte source window, independent 32-entry fixed-capacity global/extern, local,
+and label tables with exact 15-visible-character names, and an eight-node
+expression bound. The core releases expression state at statement completion
+and exposes deterministic E_NOSPC/E_INVAL/E_FORMAT failure before committed
+output state is changed.
+
+This preserves the SDK separation of preprocessing, lexing, parsing, type and
+semantic checking, limits/errors, numeric behavior, and memory/runtime modeling
+while satisfying REV17 Sections 25.5-25.6 and the <=20 KiB compiler residency
+budget. Host C48B1/VM memory structures remain reference oracles only; the
+native compiler is a streaming Z80 implementation feeding symbolic emission and
+the native OBJ1 writer.
