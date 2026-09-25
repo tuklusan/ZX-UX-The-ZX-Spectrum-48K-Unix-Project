@@ -1262,3 +1262,261 @@ cc_lex_string_ok:
     ld a,CC_TOK_STRING
     jp cc_lex_success
 
+
+cc_lex_operator:
+    cp '('
+    jr z,cc_lex_punct
+    cp ')'
+    jr z,cc_lex_punct
+    cp '['
+    jr z,cc_lex_punct
+    cp ']'
+    jr z,cc_lex_punct
+    cp '{'
+    jr z,cc_lex_punct
+    cp '}'
+    jr z,cc_lex_punct
+    cp ';'
+    jr z,cc_lex_punct
+    cp ','
+    jr z,cc_lex_punct
+    cp '?'
+    jp z,cc_lex_notsup
+    cp ':'
+    jp z,cc_lex_notsup
+    cp '.'
+    jp z,cc_lex_notsup
+    cp '+'
+    jr z,cc_lex_plus
+    cp '-'
+    jr z,cc_lex_minus
+    cp '<'
+    jr z,cc_lex_lt
+    cp '>'
+    jr z,cc_lex_gt
+    cp '='
+    jr z,cc_lex_eq
+    cp '!'
+    jr z,cc_lex_eq
+    cp '&'
+    jr z,cc_lex_amp
+    cp '|'
+    jr z,cc_lex_pipe
+    cp '*'
+    jr z,cc_lex_assignable
+    cp '/'
+    jr z,cc_lex_assignable
+    cp '%'
+    jr z,cc_lex_assignable
+    cp '^'
+    jr z,cc_lex_assignable
+    cp '~'
+    jr z,cc_lex_op1
+    jp cc_lex_format
+
+cc_lex_punct:
+    call cc_lex_toktake
+    ld a,CC_TOK_PUNCT
+    jp cc_lex_success
+cc_lex_op1:
+    call cc_lex_toktake
+    ld a,CC_TOK_OPERATOR
+    jp cc_lex_success
+cc_lex_op2:
+    call cc_lex_toktake
+    call cc_lex_toktake
+    ld a,CC_TOK_OPERATOR
+    jp cc_lex_success
+cc_lex_plus:
+    call cc_lex_peek2
+    jr c,cc_lex_op1
+    cp '+'
+    jr z,cc_lex_op2
+    cp '='
+    jp z,cc_lex_notsup
+    jr cc_lex_op1
+cc_lex_minus:
+    call cc_lex_peek2
+    jr c,cc_lex_op1
+    cp '-'
+    jr z,cc_lex_op2
+    cp '='
+    jp z,cc_lex_notsup
+    cp '>'
+    jp z,cc_lex_notsup
+    jr cc_lex_op1
+cc_lex_lt:
+    call cc_lex_peek2
+    jr c,cc_lex_op1
+    cp '='
+    jr z,cc_lex_op2
+    cp '<'
+    jr nz,cc_lex_op1
+    call cc_lex_peek3
+    jr c,cc_lex_op2
+    cp '='
+    jp z,cc_lex_notsup
+    jr cc_lex_op2
+cc_lex_gt:
+    call cc_lex_peek2
+    jr c,cc_lex_op1
+    cp '='
+    jr z,cc_lex_op2
+    cp '>'
+    jr nz,cc_lex_op1
+    call cc_lex_peek3
+    jr c,cc_lex_op2
+    cp '='
+    jp z,cc_lex_notsup
+    jr cc_lex_op2
+cc_lex_eq:
+    call cc_lex_peek2
+    jr c,cc_lex_op1
+    cp '='
+    jr z,cc_lex_op2
+    jr cc_lex_op1
+cc_lex_amp:
+    call cc_lex_peek2
+    jr c,cc_lex_op1
+    cp '&'
+    jr z,cc_lex_op2
+    cp '='
+    jp z,cc_lex_notsup
+    jr cc_lex_op1
+cc_lex_pipe:
+    call cc_lex_peek2
+    jr c,cc_lex_op1
+    cp '|'
+    jr z,cc_lex_op2
+    cp '='
+    jp z,cc_lex_notsup
+    jr cc_lex_op1
+cc_lex_assignable:
+    call cc_lex_peek2
+    jr c,cc_lex_op1
+    cp '='
+    jp z,cc_lex_notsup
+    jr cc_lex_op1
+
+cc_lex_peek:
+    ld hl,(cc_lex_remaining)
+    ld a,h
+    or l
+    jr z,cc_lex_empty
+    ld hl,(cc_lex_ptr)
+    ld a,(hl)
+    or a
+    ret
+cc_lex_peek2:
+    ld hl,(cc_lex_remaining)
+    ld a,h
+    or a
+    jr nz,cc_lex_peek2_have
+    ld a,l
+    cp 2
+    jr c,cc_lex_empty
+cc_lex_peek2_have:
+    ld hl,(cc_lex_ptr)
+    inc hl
+    ld a,(hl)
+    or a
+    ret
+cc_lex_peek3:
+    ld hl,(cc_lex_remaining)
+    ld a,h
+    or a
+    jr nz,cc_lex_peek3_have
+    ld a,l
+    cp 3
+    jr c,cc_lex_empty
+cc_lex_peek3_have:
+    ld hl,(cc_lex_ptr)
+    inc hl
+    inc hl
+    ld a,(hl)
+    or a
+    ret
+cc_lex_empty:
+    scf
+    ret
+
+cc_lex_take:
+    ld hl,(cc_lex_ptr)
+    ld a,(hl)
+    inc hl
+    ld (cc_lex_ptr),hl
+    ld hl,(cc_lex_remaining)
+    dec hl
+    ld (cc_lex_remaining),hl
+    ld hl,(cc_lex_consumed)
+    inc hl
+    ld (cc_lex_consumed),hl
+    ret
+cc_lex_toktake:
+    call cc_lex_take
+    push af
+    ld a,(cc_lex_token_len)
+    inc a
+    ld (cc_lex_token_len),a
+    pop af
+    ret
+
+cc_lex_is_alpha:
+    cp 'A'
+    jr c,cc_lex_class_no
+    cp 'Z'+1
+    jr c,cc_lex_class_yes
+    cp 'a'
+    jr c,cc_lex_class_no
+    cp 'z'+1
+    jr c,cc_lex_class_yes
+cc_lex_class_no:
+    scf
+    ret
+cc_lex_class_yes:
+    or a
+    ret
+cc_lex_is_digit:
+    cp '0'
+    jr c,cc_lex_class_no
+    cp '9'+1
+    jr c,cc_lex_class_yes
+    scf
+    ret
+cc_lex_is_hex:
+    call cc_lex_is_digit
+    ret nc
+    cp 'A'
+    jr c,cc_lex_class_no
+    cp 'F'+1
+    jr c,cc_lex_class_yes
+    cp 'a'
+    jr c,cc_lex_class_no
+    cp 'f'+1
+    jr c,cc_lex_class_yes
+    scf
+    ret
+cc_lex_is_ident:
+    call cc_lex_is_alpha
+    ret nc
+    cp '_'
+    jr z,cc_lex_class_yes
+    jp cc_lex_is_digit
+
+cc_lex_success:
+    ld de,(cc_lex_consumed)
+    or a
+    ret
+cc_lex_toolong:
+    ld a,E_TOOLONG
+    scf
+    ret
+cc_lex_notsup:
+    ld a,E_NOTSUP
+    scf
+    ret
+cc_lex_format:
+    ld a,E_FORMAT
+    scf
+    ret
+    ENDM
