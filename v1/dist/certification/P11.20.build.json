@@ -1,0 +1,66 @@
+{
+  "action": "build",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "eleven-public-math-symbols-present",
+      "passed": true
+    },
+    {
+      "name": "public-symbols-map-only-to-required-internal-fp-helpers",
+      "passed": true
+    },
+    {
+      "name": "all-public-float-results-use-hidden-pointer-regcall",
+      "passed": true
+    },
+    {
+      "name": "pow-uses-shifted-de-bc-pointer-arguments",
+      "passed": true
+    },
+    {
+      "name": "runtime-remains-serialized-through-sys-fp-exec",
+      "passed": true
+    },
+    {
+      "name": "sdk-vm-and-float5-mapping-recorded",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1120-math.sym",
+        "p1120-math.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 12,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 4677 lines, work time: 0.010 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p1120-main.bin": "63c570019c8dfe4220b75f7f547def8f6b8cad29a9d588ec352810e5b054dc78",
+    "v1/dist/certification/P11.19.build.json": "777898928ac6573b8a6c1b6ac74076e989fca0ec57036976f1aef198d16eac52",
+    "v1/dist/certification/P11.19.test.json": "7911a967119f3a3d88db5da9759fdd4ca3b3c7076717a8f4c03404a3e11d6f3b",
+    "v1/src/kernel/rom_services.asm": "11e6cdd57bf00bada283e408b5bfeed456929f8bd00a6aa1db609bc95a4c89c7",
+    "v1/src/kernel/syscall.asm": "f59cc92273aa5c0f6f2effa283f9944630fa673c42afe69cd10825d5dabcee43",
+    "v1/src/libc48/float_runtime.asm": "00e666bfe96327279ab975b8895ed9208bdd1d92b14b60b1ac6bb5dc3e522d84",
+    "v1/src/libc48/math_runtime.asm": "99a16e6ffa810c6ba4d7a541febc77dce5fb5f07f6e649bb25c7faa85cefbe54",
+    "v1/tools-host/test-driver/phase11_step_20.py": "d43d6d79fad6c732d3b5b107fe129f46f7c698cdaaec10f7b60c98a871775836"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.19": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "74fd73b7885d1a7ca94c78ae8432cbcec8882675",
+  "status": "PASS",
+  "step": "P11.20",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
