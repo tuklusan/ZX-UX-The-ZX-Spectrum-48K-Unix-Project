@@ -877,7 +877,10 @@ cc_lex_skip_plain:
     cp 127
     jp nc,cc_lex_format
     cp '/'
-    ret nz
+    jp z,cc_lex_skip_slash
+    or a
+    ret
+cc_lex_skip_slash:
     call cc_lex_peek2
     jp nc,cc_lex_skip_slash_pair
     or a
