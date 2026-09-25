@@ -17,6 +17,7 @@
 ; compiler/c48/float5.py -> exact five-byte values and domain failures
 ; compiler/c48/vm.py -> public builtin dispatch/runtime-error behavior
 ; REV17/REV08 own native C48_REGCALL and serialized SYS_FP_EXEC execution.
+; P11.20 qualification is chained only from admitted P11.19 evidence.
 
     MACRO EMIT_P1120_C48_MATH_RUNTIME
 ; Float-return C48_REGCALL: hidden result pointer in HL; unary value pointer DE.
