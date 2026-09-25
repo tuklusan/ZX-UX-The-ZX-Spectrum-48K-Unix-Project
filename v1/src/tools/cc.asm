@@ -4827,3 +4827,338 @@ cc_frame_format:
     scf
     ret
     ENDM
+
+
+; P11.13 single externally linkable C48_REGCALL ABI for integer/pointer calls.
+; Every scalar/pointer argument occupies one 16-bit slot. Argument 0/1/2 map
+; to HL/DE/BC; argument 3+ are pushed right-to-left as 16-bit words. Character
+; arguments are zero-extended before placement. Stack words are caller-cleaned
+; with POP AF so an HL return value survives cleanup. This emitter never uses
+; IY, EXX, or EX AF,AF' and does not define any alternate calling convention.
+;
+; Mandatory pinned SDK/reference mapping:
+; 84d144de2721cda5075c3a6610a422663b5e2f77
+; compiler/c48/semantics.py -> fixed supported scalar/pointer parameter types
+; compiler/tests/test_conformance.py -> fixed-arity function call semantics
+; REV17 §25.3 remains authoritative for the target-native register ABI.
+    MACRO EMIT_P11_CC_REGCALL
+CC_REGCALL_MAX_ARGS        EQU 6
+CC_REGCALL_KIND_WORD       EQU 0
+CC_REGCALL_KIND_CHAR       EQU 1
+CC_REGCALL_SLOT_HL         EQU 0
+CC_REGCALL_SLOT_DE         EQU 1
+CC_REGCALL_SLOT_BC         EQU 2
+CC_REGCALL_SLOT_STACK      EQU 3
+CC_REGCALL_RET_NONE        EQU 0
+CC_REGCALL_RET_L           EQU 1
+CC_REGCALL_RET_HL          EQU 2
+CC_REGCALL_BUFFER_CAPACITY EQU 32
+
+cc_regcall_args:           defs CC_REGCALL_MAX_ARGS*2,0
+cc_regcall_kinds:          defs CC_REGCALL_MAX_ARGS,0
+cc_regcall_count:          db 0
+cc_regcall_target:         dw 0
+cc_regcall_buffer:         defs CC_REGCALL_BUFFER_CAPACITY,0
+cc_regcall_len:            db 0
+cc_regcall_emit_ptr:       dw 0
+cc_regcall_index:          db 0
+cc_regcall_kind_tmp:       db 0
+cc_regcall_value_tmp:      dw 0
+
+cc_regcall_reset:
+    xor a
+    ld (cc_regcall_count),a
+    ld (cc_regcall_len),a
+    ret
+
+; A=zero-based argument index 0..5, BC=value, D=kind.
+; CHAR is normalized to 00xx here so all later slots are exact 16-bit values.
+cc_regcall_set_arg:
+    cp CC_REGCALL_MAX_ARGS
+    jp nc,cc_regcall_inval
+    ld (cc_regcall_index),a
+    ld a,d
+    cp CC_REGCALL_KIND_CHAR+1
+    jp nc,cc_regcall_inval
+    ld (cc_regcall_kind_tmp),a
+    ld a,c
+    ld (cc_regcall_value_tmp),a
+    ld a,(cc_regcall_kind_tmp)
+    cp CC_REGCALL_KIND_CHAR
+    jp z,cc_regcall_set_char_high
+    ld a,b
+    jp cc_regcall_set_high_ready
+cc_regcall_set_char_high:
+    xor a
+cc_regcall_set_high_ready:
+    ld (cc_regcall_value_tmp+1),a
+
+    ld a,(cc_regcall_index)
+    ld e,a
+    ld d,0
+    sla e
+    rl d
+    ld hl,cc_regcall_args
+    add hl,de
+    ld a,(cc_regcall_value_tmp)
+    ld (hl),a
+    inc hl
+    ld a,(cc_regcall_value_tmp+1)
+    ld (hl),a
+
+    ld a,(cc_regcall_index)
+    ld e,a
+    ld d,0
+    ld hl,cc_regcall_kinds
+    add hl,de
+    ld a,(cc_regcall_kind_tmp)
+    ld (hl),a
+    xor a
+    ret
+
+; A=zero-based argument index. Success A=slot, E=zero-based stack word index
+; for stack arguments. The stack slot is later pushed in descending argument
+; order so callee offsets are arg4 at SP+2, arg5 at SP+4, arg6 at SP+6.
+cc_regcall_arg_location:
+    cp CC_REGCALL_MAX_ARGS
+    jp nc,cc_regcall_inval
+    ld e,0
+    cp 3
+    jp nc,cc_regcall_arg_stack
+    or a
+    ret
+cc_regcall_arg_stack:
+    sub 3
+    ld e,a
+    ld a,CC_REGCALL_SLOT_STACK
+    or a
+    ret
+
+; A=argument count 0..6. Success A=number of stack words.
+cc_regcall_stack_words:
+    cp CC_REGCALL_MAX_ARGS+1
+    jp nc,cc_regcall_inval
+    cp 4
+    jp c,cc_regcall_no_stack
+    sub 3
+    or a
+    ret
+cc_regcall_no_stack:
+    xor a
+    ret
+
+; A=C48 base type, E=pointer depth. Success A=return register class.
+; Float return is deliberately deferred to P11.16 hidden-result-pointer ABI.
+cc_regcall_return_class:
+    ld d,a
+    ld a,e
+    or a
+    jp nz,cc_regcall_ret_hl
+    ld a,d
+    cp CC_TYPE_VOID
+    jp z,cc_regcall_ret_none
+    cp CC_TYPE_CHAR
+    jp z,cc_regcall_ret_l
+    cp CC_TYPE_UCHAR
+    jp z,cc_regcall_ret_l
+    cp CC_TYPE_SHORT
+    jp z,cc_regcall_ret_hl
+    cp CC_TYPE_USHORT
+    jp z,cc_regcall_ret_hl
+    cp CC_TYPE_INT
+    jp z,cc_regcall_ret_hl
+    cp CC_TYPE_UINT
+    jp z,cc_regcall_ret_hl
+    cp CC_TYPE_FLOAT
+    jp z,cc_regcall_notsup
+    jp cc_regcall_inval
+cc_regcall_ret_none:
+    ld a,CC_REGCALL_RET_NONE
+    or a
+    ret
+cc_regcall_ret_l:
+    ld a,CC_REGCALL_RET_L
+    or a
+    ret
+cc_regcall_ret_hl:
+    ld a,CC_REGCALL_RET_HL
+    or a
+    ret
+
+; HL=SP observed immediately before a C48 CALL. All call boundaries are even.
+cc_regcall_call_sp_check:
+    bit 0,l
+    jp nz,cc_regcall_format
+    xor a
+    ret
+
+; A=argument count 0..6, HL=absolute callee address.
+; Emits the exact native call sequence into cc_regcall_buffer. The sequence has
+; no trailing RET because production code continues after the call.
+cc_regcall_emit_call:
+    ld (cc_regcall_target),hl
+    cp CC_REGCALL_MAX_ARGS+1
+    jp nc,cc_regcall_inval
+    ld (cc_regcall_count),a
+    xor a
+    ld (cc_regcall_len),a
+    ld hl,cc_regcall_buffer
+    ld (cc_regcall_emit_ptr),hl
+
+    ld a,(cc_regcall_count)
+    cp 4
+    jp c,cc_regcall_emit_registers
+    dec a
+    ld (cc_regcall_index),a
+cc_regcall_emit_stack_loop:
+    call cc_regcall_load_index_bc
+    ret c
+    ld a,$21                 ; LD HL,nn
+    call cc_regcall_put
+    ret c
+    ld a,c
+    call cc_regcall_put
+    ret c
+    ld a,b
+    call cc_regcall_put
+    ret c
+    ld a,$E5                 ; PUSH HL
+    call cc_regcall_put
+    ret c
+    ld a,(cc_regcall_index)
+    cp 3
+    jp z,cc_regcall_emit_registers
+    dec a
+    ld (cc_regcall_index),a
+    jp cc_regcall_emit_stack_loop
+
+cc_regcall_emit_registers:
+    ld a,(cc_regcall_count)
+    cp 3
+    jp c,cc_regcall_emit_arg1_check
+    ld a,2
+    ld (cc_regcall_index),a
+    call cc_regcall_load_index_bc
+    ret c
+    ld a,$01                 ; LD BC,nn
+    call cc_regcall_put
+    ret c
+    ld a,c
+    call cc_regcall_put
+    ret c
+    ld a,b
+    call cc_regcall_put
+    ret c
+cc_regcall_emit_arg1_check:
+    ld a,(cc_regcall_count)
+    cp 2
+    jp c,cc_regcall_emit_arg0_check
+    ld a,1
+    ld (cc_regcall_index),a
+    call cc_regcall_load_index_bc
+    ret c
+    ld a,$11                 ; LD DE,nn
+    call cc_regcall_put
+    ret c
+    ld a,c
+    call cc_regcall_put
+    ret c
+    ld a,b
+    call cc_regcall_put
+    ret c
+cc_regcall_emit_arg0_check:
+    ld a,(cc_regcall_count)
+    or a
+    jp z,cc_regcall_emit_call_opcode
+    xor a
+    ld (cc_regcall_index),a
+    call cc_regcall_load_index_bc
+    ret c
+    ld a,$21                 ; LD HL,nn
+    call cc_regcall_put
+    ret c
+    ld a,c
+    call cc_regcall_put
+    ret c
+    ld a,b
+    call cc_regcall_put
+    ret c
+
+cc_regcall_emit_call_opcode:
+    ld a,$CD
+    call cc_regcall_put
+    ret c
+    ld hl,(cc_regcall_target)
+    ld a,l
+    call cc_regcall_put
+    ret c
+    ld a,h
+    call cc_regcall_put
+    ret c
+
+    ld a,(cc_regcall_count)
+    call cc_regcall_stack_words
+    ret c
+    ld b,a
+cc_regcall_emit_cleanup_loop:
+    ld a,b
+    or a
+    jp z,cc_regcall_emit_done
+    ld a,$F1                 ; POP AF: caller cleanup, preserves HL return
+    call cc_regcall_put
+    ret c
+    djnz cc_regcall_emit_cleanup_loop
+cc_regcall_emit_done:
+    xor a
+    ret
+
+cc_regcall_load_index_bc:
+    ld a,(cc_regcall_index)
+    cp CC_REGCALL_MAX_ARGS
+    jp nc,cc_regcall_inval
+    ld e,a
+    ld d,0
+    sla e
+    rl d
+    ld hl,cc_regcall_args
+    add hl,de
+    ld c,(hl)
+    inc hl
+    ld b,(hl)
+    xor a
+    ret
+
+cc_regcall_put:
+    push af
+    ld a,(cc_regcall_len)
+    cp CC_REGCALL_BUFFER_CAPACITY
+    jp nc,cc_regcall_put_full
+    ld hl,(cc_regcall_emit_ptr)
+    pop af
+    ld (hl),a
+    inc hl
+    ld (cc_regcall_emit_ptr),hl
+    ld a,(cc_regcall_len)
+    inc a
+    ld (cc_regcall_len),a
+    xor a
+    ret
+cc_regcall_put_full:
+    pop af
+    ld a,E_NOSPC
+    scf
+    ret
+
+cc_regcall_notsup:
+    ld a,E_NOTSUP
+    scf
+    ret
+cc_regcall_inval:
+    ld a,E_INVAL
+    scf
+    ret
+cc_regcall_format:
+    ld a,E_FORMAT
+    scf
+    ret
+    ENDM

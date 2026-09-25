@@ -25,3 +25,24 @@ p10_crt0_obj:
     db $00,$04,$00,$02,$00,$01,$00
 p10_crt0_obj_end:
     ENDM
+
+
+; P11.13 C48_REGCALL runtime boundary probe.
+; Production code does not need this check on every call; the helper exists so
+; native qualification and later runtime members share the exact frozen rule:
+; IY is OS/ROM-owned and must equal ROM_IY_ANCHOR at C48 boundaries.
+    MACRO EMIT_P11_C48_REGCALL_RUNTIME
+c48_regcall_require_iy_anchor:
+    push iy
+    pop de
+    ld hl,ROM_IY_ANCHOR
+    or a
+    sbc hl,de
+    jp nz,c48_regcall_bad_iy
+    xor a
+    ret
+c48_regcall_bad_iy:
+    ld a,E_FORMAT
+    scf
+    ret
+    ENDM
