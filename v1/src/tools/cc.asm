@@ -2332,21 +2332,25 @@ cc_parse_name_is_main:
     ld hl,cc_parse_name
     ld a,(hl)
     cp 'm'
-    ret nz
+    jp nz,cc_parse_name_not_main
     inc hl
     ld a,(hl)
     cp 'a'
-    ret nz
+    jp nz,cc_parse_name_not_main
     inc hl
     ld a,(hl)
     cp 'i'
-    ret nz
+    jp nz,cc_parse_name_not_main
     inc hl
     ld a,(hl)
     cp 'n'
-    ret nz
+    jp nz,cc_parse_name_not_main
     inc hl
     ld a,(hl)
+    or a
+    ret
+cc_parse_name_not_main:
+    ld a,1
     or a
     ret
 
@@ -2400,10 +2404,13 @@ cc_parse_is_char:
     ld hl,(cc_parse_tok_ptr)
     ld a,(cc_parse_saved_char)
     cp (hl)
-    ret
+    jp z,cc_parse_char_yes
 cc_parse_char_no:
     ld a,1
     or a
+    ret
+cc_parse_char_yes:
+    xor a
     ret
 
 cc_parse_require_eof:
