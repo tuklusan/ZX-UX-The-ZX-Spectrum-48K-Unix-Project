@@ -1,0 +1,223 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: Phase-11 step admission
+
+on:
+  workflow_dispatch:
+    inputs:
+      step:
+        required: true
+        type: string
+      run_id:
+        required: true
+        type: string
+      source_commit:
+        required: true
+        type: string
+
+permissions:
+  actions: write
+  contents: write
+
+jobs:
+  admit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      STEP: ${{ inputs.step }}
+      RUN_ID: ${{ inputs.run_id }}
+      SOURCE_COMMIT: ${{ inputs.source_commit }}
+      ZXUX_REV17_SHA256: d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8
+      ZXUX_REV08_SHA256: 97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.source_commit }}
+      - name: Guard exact qualified head and authorities
+        run: |
+          set -euo pipefail
+          test "$STEP" = "$(printf '%s' "$STEP" | grep -Eo '^P11\.[0-9]{2}$')"
+          n="${STEP#P11.}"
+          test "$((10#$n))" -ge 1
+          test "$((10#$n))" -le 48
+          test "$(git rev-parse HEAD)" = "$SOURCE_COMMIT"
+          test "$(git ls-remote origin refs/heads/main | awk '{print $1}')" = "$SOURCE_COMMIT"
+          test "$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV17.md | awk '{print $1}')" = "$ZXUX_REV17_SHA256"
+          test "$(sha256sum docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV08.md | awk '{print $1}')" = "$ZXUX_REV08_SHA256"
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+          python3 tools/check_phase10_evidence.py --require-active
+          python3 tools/check_media_retention.py
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          cert=Path("v1/dist/certification")
+          for action in ("build","test","result"):
+              r=json.loads((cert/f"R17.00.{action}.json").read_text())
+              assert r["step"]=="R17.00" and r["action"]==action and r["status"]=="PASS"
+              assert r["architecture_sha256"]=="d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8"
+              assert r["implementation_plan_sha256"]=="97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c"
+          PY
+      - name: Download exact qualification artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, pathlib, urllib.error, urllib.request, zipfile, time
+          step=os.environ["STEP"]
+          run=os.environ["RUN_ID"]
+          source=os.environ["SOURCE_COMMIT"]
+          slug=step.lower().replace(".","")
+          repo=os.environ["GITHUB_REPOSITORY"]
+          token=os.environ["GH_TOKEN"]
+          headers={
+              "Authorization":f"Bearer {token}",
+              "Accept":"application/vnd.github+json",
+              "X-GitHub-Api-Version":"2022-11-28",
+          }
+          def get(url):
+              req=urllib.request.Request(url,headers=headers)
+              with urllib.request.urlopen(req,timeout=60) as response:
+                  return response.read()
+          run_data=json.loads(get(f"https://api.github.com/repos/{repo}/actions/runs/{run}"))
+          if run_data.get("conclusion")!="success":
+              raise SystemExit("qualification run is not successful")
+          if run_data.get("head_sha")!=source:
+              raise SystemExit("qualification run head does not match source commit")
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, hdrs, newurl):
+                  return None
+          def get_zip(url):
+              req=urllib.request.Request(url,headers=headers)
+              opener=urllib.request.build_opener(NoRedirect)
+              try:
+                  opener.open(req,timeout=60)
+              except urllib.error.HTTPError as exc:
+                  if exc.code not in (301,302,303,307,308):
+                      raise
+                  with urllib.request.urlopen(exc.headers["Location"],timeout=60) as response:
+                      return response.read()
+              raise SystemExit("artifact endpoint did not redirect")
+          wanted=[]
+          for _ in range(60):
+              data=json.loads(get(f"https://api.github.com/repos/{repo}/actions/runs/{run}/artifacts"))
+              wanted=[
+                  artifact for artifact in data["artifacts"]
+                  if artifact["name"].startswith(f"zxux-{slug}-qualification-{run}-")
+                  and not artifact.get("expired")
+              ]
+              if len(wanted)==1:
+                  break
+              if len(wanted)>1:
+                  raise SystemExit("multiple qualification artifacts")
+              time.sleep(5)
+          if len(wanted)!=1:
+              raise SystemExit("qualification artifact unavailable")
+          pathlib.Path("/tmp/qualification.zip").write_bytes(
+              get_zip(wanted[0]["archive_download_url"])
+          )
+          with zipfile.ZipFile("/tmp/qualification.zip") as archive:
+              archive.extractall("/tmp/qualification")
+          PY
+      - name: Validate and stage immutable evidence
+        run: |
+          set -euo pipefail
+          python3 - "$STEP" "$SOURCE_COMMIT" <<'PY'
+          import json, pathlib, sys
+          step,source=sys.argv[1:3]
+          n=int(step.split(".")[1])
+          expected={"R17.00":"PASS"} if n==1 else {f"P11.{n-1:02d}":"PASS"}
+          root=pathlib.Path("/tmp/qualification")
+          meta=(root/"meta/candidate-commit.txt").read_text().strip()
+          status=(root/"meta/worktree-status.txt").read_text()
+          assert meta==source and status==""
+          for action in ("build","test"):
+              path=root/f"{step}.{action}.json"
+              record=json.loads(path.read_text())
+              assert record["schema"]==2
+              assert record["step"]==step and record["action"]==action
+              assert record["status"]=="PASS" and record["worktree_clean"] is True
+              assert record["source_commit"]==source
+              assert record["prerequisites"]==expected
+              assert record["architecture_sha256"]=="d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8"
+              assert record["implementation_plan_sha256"]=="97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c"
+              destination=pathlib.Path("v1/dist/certification")/path.name
+              if destination.exists():
+                  raise SystemExit(f"immutable evidence already exists: {destination}")
+              destination.write_bytes(path.read_bytes())
+          if step=="P11.48":
+              path=root/"P11.48.result.json"
+              record=json.loads(path.read_text())
+              assert record["schema"]==2 and record["step"]=="P11.48"
+              assert record["action"]=="result" and record["status"]=="PASS"
+              assert record["worktree_clean"] is True and record["source_commit"]==source
+              assert record["prerequisites"]=={"P11.47":"PASS"}
+              assert record["architecture_sha256"]=="d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8"
+              assert record["implementation_plan_sha256"]=="97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c"
+              assert record["pass_marker"]=="ZX-UX PHASE 11 ACCEPTANCE PASS"
+              destination=pathlib.Path("v1/dist/certification")/path.name
+              if destination.exists():
+                  raise SystemExit(f"immutable evidence already exists: {destination}")
+              destination.write_bytes(path.read_bytes())
+          PY
+          if test -d "/tmp/qualification/media-staging/$STEP" && find "/tmp/qualification/media-staging/$STEP" -type f ! -name manifest.json -print -quit | grep -q .; then
+            python3 tools/finalize_step_media.py --step "$STEP" --evidence-dir /tmp/qualification
+          fi
+          git add "v1/dist/certification/$STEP.build.json" "v1/dist/certification/$STEP.test.json"
+          if test -d "v1/dist/media/$STEP"; then
+            git add "v1/dist/media/$STEP"
+          fi
+          if test "$STEP" = P11.48; then
+            git add v1/dist/certification/P11.48.result.json
+          fi
+          test -n "$(git diff --cached --name-only)"
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+          python3 tools/check_media_retention.py
+      - name: Admit exact evidence-only commit
+        run: |
+          set -euo pipefail
+          test "$(git ls-remote origin refs/heads/main | awk '{print $1}')" = "$SOURCE_COMMIT"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "$STEP: admit qualification evidence and media"
+          test "$(git rev-parse HEAD^)" = "$SOURCE_COMMIT"
+          git push origin HEAD:main
+      - name: Dispatch exact admission validation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          admitted="$(git rev-parse HEAD)"
+          python3 - "$admitted" <<'PY'
+          import json, os, sys, urllib.request
+          payload=json.dumps({
+              "ref":"main",
+              "inputs":{"admitted_commit":sys.argv[1]},
+          }).encode()
+          req=urllib.request.Request(
+              f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}/actions/workflows/phase11-admission-validation.yml/dispatches",
+              data=payload,
+              method="POST",
+              headers={
+                  "Authorization":f"Bearer {os.environ['GH_TOKEN']}",
+                  "Accept":"application/vnd.github+json",
+                  "X-GitHub-Api-Version":"2022-11-28",
+                  "Content-Type":"application/json",
+              },
+          )
+          with urllib.request.urlopen(req,timeout=30) as response:
+              assert response.status==204
+          PY
