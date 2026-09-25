@@ -5597,4 +5597,3 @@ cc_fp_compare_notsup:
     scf
     ret
     ENDM
-
