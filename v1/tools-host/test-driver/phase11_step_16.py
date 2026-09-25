@@ -85,6 +85,9 @@ def dispatch(root, action, step, *, sha256_file, run_command, require_project_to
 
     ORG $C000
 p1116_start:
+    EMIT_P11_CC_STREAMING_CORE
+    EMIT_P11_CC_LEXER
+    EMIT_P11_CC_DECL_PARSER
     EMIT_P11_CC_REGCALL
     EMIT_P11_CC_FLOAT5
     EMIT_P11_CC_FLOAT_ARGS
