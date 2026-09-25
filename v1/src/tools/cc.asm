@@ -1586,6 +1586,8 @@ cc_parse_init_kind:      db 0
 cc_parse_init_count:     db 0
 cc_parse_param_count:    db 0
 cc_parse_param_missing:  db 0
+cc_parse_return_type:    db 0
+cc_parse_return_ptr:     db 0
 cc_parse_params:         defs CC_PARSE_PARAM_CAPACITY*2,0
 cc_parse_name:           defs 16,0
 cc_parse_definition:     db 0
@@ -1985,9 +1987,19 @@ cc_parse_function:
     jp nz,cc_parse_notsup
     ld a,CC_DECL_FUNCTION
     ld (cc_parse_decl_kind),a
+    ld a,(cc_parse_type)
+    ld (cc_parse_return_type),a
+    ld a,(cc_parse_ptr_depth)
+    ld (cc_parse_return_ptr),a
     xor a
     ld (cc_parse_param_count),a
     ld (cc_parse_param_missing),a
+    ld hl,cc_parse_params
+    ld b,CC_PARSE_PARAM_CAPACITY*2
+cc_parse_clear_params:
+    ld (hl),a
+    inc hl
+    djnz cc_parse_clear_params
     call cc_parse_next
     ret c
     ld a,')'
@@ -2022,6 +2034,10 @@ cc_parse_params_done:
     ld (cc_parse_param_count),a
     ld (cc_parse_param_missing),a
 cc_parse_function_term:
+    ld a,(cc_parse_return_type)
+    ld (cc_parse_type),a
+    ld a,(cc_parse_return_ptr)
+    ld (cc_parse_ptr_depth),a
     ld a,';'
     call cc_parse_is_char
     jp z,cc_parse_function_proto
