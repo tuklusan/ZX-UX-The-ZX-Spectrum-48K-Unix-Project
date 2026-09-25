@@ -4612,3 +4612,217 @@ cc_store_format:
     scf
     ret
     ENDM
+
+
+; P11.12 C48 local-variable frame planning and exact Z80 frame sequences.
+; REV17 owns the native ABI. The pinned SDK VM is a semantic oracle and has no
+; target-Z80 IX/IY frame backend, so there is no conflicting SDK frame rule.
+; Leaf/simple functions with <=4 bytes of explicitly direct/register-addressable
+; locals omit IX completely. Zero-stack-local functions also omit IX. When a
+; stack frame is required, IX is saved/restored and SP allocation is padded even.
+; IY is never emitted or used as a C48 frame/index register.
+    MACRO EMIT_P11_CC_FRAME_LAYOUT
+CC_FRAME_FLAG_LEAF_SIMPLE   EQU 1
+CC_FRAME_FLAG_DIRECT_LOCALS EQU 2
+CC_FRAME_DIRECT_MAX         EQU 4
+CC_FRAME_STACK_MAX          EQU 126
+CC_FRAME_PROLOGUE_CAPACITY  EQU 72
+CC_FRAME_EPILOGUE_CAPACITY  EQU 8
+
+cc_frame_flags:          db 0
+cc_frame_local_bytes:    dw 0
+cc_frame_stack_bytes:    db 0
+cc_frame_direct_bytes:   db 0
+cc_frame_uses_ix:        db 0
+cc_frame_prologue_len:   db 0
+cc_frame_epilogue_len:   db 0
+cc_frame_emit_ptr:       dw 0
+cc_frame_prologue:       defs CC_FRAME_PROLOGUE_CAPACITY,0
+cc_frame_epilogue:       defs CC_FRAME_EPILOGUE_CAPACITY,0
+
+; A=planning flags, BC=required local bytes.
+cc_frame_plan:
+    ld (cc_frame_flags),a
+    ld (cc_frame_local_bytes),bc
+    xor a
+    ld (cc_frame_stack_bytes),a
+    ld (cc_frame_direct_bytes),a
+    ld (cc_frame_uses_ix),a
+
+    ld a,b
+    or c
+    ret z
+
+    ; Direct/register-resident leaf locals require both eligibility flags and
+    ; are intentionally capped. They consume no stack frame.
+    ld a,(cc_frame_flags)
+    and CC_FRAME_FLAG_LEAF_SIMPLE|CC_FRAME_FLAG_DIRECT_LOCALS
+    cp CC_FRAME_FLAG_LEAF_SIMPLE|CC_FRAME_FLAG_DIRECT_LOCALS
+    jp nz,cc_frame_plan_stack
+    ld a,b
+    or a
+    jp nz,cc_frame_plan_stack
+    ld a,c
+    cp CC_FRAME_DIRECT_MAX+1
+    jp nc,cc_frame_plan_stack
+    ld (cc_frame_direct_bytes),a
+    xor a
+    ret
+
+cc_frame_plan_stack:
+    ld a,b
+    or a
+    jp nz,cc_frame_nospc
+    ld a,c
+    cp CC_FRAME_STACK_MAX+1
+    jp nc,cc_frame_nospc
+    ; Round stack storage up to an even byte count.
+    bit 0,a
+    jp z,cc_frame_plan_even
+    inc a
+cc_frame_plan_even:
+    cp CC_FRAME_STACK_MAX+1
+    jp nc,cc_frame_nospc
+    ld (cc_frame_stack_bytes),a
+    ld a,1
+    ld (cc_frame_uses_ix),a
+    xor a
+    ret
+
+; Emit exact prologue/epilogue byte streams for the current plan.
+cc_frame_emit:
+    call cc_frame_emit_prologue
+    ret c
+    jp cc_frame_emit_epilogue
+
+cc_frame_emit_prologue:
+    xor a
+    ld (cc_frame_prologue_len),a
+    ld a,(cc_frame_uses_ix)
+    or a
+    ret z
+    ld hl,cc_frame_prologue
+    ld (cc_frame_emit_ptr),hl
+    ld a,$DD
+    call cc_frame_put_prologue
+    ld a,$E5                 ; PUSH IX
+    call cc_frame_put_prologue
+    ld a,$DD
+    call cc_frame_put_prologue
+    ld a,$21                 ; LD IX,0
+    call cc_frame_put_prologue
+    xor a
+    call cc_frame_put_prologue
+    xor a
+    call cc_frame_put_prologue
+    ld a,$DD
+    call cc_frame_put_prologue
+    ld a,$39                 ; ADD IX,SP
+    call cc_frame_put_prologue
+    ld a,(cc_frame_stack_bytes)
+    srl a
+    ld b,a
+cc_frame_push_locals:
+    ld a,b
+    or a
+    jp z,cc_frame_prologue_done
+    ld a,$F5                 ; PUSH AF reserves two bytes, SP remains even
+    call cc_frame_put_prologue
+    djnz cc_frame_push_locals
+cc_frame_prologue_done:
+    xor a
+    ret
+
+cc_frame_emit_epilogue:
+    xor a
+    ld (cc_frame_epilogue_len),a
+    ld hl,cc_frame_epilogue
+    ld (cc_frame_emit_ptr),hl
+    ld a,(cc_frame_uses_ix)
+    or a
+    jp z,cc_frame_leaf_epilogue
+    ld a,$DD
+    call cc_frame_put_epilogue
+    ld a,$F9                 ; LD SP,IX
+    call cc_frame_put_epilogue
+    ld a,$DD
+    call cc_frame_put_epilogue
+    ld a,$E1                 ; POP IX
+    call cc_frame_put_epilogue
+cc_frame_leaf_epilogue:
+    ld a,$C9                 ; RET
+    call cc_frame_put_epilogue
+    xor a
+    ret
+
+cc_frame_put_prologue:
+    push af
+    ld a,(cc_frame_prologue_len)
+    cp CC_FRAME_PROLOGUE_CAPACITY
+    jp nc,cc_frame_put_prologue_full
+    ld hl,(cc_frame_emit_ptr)
+    pop af
+    ld (hl),a
+    inc hl
+    ld (cc_frame_emit_ptr),hl
+    ld a,(cc_frame_prologue_len)
+    inc a
+    ld (cc_frame_prologue_len),a
+    ret
+cc_frame_put_prologue_full:
+    pop af
+    jp cc_frame_nospc
+
+cc_frame_put_epilogue:
+    push af
+    ld a,(cc_frame_epilogue_len)
+    cp CC_FRAME_EPILOGUE_CAPACITY
+    jp nc,cc_frame_put_epilogue_full
+    ld hl,(cc_frame_emit_ptr)
+    pop af
+    ld (hl),a
+    inc hl
+    ld (cc_frame_emit_ptr),hl
+    ld a,(cc_frame_epilogue_len)
+    inc a
+    ld (cc_frame_epilogue_len),a
+    ret
+cc_frame_put_epilogue_full:
+    pop af
+    jp cc_frame_nospc
+
+; A=0-based byte offset within stack local area. Success A=signed IX
+; displacement: local byte 0 is IX-1. Direct/no-IX locals are not stack-addressed.
+cc_frame_local_disp:
+    ld e,a
+    ld a,(cc_frame_uses_ix)
+    or a
+    jp z,cc_frame_format
+    ld hl,(cc_frame_local_bytes)
+    ld a,h
+    or a
+    jp nz,cc_frame_disp_in_range
+    ld a,e
+    cp l
+    jp nc,cc_frame_format
+cc_frame_disp_in_range:
+    ld a,e
+    cpl
+    ret
+
+; HL=SP value at a C48 call boundary. SP must always be even.
+cc_frame_call_sp_check:
+    bit 0,l
+    jp nz,cc_frame_format
+    xor a
+    ret
+
+cc_frame_nospc:
+    ld a,E_NOSPC
+    scf
+    ret
+cc_frame_format:
+    ld a,E_FORMAT
+    scf
+    ret
+    ENDM
