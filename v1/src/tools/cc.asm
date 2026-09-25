@@ -2958,3 +2958,636 @@ cc_stmt_format:
     scf
     ret
     ENDM
+
+
+; P11.07 C48 expression precedence.
+; The recursive-descent expression stage emits bounded postfix events. Logical
+; AND/OR use explicit short-circuit event kinds so later symbolic Z80 emission
+; cannot accidentally lower them as eager bitwise operations.
+    MACRO EMIT_P11_CC_EXPRESSIONS
+CC_X_IDENT              EQU 1
+CC_X_INT                EQU 2
+CC_X_FLOAT              EQU 3
+CC_X_CHAR               EQU 4
+CC_X_STRING             EQU 5
+CC_X_ASSIGN             EQU 16
+CC_X_ADD                EQU 17
+CC_X_SUB                EQU 18
+CC_X_MUL                EQU 19
+CC_X_DIV                EQU 20
+CC_X_MOD                EQU 21
+CC_X_PREINC             EQU 22
+CC_X_PREDEC             EQU 23
+CC_X_POSTINC            EQU 24
+CC_X_POSTDEC            EQU 25
+CC_X_SHL                EQU 26
+CC_X_SHR                EQU 27
+CC_X_LT                 EQU 28
+CC_X_LE                 EQU 29
+CC_X_GT                 EQU 30
+CC_X_GE                 EQU 31
+CC_X_EQ                 EQU 32
+CC_X_NE                 EQU 33
+CC_X_BAND               EQU 34
+CC_X_BOR                EQU 35
+CC_X_BXOR               EQU 36
+CC_X_BNOT               EQU 37
+CC_X_LAND_SC            EQU 38
+CC_X_LOR_SC             EQU 39
+CC_X_LNOT               EQU 40
+CC_X_ADDR               EQU 41
+CC_X_DEREF              EQU 42
+CC_X_INDEX              EQU 43
+CC_X_CALL               EQU 44
+CC_X_UPLUS              EQU 45
+CC_X_UMINUS             EQU 46
+CC_X_CAST               EQU 47
+CC_X_OUTPUT_CAPACITY    EQU 128
+CC_X_NEST_MAX           EQU 8
+
+cc_x_output:            defs CC_X_OUTPUT_CAPACITY,0
+cc_x_output_count:      db 0
+cc_x_nest:              db 0
+cc_x_saved_char:        db 0
+cc_x_saved_op:          db 0
+
+; HL=complete expression bytes, BC=length.
+cc_expr_parse:
+    ld (cc_parse_ptr),hl
+    ld (cc_parse_remaining),bc
+    xor a
+    ld (cc_x_output_count),a
+    ld (cc_x_nest),a
+    call cc_lex_reset
+    call cc_parse_next
+    ret c
+    call cc_x_assignment
+    ret c
+    ld a,(cc_parse_tok_kind)
+    cp CC_TOK_EOF
+    ret z
+    ld a,','
+    call cc_parse_is_char
+    jp z,cc_x_notsup
+    jp cc_x_format
+
+cc_x_assignment:
+    call cc_x_lor
+    ret c
+    ld a,'='
+    call cc_parse_is_char
+    ret nz
+    call cc_parse_next
+    ret c
+    call cc_x_nest_enter
+    ret c
+    call cc_x_assignment
+    push af
+    call cc_x_nest_leave
+    pop af
+    ret c
+    ld a,CC_X_ASSIGN
+    jp cc_x_emit
+
+cc_x_lor:
+    call cc_x_land
+    ret c
+cc_x_lor_loop:
+    ld de,cc_x_op_lor
+    call cc_x_match2
+    ret nz
+    call cc_parse_next
+    ret c
+    call cc_x_land
+    ret c
+    ld a,CC_X_LOR_SC
+    call cc_x_emit
+    ret c
+    jp cc_x_lor_loop
+
+cc_x_land:
+    call cc_x_bor
+    ret c
+cc_x_land_loop:
+    ld de,cc_x_op_land
+    call cc_x_match2
+    ret nz
+    call cc_parse_next
+    ret c
+    call cc_x_bor
+    ret c
+    ld a,CC_X_LAND_SC
+    call cc_x_emit
+    ret c
+    jp cc_x_land_loop
+
+cc_x_bor:
+    call cc_x_bxor
+    ret c
+cc_x_bor_loop:
+    ld a,'|'
+    call cc_parse_is_char
+    ret nz
+    call cc_parse_next
+    ret c
+    call cc_x_bxor
+    ret c
+    ld a,CC_X_BOR
+    call cc_x_emit
+    ret c
+    jp cc_x_bor_loop
+
+cc_x_bxor:
+    call cc_x_band
+    ret c
+cc_x_bxor_loop:
+    ld a,'^'
+    call cc_parse_is_char
+    ret nz
+    call cc_parse_next
+    ret c
+    call cc_x_band
+    ret c
+    ld a,CC_X_BXOR
+    call cc_x_emit
+    ret c
+    jp cc_x_bxor_loop
+
+cc_x_band:
+    call cc_x_equality
+    ret c
+cc_x_band_loop:
+    ld a,'&'
+    call cc_parse_is_char
+    ret nz
+    call cc_parse_next
+    ret c
+    call cc_x_equality
+    ret c
+    ld a,CC_X_BAND
+    call cc_x_emit
+    ret c
+    jp cc_x_band_loop
+
+cc_x_equality:
+    call cc_x_relational
+    ret c
+cc_x_eq_loop:
+    ld de,cc_x_op_eq
+    call cc_x_match2
+    jp z,cc_x_eq_take
+    ld de,cc_x_op_ne
+    call cc_x_match2
+    ret nz
+    ld a,CC_X_NE
+    jp cc_x_eq_take_saved
+cc_x_eq_take:
+    ld a,CC_X_EQ
+cc_x_eq_take_saved:
+    ld (cc_x_saved_op),a
+    call cc_parse_next
+    ret c
+    call cc_x_relational
+    ret c
+    ld a,(cc_x_saved_op)
+    call cc_x_emit
+    ret c
+    jp cc_x_eq_loop
+
+cc_x_relational:
+    call cc_x_shift
+    ret c
+cc_x_rel_loop:
+    ld de,cc_x_op_le
+    call cc_x_match2
+    jp z,cc_x_rel_le
+    ld de,cc_x_op_ge
+    call cc_x_match2
+    jp z,cc_x_rel_ge
+    ld a,'<'
+    call cc_parse_is_char
+    jp z,cc_x_rel_lt
+    ld a,'>'
+    call cc_parse_is_char
+    ret nz
+    ld a,CC_X_GT
+    jp cc_x_rel_take
+cc_x_rel_lt:
+    ld a,CC_X_LT
+    jp cc_x_rel_take
+cc_x_rel_le:
+    ld a,CC_X_LE
+    jp cc_x_rel_take
+cc_x_rel_ge:
+    ld a,CC_X_GE
+cc_x_rel_take:
+    ld (cc_x_saved_op),a
+    call cc_parse_next
+    ret c
+    call cc_x_shift
+    ret c
+    ld a,(cc_x_saved_op)
+    call cc_x_emit
+    ret c
+    jp cc_x_rel_loop
+
+cc_x_shift:
+    call cc_x_additive
+    ret c
+cc_x_shift_loop:
+    ld de,cc_x_op_shl
+    call cc_x_match2
+    jp z,cc_x_shift_left
+    ld de,cc_x_op_shr
+    call cc_x_match2
+    ret nz
+    ld a,CC_X_SHR
+    jp cc_x_shift_take
+cc_x_shift_left:
+    ld a,CC_X_SHL
+cc_x_shift_take:
+    ld (cc_x_saved_op),a
+    call cc_parse_next
+    ret c
+    call cc_x_additive
+    ret c
+    ld a,(cc_x_saved_op)
+    call cc_x_emit
+    ret c
+    jp cc_x_shift_loop
+
+cc_x_additive:
+    call cc_x_multiplicative
+    ret c
+cc_x_add_loop:
+    ld a,'+'
+    call cc_parse_is_char
+    jp z,cc_x_add_plus
+    ld a,'-'
+    call cc_parse_is_char
+    ret nz
+    ld a,CC_X_SUB
+    jp cc_x_add_take
+cc_x_add_plus:
+    ld a,CC_X_ADD
+cc_x_add_take:
+    ld (cc_x_saved_op),a
+    call cc_parse_next
+    ret c
+    call cc_x_multiplicative
+    ret c
+    ld a,(cc_x_saved_op)
+    call cc_x_emit
+    ret c
+    jp cc_x_add_loop
+
+cc_x_multiplicative:
+    call cc_x_unary
+    ret c
+cc_x_mul_loop:
+    ld a,'*'
+    call cc_parse_is_char
+    jp z,cc_x_mul_mul
+    ld a,'/'
+    call cc_parse_is_char
+    jp z,cc_x_mul_div
+    ld a,'%'
+    call cc_parse_is_char
+    ret nz
+    ld a,CC_X_MOD
+    jp cc_x_mul_take
+cc_x_mul_mul:
+    ld a,CC_X_MUL
+    jp cc_x_mul_take
+cc_x_mul_div:
+    ld a,CC_X_DIV
+cc_x_mul_take:
+    ld (cc_x_saved_op),a
+    call cc_parse_next
+    ret c
+    call cc_x_unary
+    ret c
+    ld a,(cc_x_saved_op)
+    call cc_x_emit
+    ret c
+    jp cc_x_mul_loop
+
+cc_x_unary:
+    ld de,cc_x_op_inc
+    call cc_x_match2
+    jp z,cc_x_preinc
+    ld de,cc_x_op_dec
+    call cc_x_match2
+    jp z,cc_x_predec
+    ld a,'+'
+    call cc_parse_is_char
+    jp z,cc_x_uplus
+    ld a,'-'
+    call cc_parse_is_char
+    jp z,cc_x_uminus
+    ld a,'!'
+    call cc_parse_is_char
+    jp z,cc_x_lnot
+    ld a,'~'
+    call cc_parse_is_char
+    jp z,cc_x_bnot
+    ld a,'&'
+    call cc_parse_is_char
+    jp z,cc_x_addr
+    ld a,'*'
+    call cc_parse_is_char
+    jp z,cc_x_deref
+    ld a,'('
+    call cc_parse_is_char
+    jp z,cc_x_paren_or_cast
+    jp cc_x_postfix
+
+cc_x_preinc:
+    ld a,CC_X_PREINC
+    jp cc_x_unary_take
+cc_x_predec:
+    ld a,CC_X_PREDEC
+    jp cc_x_unary_take
+cc_x_uplus:
+    ld a,CC_X_UPLUS
+    jp cc_x_unary_take
+cc_x_uminus:
+    ld a,CC_X_UMINUS
+    jp cc_x_unary_take
+cc_x_lnot:
+    ld a,CC_X_LNOT
+    jp cc_x_unary_take
+cc_x_bnot:
+    ld a,CC_X_BNOT
+    jp cc_x_unary_take
+cc_x_addr:
+    ld a,CC_X_ADDR
+    jp cc_x_unary_take
+cc_x_deref:
+    ld a,CC_X_DEREF
+cc_x_unary_take:
+    ld (cc_x_saved_op),a
+    call cc_parse_next
+    ret c
+    call cc_x_nest_enter
+    ret c
+    call cc_x_unary
+    push af
+    call cc_x_nest_leave
+    pop af
+    ret c
+    ld a,(cc_x_saved_op)
+    jp cc_x_emit
+
+cc_x_paren_or_cast:
+    call cc_parse_next
+    ret c
+    ld a,(cc_parse_tok_kind)
+    cp CC_TOK_KEYWORD
+    jp nz,cc_x_group
+    call cc_parse_word_code
+    cp CC_WORD_VOID
+    jp z,cc_x_cast
+    cp CC_WORD_CHAR
+    jp z,cc_x_cast
+    cp CC_WORD_UNSIGNED
+    jp z,cc_x_cast
+    cp CC_WORD_SHORT
+    jp z,cc_x_cast
+    cp CC_WORD_INT
+    jp z,cc_x_cast
+    cp CC_WORD_FLOAT
+    jp z,cc_x_cast
+    jp cc_x_group
+cc_x_group:
+    call cc_x_nest_enter
+    ret c
+    call cc_x_assignment
+    push af
+    call cc_x_nest_leave
+    pop af
+    ret c
+    ld a,')'
+    jp cc_parse_expect_char
+
+cc_x_cast:
+    call cc_parse_type_spec
+    ret c
+    xor a
+    ld (cc_parse_ptr_depth),a
+    call cc_parse_pointer_stars
+    ret c
+    ld a,(cc_parse_ptr_depth)
+    or a
+    jp nz,cc_x_notsup
+    ld a,(cc_parse_type)
+    cp CC_TYPE_VOID
+    jp z,cc_x_notsup
+    ld a,')'
+    call cc_parse_expect_char
+    ret c
+    call cc_x_nest_enter
+    ret c
+    call cc_x_unary
+    push af
+    call cc_x_nest_leave
+    pop af
+    ret c
+    ld a,CC_X_CAST
+    call cc_x_emit
+    ret c
+    ld a,(cc_parse_type)
+    jp cc_x_emit
+
+cc_x_postfix:
+    call cc_x_primary
+    ret c
+cc_x_post_loop:
+    ld a,'['
+    call cc_parse_is_char
+    jp z,cc_x_index
+    ld a,'('
+    call cc_parse_is_char
+    jp z,cc_x_call
+    ld de,cc_x_op_inc
+    call cc_x_match2
+    jp z,cc_x_postinc
+    ld de,cc_x_op_dec
+    call cc_x_match2
+    ret nz
+    ld a,CC_X_POSTDEC
+    jp cc_x_post_take
+cc_x_postinc:
+    ld a,CC_X_POSTINC
+cc_x_post_take:
+    ld (cc_x_saved_op),a
+    call cc_parse_next
+    ret c
+    ld a,(cc_x_saved_op)
+    call cc_x_emit
+    ret c
+    jp cc_x_post_loop
+
+cc_x_index:
+    call cc_parse_next
+    ret c
+    call cc_x_nest_enter
+    ret c
+    call cc_x_assignment
+    push af
+    call cc_x_nest_leave
+    pop af
+    ret c
+    ld a,']'
+    call cc_parse_expect_char
+    ret c
+    ld a,CC_X_INDEX
+    call cc_x_emit
+    ret c
+    jp cc_x_post_loop
+
+cc_x_call:
+    call cc_parse_next
+    ret c
+    ld a,')'
+    call cc_parse_is_char
+    jp z,cc_x_call_close
+cc_x_call_arg:
+    call cc_x_nest_enter
+    ret c
+    call cc_x_assignment
+    push af
+    call cc_x_nest_leave
+    pop af
+    ret c
+    ld a,','
+    call cc_parse_is_char
+    jp nz,cc_x_call_expect_close
+    call cc_parse_next
+    ret c
+    jp cc_x_call_arg
+cc_x_call_expect_close:
+    ld a,')'
+    call cc_parse_is_char
+    jp nz,cc_x_format
+cc_x_call_close:
+    call cc_parse_next
+    ret c
+    ld a,CC_X_CALL
+    call cc_x_emit
+    ret c
+    jp cc_x_post_loop
+
+cc_x_primary:
+    ld a,(cc_parse_tok_kind)
+    cp CC_TOK_IDENT
+    jp z,cc_x_primary_ident
+    cp CC_TOK_INT
+    jp z,cc_x_primary_int
+    cp CC_TOK_FLOAT
+    jp z,cc_x_primary_float
+    cp CC_TOK_CHAR
+    jp z,cc_x_primary_char
+    cp CC_TOK_STRING
+    jp z,cc_x_primary_string
+    jp cc_x_format
+cc_x_primary_ident:
+    ld a,CC_X_IDENT
+    jp cc_x_primary_take
+cc_x_primary_int:
+    ld a,CC_X_INT
+    jp cc_x_primary_take
+cc_x_primary_float:
+    ld a,CC_X_FLOAT
+    jp cc_x_primary_take
+cc_x_primary_char:
+    ld a,CC_X_CHAR
+    jp cc_x_primary_take
+cc_x_primary_string:
+    ld a,CC_X_STRING
+cc_x_primary_take:
+    ld (cc_x_saved_op),a
+    call cc_parse_next
+    ret c
+    ld a,(cc_x_saved_op)
+    jp cc_x_emit
+
+cc_x_emit:
+    ld (cc_x_saved_op),a
+    ld a,(cc_x_output_count)
+    cp CC_X_OUTPUT_CAPACITY
+    jp nc,cc_x_nospc
+    ld e,a
+    ld d,0
+    ld hl,cc_x_output
+    add hl,de
+    ld a,(cc_x_saved_op)
+    ld (hl),a
+    ld hl,cc_x_output_count
+    inc (hl)
+    xor a
+    ret
+
+cc_x_nest_enter:
+    ld a,(cc_x_nest)
+    cp CC_X_NEST_MAX
+    jp nc,cc_x_nospc
+    inc a
+    ld (cc_x_nest),a
+    xor a
+    ret
+cc_x_nest_leave:
+    ld a,(cc_x_nest)
+    or a
+    jp z,cc_x_format
+    dec a
+    ld (cc_x_nest),a
+    xor a
+    ret
+
+; DE -> exact two-byte operator spelling, Z on match.
+cc_x_match2:
+    ld a,(cc_parse_tok_len)
+    cp 2
+    jp nz,cc_x_match_no
+    ld hl,(cc_parse_tok_ptr)
+    ld a,(de)
+    cp (hl)
+    jp nz,cc_x_match_no
+    inc de
+    inc hl
+    ld a,(de)
+    cp (hl)
+    jp z,cc_x_match_yes
+cc_x_match_no:
+    ld a,1
+    or a
+    ret
+cc_x_match_yes:
+    xor a
+    ret
+
+cc_x_op_inc: db "++"
+cc_x_op_dec: db "--"
+cc_x_op_shl: db "<<"
+cc_x_op_shr: db ">>"
+cc_x_op_le:  db "<="
+cc_x_op_ge:  db ">="
+cc_x_op_eq:  db "=="
+cc_x_op_ne:  db "!="
+cc_x_op_land: db "&&"
+cc_x_op_lor:  db "||"
+
+cc_x_nospc:
+    ld a,E_NOSPC
+    scf
+    ret
+cc_x_notsup:
+    ld a,E_NOTSUP
+    scf
+    ret
+cc_x_format:
+    ld a,E_FORMAT
+    scf
+    ret
+    ENDM
