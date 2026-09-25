@@ -2488,3 +2488,470 @@ cc_parse_format:
     scf
     ret
     ENDM
+
+
+; P11.06 C48 statement/control-flow parser.
+; Expression interiors remain opaque token spans until P11.07 freezes precedence.
+; This stage emits a compact deterministic control-flow event stream.
+    MACRO EMIT_P11_CC_STATEMENTS
+CC_CF_IF                EQU 1
+CC_CF_ELSE              EQU 2
+CC_CF_WHILE             EQU 3
+CC_CF_DO                EQU 4
+CC_CF_FOR               EQU 5
+CC_CF_BREAK             EQU 6
+CC_CF_CONTINUE          EQU 7
+CC_CF_RETURN            EQU 8
+CC_CF_BLOCK_BEGIN       EQU 9
+CC_CF_BLOCK_END         EQU 10
+CC_CF_EXPR              EQU 11
+CC_CF_EMPTY             EQU 12
+CC_STMT_DEPTH_MAX       EQU 8
+CC_STMT_OUTPUT_CAPACITY EQU 64
+
+CC_STMT_WORD_IF         EQU 1
+CC_STMT_WORD_ELSE       EQU 2
+CC_STMT_WORD_WHILE      EQU 3
+CC_STMT_WORD_DO         EQU 4
+CC_STMT_WORD_FOR        EQU 5
+CC_STMT_WORD_BREAK      EQU 6
+CC_STMT_WORD_CONTINUE   EQU 7
+CC_STMT_WORD_RETURN     EQU 8
+
+cc_stmt_output:         defs CC_STMT_OUTPUT_CAPACITY,0
+cc_stmt_output_count:   db 0
+cc_stmt_depth:          db 0
+cc_stmt_loop_depth:     db 0
+cc_stmt_expr_depth:     db 0
+cc_stmt_bracket_depth:  db 0
+cc_stmt_expr_seen:      db 0
+cc_stmt_expr_required:  db 0
+cc_stmt_delimiter:      db 0
+cc_stmt_word_tmp:       db 0
+cc_stmt_word_len:       db 0
+
+; HL=bounded complete statement span, BC=length.
+cc_stmt_parse:
+    ld (cc_parse_ptr),hl
+    ld (cc_parse_remaining),bc
+    xor a
+    ld (cc_stmt_output_count),a
+    ld (cc_stmt_depth),a
+    ld (cc_stmt_loop_depth),a
+    call cc_lex_reset
+    call cc_parse_next
+    ret c
+    call cc_stmt_statement
+    ret c
+    jp cc_parse_require_eof
+
+cc_stmt_statement:
+    ld a,(cc_stmt_depth)
+    cp CC_STMT_DEPTH_MAX
+    jp nc,cc_stmt_nospc
+    inc a
+    ld (cc_stmt_depth),a
+    call cc_stmt_statement_impl
+    push af
+    ld hl,cc_stmt_depth
+    dec (hl)
+    pop af
+    ret
+
+cc_stmt_statement_impl:
+    ld a,'{'
+    call cc_parse_is_char
+    jp z,cc_stmt_compound
+    ld a,(cc_parse_tok_kind)
+    cp CC_TOK_KEYWORD
+    jp nz,cc_stmt_expr_or_empty
+    call cc_stmt_word_code
+    cp CC_STMT_WORD_IF
+    jp z,cc_stmt_if
+    cp CC_STMT_WORD_WHILE
+    jp z,cc_stmt_while
+    cp CC_STMT_WORD_DO
+    jp z,cc_stmt_do
+    cp CC_STMT_WORD_FOR
+    jp z,cc_stmt_for
+    cp CC_STMT_WORD_BREAK
+    jp z,cc_stmt_break
+    cp CC_STMT_WORD_CONTINUE
+    jp z,cc_stmt_continue
+    cp CC_STMT_WORD_RETURN
+    jp z,cc_stmt_return
+    jp cc_stmt_expr_or_empty
+
+cc_stmt_compound:
+    ld a,CC_CF_BLOCK_BEGIN
+    call cc_stmt_emit
+    ret c
+    call cc_parse_next
+    ret c
+cc_stmt_compound_loop:
+    ld a,'}'
+    call cc_parse_is_char
+    jp z,cc_stmt_compound_end
+    ld a,(cc_parse_tok_kind)
+    cp CC_TOK_EOF
+    jp z,cc_stmt_format
+    call cc_stmt_statement
+    ret c
+    jp cc_stmt_compound_loop
+cc_stmt_compound_end:
+    ld a,CC_CF_BLOCK_END
+    call cc_stmt_emit
+    ret c
+    jp cc_parse_next
+
+cc_stmt_if:
+    ld a,CC_CF_IF
+    call cc_stmt_emit
+    ret c
+    call cc_parse_next
+    ret c
+    ld a,'('
+    call cc_parse_expect_char
+    ret c
+    ld a,')'
+    ld b,1
+    call cc_stmt_expression_to
+    ret c
+    ld a,')'
+    call cc_parse_expect_char
+    ret c
+    call cc_stmt_statement
+    ret c
+    ld a,(cc_parse_tok_kind)
+    cp CC_TOK_KEYWORD
+    ret nz
+    call cc_stmt_word_code
+    cp CC_STMT_WORD_ELSE
+    ret nz
+    ld a,CC_CF_ELSE
+    call cc_stmt_emit
+    ret c
+    call cc_parse_next
+    ret c
+    jp cc_stmt_statement
+
+cc_stmt_while:
+    ld a,CC_CF_WHILE
+    call cc_stmt_emit
+    ret c
+    call cc_parse_next
+    ret c
+    ld a,'('
+    call cc_parse_expect_char
+    ret c
+    ld a,')'
+    ld b,1
+    call cc_stmt_expression_to
+    ret c
+    ld a,')'
+    call cc_parse_expect_char
+    ret c
+    ld hl,cc_stmt_loop_depth
+    inc (hl)
+    call cc_stmt_statement
+    push af
+    ld hl,cc_stmt_loop_depth
+    dec (hl)
+    pop af
+    ret
+
+cc_stmt_do:
+    ld a,CC_CF_DO
+    call cc_stmt_emit
+    ret c
+    call cc_parse_next
+    ret c
+    ld hl,cc_stmt_loop_depth
+    inc (hl)
+    call cc_stmt_statement
+    push af
+    ld hl,cc_stmt_loop_depth
+    dec (hl)
+    pop af
+    ret c
+    ld a,(cc_parse_tok_kind)
+    cp CC_TOK_KEYWORD
+    jp nz,cc_stmt_format
+    call cc_stmt_word_code
+    cp CC_STMT_WORD_WHILE
+    jp nz,cc_stmt_format
+    call cc_parse_next
+    ret c
+    ld a,'('
+    call cc_parse_expect_char
+    ret c
+    ld a,')'
+    ld b,1
+    call cc_stmt_expression_to
+    ret c
+    ld a,')'
+    call cc_parse_expect_char
+    ret c
+    ld a,';'
+    jp cc_parse_expect_char
+
+cc_stmt_for:
+    ld a,CC_CF_FOR
+    call cc_stmt_emit
+    ret c
+    call cc_parse_next
+    ret c
+    ld a,'('
+    call cc_parse_expect_char
+    ret c
+    ld a,';'
+    ld b,0
+    call cc_stmt_expression_to
+    ret c
+    ld a,';'
+    call cc_parse_expect_char
+    ret c
+    ld a,';'
+    ld b,0
+    call cc_stmt_expression_to
+    ret c
+    ld a,';'
+    call cc_parse_expect_char
+    ret c
+    ld a,')'
+    ld b,0
+    call cc_stmt_expression_to
+    ret c
+    ld a,')'
+    call cc_parse_expect_char
+    ret c
+    ld hl,cc_stmt_loop_depth
+    inc (hl)
+    call cc_stmt_statement
+    push af
+    ld hl,cc_stmt_loop_depth
+    dec (hl)
+    pop af
+    ret
+
+cc_stmt_break:
+    ld a,(cc_stmt_loop_depth)
+    or a
+    jp z,cc_stmt_format
+    ld a,CC_CF_BREAK
+    call cc_stmt_emit
+    ret c
+    call cc_parse_next
+    ret c
+    ld a,';'
+    jp cc_parse_expect_char
+
+cc_stmt_continue:
+    ld a,(cc_stmt_loop_depth)
+    or a
+    jp z,cc_stmt_format
+    ld a,CC_CF_CONTINUE
+    call cc_stmt_emit
+    ret c
+    call cc_parse_next
+    ret c
+    ld a,';'
+    jp cc_parse_expect_char
+
+cc_stmt_return:
+    ld a,CC_CF_RETURN
+    call cc_stmt_emit
+    ret c
+    call cc_parse_next
+    ret c
+    ld a,';'
+    call cc_parse_is_char
+    jp z,cc_parse_next
+    ld a,';'
+    ld b,1
+    call cc_stmt_expression_to
+    ret c
+    ld a,';'
+    jp cc_parse_expect_char
+
+cc_stmt_expr_or_empty:
+    ld a,';'
+    call cc_parse_is_char
+    jp nz,cc_stmt_expression_statement
+    ld a,CC_CF_EMPTY
+    call cc_stmt_emit
+    ret c
+    jp cc_parse_next
+cc_stmt_expression_statement:
+    ld a,';'
+    ld b,1
+    call cc_stmt_expression_to
+    ret c
+    ld a,';'
+    jp cc_parse_expect_char
+
+; Input A=delimiter, B=0 allow empty / nonzero require at least one token.
+; Stops with delimiter current and emits CC_CF_EXPR iff a token was consumed.
+cc_stmt_expression_to:
+    ld (cc_stmt_delimiter),a
+    ld a,b
+    ld (cc_stmt_expr_required),a
+    xor a
+    ld (cc_stmt_expr_depth),a
+    ld (cc_stmt_bracket_depth),a
+    ld (cc_stmt_expr_seen),a
+cc_stmt_expr_loop:
+    ld a,(cc_parse_tok_kind)
+    cp CC_TOK_EOF
+    jp z,cc_stmt_format
+    ld a,(cc_stmt_delimiter)
+    call cc_parse_is_char
+    jp nz,cc_stmt_expr_not_delim
+    ld a,(cc_stmt_expr_depth)
+    or a
+    jp nz,cc_stmt_expr_not_delim
+    ld a,(cc_stmt_bracket_depth)
+    or a
+    jp nz,cc_stmt_expr_not_delim
+    ld a,(cc_stmt_expr_seen)
+    or a
+    jp nz,cc_stmt_expr_emit
+    ld a,(cc_stmt_expr_required)
+    or a
+    ret z
+    jp cc_stmt_format
+cc_stmt_expr_emit:
+    ld a,CC_CF_EXPR
+    jp cc_stmt_emit
+
+cc_stmt_expr_not_delim:
+    ld a,'{'
+    call cc_parse_is_char
+    jp z,cc_stmt_notsup
+    ld a,'}'
+    call cc_parse_is_char
+    jp z,cc_stmt_format
+    ld a,'('
+    call cc_parse_is_char
+    jp nz,cc_stmt_expr_close_paren
+    ld a,(cc_stmt_expr_depth)
+    cp CC_STMT_DEPTH_MAX
+    jp nc,cc_stmt_nospc
+    inc a
+    ld (cc_stmt_expr_depth),a
+    jp cc_stmt_expr_take
+cc_stmt_expr_close_paren:
+    ld a,')'
+    call cc_parse_is_char
+    jp nz,cc_stmt_expr_open_bracket
+    ld a,(cc_stmt_expr_depth)
+    or a
+    jp z,cc_stmt_format
+    dec a
+    ld (cc_stmt_expr_depth),a
+    jp cc_stmt_expr_take
+cc_stmt_expr_open_bracket:
+    ld a,'['
+    call cc_parse_is_char
+    jp nz,cc_stmt_expr_close_bracket
+    ld a,(cc_stmt_bracket_depth)
+    cp CC_STMT_DEPTH_MAX
+    jp nc,cc_stmt_nospc
+    inc a
+    ld (cc_stmt_bracket_depth),a
+    jp cc_stmt_expr_take
+cc_stmt_expr_close_bracket:
+    ld a,']'
+    call cc_parse_is_char
+    jp nz,cc_stmt_expr_take
+    ld a,(cc_stmt_bracket_depth)
+    or a
+    jp z,cc_stmt_format
+    dec a
+    ld (cc_stmt_bracket_depth),a
+cc_stmt_expr_take:
+    ld a,1
+    ld (cc_stmt_expr_seen),a
+    call cc_parse_next
+    ret c
+    jp cc_stmt_expr_loop
+
+cc_stmt_emit:
+    ld (cc_parse_saved_char),a
+    ld a,(cc_stmt_output_count)
+    cp CC_STMT_OUTPUT_CAPACITY
+    jp nc,cc_stmt_nospc
+    ld e,a
+    ld d,0
+    ld hl,cc_stmt_output
+    add hl,de
+    ld a,(cc_parse_saved_char)
+    ld (hl),a
+    ld hl,cc_stmt_output_count
+    inc (hl)
+    xor a
+    ret
+
+cc_stmt_word_code:
+    ld de,cc_stmt_words
+cc_stmt_word_loop:
+    ld a,(de)
+    or a
+    ret z
+    ld (cc_stmt_word_tmp),a
+    inc de
+    ld a,(de)
+    ld (cc_stmt_word_len),a
+    inc de
+    ld c,a
+    ld a,(cc_parse_tok_len)
+    cp c
+    jp nz,cc_stmt_word_skip
+    push de
+    ld hl,(cc_parse_tok_ptr)
+    ld b,c
+cc_stmt_word_cmp:
+    ld a,(de)
+    cp (hl)
+    jp nz,cc_stmt_word_miss
+    inc de
+    inc hl
+    djnz cc_stmt_word_cmp
+    pop de
+    ld a,(cc_stmt_word_tmp)
+    or a
+    ret
+cc_stmt_word_miss:
+    pop de
+cc_stmt_word_skip:
+    ld a,(cc_stmt_word_len)
+    ld l,a
+    ld h,0
+    add hl,de
+    ex de,hl
+    jp cc_stmt_word_loop
+
+cc_stmt_words:
+    db CC_STMT_WORD_IF,2,"if"
+    db CC_STMT_WORD_ELSE,4,"else"
+    db CC_STMT_WORD_WHILE,5,"while"
+    db CC_STMT_WORD_DO,2,"do"
+    db CC_STMT_WORD_FOR,3,"for"
+    db CC_STMT_WORD_BREAK,5,"break"
+    db CC_STMT_WORD_CONTINUE,8,"continue"
+    db CC_STMT_WORD_RETURN,6,"return"
+    db 0
+
+cc_stmt_nospc:
+    ld a,E_NOSPC
+    scf
+    ret
+cc_stmt_notsup:
+    ld a,E_NOTSUP
+    scf
+    ret
+cc_stmt_format:
+    ld a,E_FORMAT
+    scf
+    ret
+    ENDM
