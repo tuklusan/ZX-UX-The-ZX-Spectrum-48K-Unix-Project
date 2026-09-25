@@ -41,10 +41,18 @@ hook:
         push bc
         push hl
         push de
+        call render_row
 
+restore:
+        pop de
+        pop hl
+        ld a,h
+        ret
+
+render_row:
         ld a,(lines_left)
         or a
-        jr z,restore
+        ret z
 
         ld a,32
         ld (chars_left),a
@@ -101,30 +109,18 @@ glyph_loop:
         ld a,(lines_left)
         dec a
         ld (lines_left),a
-        jr nz,restore
-
-        ; Last row: tape payload is complete. The product TZX deliberately
-        ; uses the loader's ordinary 0x0100 continuation for its final block
-        ; so this 24th callback runs. Tail-dispatch through final_hold: render
-        ; is already complete, then beep exactly once and hand off to 0xE003.
-        jp final_hold
-
-restore:
-        pop de
-        pop hl
-        ld a,h
         ret
+        nop
+        nop
 
 final_hold:
+        ; The final turbo header dispatches here after the last kernel bytes
+        ; have been copied into place. Render row 24 explicitly, beep exactly
+        ; once, then hand off to the permanent kernel entry at 0xE003.
         ; Keep this block exactly 14 bytes so init_screen remains at 0x5EC2.
-        ; The beep follows the data tables and may move when init_screen grows.
-        ; The kernel entry is permanent and resets SP, so no loader return is
-        ; required after the final callback.
+        call render_row
         call startup_beep
         jp 0xE003
-        nop
-        nop
-        nop
         nop
         nop
         nop
