@@ -1,0 +1,139 @@
+{
+  "action": "build",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "working-contract-explicit-version1-surface",
+      "passed": true
+    },
+    {
+      "name": "active-rev17-identity-exact",
+      "passed": true
+    },
+    {
+      "name": "active-rev08-identity-exact",
+      "passed": true
+    },
+    {
+      "name": "r17-authority-admission-present",
+      "passed": true
+    },
+    {
+      "name": "sdk-reference-commit-and-tree-pinned",
+      "passed": true
+    },
+    {
+      "name": "sdk-reference-matches-rev08-no-rebaseline",
+      "passed": true
+    },
+    {
+      "name": "sdk-python-implementation-and-doc-surface-reviewed",
+      "passed": true
+    },
+    {
+      "name": "sdk-release-test-count-recorded",
+      "passed": true
+    },
+    {
+      "name": "docx-corrected-identity-recorded",
+      "passed": true
+    },
+    {
+      "name": "docx-corrected-sha256-exact",
+      "passed": true
+    },
+    {
+      "name": "docx-license-gate-pins-corrected-blob",
+      "passed": true
+    },
+    {
+      "name": "docx-current-authorities-present",
+      "passed": true
+    },
+    {
+      "name": "docx-stale-authorities-removed",
+      "passed": true
+    },
+    {
+      "name": "docx-end-to-end-language-families-present",
+      "passed": true
+    },
+    {
+      "name": "docx-real-office-container",
+      "passed": true
+    },
+    {
+      "name": "intentional-rev17-over-sdk-differences-recorded",
+      "passed": true
+    },
+    {
+      "name": "three-way-discrepancies-resolved",
+      "passed": true
+    },
+    {
+      "name": "h06-later-pin-separation-recorded",
+      "passed": true
+    },
+    {
+      "name": "docx-git-blob-exact",
+      "passed": true
+    },
+    {
+      "name": "docx-index-mode-and-blob-exact",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "git",
+        "hash-object",
+        "--",
+        "docs/04-C48 Language Specification Rev 0.11.docx"
+      ],
+      "cwd": ".",
+      "duration_ms": 5,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "a84c314a6d2957835efdc916a49e5289718140c2\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "git",
+        "ls-files",
+        "--stage",
+        "--",
+        "docs/04-C48 Language Specification Rev 0.11.docx"
+      ],
+      "cwd": ".",
+      "duration_ms": 2,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "100644 a84c314a6d2957835efdc916a49e5289718140c2 0\tdocs/04-C48 Language Specification Rev 0.11.docx\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "docs/01-ZX-UX-ARCHITECTURE-REV17.md": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+    "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV08.md": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+    "docs/04-C48 Language Specification Rev 0.11.docx": "981eeb963d59e7ce2fd5e0fb73866f8a734fd33746a5ee0fce32d84fdec41903",
+    "tools/check_license_headers.sh": "91cf1551b07a42bff7a26fb457cc2fb3ca8cf87a0e5cb3977feca1d6640cc135",
+    "v1/dist/certification/R17.00.result.json": "de92b0288343b925de1443bbb5faf882f320a5bc5db427ac1949bf9ceaf65447",
+    "v1/dist/certification/phase-10.json": "fea4c3246fd982f32d0a9fef89f93605c0965b2357ebc4e4bfca70636cd45060",
+    "v1/docs/c48.md": "c22cebe44b8aecaf6abd17b181127e64a9dca52977e61f6b24d4da09c7dc6735",
+    "v1/tests/compiler/sdk-reference/SDK-PROVENANCE.md": "5d4430d3614c3d866c34db0c5a62b74c8d2e207bb408682fd4ca22e1e3506dd7",
+    "v1/tools-host/test-driver/phase11_step_01.py": "b73091e0ed3a1468ae7017ecb72981310d861e6d1aa93ef4247ea2ab2c14eb9d",
+    "v1/tools-host/test-driver/run.py": "85d26f9224c9d9e6eded35d137dfc317be90dfed78f74fe3039dac1acdf103cf"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "R17.00": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "f4f23b2aefe7610d32a929d7806c232f861cf3e9",
+  "status": "PASS",
+  "step": "P11.01",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
