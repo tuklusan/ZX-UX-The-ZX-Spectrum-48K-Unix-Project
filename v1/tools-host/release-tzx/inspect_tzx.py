@@ -22,13 +22,13 @@ import struct
 
 PROG_BASE = 0x5CCB
 HOOK_ADDR = 0x5E4F
-FINAL_ROW_DISPATCH_ADDR = 0x5EAD
+RENDER_ROW_ADDR = 0x5E62
 FINAL_HOLD_ADDR = 0x5EB4
 STARTUP_BEEP_ADDR = 0x5F2A
 KERNEL_BASE = 0xE000
 KERNEL_SIZE = 8192
 HANDOFF = 0xE003
-FINAL_LOADER_AFTER = 0x0100
+FINAL_LOADER_AFTER = FINAL_HOLD_ADDR
 DUMMY_SHA256 = "0e59ef9290ffc4391b0ae999177cd9d7d9eafb6fcd86a45b13f9a4bd0b08c9ce"
 CHUNK_LENGTHS = (342,) * 8 + (341,) * 16
 
@@ -124,16 +124,13 @@ def inspect(data: bytes) -> dict:
             raise ValueError(f"BASIC address range {address:#06x}+{size} is out of bounds")
         return basic[offset:offset + size]
 
-    if basic_bytes(FINAL_ROW_DISPATCH_ADDR, 3) != bytes(
-        [0xC3, FINAL_HOLD_ADDR & 0xFF, FINAL_HOLD_ADDR >> 8]
-    ):
-        raise ValueError("24th-row tail dispatch is not JP final_hold")
     expected_hold = bytes(
-        [0xCD, STARTUP_BEEP_ADDR & 0xFF, STARTUP_BEEP_ADDR >> 8,
+        [0xCD, RENDER_ROW_ADDR & 0xFF, RENDER_ROW_ADDR >> 8,
+         0xCD, STARTUP_BEEP_ADDR & 0xFF, STARTUP_BEEP_ADDR >> 8,
          0xC3, HANDOFF & 0xFF, HANDOFF >> 8]
-    ) + bytes(8)
+    ) + bytes(5)
     if basic_bytes(FINAL_HOLD_ADDR, 14) != expected_hold:
-        raise ValueError("final_hold is not startup-beep then exact E003 handoff")
+        raise ValueError("final_hold is not final-row render, startup beep, then E003")
     if basic_bytes(STARTUP_BEEP_ADDR, 15) != bytes.fromhex(
         "dde511e00021ca01cdb503f3dde1c9"
     ):
@@ -174,7 +171,7 @@ def inspect(data: bytes) -> dict:
         if i == 23 and (load_addr, dest_addr, after) != (
             0x9000, 0xFEAB, FINAL_LOADER_AFTER
         ):
-            raise ValueError("final temporary-copy/destination/continuation tuple drifted")
+            raise ValueError("final temporary-copy/destination/finalizer tuple drifted")
         checks.append(check)
         destinations.append(logical_dest)
         offset += len(chunk)
