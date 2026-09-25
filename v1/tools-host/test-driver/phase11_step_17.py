@@ -20,6 +20,8 @@ import phase3_open_descriptions
 from driver_core import DriverError
 from fuse_harness import FAIL_PC, PASS_PC, run_sna
 
+SYSCALL_GATEWAY = 0xE000
+
 
 class P1117Error(DriverError):
     pass
