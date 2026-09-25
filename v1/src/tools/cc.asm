@@ -879,7 +879,10 @@ cc_lex_skip_plain:
     cp '/'
     ret nz
     call cc_lex_peek2
-    ret c
+    jr nc,cc_lex_skip_slash_pair
+    or a
+    ret
+cc_lex_skip_slash_pair:
     cp '/'
     jr z,cc_lex_start_line
     cp '*'
