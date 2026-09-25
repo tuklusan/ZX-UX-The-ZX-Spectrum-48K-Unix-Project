@@ -79,7 +79,7 @@ jobs:
           from pathlib import Path
           cert=Path("v1/dist/certification")
           for action in ("build","test"):
-              r=json.loads((cert/f"P11.14.{action}.json").read_text())
+              r=json.loads((cert/f"P11.15.{action}.json").read_text())
               assert r["schema"]==2 and r["step"]=="P11.15" and r["action"]==action
               assert r["status"]=="PASS" and r["worktree_clean"] is True
               assert r["prerequisites"]=={"P11.14":"PASS"}
