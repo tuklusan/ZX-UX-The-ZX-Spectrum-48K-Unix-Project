@@ -4096,7 +4096,7 @@ cc_lit_escape:
     cp 'x'
     jr z,cc_lit_escape_hex
     cp '1'
-    jr c,cc_lit_format
+    jp c,cc_lit_format
     cp '8'
     jp c,cc_lit_notsup
     jp cc_lit_format
