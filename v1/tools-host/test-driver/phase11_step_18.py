@@ -355,10 +355,11 @@ p1118_end:
     require(not result.timed_out and result.exit_code==0,
             f"P11.18 assemble: {result.stderr or result.stdout}")
     main=(build/"p1118-main.bin").read_bytes()
-    require(0<len(main)<=0x3F00,"P11.18 fixture exceeds upper-RAM budget")
+    require(0<len(main)<=0x2000,"P11.18 fixture exceeds C000-DFFF user range")
     names=("p1118_boundaries","p1118_truncate","p1118_overflow","p1118_runtime",
            "p1118_castmap","p1118_invalid_record")
-    syms=phase3_open_descriptions._symbols(build/"p1118-fp-casts.sym",names)
+    symbol_names=("p1118_gateway",)+names
+    syms=phase3_open_descriptions._symbols(build/"p1118-fp-casts.sym",symbol_names)
 
     assertions=[
       {"name":"itof1-ftoi1-layout-exact","passed":True},
@@ -371,8 +372,10 @@ p1118_end:
     ]
     commands=[result]
     if action=="test":
+        gateway=phase1._jp(syms["p1118_gateway"])
         def patch(ram):
             ram[0xC000-0x4000:0xC000-0x4000+len(main)]=main
+            ram[0xE000-0x4000:0xE000-0x4000+len(gateway)]=gateway
         for name in names:
             code=(b"\xF3"+phase1._ld_sp(0xBFC0)+phase1._call(syms[name])
                   +phase1._jp_c(FAIL_PC)+phase1._jp(PASS_PC))
