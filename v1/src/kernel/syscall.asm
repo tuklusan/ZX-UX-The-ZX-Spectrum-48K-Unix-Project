@@ -1385,3 +1385,105 @@ zx48_p715_udg_invalid:
     scf
     ret
     ENDM
+
+; P11.17 exact staged SYS_FP_EXEC FPOP1 ABI.
+    MACRO EMIT_P1117_FP_EXEC_SYSCALL_ROUTINES
+p1117_fp_req_ptr:        dw 0
+p1117_fp_req_op:         db 0
+p1117_fp_req_lhs:        dw 0
+p1117_fp_req_rhs:        dw 0
+p1117_fp_req_out:        dw 0
+
+zx48_p1117_sys_fp_exec:
+    ld hl,(syscall_arg_hl)
+    ld (p1117_fp_req_ptr),hl
+    ld bc,FPOP1_SIZE
+    call zx48_user_range_validate
+    ret c
+
+    ld hl,(p1117_fp_req_ptr)
+    ld a,(hl)
+    ld (p1117_fp_req_op),a
+    or a
+    jp z,p1117_fp_sys_invalid
+    cp FPOP_OP_SQR+1
+    jp nc,p1117_fp_sys_invalid
+
+    inc hl
+    ld a,(hl)
+    or a
+    jp nz,p1117_fp_sys_invalid
+
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (p1117_fp_req_lhs),de
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (p1117_fp_req_rhs),de
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (p1117_fp_req_out),de
+
+    ld hl,(p1117_fp_req_lhs)
+    ld a,h
+    or l
+    jp z,p1117_fp_sys_invalid
+
+    ld hl,(p1117_fp_req_out)
+    ld a,h
+    or l
+    jp z,p1117_fp_sys_invalid
+
+    ld a,(p1117_fp_req_op)
+    cp FPOP_OP_ABS
+    jp nc,p1117_fp_sys_unary
+    ld hl,(p1117_fp_req_rhs)
+    ld a,h
+    or l
+    jp z,p1117_fp_sys_invalid
+    jp p1117_fp_sys_validate_ranges
+
+p1117_fp_sys_unary:
+    ld hl,(p1117_fp_req_rhs)
+    ld a,h
+    or l
+    jp nz,p1117_fp_sys_invalid
+
+p1117_fp_sys_validate_ranges:
+    ld hl,(p1117_fp_req_lhs)
+    ld bc,5
+    call zx48_user_range_validate
+    ret c
+
+    ld a,(p1117_fp_req_op)
+    cp FPOP_OP_ABS
+    jp nc,p1117_fp_sys_validate_out
+    ld hl,(p1117_fp_req_rhs)
+    ld bc,5
+    call zx48_user_range_validate
+    ret c
+
+p1117_fp_sys_validate_out:
+    ld hl,(p1117_fp_req_out)
+    ld bc,5
+    call zx48_user_range_validate
+    ret c
+
+    ld a,(p1117_fp_req_op)
+    ld hl,(p1117_fp_req_lhs)
+    ld de,(p1117_fp_req_rhs)
+    ld bc,(p1117_fp_req_out)
+    jp zx48_p1117_rom_fp_exec
+
+p1117_fp_sys_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+    ENDM
+

@@ -43,6 +43,7 @@ ROM_POWER                 EQU $3851
 ROM_ERR_SP                EQU $5C3D
 ROM_STKBOT                EQU $5C63
 ROM_STKEND                EQU $5C65
+ROM_BREG                  EQU $5C67
 ROM_MEM                   EQU $5C68
 ROM_MEMBOT                EQU $5C92
 ROM_BEEP_STACK            EQU $5D00
@@ -311,6 +312,180 @@ rom_calc_saved_mem: dw 0
 rom_calc_saved_chadd: dw 0
 rom_calc_saved_flags: db 0
 rom_calc_saved_errnr: db 0
+    ENDM
+
+
+; P11.17 isolated SYS_FP_EXEC calculator engine. The public syscall layer owns
+; FPOP1 validation; this routine owns calculator serialization, protected ROM
+; state, controlled operand copies, error recovery, and exact result copying.
+    MACRO EMIT_P1117_ROM_FP_EXEC_ROUTINES
+P1117_ROM_ADD            EQU $0F
+P1117_ROM_SUB            EQU $03
+P1117_ROM_MUL            EQU $04
+P1117_ROM_DIV            EQU $05
+P1117_ROM_POW            EQU $06
+P1117_ROM_ABS            EQU $2A
+P1117_ROM_SGN            EQU $29
+P1117_ROM_INT            EQU $27
+P1117_ROM_EXP            EQU $26
+P1117_ROM_LN             EQU $25
+P1117_ROM_SIN            EQU $1F
+P1117_ROM_COS            EQU $20
+P1117_ROM_TAN            EQU $21
+P1117_ROM_ASN            EQU $22
+P1117_ROM_ACS            EQU $23
+P1117_ROM_ATN            EQU $24
+P1117_ROM_SQR            EQU $28
+
+p1117_fp_op:             db 0
+p1117_fp_lhs_ptr:        dw 0
+p1117_fp_rhs_ptr:        dw 0
+p1117_fp_out_ptr:        dw 0
+p1117_fp_result:         defs 5,0
+p1117_fp_saved_sp:       dw 0
+p1117_fp_saved_err_sp:   dw 0
+p1117_fp_saved_stkbot:   dw 0
+p1117_fp_saved_stkend:   dw 0
+p1117_fp_saved_mem:      dw 0
+p1117_fp_saved_chadd:    dw 0
+p1117_fp_saved_flags:    db 0
+p1117_fp_saved_errnr:    db 0
+p1117_fp_saved_breg:     db 0
+
+p1117_fp_rom_table:
+    db P1117_ROM_ADD,P1117_ROM_SUB,P1117_ROM_MUL,P1117_ROM_DIV
+    db P1117_ROM_POW,P1117_ROM_ABS,P1117_ROM_SGN,P1117_ROM_INT
+    db P1117_ROM_EXP,P1117_ROM_LN,P1117_ROM_SIN,P1117_ROM_COS
+    db P1117_ROM_TAN,P1117_ROM_ASN,P1117_ROM_ACS,P1117_ROM_ATN
+    db P1117_ROM_SQR
+
+; A=FPOP1 op 1..17, HL=lhs five-byte pointer, DE=rhs pointer/0,
+; BC=caller-owned five-byte output. Inputs have already been range-validated.
+zx48_p1117_rom_fp_exec:
+    ld (p1117_fp_op),a
+    ld (p1117_fp_lhs_ptr),hl
+    ld (p1117_fp_rhs_ptr),de
+    ld (p1117_fp_out_ptr),bc
+    ld a,(altreg_busy)
+    or a
+    jp nz,p1117_fp_rom_busy
+
+    ld hl,0
+    add hl,sp
+    ld (p1117_fp_saved_sp),hl
+    ld hl,(ROM_ERR_SP)
+    ld (p1117_fp_saved_err_sp),hl
+    ld hl,(ROM_STKBOT)
+    ld (p1117_fp_saved_stkbot),hl
+    ld hl,(ROM_STKEND)
+    ld (p1117_fp_saved_stkend),hl
+    ld hl,(ROM_MEM)
+    ld (p1117_fp_saved_mem),hl
+    ld hl,(ROM_CH_ADD)
+    ld (p1117_fp_saved_chadd),hl
+    ld a,(ROM_FLAGS)
+    ld (p1117_fp_saved_flags),a
+    ld a,(ROM_IY_ANCHOR)
+    ld (p1117_fp_saved_errnr),a
+    ld a,(ROM_BREG)
+    ld (p1117_fp_saved_breg),a
+
+    ld a,1
+    ld (altreg_busy),a
+    ld hl,ROM_CALC_STACK
+    ld (ROM_STKBOT),hl
+    ld (ROM_STKEND),hl
+    ld hl,ROM_MEMBOT
+    ld (ROM_MEM),hl
+    ld a,$FF
+    ld (ROM_IY_ANCHOR),a
+
+    ld hl,(p1117_fp_lhs_ptr)
+    ld de,ROM_CALC_STACK
+    ld bc,5
+    ldir
+    ld hl,ROM_CALC_STACK+5
+    ld (ROM_STKEND),hl
+
+    ld a,(p1117_fp_op)
+    cp FPOP_OP_ABS
+    jp nc,p1117_fp_rom_operands_ready
+    ld hl,(p1117_fp_rhs_ptr)
+    ld de,ROM_CALC_STACK+5
+    ld bc,5
+    ldir
+    ld hl,ROM_CALC_STACK+10
+    ld (ROM_STKEND),hl
+
+p1117_fp_rom_operands_ready:
+    ld a,(p1117_fp_op)
+    dec a
+    ld e,a
+    ld d,0
+    ld hl,p1117_fp_rom_table
+    add hl,de
+    ld b,(hl)
+
+    ld hl,p1117_fp_rom_error
+    push hl
+    ld hl,0
+    add hl,sp
+    ld (ROM_ERR_SP),hl
+    ld iy,ROM_IY_ANCHOR
+    call ROM_CALCULATE
+    db $3B,$38
+    pop hl
+
+    ld hl,(ROM_STKEND)
+    ld bc,5
+    or a
+    sbc hl,bc
+    ld de,p1117_fp_result
+    ldir
+    call p1117_fp_rom_cleanup
+
+    ld hl,p1117_fp_result
+    ld de,(p1117_fp_out_ptr)
+    ld bc,5
+    ldir
+    ld hl,0
+    xor a
+    ret
+
+p1117_fp_rom_error:
+    ld hl,(p1117_fp_saved_sp)
+    ld sp,hl
+    call p1117_fp_rom_cleanup
+    ld a,E_INVAL
+    scf
+    ret
+
+p1117_fp_rom_cleanup:
+    ld hl,(p1117_fp_saved_err_sp)
+    ld (ROM_ERR_SP),hl
+    ld hl,(p1117_fp_saved_stkbot)
+    ld (ROM_STKBOT),hl
+    ld hl,(p1117_fp_saved_stkend)
+    ld (ROM_STKEND),hl
+    ld hl,(p1117_fp_saved_mem)
+    ld (ROM_MEM),hl
+    ld hl,(p1117_fp_saved_chadd)
+    ld (ROM_CH_ADD),hl
+    ld a,(p1117_fp_saved_flags)
+    ld (ROM_FLAGS),a
+    ld a,(p1117_fp_saved_breg)
+    ld (ROM_BREG),a
+    ld a,(p1117_fp_saved_errnr)
+    ld (ROM_IY_ANCHOR),a
+    xor a
+    ld (altreg_busy),a
+    ld iy,ROM_IY_ANCHOR
+    ret
+
+p1117_fp_rom_busy:
+    ld a,E_BUSY
+    scf
+    ret
     ENDM
 
     MACRO EMIT_P709_ROM_BEEP_ROUTINES

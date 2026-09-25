@@ -240,6 +240,32 @@ SYS_INT_TO_FP            EQU $6C
 SYS_FP_TO_INT            EQU $6D
 SYS_FP_CMP               EQU $6E
 
+FPOP1_OP_O               EQU $00
+FPOP1_RESERVED_O         EQU $01
+FPOP1_LHS_O              EQU $02
+FPOP1_RHS_O              EQU $04
+FPOP1_OUT_O              EQU $06
+FPOP1_SIZE               EQU $08
+
+FPOP_OP_INVALID          EQU $00
+FPOP_OP_ADD              EQU $01
+FPOP_OP_SUB              EQU $02
+FPOP_OP_MUL              EQU $03
+FPOP_OP_DIV              EQU $04
+FPOP_OP_POW              EQU $05
+FPOP_OP_ABS              EQU $06
+FPOP_OP_SGN              EQU $07
+FPOP_OP_INT              EQU $08
+FPOP_OP_EXP              EQU $09
+FPOP_OP_LN               EQU $0A
+FPOP_OP_SIN              EQU $0B
+FPOP_OP_COS              EQU $0C
+FPOP_OP_TAN              EQU $0D
+FPOP_OP_ASN              EQU $0E
+FPOP_OP_ACS              EQU $0F
+FPOP_OP_ATN              EQU $10
+FPOP_OP_SQR              EQU $11
+
 MEX1_HEADER_SIZE         EQU $0018
 OBJ1_HEADER_SIZE         EQU $0018
 M48O_HEADER_SIZE         EQU $0020
