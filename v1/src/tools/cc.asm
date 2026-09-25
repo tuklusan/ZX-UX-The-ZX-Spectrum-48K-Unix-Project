@@ -774,3 +774,231 @@ cc_pp_format:
     scf
     ret
     ENDM
+
+; P11.04 C48 lexer.
+    MACRO EMIT_P11_CC_LEXER
+CC_TOK_EOF      EQU 0
+CC_TOK_IDENT    EQU 1
+CC_TOK_INT      EQU 2
+CC_TOK_FLOAT    EQU 3
+CC_TOK_CHAR     EQU 4
+CC_TOK_STRING   EQU 5
+CC_TOK_OPERATOR EQU 6
+CC_TOK_PUNCT    EQU 7
+CC_TOK_KEYWORD  EQU 8
+CC_TOK_MORE     EQU 9
+
+cc_lex_ptr:         dw 0
+cc_lex_remaining:   dw 0
+cc_lex_consumed:    dw 0
+cc_lex_token_start: dw 0
+cc_lex_token_len:   db 0
+cc_lex_comment:     db 0
+cc_lex_quote:       db 0
+cc_lex_units:       db 0
+cc_lex_kw_class:    db 0
+cc_lex_kw_len:      db 0
+cc_lex_octal_bad:   db 0
+
+cc_lex_reset:
+    xor a
+    ld (cc_lex_comment),a
+    ret
+
+; HL=buffer, BC=length. Success A=kind, DE=bytes consumed.
+cc_lex_token:
+    ld (cc_lex_ptr),hl
+    ld (cc_lex_remaining),bc
+    ld hl,0
+    ld (cc_lex_consumed),hl
+    xor a
+    ld (cc_lex_token_len),a
+    call cc_lex_skip
+    ret c
+    ld hl,(cc_lex_remaining)
+    ld a,h
+    or l
+    jr nz,cc_lex_dispatch
+    ld a,CC_TOK_MORE
+    jp cc_lex_success
+cc_lex_dispatch:
+    ld hl,(cc_lex_ptr)
+    ld (cc_lex_token_start),hl
+    call cc_lex_peek
+    ret c
+    call cc_lex_is_alpha
+    jp nc,cc_lex_identifier
+    cp '_'
+    jp z,cc_lex_identifier
+    call cc_lex_is_digit
+    jp nc,cc_lex_number
+    cp '.'
+    jr nz,cc_lex_literal_dispatch
+    call cc_lex_peek2
+    jp c,cc_lex_notsup
+    call cc_lex_is_digit
+    jp nc,cc_lex_number
+    jp cc_lex_notsup
+cc_lex_literal_dispatch:
+    cp 39
+    jp z,cc_lex_literal
+    cp 34
+    jp z,cc_lex_literal
+    jp cc_lex_operator
+
+cc_lex_finish:
+    ld a,(cc_lex_comment)
+    cp 1
+    jp z,cc_lex_format
+    xor a
+    ld (cc_lex_comment),a
+    ld a,CC_TOK_EOF
+    or a
+    ret
+
+; comment state: 0 none, 1 block, 2 line
+cc_lex_skip:
+    ld a,(cc_lex_comment)
+    cp 1
+    jr z,cc_lex_skip_block
+    cp 2
+    jr z,cc_lex_skip_line
+cc_lex_skip_plain:
+    call cc_lex_peek
+    ret c
+    cp ' '
+    jr z,cc_lex_skip_take
+    cp 9
+    jr z,cc_lex_skip_take
+    cp 10
+    jr z,cc_lex_skip_take
+    cp 32
+    jp c,cc_lex_format
+    cp 127
+    jp nc,cc_lex_format
+    cp '/'
+    ret nz
+    call cc_lex_peek2
+    ret c
+    cp '/'
+    jr z,cc_lex_start_line
+    cp '*'
+    jr z,cc_lex_start_block
+    or a
+    ret
+cc_lex_skip_take:
+    call cc_lex_take
+    jr cc_lex_skip_plain
+cc_lex_start_line:
+    call cc_lex_take
+    call cc_lex_take
+    ld a,2
+    ld (cc_lex_comment),a
+cc_lex_skip_line:
+    call cc_lex_peek
+    ret c
+    call cc_lex_take
+    cp 10
+    jr nz,cc_lex_skip_line
+    xor a
+    ld (cc_lex_comment),a
+    jr cc_lex_skip_plain
+cc_lex_start_block:
+    call cc_lex_take
+    call cc_lex_take
+    ld a,1
+    ld (cc_lex_comment),a
+cc_lex_skip_block:
+    call cc_lex_peek
+    ret c
+    cp '*'
+    jr nz,cc_lex_block_take
+    call cc_lex_peek2
+    jr c,cc_lex_block_take
+    cp '/'
+    jr nz,cc_lex_block_take
+    call cc_lex_take
+    call cc_lex_take
+    xor a
+    ld (cc_lex_comment),a
+    jr cc_lex_skip_plain
+cc_lex_block_take:
+    call cc_lex_take
+    jr cc_lex_skip_block
+
+cc_lex_identifier:
+cc_lex_ident_loop:
+    call cc_lex_peek
+    jr c,cc_lex_ident_done
+    call cc_lex_is_ident
+    jr c,cc_lex_ident_done
+    ld a,(cc_lex_token_len)
+    cp CC_IDENT_MAX
+    jp nc,cc_lex_toolong
+    call cc_lex_toktake
+    jr cc_lex_ident_loop
+cc_lex_ident_done:
+    call cc_lex_keyword
+    ret c
+    jp cc_lex_success
+
+; row = class(1 supported,2 unsupported), length, text
+cc_lex_keyword:
+    ld de,cc_lex_keywords
+cc_lex_kw_loop:
+    ld a,(de)
+    or a
+    jr z,cc_lex_kw_ident
+    ld (cc_lex_kw_class),a
+    inc de
+    ld a,(de)
+    ld (cc_lex_kw_len),a
+    inc de
+    ld c,a
+    ld a,(cc_lex_token_len)
+    cp c
+    jr nz,cc_lex_kw_skip
+    push de
+    ld hl,(cc_lex_token_start)
+    ld b,c
+cc_lex_kw_cmp:
+    ld a,(de)
+    cp (hl)
+    jr nz,cc_lex_kw_miss
+    inc de
+    inc hl
+    djnz cc_lex_kw_cmp
+    pop de
+    ld a,(cc_lex_kw_class)
+    cp 2
+    jp z,cc_lex_notsup
+    ld a,CC_TOK_KEYWORD
+    or a
+    ret
+cc_lex_kw_miss:
+    pop de
+cc_lex_kw_skip:
+    ld a,(cc_lex_kw_len)
+    ld l,a
+    ld h,0
+    add hl,de
+    ex de,hl
+    jr cc_lex_kw_loop
+cc_lex_kw_ident:
+    ld a,CC_TOK_IDENT
+    or a
+    ret
+
+cc_lex_keywords:
+    db 1,5,"break",1,4,"char",1,8,"continue",1,2,"do",1,4,"else"
+    db 1,6,"extern",1,5,"float",1,3,"for",1,2,"if",1,3,"int"
+    db 1,6,"return",1,5,"short",1,6,"sizeof",1,6,"static"
+    db 1,8,"unsigned",1,4,"void",1,5,"while"
+    db 2,4,"auto",2,4,"case",2,5,"const",2,7,"default",2,6,"double"
+    db 2,4,"enum",2,4,"goto",2,4,"long",2,8,"register",2,6,"signed"
+    db 2,6,"struct",2,6,"switch",2,7,"typedef",2,5,"union",2,8,"volatile"
+    db 2,6,"inline",2,8,"restrict",2,8,"_Alignas",2,8,"_Alignof"
+    db 2,7,"_Atomic",2,5,"_Bool",2,8,"_Complex",2,8,"_Generic"
+    db 2,10,"_Imaginary",2,9,"_Noreturn",2,14,"_Static_assert",2,13,"_Thread_local"
+    db 0
+
