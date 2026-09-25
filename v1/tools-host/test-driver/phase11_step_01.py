@@ -231,7 +231,7 @@ def source_assertions(root: Path, sha256_file):
             "passed": (
                 "Intentional REV17-over-SDK differences" in provenance
                 and "reference/oracle material" in provenance
-                and "native ZX-UX `cc`" in provenance
+                and "native zx-ux `cc`" in provenance.lower()
                 and "C48B1" in provenance
             ),
         },

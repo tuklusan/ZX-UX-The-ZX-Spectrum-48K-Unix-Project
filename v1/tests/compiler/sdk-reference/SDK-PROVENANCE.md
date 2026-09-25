@@ -89,8 +89,8 @@ P11.01 corrected identity:
 The DOCX was reviewed end-to-end against REV17 Section 25, REV08 P11.01, the
 pinned SDK implementation, `doc/CONFORMANCE.md`, and
 `doc/HOST-DIVERGENCES.md`. Its C48 language semantics were consistent with the
-current authority, but its normative prose still named obsolete REV11/REV02
-authorities. P11.01 corrected those references to REV17/REV08 throughout the
+current authority, but its normative prose contained stale REV11/REV02 authority
+references. P11.01 corrected those references to REV17/REV08 throughout the
 Office XML package. No language feature was added, removed, or relaxed by that
 correction.
 
