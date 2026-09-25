@@ -123,32 +123,35 @@ p1114_cmp:
     xor a
     ret
 
-p1114_known:
+p1114_rom_zero:
     ld hl,p1114_lit_0
     ld bc,p1114_lit_0_end-p1114_lit_0-1
     ld de,p1114_exp_0
-    call p1114_one
-    ret c
+    jp p1114_one
+
+p1114_rom_one:
     ld hl,p1114_lit_1
     ld bc,p1114_lit_1_end-p1114_lit_1-1
     ld de,p1114_exp_1
-    call p1114_one
-    ret c
+    jp p1114_one
+
+p1114_rom_half:
     ld hl,p1114_lit_half
     ld bc,p1114_lit_half_end-p1114_lit_half-1
     ld de,p1114_exp_half
-    call p1114_one
-    ret c
+    jp p1114_one
+
+p1114_rom_one_point_five:
     ld hl,p1114_lit_15
     ld bc,p1114_lit_15_end-p1114_lit_15-1
     ld de,p1114_exp_15
-    call p1114_one
-    ret c
+    jp p1114_one
+
+p1114_rom_65535:
     ld hl,p1114_lit_maxu
     ld bc,p1114_lit_maxu_end-p1114_lit_maxu-1
     ld de,p1114_exp_maxu
-    call p1114_one
-    ret
+    jp p1114_one
 
 p1114_copy_exact:
     ld hl,p1114_exp_15
@@ -233,7 +236,11 @@ p1114_gateway_end:
     gateway = (build / "p1114-gateway.bin").read_bytes()
     require(len(main) < 0x1000 and len(rom) < 0x1000 and len(gateway) < 0x0100,
             "P11.14 fixture segment budget exceeded")
-    names = ("p1114_known", "p1114_copy_exact", "p1114_width")
+    names = (
+        "p1114_rom_zero", "p1114_rom_one", "p1114_rom_half",
+        "p1114_rom_one_point_five", "p1114_rom_65535",
+        "p1114_copy_exact", "p1114_width",
+    )
     syms = phase3_open_descriptions._symbols(build / "p1114-float5.sym", names)
 
     assertions = [
