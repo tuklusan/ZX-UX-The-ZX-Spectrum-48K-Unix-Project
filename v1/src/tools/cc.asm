@@ -1002,3 +1002,263 @@ cc_lex_keywords:
     db 2,10,"_Imaginary",2,9,"_Noreturn",2,14,"_Static_assert",2,13,"_Thread_local"
     db 0
 
+
+; Integers: decimal/octal/hex with optional u/U. Floats: decimal point/exponent.
+cc_lex_number:
+    xor a
+    ld (cc_lex_octal_bad),a
+    call cc_lex_peek
+    cp '.'
+    jp z,cc_lex_float_dotlead
+    cp '0'
+    jr nz,cc_lex_dec_loop
+    call cc_lex_peek2
+    jr c,cc_lex_dec_loop
+    cp 'x'
+    jr z,cc_lex_hex
+    cp 'X'
+    jr z,cc_lex_hex
+cc_lex_dec_loop:
+    call cc_lex_peek
+    jr c,cc_lex_int_done
+    call cc_lex_is_digit
+    jr c,cc_lex_dec_end
+    ld d,a
+    ld hl,(cc_lex_token_start)
+    ld a,(hl)
+    cp '0'
+    jr nz,cc_lex_dec_consume
+    ld a,d
+    cp '8'
+    jr c,cc_lex_dec_consume
+    ld a,1
+    ld (cc_lex_octal_bad),a
+cc_lex_dec_consume:
+    call cc_lex_toktake
+    jr cc_lex_dec_loop
+cc_lex_dec_end:
+    cp '.'
+    jr z,cc_lex_float_dot
+    cp 'e'
+    jr z,cc_lex_float_exp
+    cp 'E'
+    jr z,cc_lex_float_exp
+cc_lex_int_done:
+    ld a,(cc_lex_octal_bad)
+    or a
+    jp nz,cc_lex_format
+    call cc_lex_peek
+    jr c,cc_lex_int_ok
+    cp 'u'
+    jr z,cc_lex_int_suffix
+    cp 'U'
+    jr z,cc_lex_int_suffix
+    call cc_lex_is_ident
+    jp nc,cc_lex_format
+cc_lex_int_ok:
+    ld a,CC_TOK_INT
+    jp cc_lex_success
+cc_lex_int_suffix:
+    call cc_lex_toktake
+    call cc_lex_peek
+    jr c,cc_lex_int_ok
+    call cc_lex_is_ident
+    jp nc,cc_lex_format
+    jr cc_lex_int_ok
+
+cc_lex_hex:
+    call cc_lex_toktake
+    call cc_lex_toktake
+    call cc_lex_peek
+    jp c,cc_lex_format
+    call cc_lex_is_hex
+    jp c,cc_lex_format
+cc_lex_hex_loop:
+    call cc_lex_peek
+    jr c,cc_lex_int_ok
+    call cc_lex_is_hex
+    jr c,cc_lex_hex_end
+    call cc_lex_toktake
+    jr cc_lex_hex_loop
+cc_lex_hex_end:
+    cp 'u'
+    jr z,cc_lex_int_suffix
+    cp 'U'
+    jr z,cc_lex_int_suffix
+    call cc_lex_is_ident
+    jp nc,cc_lex_format
+    jr cc_lex_int_ok
+
+cc_lex_float_dotlead:
+    call cc_lex_toktake
+    call cc_lex_peek
+    jp c,cc_lex_format
+    call cc_lex_is_digit
+    jp c,cc_lex_format
+cc_lex_float_frac:
+    call cc_lex_peek
+    jr c,cc_lex_float_done
+    call cc_lex_is_digit
+    jr c,cc_lex_float_frac_end
+    call cc_lex_toktake
+    jr cc_lex_float_frac
+cc_lex_float_frac_end:
+    cp 'e'
+    jr z,cc_lex_float_exp
+    cp 'E'
+    jr z,cc_lex_float_exp
+    jr cc_lex_float_done
+cc_lex_float_dot:
+    call cc_lex_toktake
+cc_lex_float_frac2:
+    call cc_lex_peek
+    jr c,cc_lex_float_done
+    call cc_lex_is_digit
+    jr c,cc_lex_float_frac2_end
+    call cc_lex_toktake
+    jr cc_lex_float_frac2
+cc_lex_float_frac2_end:
+    cp 'e'
+    jr z,cc_lex_float_exp
+    cp 'E'
+    jr z,cc_lex_float_exp
+    jr cc_lex_float_done
+cc_lex_float_exp:
+    call cc_lex_toktake
+    call cc_lex_peek
+    jp c,cc_lex_format
+    cp '+'
+    jr z,cc_lex_float_sign
+    cp '-'
+    jr nz,cc_lex_float_exp_digit
+cc_lex_float_sign:
+    call cc_lex_toktake
+    call cc_lex_peek
+    jp c,cc_lex_format
+cc_lex_float_exp_digit:
+    call cc_lex_is_digit
+    jp c,cc_lex_format
+cc_lex_float_exp_loop:
+    call cc_lex_peek
+    jr c,cc_lex_float_done
+    call cc_lex_is_digit
+    jr c,cc_lex_float_done
+    call cc_lex_toktake
+    jr cc_lex_float_exp_loop
+cc_lex_float_done:
+    call cc_lex_peek
+    jr c,cc_lex_float_ok
+    cp 'f'
+    jr z,cc_lex_float_suffix
+    cp 'F'
+    jr z,cc_lex_float_suffix
+    call cc_lex_is_ident
+    jp nc,cc_lex_format
+cc_lex_float_ok:
+    ld a,CC_TOK_FLOAT
+    jp cc_lex_success
+cc_lex_float_suffix:
+    call cc_lex_toktake
+    call cc_lex_peek
+    jr c,cc_lex_float_ok
+    call cc_lex_is_ident
+    jp nc,cc_lex_format
+    jr cc_lex_float_ok
+
+cc_lex_literal:
+    ld (cc_lex_quote),a
+    xor a
+    ld (cc_lex_units),a
+    call cc_lex_toktake
+cc_lex_lit_loop:
+    call cc_lex_peek
+    jp c,cc_lex_format
+    ld d,a
+    ld a,(cc_lex_quote)
+    cp d
+    jr z,cc_lex_lit_close
+    ld a,d
+    cp 10
+    jp z,cc_lex_format
+    cp 32
+    jp c,cc_lex_format
+    cp 127
+    jp nc,cc_lex_format
+    cp 92
+    jr z,cc_lex_escape
+    call cc_lex_toktake
+    jr cc_lex_lit_unit
+cc_lex_escape:
+    call cc_lex_toktake
+    call cc_lex_peek
+    jp c,cc_lex_format
+    cp '1'
+    jr c,cc_lex_escape_simple
+    cp '8'
+    jp c,cc_lex_notsup
+cc_lex_escape_simple:
+    cp 'x'
+    jr z,cc_lex_escape_hex
+    cp 92
+    jr z,cc_lex_escape_take
+    cp 39
+    jr z,cc_lex_escape_take
+    cp 34
+    jr z,cc_lex_escape_take
+    cp '0'
+    jr z,cc_lex_escape_take
+    cp 'a'
+    jr z,cc_lex_escape_take
+    cp 'b'
+    jr z,cc_lex_escape_take
+    cp 't'
+    jr z,cc_lex_escape_take
+    cp 'n'
+    jr z,cc_lex_escape_take
+    cp 'v'
+    jr z,cc_lex_escape_take
+    cp 'f'
+    jr z,cc_lex_escape_take
+    cp 'r'
+    jp nz,cc_lex_format
+cc_lex_escape_take:
+    call cc_lex_toktake
+    jr cc_lex_lit_unit
+cc_lex_escape_hex:
+    call cc_lex_toktake
+    call cc_lex_peek
+    jp c,cc_lex_format
+    call cc_lex_is_hex
+    jp c,cc_lex_format
+    call cc_lex_toktake
+    call cc_lex_peek
+    jp c,cc_lex_format
+    call cc_lex_is_hex
+    jp c,cc_lex_format
+    call cc_lex_toktake
+cc_lex_lit_unit:
+    ld a,(cc_lex_units)
+    inc a
+    ld (cc_lex_units),a
+    ld d,a
+    ld a,(cc_lex_quote)
+    cp 39
+    jr nz,cc_lex_lit_loop
+    ld a,d
+    cp 2
+    jp nc,cc_lex_format
+    jr cc_lex_lit_loop
+cc_lex_lit_close:
+    call cc_lex_toktake
+    ld a,(cc_lex_quote)
+    cp 39
+    jr nz,cc_lex_string_ok
+    ld a,(cc_lex_units)
+    cp 1
+    jp nz,cc_lex_format
+    ld a,CC_TOK_CHAR
+    jp cc_lex_success
+cc_lex_string_ok:
+    ld a,CC_TOK_STRING
+    jp cc_lex_success
+
