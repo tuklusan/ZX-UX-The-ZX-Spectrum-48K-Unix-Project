@@ -61,7 +61,6 @@ def dispatch(root, action, step, *, sha256_file, run_command, require_project_to
     build.mkdir(parents=True, exist_ok=True)
     fixture = build / "p1108-integers.asm"
     fixture.write_text(r'''    DEVICE ZXSPECTRUM48
-C48_INT_TEST_MODE EQU 1
     INCLUDE "../include/zx48ux.inc"
     INCLUDE "../src/tools/cc.asm"
     INCLUDE "../src/libc48/int_runtime.asm"
@@ -357,6 +356,13 @@ p1108_division:
     ld a,(c48_int_runtime_exit_status)
     cp 1
     jp nz,p1108_fail
+    ld a,($E020)
+    cp SYS_EXIT
+    jp nz,p1108_fail
+    ld hl,($E021)
+    ld de,1
+    call p1108_expect_hl
+    ret c
     xor a
     ret
 
@@ -491,6 +497,9 @@ fixture_end:
     if action == "test":
         def patch(ram):
             ram[0xC000 - 0x4000:0xC000 - 0x4000 + len(main)] = main
+            # Isolated native oracle: capture SYS_EXIT A and HL, then return.
+            gateway = bytes((0x32, 0x20, 0xE0, 0x22, 0x21, 0xE0, 0xC9))
+            ram[0xE000 - 0x4000:0xE000 - 0x4000 + len(gateway)] = gateway
 
         for name in (
             "p1108_compiler", "p1108_wrap", "p1108_shifts", "p1108_division",
@@ -513,7 +522,7 @@ fixture_end:
             {"name": "fuse-signed-division-truncates-toward-zero", "passed": True},
             {"name": "fuse-signed-remainder-has-dividend-sign", "passed": True},
             {"name": "fuse-int-min-div-minus-one-wrap-case", "passed": True},
-            {"name": "fuse-divzero-status-one-path", "passed": True},
+            {"name": "fuse-divzero-status-one-sys-exit-gateway-path", "passed": True},
             {"name": "fuse-signed-unsigned-comparisons", "passed": True},
             {"name": "negative-unmasked-shift-and-signedness-oracles-detect-wrong-semantics", "passed": True},
         ]

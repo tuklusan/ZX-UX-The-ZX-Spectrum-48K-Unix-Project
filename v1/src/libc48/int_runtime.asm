@@ -271,20 +271,16 @@ c48_cmp_u8:
     jr c48_cmp_greater
 
 ; C48 divide/remainder by zero is a process runtime error with status 1.
-; Qualification defines C48_INT_TEST_MODE only to observe the pre-exit status
-; without requiring a complete process scheduler inside the isolated helper SNA.
+; SYS_EXIT is mandatory. The isolated qualification SNA replaces only the
+; syscall gateway with an observing stub; production execution never bypasses it.
 c48_int_divzero:
     ld a,1
     ld (c48_int_runtime_exit_status),a
-    IFDEF C48_INT_TEST_MODE
-    scf
-    ret
-    ELSE
     ld hl,1
     ld a,SYS_EXIT
     call SYSCALL_GATEWAY
+    ; SYS_EXIT is not expected to return. Fail closed if a broken gateway does.
     ld a,E_INVAL
     scf
     ret
-    ENDIF
     ENDM
