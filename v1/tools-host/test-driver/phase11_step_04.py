@@ -277,8 +277,7 @@ fixture_end:
     main = (build / "p1104-main.bin").read_bytes()
     require(len(main) <= 0x3000, "P11.04 fixture exceeds compact SNA budget")
     syms = phase3_open_descriptions._symbols(
-        build / "p1104-lexer.sym",
-        ("p1104_all", "p1104_golden", "p1104_case_test", "p1104_negatives"),
+        build / "p1104-lexer.sym", ("p1104_all",)
     )
 
     assertions = [
@@ -293,15 +292,11 @@ fixture_end:
         def patch(ram):
             ram[0xC000 - 0x4000:0xC000 - 0x4000 + len(main)] = main
 
-        for name in ("p1104_golden", "p1104_case_test", "p1104_negatives"):
-            code = (
-                b"\xF3" + phase1._ld_sp(0xBFC0) + phase1._call(syms[name])
-                + phase1._jp_c(FAIL_PC) + phase1._jp(PASS_PC)
-            )
-            try:
-                commands.append(run_sna(root, code, patch=patch))
-            except DriverError as exc:
-                raise P1104Error(f"{name}: {exc}") from exc
+        code = (
+            b"\xF3" + phase1._ld_sp(0xBFC0) + phase1._call(syms["p1104_all"])
+            + phase1._jp_c(FAIL_PC) + phase1._jp(PASS_PC)
+        )
+        commands.append(run_sna(root, code, patch=patch))
         assertions += [
             {"name": "fuse-golden-lexical-corpus", "passed": True},
             {"name": "fuse-case-sensitive-Foo-foo", "passed": True},
