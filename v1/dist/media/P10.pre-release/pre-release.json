@@ -11,7 +11,7 @@
     "final_loader_after": "0x5EB4",
     "generalized_block_count": 48,
     "handoff": "0xE003",
-    "handoff_path": "final block -> render row 24 -> ~1 second hold -> startup beep -> 0xE003",
+    "handoff_path": "final block -> drain pending rows -> ~1 second hold -> startup beep -> 0xE003",
     "kernel_address": "0xE000",
     "kernel_end": "0xFFFF",
     "kernel_size": 8192,
@@ -23,18 +23,18 @@
     "standard_speed_block_count": 2,
     "zx48uxscr": false
   },
-  "candidate_source_commit": "22a4863e737f95f8f6ea33cb4b30ed2f911f8b7d",
+  "candidate_source_commit": "8d3a70a50d8241aa6db087509ea6c64f1c46d91c",
   "checkpoint_commit": "8360b0c5817738b01dc4b75bb64b12d77341adcd",
   "checkpoint_tag": "PHASE-10-COMPLETE",
   "fast_loader": {
-    "builder_sha256": "d3650fbd81227e9964492618344949499f955f36ed7af337185f0b71b095bd98",
-    "hook_sha256": "4cb5115044b3eb726cc8834ce4578e4532d24c960e32673d1e66e7f88ebd3417",
-    "inspector_sha256": "ec50df74fb44f92c799942ae277318bd3102b10edb6669c3a5dc4e3cc781c82d",
+    "builder_sha256": "addfd771a82f0e1eb15fa55b3691a1acd0e50344b58b9453de092627efa613fd",
+    "hook_sha256": "9c05b4d2e1c23f44a4e3d059a1313116a8f7c12380e4ba1f2ccf645cf5e0e475",
+    "inspector_sha256": "4722eb0fb42d438b163e30316f1b24d7d7d1f58c5e008ef83b4362fc33e6a32c",
     "pasmo_executable_sha256": "d510ff3942203c010b6b299c7ba138480a55f16297a3bd2f9ee9ed3fb3f76ded",
     "pasmo_path": "/usr/bin/pasmo",
     "pasmo_version": "0.5.3-7",
     "portable_zip_sha256": "4c83a681f718192db9ebb32f0c8bc565baf2e68eb85de480322a1102d32f00c7",
-    "runtime_acceptance_sha256": "75e8efac4f7a0d540b46faf74b485dab0679a876d24fafbfd29aa54ad8d250f3",
+    "runtime_acceptance_sha256": "a1409b9ea83ca2833ecd181b759ef7dd1f25ba2008d16c0c5f18a2b7c7b19074",
     "seed_sha256": "7ffe2f90b58e87a19a090ca0e0f1323605754af7d8809f3f051662f9faaec6f1",
     "text_lines_sha256": "610f0b6d8cadf7ed0c3935fc66b889aee2f89fbb5e278d580813686402c72f10",
     "upstream_commit": "99c948feb2893e369055879ddf82aa0105bfe541",
@@ -44,13 +44,13 @@
   "files": [
     {
       "path": "README.txt",
-      "sha256": "66d615961fac24f81eb98657a634b0f989e011731f07c23577fc368630086136",
-      "size": 725
+      "sha256": "f6d52c9f95376036266807527c1a28cfe7ea05f2715c26581d2fd2efbf52d89e",
+      "size": 819
     },
     {
       "path": "zx-ux-phase10-pre-release.tzx",
-      "sha256": "3211b3b450b90a053f04347769de50b268331d7eafbe4b4f790bfeeb47901d5f",
-      "size": 11977
+      "sha256": "fdb9dbf3ffb004163567ceda46831c4ee72ade7b1d308e22e45eeb4bd137a0ed",
+      "size": 11993
     }
   ],
   "historical_phase10": {
@@ -91,7 +91,7 @@
       "final_row_intact_at_handoff": "PASS",
       "final_row_rendered_before_beep": "PASS",
       "finalizer_completed_row_24": "PASS",
-      "finalizer_entered_with_row_24_ready_or_pending": "PASS",
+      "finalizer_entered_with_consistent_pending_rows": "PASS",
       "handoff_reached_once": "PASS",
       "handoff_state_complete": "PASS",
       "interblock_display_callback_count_valid": "PASS",
@@ -110,37 +110,92 @@
     "final_hold": {
       "line_index": 24,
       "lines_left": 0,
-      "text_ptr": 25257
+      "text_ptr": 25273
     },
     "final_render_done": {
       "line_index": 24,
       "lines_left": 0,
-      "text_ptr": 25257
+      "text_ptr": 25273
     },
     "handoff": {
       "address": 57347,
       "line_index": 24,
       "lines_left": 0,
-      "text_ptr": 25257
+      "text_ptr": 25273
     },
     "hook_count": 24,
     "pre_beep_pause": {
-      "beep_frame": 1781,
-      "frames": 61,
+      "beep_frame": 1931,
+      "frames": 62,
       "nominal_tstates": 3500009,
-      "render_done_frame": 1720,
+      "render_done_frame": 1869,
       "routine_address": 24377
     },
     "rom_beeper": {
       "de": 224,
       "hl": 458,
       "return_address": 24373,
-      "sp": 32732
+      "sp": 32730
+    }
+  },
+  "runtime_detect_loader_compatibility": {
+    "assertions": {
+      "final_row_attributes_correct_before_beep": "PASS",
+      "final_row_attributes_intact_at_handoff": "PASS",
+      "final_row_intact_at_handoff": "PASS",
+      "final_row_rendered_before_beep": "PASS",
+      "finalizer_completed_row_24": "PASS",
+      "finalizer_entered_with_consistent_pending_rows": "PASS",
+      "handoff_reached_once": "PASS",
+      "handoff_state_complete": "PASS",
+      "interblock_display_callback_count_valid": "PASS",
+      "interblock_display_callback_state_sequence": "PASS",
+      "no_timeout": "PASS",
+      "one_second_final_row_hold_before_beep": "PASS",
+      "ordered_final_path": "PASS",
+      "real_rom_basic_path_seen": "PASS",
+      "real_rom_ld_bytes_seen": "PASS",
+      "rom_beeper_parameters_exact": "PASS",
+      "rom_beeper_reached_once": "PASS",
+      "rom_beeper_returns_to_startup_beep": "PASS",
+      "startup_beep_reached_once": "PASS"
+    },
+    "expected_final_line": "starting ZX-UX...               ",
+    "final_hold": {
+      "line_index": 24,
+      "lines_left": 0,
+      "text_ptr": 25273
+    },
+    "final_render_done": {
+      "line_index": 24,
+      "lines_left": 0,
+      "text_ptr": 25273
+    },
+    "handoff": {
+      "address": 57347,
+      "line_index": 24,
+      "lines_left": 0,
+      "text_ptr": 25273
+    },
+    "hook_count": 24,
+    "pre_beep_pause": {
+      "beep_frame": 1681,
+      "frames": 62,
+      "nominal_tstates": 3500009,
+      "render_done_frame": 1619,
+      "routine_address": 24377
+    },
+    "rom_beeper": {
+      "de": 224,
+      "hl": 458,
+      "return_address": 24373,
+      "sp": 32730
     }
   },
   "schema": 2,
   "tests": {
     "controlled_source_mutation_identity_failure": "PASS",
+    "detect_loader_enabled_final_row_runtime_verified": "PASS",
     "deterministic_double_build": "PASS",
     "e003_after_startup_beep_runtime_verified": "PASS",
     "exact_8192_byte_host_tzx_compare": "PASS",
@@ -163,7 +218,7 @@
   "tzx": {
     "dummy_payload_rejected": true,
     "path": "zx-ux-phase10-pre-release.tzx",
-    "sha256": "3211b3b450b90a053f04347769de50b268331d7eafbe4b4f790bfeeb47901d5f",
-    "size": 11977
+    "sha256": "fdb9dbf3ffb004163567ceda46831c4ee72ade7b1d308e22e45eeb4bd137a0ed",
+    "size": 11993
   }
 }

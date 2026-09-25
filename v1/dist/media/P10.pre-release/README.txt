@@ -7,8 +7,9 @@ This is the REV17/REV08 TZX-only pre-release path. The loader owns the
 The TZX embeds the freshly rebuilt exact 8192-byte kernel at E000-FFFF
 and hands off at E003. The final row is held visible for about one
 second, then the exact startup BEEPER call runs before handoff.
-Real-time Fuse acceptance disables fastload, loader detection,
-acceleration and tape traps.
+Real-time Fuse acceptance disables every loader shortcut; a second
+compatibility pass keeps Detect loaders enabled while fastloading,
+loader acceleration and tape traps remain disabled.
 
 This Phase-10 pre-release intentionally contains no post-kernel M48O
 system stream. It proves the fast-loader/kernel handoff only; it is not
