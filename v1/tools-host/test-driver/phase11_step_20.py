@@ -99,6 +99,9 @@ p1120_two:  db $00,$00,$02,$00,$00
 p1120_three:db $00,$00,$03,$00,$00
 p1120_four: db $00,$00,$04,$00,$00
 p1120_eight:db $00,$00,$08,$00,$00
+p1120_full1:db $81,$00,$00,$00,$00
+p1120_full2:db $82,$00,$00,$00,$00
+p1120_full8:db $84,$00,$00,$00,$00
 p1120_out:  defs 5,$A5
 p1120_guard0: db $5A
 p1120_guard1: db $A6
@@ -185,7 +188,7 @@ p1120_cos:
     ld de,p1120_zero
     call cos
     ret c
-    ld de,p1120_one
+    ld de,p1120_full1
     jp p1120_check_out
 
 p1120_tan:
@@ -225,7 +228,7 @@ p1120_sqrt:
     ld de,p1120_four
     call sqrt
     ret c
-    ld de,p1120_two
+    ld de,p1120_full2
     jp p1120_check_out
 
 p1120_exp:
@@ -233,7 +236,7 @@ p1120_exp:
     ld de,p1120_zero
     call exp
     ret c
-    ld de,p1120_one
+    ld de,p1120_full1
     jp p1120_check_out
 
 p1120_log:
@@ -250,7 +253,7 @@ p1120_pow:
     ld bc,p1120_three
     call pow
     ret c
-    ld de,p1120_eight
+    ld de,p1120_full8
     jp p1120_check_out
 
 p1120_fabs:
@@ -291,7 +294,7 @@ p1120_helpers:
     call __fpow
     ret c
     ld hl,p1120_out
-    ld de,p1120_eight
+    ld de,p1120_full8
     call p1120_cmp5
     ret c
 
