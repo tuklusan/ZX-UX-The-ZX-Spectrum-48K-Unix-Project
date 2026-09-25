@@ -3002,6 +3002,7 @@ CC_X_CALL               EQU 44
 CC_X_UPLUS              EQU 45
 CC_X_UMINUS             EQU 46
 CC_X_CAST               EQU 47
+CC_X_SC_END             EQU 48
 CC_X_OUTPUT_CAPACITY    EQU 128
 CC_X_NEST_MAX           EQU 8
 
@@ -3058,9 +3059,12 @@ cc_x_lor_loop:
     ret nz
     call cc_parse_next
     ret c
+    ld a,CC_X_LOR_SC
+    call cc_x_emit
+    ret c
     call cc_x_land
     ret c
-    ld a,CC_X_LOR_SC
+    ld a,CC_X_SC_END
     call cc_x_emit
     ret c
     jp cc_x_lor_loop
@@ -3074,9 +3078,12 @@ cc_x_land_loop:
     ret nz
     call cc_parse_next
     ret c
+    ld a,CC_X_LAND_SC
+    call cc_x_emit
+    ret c
     call cc_x_bor
     ret c
-    ld a,CC_X_LAND_SC
+    ld a,CC_X_SC_END
     call cc_x_emit
     ret c
     jp cc_x_land_loop
