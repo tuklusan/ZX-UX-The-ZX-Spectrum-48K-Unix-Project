@@ -1,0 +1,120 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: P10 final-line visual diagnostic once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/p10-final-line-visual-diagnostic-once.yml
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      DISPLAY: ":99"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: ./.github/actions/setup-zxux-runtime
+      - name: Install diagnostic UI capture helper
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends imagemagick xdotool xvfb
+      - name: Capture screen at startup-beep entry
+        shell: bash
+        run: |
+          set -euo pipefail
+          diag=/tmp/p10-final-line-visual
+          mkdir -p "$diag"
+          cat >"$diag/debugger.txt" <<'EOF'
+          base 16
+          breakpoint 0x5ce7
+          commands 1
+          print 0xa00001
+          continue
+          end
+          breakpoint 0x0556
+          commands 2
+          print 0xa00002
+          continue
+          end
+          breakpoint 0x5f2a
+          commands 3
+          print 0xfeed002a
+          print [0x5ef7]
+          print [0x5ef8]
+          print [0x5ef5]
+          print [0x5ef6]
+          end
+          continue
+          EOF
+          Xvfb :99 -screen 0 1280x900x24 >"$diag/xvfb.log" 2>&1 &
+          xvfb_pid=$!
+          fuse_pid=""
+          trap 'kill "$fuse_pid" "$xvfb_pid" 2>/dev/null || true' EXIT
+          sleep 1
+          stdbuf -oL -eL tools/runtime/fuse/bin/fuse --machine 48 \
+            --rom-48 tools/runtime/fuse/roms/48.rom \
+            --tape v1/dist/media/P10.pre-release/zx-ux-phase10-pre-release.tzx \
+            --no-accelerate-loader --no-fastload --no-traps --no-detect-loader \
+            --no-confirm-actions --no-sound \
+            --debugger-command "$(cat "$diag/debugger.txt")" \
+            >"$diag/fuse-state.log" 2>&1 &
+          fuse_pid=$!
+          window=""
+          for i in $(seq 1 40); do
+            window="$(xdotool search --onlyvisible --name '^Fuse$' 2>/dev/null | head -n1 || true)"
+            test -n "$window" && break
+            sleep 0.25
+          done
+          test -n "$window"
+          xdotool windowfocus --sync "$window" || true
+          xdotool mousemove --window "$window" 160 145 click 1 || true
+          sleep 0.75
+          xdotool keydown Shift_L; sleep 0.25; xdotool keyup Shift_L; sleep 0.60
+          xdotool keydown j; sleep 0.45; xdotool keyup j; sleep 0.60
+          xdotool key --delay 300 ctrl+p; sleep 0.60
+          xdotool key --delay 300 ctrl+p; sleep 0.60
+          xdotool keydown Return; sleep 0.45; xdotool keyup Return
+          for i in $(seq 1 50); do
+            grep -q '0xa00002' "$diag/fuse-state.log" && break
+            sleep 0.2
+          done
+          grep -q '0xa00002' "$diag/fuse-state.log"
+          xdotool windowfocus --sync "$window" || true
+          xdotool key F8
+          for i in $(seq 1 180); do
+            grep -q '0xfeed002a' "$diag/fuse-state.log" && break
+            sleep 0.1
+          done
+          grep -q '0xfeed002a' "$diag/fuse-state.log"
+          sleep 0.25
+          import -display :99 -window "$window" "$diag/fuse-at-beep.png"
+          identify "$diag/fuse-at-beep.png"
+          kill "$fuse_pid" "$xvfb_pid" 2>/dev/null || true
+          fuse_pid=""
+          xvfb_pid=""
+          trap - EXIT
+      - name: Upload visual proof
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: p10-final-line-visual-diagnostic
+          path: /tmp/p10-final-line-visual/
+          retention-days: 7
+          if-no-files-found: error
