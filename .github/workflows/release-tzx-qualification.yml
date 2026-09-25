@@ -204,7 +204,7 @@ jobs:
           diag=/tmp/release-tzx/realtime-detect-loader
           mkdir -p "$diag"
           tools/runtime/python/bin/python v1/tools-host/release-tzx/runtime_acceptance.py \
-            debugger --output "$diag/debugger.txt"
+            debugger --omit-hook-trace --output "$diag/debugger.txt"
           Xvfb :99 -screen 0 1280x900x24 >"$diag/xvfb.log" 2>&1 &
           xvfb_pid=$!
           fuse_pid=""

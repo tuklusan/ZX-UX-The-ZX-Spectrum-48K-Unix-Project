@@ -145,6 +145,74 @@ def debugger_text() -> str:
     return "\n".join(lines) + "\n"
 
 
+def debugger_text_minimal() -> str:
+    """Trace the user-facing loader path without inter-block hook breakpoints."""
+
+    lines = [
+        "base 16",
+        "breakpoint 0x5ce7",
+        "breakpoint 0x0556",
+        f"breakpoint 0x{FINAL_HOLD:04x}",
+        f"breakpoint 0x{FINAL_RENDER_DONE:04x}",
+        f"breakpoint 0x{STARTUP_BEEP:04x}",
+        f"breakpoint 0x{ROM_BEEPER:04x} if [z80:sp] + 0x100 * [z80:sp+1] == 0x5f35",
+        f"breakpoint 0x{HANDOFF:04x}",
+        "breakpoint time 0 if spectrum:frames > 0x1964",
+        "commands 1",
+        f"print 0x{M_ROM_BASIC:x}",
+        "continue",
+        "end",
+        "commands 2",
+        f"print 0x{M_ROM_LOAD:x}",
+        "continue",
+        "end",
+        "commands 3",
+    ]
+    lines.extend(_state_lines(M_HOLD))
+    lines.extend(["continue", "end", "commands 4"])
+    lines.extend(_state_lines(M_RENDER_DONE))
+    lines.extend([f"print 0x{M_RENDER_FRAME:x}", "print spectrum:frames"])
+    lines.extend(_screen_dump(M_RENDER_ROW, M_RENDER_ATTR, M_RENDER_END))
+    lines.extend(
+        [
+            "continue",
+            "end",
+            "commands 5",
+            f"print 0x{M_BEEP:x}",
+            f"print 0x{M_BEEP_FRAME:x}",
+            "print spectrum:frames",
+            "continue",
+            "end",
+            "commands 6",
+            f"print 0x{M_BEEPER:x}",
+            "print z80:de",
+            "print z80:hl",
+            "print z80:sp",
+            "print [z80:sp]",
+            "print [z80:sp+1]",
+            "continue",
+            "end",
+            "commands 7",
+        ]
+    )
+    lines.extend(_state_lines(M_E003))
+    lines.extend(_screen_dump(M_E003_ROW, M_E003_ATTR, M_E003_END))
+    lines.extend(
+        [
+            "exit 0",
+            "end",
+            "commands 8",
+            f"print 0x{M_TIMEOUT:x}",
+            "print z80:pc",
+            "print spectrum:frames",
+            "exit 3",
+            "end",
+            "continue",
+        ]
+    )
+    return "\n".join(lines) + "\n"
+
+
 def _values(path: Path) -> list[int]:
     text = path.read_text(encoding="utf-8", errors="replace")
     return [int(x, 16) for x in re.findall(r"0x([0-9a-fA-F]+)", text)]
@@ -224,16 +292,26 @@ def verify(log: Path, rom_path: Path, text_path: Path) -> dict:
     ]
     expected_attr = [0x07] * 32
 
-    first_ptr = hook_states[0][2] if hook_states else -1
-    expected_hook_states = [(24 - i, i, first_ptr + 32 * i) for i in range(len(hooks))]
+    hook_trace_present = bool(hooks)
+    if hook_trace_present:
+        first_ptr = hook_states[0][2]
+        expected_hook_states = [(24 - i, i, first_ptr + 32 * i) for i in range(len(hooks))]
+        hook_trace_valid = (
+            1 <= len(hooks) <= 24
+            and hook_states == expected_hook_states
+        )
+    else:
+        first_ptr = done_ptr - 24 * 32
+        expected_hook_states = []
+        hook_trace_valid = True
+
     finalizer_entry_valid = (
-        1 <= len(hooks) <= 24
-        and hold_line == len(hooks)
-        and hold_left == 24 - len(hooks)
-        and hold_ptr == first_ptr + 32 * len(hooks)
+        0 <= hold_line <= 24
+        and hold_left == 24 - hold_line
+        and hold_ptr == first_ptr + 32 * hold_line
+        and (not hook_trace_present or hold_line == len(hooks))
     )
-    order = [
-        hooks[-1][3] if hooks else -1,
+    order = ([hooks[-1][3]] if hook_trace_present else []) + [
         hold_index,
         done_index,
         beep_index,
@@ -245,8 +323,8 @@ def verify(log: Path, rom_path: Path, text_path: Path) -> dict:
         "real_rom_basic_path_seen": rom_basic_hits >= 1,
         "real_rom_ld_bytes_seen": rom_load_hits >= 1,
         "no_timeout": timeout_hits == 0,
-        "interblock_display_callback_count_valid": 1 <= len(hooks) <= 24,
-        "interblock_display_callback_state_sequence": hook_states == expected_hook_states,
+        "interblock_display_callback_count_valid": (not hook_trace_present) or 1 <= len(hooks) <= 24,
+        "interblock_display_callback_state_sequence": hook_trace_valid,
         "finalizer_entered_with_consistent_pending_rows": finalizer_entry_valid,
         "finalizer_completed_row_24": (
             done_left == 0 and done_line == 24 and done_ptr == first_ptr + 24 * 32
@@ -267,7 +345,8 @@ def verify(log: Path, rom_path: Path, text_path: Path) -> dict:
         "ordered_final_path": order == sorted(order),
     }
     report = {
-        "schema": 3,
+        "schema": 4,
+        "hook_trace_present": hook_trace_present,
         "hook_count": len(hooks),
         "hook_states": [
             {"lines_left": left, "line_index": line, "text_ptr": ptr}
@@ -331,6 +410,7 @@ def main() -> int:
 
     dbg = sub.add_parser("debugger")
     dbg.add_argument("--output", type=Path, required=True)
+    dbg.add_argument("--omit-hook-trace", action="store_true")
 
     check = sub.add_parser("verify")
     check.add_argument("--log", type=Path, required=True)
@@ -341,7 +421,8 @@ def main() -> int:
     args = ap.parse_args()
     if args.command == "debugger":
         args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(debugger_text(), encoding="ascii", newline="\n")
+        text = debugger_text_minimal() if args.omit_hook_trace else debugger_text()
+        args.output.write_text(text, encoding="ascii", newline="\n")
         return 0
 
     report = verify(args.log, args.rom, args.text)

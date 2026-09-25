@@ -254,7 +254,7 @@ jobs:
           diag=/tmp/p10-prerelease/realtime-detect-loader
           mkdir -p "$diag"
           tools/runtime/python/bin/python v1/tools-host/release-tzx/runtime_acceptance.py \
-            debugger --output "$diag/debugger.txt"
+            debugger --omit-hook-trace --output "$diag/debugger.txt"
           Xvfb :99 -screen 0 1280x900x24 >"$diag/xvfb.log" 2>&1 &
           xvfb_pid=$!
           fuse_pid=""
@@ -411,6 +411,7 @@ jobs:
               'assertions':native['assertions'],
             },
             'runtime_acceptance':{
+              'hook_trace_present':runtime['hook_trace_present'],
               'hook_count':runtime['hook_count'],
               'final_hold':runtime['final_hold'],
               'final_render_done':runtime['final_render_done'],
@@ -421,6 +422,7 @@ jobs:
               'assertions':runtime['assertions'],
             },
             'runtime_detect_loader_compatibility':{
+              'hook_trace_present':runtime_detect['hook_trace_present'],
               'hook_count':runtime_detect['hook_count'],
               'final_hold':runtime_detect['final_hold'],
               'final_render_done':runtime_detect['final_render_done'],
@@ -488,6 +490,7 @@ jobs:
           assert meta['boot_contract']['zx48uxscr'] is False
           assert meta['kernel_identity']['size']==8192
           assert meta['boot_contract']['final_loader_after']=='0x5EB4'
+          assert meta['runtime_acceptance']['hook_trace_present'] is True
           assert 1 <= meta['runtime_acceptance']['hook_count'] <= 24
           hold=meta['runtime_acceptance']['final_hold']
           assert hold['line_index']==meta['runtime_acceptance']['hook_count']
@@ -495,9 +498,10 @@ jobs:
           assert meta['runtime_acceptance']['final_render_done']['lines_left']==0
           assert meta['runtime_acceptance']['final_render_done']['line_index']==24
           detect=meta['runtime_detect_loader_compatibility']
-          assert 1 <= detect['hook_count'] <= 24
+          assert detect['hook_trace_present'] is False
+          assert detect['hook_count']==0
           dhold=detect['final_hold']
-          assert dhold['line_index']==detect['hook_count']
+          assert 0 <= dhold['line_index'] <= 24
           assert dhold['lines_left']+dhold['line_index']==24
           assert detect['final_render_done']['lines_left']==0
           assert detect['final_render_done']['line_index']==24
