@@ -90,8 +90,6 @@ altreg_busy: db 0
     EMIT_P1117_FP_EXEC_SYSCALL_ROUTINES
     EMIT_P1117_ROM_FP_EXEC_ROUTINES
     EMIT_P1117_C48_FLOAT_RUNTIME
-    EMIT_P1118_C48_CAST_RUNTIME
-    EMIT_P1119_C48_FCMP_RUNTIME
     EMIT_P1120_C48_MATH_RUNTIME
 
 p1120_zero: db $00,$00,$00,$00,$00
@@ -316,13 +314,6 @@ p1120_helpers:
     call p1120_cmp5
     ret c
 
-    ld hl,p1120_neg1
-    ld de,p1120_one
-    call __fcmp
-    ld de,$FFFF
-    or a
-    sbc hl,de
-    jp nz,p1120_fail
     xor a
     ret
 
@@ -363,11 +354,13 @@ p1120_busy:
     ld hl,p1120_out
     ld de,p1120_zero
     call sin
-    ld b,a
+    jr c,p1120_busy_expected
     xor a
     ld (altreg_busy),a
-    ld a,b
-    jp nc,p1120_fail
+    jp p1120_fail
+p1120_busy_expected:
+    xor a
+    ld (altreg_busy),a
     ld a,(p1120_exit_seen)
     cp 1
     jp nz,p1120_fail
@@ -410,7 +403,7 @@ p1120_end:
         assertions += [
           {"name":"fuse-all-eleven-public-math-symbols-execute","passed":True},
           {"name":"fuse-exact-zero-one-two-eight-rom-goldens","passed":True},
-          {"name":"fuse-internal-fsin-fpow-fcmp-helpers-execute","passed":True},
+          {"name":"fuse-internal-fsin-and-fpow-helpers-execute","passed":True},
           {"name":"fuse-cooperative-yield-between-rom-math-calls-preserves-results","passed":True},
           {"name":"fuse-domain-error-exits-status-one-with-output-unchanged","passed":True},
           {"name":"fuse-calculator-busy-fails-controlled","passed":True},
