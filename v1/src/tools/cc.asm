@@ -2580,7 +2580,7 @@ cc_stmt_statement_impl:
     jp z,cc_stmt_continue
     cp CC_STMT_WORD_RETURN
     jp z,cc_stmt_return
-    jp cc_stmt_expr_or_empty
+    jp cc_stmt_format
 
 cc_stmt_compound:
     ld a,CC_CF_BLOCK_BEGIN
@@ -2624,10 +2624,10 @@ cc_stmt_if:
     ret c
     ld a,(cc_parse_tok_kind)
     cp CC_TOK_KEYWORD
-    ret nz
+    jp nz,cc_stmt_ok
     call cc_stmt_word_code
     cp CC_STMT_WORD_ELSE
-    ret nz
+    jp nz,cc_stmt_ok
     ld a,CC_CF_ELSE
     call cc_stmt_emit
     ret c
@@ -2942,6 +2942,9 @@ cc_stmt_words:
     db CC_STMT_WORD_RETURN,6,"return"
     db 0
 
+cc_stmt_ok:
+    xor a
+    ret
 cc_stmt_nospc:
     ld a,E_NOSPC
     scf
