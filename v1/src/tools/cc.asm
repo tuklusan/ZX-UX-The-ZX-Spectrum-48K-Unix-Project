@@ -818,7 +818,7 @@ cc_lex_token:
     ld hl,(cc_lex_remaining)
     ld a,h
     or l
-    jr nz,cc_lex_dispatch
+    jp nz,cc_lex_dispatch
     ld a,CC_TOK_MORE
     jp cc_lex_success
 cc_lex_dispatch:
@@ -833,7 +833,7 @@ cc_lex_dispatch:
     call cc_lex_is_digit
     jp nc,cc_lex_number
     cp '.'
-    jr nz,cc_lex_literal_dispatch
+    jp nz,cc_lex_literal_dispatch
     call cc_lex_peek2
     jp c,cc_lex_notsup
     call cc_lex_is_digit
@@ -860,18 +860,18 @@ cc_lex_finish:
 cc_lex_skip:
     ld a,(cc_lex_comment)
     cp 1
-    jr z,cc_lex_skip_block
+    jp z,cc_lex_skip_block
     cp 2
-    jr z,cc_lex_skip_line
+    jp z,cc_lex_skip_line
 cc_lex_skip_plain:
     call cc_lex_peek
-    jr c,cc_lex_skip_exhausted
+    jp c,cc_lex_skip_exhausted
     cp ' '
-    jr z,cc_lex_skip_take
+    jp z,cc_lex_skip_take
     cp 9
-    jr z,cc_lex_skip_take
+    jp z,cc_lex_skip_take
     cp 10
-    jr z,cc_lex_skip_take
+    jp z,cc_lex_skip_take
     cp 32
     jp c,cc_lex_format
     cp 127
@@ -879,19 +879,19 @@ cc_lex_skip_plain:
     cp '/'
     ret nz
     call cc_lex_peek2
-    jr nc,cc_lex_skip_slash_pair
+    jp nc,cc_lex_skip_slash_pair
     or a
     ret
 cc_lex_skip_slash_pair:
     cp '/'
-    jr z,cc_lex_start_line
+    jp z,cc_lex_start_line
     cp '*'
-    jr z,cc_lex_start_block
+    jp z,cc_lex_start_block
     or a
     ret
 cc_lex_skip_take:
     call cc_lex_take
-    jr cc_lex_skip_plain
+    jp cc_lex_skip_plain
 cc_lex_start_line:
     call cc_lex_take
     call cc_lex_take
@@ -899,13 +899,13 @@ cc_lex_start_line:
     ld (cc_lex_comment),a
 cc_lex_skip_line:
     call cc_lex_peek
-    jr c,cc_lex_skip_exhausted
+    jp c,cc_lex_skip_exhausted
     call cc_lex_take
     cp 10
-    jr nz,cc_lex_skip_line
+    jp nz,cc_lex_skip_line
     xor a
     ld (cc_lex_comment),a
-    jr cc_lex_skip_plain
+    jp cc_lex_skip_plain
 cc_lex_start_block:
     call cc_lex_take
     call cc_lex_take
@@ -913,21 +913,21 @@ cc_lex_start_block:
     ld (cc_lex_comment),a
 cc_lex_skip_block:
     call cc_lex_peek
-    jr c,cc_lex_skip_exhausted
+    jp c,cc_lex_skip_exhausted
     cp '*'
-    jr nz,cc_lex_block_take
+    jp nz,cc_lex_block_take
     call cc_lex_peek2
-    jr c,cc_lex_block_take
+    jp c,cc_lex_block_take
     cp '/'
-    jr nz,cc_lex_block_take
+    jp nz,cc_lex_block_take
     call cc_lex_take
     call cc_lex_take
     xor a
     ld (cc_lex_comment),a
-    jr cc_lex_skip_plain
+    jp cc_lex_skip_plain
 cc_lex_block_take:
     call cc_lex_take
-    jr cc_lex_skip_block
+    jp cc_lex_skip_block
 
 cc_lex_skip_exhausted:
     or a
@@ -936,14 +936,14 @@ cc_lex_skip_exhausted:
 cc_lex_identifier:
 cc_lex_ident_loop:
     call cc_lex_peek
-    jr c,cc_lex_ident_done
+    jp c,cc_lex_ident_done
     call cc_lex_is_ident
-    jr c,cc_lex_ident_done
+    jp c,cc_lex_ident_done
     ld a,(cc_lex_token_len)
     cp CC_IDENT_MAX
     jp nc,cc_lex_toolong
     call cc_lex_toktake
-    jr cc_lex_ident_loop
+    jp cc_lex_ident_loop
 cc_lex_ident_done:
     call cc_lex_keyword
     ret c
@@ -955,7 +955,7 @@ cc_lex_keyword:
 cc_lex_kw_loop:
     ld a,(de)
     or a
-    jr z,cc_lex_kw_ident
+    jp z,cc_lex_kw_ident
     ld (cc_lex_kw_class),a
     inc de
     ld a,(de)
@@ -964,14 +964,14 @@ cc_lex_kw_loop:
     ld c,a
     ld a,(cc_lex_token_len)
     cp c
-    jr nz,cc_lex_kw_skip
+    jp nz,cc_lex_kw_skip
     push de
     ld hl,(cc_lex_token_start)
     ld b,c
 cc_lex_kw_cmp:
     ld a,(de)
     cp (hl)
-    jr nz,cc_lex_kw_miss
+    jp nz,cc_lex_kw_miss
     inc de
     inc hl
     djnz cc_lex_kw_cmp
@@ -990,7 +990,7 @@ cc_lex_kw_skip:
     ld h,0
     add hl,de
     ex de,hl
-    jr cc_lex_kw_loop
+    jp cc_lex_kw_loop
 cc_lex_kw_ident:
     ld a,CC_TOK_IDENT
     or a
@@ -1018,48 +1018,48 @@ cc_lex_number:
     cp '.'
     jp z,cc_lex_float_dotlead
     cp '0'
-    jr nz,cc_lex_dec_loop
+    jp nz,cc_lex_dec_loop
     call cc_lex_peek2
-    jr c,cc_lex_dec_loop
+    jp c,cc_lex_dec_loop
     cp 'x'
-    jr z,cc_lex_hex
+    jp z,cc_lex_hex
     cp 'X'
-    jr z,cc_lex_hex
+    jp z,cc_lex_hex
 cc_lex_dec_loop:
     call cc_lex_peek
-    jr c,cc_lex_int_done
+    jp c,cc_lex_int_done
     call cc_lex_is_digit
-    jr c,cc_lex_dec_end
+    jp c,cc_lex_dec_end
     ld d,a
     ld hl,(cc_lex_token_start)
     ld a,(hl)
     cp '0'
-    jr nz,cc_lex_dec_consume
+    jp nz,cc_lex_dec_consume
     ld a,d
     cp '8'
-    jr c,cc_lex_dec_consume
+    jp c,cc_lex_dec_consume
     ld a,1
     ld (cc_lex_octal_bad),a
 cc_lex_dec_consume:
     call cc_lex_toktake
-    jr cc_lex_dec_loop
+    jp cc_lex_dec_loop
 cc_lex_dec_end:
     cp '.'
-    jr z,cc_lex_float_dot
+    jp z,cc_lex_float_dot
     cp 'e'
-    jr z,cc_lex_float_exp
+    jp z,cc_lex_float_exp
     cp 'E'
-    jr z,cc_lex_float_exp
+    jp z,cc_lex_float_exp
 cc_lex_int_done:
     ld a,(cc_lex_octal_bad)
     or a
     jp nz,cc_lex_format
     call cc_lex_peek
-    jr c,cc_lex_int_ok
+    jp c,cc_lex_int_ok
     cp 'u'
-    jr z,cc_lex_int_suffix
+    jp z,cc_lex_int_suffix
     cp 'U'
-    jr z,cc_lex_int_suffix
+    jp z,cc_lex_int_suffix
     call cc_lex_is_ident
     jp nc,cc_lex_format
 cc_lex_int_ok:
@@ -1068,10 +1068,10 @@ cc_lex_int_ok:
 cc_lex_int_suffix:
     call cc_lex_toktake
     call cc_lex_peek
-    jr c,cc_lex_int_ok
+    jp c,cc_lex_int_ok
     call cc_lex_is_ident
     jp nc,cc_lex_format
-    jr cc_lex_int_ok
+    jp cc_lex_int_ok
 
 cc_lex_hex:
     call cc_lex_toktake
@@ -1082,19 +1082,19 @@ cc_lex_hex:
     jp c,cc_lex_format
 cc_lex_hex_loop:
     call cc_lex_peek
-    jr c,cc_lex_int_ok
+    jp c,cc_lex_int_ok
     call cc_lex_is_hex
-    jr c,cc_lex_hex_end
+    jp c,cc_lex_hex_end
     call cc_lex_toktake
-    jr cc_lex_hex_loop
+    jp cc_lex_hex_loop
 cc_lex_hex_end:
     cp 'u'
-    jr z,cc_lex_int_suffix
+    jp z,cc_lex_int_suffix
     cp 'U'
-    jr z,cc_lex_int_suffix
+    jp z,cc_lex_int_suffix
     call cc_lex_is_ident
     jp nc,cc_lex_format
-    jr cc_lex_int_ok
+    jp cc_lex_int_ok
 
 cc_lex_float_dotlead:
     call cc_lex_toktake
@@ -1104,40 +1104,40 @@ cc_lex_float_dotlead:
     jp c,cc_lex_format
 cc_lex_float_frac:
     call cc_lex_peek
-    jr c,cc_lex_float_done
+    jp c,cc_lex_float_done
     call cc_lex_is_digit
-    jr c,cc_lex_float_frac_end
+    jp c,cc_lex_float_frac_end
     call cc_lex_toktake
-    jr cc_lex_float_frac
+    jp cc_lex_float_frac
 cc_lex_float_frac_end:
     cp 'e'
-    jr z,cc_lex_float_exp
+    jp z,cc_lex_float_exp
     cp 'E'
-    jr z,cc_lex_float_exp
-    jr cc_lex_float_done
+    jp z,cc_lex_float_exp
+    jp cc_lex_float_done
 cc_lex_float_dot:
     call cc_lex_toktake
 cc_lex_float_frac2:
     call cc_lex_peek
-    jr c,cc_lex_float_done
+    jp c,cc_lex_float_done
     call cc_lex_is_digit
-    jr c,cc_lex_float_frac2_end
+    jp c,cc_lex_float_frac2_end
     call cc_lex_toktake
-    jr cc_lex_float_frac2
+    jp cc_lex_float_frac2
 cc_lex_float_frac2_end:
     cp 'e'
-    jr z,cc_lex_float_exp
+    jp z,cc_lex_float_exp
     cp 'E'
-    jr z,cc_lex_float_exp
-    jr cc_lex_float_done
+    jp z,cc_lex_float_exp
+    jp cc_lex_float_done
 cc_lex_float_exp:
     call cc_lex_toktake
     call cc_lex_peek
     jp c,cc_lex_format
     cp '+'
-    jr z,cc_lex_float_sign
+    jp z,cc_lex_float_sign
     cp '-'
-    jr nz,cc_lex_float_exp_digit
+    jp nz,cc_lex_float_exp_digit
 cc_lex_float_sign:
     call cc_lex_toktake
     call cc_lex_peek
@@ -1147,18 +1147,18 @@ cc_lex_float_exp_digit:
     jp c,cc_lex_format
 cc_lex_float_exp_loop:
     call cc_lex_peek
-    jr c,cc_lex_float_done
+    jp c,cc_lex_float_done
     call cc_lex_is_digit
-    jr c,cc_lex_float_done
+    jp c,cc_lex_float_done
     call cc_lex_toktake
-    jr cc_lex_float_exp_loop
+    jp cc_lex_float_exp_loop
 cc_lex_float_done:
     call cc_lex_peek
-    jr c,cc_lex_float_ok
+    jp c,cc_lex_float_ok
     cp 'f'
-    jr z,cc_lex_float_suffix
+    jp z,cc_lex_float_suffix
     cp 'F'
-    jr z,cc_lex_float_suffix
+    jp z,cc_lex_float_suffix
     call cc_lex_is_ident
     jp nc,cc_lex_format
 cc_lex_float_ok:
@@ -1167,10 +1167,10 @@ cc_lex_float_ok:
 cc_lex_float_suffix:
     call cc_lex_toktake
     call cc_lex_peek
-    jr c,cc_lex_float_ok
+    jp c,cc_lex_float_ok
     call cc_lex_is_ident
     jp nc,cc_lex_format
-    jr cc_lex_float_ok
+    jp cc_lex_float_ok
 
 cc_lex_literal:
     ld (cc_lex_quote),a
@@ -1183,7 +1183,7 @@ cc_lex_lit_loop:
     ld d,a
     ld a,(cc_lex_quote)
     cp d
-    jr z,cc_lex_lit_close
+    jp z,cc_lex_lit_close
     ld a,d
     cp 10
     jp z,cc_lex_format
@@ -1192,45 +1192,45 @@ cc_lex_lit_loop:
     cp 127
     jp nc,cc_lex_format
     cp 92
-    jr z,cc_lex_escape
+    jp z,cc_lex_escape
     call cc_lex_toktake
-    jr cc_lex_lit_unit
+    jp cc_lex_lit_unit
 cc_lex_escape:
     call cc_lex_toktake
     call cc_lex_peek
     jp c,cc_lex_format
     cp '1'
-    jr c,cc_lex_escape_simple
+    jp c,cc_lex_escape_simple
     cp '8'
     jp c,cc_lex_notsup
 cc_lex_escape_simple:
     cp 'x'
-    jr z,cc_lex_escape_hex
+    jp z,cc_lex_escape_hex
     cp 92
-    jr z,cc_lex_escape_take
+    jp z,cc_lex_escape_take
     cp 39
-    jr z,cc_lex_escape_take
+    jp z,cc_lex_escape_take
     cp 34
-    jr z,cc_lex_escape_take
+    jp z,cc_lex_escape_take
     cp '0'
-    jr z,cc_lex_escape_take
+    jp z,cc_lex_escape_take
     cp 'a'
-    jr z,cc_lex_escape_take
+    jp z,cc_lex_escape_take
     cp 'b'
-    jr z,cc_lex_escape_take
+    jp z,cc_lex_escape_take
     cp 't'
-    jr z,cc_lex_escape_take
+    jp z,cc_lex_escape_take
     cp 'n'
-    jr z,cc_lex_escape_take
+    jp z,cc_lex_escape_take
     cp 'v'
-    jr z,cc_lex_escape_take
+    jp z,cc_lex_escape_take
     cp 'f'
-    jr z,cc_lex_escape_take
+    jp z,cc_lex_escape_take
     cp 'r'
     jp nz,cc_lex_format
 cc_lex_escape_take:
     call cc_lex_toktake
-    jr cc_lex_lit_unit
+    jp cc_lex_lit_unit
 cc_lex_escape_hex:
     call cc_lex_toktake
     call cc_lex_peek
@@ -1250,16 +1250,16 @@ cc_lex_lit_unit:
     ld d,a
     ld a,(cc_lex_quote)
     cp 39
-    jr nz,cc_lex_lit_loop
+    jp nz,cc_lex_lit_loop
     ld a,d
     cp 2
     jp nc,cc_lex_format
-    jr cc_lex_lit_loop
+    jp cc_lex_lit_loop
 cc_lex_lit_close:
     call cc_lex_toktake
     ld a,(cc_lex_quote)
     cp 39
-    jr nz,cc_lex_string_ok
+    jp nz,cc_lex_string_ok
     ld a,(cc_lex_units)
     cp 1
     jp nz,cc_lex_format
@@ -1272,21 +1272,21 @@ cc_lex_string_ok:
 
 cc_lex_operator:
     cp '('
-    jr z,cc_lex_punct
+    jp z,cc_lex_punct
     cp ')'
-    jr z,cc_lex_punct
+    jp z,cc_lex_punct
     cp '['
-    jr z,cc_lex_punct
+    jp z,cc_lex_punct
     cp ']'
-    jr z,cc_lex_punct
+    jp z,cc_lex_punct
     cp '{'
-    jr z,cc_lex_punct
+    jp z,cc_lex_punct
     cp '}'
-    jr z,cc_lex_punct
+    jp z,cc_lex_punct
     cp ';'
-    jr z,cc_lex_punct
+    jp z,cc_lex_punct
     cp ','
-    jr z,cc_lex_punct
+    jp z,cc_lex_punct
     cp '?'
     jp z,cc_lex_notsup
     cp ':'
@@ -1294,31 +1294,31 @@ cc_lex_operator:
     cp '.'
     jp z,cc_lex_notsup
     cp '+'
-    jr z,cc_lex_plus
+    jp z,cc_lex_plus
     cp '-'
-    jr z,cc_lex_minus
+    jp z,cc_lex_minus
     cp '<'
-    jr z,cc_lex_lt
+    jp z,cc_lex_lt
     cp '>'
-    jr z,cc_lex_gt
+    jp z,cc_lex_gt
     cp '='
-    jr z,cc_lex_eq
+    jp z,cc_lex_eq
     cp '!'
-    jr z,cc_lex_eq
+    jp z,cc_lex_eq
     cp '&'
-    jr z,cc_lex_amp
+    jp z,cc_lex_amp
     cp '|'
-    jr z,cc_lex_pipe
+    jp z,cc_lex_pipe
     cp '*'
-    jr z,cc_lex_assignable
+    jp z,cc_lex_assignable
     cp '/'
-    jr z,cc_lex_assignable
+    jp z,cc_lex_assignable
     cp '%'
-    jr z,cc_lex_assignable
+    jp z,cc_lex_assignable
     cp '^'
-    jr z,cc_lex_assignable
+    jp z,cc_lex_assignable
     cp '~'
-    jr z,cc_lex_op1
+    jp z,cc_lex_op1
     jp cc_lex_format
 
 cc_lex_punct:
@@ -1336,80 +1336,80 @@ cc_lex_op2:
     jp cc_lex_success
 cc_lex_plus:
     call cc_lex_peek2
-    jr c,cc_lex_op1
+    jp c,cc_lex_op1
     cp '+'
-    jr z,cc_lex_op2
+    jp z,cc_lex_op2
     cp '='
     jp z,cc_lex_notsup
-    jr cc_lex_op1
+    jp cc_lex_op1
 cc_lex_minus:
     call cc_lex_peek2
-    jr c,cc_lex_op1
+    jp c,cc_lex_op1
     cp '-'
-    jr z,cc_lex_op2
+    jp z,cc_lex_op2
     cp '='
     jp z,cc_lex_notsup
     cp '>'
     jp z,cc_lex_notsup
-    jr cc_lex_op1
+    jp cc_lex_op1
 cc_lex_lt:
     call cc_lex_peek2
-    jr c,cc_lex_op1
+    jp c,cc_lex_op1
     cp '='
-    jr z,cc_lex_op2
+    jp z,cc_lex_op2
     cp '<'
-    jr nz,cc_lex_op1
+    jp nz,cc_lex_op1
     call cc_lex_peek3
-    jr c,cc_lex_op2
+    jp c,cc_lex_op2
     cp '='
     jp z,cc_lex_notsup
-    jr cc_lex_op2
+    jp cc_lex_op2
 cc_lex_gt:
     call cc_lex_peek2
-    jr c,cc_lex_op1
+    jp c,cc_lex_op1
     cp '='
-    jr z,cc_lex_op2
+    jp z,cc_lex_op2
     cp '>'
-    jr nz,cc_lex_op1
+    jp nz,cc_lex_op1
     call cc_lex_peek3
-    jr c,cc_lex_op2
+    jp c,cc_lex_op2
     cp '='
     jp z,cc_lex_notsup
-    jr cc_lex_op2
+    jp cc_lex_op2
 cc_lex_eq:
     call cc_lex_peek2
-    jr c,cc_lex_op1
+    jp c,cc_lex_op1
     cp '='
-    jr z,cc_lex_op2
-    jr cc_lex_op1
+    jp z,cc_lex_op2
+    jp cc_lex_op1
 cc_lex_amp:
     call cc_lex_peek2
-    jr c,cc_lex_op1
+    jp c,cc_lex_op1
     cp '&'
-    jr z,cc_lex_op2
+    jp z,cc_lex_op2
     cp '='
     jp z,cc_lex_notsup
-    jr cc_lex_op1
+    jp cc_lex_op1
 cc_lex_pipe:
     call cc_lex_peek2
-    jr c,cc_lex_op1
+    jp c,cc_lex_op1
     cp '|'
-    jr z,cc_lex_op2
+    jp z,cc_lex_op2
     cp '='
     jp z,cc_lex_notsup
-    jr cc_lex_op1
+    jp cc_lex_op1
 cc_lex_assignable:
     call cc_lex_peek2
-    jr c,cc_lex_op1
+    jp c,cc_lex_op1
     cp '='
     jp z,cc_lex_notsup
-    jr cc_lex_op1
+    jp cc_lex_op1
 
 cc_lex_peek:
     ld hl,(cc_lex_remaining)
     ld a,h
     or l
-    jr z,cc_lex_empty
+    jp z,cc_lex_empty
     ld hl,(cc_lex_ptr)
     ld a,(hl)
     or a
@@ -1418,10 +1418,10 @@ cc_lex_peek2:
     ld hl,(cc_lex_remaining)
     ld a,h
     or a
-    jr nz,cc_lex_peek2_have
+    jp nz,cc_lex_peek2_have
     ld a,l
     cp 2
-    jr c,cc_lex_empty
+    jp c,cc_lex_empty
 cc_lex_peek2_have:
     ld hl,(cc_lex_ptr)
     inc hl
@@ -1432,10 +1432,10 @@ cc_lex_peek3:
     ld hl,(cc_lex_remaining)
     ld a,h
     or a
-    jr nz,cc_lex_peek3_have
+    jp nz,cc_lex_peek3_have
     ld a,l
     cp 3
-    jr c,cc_lex_empty
+    jp c,cc_lex_empty
 cc_lex_peek3_have:
     ld hl,(cc_lex_ptr)
     inc hl
@@ -1470,13 +1470,13 @@ cc_lex_toktake:
 
 cc_lex_is_alpha:
     cp 'A'
-    jr c,cc_lex_class_no
+    jp c,cc_lex_class_no
     cp 'Z'+1
-    jr c,cc_lex_class_yes
+    jp c,cc_lex_class_yes
     cp 'a'
-    jr c,cc_lex_class_no
+    jp c,cc_lex_class_no
     cp 'z'+1
-    jr c,cc_lex_class_yes
+    jp c,cc_lex_class_yes
 cc_lex_class_no:
     scf
     ret
@@ -1485,29 +1485,29 @@ cc_lex_class_yes:
     ret
 cc_lex_is_digit:
     cp '0'
-    jr c,cc_lex_class_no
+    jp c,cc_lex_class_no
     cp '9'+1
-    jr c,cc_lex_class_yes
+    jp c,cc_lex_class_yes
     scf
     ret
 cc_lex_is_hex:
     call cc_lex_is_digit
     ret nc
     cp 'A'
-    jr c,cc_lex_class_no
+    jp c,cc_lex_class_no
     cp 'F'+1
-    jr c,cc_lex_class_yes
+    jp c,cc_lex_class_yes
     cp 'a'
-    jr c,cc_lex_class_no
+    jp c,cc_lex_class_no
     cp 'f'+1
-    jr c,cc_lex_class_yes
+    jp c,cc_lex_class_yes
     scf
     ret
 cc_lex_is_ident:
     call cc_lex_is_alpha
     ret nc
     cp '_'
-    jr z,cc_lex_class_yes
+    jp z,cc_lex_class_yes
     jp cc_lex_is_digit
 
 cc_lex_success:
