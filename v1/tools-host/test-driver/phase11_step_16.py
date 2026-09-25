@@ -102,6 +102,7 @@ p1116_cap_stack:   defs 8,0
 p1116_returned:    dw 0
 p1116_sp_before:   dw 0
 p1116_sp_after:    dw 0
+p1116_exec:        defs CC_REGCALL_BUFFER_CAPACITY+1,0
 
 p1116_fail:
     ld a,E_FORMAT
@@ -115,15 +116,18 @@ p1116_check_word:
     xor a
     ret
 
-p1116_append_ret:
-    ld hl,cc_regcall_buffer
+p1116_run_emitted:
     ld a,(cc_regcall_len)
-    cp CC_REGCALL_BUFFER_CAPACITY
+    cp CC_REGCALL_BUFFER_CAPACITY+1
     jp nc,p1116_fail
-    ld e,a
-    ld d,0
-    add hl,de
-    ld (hl),$C9
+    ld c,a
+    ld b,0
+    ld hl,cc_regcall_buffer
+    ld de,p1116_exec
+    ldir
+    ld a,$C9
+    ld (de),a
+    call p1116_exec
     ret
 
 p1116_set_word:
@@ -185,12 +189,11 @@ p1116_runtime:
     ld hl,p1116_callee
     call cc_float_return_emit_call
     ret c
-    call p1116_append_ret
     ld iy,$5C3A
     ld hl,0
     add hl,sp
     ld (p1116_sp_before),hl
-    call cc_regcall_buffer
+    call p1116_run_emitted
     ld (p1116_returned),hl
     ld (p1116_sp_after),sp
 
@@ -378,8 +381,7 @@ p1116_wrong_shift:
     ld hl,p1116_wrong_callee
     call cc_regcall_emit_call
     ret c
-    call p1116_append_ret
-    call cc_regcall_buffer
+    call p1116_run_emitted
     jp nc,p1116_fail
     cp E_FORMAT
     jp nz,p1116_fail
