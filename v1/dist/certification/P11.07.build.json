@@ -1,0 +1,71 @@
+{
+  "action": "build",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "exact-version1-precedence-ladder-native",
+      "passed": true
+    },
+    {
+      "name": "assignment-right-associative-native",
+      "passed": true
+    },
+    {
+      "name": "prefix-postfix-index-call-native",
+      "passed": true
+    },
+    {
+      "name": "postfix-after-grouped-expression-native",
+      "passed": true
+    },
+    {
+      "name": "integer-and-integer-float-cast-syntax-native",
+      "passed": true
+    },
+    {
+      "name": "logical-short-circuit-boundary-events-native",
+      "passed": true
+    },
+    {
+      "name": "comma-operator-not-in-expression-grammar",
+      "passed": true
+    },
+    {
+      "name": "bounded-expression-nesting-native",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1107-expressions.sym",
+        "p1107-expressions.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 19,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 6796 lines, work time: 0.017 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p1107-main.bin": "5c0c789a57c040396ea6645d511ba149b054ddaf97ce82161fad1a7757f2db43",
+    "v1/dist/certification/P11.06.build.json": "2dd70f6acd34e35b71c4384313bf0b3cb8e79e47594c30f9ec6f096ded298c5b",
+    "v1/dist/certification/P11.06.test.json": "649b2a9490ff1c98b4c420a07eb9a73f7c098a7053d7ee735b525eae77459698",
+    "v1/src/tools/cc.asm": "d1ac41a6e879084d516443290a9c6fe6a71ac36c362363cb44282c739c10a07a",
+    "v1/tools-host/test-driver/phase11_step_07.py": "5158973917cdd0aaae4fd3780c01efc5217f4cbfcaa51ef04f66aac08fbe1a61"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.06": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "25a13eba811c04c19c44ef8be057b45be9055e43",
+  "status": "PASS",
+  "step": "P11.07",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
