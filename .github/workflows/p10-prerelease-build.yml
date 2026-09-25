@@ -181,7 +181,7 @@ jobs:
           assert all(v=='PASS' for v in native['assertions'].values())
           PY
 
-      - name: Real-time Fuse finalizer row beep and E003 proof with every loader shortcut disabled
+      - name: Real-time Fuse finalizer row one-second hold beep and E003 proof with every loader shortcut disabled
         shell: bash
         run: |
           set -euo pipefail

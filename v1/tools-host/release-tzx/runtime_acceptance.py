@@ -302,7 +302,21 @@ def verify(log: Path, rom_path: Path, text_path: Path) -> dict:
     }
     if not all(assertions.values()):
         failed = [name for name, ok in assertions.items() if not ok]
-        raise ValueError("runtime acceptance failed: " + ", ".join(failed))
+        diagnostics = {
+            "hook_count": len(hooks),
+            "hook_states": hook_states,
+            "final_hold": [hold_left, hold_line, hold_ptr],
+            "final_render_done": [done_left, done_line, done_ptr],
+            "render_done_frame": render_done_frame,
+            "beep_frame": beep_frame,
+            "pause_frames": pause_frames,
+        }
+        raise ValueError(
+            "runtime acceptance failed: "
+            + ", ".join(failed)
+            + "; diagnostics="
+            + json.dumps(diagnostics, sort_keys=True)
+        )
     return report
 
 
