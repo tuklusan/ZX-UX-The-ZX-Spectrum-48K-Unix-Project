@@ -36,7 +36,7 @@ jobs:
           set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends imagemagick xdotool xvfb
-      - name: Capture screen at startup-beep entry
+      - name: Capture live screen during one-second hold
         shell: bash
         run: |
           set -euo pipefail
@@ -54,13 +54,14 @@ jobs:
           print 0xa00002
           continue
           end
-          breakpoint 0x5f2a
+          breakpoint 0x5eb7
           commands 3
-          print 0xfeed002a
+          print 0xfeed00b7
           print [0x5ef7]
           print [0x5ef8]
           print [0x5ef5]
           print [0x5ef6]
+          continue
           end
           continue
           EOF
@@ -100,13 +101,13 @@ jobs:
           xdotool windowfocus --sync "$window" || true
           xdotool key F8
           for i in $(seq 1 1200); do
-            grep -q '0xfeed002a' "$diag/fuse-state.log" && break
+            grep -q '0xfeed00b7' "$diag/fuse-state.log" && break
             sleep 0.1
           done
-          grep -q '0xfeed002a' "$diag/fuse-state.log"
-          sleep 0.25
-          import -display :99 -window "$window" "$diag/fuse-at-beep.png"
-          identify "$diag/fuse-at-beep.png"
+          grep -q '0xfeed00b7' "$diag/fuse-state.log"
+                    sleep 0.30
+          import -display :99 -window "$window" "$diag/fuse-during-hold.png"
+          identify "$diag/fuse-during-hold.png"
           kill "$fuse_pid" "$xvfb_pid" 2>/dev/null || true
           fuse_pid=""
           xvfb_pid=""
