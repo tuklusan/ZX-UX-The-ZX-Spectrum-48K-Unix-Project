@@ -1,0 +1,75 @@
+{
+  "action": "build",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "fcmp1-six-byte-layout-exact",
+      "passed": true
+    },
+    {
+      "name": "sys-fp-cmp-writes-one-signed-byte-only",
+      "passed": true
+    },
+    {
+      "name": "rom-equality-and-less-comparators-own-ordering",
+      "passed": true
+    },
+    {
+      "name": "inputs-copied-before-alias-result-write",
+      "passed": true
+    },
+    {
+      "name": "required-helper-name-fcmp-frozen",
+      "passed": true
+    },
+    {
+      "name": "all-six-float-relations-lower-through-fcmp",
+      "passed": true
+    },
+    {
+      "name": "float-logical-truth-compares-exact-five-byte-zero",
+      "passed": true
+    },
+    {
+      "name": "sdk-float-compare-mapping-recorded",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1119-fp-cmp.sym",
+        "p1119-fp-cmp.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 20,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 12202 lines, work time: 0.020 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p1119-main.bin": "50adbd164e8b40402b4eda559796d9f8ae8758e282a2cdcb4635a1419d85d53d",
+    "v1/dist/certification/P11.18.build.json": "0e8d1e3605e19f9df8eabed68f33b2ba3d432fd6418c8db80b4572e2c166f1d0",
+    "v1/dist/certification/P11.18.test.json": "a39a683b8a23471d759a0bf1bc26e41baf6d1f41a76b29b51679c43336b739de",
+    "v1/include/zx48ux.inc": "c00093838ecaaabe0f5e1a57d3844940dd6b4ff816f065758f09ae9f97105661",
+    "v1/src/kernel/rom_services.asm": "11e6cdd57bf00bada283e408b5bfeed456929f8bd00a6aa1db609bc95a4c89c7",
+    "v1/src/kernel/syscall.asm": "f59cc92273aa5c0f6f2effa283f9944630fa673c42afe69cd10825d5dabcee43",
+    "v1/src/libc48/float_runtime.asm": "00e666bfe96327279ab975b8895ed9208bdd1d92b14b60b1ac6bb5dc3e522d84",
+    "v1/src/tools/cc.asm": "e431bb11a8176d61f0a935768875a84044440f296d217ad0de7ad0ec422794b6",
+    "v1/tools-host/test-driver/phase11_step_19.py": "d5cd15d6ea9d13191c4cc0c30b253af8bbc2f869a479d0489c2a3e24b93fcc7b"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.18": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "ff59fe01552d523bf3be6b4994e086fdcb7dbcad",
+  "status": "PASS",
+  "step": "P11.19",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
