@@ -100,6 +100,7 @@ p1120_three:db $00,$00,$03,$00,$00
 p1120_four: db $00,$00,$04,$00,$00
 p1120_eight:db $00,$00,$08,$00,$00
 p1120_full1:db $81,$00,$00,$00,$00
+p1120_fullneg1:db $81,$80,$00,$00,$00
 p1120_full2:db $82,$00,$00,$00,$00
 p1120_full8:db $84,$00,$00,$00,$00
 p1120_out:  defs 5,$A5
@@ -258,10 +259,10 @@ p1120_pow:
 
 p1120_fabs:
     ld hl,p1120_out
-    ld de,p1120_neg1
+    ld de,p1120_fullneg1
     call fabs
     ret c
-    ld de,p1120_one
+    ld de,p1120_full1
     jp p1120_check_out
 
 p1120_yield:
