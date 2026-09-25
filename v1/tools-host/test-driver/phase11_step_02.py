@@ -73,6 +73,7 @@ def dispatch(root, action, step, *, sha256_file, run_command, require_project_to
         require(marker in text, f"P11.02 missing SDK/streaming design marker: {marker}")
 
     provenance = (root / "v1/tests/compiler/sdk-reference/SDK-PROVENANCE.md").read_text(encoding="utf-8")
+    compact_provenance = " ".join(provenance.split())
     for marker in (
         "P11.02 target architecture mapping",
         "64-byte source window",
@@ -80,7 +81,7 @@ def dispatch(root, action, step, *, sha256_file, run_command, require_project_to
         "eight-node expression bound",
         "Host C48B1/VM memory structures remain reference oracles only",
     ):
-        require(marker in provenance, f"P11.02 provenance mapping missing: {marker}")
+        require(marker in compact_provenance, f"P11.02 provenance mapping missing: {marker}")
 
     assembler = require_project_tool(root, "tools/runtime/sjasmplus/bin/sjasmplus")
     build = root / "v1/build"
