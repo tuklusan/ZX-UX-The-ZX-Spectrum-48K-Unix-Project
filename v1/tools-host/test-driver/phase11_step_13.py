@@ -52,8 +52,8 @@ def dispatch(root, action, step, *, sha256_file, run_command, require_project_to
     )
     require(all(m in text for m in markers), "P11.13 C48_REGCALL surface incomplete")
     require("EMIT_P11_C48_REGCALL_RUNTIME" in crt and
-            "c48_regcall_require_iy_anchor:" in crt,
-            "P11.13 libc/crt0 ABI boundary helper missing")
+            "C48_REGCALL_IY_REQUIRED EQU ROM_IY_ANCHOR" in crt,
+            "P11.13 libc/crt0 ABI boundary contract missing")
     require("Version 1 has one externally linkable C48 calling convention: `C48_REGCALL`." in arch and
             "first argument     HL" in arch and "second argument    DE" in arch and
             "third argument     BC" in arch and
@@ -328,10 +328,8 @@ p1113_run_one:
     ret c
     push iy
     pop hl
-    ld de,ROM_IY_ANCHOR
+    ld de,C48_REGCALL_IY_REQUIRED
     call p1113_check_word
-    ret c
-    call c48_regcall_require_iy_anchor
     ret c
     ld hl,(p1113_sp_before)
     ld de,(p1113_sp_after)
