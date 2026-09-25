@@ -42,8 +42,8 @@ def dispatch(root, action, step, *, sha256_file, run_command, require_project_to
         "cc_store_allocate:",
         "cc_store_mark_definition:",
         "cc_store_output:",
-        "OBJ1_SEC_BSS",
-        "OBJ1_SYM_GLOBAL",
+        "CC_STORE_SEC_BSS",
+        "CC_STORE_SYM_GLOBAL",
         "compiler/c48/semantics.py::_declare_file_symbol",
         "compiler/tests/test_conformance.py::DeclarationCorpus",
         "84d144de2721cda5075c3a6610a422663b5e2f77",
@@ -63,12 +63,12 @@ def dispatch(root, action, step, *, sha256_file, run_command, require_project_to
     fixture = build / "p1111-storage.asm"
     fixture.write_text(r'''    DEVICE ZXSPECTRUM48
     INCLUDE "../include/zx48ux.inc"
-    INCLUDE "../include/obj1.inc"
     INCLUDE "../src/tools/cc.asm"
     INCLUDE "../../tools/ld.asm"
     ORG $C000
 fixture:
     EMIT_P11_CC_STREAMING_CORE
+    EMIT_P11_CC_LEXER
     EMIT_P11_CC_DECL_PARSER
     EMIT_P11_CC_GLOBAL_STORAGE
     EMIT_P10_LD_SYMBOL_RESOLVE_ROUTINES
@@ -82,16 +82,16 @@ p1111_bad: db "bad",0
 p1111_expected:
     db "x",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     dw 0
-    db OBJ1_SEC_BSS,OBJ1_SYM_GLOBAL
+    db CC_STORE_SEC_BSS,CC_STORE_SYM_GLOBAL
     db "s",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     dw 2
-    db OBJ1_SEC_BSS,0
+    db CC_STORE_SEC_BSS,0
     db "y",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     dw 4
-    db OBJ1_SEC_BSS,OBJ1_SYM_GLOBAL
+    db CC_STORE_SEC_BSS,CC_STORE_SYM_GLOBAL
     db "z",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     dw 0
-    db OBJ1_SEC_UNDEF,OBJ1_SYM_GLOBAL
+    db CC_STORE_SEC_UNDEF,CC_STORE_SYM_GLOBAL
 p1111_expected_end:
 
 ; P10.25 native resolver table: name[16], value, section, TEXT base, BSS base.
@@ -99,7 +99,7 @@ p1111_c_def: defs 23,0
 p1111_asm_z:
     db "z",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     dw 3
-    db OBJ1_SEC_TEXT
+    db CC_STORE_SEC_TEXT
     dw 20
     dw 0
 
@@ -205,7 +205,7 @@ p1111_link_golden:
     call ld_p1025_resolve
     ret c
     ld a,(ld_p1025_resolved_section)
-    cp OBJ1_SEC_BSS
+    cp CC_STORE_SEC_BSS
     jp nz,p1111_fail
     ld hl,(ld_p1025_resolved_value)
     ld de,14
@@ -220,7 +220,7 @@ p1111_link_golden:
     call ld_p1025_resolve
     ret c
     ld a,(ld_p1025_resolved_section)
-    cp OBJ1_SEC_TEXT
+    cp CC_STORE_SEC_TEXT
     jp nz,p1111_fail
     ld hl,(ld_p1025_resolved_value)
     ld de,23

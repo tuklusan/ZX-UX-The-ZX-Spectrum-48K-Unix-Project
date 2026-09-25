@@ -4243,6 +4243,10 @@ CC_STORE_RECORD_SIZE     EQU 20
 CC_STORE_NAME_SIZE       EQU 16
 CC_STORE_LINK_EXTERNAL   EQU 0
 CC_STORE_LINK_INTERNAL   EQU 1
+CC_STORE_SEC_UNDEF       EQU 0
+CC_STORE_SEC_TEXT        EQU 1
+CC_STORE_SEC_BSS         EQU 2
+CC_STORE_SYM_GLOBAL      EQU 1
 
 cc_store_records:        defs CC_STORE_CAPACITY*CC_STORE_RECORD_SIZE,0
 cc_store_sizes:          defs CC_STORE_CAPACITY*2,0
@@ -4415,7 +4419,7 @@ cc_store_new_extern:
     xor a
     ld (hl),a
     inc hl
-    ld a,OBJ1_SYM_GLOBAL
+    ld a,CC_STORE_SYM_GLOBAL
     ld (hl),a
 cc_store_new_commit:
     ld hl,cc_store_count
@@ -4522,14 +4526,14 @@ cc_store_mark_definition:
     inc hl
     ld (hl),d
     inc hl
-    ld a,OBJ1_SEC_BSS
+    ld a,CC_STORE_SEC_BSS
     ld (hl),a
     inc hl
     ld a,(cc_store_work_linkage)
     or a
     ld a,0
     jp nz,cc_store_mark_flags
-    ld a,OBJ1_SYM_GLOBAL
+    ld a,CC_STORE_SYM_GLOBAL
 cc_store_mark_flags:
     ld (hl),a
     xor a
