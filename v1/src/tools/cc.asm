@@ -5533,6 +5533,12 @@ cc_fp_cast_notsup:
 CC_FP_COMPARE_HELPER_FCMP EQU 1
 CC_FP_COMPARE_CAST_LHS    EQU 1
 CC_FP_COMPARE_CAST_RHS    EQU 2
+CC_FP_REL_LT              EQU 1
+CC_FP_REL_LE              EQU 2
+CC_FP_REL_EQ              EQU 3
+CC_FP_REL_NE              EQU 4
+CC_FP_REL_GT              EQU 5
+CC_FP_REL_GE              EQU 6
 
 ; A=lhs base type, E=rhs base type. Success A=cast mask, D=helper id.
 ; Integer operands mixed with float are first converted through P11.18 __itof.
@@ -5576,9 +5582,9 @@ cc_fp_compare_integer_type:
 
 ; A=relation id 1..6. Success D=__fcmp helper id.
 cc_fp_relation_helper:
-    cp C48_FP_REL_LT
+    cp CC_FP_REL_LT
     jr c,cc_fp_compare_notsup
-    cp C48_FP_REL_GE+1
+    cp CC_FP_REL_GE+1
     jr nc,cc_fp_compare_notsup
     ld d,CC_FP_COMPARE_HELPER_FCMP
     or a
