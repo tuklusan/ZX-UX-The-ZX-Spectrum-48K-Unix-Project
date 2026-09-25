@@ -30,16 +30,19 @@ Known dummy 8192-byte payload SHA-256: `0e59ef9290ffc4391b0ae999177cd9d7d9eafb6f
 
 Upstream reviewed hook SHA-256: `f1c6b88998488c552bbf5358cfcf32494de4687a2f0cfb7bcbe37a71cf6c00ef`
 
-Current ZX-UX integration hook SHA-256: `8de7a5a325c4976760c172b367ee230f9d1014db2915bbde3f94eade0d686046`
+Current ZX-UX integration hook SHA-256: `0dcc63767005e1140b452d71a326d4b9af9fc39bfb57c9221e776d2957991b08`
 
-The integration hook differs only to repair the final-block control path: product
-media uses the loader's ordinary `0x0100` final continuation, the 24th display
-callback renders the last row, the startup beep executes once, and that callback
-then performs the exact `0xE003` handoff.
+The integration hook differs only to repair the final-block control path. The
+reviewed transport invokes display callbacks between turbo payload blocks, so only
+23 such callbacks exist for 24 payload blocks. Product media therefore routes the
+final block's post-copy dispatch to the resident finalizer at `0x5EB4`. That
+finalizer renders row 24 from the same loader-owned text buffer, executes the
+startup beep exactly once, and then performs the exact `0xE003` handoff.
 
 Construction assembler reference: Pasmo `0.5.3-7`, release-scoped only.
 
 The exact display text and base64 seed remain promoted byte-for-byte. `build.py`
-retains the reviewed transport algorithm but patches the final product header and
-`src/print_hook.asm` contains the narrowly scoped final-callback repair described
-above. The preserved ZIP remains the immutable upstream input and is never modified.
+retains the reviewed transport algorithm but patches only the final product
+header's post-copy address, and `src/print_hook.asm` contains the narrowly scoped
+finalizer repair described above. The preserved ZIP remains the immutable upstream
+input and is never modified.
