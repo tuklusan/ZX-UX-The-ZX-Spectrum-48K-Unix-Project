@@ -240,7 +240,7 @@ p1117_goldens:
     ld a,FPOP_OP_DIV
     ld hl,p1117_f4
     ld de,p1117_f2
-    ld bc,p1117_f2
+    ld bc,p1117_full2
     call p1117_case
     ret c
     ld a,FPOP_OP_POW
@@ -288,7 +288,7 @@ p1117_goldens:
     ld a,FPOP_OP_COS
     ld hl,p1117_f0
     ld de,0
-    ld bc,p1117_f1
+    ld bc,p1117_full1
     call p1117_case
     ret c
     ld a,FPOP_OP_TAN
