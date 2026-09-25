@@ -197,6 +197,82 @@ jobs:
             --report "$diag/runtime-acceptance.json"
           echo "ZX-UX RELEASE TZX FINAL-ROW/BEEP/E003 PASS"
 
+      - name: Real-time Fuse detect-loader compatibility proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          diag=/tmp/release-tzx/realtime-detect-loader
+          mkdir -p "$diag"
+          tools/runtime/python/bin/python v1/tools-host/release-tzx/runtime_acceptance.py \
+            debugger --output "$diag/debugger.txt"
+          Xvfb :99 -screen 0 1280x900x24 >"$diag/xvfb.log" 2>&1 &
+          xvfb_pid=$!
+          fuse_pid=""
+          trap 'kill "$fuse_pid" "$xvfb_pid" 2>/dev/null || true' EXIT
+          sleep 1
+          stdbuf -oL -eL tools/runtime/fuse/bin/fuse --machine 48 \
+            --rom-48 tools/runtime/fuse/roms/48.rom \
+            --tape /tmp/release-tzx/a/release.tzx \
+            --no-accelerate-loader --no-fastload --no-traps --detect-loader \
+            --no-confirm-actions --no-sound \
+            --debugger-command "$(cat "$diag/debugger.txt")" \
+            >"$diag/fuse-state.log" 2>&1 &
+          fuse_pid=$!
+          window=""
+          for i in $(seq 1 40); do
+            window="$(xdotool search --onlyvisible --name '^Fuse
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --quiet origin main
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
+          test ! -n "$(git ls-files | grep -Ei '(^|/)(P11(\.|/)|p11[^/]*qualification|phase-?11)' || true)"
+          test -z "$(git status --porcelain)"
+          echo "ZX-UX RELEASE TZX TOOLING QUALIFICATION PASS"
+
+      - name: Upload qualification outputs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: zxux-release-tzx-qualification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: /tmp/release-tzx/
+          retention-days: 30
+          if-no-files-found: warn
+ 2>/dev/null | head -n1 || true)"
+            test -n "$window" && break
+            sleep 0.25
+          done
+          test -n "$window"
+          xdotool windowfocus --sync "$window" || true
+          xdotool mousemove --window "$window" 160 145 click 1 || true
+          sleep 0.75
+          xdotool keydown Shift_L; sleep 0.25; xdotool keyup Shift_L; sleep 0.60
+          xdotool keydown j; sleep 0.45; xdotool keyup j; sleep 0.60
+          xdotool key --delay 300 ctrl+p; sleep 0.60
+          xdotool key --delay 300 ctrl+p; sleep 0.60
+          xdotool keydown Return; sleep 0.45; xdotool keyup Return
+          result=""
+          for i in $(seq 1 130); do
+            if grep -q '0xa50001' "$diag/fuse-state.log"; then result=E003_REACHED; break; fi
+            if grep -q '0xaf0001' "$diag/fuse-state.log"; then result=TIMEOUT; break; fi
+            kill -0 "$fuse_pid" 2>/dev/null || { result=FUSE_EXITED; break; }
+            sleep 1
+          done
+          wait "$fuse_pid" || true
+          fuse_pid=""
+          kill "$xvfb_pid" 2>/dev/null || true
+          xvfb_pid=""
+          trap - EXIT
+          test "$result" = E003_REACHED
+          tools/runtime/python/bin/python v1/tools-host/release-tzx/runtime_acceptance.py \
+            verify \
+            --log "$diag/fuse-state.log" \
+            --rom tools/runtime/fuse/roms/48.rom \
+            --text v1/tools-host/release-tzx/text-lines.txt \
+            --report "$diag/runtime-acceptance.json"
+          echo "ZX-UX RELEASE TZX DETECT-LOADER COMPATIBILITY PASS"
+
       - name: Final exact-head and clean-state gate
         shell: bash
         run: |

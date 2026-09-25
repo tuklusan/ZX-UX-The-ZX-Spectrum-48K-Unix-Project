@@ -26,6 +26,7 @@ RENDER_ROW_ADDR = 0x5E62
 FINAL_HOLD_ADDR = 0x5EB4
 STARTUP_BEEP_ADDR = 0x5F2A
 PAUSE_ONE_SECOND_ADDR = 0x5F39
+FINALIZE_DISPLAY_ADDR = 0x5F50
 PRE_BEEP_PAUSE_TSTATES = 3500009
 KERNEL_BASE = 0xE000
 KERNEL_SIZE = 8192
@@ -127,13 +128,11 @@ def inspect(data: bytes) -> dict:
         return basic[offset:offset + size]
 
     expected_hold = bytes(
-        [0xCD, RENDER_ROW_ADDR & 0xFF, RENDER_ROW_ADDR >> 8,
-         0xCD, PAUSE_ONE_SECOND_ADDR & 0xFF, PAUSE_ONE_SECOND_ADDR >> 8,
-         0xCD, STARTUP_BEEP_ADDR & 0xFF, STARTUP_BEEP_ADDR >> 8,
+        [0xCD, FINALIZE_DISPLAY_ADDR & 0xFF, FINALIZE_DISPLAY_ADDR >> 8,
          0xC3, HANDOFF & 0xFF, HANDOFF >> 8]
-    ) + bytes(2)
+    ) + bytes(8)
     if basic_bytes(FINAL_HOLD_ADDR, 14) != expected_hold:
-        raise ValueError("final_hold is not render, one-second hold, beep, then E003")
+        raise ValueError("final_hold is not completion helper then exact E003")
     if basic_bytes(STARTUP_BEEP_ADDR, 15) != bytes.fromhex(
         "dde511e00021ca01cdb503f3dde1c9"
     ):
@@ -142,6 +141,10 @@ def inspect(data: bytes) -> dict:
         "f316020100000b78b120fb1520f501d40d0b78b120fbc9"
     ):
         raise ValueError("one-second pre-beep pause routine drifted")
+    if basic_bytes(FINALIZE_DISPLAY_ADDR, 16) != bytes.fromhex(
+        "cd625e3af75eb720f7cd395fcd2a5fc9"
+    ):
+        raise ValueError("pending-row finalizer routine drifted")
     if basic_bytes(0x5EF7, 2) != bytes([24, 0]):
         raise ValueError("loader display callback state is not 24 rows from row zero")
 

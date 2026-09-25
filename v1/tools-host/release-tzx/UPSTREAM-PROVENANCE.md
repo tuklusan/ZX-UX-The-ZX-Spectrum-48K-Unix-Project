@@ -30,15 +30,17 @@ Known dummy 8192-byte payload SHA-256: `0e59ef9290ffc4391b0ae999177cd9d7d9eafb6f
 
 Upstream reviewed hook SHA-256: `f1c6b88998488c552bbf5358cfcf32494de4687a2f0cfb7bcbe37a71cf6c00ef`
 
-Current ZX-UX integration hook SHA-256: `4cb5115044b3eb726cc8834ce4578e4532d24c960e32673d1e66e7f88ebd3417`
+Current ZX-UX integration hook SHA-256: `9c05b4d2e1c23f44a4e3d059a1313116a8f7c12380e4ba1f2ccf645cf5e0e475`
 
 The integration hook differs only to repair the final-block control path. The
-reviewed transport invokes display callbacks between turbo payload blocks, so only
-23 such callbacks exist for 24 payload blocks. Product media therefore routes the
-final block's post-copy dispatch to the resident finalizer at `0x5EB4`. That
-finalizer renders row 24 from the same loader-owned text buffer, holds that
-completed display for one nominal second, executes the startup beep exactly once,
-and then performs the exact `0xE003` handoff.
+reviewed transport normally invokes display callbacks between turbo payload
+blocks, but emulator loader-detection heuristics can suppress more than one such
+callback even when fastloading, tape traps and loader acceleration are disabled.
+Product media therefore routes the final block's post-copy dispatch to the
+resident finalizer at `0x5EB4`. That finalizer drains every still-pending row
+from the same loader-owned text buffer, holds the completed 24x32 display for one
+nominal second, executes the startup beep exactly once, and then performs the
+exact `0xE003` handoff.
 
 Construction assembler reference: Pasmo `0.5.3-7`, release-scoped only.
 

@@ -20,9 +20,9 @@ The immutable reviewed seed supplies only the BASIC/fast-loader timing template.
 Product mode requires an explicit freshly rebuilt 8192-byte kernel. The known
 seed dummy payload is forbidden. All 24 turbo payload chunks and their loader
 check bytes are regenerated from that kernel. Product mode routes the final turbo block's post-copy dispatch to the resident
-finalizer. That finalizer renders row 24 from the loader-owned text buffer, holds
-it visible for one nominal second, plays the startup beep exactly once, then
-performs the exact 0xE003 handoff.
+finalizer. That finalizer drains every still-pending loader-owned status row,
+holds the completed 24x32 display visible for one nominal second, plays the
+startup beep exactly once, then performs the exact 0xE003 handoff.
 """
 
 from __future__ import annotations
@@ -45,7 +45,7 @@ HOOK_ASM = ROOT / "src" / "print_hook.asm"
 
 SEED_SHA256 = "7ffe2f90b58e87a19a090ca0e0f1323605754af7d8809f3f051662f9faaec6f1"
 DUMMY_PAYLOAD_SHA256 = "0e59ef9290ffc4391b0ae999177cd9d7d9eafb6fcd86a45b13f9a4bd0b08c9ce"
-HOOK_SHA256 = "4cb5115044b3eb726cc8834ce4578e4532d24c960e32673d1e66e7f88ebd3417"
+HOOK_SHA256 = "9c05b4d2e1c23f44a4e3d059a1313116a8f7c12380e4ba1f2ccf645cf5e0e475"
 
 PROG_BASE = 0x5CCB
 HOOK_ADDR = 0x5E4F
@@ -62,6 +62,7 @@ FINAL_LOADER_AFTER = FINAL_HOLD_ADDR
 INIT_SCREEN_ADDR = 0x5EC2
 BEEP_ADDR = 0x5F2A
 PAUSE_ADDR = 0x5F39
+FINALIZE_DISPLAY_ADDR = 0x5F50
 PRE_BEEP_PAUSE_TSTATES = 3500009
 TEXT_ARRAY_OFFSET = 84
 CHUNK_LENGTHS = (342,) * 8 + (341,) * 16
@@ -199,8 +200,8 @@ def assemble_hook(output: Path, pasmo: str) -> bytes:
     sentinel = struct.pack("<H", TEXT_BUFFER_SENTINEL)
     if hook.count(sentinel) != 1:
         raise AssertionError("print_hook.asm must contain exactly one TEXT_BUFFER sentinel")
-    if len(hook) != 257:
-        raise AssertionError(f"unexpected hook length {len(hook)}; expected 257")
+    if len(hook) != 273:
+        raise AssertionError(f"unexpected hook length {len(hook)}; expected 273")
     screen_off = INIT_SCREEN_ADDR - HOOK_ADDR
     screen_prefix = bytes.fromhex(
         "21004011014001ff17af77edb0"
@@ -213,19 +214,22 @@ def assemble_hook(output: Path, pasmo: str) -> bytes:
     beep_off = BEEP_ADDR - HOOK_ADDR
     pause_off = PAUSE_ADDR - HOOK_ADDR
     expected_hold = bytes(
-        [0xCD, RENDER_ROW_ADDR & 0xFF, RENDER_ROW_ADDR >> 8,
-         0xCD, PAUSE_ADDR & 0xFF, PAUSE_ADDR >> 8,
-         0xCD, BEEP_ADDR & 0xFF, BEEP_ADDR >> 8,
+        [0xCD, FINALIZE_DISPLAY_ADDR & 0xFF, FINALIZE_DISPLAY_ADDR >> 8,
          0xC3, PAYLOAD_ENTRY & 0xFF, PAYLOAD_ENTRY >> 8]
-    ) + bytes(2)
+    ) + bytes(8)
     if hook[hold_off:hold_off+14] != expected_hold:
-        raise AssertionError("final_hold render/pause/beep/E003 dispatch drifted")
+        raise AssertionError("final_hold completion/E003 dispatch drifted")
     if hook[beep_off:beep_off+15] != bytes.fromhex("dde511e00021ca01cdb503f3dde1c9"):
         raise AssertionError("startup beep drifted")
-    if hook[pause_off:] != bytes.fromhex(
+    finalizer_off = FINALIZE_DISPLAY_ADDR - HOOK_ADDR
+    if hook[pause_off:finalizer_off] != bytes.fromhex(
         "f316020100000b78b120fb1520f501d40d0b78b120fbc9"
     ):
         raise AssertionError("one-second pre-beep pause drifted")
+    if hook[finalizer_off:] != bytes.fromhex(
+        "cd625e3af75eb720f7cd395fcd2a5fc9"
+    ):
+        raise AssertionError("pending-row finalizer drifted")
     return bytes(hook)
 
 
@@ -302,7 +306,7 @@ def patch_basic(seed: bytes, hook_template: bytes) -> bytearray:
 
     hook = bytearray(hook_template)
     delta = len(hook) - len(old_hook)
-    if delta != 65:
+    if delta != 81:
         raise AssertionError("hook growth drifted")
     new_line30_off = line30_off + delta
     content = new_line30_off + 4

@@ -22,7 +22,7 @@ import re
 
 DISPLAY_HOOK = 0x5E55
 FINAL_HOLD = 0x5EB4
-FINAL_RENDER_DONE = 0x5EB7
+FINAL_RENDER_DONE = 0x5F59
 PAUSE_ONE_SECOND = 0x5F39
 STARTUP_BEEP = 0x5F2A
 ROM_BEEPER = 0x03B5
@@ -227,9 +227,10 @@ def verify(log: Path, rom_path: Path, text_path: Path) -> dict:
     first_ptr = hook_states[0][2] if hook_states else -1
     expected_hook_states = [(24 - i, i, first_ptr + 32 * i) for i in range(len(hooks))]
     finalizer_entry_valid = (
-        (len(hooks) == 23 and hold_left == 1 and hold_line == 23 and hold_ptr == first_ptr + 23 * 32)
-        or
-        (len(hooks) == 24 and hold_left == 0 and hold_line == 24 and hold_ptr == first_ptr + 24 * 32)
+        1 <= len(hooks) <= 24
+        and hold_line == len(hooks)
+        and hold_left == 24 - len(hooks)
+        and hold_ptr == first_ptr + 32 * len(hooks)
     )
     order = [
         hooks[-1][3] if hooks else -1,
@@ -244,9 +245,9 @@ def verify(log: Path, rom_path: Path, text_path: Path) -> dict:
         "real_rom_basic_path_seen": rom_basic_hits >= 1,
         "real_rom_ld_bytes_seen": rom_load_hits >= 1,
         "no_timeout": timeout_hits == 0,
-        "interblock_display_callback_count_valid": len(hooks) in (23, 24),
+        "interblock_display_callback_count_valid": 1 <= len(hooks) <= 24,
         "interblock_display_callback_state_sequence": hook_states == expected_hook_states,
-        "finalizer_entered_with_row_24_ready_or_pending": finalizer_entry_valid,
+        "finalizer_entered_with_consistent_pending_rows": finalizer_entry_valid,
         "finalizer_completed_row_24": (
             done_left == 0 and done_line == 24 and done_ptr == first_ptr + 24 * 32
         ),

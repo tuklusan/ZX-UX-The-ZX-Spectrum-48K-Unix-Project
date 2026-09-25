@@ -115,13 +115,19 @@ glyph_loop:
 
 final_hold:
         ; The final turbo header dispatches here after the last kernel bytes
-        ; have been copied into place. Render row 24 explicitly, hold it visible
-        ; for one nominal second, beep exactly once, then hand off at 0xE003.
+        ; have been copied into place. Drain every status row still pending:
+        ; real hardware/no-shortcut Fuse normally leaves zero or one, while
+        ; Fuse loader detection may suppress two inter-block callbacks. The
+        ; completion helper is idempotent once lines_left reaches zero.
         ; Keep this block exactly 14 bytes so init_screen remains at 0x5EC2.
-        call render_row
-        call pause_one_second
-        call startup_beep
+        call finalize_display
         jp 0xE003
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
         nop
         nop
 
@@ -214,4 +220,16 @@ pause_fine:
         ld a,b
         or c
         jr nz,pause_fine
+        ret
+
+finalize_display:
+        ; Complete all remaining rows before the visible hold. This makes the
+        ; finalizer independent of how many inter-block callbacks an emulator's
+        ; optional loader detector allows to execute.
+        call render_row
+        ld a,(lines_left)
+        or a
+        jr nz,finalize_display
+        call pause_one_second
+        call startup_beep
         ret
