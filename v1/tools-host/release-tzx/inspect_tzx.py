@@ -221,7 +221,7 @@ def main() -> int:
         args.extract.write_bytes(kernel)
     for key in ("tzx_sha256", "tzx_size", "kernel_sha256", "kernel_size", "standard_speed_blocks", "generalized_blocks"):
         print(f"{key}={result[key]}")
-    print("final_loader_after=0x0100")
+    print(f"final_loader_after=0x{result['final_loader_after']:04X}")
     print("handoff=0xE003")
     print("ZX-UX RELEASE TZX INSPECTION PASS")
     return 0
