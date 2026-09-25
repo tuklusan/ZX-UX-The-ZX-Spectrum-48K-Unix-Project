@@ -131,7 +131,9 @@ jobs:
           embedded_sha="$(sha256sum /tmp/p10-prerelease/embedded-kernel.bin | awk '{print $1}')"
           test "$host_sha" = "$embedded_sha"
           test "$host_sha" != 0e59ef9290ffc4391b0ae999177cd9d7d9eafb6fcd86a45b13f9a4bd0b08c9ce
-          grep -q '^final_loader_after=0x5EB4          grep -q '^kernel_size=8192$' /tmp/p10-prerelease/inspection.txt
+          grep -q '^final_loader_after=0x5EB4$' /tmp/p10-prerelease/inspection.txt
+          grep -q '^handoff=0xE003$' /tmp/p10-prerelease/inspection.txt
+          grep -q '^kernel_size=8192$' /tmp/p10-prerelease/inspection.txt
           grep -q '^standard_speed_blocks=2$' /tmp/p10-prerelease/inspection.txt
           grep -q '^generalized_blocks=48$' /tmp/p10-prerelease/inspection.txt
 
