@@ -109,7 +109,7 @@ p1110_chars:
     ld bc,p1110_ca_end-p1110_ca
     call cc_lit_char
     ret c
-    cp "A"
+    cp 'A'
     jp nz,p1110_fail
 
     ld hl,p1110_cnl
