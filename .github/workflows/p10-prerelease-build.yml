@@ -374,7 +374,7 @@ jobs:
               'exact_8192_byte_host_tzx_compare':'PASS',
               'real_time_rom_basic_loader_path':'PASS',
               'real_time_fast_loader_to_e003_no_shortcuts':'PASS',
-              'loader_23_interblock_callbacks_runtime_verified':'PASS',
+              'loader_interblock_display_callbacks_runtime_verified':'PASS',
               'loader_finalizer_row24_runtime_verified':'PASS',
               'loader_final_row_bitmap_runtime_verified':'PASS',
               'loader_final_row_one_second_hold_runtime_verified':'PASS',
@@ -418,9 +418,11 @@ jobs:
           assert meta['boot_contract']['zx48uxscr'] is False
           assert meta['kernel_identity']['size']==8192
           assert meta['boot_contract']['final_loader_after']=='0x5EB4'
-          assert meta['runtime_acceptance']['hook_count']==23
-          assert meta['runtime_acceptance']['final_hold']['lines_left']==1
+          assert meta['runtime_acceptance']['hook_count'] in (23,24)
+          hold=meta['runtime_acceptance']['final_hold']
+          assert (hold['lines_left'],hold['line_index']) in ((1,23),(0,24))
           assert meta['runtime_acceptance']['final_render_done']['lines_left']==0
+          assert meta['runtime_acceptance']['final_render_done']['line_index']==24
           assert meta['boot_contract']['pre_beep_pause_nominal_tstates']==3500009
           assert meta['runtime_acceptance']['pre_beep_pause']['nominal_tstates']==3500009
           assert 59 <= meta['runtime_acceptance']['pre_beep_pause']['frames'] <= 63

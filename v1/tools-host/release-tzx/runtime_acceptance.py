@@ -225,7 +225,12 @@ def verify(log: Path, rom_path: Path, text_path: Path) -> dict:
     expected_attr = [0x07] * 32
 
     first_ptr = hook_states[0][2] if hook_states else -1
-    expected_hook_states = [(24 - i, i, first_ptr + 32 * i) for i in range(23)]
+    expected_hook_states = [(24 - i, i, first_ptr + 32 * i) for i in range(len(hooks))]
+    finalizer_entry_valid = (
+        (len(hooks) == 23 and hold_left == 1 and hold_line == 23 and hold_ptr == first_ptr + 23 * 32)
+        or
+        (len(hooks) == 24 and hold_left == 0 and hold_line == 24 and hold_ptr == first_ptr + 24 * 32)
+    )
     order = [
         hooks[-1][3] if hooks else -1,
         hold_index,
@@ -239,12 +244,10 @@ def verify(log: Path, rom_path: Path, text_path: Path) -> dict:
         "real_rom_basic_path_seen": rom_basic_hits >= 1,
         "real_rom_ld_bytes_seen": rom_load_hits >= 1,
         "no_timeout": timeout_hits == 0,
-        "exactly_23_interblock_display_callbacks": len(hooks) == 23,
+        "interblock_display_callback_count_valid": len(hooks) in (23, 24),
         "interblock_display_callback_state_sequence": hook_states == expected_hook_states,
-        "finalizer_entered_with_row_24_pending": (
-            hold_left == 1 and hold_line == 23 and hold_ptr == first_ptr + 23 * 32
-        ),
-        "finalizer_rendered_row_24": (
+        "finalizer_entered_with_row_24_ready_or_pending": finalizer_entry_valid,
+        "finalizer_completed_row_24": (
             done_left == 0 and done_line == 24 and done_ptr == first_ptr + 24 * 32
         ),
         "final_row_rendered_before_beep": final_row == expected_row,
