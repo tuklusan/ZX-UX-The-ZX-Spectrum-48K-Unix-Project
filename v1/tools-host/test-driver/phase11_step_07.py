@@ -142,6 +142,13 @@ p1107_literals_expected:
     db CC_X_FLOAT,CC_X_CHAR,CC_X_ADD
 p1107_literals_expected_end:
 
+p1107_group_post:
+    db "(a)[1]++"
+p1107_group_post_end:
+p1107_group_post_expected:
+    db CC_X_IDENT,CC_X_INT,CC_X_INDEX,CC_X_POSTINC
+p1107_group_post_expected_end:
+
 p1107_bad_cond: db "a?b:c"
 p1107_bad_cond_end:
 p1107_bad_comp: db "a+=1"
@@ -255,6 +262,12 @@ p1107_golden:
     ld a,p1107_literals_expected_end-p1107_literals_expected
     call p1107_compare
     ret c
+    ld hl,p1107_group_post
+    ld bc,p1107_group_post_end-p1107_group_post
+    ld de,p1107_group_post_expected
+    ld a,p1107_group_post_expected_end-p1107_group_post_expected
+    call p1107_compare
+    ret c
     xor a
     ret
 
@@ -320,6 +333,7 @@ fixture_end:
         {"name": "exact-version1-precedence-ladder-native", "passed": True},
         {"name": "assignment-right-associative-native", "passed": True},
         {"name": "prefix-postfix-index-call-native", "passed": True},
+        {"name": "postfix-after-grouped-expression-native", "passed": True},
         {"name": "integer-and-integer-float-cast-syntax-native", "passed": True},
         {"name": "logical-short-circuit-boundary-events-native", "passed": True},
         {"name": "comma-operator-not-in-expression-grammar", "passed": True},
