@@ -3734,6 +3734,8 @@ cc_ptr_remainder:         db 0
 ; pointee and is rejected; void ** is valid because its pointee is void *.
 cc_ptr_pointee_size:
     ld (cc_ptr_base_type),a
+    cp CC_TYPE_FLOAT+1
+    jp nc,cc_ptr_inval
     ld a,e
     or a
     jp z,cc_ptr_inval
