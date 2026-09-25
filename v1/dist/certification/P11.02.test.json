@@ -1,0 +1,130 @@
+{
+  "action": "test",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "source-window-fixed-64",
+      "passed": true
+    },
+    {
+      "name": "separate-bounded-symbol-tables",
+      "passed": true
+    },
+    {
+      "name": "identifier-visible-limit-15",
+      "passed": true
+    },
+    {
+      "name": "expression-tree-fixed-bound",
+      "passed": true
+    },
+    {
+      "bytes": 1844,
+      "name": "measured-core-workspace-under-2k",
+      "passed": true
+    },
+    {
+      "name": "sdk-decomposition-cross-reference",
+      "passed": true
+    },
+    {
+      "name": "no-whole-source-or-program-ast-design",
+      "passed": true
+    },
+    {
+      "name": "fuse-single-sna-stream-to-obj1-stage",
+      "passed": true
+    },
+    {
+      "name": "fuse-case-sensitive-identifiers-coexist",
+      "passed": true
+    },
+    {
+      "name": "fuse-15-char-identifier-accepted-exact",
+      "passed": true
+    },
+    {
+      "name": "fuse-16-char-truncation-alias-rejected",
+      "passed": true
+    },
+    {
+      "name": "fuse-global-table-exact-capacity-fails-closed",
+      "passed": true
+    },
+    {
+      "name": "fuse-local-table-exact-capacity-fails-closed",
+      "passed": true
+    },
+    {
+      "name": "fuse-label-table-exact-capacity-fails-closed",
+      "passed": true
+    },
+    {
+      "name": "fuse-expression-capacity-released",
+      "passed": true
+    },
+    {
+      "name": "fuse-source-window-overflow-fails-closed",
+      "passed": true
+    },
+    {
+      "name": "failure-preserves-output-marker-and-workspace-guards",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1102-streaming.sym",
+        "p1102-streaming.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 7,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 1162 lines, work time: 0.005 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-fuse-revwulwz/fixture.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 140,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p1102-main.bin": "1d98de426c0788f86ff9265723215629471e24d635f523155c3f3aa485cccff9",
+    "v1/dist/certification/P11.01.build.json": "42aa8e7e4201681d03aa3ed53b9497c4367cac51ef8188c9e97c43ef17818686",
+    "v1/dist/certification/P11.01.test.json": "fb0ffa8d71ee3b8d8affef870523eb2d6a03214c1a4314c8b5a8a3468de07f7e",
+    "v1/src/tools/cc.asm": "245fc2b39d23414e1ca4392cbe76f2e5b12687c3d6143662264eb0e94397411f",
+    "v1/tests/compiler/sdk-reference/SDK-PROVENANCE.md": "73bdbe23f84102c761995d4961855753ed1e4fe57523b363b0dffb689f8682f5",
+    "v1/tools-host/test-driver/phase11_step_02.py": "164c5461fd40b9c069116f216ee7e2f24ba5f2823edd9a4843a926582582e986"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.01": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "0f4ac1ac1ae5ef5ca03e008f64738d0abbabb674",
+  "status": "PASS",
+  "step": "P11.02",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
