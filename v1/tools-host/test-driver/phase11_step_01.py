@@ -239,7 +239,7 @@ def source_assertions(root: Path, sha256_file):
             "name": "three-way-discrepancies-resolved",
             "passed": (
                 "zero outstanding REV17/DOCX/SDK discrepancies" in compact_provenance
-                and "obsolete REV11/REV02 authorities" in compact_provenance
+                and "stale REV11/REV02 authority references" in compact_provenance
             ),
         },
         {
