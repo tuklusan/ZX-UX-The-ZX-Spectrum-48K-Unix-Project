@@ -86,6 +86,7 @@ def dispatch(root, action, step, *, sha256_file, run_command, require_project_to
 
     ORG $C000
 p1119_start:
+altreg_busy: db 0
     EMIT_USER_RANGE_VALIDATION_ROUTINE
     EMIT_P1119_FP_CMP_SYSCALL_ROUTINES
     EMIT_P1119_ROM_FP_CMP_ROUTINES
