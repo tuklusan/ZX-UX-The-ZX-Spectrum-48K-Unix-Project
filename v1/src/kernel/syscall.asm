@@ -1572,3 +1572,69 @@ p1118_cast_invalid:
     scf
     ret
     ENDM
+
+; P11.19 exact staged SYS_FP_CMP FCMP1 ABI.
+    MACRO EMIT_P1119_FP_CMP_SYSCALL_ROUTINES
+p1119_cmp_req_ptr:        dw 0
+p1119_cmp_lhs:            dw 0
+p1119_cmp_rhs:            dw 0
+p1119_cmp_out:            dw 0
+
+zx48_p1119_sys_fp_cmp:
+    ld hl,(syscall_arg_hl)
+    ld (p1119_cmp_req_ptr),hl
+    ld bc,FCMP1_SIZE
+    call zx48_user_range_validate
+    ret c
+
+    ld hl,(p1119_cmp_req_ptr)
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (p1119_cmp_lhs),de
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (p1119_cmp_rhs),de
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (p1119_cmp_out),de
+
+    ld hl,(p1119_cmp_lhs)
+    ld a,h
+    or l
+    jp z,p1119_cmp_invalid
+    ld bc,5
+    call zx48_user_range_validate
+    ret c
+
+    ld hl,(p1119_cmp_rhs)
+    ld a,h
+    or l
+    jp z,p1119_cmp_invalid
+    ld bc,5
+    call zx48_user_range_validate
+    ret c
+
+    ld hl,(p1119_cmp_out)
+    ld a,h
+    or l
+    jp z,p1119_cmp_invalid
+    ld bc,1
+    call zx48_user_range_validate
+    ret c
+
+    ld hl,(p1119_cmp_lhs)
+    ld de,(p1119_cmp_rhs)
+    ld bc,(p1119_cmp_out)
+    jp zx48_p1119_rom_fp_cmp
+
+p1119_cmp_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+    ENDM
+

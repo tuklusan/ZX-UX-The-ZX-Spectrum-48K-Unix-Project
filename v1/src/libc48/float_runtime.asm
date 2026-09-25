@@ -220,3 +220,112 @@ c48_cast_runtime_error:
     scf
     ret
     ENDM
+
+; P11.19 C48 floating comparison runtime.
+; Pinned SDK mapping: 84d144de2721cda5075c3a6610a422663b5e2f77
+; compiler/c48/float5.py and compiler/c48/vm.py define source comparison/truth
+; semantics; REV17/REV08 own FCMP1 and the target-native syscall contract.
+    MACRO EMIT_P1119_C48_FCMP_RUNTIME
+C48_FP_REL_LT             EQU 1
+C48_FP_REL_LE             EQU 2
+C48_FP_REL_EQ             EQU 3
+C48_FP_REL_NE             EQU 4
+C48_FP_REL_GT             EQU 5
+C48_FP_REL_GE             EQU 6
+
+c48_fcmp_req:             defs FCMP1_SIZE,0
+c48_fcmp_result:          db 0
+c48_fp_exact_zero:        db 0,0,0,0,0
+
+; int __fcmp(const float *lhs,const float *rhs)
+; Ordinary C48_REGCALL: HL=lhs pointer, DE=rhs pointer. Return HL=-1,0,+1.
+__fcmp:
+    ld (c48_fcmp_req+FCMP1_LHS_O),hl
+    ld (c48_fcmp_req+FCMP1_RHS_O),de
+    ld hl,c48_fcmp_result
+    ld (c48_fcmp_req+FCMP1_OUT_O),hl
+    ld hl,c48_fcmp_req
+    ld a,SYS_FP_CMP
+    call SYSCALL_GATEWAY
+    jp c,c48_fcmp_runtime_error
+    ld a,(c48_fcmp_result)
+    ld l,a
+    add a,a
+    sbc a,a
+    ld h,a
+    xor a
+    ret
+
+; A=C48_FP_REL_*, HL=__fcmp signed result. Return HL=0/1.
+c48_fcmp_rel:
+    cp C48_FP_REL_LT
+    jp z,c48_fcmp_rel_lt
+    cp C48_FP_REL_LE
+    jp z,c48_fcmp_rel_le
+    cp C48_FP_REL_EQ
+    jp z,c48_fcmp_rel_eq
+    cp C48_FP_REL_NE
+    jp z,c48_fcmp_rel_ne
+    cp C48_FP_REL_GT
+    jp z,c48_fcmp_rel_gt
+    cp C48_FP_REL_GE
+    jp z,c48_fcmp_rel_ge
+    jp c48_fcmp_runtime_error
+c48_fcmp_rel_lt:
+    bit 7,h
+    jr nz,c48_fcmp_true
+    jr c48_fcmp_false
+c48_fcmp_rel_le:
+    bit 7,h
+    jr nz,c48_fcmp_true
+    ld a,h
+    or l
+    jr z,c48_fcmp_true
+    jr c48_fcmp_false
+c48_fcmp_rel_eq:
+    ld a,h
+    or l
+    jr z,c48_fcmp_true
+    jr c48_fcmp_false
+c48_fcmp_rel_ne:
+    ld a,h
+    or l
+    jr nz,c48_fcmp_true
+    jr c48_fcmp_false
+c48_fcmp_rel_gt:
+    bit 7,h
+    jr nz,c48_fcmp_false
+    ld a,h
+    or l
+    jr nz,c48_fcmp_true
+    jr c48_fcmp_false
+c48_fcmp_rel_ge:
+    bit 7,h
+    jr z,c48_fcmp_true
+c48_fcmp_false:
+    ld hl,0
+    xor a
+    ret
+c48_fcmp_true:
+    ld hl,1
+    xor a
+    ret
+
+; int truth(float value): compare through __fcmp against exact five-byte zero.
+__ftruth:
+    ld de,c48_fp_exact_zero
+    call __fcmp
+    ld a,h
+    or l
+    jr nz,c48_fcmp_true
+    jr c48_fcmp_false
+
+c48_fcmp_runtime_error:
+    ld hl,1
+    ld a,SYS_EXIT
+    call SYSCALL_GATEWAY
+    ld a,E_INVAL
+    scf
+    ret
+    ENDM
+

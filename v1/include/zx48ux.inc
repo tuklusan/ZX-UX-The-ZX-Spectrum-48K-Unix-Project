@@ -278,6 +278,11 @@ FTOI1_RESERVED_O          EQU $03
 FTOI1_OUT_O               EQU $04
 FTOI1_SIZE                EQU $06
 
+FCMP1_LHS_O                EQU $00
+FCMP1_RHS_O                EQU $02
+FCMP1_OUT_O                EQU $04
+FCMP1_SIZE                 EQU $06
+
 MEX1_HEADER_SIZE         EQU $0018
 OBJ1_HEADER_SIZE         EQU $0018
 M48O_HEADER_SIZE         EQU $0020

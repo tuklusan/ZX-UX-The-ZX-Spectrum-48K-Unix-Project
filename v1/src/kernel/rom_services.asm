@@ -798,3 +798,176 @@ p1118_rom_cast_invalid:
     scf
     ret
     ENDM
+
+; P11.19 serialized ROM floating comparison gateway.
+; The two caller operands are copied into protected calculator workspace before
+; the one-byte caller result is touched, preserving documented alias safety.
+    MACRO EMIT_P1119_ROM_FP_CMP_ROUTINES
+P1119_ROM_LT             EQU $0D
+P1119_ROM_EQ             EQU $0E
+
+p1119_rom_lhs_ptr:       dw 0
+p1119_rom_rhs_ptr:       dw 0
+p1119_rom_out_ptr:       dw 0
+p1119_rom_result:        db 0
+p1119_rom_saved_sp:      dw 0
+p1119_rom_saved_err_sp:  dw 0
+p1119_rom_saved_stkbot:  dw 0
+p1119_rom_saved_stkend:  dw 0
+p1119_rom_saved_mem:     dw 0
+p1119_rom_saved_chadd:   dw 0
+p1119_rom_saved_flags:   db 0
+p1119_rom_saved_errnr:   db 0
+p1119_rom_saved_breg:    db 0
+
+; HL=lhs five-byte pointer, DE=rhs five-byte pointer, BC=writable i8 result.
+zx48_p1119_rom_fp_cmp:
+    ld (p1119_rom_lhs_ptr),hl
+    ld (p1119_rom_rhs_ptr),de
+    ld (p1119_rom_out_ptr),bc
+    ld a,(altreg_busy)
+    or a
+    jp nz,p1119_rom_busy
+
+    ld hl,0
+    add hl,sp
+    ld (p1119_rom_saved_sp),hl
+    ld hl,(ROM_ERR_SP)
+    ld (p1119_rom_saved_err_sp),hl
+    ld hl,(ROM_STKBOT)
+    ld (p1119_rom_saved_stkbot),hl
+    ld hl,(ROM_STKEND)
+    ld (p1119_rom_saved_stkend),hl
+    ld hl,(ROM_MEM)
+    ld (p1119_rom_saved_mem),hl
+    ld hl,(ROM_CH_ADD)
+    ld (p1119_rom_saved_chadd),hl
+    ld a,(ROM_FLAGS)
+    ld (p1119_rom_saved_flags),a
+    ld a,(ROM_IY_ANCHOR)
+    ld (p1119_rom_saved_errnr),a
+    ld a,(ROM_BREG)
+    ld (p1119_rom_saved_breg),a
+
+    ld a,1
+    ld (altreg_busy),a
+    ld hl,ROM_CALC_STACK
+    ld (ROM_STKBOT),hl
+    ld (ROM_STKEND),hl
+    ld hl,ROM_MEMBOT
+    ld (ROM_MEM),hl
+    ld a,$FF
+    ld (ROM_IY_ANCHOR),a
+
+    ld hl,p1119_rom_error
+    push hl
+    ld hl,0
+    add hl,sp
+    ld (ROM_ERR_SP),hl
+    ld iy,ROM_IY_ANCHOR
+
+    call p1119_rom_load_operands
+    ld b,P1119_ROM_EQ
+    call ROM_CALCULATE
+    db $3B,$38
+    call p1119_rom_bool
+    or a
+    jr z,p1119_rom_not_equal
+    xor a
+    ld (p1119_rom_result),a
+    jr p1119_rom_success
+
+p1119_rom_not_equal:
+    call p1119_rom_load_operands
+    ld b,P1119_ROM_LT
+    call ROM_CALCULATE
+    db $3B,$38
+    call p1119_rom_bool
+    or a
+    jr z,p1119_rom_greater
+    ld a,$FF
+    ld (p1119_rom_result),a
+    jr p1119_rom_success
+
+p1119_rom_greater:
+    ld a,1
+    ld (p1119_rom_result),a
+
+p1119_rom_success:
+    pop hl
+    call p1119_rom_cleanup
+    ld a,(p1119_rom_result)
+    ld hl,(p1119_rom_out_ptr)
+    ld (hl),a
+    ld hl,0
+    xor a
+    ret
+
+; Reset the private calculator stack and copy both inputs before each operation.
+p1119_rom_load_operands:
+    ld hl,ROM_CALC_STACK
+    ld (ROM_STKBOT),hl
+    ld (ROM_STKEND),hl
+    ld hl,(p1119_rom_lhs_ptr)
+    ld de,ROM_CALC_STACK
+    ld bc,5
+    ldir
+    ld hl,(p1119_rom_rhs_ptr)
+    ld de,ROM_CALC_STACK+5
+    ld bc,5
+    ldir
+    ld hl,ROM_CALC_STACK+10
+    ld (ROM_STKEND),hl
+    ret
+
+; Return A=0 for calculator false, A=1 for calculator true.
+p1119_rom_bool:
+    ld hl,(ROM_STKEND)
+    ld de,$FFFB
+    add hl,de
+    ld b,5
+    xor a
+p1119_rom_bool_loop:
+    or (hl)
+    inc hl
+    djnz p1119_rom_bool_loop
+    ret z
+    ld a,1
+    ret
+
+p1119_rom_error:
+    ld hl,(p1119_rom_saved_sp)
+    ld sp,hl
+    call p1119_rom_cleanup
+    ld a,E_INVAL
+    scf
+    ret
+
+p1119_rom_cleanup:
+    ld hl,(p1119_rom_saved_err_sp)
+    ld (ROM_ERR_SP),hl
+    ld hl,(p1119_rom_saved_stkbot)
+    ld (ROM_STKBOT),hl
+    ld hl,(p1119_rom_saved_stkend)
+    ld (ROM_STKEND),hl
+    ld hl,(p1119_rom_saved_mem)
+    ld (ROM_MEM),hl
+    ld hl,(p1119_rom_saved_chadd)
+    ld (ROM_CH_ADD),hl
+    ld a,(p1119_rom_saved_flags)
+    ld (ROM_FLAGS),a
+    ld a,(p1119_rom_saved_breg)
+    ld (ROM_BREG),a
+    ld a,(p1119_rom_saved_errnr)
+    ld (ROM_IY_ANCHOR),a
+    xor a
+    ld (altreg_busy),a
+    ld iy,ROM_IY_ANCHOR
+    ret
+
+p1119_rom_busy:
+    ld a,E_BUSY
+    scf
+    ret
+    ENDM
+

@@ -5525,3 +5525,76 @@ cc_fp_cast_notsup:
     scf
     ret
     ENDM
+
+; P11.19 float comparison lowering map.
+; Every floating relational/equality expression uses __fcmp; float truth uses
+; the same helper against the runtime's exact five-byte zero.
+    MACRO EMIT_P1119_CC_FLOAT_COMPARE
+CC_FP_COMPARE_HELPER_FCMP EQU 1
+CC_FP_COMPARE_CAST_LHS    EQU 1
+CC_FP_COMPARE_CAST_RHS    EQU 2
+
+; A=lhs base type, E=rhs base type. Success A=cast mask, D=helper id.
+; Integer operands mixed with float are first converted through P11.18 __itof.
+cc_fp_compare_plan:
+    ld d,a
+    ld a,e
+    cp CC_TYPE_FLOAT
+    jr z,cc_fp_compare_rhs_float
+    ld a,d
+    cp CC_TYPE_FLOAT
+    jr nz,cc_fp_compare_notsup
+    ld a,e
+    call cc_fp_compare_integer_type
+    ret c
+    ld a,CC_FP_COMPARE_CAST_RHS
+    ld d,CC_FP_COMPARE_HELPER_FCMP
+    or a
+    ret
+cc_fp_compare_rhs_float:
+    ld a,d
+    cp CC_TYPE_FLOAT
+    jr z,cc_fp_compare_both_float
+    call cc_fp_compare_integer_type
+    ret c
+    ld a,CC_FP_COMPARE_CAST_LHS
+    ld d,CC_FP_COMPARE_HELPER_FCMP
+    or a
+    ret
+cc_fp_compare_both_float:
+    xor a
+    ld d,CC_FP_COMPARE_HELPER_FCMP
+    ret
+
+cc_fp_compare_integer_type:
+    cp CC_TYPE_CHAR
+    jr c,cc_fp_compare_notsup
+    cp CC_TYPE_UINT+1
+    jr nc,cc_fp_compare_notsup
+    xor a
+    ret
+
+; A=relation id 1..6. Success D=__fcmp helper id.
+cc_fp_relation_helper:
+    cp C48_FP_REL_LT
+    jr c,cc_fp_compare_notsup
+    cp C48_FP_REL_GE+1
+    jr nc,cc_fp_compare_notsup
+    ld d,CC_FP_COMPARE_HELPER_FCMP
+    or a
+    ret
+
+; A=base type. Float truth is always __fcmp(value, exact-zero).
+cc_fp_truth_helper:
+    cp CC_TYPE_FLOAT
+    jr nz,cc_fp_compare_notsup
+    ld d,CC_FP_COMPARE_HELPER_FCMP
+    xor a
+    ret
+
+cc_fp_compare_notsup:
+    ld a,E_NOTSUP
+    scf
+    ret
+    ENDM
+
