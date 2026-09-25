@@ -19,6 +19,7 @@ from driver_core import DriverError
 from fuse_harness import FAIL_PC, PASS_PC, run_sna
 
 
+# P11.04 exact-candidate marker.
 class P1104Error(DriverError):
     pass
 
