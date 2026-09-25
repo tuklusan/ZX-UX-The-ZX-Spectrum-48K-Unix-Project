@@ -3856,7 +3856,7 @@ cc_ptr_diff5:
     xor a
     sub l
     ld l,a
-    xor a
+    ld a,0
     sbc a,h
     ld h,a
 cc_ptr_diff5_abs:
@@ -3896,7 +3896,7 @@ cc_ptr_diff5_qbit:
     xor a
     sub l
     ld l,a
-    xor a
+    ld a,0
     sbc a,h
     ld h,a
     jr cc_ptr_diff_ok
