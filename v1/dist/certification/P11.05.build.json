@@ -1,0 +1,71 @@
+{
+  "action": "build",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "all-version1-base-types-native",
+      "passed": true
+    },
+    {
+      "name": "pointers-one-dimensional-arrays-native",
+      "passed": true
+    },
+    {
+      "name": "file-static-extern-and-local-declarations-native",
+      "passed": true
+    },
+    {
+      "name": "fixed-nonvariadic-prototypes-native",
+      "passed": true
+    },
+    {
+      "name": "prototype-definition-exact-signature-table-native",
+      "passed": true
+    },
+    {
+      "name": "main-two-exact-signatures-native",
+      "passed": true
+    },
+    {
+      "name": "simple-scalar-and-array-initializers-native",
+      "passed": true
+    },
+    {
+      "name": "bounded-parser-state-native",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1105-parser.sym",
+        "p1105-parser.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 17,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 5157 lines, work time: 0.016 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p1105-main.bin": "69f7975905e2ae32f65aa408a00701212c8771b65ab08d1d091eee2fba57c382",
+    "v1/dist/certification/P11.04.build.json": "acf5eff8c3e9151ab5a77fd20208fbc07e600ec4a7e2d32543376db8e8bfc85f",
+    "v1/dist/certification/P11.04.test.json": "bbf2deb2d5f0100a9ca3f88c611648f9bab66a95a89ca5f6c32586630efdc9ea",
+    "v1/src/tools/cc.asm": "da59917d0f35408c39ca831a076157291f3469ae284a26e7bcc269f3c9c9eabc",
+    "v1/tools-host/test-driver/phase11_step_05.py": "5dc58fc0efdc8ec6d6111118752692fdfa03bec02db580f706a407b603321745"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.04": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "234668040b97496301f56eee9224d4840e76719a",
+  "status": "PASS",
+  "step": "P11.05",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
