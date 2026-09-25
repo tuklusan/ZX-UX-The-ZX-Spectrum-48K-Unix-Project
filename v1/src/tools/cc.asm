@@ -1530,3 +1530,938 @@ cc_lex_format:
     scf
     ret
     ENDM
+
+
+; P11.05 C48 declarations/types parser.
+; This stage consumes lexer tokens incrementally and freezes declaration/type
+; syntax and exact function-signature compatibility. Statement parsing follows
+; in P11.06; a definition header ending in "{" is therefore this stage's
+; deliberate hand-off boundary.
+    MACRO EMIT_P11_CC_DECL_PARSER
+CC_TYPE_VOID             EQU 0
+CC_TYPE_CHAR             EQU 1
+CC_TYPE_UCHAR            EQU 2
+CC_TYPE_SHORT            EQU 3
+CC_TYPE_USHORT           EQU 4
+CC_TYPE_INT              EQU 5
+CC_TYPE_UINT             EQU 6
+CC_TYPE_FLOAT            EQU 7
+CC_STORAGE_NONE          EQU 0
+CC_STORAGE_STATIC        EQU 1
+CC_STORAGE_EXTERN        EQU 2
+CC_DECL_OBJECT           EQU 1
+CC_DECL_ARRAY            EQU 2
+CC_DECL_FUNCTION         EQU 3
+CC_INIT_NONE             EQU 0
+CC_INIT_SCALAR           EQU 1
+CC_INIT_ARRAY            EQU 2
+CC_INIT_STRING           EQU 3
+CC_PARSE_PTR_MAX         EQU 8
+CC_PARSE_PARAM_CAPACITY  EQU 8
+CC_PARSE_PROTO_CAPACITY  EQU 8
+CC_PARSE_PROTO_ENTRY_SIZE EQU 38
+
+CC_WORD_VOID             EQU 1
+CC_WORD_CHAR             EQU 2
+CC_WORD_UNSIGNED         EQU 3
+CC_WORD_SHORT            EQU 4
+CC_WORD_INT              EQU 5
+CC_WORD_FLOAT            EQU 6
+CC_WORD_STATIC           EQU 7
+CC_WORD_EXTERN           EQU 8
+CC_WORD_MAIN             EQU 9
+
+cc_parse_ptr:            dw 0
+cc_parse_remaining:      dw 0
+cc_parse_tok_ptr:        dw 0
+cc_parse_tok_kind:       db 0
+cc_parse_tok_len:        db 0
+cc_parse_scope:          db 0
+cc_parse_storage:        db 0
+cc_parse_type:           db 0
+cc_parse_ptr_depth:      db 0
+cc_parse_decl_kind:      db 0
+cc_parse_array_bound:    db 0
+cc_parse_init_kind:      db 0
+cc_parse_init_count:     db 0
+cc_parse_param_count:    db 0
+cc_parse_param_missing:  db 0
+cc_parse_params:         defs CC_PARSE_PARAM_CAPACITY*2,0
+cc_parse_name:           defs 16,0
+cc_parse_definition:     db 0
+cc_parse_proto_new:      db 0
+cc_parse_word_code_tmp:  db 0
+cc_parse_word_len:       db 0
+cc_parse_saved_char:     db 0
+cc_parse_proto_count:    db 0
+cc_parse_proto_table:    defs CC_PARSE_PROTO_CAPACITY*CC_PARSE_PROTO_ENTRY_SIZE,0
+
+cc_parse_tu_reset:
+    xor a
+    ld (cc_parse_proto_count),a
+    ld (cc_global_count),a
+    ld (cc_local_count),a
+    ret
+
+; HL=complete bounded declaration/header span, BC=length.
+cc_parse_file_decl:
+    xor a
+    ld (cc_parse_scope),a
+    jp cc_parse_begin
+
+; HL=complete bounded local declaration span, BC=length.
+cc_parse_local_decl:
+    ld a,1
+    ld (cc_parse_scope),a
+cc_parse_begin:
+    ld (cc_parse_ptr),hl
+    ld (cc_parse_remaining),bc
+    xor a
+    ld (cc_parse_storage),a
+    ld (cc_parse_ptr_depth),a
+    ld (cc_parse_decl_kind),a
+    ld (cc_parse_array_bound),a
+    ld (cc_parse_init_kind),a
+    ld (cc_parse_init_count),a
+    ld (cc_parse_param_count),a
+    ld (cc_parse_param_missing),a
+    ld (cc_parse_definition),a
+    call cc_lex_reset
+    call cc_parse_next
+    ret c
+    call cc_parse_storage_class
+    ret c
+    call cc_parse_type_spec
+    ret c
+    xor a
+    ld (cc_parse_ptr_depth),a
+    call cc_parse_pointer_stars
+    ret c
+    call cc_parse_capture_name
+    ret c
+    call cc_parse_next
+    ret c
+    ld a,'('
+    call cc_parse_is_char
+    jp z,cc_parse_function
+    ld a,'['
+    call cc_parse_is_char
+    jp z,cc_parse_array
+    ld a,CC_DECL_OBJECT
+    ld (cc_parse_decl_kind),a
+    jp cc_parse_object_tail
+
+cc_parse_storage_class:
+    ld a,(cc_parse_tok_kind)
+    cp CC_TOK_KEYWORD
+    ret nz
+    call cc_parse_word_code
+    cp CC_WORD_STATIC
+    jp z,cc_parse_storage_static
+    cp CC_WORD_EXTERN
+    jp z,cc_parse_storage_extern
+    or a
+    ret
+cc_parse_storage_static:
+    ld a,(cc_parse_scope)
+    or a
+    jp nz,cc_parse_notsup
+    ld a,CC_STORAGE_STATIC
+    ld (cc_parse_storage),a
+    jp cc_parse_next
+cc_parse_storage_extern:
+    ld a,(cc_parse_scope)
+    or a
+    jp nz,cc_parse_notsup
+    ld a,CC_STORAGE_EXTERN
+    ld (cc_parse_storage),a
+    jp cc_parse_next
+
+; Leaves current token immediately after the type specifier.
+cc_parse_type_spec:
+    ld a,(cc_parse_tok_kind)
+    cp CC_TOK_KEYWORD
+    jp nz,cc_parse_format
+    call cc_parse_word_code
+    cp CC_WORD_VOID
+    jp z,cc_parse_type_void
+    cp CC_WORD_CHAR
+    jp z,cc_parse_type_char
+    cp CC_WORD_SHORT
+    jp z,cc_parse_type_short
+    cp CC_WORD_INT
+    jp z,cc_parse_type_int
+    cp CC_WORD_FLOAT
+    jp z,cc_parse_type_float
+    cp CC_WORD_UNSIGNED
+    jp z,cc_parse_type_unsigned
+    jp cc_parse_format
+cc_parse_type_void:
+    ld a,CC_TYPE_VOID
+    ld (cc_parse_type),a
+    jp cc_parse_next
+cc_parse_type_char:
+    ld a,CC_TYPE_CHAR
+    ld (cc_parse_type),a
+    jp cc_parse_next
+cc_parse_type_short:
+    ld a,CC_TYPE_SHORT
+    ld (cc_parse_type),a
+    jp cc_parse_next
+cc_parse_type_int:
+    ld a,CC_TYPE_INT
+    ld (cc_parse_type),a
+    jp cc_parse_next
+cc_parse_type_float:
+    ld a,CC_TYPE_FLOAT
+    ld (cc_parse_type),a
+    jp cc_parse_next
+cc_parse_type_unsigned:
+    call cc_parse_next
+    ret c
+    ld a,(cc_parse_tok_kind)
+    cp CC_TOK_KEYWORD
+    jp nz,cc_parse_format
+    call cc_parse_word_code
+    cp CC_WORD_CHAR
+    jp z,cc_parse_type_uchar
+    cp CC_WORD_SHORT
+    jp z,cc_parse_type_ushort
+    cp CC_WORD_INT
+    jp z,cc_parse_type_uint
+    jp cc_parse_format
+cc_parse_type_uchar:
+    ld a,CC_TYPE_UCHAR
+    ld (cc_parse_type),a
+    jp cc_parse_next
+cc_parse_type_ushort:
+    ld a,CC_TYPE_USHORT
+    ld (cc_parse_type),a
+    jp cc_parse_next
+cc_parse_type_uint:
+    ld a,CC_TYPE_UINT
+    ld (cc_parse_type),a
+    jp cc_parse_next
+
+cc_parse_pointer_stars:
+    ld a,'*'
+    call cc_parse_is_char
+    ret nz
+    ld a,(cc_parse_ptr_depth)
+    cp CC_PARSE_PTR_MAX
+    jp nc,cc_parse_nospc
+    inc a
+    ld (cc_parse_ptr_depth),a
+    call cc_parse_next
+    ret c
+    jp cc_parse_pointer_stars
+
+cc_parse_capture_name:
+    ld a,(cc_parse_tok_kind)
+    cp CC_TOK_IDENT
+    jp nz,cc_parse_format
+    ld a,(cc_parse_tok_len)
+    or a
+    jp z,cc_parse_format
+    cp CC_IDENT_MAX+1
+    jp nc,cc_parse_toolong
+    ld b,a
+    ld hl,(cc_parse_tok_ptr)
+    ld de,cc_parse_name
+cc_parse_name_copy:
+    ld a,(hl)
+    ld (de),a
+    inc hl
+    inc de
+    djnz cc_parse_name_copy
+    ld a,(cc_parse_tok_len)
+    ld b,a
+    ld a,16
+    sub b
+    ld b,a
+    xor a
+cc_parse_name_zero:
+    ld (de),a
+    inc de
+    djnz cc_parse_name_zero
+    or a
+    ret
+
+cc_parse_object_tail:
+    ld a,(cc_parse_type)
+    or a
+    jp nz,cc_parse_object_init
+    ld a,(cc_parse_ptr_depth)
+    or a
+    jp z,cc_parse_format
+cc_parse_object_init:
+    call cc_parse_initializer_optional
+    ret c
+    ld a,';'
+    call cc_parse_expect_char
+    ret c
+    call cc_parse_require_eof
+    ret c
+    ld a,(cc_parse_storage)
+    cp CC_STORAGE_EXTERN
+    jp nz,cc_parse_commit_object
+    ld a,(cc_parse_init_kind)
+    or a
+    jp nz,cc_parse_format
+cc_parse_commit_object:
+    ld hl,cc_parse_name
+    ld a,(cc_parse_type)
+    ld d,a
+    ld a,(cc_parse_ptr_depth)
+    ld e,a
+    ld a,(cc_parse_scope)
+    or a
+    jp nz,cc_parse_commit_local
+    call cc_global_insert
+    ret
+cc_parse_commit_local:
+    call cc_local_insert
+    ret
+
+cc_parse_array:
+    ld a,(cc_parse_scope)
+    ; arrays are valid at file or local scope.
+    ld a,(cc_parse_type)
+    or a
+    jp nz,cc_parse_array_nonvoid
+    ld a,(cc_parse_ptr_depth)
+    or a
+    jp z,cc_parse_format
+cc_parse_array_nonvoid:
+    ld a,CC_DECL_ARRAY
+    ld (cc_parse_decl_kind),a
+    call cc_parse_next
+    ret c
+    ld a,']'
+    call cc_parse_is_char
+    jp z,cc_parse_array_close
+    ld a,(cc_parse_tok_kind)
+    cp CC_TOK_INT
+    jp nz,cc_parse_notsup
+    ld a,1
+    ld (cc_parse_array_bound),a
+    call cc_parse_next
+    ret c
+    ld a,']'
+    call cc_parse_expect_char
+    ret c
+    jp cc_parse_array_after_close
+cc_parse_array_close:
+    call cc_parse_next
+    ret c
+cc_parse_array_after_close:
+    ld a,'['
+    call cc_parse_is_char
+    jp z,cc_parse_notsup
+    call cc_parse_initializer_optional
+    ret c
+    ld a,';'
+    call cc_parse_expect_char
+    ret c
+    call cc_parse_require_eof
+    ret c
+    ld a,(cc_parse_storage)
+    cp CC_STORAGE_EXTERN
+    jp nz,cc_parse_array_unsized_check
+    ld a,(cc_parse_init_kind)
+    or a
+    jp nz,cc_parse_format
+cc_parse_array_unsized_check:
+    ld a,(cc_parse_array_bound)
+    or a
+    jp nz,cc_parse_commit_object
+    ld a,(cc_parse_init_kind)
+    cp CC_INIT_ARRAY
+    jp z,cc_parse_commit_object
+    cp CC_INIT_STRING
+    jp z,cc_parse_commit_object
+    jp cc_parse_format
+
+cc_parse_initializer_optional:
+    xor a
+    ld (cc_parse_init_kind),a
+    ld (cc_parse_init_count),a
+    ld a,'='
+    call cc_parse_is_char
+    ret nz
+    ld a,(cc_parse_storage)
+    cp CC_STORAGE_EXTERN
+    jp z,cc_parse_format
+    call cc_parse_next
+    ret c
+    ld a,(cc_parse_decl_kind)
+    cp CC_DECL_ARRAY
+    jp z,cc_parse_array_initializer
+    call cc_parse_constant
+    ret c
+    ld a,CC_INIT_SCALAR
+    ld (cc_parse_init_kind),a
+    ret
+
+cc_parse_array_initializer:
+    ld a,(cc_parse_tok_kind)
+    cp CC_TOK_STRING
+    jp z,cc_parse_array_string
+    ld a,'{'
+    call cc_parse_is_char
+    jp nz,cc_parse_notsup
+    call cc_parse_next
+    ret c
+    ld a,'}'
+    call cc_parse_is_char
+    jp z,cc_parse_format
+cc_parse_array_init_loop:
+    ld a,'{'
+    call cc_parse_is_char
+    jp z,cc_parse_notsup
+    call cc_parse_constant
+    ret c
+    ld a,(cc_parse_init_count)
+    cp 255
+    jp z,cc_parse_nospc
+    inc a
+    ld (cc_parse_init_count),a
+    ld a,'}'
+    call cc_parse_is_char
+    jp z,cc_parse_array_init_close
+    ld a,','
+    call cc_parse_expect_char
+    ret c
+    ld a,'}'
+    call cc_parse_is_char
+    jp z,cc_parse_array_init_close
+    jp cc_parse_array_init_loop
+cc_parse_array_init_close:
+    call cc_parse_next
+    ret c
+    ld a,CC_INIT_ARRAY
+    ld (cc_parse_init_kind),a
+    ret
+cc_parse_array_string:
+    call cc_parse_next
+    ret c
+    ld a,CC_INIT_STRING
+    ld (cc_parse_init_kind),a
+    ret
+
+; Accept an intentionally small constant initializer atom. Full expression
+; precedence arrives in P11.07; identifiers/calls are not silently accepted.
+cc_parse_constant:
+    ld a,(cc_parse_tok_kind)
+    cp CC_TOK_INT
+    jp z,cc_parse_constant_take
+    cp CC_TOK_FLOAT
+    jp z,cc_parse_constant_take
+    cp CC_TOK_CHAR
+    jp z,cc_parse_constant_take
+    cp CC_TOK_STRING
+    jp z,cc_parse_constant_take
+    ld a,'+'
+    call cc_parse_is_char
+    jp z,cc_parse_constant_unary
+    ld a,'-'
+    call cc_parse_is_char
+    jp z,cc_parse_constant_unary
+    jp cc_parse_notsup
+cc_parse_constant_unary:
+    call cc_parse_next
+    ret c
+    ld a,(cc_parse_tok_kind)
+    cp CC_TOK_INT
+    jp z,cc_parse_constant_take
+    cp CC_TOK_FLOAT
+    jp nz,cc_parse_notsup
+cc_parse_constant_take:
+    jp cc_parse_next
+
+cc_parse_function:
+    ld a,(cc_parse_scope)
+    or a
+    jp nz,cc_parse_notsup
+    ld a,CC_DECL_FUNCTION
+    ld (cc_parse_decl_kind),a
+    xor a
+    ld (cc_parse_param_count),a
+    ld (cc_parse_param_missing),a
+    call cc_parse_next
+    ret c
+    ld a,')'
+    call cc_parse_is_char
+    jp z,cc_parse_notsup
+    call cc_parse_param
+    ret c
+cc_parse_param_tail:
+    ld a,')'
+    call cc_parse_is_char
+    jp z,cc_parse_params_done
+    ld a,','
+    call cc_parse_expect_char
+    ret c
+    call cc_parse_param
+    ret c
+    jp cc_parse_param_tail
+cc_parse_params_done:
+    call cc_parse_next
+    ret c
+    ; exactly "void" denotes zero parameters.
+    ld a,(cc_parse_param_count)
+    cp 1
+    jp nz,cc_parse_function_term
+    ld a,(cc_parse_params)
+    cp CC_TYPE_VOID
+    jp nz,cc_parse_function_term
+    ld a,(cc_parse_params+1)
+    or a
+    jp nz,cc_parse_function_term
+    xor a
+    ld (cc_parse_param_count),a
+    ld (cc_parse_param_missing),a
+cc_parse_function_term:
+    ld a,';'
+    call cc_parse_is_char
+    jp z,cc_parse_function_proto
+    ld a,'{'
+    call cc_parse_is_char
+    jp z,cc_parse_function_def
+    jp cc_parse_format
+cc_parse_function_proto:
+    xor a
+    ld (cc_parse_definition),a
+    call cc_parse_next
+    ret c
+    call cc_parse_require_eof
+    ret c
+    call cc_parse_validate_function
+    ret c
+    jp cc_parse_register_function
+cc_parse_function_def:
+    ld a,1
+    ld (cc_parse_definition),a
+    ld a,(cc_parse_storage)
+    cp CC_STORAGE_EXTERN
+    jp z,cc_parse_format
+    ld a,(cc_parse_param_missing)
+    or a
+    jp nz,cc_parse_format
+    call cc_parse_next
+    ret c
+    call cc_parse_require_eof
+    ret c
+    call cc_parse_validate_function
+    ret c
+    jp cc_parse_register_function
+
+; Current token begins one parameter. Stores [base-type,pointer-depth].
+cc_parse_param:
+    ld a,(cc_parse_param_count)
+    cp CC_PARSE_PARAM_CAPACITY
+    jp nc,cc_parse_nospc
+    call cc_parse_type_spec
+    ret c
+    xor a
+    ld (cc_parse_ptr_depth),a
+    call cc_parse_pointer_stars
+    ret c
+    ld a,(cc_parse_type)
+    or a
+    jp nz,cc_parse_param_nonvoid
+    ld a,(cc_parse_ptr_depth)
+    or a
+    jp nz,cc_parse_param_nonvoid
+    ; plain void is accepted only as the entire zero-parameter clause.
+    ld a,(cc_parse_param_count)
+    or a
+    jp nz,cc_parse_format
+    ld a,')'
+    call cc_parse_is_char
+    jp nz,cc_parse_format
+cc_parse_param_nonvoid:
+    ld a,(cc_parse_param_count)
+    ld e,a
+    ld d,0
+    sla e
+    rl d
+    ld hl,cc_parse_params
+    add hl,de
+    ld a,(cc_parse_type)
+    ld (hl),a
+    inc hl
+    ld a,(cc_parse_ptr_depth)
+    ld (hl),a
+    ld hl,cc_parse_param_count
+    inc (hl)
+    ld a,(cc_parse_tok_kind)
+    cp CC_TOK_IDENT
+    jp nz,cc_parse_param_unnamed
+    call cc_parse_next
+    ret c
+    ld a,'['
+    call cc_parse_is_char
+    jp z,cc_parse_notsup
+    or a
+    ret
+cc_parse_param_unnamed:
+    ld a,1
+    ld (cc_parse_param_missing),a
+    or a
+    ret
+
+cc_parse_validate_function:
+    call cc_parse_name_is_main
+    ret nz
+    ld a,(cc_parse_type)
+    cp CC_TYPE_INT
+    jp nz,cc_parse_format
+    ld a,(cc_parse_ptr_depth)
+    or a
+    jp nz,cc_parse_format
+    ld a,(cc_parse_storage)
+    cp CC_STORAGE_STATIC
+    jp z,cc_parse_format
+    ld a,(cc_parse_definition)
+    or a
+    jp z,cc_parse_main_params
+    ld a,(cc_parse_storage)
+    or a
+    jp nz,cc_parse_format
+cc_parse_main_params:
+    ld a,(cc_parse_param_count)
+    or a
+    ret z
+    cp 2
+    jp nz,cc_parse_format
+    ld a,(cc_parse_params)
+    cp CC_TYPE_INT
+    jp nz,cc_parse_format
+    ld a,(cc_parse_params+1)
+    or a
+    jp nz,cc_parse_format
+    ld a,(cc_parse_params+2)
+    cp CC_TYPE_CHAR
+    jp nz,cc_parse_format
+    ld a,(cc_parse_params+3)
+    cp 2
+    jp nz,cc_parse_format
+    or a
+    ret
+
+cc_parse_register_function:
+    call cc_parse_proto_register
+    ret c
+    ld a,(cc_parse_proto_new)
+    or a
+    ret z
+    ld hl,cc_parse_name
+    ld a,(cc_parse_type)
+    ld d,a
+    ld a,(cc_parse_ptr_depth)
+    ld e,a
+    call cc_global_insert
+    ret
+
+cc_parse_proto_register:
+    xor a
+    ld (cc_parse_proto_new),a
+    ld a,(cc_parse_proto_count)
+    or a
+    jp z,cc_parse_proto_add
+    ld b,a
+    ld de,cc_parse_proto_table
+cc_parse_proto_find:
+    push bc
+    push de
+    ld hl,cc_parse_name
+    ld c,16
+cc_parse_proto_name_cmp:
+    ld a,(de)
+    cp (hl)
+    jp nz,cc_parse_proto_name_miss
+    inc de
+    inc hl
+    dec c
+    jp nz,cc_parse_proto_name_cmp
+    pop de
+    pop bc
+    jp cc_parse_proto_match
+cc_parse_proto_name_miss:
+    pop de
+    pop bc
+    ld hl,CC_PARSE_PROTO_ENTRY_SIZE
+    add hl,de
+    ex de,hl
+    djnz cc_parse_proto_find
+cc_parse_proto_add:
+    ld a,(cc_parse_proto_count)
+    cp CC_PARSE_PROTO_CAPACITY
+    jp nc,cc_parse_nospc
+    ld b,a
+    ld de,cc_parse_proto_table
+    ld a,b
+    or a
+    jp z,cc_parse_proto_add_ready
+cc_parse_proto_add_seek:
+    ld hl,CC_PARSE_PROTO_ENTRY_SIZE
+    add hl,de
+    ex de,hl
+    djnz cc_parse_proto_add_seek
+cc_parse_proto_add_ready:
+    push de
+    ld hl,cc_parse_name
+    ld b,16
+cc_parse_proto_add_name:
+    ld a,(hl)
+    ld (de),a
+    inc hl
+    inc de
+    djnz cc_parse_proto_add_name
+    ld a,(cc_parse_type)
+    ld (de),a
+    inc de
+    ld a,(cc_parse_ptr_depth)
+    ld (de),a
+    inc de
+    ld a,(cc_parse_param_count)
+    ld (de),a
+    inc de
+    ld hl,cc_parse_params
+    ld b,CC_PARSE_PARAM_CAPACITY*2
+cc_parse_proto_add_params:
+    ld a,(hl)
+    ld (de),a
+    inc hl
+    inc de
+    djnz cc_parse_proto_add_params
+    ld a,(cc_parse_storage)
+    cp CC_STORAGE_STATIC
+    ld a,0
+    jp nz,cc_parse_proto_add_link
+    inc a
+cc_parse_proto_add_link:
+    ld (de),a
+    inc de
+    ld a,(cc_parse_definition)
+    ld (de),a
+    inc de
+    xor a
+    ld (de),a
+    pop de
+    ld hl,cc_parse_proto_count
+    inc (hl)
+    ld a,1
+    ld (cc_parse_proto_new),a
+    or a
+    ret
+
+; DE points at existing entry.
+cc_parse_proto_match:
+    push de
+    ld hl,16
+    add hl,de
+    ld a,(cc_parse_type)
+    cp (hl)
+    jp nz,cc_parse_proto_match_fail
+    inc hl
+    ld a,(cc_parse_ptr_depth)
+    cp (hl)
+    jp nz,cc_parse_proto_match_fail
+    inc hl
+    ld a,(cc_parse_param_count)
+    cp (hl)
+    jp nz,cc_parse_proto_match_fail
+    inc hl
+    ld de,cc_parse_params
+    ld b,CC_PARSE_PARAM_CAPACITY*2
+cc_parse_proto_param_cmp:
+    ld a,(de)
+    cp (hl)
+    jp nz,cc_parse_proto_match_fail
+    inc de
+    inc hl
+    djnz cc_parse_proto_param_cmp
+    ld a,(cc_parse_storage)
+    cp CC_STORAGE_STATIC
+    ld a,0
+    jp nz,cc_parse_proto_link_ready
+    inc a
+cc_parse_proto_link_ready:
+    cp (hl)
+    jp nz,cc_parse_proto_match_fail
+    inc hl
+    ld a,(cc_parse_definition)
+    or a
+    jp z,cc_parse_proto_match_ok
+    ld a,(hl)
+    or a
+    jp nz,cc_parse_proto_duplicate_def
+    ld (hl),1
+cc_parse_proto_match_ok:
+    pop de
+    xor a
+    ret
+cc_parse_proto_duplicate_def:
+    pop de
+    ld a,E_EXIST
+    scf
+    ret
+cc_parse_proto_match_fail:
+    pop de
+    jp cc_parse_format
+
+cc_parse_name_is_main:
+    ld hl,cc_parse_name
+    ld a,(hl)
+    cp 'm'
+    ret nz
+    inc hl
+    ld a,(hl)
+    cp 'a'
+    ret nz
+    inc hl
+    ld a,(hl)
+    cp 'i'
+    ret nz
+    inc hl
+    ld a,(hl)
+    cp 'n'
+    ret nz
+    inc hl
+    ld a,(hl)
+    or a
+    ret
+
+cc_parse_next:
+    ld hl,(cc_parse_ptr)
+    ld bc,(cc_parse_remaining)
+    call cc_lex_token
+    ret c
+    push af
+    ld hl,(cc_parse_ptr)
+    add hl,de
+    ld (cc_parse_ptr),hl
+    ld hl,(cc_parse_remaining)
+    or a
+    sbc hl,de
+    ld (cc_parse_remaining),hl
+    pop af
+    cp CC_TOK_MORE
+    jp z,cc_parse_next_finish
+    ld (cc_parse_tok_kind),a
+    ld hl,(cc_lex_token_start)
+    ld (cc_parse_tok_ptr),hl
+    ld a,(cc_lex_token_len)
+    ld (cc_parse_tok_len),a
+    ld a,(cc_parse_tok_kind)
+    or a
+    ret
+cc_parse_next_finish:
+    call cc_lex_finish
+    ret c
+    ld (cc_parse_tok_kind),a
+    xor a
+    ld (cc_parse_tok_len),a
+    ld hl,(cc_parse_ptr)
+    ld (cc_parse_tok_ptr),hl
+    or a
+    ret
+
+cc_parse_expect_char:
+    ld (cc_parse_saved_char),a
+    call cc_parse_is_char
+    jp nz,cc_parse_format
+    jp cc_parse_next
+
+; Input A=ASCII, returns Z on exact one-byte current token match.
+cc_parse_is_char:
+    ld (cc_parse_saved_char),a
+    ld a,(cc_parse_tok_len)
+    cp 1
+    jp nz,cc_parse_char_no
+    ld hl,(cc_parse_tok_ptr)
+    ld a,(cc_parse_saved_char)
+    cp (hl)
+    ret
+cc_parse_char_no:
+    ld a,1
+    or a
+    ret
+
+cc_parse_require_eof:
+    ld a,(cc_parse_tok_kind)
+    cp CC_TOK_EOF
+    ret z
+    jp cc_parse_format
+
+; Map current exact word spelling to a compact parser code.
+cc_parse_word_code:
+    ld de,cc_parse_words
+cc_parse_word_loop:
+    ld a,(de)
+    or a
+    ret z
+    ld (cc_parse_word_code_tmp),a
+    inc de
+    ld a,(de)
+    ld (cc_parse_word_len),a
+    inc de
+    ld c,a
+    ld a,(cc_parse_tok_len)
+    cp c
+    jp nz,cc_parse_word_skip
+    push de
+    ld hl,(cc_parse_tok_ptr)
+    ld b,c
+cc_parse_word_cmp:
+    ld a,(de)
+    cp (hl)
+    jp nz,cc_parse_word_miss
+    inc de
+    inc hl
+    djnz cc_parse_word_cmp
+    pop de
+    ld a,(cc_parse_word_code_tmp)
+    or a
+    ret
+cc_parse_word_miss:
+    pop de
+cc_parse_word_skip:
+    ld a,(cc_parse_word_len)
+    ld l,a
+    ld h,0
+    add hl,de
+    ex de,hl
+    jp cc_parse_word_loop
+
+cc_parse_words:
+    db CC_WORD_VOID,4,"void"
+    db CC_WORD_CHAR,4,"char"
+    db CC_WORD_UNSIGNED,8,"unsigned"
+    db CC_WORD_SHORT,5,"short"
+    db CC_WORD_INT,3,"int"
+    db CC_WORD_FLOAT,5,"float"
+    db CC_WORD_STATIC,6,"static"
+    db CC_WORD_EXTERN,6,"extern"
+    db CC_WORD_MAIN,4,"main"
+    db 0
+
+cc_parse_nospc:
+    ld a,E_NOSPC
+    scf
+    ret
+cc_parse_toolong:
+    ld a,E_TOOLONG
+    scf
+    ret
+cc_parse_notsup:
+    ld a,E_NOTSUP
+    scf
+    ret
+cc_parse_format:
+    ld a,E_FORMAT
+    scf
+    ret
+    ENDM
