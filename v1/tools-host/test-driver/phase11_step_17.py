@@ -548,7 +548,7 @@ p1117_runtime:
     call p1117_check_word
     ret c
     ld hl,p1117_out
-    ld de,p1117_f1
+    ld de,p1117_full1
     call p1117_check5
     ret c
     call p1117_fill_out
