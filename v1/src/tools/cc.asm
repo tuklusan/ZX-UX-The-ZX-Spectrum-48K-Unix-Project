@@ -3703,3 +3703,218 @@ cc_int_runtime_symbols:
     db "c48_cmp_u8",0,"c48_cmp_u16",0,"c48_cmp_s16",0
     db 0
     ENDM
+
+
+; P11.09 C48 pointer arithmetic.
+; Native pointers are exactly 16 bits. Pointer +/- integer scales the signed
+; element count by the pointed-to sizeof (1, 2, or 5 bytes in version 1), and
+; same-object pointer subtraction returns a signed 16-bit element count.
+; Ordering/subtraction of unrelated pointers is outside the portable C48
+; contract and must never be presented as a defined result.
+;
+; Mandatory reference/oracle mapping:
+; SDK commit 84d144de2721cda5075c3a6610a422663b5e2f77
+; compiler/c48/typesys.py -> sizeof/16-bit pointer model
+; compiler/c48/semantics.py -> legal pointer operand/type forms
+; compiler/c48/vm.py -> scaling and same-object subtraction oracle
+    MACRO EMIT_P11_CC_POINTER_ARITH
+CC_PTR_REPR_SIZE          EQU 2
+CC_PTR_REL_SAME_OBJECT    EQU 1
+CC_PTR_REL_UNRELATED      EQU 2
+
+cc_ptr_base_type:         db 0
+cc_ptr_element_size:      db 0
+cc_ptr_diff_negative:     db 0
+cc_ptr_dividend:          dw 0
+cc_ptr_quotient:          dw 0
+cc_ptr_remainder:         db 0
+
+; A=C48 base type, E=pointer depth. Success A=sizeof(pointed-to object).
+; Depth >1 points to a pointer object, hence stride 2. void * has no sized
+; pointee and is rejected; void ** is valid because its pointee is void *.
+cc_ptr_pointee_size:
+    ld (cc_ptr_base_type),a
+    ld a,e
+    or a
+    jp z,cc_ptr_inval
+    cp CC_PARSE_PTR_MAX+1
+    jp nc,cc_ptr_inval
+    cp 2
+    jr nc,cc_ptr_size2
+    ld a,(cc_ptr_base_type)
+    cp CC_TYPE_CHAR
+    jr z,cc_ptr_size1
+    cp CC_TYPE_UCHAR
+    jr z,cc_ptr_size1
+    cp CC_TYPE_SHORT
+    jr z,cc_ptr_size2
+    cp CC_TYPE_USHORT
+    jr z,cc_ptr_size2
+    cp CC_TYPE_INT
+    jr z,cc_ptr_size2
+    cp CC_TYPE_UINT
+    jr z,cc_ptr_size2
+    cp CC_TYPE_FLOAT
+    jr z,cc_ptr_size5
+    jp cc_ptr_inval
+cc_ptr_size1:
+    ld a,1
+    or a
+    ret
+cc_ptr_size2:
+    ld a,2
+    or a
+    ret
+cc_ptr_size5:
+    ld a,5
+    or a
+    ret
+
+; A=element size 1/2/5, DE=signed element delta. Success DE=scaled byte delta.
+; Arithmetic deliberately wraps in the 16-bit pointer representation; portable
+; C48 source is separately constrained to its object/one-past domain.
+cc_ptr_scale_de:
+    cp 1
+    jr z,cc_ptr_scale_ok
+    cp 2
+    jr z,cc_ptr_scale2
+    cp 5
+    jr z,cc_ptr_scale5
+    jp cc_ptr_inval
+cc_ptr_scale2:
+    sla e
+    rl d
+    jr cc_ptr_scale_ok
+cc_ptr_scale5:
+    ld b,d
+    ld c,e
+    sla e
+    rl d
+    sla e
+    rl d
+    ld a,e
+    add a,c
+    ld e,a
+    ld a,d
+    adc a,b
+    ld d,a
+cc_ptr_scale_ok:
+    xor a
+    ret
+
+; HL=pointer, DE=signed element count, A=element size. Success HL=result.
+cc_ptr_add_scaled:
+    call cc_ptr_scale_de
+    ret c
+    add hl,de
+    xor a
+    ret
+
+; HL=pointer, DE=signed element count, A=element size. Success HL=result.
+cc_ptr_sub_scaled:
+    call cc_ptr_scale_de
+    ret c
+    or a
+    sbc hl,de
+    xor a
+    ret
+
+; HL=lhs pointer, DE=rhs pointer, A=element size 1/2/5.
+; Precondition for portable C48: both pointers designate the same array/object
+; (or its one-past position). Success HL=signed 16-bit element count.
+cc_ptr_diff:
+    ld (cc_ptr_element_size),a
+    or a
+    sbc hl,de
+    ld a,(cc_ptr_element_size)
+    cp 1
+    jr z,cc_ptr_diff_ok
+    cp 2
+    jr z,cc_ptr_diff2
+    cp 5
+    jr z,cc_ptr_diff5
+    jp cc_ptr_inval
+
+cc_ptr_diff2:
+    bit 0,l
+    jp nz,cc_ptr_inval
+    sra h
+    rr l
+cc_ptr_diff_ok:
+    xor a
+    ret
+
+; Exact signed divide-by-five for float-pointer differences. The byte
+; difference must be an exact element multiple or the operation fails closed.
+cc_ptr_diff5:
+    xor a
+    ld (cc_ptr_diff_negative),a
+    bit 7,h
+    jr z,cc_ptr_diff5_abs
+    ld a,1
+    ld (cc_ptr_diff_negative),a
+    xor a
+    sub l
+    ld l,a
+    xor a
+    sbc a,h
+    ld h,a
+cc_ptr_diff5_abs:
+    ld (cc_ptr_dividend),hl
+    ld hl,0
+    ld (cc_ptr_quotient),hl
+    xor a
+    ld (cc_ptr_remainder),a
+    ld b,16
+cc_ptr_diff5_loop:
+    ld hl,(cc_ptr_dividend)
+    add hl,hl
+    ld (cc_ptr_dividend),hl
+    ld a,(cc_ptr_remainder)
+    adc a,a
+    cp 5
+    jr c,cc_ptr_diff5_qzero
+    sub 5
+    scf
+    jr cc_ptr_diff5_qbit
+cc_ptr_diff5_qzero:
+    or a
+cc_ptr_diff5_qbit:
+    ld hl,(cc_ptr_quotient)
+    adc hl,hl
+    ld (cc_ptr_quotient),hl
+    ld (cc_ptr_remainder),a
+    djnz cc_ptr_diff5_loop
+
+    ld a,(cc_ptr_remainder)
+    or a
+    jp nz,cc_ptr_inval
+    ld hl,(cc_ptr_quotient)
+    ld a,(cc_ptr_diff_negative)
+    or a
+    jr z,cc_ptr_diff_ok
+    xor a
+    sub l
+    ld l,a
+    xor a
+    sbc a,h
+    ld h,a
+    jr cc_ptr_diff_ok
+
+; Language/spec oracle: only a known same-object relation may be claimed as a
+; portable ordering/subtraction result. Unknown/unrelated is explicitly NOTSUP.
+cc_ptr_require_portable_relation:
+    cp CC_PTR_REL_SAME_OBJECT
+    jr z,cc_ptr_relation_ok
+    ld a,E_NOTSUP
+    scf
+    ret
+cc_ptr_relation_ok:
+    xor a
+    ret
+
+cc_ptr_inval:
+    ld a,E_INVAL
+    scf
+    ret
+    ENDM
