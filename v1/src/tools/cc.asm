@@ -865,7 +865,7 @@ cc_lex_skip:
     jr z,cc_lex_skip_line
 cc_lex_skip_plain:
     call cc_lex_peek
-    ret c
+    jr c,cc_lex_skip_exhausted
     cp ' '
     jr z,cc_lex_skip_take
     cp 9
@@ -899,7 +899,7 @@ cc_lex_start_line:
     ld (cc_lex_comment),a
 cc_lex_skip_line:
     call cc_lex_peek
-    ret c
+    jr c,cc_lex_skip_exhausted
     call cc_lex_take
     cp 10
     jr nz,cc_lex_skip_line
@@ -913,7 +913,7 @@ cc_lex_start_block:
     ld (cc_lex_comment),a
 cc_lex_skip_block:
     call cc_lex_peek
-    ret c
+    jr c,cc_lex_skip_exhausted
     cp '*'
     jr nz,cc_lex_block_take
     call cc_lex_peek2
@@ -928,6 +928,10 @@ cc_lex_skip_block:
 cc_lex_block_take:
     call cc_lex_take
     jr cc_lex_skip_block
+
+cc_lex_skip_exhausted:
+    or a
+    ret
 
 cc_lex_identifier:
 cc_lex_ident_loop:
