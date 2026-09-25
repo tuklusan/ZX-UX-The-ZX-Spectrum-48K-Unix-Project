@@ -93,13 +93,13 @@ cc_p1102_reset:
 cc_pipeline_feed:
     ld a,b
     or a
-    jr nz,cc_p1102_nospc
+    jp nz,cc_p1102_nospc
     ld a,c
     cp CC_SOURCE_WINDOW_SIZE+1
-    jr nc,cc_p1102_nospc
+    jp nc,cc_p1102_nospc
     ld hl,(cc_stream_total)
     add hl,bc
-    jr c,cc_p1102_nospc
+    jp c,cc_p1102_nospc
     ld (cc_stream_total),hl
     ld a,CC_STAGE_LEX
     ld (cc_pipeline_stage),a
@@ -109,7 +109,7 @@ cc_pipeline_feed:
 cc_pipeline_parse:
     ld a,(cc_pipeline_stage)
     cp CC_STAGE_LEX
-    jr nz,cc_p1102_format
+    jp nz,cc_p1102_format
     ld a,CC_STAGE_PARSE
     ld (cc_pipeline_stage),a
     xor a
@@ -118,7 +118,7 @@ cc_pipeline_parse:
 cc_pipeline_emit:
     ld a,(cc_pipeline_stage)
     cp CC_STAGE_PARSE
-    jr nz,cc_p1102_format
+    jp nz,cc_p1102_format
     ld a,CC_STAGE_EMIT
     ld (cc_pipeline_stage),a
     xor a
@@ -127,7 +127,7 @@ cc_pipeline_emit:
 cc_pipeline_obj1:
     ld a,(cc_pipeline_stage)
     cp CC_STAGE_EMIT
-    jr nz,cc_p1102_format
+    jp nz,cc_p1102_format
     ld a,CC_STAGE_OBJ1
     ld (cc_pipeline_stage),a
     xor a
@@ -136,7 +136,7 @@ cc_pipeline_obj1:
 cc_expr_enter:
     ld a,(cc_expr_depth)
     cp CC_EXPR_CAPACITY
-    jr nc,cc_p1102_nospc
+    jp nc,cc_p1102_nospc
     inc a
     ld (cc_expr_depth),a
     ld b,a
@@ -152,7 +152,7 @@ cc_expr_enter_ok:
 cc_expr_leave:
     ld a,(cc_expr_depth)
     or a
-    jr z,cc_p1102_format
+    jp z,cc_p1102_format
     dec a
     ld (cc_expr_depth),a
     xor a
@@ -174,26 +174,26 @@ cc_ident_loop:
     jr z,cc_ident_nul
     ld a,c
     cp CC_IDENT_MAX
-    jr nc,cc_p1102_inval
+    jp nc,cc_p1102_inval
     ld a,c
     or a
     ld a,(hl)
     jr nz,cc_ident_tail
     call cc_ident_first_char
-    jr c,cc_p1102_inval
-    jr cc_ident_accept
+    jp c,cc_p1102_inval
+    jp cc_ident_accept
 cc_ident_tail:
     call cc_ident_next_char
-    jr c,cc_p1102_inval
+    jp c,cc_p1102_inval
 cc_ident_accept:
     inc c
     inc hl
     djnz cc_ident_loop
-    jr cc_p1102_inval
+    jp cc_p1102_inval
 cc_ident_nul:
     ld a,c
     or a
-    jr z,cc_p1102_inval
+    jp z,cc_p1102_inval
     ld a,c
     ld (cc_name_length),a
     xor a
@@ -268,7 +268,7 @@ cc_table_insert:
     ld a,(cc_work_capacity)
     cp b
     jr z,cc_p1102_nospc
-    jr c,cc_p1102_nospc
+    jp c,cc_p1102_nospc
 
     ld hl,(cc_work_table)
     ld a,b
