@@ -3615,3 +3615,91 @@ cc_x_format:
     scf
     ret
     ENDM
+
+
+; P11.08 native compiler integer semantic selection.
+; These selectors freeze width/signedness before later code emission chooses the
+; exact documented runtime/operator sequence.
+    MACRO EMIT_P11_CC_INT_SEMANTICS
+CC_INT_SHIFT_MASK_8     EQU 7
+CC_INT_SHIFT_MASK_16    EQU 15
+CC_INT_RIGHT_LOGICAL    EQU 0
+CC_INT_RIGHT_ARITH      EQU 1
+
+; A=C48 base type. Success A=shift-count mask.
+cc_int_shift_mask_for_type:
+    cp CC_TYPE_CHAR
+    jr z,cc_int_mask8
+    cp CC_TYPE_UCHAR
+    jr z,cc_int_mask8
+    cp CC_TYPE_SHORT
+    jr z,cc_int_mask16
+    cp CC_TYPE_USHORT
+    jr z,cc_int_mask16
+    cp CC_TYPE_INT
+    jr z,cc_int_mask16
+    cp CC_TYPE_UINT
+    jr z,cc_int_mask16
+    ld a,E_INVAL
+    scf
+    ret
+cc_int_mask8:
+    ld a,CC_INT_SHIFT_MASK_8
+    or a
+    ret
+cc_int_mask16:
+    ld a,CC_INT_SHIFT_MASK_16
+    or a
+    ret
+
+; A=C48 base type. Success A=1 signed or 0 unsigned.
+cc_int_is_signed_type:
+    cp CC_TYPE_SHORT
+    jr z,cc_int_signed_yes
+    cp CC_TYPE_INT
+    jr z,cc_int_signed_yes
+    cp CC_TYPE_CHAR
+    jr z,cc_int_signed_no
+    cp CC_TYPE_UCHAR
+    jr z,cc_int_signed_no
+    cp CC_TYPE_USHORT
+    jr z,cc_int_signed_no
+    cp CC_TYPE_UINT
+    jr z,cc_int_signed_no
+    ld a,E_INVAL
+    scf
+    ret
+cc_int_signed_yes:
+    ld a,1
+    or a
+    ret
+cc_int_signed_no:
+    xor a
+    ret
+
+; A=C48 base type. Success A=CC_INT_RIGHT_*.
+cc_int_right_shift_kind:
+    call cc_int_is_signed_type
+    ret c
+    or a
+    jr z,cc_int_right_unsigned
+    ld a,CC_INT_RIGHT_ARITH
+    or a
+    ret
+cc_int_right_unsigned:
+    ld a,CC_INT_RIGHT_LOGICAL
+    or a
+    ret
+
+; Runtime helper spellings are part of the compiler/runtime contract. Later
+; symbolic emission resolves these exact names through OBJ1/linker symbols.
+cc_int_runtime_symbols:
+    db "c48_u8_add",0,"c48_u8_sub",0,"c48_u8_mul",0,"c48_u8_neg",0
+    db "c48_u8_shl",0,"c48_u8_shr",0
+    db "c48_u16_add",0,"c48_u16_sub",0,"c48_u16_mul",0,"c48_u16_neg",0
+    db "c48_u16_shl",0,"c48_u16_shr",0,"c48_u16_divmod",0
+    db "c48_s16_add",0,"c48_s16_sub",0,"c48_s16_mul",0,"c48_s16_neg",0
+    db "c48_s16_shl",0,"c48_s16_shr",0,"c48_s16_divmod",0
+    db "c48_cmp_u8",0,"c48_cmp_u16",0,"c48_cmp_s16",0
+    db 0
+    ENDM
