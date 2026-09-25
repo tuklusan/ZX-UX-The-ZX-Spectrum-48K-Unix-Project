@@ -1,0 +1,74 @@
+{
+  "action": "build",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "fpop1-eight-byte-layout-and-op-ids-0-through-17-frozen",
+      "passed": true
+    },
+    {
+      "name": "all-required-runtime-helper-symbols-present",
+      "passed": true
+    },
+    {
+      "name": "zx-fp-exec-library-facing-regcall-present",
+      "passed": true
+    },
+    {
+      "name": "binary-unary-pointer-rules-validated-before-rom-entry",
+      "passed": true
+    },
+    {
+      "name": "calculator-critical-section-is-serialized",
+      "passed": true
+    },
+    {
+      "name": "operands-copy-before-result-write-preserves-aliasing",
+      "passed": true
+    },
+    {
+      "name": "rom-errors-map-to-einval-and-runtime-status-one",
+      "passed": true
+    },
+    {
+      "name": "sdk-float5-vm-conformance-mapping-recorded",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1117-fp-exec.sym",
+        "p1117-fp-exec.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 12,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 4189 lines, work time: 0.011 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p1117-main.bin": "c3a235547601e7e5813e3a7165cfc626a3465a6e0d9e7bcfb36a8db8096a57f5",
+    "v1/dist/certification/P11.16.build.json": "240087072b1c04620e3b7429e40045828a13f89bad36d6aed94535423bde12df",
+    "v1/dist/certification/P11.16.test.json": "2577bbb12e3fb500e5c71a7f5a5997670ee452aaa0e63df97201b224d5bdbefe",
+    "v1/include/zx48ux.inc": "0ccb81d2f7c8df7fc0775a54c7eee913be1fab4fc69c17c859a21434a5d557f6",
+    "v1/src/kernel/rom_services.asm": "81d600b3e88d4f4dbe916710fd352f9cc53ce47136c48b23eff2de151afcdc1c",
+    "v1/src/kernel/syscall.asm": "2451296861605dcd425a028b1f3b4c6af67c360f807b4b567af7adc8e13b28f8",
+    "v1/src/libc48/float_runtime.asm": "25bebb341b667f2b5213e27582c1d8c9925cee030971cdd66015290afbe681ed",
+    "v1/tools-host/test-driver/phase11_step_17.py": "ff9f89fb1a06f085c8652bef0e21d477cb1ab265430d4236b3da68b241e92d65"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.16": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "4fc4aec1cfeafd17c6d204df070e4a4e119e987d",
+  "status": "PASS",
+  "step": "P11.17",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
