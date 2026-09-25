@@ -4808,6 +4808,7 @@ cc_frame_local_disp:
 cc_frame_disp_in_range:
     ld a,e
     cpl
+    or a
     ret
 
 ; HL=SP value at a C48 call boundary. SP must always be even.
