@@ -1,0 +1,70 @@
+{
+  "action": "build",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "object-like-macro-only",
+      "passed": true
+    },
+    {
+      "name": "macro-capacity-bounded-16",
+      "passed": true
+    },
+    {
+      "name": "macro-replacement-bounded-32",
+      "passed": true
+    },
+    {
+      "name": "one-level-local-include-bounded",
+      "passed": true
+    },
+    {
+      "name": "include-stream-window-64",
+      "passed": true
+    },
+    {
+      "name": "builtin-c48-header-compiler-resident",
+      "passed": true
+    },
+    {
+      "name": "sdk-preprocessor-surface-mapped",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1103-preprocessor.sym",
+        "p1103-preprocessor.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 7,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2135 lines, work time: 0.007 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p1103-gateway.bin": "e7b5e9da9c74ab876181d584f21162cad92af8625ecb736af203715303fbc41c",
+    "v1/build/p1103-main.bin": "6763149499b8f198202a6494b5a5af4155d169d34eebce601ff081415179b509",
+    "v1/dist/certification/P11.02.build.json": "b1f374a7bc67f06bebbcc026bacd109b811db48a1a6a3bea4c150e90b42f099f",
+    "v1/dist/certification/P11.02.test.json": "1b6f018f7a40c5a651cd35acd650794965d69c33e71e7044e1d9344342f178af",
+    "v1/docs/c48.md": "84255311ea4e67e01a67bc7ad599c04e803e88c16dfb8c10fbe577715c2786b9",
+    "v1/src/tools/cc.asm": "b8c360aa41466fe991f962dec016032825f1f5220d722a454d393a77ff550bf6",
+    "v1/tests/compiler/preprocessor/README.md": "4db1cf90d6d89911a370516dd3b92d7c07957b7e407aafa3ecd82d75d389dce0",
+    "v1/tools-host/test-driver/phase11_step_03.py": "a050bc86d47ec7b5d0675f6a83094e7f3ae9d8c71104cf9cc2677b6e6e3eae12"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.02": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "7ccddc1e1d015190ad5c6452121e16a6dfe6d9e0",
+  "status": "PASS",
+  "step": "P11.03",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
