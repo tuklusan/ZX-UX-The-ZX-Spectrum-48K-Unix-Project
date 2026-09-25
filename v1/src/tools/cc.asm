@@ -3920,3 +3920,308 @@ cc_ptr_inval:
     scf
     ret
     ENDM
+
+
+; P11.10 C48 string/character literal bytes and deterministic object storage.
+; Decoded string bytes are appended in source encounter order to the bounded
+; literal pool. The pool is the exact data-byte staging surface later consumed
+; by the OBJ1 writer; each completed string has exactly one trailing NUL.
+;
+; Mandatory pinned SDK/reference mapping:
+; 84d144de2721cda5075c3a6610a422663b5e2f77
+; compiler/c48/lexer.py -> exact byte escape decoding
+; compiler/c48/parser.py -> adjacent string-token concatenation
+    MACRO EMIT_P11_CC_LITERALS
+CC_LIT_POOL_CAPACITY     EQU 512
+
+cc_lit_pool:             defs CC_LIT_POOL_CAPACITY,0
+cc_lit_pool_used:        dw 0
+cc_lit_string_start:     dw 0
+cc_lit_input_ptr:        dw 0
+cc_lit_remaining:        dw 0
+cc_lit_quote:            db 0
+cc_lit_active:           db 0
+cc_lit_tmp:              db 0
+cc_lit_hex_high:         db 0
+
+cc_lit_reset:
+    ld hl,0
+    ld (cc_lit_pool_used),hl
+    xor a
+    ld (cc_lit_active),a
+    ret
+
+; Start one C string literal sequence. Consecutive STRING tokens are appended
+; with cc_lit_string_append and only cc_lit_string_end emits the terminating NUL.
+cc_lit_string_begin:
+    ld hl,(cc_lit_pool_used)
+    ld (cc_lit_string_start),hl
+    ld a,1
+    ld (cc_lit_active),a
+    xor a
+    ret
+
+; HL=one exact quoted STRING token, BC=token byte length.
+cc_lit_string_append:
+    ld a,(cc_lit_active)
+    or a
+    jp z,cc_lit_format
+    ld a,34
+    call cc_lit_setup
+    ret c
+cc_lit_string_loop:
+    ld hl,(cc_lit_remaining)
+    ld a,h
+    or l
+    ret z
+    call cc_lit_decode_byte
+    ret c
+    call cc_lit_emit_byte
+    ret c
+    jr cc_lit_string_loop
+
+; Complete current string sequence. Success HL=pool offset, BC=byte length
+; including the one trailing NUL.
+cc_lit_string_end:
+    ld a,(cc_lit_active)
+    or a
+    jp z,cc_lit_format
+    xor a
+    call cc_lit_emit_byte
+    ret c
+    xor a
+    ld (cc_lit_active),a
+    ld hl,(cc_lit_pool_used)
+    ld de,(cc_lit_string_start)
+    or a
+    sbc hl,de
+    ld b,h
+    ld c,l
+    ld hl,(cc_lit_string_start)
+    xor a
+    ret
+
+; HL=one exact quoted CHAR token, BC=token byte length.
+; Success A=decoded byte. Exactly one decoded byte is mandatory.
+cc_lit_char:
+    ld a,39
+    call cc_lit_setup
+    ret c
+    call cc_lit_decode_byte
+    ret c
+    ld (cc_lit_tmp),a
+    ld hl,(cc_lit_remaining)
+    ld a,h
+    or l
+    jp nz,cc_lit_format
+    ld a,(cc_lit_tmp)
+    or a
+    ret
+
+; A=required quote, HL=token bytes, BC=token length. Leaves input pointing at
+; the first inner source byte and remaining equal to token length minus quotes.
+cc_lit_setup:
+    ld (cc_lit_quote),a
+    ld a,b
+    or a
+    jr nz,cc_lit_setup_len_ok
+    ld a,c
+    cp 2
+    jp c,cc_lit_format
+cc_lit_setup_len_ok:
+    ld a,(hl)
+    ld d,a
+    ld a,(cc_lit_quote)
+    cp d
+    jp nz,cc_lit_format
+    push hl
+    add hl,bc
+    dec hl
+    ld d,(hl)
+    ld a,(cc_lit_quote)
+    cp d
+    pop hl
+    jp nz,cc_lit_format
+    inc hl
+    ld (cc_lit_input_ptr),hl
+    dec bc
+    dec bc
+    ld (cc_lit_remaining),bc
+    xor a
+    ret
+
+; Decode one inner literal byte and consume its source spelling.
+cc_lit_decode_byte:
+    call cc_lit_take_raw
+    ret c
+    ld d,a
+    ld a,(cc_lit_quote)
+    cp d
+    jp z,cc_lit_format
+    ld a,d
+    cp 32
+    jp c,cc_lit_format
+    cp 127
+    jp nc,cc_lit_format
+    cp 92
+    jr z,cc_lit_escape
+    or a
+    ret
+
+cc_lit_escape:
+    call cc_lit_take_raw
+    ret c
+    cp 92
+    jr z,cc_lit_escape_slash
+    cp 39
+    jr z,cc_lit_escape_quote
+    cp 34
+    jr z,cc_lit_escape_dquote
+    cp '0'
+    jr z,cc_lit_escape_zero
+    cp 'a'
+    jr z,cc_lit_escape_bel
+    cp 'b'
+    jr z,cc_lit_escape_bs
+    cp 't'
+    jr z,cc_lit_escape_tab
+    cp 'n'
+    jr z,cc_lit_escape_lf
+    cp 'v'
+    jr z,cc_lit_escape_vt
+    cp 'f'
+    jr z,cc_lit_escape_ff
+    cp 'r'
+    jr z,cc_lit_escape_cr
+    cp 'x'
+    jr z,cc_lit_escape_hex
+    cp '1'
+    jr c,cc_lit_format
+    cp '8'
+    jp c,cc_lit_notsup
+    jp cc_lit_format
+cc_lit_escape_slash:
+    ld a,92
+    ret
+cc_lit_escape_quote:
+    ld a,39
+    ret
+cc_lit_escape_dquote:
+    ld a,34
+    ret
+cc_lit_escape_zero:
+    xor a
+    ret
+cc_lit_escape_bel:
+    ld a,7
+    ret
+cc_lit_escape_bs:
+    ld a,8
+    ret
+cc_lit_escape_tab:
+    ld a,9
+    ret
+cc_lit_escape_lf:
+    ld a,10
+    ret
+cc_lit_escape_vt:
+    ld a,11
+    ret
+cc_lit_escape_ff:
+    ld a,12
+    ret
+cc_lit_escape_cr:
+    ld a,13
+    ret
+
+; C48 hex escapes are exactly two hexadecimal digits.
+cc_lit_escape_hex:
+    call cc_lit_take_raw
+    ret c
+    call cc_lit_hex_nibble
+    ret c
+    ld (cc_lit_hex_high),a
+    call cc_lit_take_raw
+    ret c
+    call cc_lit_hex_nibble
+    ret c
+    ld d,a
+    ld a,(cc_lit_hex_high)
+    rlca
+    rlca
+    rlca
+    rlca
+    or d
+    ret
+
+cc_lit_hex_nibble:
+    cp '0'
+    jp c,cc_lit_format
+    cp '9'+1
+    jr c,cc_lit_hex_digit
+    cp 'A'
+    jr c,cc_lit_hex_lower
+    cp 'F'+1
+    jr c,cc_lit_hex_upper
+cc_lit_hex_lower:
+    cp 'a'
+    jp c,cc_lit_format
+    cp 'f'+1
+    jp nc,cc_lit_format
+    sub 'a'-10
+    or a
+    ret
+cc_lit_hex_upper:
+    sub 'A'-10
+    or a
+    ret
+cc_lit_hex_digit:
+    sub '0'
+    or a
+    ret
+
+cc_lit_take_raw:
+    ld hl,(cc_lit_remaining)
+    ld a,h
+    or l
+    jp z,cc_lit_format
+    dec hl
+    ld (cc_lit_remaining),hl
+    ld hl,(cc_lit_input_ptr)
+    ld a,(hl)
+    inc hl
+    ld (cc_lit_input_ptr),hl
+    or a
+    ret
+
+cc_lit_emit_byte:
+    ld (cc_lit_tmp),a
+    ld hl,(cc_lit_pool_used)
+    ld de,CC_LIT_POOL_CAPACITY
+    or a
+    sbc hl,de
+    jp nc,cc_lit_nospc
+    ld hl,(cc_lit_pool_used)
+    ld de,cc_lit_pool
+    add hl,de
+    ld a,(cc_lit_tmp)
+    ld (hl),a
+    ld hl,(cc_lit_pool_used)
+    inc hl
+    ld (cc_lit_pool_used),hl
+    xor a
+    ret
+
+cc_lit_nospc:
+    ld a,E_NOSPC
+    scf
+    ret
+cc_lit_notsup:
+    ld a,E_NOTSUP
+    scf
+    ret
+cc_lit_format:
+    ld a,E_FORMAT
+    scf
+    ret
+    ENDM
