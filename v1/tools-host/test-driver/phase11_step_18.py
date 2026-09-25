@@ -96,6 +96,7 @@ p1118_f_s32767: db $00,$00,$FF,$7F,$00
 p1118_f_sneg32768: db $00,$FF,$00,$80,$00
 p1118_f_badpos: db $91,$00,$00,$00,$00
 p1118_f_badneg: db $91,$80,$00,$00,$00
+p1118_f_u1234: db $00,$00,$34,$12,$00
 p1118_out5: defs 5,$A5
 p1118_out2: dw $A5A5
 p1118_req: defs 6,0
@@ -268,12 +269,8 @@ p1118_alias:
     call p1118_gateway
     ret c
     ld hl,p1118_req
-    ld de,p1118_out5
-    ld bc,5
-    ldir
-    ld hl,p1118_out5
-    ld de,p1118_req
-    ; p1118_req now contains the exact converted five bytes.
+    ld de,p1118_f_u1234
+    ; Output aliases the request and must still equal the original value cast.
     call p1118_check5
     ret c
     xor a
