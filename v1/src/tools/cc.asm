@@ -329,3 +329,448 @@ cc_p1102_format:
     scf
     ret
     ENDM
+
+
+; P11.03 Version-1 C48 preprocessor.
+; Runs before lexical parsing. Local includes use cwd-relative ordinary reads;
+; <c48.h> is compiler-resident and never loaded from tape/object storage.
+    MACRO EMIT_P11_CC_PREPROCESSOR
+CC_PP_MACRO_CAPACITY     EQU 16
+CC_PP_REPLACEMENT_MAX   EQU 32
+CC_PP_MACRO_ENTRY_SIZE  EQU 49
+CC_PP_LOCAL_NAME_MAX    EQU 10
+CC_PP_INCLUDE_CHUNK     EQU 64
+CC_PP_FEATURE_FUNCTION  EQU 1
+CC_PP_FEATURE_CONDITION EQU 2
+CC_PP_FEATURE_PASTE     EQU 3
+CC_PP_FEATURE_STRINGIFY EQU 4
+CC_PP_FEATURE_RECURSIVE EQU 5
+
+cc_pp_macro_table:      defs CC_PP_MACRO_CAPACITY*CC_PP_MACRO_ENTRY_SIZE,0
+cc_pp_macro_count:      db 0
+cc_pp_include_depth:    db 0
+cc_pp_builtin_seen:     db 0
+cc_pp_open:             db 0
+cc_pp_handle:           db 0
+cc_pp_errno:            db 0
+cc_pp_work_flags:       db 0
+cc_pp_work_len:         db 0
+cc_pp_work_capacity:    db 0
+cc_pp_local_len:        db 0
+cc_pp_work_name:        dw 0
+cc_pp_work_repl:        dw 0
+cc_pp_work_dest:        dw 0
+cc_pp_stat_req:         defs 4,0
+cc_pp_stat_out:         defs 10,0
+cc_pp_local_name:       defs CC_PP_LOCAL_NAME_MAX+1,0
+cc_pp_lookup_name:      defs 16,0
+
+; P11.41 freezes the complete public declarations. P11.03 freezes delivery.
+cc_pp_builtin_header:
+    db "int getpid(void);",10
+    db "int getchar(void);",10
+cc_pp_builtin_header_end:
+CC_PP_BUILTIN_HEADER_SIZE EQU cc_pp_builtin_header_end-cc_pp_builtin_header
+    ASSERT CC_PP_BUILTIN_HEADER_SIZE <= CC_SOURCE_WINDOW_SIZE
+cc_pp_builtin_operand:   db "<c48.h>",0
+
+cc_pp_reset:
+    xor a
+    ld (cc_pp_macro_count),a
+    ld (cc_pp_include_depth),a
+    ld (cc_pp_builtin_seen),a
+    ld (cc_pp_open),a
+    ret
+
+; A=0 object-like; nonzero means a deferred preprocessing form.
+; HL=name, DE=replacement bytes, C=length.
+cc_pp_define_object:
+    ld (cc_pp_work_flags),a
+    ld (cc_pp_work_name),hl
+    ld (cc_pp_work_repl),de
+    ld a,c
+    ld (cc_pp_work_len),a
+    ld a,(cc_pp_work_flags)
+    or a
+    jp nz,cc_pp_notsup
+    ld a,(cc_pp_work_len)
+    or a
+    jp z,cc_pp_format
+    cp CC_PP_REPLACEMENT_MAX+1
+    jp nc,cc_pp_toolong
+    ld hl,(cc_pp_work_name)
+    call cc_ident_validate
+    ret c
+    ld a,(cc_pp_macro_count)
+    cp CC_PP_MACRO_CAPACITY
+    jp nc,cc_pp_nospc
+    ld b,a
+    ld de,cc_pp_macro_table
+    ld a,b
+    or a
+    jr z,cc_pp_define_dest_ready
+cc_pp_define_dest_loop:
+    ld hl,CC_PP_MACRO_ENTRY_SIZE
+    add hl,de
+    ex de,hl
+    djnz cc_pp_define_dest_loop
+cc_pp_define_dest_ready:
+    push de
+    ld hl,(cc_pp_work_name)
+    call cc_pp_copy_name16
+    pop de
+    ld hl,16
+    add hl,de
+    ex de,hl
+    ld a,(cc_pp_work_len)
+    ld (de),a
+    inc de
+    ld hl,(cc_pp_work_repl)
+    ld a,(cc_pp_work_len)
+    ld b,a
+cc_pp_define_repl_loop:
+    ld a,(hl)
+    ld (de),a
+    inc hl
+    inc de
+    djnz cc_pp_define_repl_loop
+    ld hl,cc_pp_macro_count
+    inc (hl)
+    xor a
+    ret
+
+; HL=name, DE=destination, C=capacity; success A=expanded byte count.
+cc_pp_expand_ident:
+    ld (cc_pp_work_name),hl
+    ld (cc_pp_work_dest),de
+    ld a,c
+    ld (cc_pp_work_capacity),a
+    call cc_ident_validate
+    ret c
+    ld hl,(cc_pp_work_name)
+    ld de,cc_pp_lookup_name
+    call cc_pp_copy_name16
+    ld a,(cc_pp_macro_count)
+    or a
+    jp z,cc_pp_noent
+    ld b,a
+    ld de,cc_pp_macro_table
+cc_pp_find_loop:
+    push bc
+    push de
+    ld hl,cc_pp_lookup_name
+    ld c,16
+cc_pp_find_cmp:
+    ld a,(de)
+    cp (hl)
+    jr nz,cc_pp_find_miss
+    inc de
+    inc hl
+    dec c
+    jr nz,cc_pp_find_cmp
+    pop de
+    pop bc
+    ld hl,16
+    add hl,de
+    ld a,(hl)
+    ld c,a
+    ld a,(cc_pp_work_capacity)
+    cp c
+    jp c,cc_pp_nospc
+    inc hl
+    ld de,(cc_pp_work_dest)
+    ld a,c
+    or a
+    jr z,cc_pp_expand_done
+    ld b,a
+cc_pp_expand_copy:
+    ld a,(hl)
+    ld (de),a
+    inc hl
+    inc de
+    djnz cc_pp_expand_copy
+cc_pp_expand_done:
+    ld a,c
+    or a
+    ret
+cc_pp_find_miss:
+    pop de
+    pop bc
+    ld hl,CC_PP_MACRO_ENTRY_SIZE
+    add hl,de
+    ex de,hl
+    djnz cc_pp_find_loop
+    jp cc_pp_noent
+
+cc_pp_copy_name16:
+    xor a
+    ld (cc_copy_zero),a
+    ld b,16
+cc_pp_copy_name_loop:
+    ld a,(cc_copy_zero)
+    or a
+    jr nz,cc_pp_copy_name_zero
+    ld a,(hl)
+    inc hl
+    ld (de),a
+    or a
+    jr nz,cc_pp_copy_name_next
+    ld a,1
+    ld (cc_copy_zero),a
+    jr cc_pp_copy_name_next
+cc_pp_copy_name_zero:
+    xor a
+    ld (de),a
+cc_pp_copy_name_next:
+    inc de
+    djnz cc_pp_copy_name_loop
+    ret
+
+; HL -> exact operand: <c48.h> or "portable-basename".
+cc_pp_include_operand:
+    ld a,(hl)
+    cp '<'
+    jr z,cc_pp_include_angle
+    cp '"'
+    jp nz,cc_pp_format
+    inc hl
+    ld de,cc_pp_local_name
+    xor a
+    ld (cc_pp_local_len),a
+cc_pp_quote_loop:
+    ld a,(hl)
+    or a
+    jp z,cc_pp_format
+    cp '"'
+    jr z,cc_pp_quote_done
+    call cc_pp_portable_char
+    jp c,cc_pp_inval
+    ld a,(cc_pp_local_len)
+    cp CC_PP_LOCAL_NAME_MAX
+    jp nc,cc_pp_toolong
+    ld a,(hl)
+    ld (de),a
+    inc hl
+    inc de
+    ld a,(cc_pp_local_len)
+    inc a
+    ld (cc_pp_local_len),a
+    jr cc_pp_quote_loop
+cc_pp_quote_done:
+    inc hl
+    ld a,(hl)
+    or a
+    jp nz,cc_pp_format
+    xor a
+    ld (de),a
+    ld a,(cc_pp_local_len)
+    or a
+    jp z,cc_pp_inval
+    cp 1
+    jr nz,cc_pp_quote_check_dotdot
+    ld a,(cc_pp_local_name)
+    cp '.'
+    jp z,cc_pp_inval
+    jr cc_pp_quote_ready
+cc_pp_quote_check_dotdot:
+    cp 2
+    jr nz,cc_pp_quote_ready
+    ld a,(cc_pp_local_name)
+    cp '.'
+    jr nz,cc_pp_quote_ready
+    ld a,(cc_pp_local_name+1)
+    cp '.'
+    jp z,cc_pp_inval
+cc_pp_quote_ready:
+    ld hl,cc_pp_local_name
+    jp cc_pp_include_local
+
+cc_pp_include_angle:
+    ld de,cc_pp_builtin_operand
+    call cc_pp_streq
+    jp nz,cc_pp_notsup
+    jp cc_pp_include_builtin
+
+cc_pp_include_builtin:
+    ld a,(cc_pp_builtin_seen)
+    or a
+    ret nz
+    ld a,1
+    ld (cc_pp_builtin_seen),a
+    ld hl,cc_pp_builtin_header
+    ld bc,CC_PP_BUILTIN_HEADER_SIZE
+    call cc_pipeline_feed
+    ret
+
+; Local C/TXT include: current cwd basename, streamed in <=64-byte reads.
+; No whole include object is materialized.
+cc_pp_include_local:
+    ld a,(cc_pp_include_depth)
+    or a
+    jp nz,cc_pp_notsup
+    ld (cc_pp_stat_req),hl
+    ld de,cc_pp_stat_out
+    ld (cc_pp_stat_req+2),de
+    ld hl,cc_pp_stat_req
+    ld a,SYS_STAT
+    call SYSCALL_GATEWAY
+    ret c
+    ld a,(cc_pp_stat_out)
+    cp OBJ_C
+    jr z,cc_pp_local_type_ok
+    cp OBJ_TXT
+    jp nz,cc_pp_format
+cc_pp_local_type_ok:
+    ld a,1
+    ld (cc_pp_include_depth),a
+    ld hl,(cc_pp_stat_req)
+    ld c,O_READ
+    ld b,0
+    ld a,SYS_OPEN
+    call SYSCALL_GATEWAY
+    jp c,cc_pp_local_open_fail
+    ld a,h
+    or a
+    jp nz,cc_pp_local_bad_handle
+    ld a,l
+    ld (cc_pp_handle),a
+    ld a,1
+    ld (cc_pp_open),a
+cc_pp_local_read:
+    ld a,(cc_pp_handle)
+    ld e,a
+    ld d,0
+    ld hl,cc_source_window
+    ld bc,CC_PP_INCLUDE_CHUNK
+    ld a,SYS_READ
+    call SYSCALL_GATEWAY
+    jp c,cc_pp_stream_error
+    ld a,h
+    or l
+    jr z,cc_pp_local_eof
+    ld b,h
+    ld c,l
+    ld hl,cc_source_window
+    call cc_pipeline_feed
+    jp c,cc_pp_stream_error
+    jr cc_pp_local_read
+cc_pp_local_eof:
+    call cc_pp_close
+    jp c,cc_pp_local_close_fail
+    xor a
+    ld (cc_pp_include_depth),a
+    ret
+cc_pp_local_open_fail:
+    ld (cc_pp_errno),a
+    xor a
+    ld (cc_pp_include_depth),a
+    ld a,(cc_pp_errno)
+    scf
+    ret
+cc_pp_local_bad_handle:
+    ld a,E_FORMAT
+    jp cc_pp_stream_error
+cc_pp_stream_error:
+    ld (cc_pp_errno),a
+    call cc_pp_close
+    xor a
+    ld (cc_pp_include_depth),a
+    ld a,(cc_pp_errno)
+    scf
+    ret
+cc_pp_local_close_fail:
+    ld (cc_pp_errno),a
+    xor a
+    ld (cc_pp_include_depth),a
+    ld a,(cc_pp_errno)
+    scf
+    ret
+cc_pp_close:
+    ld a,(cc_pp_open)
+    or a
+    ret z
+    ld a,(cc_pp_handle)
+    ld l,a
+    ld h,0
+    ld a,SYS_CLOSE
+    call SYSCALL_GATEWAY
+    ret c
+    xor a
+    ld (cc_pp_open),a
+    ret
+
+cc_pp_reject_feature:
+    cp CC_PP_FEATURE_FUNCTION
+    jr z,cc_pp_notsup
+    cp CC_PP_FEATURE_CONDITION
+    jr z,cc_pp_notsup
+    cp CC_PP_FEATURE_PASTE
+    jr z,cc_pp_notsup
+    cp CC_PP_FEATURE_STRINGIFY
+    jr z,cc_pp_notsup
+    cp CC_PP_FEATURE_RECURSIVE
+    jr z,cc_pp_notsup
+    jp cc_pp_format
+
+cc_pp_portable_char:
+    cp '0'
+    jr c,cc_pp_portable_alpha
+    cp '9'+1
+    jr c,cc_pp_char_ok
+cc_pp_portable_alpha:
+    cp 'A'
+    jr c,cc_pp_portable_misc
+    cp 'Z'+1
+    jr c,cc_pp_char_ok
+    cp 'a'
+    jr c,cc_pp_portable_misc
+    cp 'z'+1
+    jr c,cc_pp_char_ok
+cc_pp_portable_misc:
+    cp '.'
+    jr z,cc_pp_char_ok
+    cp '_'
+    jr z,cc_pp_char_ok
+    cp '-'
+    jr z,cc_pp_char_ok
+    scf
+    ret
+cc_pp_char_ok:
+    or a
+    ret
+
+cc_pp_streq:
+    ld a,(de)
+    cp (hl)
+    ret nz
+    or a
+    ret z
+    inc de
+    inc hl
+    jr cc_pp_streq
+
+cc_pp_noent:
+    ld a,E_NOENT
+    scf
+    ret
+cc_pp_nospc:
+    ld a,E_NOSPC
+    scf
+    ret
+cc_pp_toolong:
+    ld a,E_TOOLONG
+    scf
+    ret
+cc_pp_notsup:
+    ld a,E_NOTSUP
+    scf
+    ret
+cc_pp_inval:
+    ld a,E_INVAL
+    scf
+    ret
+cc_pp_format:
+    ld a,E_FORMAT
+    scf
+    ret
+    ENDM
