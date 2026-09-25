@@ -177,7 +177,7 @@ p1113_setup:
     ld d,CC_REGCALL_KIND_WORD
     call cc_regcall_set_arg
     ret
-     
+
 ; A=count, DE=golden pointer, B=golden length.
 p1113_compare_one:
     push bc
