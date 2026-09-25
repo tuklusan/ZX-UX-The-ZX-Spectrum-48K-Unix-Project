@@ -5163,3 +5163,55 @@ cc_regcall_format:
     scf
     ret
     ENDM
+
+
+; P11.14 exact Spectrum/C48 five-byte float representation.
+; C48 float is never IEEE binary32. Literal conversion is delegated through the
+; frozen kernel SYS_FP_FROM_TEXT ROM gateway so compiler output bytes are the
+; same bytes consumed by the runtime and Sinclair ROM calculator services.
+;
+; Mandatory pinned SDK/reference mapping:
+; 84d144de2721cda5075c3a6610a422663b5e2f77
+; compiler/c48/float5.py -> exact five-byte representation and integer form
+; compiler/tests/test_conformance.py -> required decimal float literal corpus
+    MACRO EMIT_P11_CC_FLOAT5
+CC_FLOAT5_SIZE           EQU 5
+CC_FLOAT5_ALIGN          EQU 1
+
+; A=claimed storage size. Only the architecture-frozen five-byte ABI is valid.
+cc_float5_require_size:
+    cp CC_FLOAT5_SIZE
+    jp nz,cc_float5_format
+    xor a
+    ret
+
+; HL=source, DE=destination. Copy exactly one C48 float object.
+cc_float5_copy:
+    ld bc,CC_FLOAT5_SIZE
+    ldir
+    xor a
+    ret
+
+; DE=destination. Produce canonical five-byte zero.
+cc_float5_zero:
+    xor a
+    ld b,CC_FLOAT5_SIZE
+cc_float5_zero_loop:
+    ld (de),a
+    inc de
+    djnz cc_float5_zero_loop
+    xor a
+    ret
+
+; HL=ASCII decimal literal, BC=exact source length, DE=five-byte destination.
+; The kernel validates lexical form and performs the ROM-compatible conversion.
+cc_float5_from_text:
+    ld a,SYS_FP_FROM_TEXT
+    call SYSCALL_GATEWAY
+    ret
+
+cc_float5_format:
+    ld a,E_FORMAT
+    scf
+    ret
+    ENDM
