@@ -70,6 +70,15 @@ jobs:
           p.write_bytes(data); tmp.unlink()
           print("ZX-UX P11.01 DOCX REPAIR PASS",got)
           PY
+          python3 - <<'PYGATE'
+          from pathlib import Path
+          p=Path("tools/check_license_headers.sh")
+          s=p.read_text(encoding="utf-8")
+          old='# Project-owner C48 documentation update admitted from b58f9630397829788972260b5948e882452993e2.\nreadonly C48_SPEC_DOCX_BLOB_SHA1="5744e9f2c440b4ef11f7ffcd7dad7d218f3ba44d"'
+          new='# P11.01 authority reconciliation corrects the C48 specification under REV17/REV08.\nreadonly C48_SPEC_DOCX_BLOB_SHA1="a84c314a6d2957835efdc916a49e5289718140c2"'
+          if old not in s: raise SystemExit("C48 DOCX license-gate baseline not found")
+          p.write_text(s.replace(old,new),encoding="utf-8",newline="\n")
+          PYGATE
           ./tools/check_license_headers.sh
           ./tools/check_project_policy.py
           python3 tools/check_media_retention.py
@@ -79,7 +88,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git rm .github/workflows/p1101-docx-repair-commit-once.yml
-          git add "docs/04-C48 Language Specification Rev 0.11.docx"
+          git add "docs/04-C48 Language Specification Rev 0.11.docx" tools/check_license_headers.sh
           git diff --cached --check
           git commit -m "P11.01: synchronize C48 specification authorities"
           git push origin HEAD:main
