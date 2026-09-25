@@ -8,8 +8,10 @@
   },
   "boot_contract": {
     "distribution": "TZX-only",
+    "final_loader_after": "0x5EB4",
     "generalized_block_count": 48,
     "handoff": "0xE003",
+    "handoff_path": "final block -> render row 24 -> startup beep -> 0xE003",
     "kernel_address": "0xE000",
     "kernel_end": "0xFFFF",
     "kernel_size": 8192,
@@ -20,17 +22,18 @@
     "standard_speed_block_count": 2,
     "zx48uxscr": false
   },
-  "candidate_source_commit": "5db0345ebb14f90508af46681eb1957ae9ea4eed",
+  "candidate_source_commit": "c3ed8765249ff8a59ae6673908333e4f10ca1c71",
   "checkpoint_commit": "8360b0c5817738b01dc4b75bb64b12d77341adcd",
   "checkpoint_tag": "PHASE-10-COMPLETE",
   "fast_loader": {
-    "builder_sha256": "de723404de12795d891754a13e2dfd0a1be905740da460acab5c3b3409a6d06d",
-    "hook_sha256": "f1c6b88998488c552bbf5358cfcf32494de4687a2f0cfb7bcbe37a71cf6c00ef",
-    "inspector_sha256": "0ddd67c1cd34ba71a9c1319e1a6fee5b4a4c64ee5ee606aba1fe57d4b7732157",
+    "builder_sha256": "e8fc9571bfd32410672fe0bd94788d609f9f90028cd90dedb3462c14577f9712",
+    "hook_sha256": "0dcc63767005e1140b452d71a326d4b9af9fc39bfb57c9221e776d2957991b08",
+    "inspector_sha256": "c9a023b4920a0b243e5d767f8cf1145d022f72373b176bfb9b9c54a640152cbe",
     "pasmo_executable_sha256": "d510ff3942203c010b6b299c7ba138480a55f16297a3bd2f9ee9ed3fb3f76ded",
     "pasmo_path": "/usr/bin/pasmo",
     "pasmo_version": "0.5.3-7",
     "portable_zip_sha256": "4c83a681f718192db9ebb32f0c8bc565baf2e68eb85de480322a1102d32f00c7",
+    "runtime_acceptance_sha256": "9587eca23afec330c99dcab440b27d34160f714ddcc0f60430812383a0e98fac",
     "seed_sha256": "7ffe2f90b58e87a19a090ca0e0f1323605754af7d8809f3f051662f9faaec6f1",
     "text_lines_sha256": "610f0b6d8cadf7ed0c3935fc66b889aee2f89fbb5e278d580813686402c72f10",
     "upstream_commit": "99c948feb2893e369055879ddf82aa0105bfe541",
@@ -40,12 +43,12 @@
   "files": [
     {
       "path": "README.txt",
-      "sha256": "78b7806f4ab4b99d9753eb0317fc1a4afc15cdb22c63bb05eb38356fb9f14552",
-      "size": 617
+      "sha256": "7d6461526cde27bd6014f6bbf01f7700d2d53c413cf0787a14b54cc2ce8ace93",
+      "size": 703
     },
     {
       "path": "zx-ux-phase10-pre-release.tzx",
-      "sha256": "41257362e2de40375aa2ecd30db2ad7808624634e8554ddcb93a8ba390483070",
+      "sha256": "fa645231f5792d8cd841b306feb581876810287ffdb03cfdd50d8970ed9e4af4",
       "size": 11954
     }
   ],
@@ -80,14 +83,63 @@
     "projection_sha256": "e6726d5646a91ddd4b237274c47d30d4b550766447633da095e26b019c3a0e67",
     "resident_kernel_overwritten": false
   },
+  "runtime_acceptance": {
+    "assertions": {
+      "exactly_23_interblock_display_callbacks": "PASS",
+      "final_row_attributes_correct_before_beep": "PASS",
+      "final_row_attributes_intact_at_handoff": "PASS",
+      "final_row_intact_at_handoff": "PASS",
+      "final_row_rendered_before_beep": "PASS",
+      "finalizer_entered_with_row_24_pending": "PASS",
+      "finalizer_rendered_row_24": "PASS",
+      "handoff_reached_once": "PASS",
+      "handoff_state_complete": "PASS",
+      "interblock_display_callback_state_sequence": "PASS",
+      "no_timeout": "PASS",
+      "ordered_final_path": "PASS",
+      "real_rom_basic_path_seen": "PASS",
+      "real_rom_ld_bytes_seen": "PASS",
+      "rom_beeper_parameters_exact": "PASS",
+      "rom_beeper_reached_once": "PASS",
+      "rom_beeper_returns_to_startup_beep": "PASS",
+      "startup_beep_reached_once": "PASS"
+    },
+    "expected_final_line": "starting ZX-UX...               ",
+    "final_hold": {
+      "line_index": 23,
+      "lines_left": 1,
+      "text_ptr": 25202
+    },
+    "final_render_done": {
+      "line_index": 24,
+      "lines_left": 0,
+      "text_ptr": 25234
+    },
+    "handoff": {
+      "address": 57347,
+      "line_index": 24,
+      "lines_left": 0,
+      "text_ptr": 25234
+    },
+    "hook_count": 23,
+    "rom_beeper": {
+      "de": 224,
+      "hl": 458,
+      "return_address": 24373,
+      "sp": 32732
+    }
+  },
   "schema": 2,
   "tests": {
     "controlled_source_mutation_identity_failure": "PASS",
     "deterministic_double_build": "PASS",
+    "e003_after_startup_beep_runtime_verified": "PASS",
     "exact_8192_byte_host_tzx_compare": "PASS",
     "independent_embedded_kernel_reconstruction": "PASS",
     "independent_tzx_structure_parse": "PASS",
-    "loader_owned_24x32_display_contract": "PASS",
+    "loader_23_interblock_callbacks_runtime_verified": "PASS",
+    "loader_final_row_bitmap_runtime_verified": "PASS",
+    "loader_finalizer_row24_runtime_verified": "PASS",
     "native_as_real_obj1": "PASS",
     "native_exact_8192_byte_compare": "PASS",
     "native_ld_consumes_native_obj1": "PASS",
@@ -96,12 +148,12 @@
     "phase11_state_absent_before_publication": "PASS",
     "real_time_fast_loader_to_e003_no_shortcuts": "PASS",
     "real_time_rom_basic_loader_path": "PASS",
-    "startup_beep_path_structurally_verified": "PASS"
+    "startup_beep_runtime_verified": "PASS"
   },
   "tzx": {
     "dummy_payload_rejected": true,
     "path": "zx-ux-phase10-pre-release.tzx",
-    "sha256": "41257362e2de40375aa2ecd30db2ad7808624634e8554ddcb93a8ba390483070",
+    "sha256": "fa645231f5792d8cd841b306feb581876810287ffdb03cfdd50d8970ed9e4af4",
     "size": 11954
   }
 }
