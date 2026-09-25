@@ -95,7 +95,7 @@ p1119_start:
     EMIT_P11_CC_DECL_PARSER
     EMIT_P1119_CC_FLOAT_COMPARE
 
-p1119_f_neg1: db $00,$FF,$FF,$FF,$00
+p1119_f_neg1: db $00,$FF,$01,$00,$00
 p1119_f_zero: db $00,$00,$00,$00,$00
 p1119_f_one:  db $00,$00,$01,$00,$00
 p1119_f_two:  db $00,$00,$02,$00,$00
@@ -282,7 +282,7 @@ p1119_compiler_map:
     cp CC_FP_COMPARE_HELPER_FCMP
     jp nz,p1119_fail
 
-    ld a,C48_FP_REL_GE
+    ld a,CC_FP_REL_GE
     call cc_fp_relation_helper
     ret c
     ld a,d
