@@ -79,6 +79,7 @@ jobs:
           if old not in s: raise SystemExit("C48 DOCX license-gate baseline not found")
           p.write_text(s.replace(old,new),encoding="utf-8",newline="\n")
           PYGATE
+          git add "docs/04-C48 Language Specification Rev 0.11.docx" tools/check_license_headers.sh
           ./tools/check_license_headers.sh
           ./tools/check_project_policy.py
           python3 tools/check_media_retention.py
