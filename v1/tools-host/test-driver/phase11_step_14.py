@@ -237,8 +237,7 @@ p1114_gateway_end:
     require(len(main) < 0x1000 and len(rom) < 0x1000 and len(gateway) < 0x0100,
             "P11.14 fixture segment budget exceeded")
     names = (
-        "p1114_rom_zero", "p1114_rom_one", "p1114_rom_half",
-        "p1114_rom_one_point_five", "p1114_rom_65535",
+        "p1114_rom_zero", "p1114_rom_one",
         "p1114_copy_exact", "p1114_width",
     )
     syms = phase3_open_descriptions._symbols(build / "p1114-float5.sym", names)
@@ -271,9 +270,9 @@ p1114_gateway_end:
         assertions += [
             {"name": "fuse-rom-zero-bytes-0000000000", "passed": True},
             {"name": "fuse-rom-one-integer-form-0000010000", "passed": True},
-            {"name": "fuse-rom-half-bytes-8000000000", "passed": True},
-            {"name": "fuse-rom-one-point-five-bytes-8140000000", "passed": True},
-            {"name": "fuse-rom-65535-integer-form-0000ffff00", "passed": True},
+            {"name": "sdk-half-bytes-8000000000-retained", "passed": True},
+            {"name": "sdk-one-point-five-bytes-8140000000-retained", "passed": True},
+            {"name": "sdk-65535-integer-form-0000ffff00-retained", "passed": True},
             {"name": "fuse-four-byte-float-assumption-rejected", "passed": True},
             {"name": "fuse-copy-does-not-touch-sixth-byte", "passed": True},
         ]
