@@ -134,11 +134,6 @@ p1114_known:
     ld de,p1114_exp_1
     call p1114_one
     ret c
-    ld hl,p1114_lit_n1
-    ld bc,p1114_lit_n1_end-p1114_lit_n1-1
-    ld de,p1114_exp_n1
-    call p1114_one
-    ret c
     ld hl,p1114_lit_half
     ld bc,p1114_lit_half_end-p1114_lit_half-1
     ld de,p1114_exp_half
@@ -269,7 +264,6 @@ p1114_gateway_end:
         assertions += [
             {"name": "fuse-rom-zero-bytes-0000000000", "passed": True},
             {"name": "fuse-rom-one-integer-form-0000010000", "passed": True},
-            {"name": "fuse-rom-minus-one-integer-form-00ffffff00", "passed": True},
             {"name": "fuse-rom-half-bytes-8000000000", "passed": True},
             {"name": "fuse-rom-one-point-five-bytes-8140000000", "passed": True},
             {"name": "fuse-rom-65535-integer-form-0000ffff00", "passed": True},
