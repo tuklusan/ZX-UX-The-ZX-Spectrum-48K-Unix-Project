@@ -54,7 +54,7 @@ def dispatch(root, action, step, *, sha256_file, run_command, require_project_to
     for helper in tuple(mapping.values()) + ("__itof","__ftoi","__fcmp"):
         require(f"{helper}:" in ltext, f"P11.20 required internal helper missing: {helper}")
     require("84d144de2721cda5075c3a6610a422663b5e2f77" in mtext
-            and "compiler/c48/rommath.py" in mtext,
+            and "compiler/c48/vm.py" in mtext and "compiler/c48/float5.py" in mtext,
             "P11.20 pinned SDK math mapping missing")
     require("EMIT_P1117_FP_EXEC_SYSCALL_ROUTINES" in stext
             and "EMIT_P1117_ROM_FP_EXEC_ROUTINES" in rtext,
@@ -168,122 +168,103 @@ p1120_unary:
     ret
 ; entry trampoline is patched by individual test routines through direct calls.
 
-p1120_exact:
-    ; sin(0) = 0
+p1120_check_out:
+    ld hl,p1120_out
+    jp p1120_cmp5
+
+p1120_sin:
     ld hl,p1120_out
     ld de,p1120_zero
     call sin
     ret c
-    ld hl,p1120_out
     ld de,p1120_zero
-    call p1120_cmp5
-    ret c
-    ; cooperative boundary between calls
-    ld a,SYS_YIELD
-    call p1120_gateway
-    ret c
+    jp p1120_check_out
 
-    ; cos(0) = 1
+p1120_cos:
     ld hl,p1120_out
     ld de,p1120_zero
     call cos
     ret c
-    ld hl,p1120_out
     ld de,p1120_one
-    call p1120_cmp5
-    ret c
+    jp p1120_check_out
 
-    ; tan(0) = 0
+p1120_tan:
     ld hl,p1120_out
     ld de,p1120_zero
     call tan
     ret c
-    ld hl,p1120_out
     ld de,p1120_zero
-    call p1120_cmp5
-    ret c
+    jp p1120_check_out
 
-    ; asin(0) = 0
+p1120_asin:
     ld hl,p1120_out
     ld de,p1120_zero
     call asin
     ret c
-    ld hl,p1120_out
     ld de,p1120_zero
-    call p1120_cmp5
-    ret c
+    jp p1120_check_out
 
-    ; acos(1) = 0
+p1120_acos:
     ld hl,p1120_out
     ld de,p1120_one
     call acos
     ret c
-    ld hl,p1120_out
     ld de,p1120_zero
-    call p1120_cmp5
-    ret c
+    jp p1120_check_out
 
-    ; atan(0) = 0
+p1120_atan:
     ld hl,p1120_out
     ld de,p1120_zero
     call atan
     ret c
-    ld hl,p1120_out
     ld de,p1120_zero
-    call p1120_cmp5
-    ret c
+    jp p1120_check_out
 
-    ; sqrt(4) = 2
+p1120_sqrt:
     ld hl,p1120_out
     ld de,p1120_four
     call sqrt
     ret c
-    ld hl,p1120_out
     ld de,p1120_two
-    call p1120_cmp5
-    ret c
+    jp p1120_check_out
 
-    ; exp(0) = 1
+p1120_exp:
     ld hl,p1120_out
     ld de,p1120_zero
     call exp
     ret c
-    ld hl,p1120_out
     ld de,p1120_one
-    call p1120_cmp5
-    ret c
+    jp p1120_check_out
 
-    ; log(1) = 0
+p1120_log:
     ld hl,p1120_out
     ld de,p1120_one
     call log
     ret c
-    ld hl,p1120_out
     ld de,p1120_zero
-    call p1120_cmp5
-    ret c
+    jp p1120_check_out
 
-    ; pow(2,3) = 8
+p1120_pow:
     ld hl,p1120_out
     ld de,p1120_two
     ld bc,p1120_three
     call pow
     ret c
-    ld hl,p1120_out
     ld de,p1120_eight
-    call p1120_cmp5
-    ret c
+    jp p1120_check_out
 
-    ; fabs(-1) = 1
+p1120_fabs:
     ld hl,p1120_out
     ld de,p1120_neg1
     call fabs
     ret c
-    ld hl,p1120_out
     ld de,p1120_one
-    call p1120_cmp5
-    ret c
+    jp p1120_check_out
 
+p1120_yield:
+    ld a,SYS_YIELD
+    call p1120_gateway
+    ret c
     ld a,(p1120_yields)
     cp 1
     jp nz,p1120_fail
@@ -377,7 +358,7 @@ p1120_end:
             f"P11.20 assemble: {result.stderr or result.stdout}")
     main=(build/"p1120-main.bin").read_bytes()
     require(0<len(main)<=0x2000,"P11.20 fixture exceeds C000-DFFF user range")
-    names=("p1120_exact","p1120_helpers","p1120_domain","p1120_busy")
+    names=("p1120_sin","p1120_cos","p1120_tan","p1120_asin","p1120_acos","p1120_atan","p1120_sqrt","p1120_exp","p1120_log","p1120_pow","p1120_fabs","p1120_yield","p1120_helpers","p1120_domain","p1120_busy")
     syms=phase3_open_descriptions._symbols(build/"p1120-math.sym",("p1120_gateway",)+names)
 
     assertions=[
@@ -386,7 +367,7 @@ p1120_end:
       {"name":"all-public-float-results-use-hidden-pointer-regcall","passed":True},
       {"name":"pow-uses-shifted-de-bc-pointer-arguments","passed":True},
       {"name":"runtime-remains-serialized-through-sys-fp-exec","passed":True},
-      {"name":"sdk-rommath-and-float5-mapping-recorded","passed":True},
+      {"name":"sdk-vm-and-float5-mapping-recorded","passed":True},
     ]
     commands=[result]
     if action=="test":

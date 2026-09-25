@@ -13,9 +13,8 @@
 ; P11.20 public C48 ROM-backed math surface.
 ; Mandatory read-only SDK/reference baseline:
 ; 84d144de2721cda5075c3a6610a422663b5e2f77
-; compiler/c48/rommath.py -> ROM-compatible public math semantics
-; compiler/c48/float5.py -> exact five-byte values and domain failures
 ; compiler/c48/vm.py -> public builtin dispatch/runtime-error behavior
+; compiler/c48/float5.py -> five-byte values plus SDK reference math/domain behavior
 ; REV17/REV08 own native C48_REGCALL and serialized SYS_FP_EXEC execution.
 ; P11.20 qualification is chained only from admitted P11.19 evidence.
 
