@@ -1,0 +1,85 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: P11.01 DOCX repair commit once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/p1101-docx-repair-commit-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: {fetch-depth: 0}
+      - name: Apply visually-qualified authority repair
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,re,zipfile
+          from pathlib import Path
+          from xml.etree import ElementTree as ET
+          p=Path("docs/04-C48 Language Specification Rev 0.11.docx")
+          tmp=p.with_suffix(".docx.p1101.tmp")
+          replacements=[
+              (b"ZX-UX-ARCHITECTURE-REV11.md",b"ZX-UX-ARCHITECTURE-REV17.md"),
+              (b"ZX-UX-IMPLEMENTATION-STEPS-REV02.md",b"ZX-UX-IMPLEMENTATION-STEPS-REV08.md"),
+              (b"Revision 11",b"Revision 17"),
+              (b"Revision-11",b"Revision-17"),
+              (b"REV11",b"REV17"),
+              (b"Revision 02",b"Revision 08"),
+              (b"Revision-02",b"Revision-08"),
+              (b"REV02",b"REV08"),
+          ]
+          with zipfile.ZipFile(p,"r") as zin, zipfile.ZipFile(tmp,"w") as zout:
+              for info in zin.infolist():
+                  data=zin.read(info.filename)
+                  if info.filename.startswith("word/") and info.filename.endswith(".xml"):
+                      for a,b in replacements: data=data.replace(a,b)
+                  zout.writestr(info,data)
+          data=tmp.read_bytes()
+          got=hashlib.sha256(data).hexdigest()
+          expected="981eeb963d59e7ce2fd5e0fb73866f8a734fd33746a5ee0fce32d84fdec41903"
+          if got!=expected: raise SystemExit(f"qualified DOCX byte identity mismatch: {got}")
+          chunks=[]
+          with zipfile.ZipFile(tmp) as z:
+              for name in z.namelist():
+                  if name.startswith("word/") and name.endswith(".xml"):
+                      try: root=ET.fromstring(z.read(name))
+                      except ET.ParseError: continue
+                      chunks.extend(n.text or "" for n in root.iter() if n.tag.endswith("}t"))
+          t=" ".join(chunks)
+          for stale in ("REV11","Revision 11","Revision-11","REV02","Revision 02","Revision-02"):
+              if re.search(re.escape(stale),t,re.I): raise SystemExit(f"stale authority remains: {stale}")
+          p.write_bytes(data); tmp.unlink()
+          print("ZX-UX P11.01 DOCX REPAIR PASS",got)
+          PY
+          ./tools/check_license_headers.sh
+          ./tools/check_project_policy.py
+          python3 tools/check_media_retention.py
+      - name: Commit repaired DOCX and retire helper
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/p1101-docx-repair-commit-once.yml
+          git add "docs/04-C48 Language Specification Rev 0.11.docx"
+          git diff --cached --check
+          git commit -m "P11.01: synchronize C48 specification authorities"
+          git push origin HEAD:main
