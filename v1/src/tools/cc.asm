@@ -5487,3 +5487,41 @@ cc_float_return_inval:
     scf
     ret
     ENDM
+
+; P11.18 native cast lowering classification.
+; Required runtime helper identities are frozen as __itof and __ftoi.
+    MACRO EMIT_P1118_CC_CASTS
+CC_CAST_HELPER_ITOF      EQU 1
+CC_CAST_HELPER_FTOI      EQU 2
+
+; A=source base type, E=destination base type.
+; Success A=helper id. Other conversions remain owned by earlier integer rules.
+cc_fp_cast_helper:
+    cp CC_TYPE_FLOAT
+    jr z,cc_fp_cast_from_float
+    ld d,a
+    ld a,e
+    cp CC_TYPE_FLOAT
+    jr nz,cc_fp_cast_notsup
+    ld a,d
+    cp CC_TYPE_CHAR
+    jr c,cc_fp_cast_notsup
+    cp CC_TYPE_UINT+1
+    jr nc,cc_fp_cast_notsup
+    ld a,CC_CAST_HELPER_ITOF
+    or a
+    ret
+cc_fp_cast_from_float:
+    ld a,e
+    cp CC_TYPE_CHAR
+    jr c,cc_fp_cast_notsup
+    cp CC_TYPE_UINT+1
+    jr nc,cc_fp_cast_notsup
+    ld a,CC_CAST_HELPER_FTOI
+    or a
+    ret
+cc_fp_cast_notsup:
+    ld a,E_NOTSUP
+    scf
+    ret
+    ENDM

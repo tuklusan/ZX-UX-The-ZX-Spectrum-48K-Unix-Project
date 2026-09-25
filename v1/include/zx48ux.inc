@@ -266,6 +266,18 @@ FPOP_OP_ACS              EQU $0F
 FPOP_OP_ATN              EQU $10
 FPOP_OP_SQR              EQU $11
 
+ITOF1_VALUE_O             EQU $00
+ITOF1_SIGNED_O            EQU $02
+ITOF1_RESERVED_O          EQU $03
+ITOF1_OUT_O               EQU $04
+ITOF1_SIZE                EQU $06
+
+FTOI1_IN_O                EQU $00
+FTOI1_SIGNED_O            EQU $02
+FTOI1_RESERVED_O          EQU $03
+FTOI1_OUT_O               EQU $04
+FTOI1_SIZE                EQU $06
+
 MEX1_HEADER_SIZE         EQU $0018
 OBJ1_HEADER_SIZE         EQU $0018
 M48O_HEADER_SIZE         EQU $0020

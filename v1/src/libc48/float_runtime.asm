@@ -154,3 +154,69 @@ c48_fp_runtime_error:
     scf
     ret
     ENDM
+
+; P11.18 C48 int/float cast runtime helpers.
+; Pinned SDK mapping: 84d144de2721cda5075c3a6610a422663b5e2f77
+; compiler/c48/semantics.py and compiler/c48/float5.py define source conversion
+; semantics; REV17/REV08 own this target-native syscall and C48_REGCALL mapping.
+    MACRO EMIT_P1118_C48_CAST_RUNTIME
+c48_itof_req:           defs ITOF1_SIZE,0
+c48_ftoi_req:           defs FTOI1_SIZE,0
+c48_cast_result_ptr:    dw 0
+c48_ftoi_result:        dw 0
+
+; float __itof(u16 value,u16 is_signed)
+; Hidden float result pointer occupies HL; users are shifted to DE,BC.
+__itof:
+    ld (c48_cast_result_ptr),hl
+    ld (c48_itof_req+ITOF1_VALUE_O),de
+    ld a,b
+    or a
+    jp nz,c48_cast_runtime_error
+    ld a,c
+    cp 2
+    jp nc,c48_cast_runtime_error
+    ld (c48_itof_req+ITOF1_SIGNED_O),a
+    xor a
+    ld (c48_itof_req+ITOF1_RESERVED_O),a
+    ld de,(c48_cast_result_ptr)
+    ld (c48_itof_req+ITOF1_OUT_O),de
+    ld hl,c48_itof_req
+    ld a,SYS_INT_TO_FP
+    call SYSCALL_GATEWAY
+    jp c,c48_cast_runtime_error
+    ld hl,(c48_cast_result_ptr)
+    xor a
+    ret
+
+; int __ftoi(const float *value,u16 is_signed)
+; Ordinary C48_REGCALL: HL=value pointer, DE=0/1 signed selector.
+__ftoi:
+    ld (c48_ftoi_req+FTOI1_IN_O),hl
+    ld a,d
+    or a
+    jp nz,c48_cast_runtime_error
+    ld a,e
+    cp 2
+    jp nc,c48_cast_runtime_error
+    ld (c48_ftoi_req+FTOI1_SIGNED_O),a
+    xor a
+    ld (c48_ftoi_req+FTOI1_RESERVED_O),a
+    ld hl,c48_ftoi_result
+    ld (c48_ftoi_req+FTOI1_OUT_O),hl
+    ld hl,c48_ftoi_req
+    ld a,SYS_FP_TO_INT
+    call SYSCALL_GATEWAY
+    jp c,c48_cast_runtime_error
+    ld hl,(c48_ftoi_result)
+    xor a
+    ret
+
+c48_cast_runtime_error:
+    ld hl,1
+    ld a,SYS_EXIT
+    call SYSCALL_GATEWAY
+    ld a,E_INVAL
+    scf
+    ret
+    ENDM

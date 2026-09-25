@@ -1486,3 +1486,89 @@ p1117_fp_sys_invalid:
     scf
     ret
     ENDM
+
+; P11.18 exact staged SYS_INT_TO_FP / SYS_FP_TO_INT ABI.
+    MACRO EMIT_P1118_FP_CAST_SYSCALL_ROUTINES
+p1118_cast_req_ptr:       dw 0
+p1118_cast_value:         dw 0
+p1118_cast_signed:        db 0
+p1118_cast_in:            dw 0
+p1118_cast_out:           dw 0
+
+zx48_p1118_sys_int_to_fp:
+    ld hl,(syscall_arg_hl)
+    ld (p1118_cast_req_ptr),hl
+    ld bc,ITOF1_SIZE
+    call zx48_user_range_validate
+    ret c
+    ld hl,(p1118_cast_req_ptr)
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (p1118_cast_value),de
+    inc hl
+    ld a,(hl)
+    cp 2
+    jp nc,p1118_cast_invalid
+    ld (p1118_cast_signed),a
+    inc hl
+    ld a,(hl)
+    or a
+    jp nz,p1118_cast_invalid
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (p1118_cast_out),de
+    ex de,hl
+    ld bc,5
+    call zx48_user_range_validate
+    ret c
+    ld hl,(p1118_cast_value)
+    ld a,(p1118_cast_signed)
+    ld de,(p1118_cast_out)
+    jp zx48_p1118_rom_int_to_fp
+
+zx48_p1118_sys_fp_to_int:
+    ld hl,(syscall_arg_hl)
+    ld (p1118_cast_req_ptr),hl
+    ld bc,FTOI1_SIZE
+    call zx48_user_range_validate
+    ret c
+    ld hl,(p1118_cast_req_ptr)
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (p1118_cast_in),de
+    inc hl
+    ld a,(hl)
+    cp 2
+    jp nc,p1118_cast_invalid
+    ld (p1118_cast_signed),a
+    inc hl
+    ld a,(hl)
+    or a
+    jp nz,p1118_cast_invalid
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (p1118_cast_out),de
+    ld hl,(p1118_cast_in)
+    ld bc,5
+    call zx48_user_range_validate
+    ret c
+    ld hl,(p1118_cast_out)
+    ld bc,2
+    call zx48_user_range_validate
+    ret c
+    ld hl,(p1118_cast_in)
+    ld a,(p1118_cast_signed)
+    ld de,(p1118_cast_out)
+    jp zx48_p1118_rom_fp_to_int
+
+p1118_cast_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+    ENDM

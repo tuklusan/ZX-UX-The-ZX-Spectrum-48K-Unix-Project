@@ -26,8 +26,10 @@ ROM_PIXEL_ADD             EQU $22AA
 ROM_POINT                 EQU $22CB
 ROM_PLOT_SUB              EQU $22E5
 ROM_DRAW_LINE             EQU $24BA
+ROM_INT_STORE             EQU $2D8E
 ROM_FP_TO_BC              EQU $2DA2
 ROM_FP_PRINT              EQU $2DE3
+ROM_TRUNCATE              EQU $3214
 ROM_CALCULATE             EQU $335B
 ROM_INT                   EQU $36AF
 ROM_EXP                   EQU $36C4
@@ -700,4 +702,99 @@ rom_info_table:
     ; Class-C rejection is diagnostic metadata only; SYS_ROM_INFO cannot call it.
     ROMINFO_REC "USR",3,$34BC,ROMINFO_CLASS_C,ROMINFO_CAT_MATH,ROMINFO_FLAG_ERROR+ROMINFO_FLAG_ALTREG+ROMINFO_FLAG_NONREENT
     db 0
+    ENDM
+
+; P11.18 approved ROM integer/floating conversion gateway.
+; Inputs are copied to private bytes before any caller destination is written,
+; so the documented request/input/output aliasing contract is atomic.
+    MACRO EMIT_P1118_ROM_FP_CAST_ROUTINES
+p1118_rom_value:          dw 0
+p1118_rom_signed:         db 0
+p1118_rom_out_ptr:        dw 0
+p1118_rom_in_ptr:         dw 0
+p1118_rom_float:          defs 5,0
+
+; HL=u16 source, A=0 unsigned/1 signed, DE=writable five-byte destination.
+zx48_p1118_rom_int_to_fp:
+    ld (p1118_rom_value),hl
+    ld (p1118_rom_signed),a
+    ld (p1118_rom_out_ptr),de
+    ld de,(p1118_rom_value)
+    ld c,0
+    ld a,(p1118_rom_signed)
+    or a
+    jr z,p1118_rom_itof_store
+    bit 7,d
+    jr z,p1118_rom_itof_store
+    ld c,$FF
+    ld a,e
+    cpl
+    ld e,a
+    ld a,d
+    cpl
+    ld d,a
+    inc de
+p1118_rom_itof_store:
+    ld hl,p1118_rom_float
+    call ROM_INT_STORE
+    ld hl,p1118_rom_float
+    ld de,(p1118_rom_out_ptr)
+    ld bc,5
+    ldir
+    ld hl,0
+    xor a
+    ret
+
+; HL=five-byte source, A=0 unsigned/1 signed, DE=writable u16 destination.
+; ROM_TRUNCATE is the Sinclair integer-toward-zero conversion primitive.
+zx48_p1118_rom_fp_to_int:
+    ld (p1118_rom_in_ptr),hl
+    ld (p1118_rom_signed),a
+    ld (p1118_rom_out_ptr),de
+    ld de,p1118_rom_float
+    ld bc,5
+    ldir
+    ld hl,p1118_rom_float
+    call ROM_TRUNCATE
+
+    ld a,(p1118_rom_float)
+    or a
+    jp nz,p1118_rom_cast_invalid
+    ld a,(p1118_rom_float+4)
+    or a
+    jp nz,p1118_rom_cast_invalid
+    ld a,(p1118_rom_float+1)
+    or a
+    jr z,p1118_rom_ftoi_positive
+    cp $FF
+    jp nz,p1118_rom_cast_invalid
+    ld a,(p1118_rom_signed)
+    or a
+    jp z,p1118_rom_cast_invalid
+    ld a,(p1118_rom_float+3)
+    bit 7,a
+    jp z,p1118_rom_cast_invalid
+    jr p1118_rom_ftoi_publish
+
+p1118_rom_ftoi_positive:
+    ld a,(p1118_rom_signed)
+    or a
+    jr z,p1118_rom_ftoi_publish
+    ld a,(p1118_rom_float+3)
+    bit 7,a
+    jp nz,p1118_rom_cast_invalid
+
+p1118_rom_ftoi_publish:
+    ld hl,p1118_rom_float+2
+    ld de,(p1118_rom_out_ptr)
+    ld bc,2
+    ldir
+    ld hl,0
+    xor a
+    ret
+
+p1118_rom_cast_invalid:
+    ld a,E_INVAL
+    scf
+    ret
     ENDM
