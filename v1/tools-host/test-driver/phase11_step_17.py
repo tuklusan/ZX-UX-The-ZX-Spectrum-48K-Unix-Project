@@ -131,6 +131,8 @@ p1117_f3: db $00,$00,$03,$00,$00
 p1117_f4: db $00,$00,$04,$00,$00
 p1117_f6: db $00,$00,$06,$00,$00
 p1117_f8: db $00,$00,$08,$00,$00
+p1117_full1: db $81,$00,$00,$00,$00
+p1117_full2: db $82,$00,$00,$00,$00
 p1117_a5: db $A5,$A5,$A5,$A5,$A5
 
 p1117_guard0: db $A6
@@ -241,9 +243,9 @@ p1117_goldens:
     call p1117_case
     ret c
     ld a,FPOP_OP_POW
-    ld hl,p1117_f2
-    ld de,p1117_f3
-    ld bc,p1117_f8
+    ld hl,p1117_f0
+    ld de,p1117_f2
+    ld bc,p1117_f0
     call p1117_case
     ret c
     ld a,FPOP_OP_ABS
@@ -267,7 +269,7 @@ p1117_goldens:
     ld a,FPOP_OP_EXP
     ld hl,p1117_f0
     ld de,0
-    ld bc,p1117_f1
+    ld bc,p1117_full1
     call p1117_case
     ret c
     ld a,FPOP_OP_LN
@@ -315,7 +317,7 @@ p1117_goldens:
     ld a,FPOP_OP_SQR
     ld hl,p1117_f4
     ld de,0
-    ld bc,p1117_f2
+    ld bc,p1117_full2
     jp p1117_case
 
 p1117_call_raw:
