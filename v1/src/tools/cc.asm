@@ -8385,14 +8385,14 @@ cc_p1138_body_loop:
     jr nz,cc_p1138_body_punct
     ld de,cc_p1138_kw_return
     call cc_p1138_token_is
-    jr nz,cc_p1138_body_loop
+    jp nz,cc_p1138_body_loop
     ld a,1
     ld (cc_p1138_saw_return),a
-    jr cc_p1138_body_loop
+    jp cc_p1138_body_loop
 
 cc_p1138_body_punct:
     cp CC_TOK_PUNCT
-    jr nz,cc_p1138_body_loop
+    jp nz,cc_p1138_body_loop
     ld a,(cc_lex_token_len)
     cp 1
     jp nz,cc_p1138_format
@@ -8410,7 +8410,7 @@ cc_p1138_body_punct:
     jr z,cc_p1138_open_bracket
     cp ']'
     jr z,cc_p1138_close_bracket
-    jr cc_p1138_body_loop
+    jp cc_p1138_body_loop
 
 cc_p1138_open_brace:
     ld a,(cc_p1138_brace_depth)
@@ -8418,14 +8418,14 @@ cc_p1138_open_brace:
     jp z,cc_p1138_format
     inc a
     ld (cc_p1138_brace_depth),a
-    jr cc_p1138_body_loop
+    jp cc_p1138_body_loop
 cc_p1138_close_brace:
     ld a,(cc_p1138_brace_depth)
     or a
     jp z,cc_p1138_format
     dec a
     ld (cc_p1138_brace_depth),a
-    jr nz,cc_p1138_body_loop
+    jp nz,cc_p1138_body_loop
     ld a,(cc_p1138_paren_depth)
     or a
     jp nz,cc_p1138_format
@@ -8445,28 +8445,28 @@ cc_p1138_open_paren:
     jp z,cc_p1138_format
     inc a
     ld (cc_p1138_paren_depth),a
-    jr cc_p1138_body_loop
+    jp cc_p1138_body_loop
 cc_p1138_close_paren:
     ld a,(cc_p1138_paren_depth)
     or a
     jp z,cc_p1138_format
     dec a
     ld (cc_p1138_paren_depth),a
-    jr cc_p1138_body_loop
+    jp cc_p1138_body_loop
 cc_p1138_open_bracket:
     ld a,(cc_p1138_bracket_depth)
     cp 255
     jp z,cc_p1138_format
     inc a
     ld (cc_p1138_bracket_depth),a
-    jr cc_p1138_body_loop
+    jp cc_p1138_body_loop
 cc_p1138_close_bracket:
     ld a,(cc_p1138_bracket_depth)
     or a
     jp z,cc_p1138_format
     dec a
     ld (cc_p1138_bracket_depth),a
-    jr cc_p1138_body_loop
+    jp cc_p1138_body_loop
 
 cc_p1138_emit:
     ld hl,cc_p1138_text
