@@ -152,8 +152,16 @@ c48_getenv_len_ok:
     or a
     jr nz,c48_getenv_null
     inc hl
+    ld e,(hl)
     inc hl
+    ld d,(hl)
     inc hl
+    push hl
+    ld hl,(c48_env1_len)
+    or a
+    sbc hl,de
+    pop hl
+    jr nz,c48_getenv_null
     ld (c48_getenv_scan),hl
 
 c48_getenv_entry:
