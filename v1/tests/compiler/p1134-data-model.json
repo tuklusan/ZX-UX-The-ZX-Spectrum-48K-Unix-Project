@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "step": "P11.34",
+  "sdk_commit": "84d144de2721cda5075c3a6610a422663b5e2f77",
+  "sdk_references": [
+    "compiler/c48/typesys.py:CType.size/CType.alignment",
+    "compiler/c48/semantics.py:sizeof_type/sizeof_expr=>UINT"
+  ],
+  "sizes": {
+    "char": 1,
+    "unsigned char": 1,
+    "short": 2,
+    "unsigned short": 2,
+    "int": 2,
+    "unsigned int": 2,
+    "pointer": 2,
+    "float": 5
+  },
+  "alignments": {
+    "char": 1,
+    "unsigned char": 1,
+    "short": 2,
+    "unsigned short": 2,
+    "int": 2,
+    "unsigned int": 2,
+    "pointer": 2,
+    "float": 1
+  },
+  "plain_char_unsigned": true,
+  "signed_char_distinct_type": false,
+  "sizeof_result_type": "unsigned int",
+  "signed_short_int_representation": "twos-complement",
+  "array_stride": "exact-sizeof-element",
+  "global_local_padding": "minimum-required-only",
+  "scalar_argument_slot_bytes": 2,
+  "char_argument_zero_extended": true,
+  "call_boundary_sp_even": true,
+  "void_function_return": true,
+  "void_pointer_base": true,
+  "void_object": false
+}
