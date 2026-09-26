@@ -5628,7 +5628,7 @@ cc_fp_compare_notsup:
 CC_OBJ1_HEADER_SIZE       EQU 24
 CC_OBJ1_SYMBOL_SIZE       EQU 20
 CC_OBJ1_RELOC_SIZE        EQU 6
-CC_OBJ1_MAX_STORED        EQU $8000
+CC_OBJ1_MAX_STORED        EQU 32768
 CC_OBJ1_SYMBOL_MAX_COUNT  EQU 1638
 CC_OBJ1_RELOC_MAX_COUNT   EQU 5461
 CC_OBJ1_RELOC_ABS16       EQU 1
@@ -6043,7 +6043,7 @@ cc_obj1_name_ok:
     ret
 
 cc_obj1_crc16:
-    ld de,$FFFF
+    ld de,65535
 cc_obj1_crc_byte_loop:
     ld a,b
     or c
