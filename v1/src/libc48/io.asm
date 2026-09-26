@@ -40,7 +40,7 @@ open:
 c48_io_open_call:
     ld a,SYS_OPEN
     call SYSCALL_GATEWAY
-    jr c,c48_io_errno
+    jp c,c48_io_errno
     or a
     ret
 
@@ -50,7 +50,7 @@ open_typed:
     ld c,e
     ld a,SYS_OPEN
     call SYSCALL_GATEWAY
-    jr c,c48_io_errno
+    jp c,c48_io_errno
     or a
     ret
 
@@ -58,7 +58,7 @@ close:
     ld h,0
     ld a,SYS_CLOSE
     call SYSCALL_GATEWAY
-    jr c,c48_io_errno
+    jp c,c48_io_errno
     ld hl,0
     xor a
     ret
@@ -82,13 +82,13 @@ c48_io_write_raw:
 
 read:
     call c48_io_read_raw
-    jr c,c48_io_errno
+    jp c,c48_io_errno
     or a
     ret
 
 write:
     call c48_io_write_raw
-    jr c,c48_io_errno
+    jp c,c48_io_errno
     or a
     ret
 
@@ -99,7 +99,7 @@ seek:
     ld d,0
     ld a,SYS_SEEK
     call SYSCALL_GATEWAY
-    jr c,c48_io_errno
+    jp c,c48_io_errno
     or a
     ret
 
@@ -109,7 +109,7 @@ stat:
     ld hl,c48_io_stat1
     ld a,SYS_STAT
     call SYSCALL_GATEWAY
-    jr c,c48_io_errno
+    jp c,c48_io_errno
     ld hl,0
     xor a
     ret
@@ -117,7 +117,7 @@ stat:
 remove:
     ld a,SYS_REMOVE
     call SYSCALL_GATEWAY
-    jr c,c48_io_errno
+    jp c,c48_io_errno
     ld hl,0
     xor a
     ret
@@ -128,7 +128,7 @@ rename:
     ld hl,c48_io_ren1
     ld a,SYS_RENAME
     call SYSCALL_GATEWAY
-    jr c,c48_io_errno
+    jp c,c48_io_errno
     ld hl,0
     xor a
     ret
@@ -143,14 +143,14 @@ list:
     ld hl,c48_io_list1
     ld a,SYS_LIST
     call SYSCALL_GATEWAY
-    jr c,c48_io_errno
+    jp c,c48_io_errno
     or a
     ret
 
 pipe:
     ld a,SYS_PIPE
     call SYSCALL_GATEWAY
-    jr c,c48_io_errno
+    jp c,c48_io_errno
     ld hl,0
     xor a
     ret
@@ -163,7 +163,7 @@ dup:
     ld hl,c48_io_dup1
     ld a,SYS_DUP
     call SYSCALL_GATEWAY
-    jr c,c48_io_errno
+    jp c,c48_io_errno
     or a
     ret
 
@@ -176,7 +176,7 @@ ioctl:
     ld hl,c48_io_ioctl1
     ld a,SYS_IOCTL
     call SYSCALL_GATEWAY
-    jr c,c48_io_errno
+    jp c,c48_io_errno
     or a
     ret
 
@@ -191,7 +191,7 @@ c48_io_read_full_loop:
     ld hl,(c48_io_full_handle)
     ld de,(c48_io_full_ptr)
     call c48_io_read_raw
-    jr c,c48_io_errno
+    jp c,c48_io_errno
     ld a,h
     or l
     jr z,c48_io_full_done
@@ -208,12 +208,12 @@ c48_io_write_full_loop:
     ld hl,(c48_io_full_handle)
     ld de,(c48_io_full_ptr)
     call c48_io_write_raw
-    jr c,c48_io_errno
+    jp c,c48_io_errno
     ld a,h
     or l
     jr nz,c48_io_write_progress
     ld a,E_IO
-    jr c48_io_errno
+    jp c48_io_errno
 c48_io_write_progress:
     call c48_io_full_advance
     jr c48_io_write_full_loop
