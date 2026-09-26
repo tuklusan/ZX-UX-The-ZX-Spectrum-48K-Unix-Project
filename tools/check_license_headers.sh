@@ -218,7 +218,10 @@ if [[ -L "$C48_SDK_REFERENCE_DIR" || ! -d "$C48_SDK_REFERENCE_DIR" ]]; then
   echo "ERROR: pinned P11.39 SDK reference corpus must exist as a real directory: $C48_SDK_REFERENCE_DIR" >&2
   exit 1
 fi
-actual_c48_sdk_reference_tree_sha1="$(compute_git_tree_sha1 "$C48_SDK_REFERENCE_DIR")"
+# Use the Git tree identity rather than checkout bytes because the preserved SDK
+# intentionally carries its own .gitattributes (notably CRLF checkout for *.bat).
+# The index/tree identity is the byte-and-mode preservation authority.
+actual_c48_sdk_reference_tree_sha1="$(git rev-parse "HEAD:$C48_SDK_REFERENCE_DIR")"
 if [[ "$actual_c48_sdk_reference_tree_sha1" != "$C48_SDK_REFERENCE_TREE_SHA1" ]]; then
   echo "ERROR: pinned P11.39 SDK reference corpus identity changed: $C48_SDK_REFERENCE_DIR" >&2
   echo "ERROR: expected tree $C48_SDK_REFERENCE_TREE_SHA1, got $actual_c48_sdk_reference_tree_sha1" >&2
