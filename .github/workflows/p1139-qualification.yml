@@ -157,6 +157,7 @@ jobs:
             'v1/tests/compiler/sdk-reference/sdk/doc/ZX-UX C48 Compiler User Manual Rev 0.11.docx' \
             'v1/tests/compiler/sdk-reference/sdk/doc/ZX-UX C48 SDK Adversarial Security Review.docx' \
             'v1/src/tools/cc.asm' \
+            'v1/tools-host/test-driver/phase11_step_13.py' \
             'v1/tools-host/test-driver/phase11_step_39.py' | sort > /tmp/expected
           diff -u /tmp/expected /tmp/changed
           git diff --check "$P1139_BASE" HEAD

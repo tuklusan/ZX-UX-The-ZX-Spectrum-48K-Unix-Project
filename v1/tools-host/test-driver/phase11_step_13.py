@@ -438,11 +438,14 @@ p1113_return_map:
     ret c
     cp CC_REGCALL_RET_HL
     jp nz,p1113_fail
+    ; P11.16 has since completed the float-return ABI. Exact-head P11.39
+    ; revalidation must therefore observe the current hidden-result class while
+    ; preserving every P11.13 integer/pointer register rule above.
     ld a,CC_TYPE_FLOAT
     ld e,0
     call cc_regcall_return_class
-    jp nc,p1113_fail
-    cp E_NOTSUP
+    ret c
+    cp CC_REGCALL_RET_FLOAT_HIDDEN
     jp nz,p1113_fail
     xor a
     ret
@@ -507,6 +510,7 @@ fixture_end:
         {"name": "char-arguments-zero-extended", "passed": True},
         {"name": "caller-stack-cleanup-preserves-hl-return", "passed": True},
         {"name": "scalar-return-register-classes-exact", "passed": True},
+        {"name": "current-head-float-return-class-is-p1116-hidden-result", "passed": True},
         {"name": "no-obj1-calling-convention-metadata", "passed": True},
         {"name": "emitter-does-not-use-iy-or-alternate-bank", "passed": True},
     ]
