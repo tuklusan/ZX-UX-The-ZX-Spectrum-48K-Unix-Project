@@ -673,7 +673,8 @@ p1135_gateway_end:
     gateway = (build / "p1135-gateway.bin").read_bytes()
     require(0 < len(main) <= 0x5000, f"P11.35 native fixture too large: {len(main)}")
     syms = phase3_open_descriptions._symbols(
-        build / "p1135-lifecycle.sym", ("p1135_lifecycle", "p1135_wrong_case")
+        build / "p1135-lifecycle.sym",
+        ("p1135_compile_stage", "p1135_link_stage", "p1135_lifecycle", "p1135_wrong_case")
     )
 
     assertions = [
