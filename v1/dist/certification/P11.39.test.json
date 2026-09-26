@@ -1,0 +1,953 @@
+{
+  "action": "test",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "pinned-sdk-tree-byte-and-mode-identical",
+      "passed": true
+    },
+    {
+      "name": "complete-imported-sdk-test-count-exact-205",
+      "passed": true
+    },
+    {
+      "name": "no-imported-sdk-skip-xfail-or-weakened-intent",
+      "passed": true
+    },
+    {
+      "name": "all-205-sdk-tests-mechanically-mapped",
+      "passed": true
+    },
+    {
+      "name": "complete-phase11-c-source-sdk-result-native-mapping",
+      "passed": true
+    },
+    {
+      "name": "docx-sdk-native-zero-unresolved-discrepancies",
+      "passed": true
+    },
+    {
+      "name": "p11-01-through-p11-38-admitted-evidence-valid",
+      "passed": true
+    },
+    {
+      "name": "copied-sdk-runner-or-release-gate-passes",
+      "passed": true
+    },
+    {
+      "name": "exact-head-native-owner-suite-p11-02-through-p11-38",
+      "passed": true
+    },
+    {
+      "name": "negative-missing-weakened-unresolved-source-oracles-fail-closed",
+      "passed": true
+    },
+    {
+      "name": "intentionally-wrong-native-expected-result-fails-harness",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "git",
+        "rev-parse",
+        "HEAD:v1/tests/compiler/sdk-reference/sdk"
+      ],
+      "cwd": ".",
+      "duration_ms": 1,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "1c6b5bae84035ee853be9142b440792881c9ca9f\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "-B",
+        "v1/tests/compiler/sdk-reference/sdk/compiler/verify_release.py"
+      ],
+      "cwd": "v1/tests/compiler/sdk-reference/sdk",
+      "duration_ms": 9271,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "VERIFY: clean-tree preflight ...\nVERIFY: clean-tree preflight PASS\nVERIFY: required files ...\nVERIFY: required files PASS\nVERIFY: Python source ...\nVERIFY: Python source PASS\nVERIFY: license/header policy ...\nVERIFY: license/header policy PASS\nVERIFY: font assets ...\nVERIFY: font assets PASS\nVERIFY: C48 64-column sources ...\nVERIFY: C48 64-column sources PASS\nVERIFY: launchers ...\nVERIFY: launchers PASS\nVERIFY: version/about ...\nVERIFY: version/about PASS\nVERIFY: manifest ...\nVERIFY: manifest PASS\nVERIFY: automated tests ...\nVERIFY: automated tests PASS\nVERIFY: game corpus ...\nVERIFY: game corpus PASS\nVERIFY: security fixture binaries ...\nVERIFY: security fixture binaries PASS\nVERIFY: deterministic demos ...\nVERIFY: demo hello ...\nVERIFY: demo hello PASS\nVERIFY: demo colors ...\nVERIFY: demo colors PASS\nVERIFY: demo graphics ...\nVERIFY: demo graphics PASS\nVERIFY: demo udg ...\nVERIFY: demo udg PASS\nVERIFY: demo maze ...\nVERIFY: demo maze PASS\nVERIFY: demo argv ...\nVERIFY: demo argv PASS\nVERIFY: deterministic demos PASS\nVERIFY: clean-tree postflight ...\nVERIFY: clean-tree postflight PASS\nVERIFY PASS: C48 SDK 0.9.0-dev | 205 tests | 6 deterministic demos | 14 games\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "-B",
+        "v1/tests/compiler/sdk-reference/sdk/compiler/c48.py",
+        "v1/src/demos/ball.c",
+        "-o",
+        "v1/build/p1139-sdk-source-results/ball.c48b"
+      ],
+      "cwd": "v1/tests/compiler/sdk-reference/sdk",
+      "duration_ms": 95,
+      "exit_code": 1,
+      "stderr": "c48: /home/runner/work/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/v1/src/demos/ball.c:19:9: declaration: undeclared identifier 'plot'\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "-B",
+        "v1/tests/compiler/sdk-reference/sdk/compiler/c48.py",
+        "v1/src/demos/colors.c",
+        "-o",
+        "v1/build/p1139-sdk-source-results/colors.c48b"
+      ],
+      "cwd": "v1/tests/compiler/sdk-reference/sdk",
+      "duration_ms": 95,
+      "exit_code": 1,
+      "stderr": "c48: /home/runner/work/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/v1/src/demos/colors.c:16:5: declaration: undeclared identifier 'ink'\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "-B",
+        "v1/tests/compiler/sdk-reference/sdk/compiler/c48.py",
+        "v1/src/demos/hello.c",
+        "-o",
+        "v1/build/p1139-sdk-source-results/hello.c48b"
+      ],
+      "cwd": "v1/tests/compiler/sdk-reference/sdk",
+      "duration_ms": 94,
+      "exit_code": 1,
+      "stderr": "c48: /home/runner/work/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/v1/src/demos/hello.c:16:5: declaration: undeclared identifier 'puts'\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "-B",
+        "v1/tests/compiler/sdk-reference/sdk/compiler/c48.py",
+        "v1/src/demos/life.c",
+        "-o",
+        "v1/build/p1139-sdk-source-results/life.c48b"
+      ],
+      "cwd": "v1/tests/compiler/sdk-reference/sdk",
+      "duration_ms": 96,
+      "exit_code": 1,
+      "stderr": "c48: /home/runner/work/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/v1/src/demos/life.c:19:5: declaration: undeclared identifier 'udg_clear'\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "-B",
+        "v1/tests/compiler/sdk-reference/sdk/compiler/c48.py",
+        "v1/src/demos/lines.c",
+        "-o",
+        "v1/build/p1139-sdk-source-results/lines.c48b"
+      ],
+      "cwd": "v1/tests/compiler/sdk-reference/sdk",
+      "duration_ms": 97,
+      "exit_code": 1,
+      "stderr": "c48: /home/runner/work/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/v1/src/demos/lines.c:16:5: declaration: undeclared identifier 'plot'\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "-B",
+        "v1/tests/compiler/sdk-reference/sdk/compiler/c48.py",
+        "v1/src/demos/mandel.c",
+        "-o",
+        "v1/build/p1139-sdk-source-results/mandel.c48b"
+      ],
+      "cwd": "v1/tests/compiler/sdk-reference/sdk",
+      "duration_ms": 96,
+      "exit_code": 1,
+      "stderr": "c48: /home/runner/work/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/v1/src/demos/mandel.c:25:9: declaration: undeclared identifier 'plot'\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "-B",
+        "v1/tests/compiler/sdk-reference/sdk/compiler/c48.py",
+        "v1/src/demos/maze.c",
+        "-o",
+        "v1/build/p1139-sdk-source-results/maze.c48b"
+      ],
+      "cwd": "v1/tests/compiler/sdk-reference/sdk",
+      "duration_ms": 96,
+      "exit_code": 1,
+      "stderr": "c48: /home/runner/work/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/v1/src/demos/maze.c:19:5: declaration: undeclared identifier 'udg_clear'\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "-B",
+        "v1/tests/compiler/sdk-reference/sdk/compiler/c48.py",
+        "v1/src/demos/multi.c",
+        "-o",
+        "v1/build/p1139-sdk-source-results/multi.c48b"
+      ],
+      "cwd": "v1/tests/compiler/sdk-reference/sdk",
+      "duration_ms": 96,
+      "exit_code": 1,
+      "stderr": "c48: /home/runner/work/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/v1/src/demos/multi.c:19:9: declaration: undeclared identifier 'spawn'\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "-B",
+        "v1/tests/compiler/sdk-reference/sdk/compiler/c48.py",
+        "v1/src/demos/pipe.c",
+        "-o",
+        "v1/build/p1139-sdk-source-results/pipe.c48b"
+      ],
+      "cwd": "v1/tests/compiler/sdk-reference/sdk",
+      "duration_ms": 95,
+      "exit_code": 1,
+      "stderr": "c48: /home/runner/work/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/v1/src/demos/pipe.c:19:5: declaration: undeclared identifier 'pipe'\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "-B",
+        "v1/tests/compiler/sdk-reference/sdk/compiler/c48.py",
+        "v1/src/demos/ship.c",
+        "-o",
+        "v1/build/p1139-sdk-source-results/ship.c48b"
+      ],
+      "cwd": "v1/tests/compiler/sdk-reference/sdk",
+      "duration_ms": 95,
+      "exit_code": 1,
+      "stderr": "c48: /home/runner/work/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/v1/src/demos/ship.c:18:5: declaration: undeclared identifier 'udg_define'\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "-B",
+        "v1/tests/compiler/sdk-reference/sdk/compiler/c48.py",
+        "v1/src/demos/sine.c",
+        "-o",
+        "v1/build/p1139-sdk-source-results/sine.c48b"
+      ],
+      "cwd": "v1/tests/compiler/sdk-reference/sdk",
+      "duration_ms": 95,
+      "exit_code": 1,
+      "stderr": "c48: /home/runner/work/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/v1/src/demos/sine.c:19:13: declaration: undeclared identifier 'sin'\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "-B",
+        "v1/tests/compiler/sdk-reference/sdk/compiler/c48.py",
+        "v1/src/demos/stars.c",
+        "-o",
+        "v1/build/p1139-sdk-source-results/stars.c48b"
+      ],
+      "cwd": "v1/tests/compiler/sdk-reference/sdk",
+      "duration_ms": 98,
+      "exit_code": 1,
+      "stderr": "c48: /home/runner/work/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/v1/src/demos/stars.c:20:9: declaration: undeclared identifier 'plot'\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "-B",
+        "v1/tests/compiler/sdk-reference/sdk/compiler/c48.py",
+        "v1/src/demos/tune.c",
+        "-o",
+        "v1/build/p1139-sdk-source-results/tune.c48b"
+      ],
+      "cwd": "v1/tests/compiler/sdk-reference/sdk",
+      "duration_ms": 98,
+      "exit_code": 1,
+      "stderr": "c48: /home/runner/work/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/ZX-UX-The-ZX-Spectrum-48K-Unix-Project/v1/src/demos/tune.c:21:9: declaration: undeclared identifier 'beep'\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.02",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1102"
+      ],
+      "cwd": ".",
+      "duration_ms": 881,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.02 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1102/P11.02.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.03",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1103"
+      ],
+      "cwd": ".",
+      "duration_ms": 814,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.03 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1103/P11.03.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.04",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1104"
+      ],
+      "cwd": ".",
+      "duration_ms": 843,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.04 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1104/P11.04.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.05",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1105"
+      ],
+      "cwd": ".",
+      "duration_ms": 1310,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.05 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1105/P11.05.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.06",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1106"
+      ],
+      "cwd": ".",
+      "duration_ms": 939,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.06 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1106/P11.06.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.07",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1107"
+      ],
+      "cwd": ".",
+      "duration_ms": 1105,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.07 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1107/P11.07.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.08",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1108"
+      ],
+      "cwd": ".",
+      "duration_ms": 1089,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.08 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1108/P11.08.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.09",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1109"
+      ],
+      "cwd": ".",
+      "duration_ms": 992,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.09 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1109/P11.09.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.10",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1110"
+      ],
+      "cwd": ".",
+      "duration_ms": 920,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.10 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1110/P11.10.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.11",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1111"
+      ],
+      "cwd": ".",
+      "duration_ms": 1001,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.11 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1111/P11.11.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.12",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1112"
+      ],
+      "cwd": ".",
+      "duration_ms": 972,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.12 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1112/P11.12.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.13",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1113"
+      ],
+      "cwd": ".",
+      "duration_ms": 1065,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.13 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1113/P11.13.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.14",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1114"
+      ],
+      "cwd": ".",
+      "duration_ms": 973,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.14 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1114/P11.14.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.15",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1115"
+      ],
+      "cwd": ".",
+      "duration_ms": 988,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.15 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1115/P11.15.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.16",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1116"
+      ],
+      "cwd": ".",
+      "duration_ms": 1049,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.16 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1116/P11.16.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.17",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1117"
+      ],
+      "cwd": ".",
+      "duration_ms": 1815,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.17 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1117/P11.17.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.18",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1118"
+      ],
+      "cwd": ".",
+      "duration_ms": 1118,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.18 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1118/P11.18.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.19",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1119"
+      ],
+      "cwd": ".",
+      "duration_ms": 1177,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.19 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1119/P11.19.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.20",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1120"
+      ],
+      "cwd": ".",
+      "duration_ms": 2527,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.20 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1120/P11.20.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.21",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1121"
+      ],
+      "cwd": ".",
+      "duration_ms": 1005,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.21 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1121/P11.21.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.22",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1122"
+      ],
+      "cwd": ".",
+      "duration_ms": 793,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.22 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1122/P11.22.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.23",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1123"
+      ],
+      "cwd": ".",
+      "duration_ms": 1032,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.23 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1123/P11.23.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.24",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1124"
+      ],
+      "cwd": ".",
+      "duration_ms": 1048,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.24 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1124/P11.24.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.25",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1125"
+      ],
+      "cwd": ".",
+      "duration_ms": 866,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.25 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1125/P11.25.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.26",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1126"
+      ],
+      "cwd": ".",
+      "duration_ms": 852,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.26 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1126/P11.26.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.27",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1127"
+      ],
+      "cwd": ".",
+      "duration_ms": 860,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.27 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1127/P11.27.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.28",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1128"
+      ],
+      "cwd": ".",
+      "duration_ms": 891,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.28 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1128/P11.28.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.29",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1129"
+      ],
+      "cwd": ".",
+      "duration_ms": 1667,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.29 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1129/P11.29.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.30",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1130"
+      ],
+      "cwd": ".",
+      "duration_ms": 734,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.30 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1130/P11.30.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.31",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1131"
+      ],
+      "cwd": ".",
+      "duration_ms": 1158,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.31 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1131/P11.31.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.32",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1132"
+      ],
+      "cwd": ".",
+      "duration_ms": 1094,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.32 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1132/P11.32.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.33",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1133"
+      ],
+      "cwd": ".",
+      "duration_ms": 1959,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.33 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1133/P11.33.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.34",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1134"
+      ],
+      "cwd": ".",
+      "duration_ms": 1200,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.34 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1134/P11.34.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.35",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1135"
+      ],
+      "cwd": ".",
+      "duration_ms": 11208,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.35 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1135/P11.35.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.36",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1136"
+      ],
+      "cwd": ".",
+      "duration_ms": 1519,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.36 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1136/P11.36.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.37",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1137"
+      ],
+      "cwd": ".",
+      "duration_ms": 2959,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.37 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1137/P11.37.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.38",
+        "--evidence-dir",
+        "/tmp/zxux-p1139-native-suite-lcogqhs3/P1138"
+      ],
+      "cwd": ".",
+      "duration_ms": 4788,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.38 TEST PASS\nevidence=/tmp/zxux-p1139-native-suite-lcogqhs3/P1138/P11.38.test.json\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/check_license_headers.sh": "df6c98d4d62f30f0d85eb9dde8b3f33877cb31079dea572dce279b0796e8f8ae",
+    "tools/ci.sh": "c956fc0d306dea8402d141e983a7acb9e9cb592ff7ace03d36404072fb6a8860",
+    "v1/dist/certification/P11.38.build.json": "e8ed1657b7adabfa81726688d48889f9f8eebce8757350e60cd4b75188b94f04",
+    "v1/dist/certification/P11.38.test.json": "4288bce700f883ecaf29caf2d234b90af0c6db48ba93cfc9675311fe1c1c9a58",
+    "v1/src/demos/ball.c": "c0664238caab012e192c7fdb4ce8f045af314f74d94e7efb4b0607876b3d862f",
+    "v1/src/demos/colors.c": "ca38d7dfc1bb21def550147906698cdfc2cbaf898d8b5bf2405166e93ed5e9f9",
+    "v1/src/demos/hello.c": "01638e6fa7d7d5e0e491d97cf6dc9ab8464a53d34fc469f8e6268b07a80a28db",
+    "v1/src/demos/life.c": "2ef86763d7e997f2b6cbb0d63a9be7c620a2acdf6a21ed7b1cfd3cbb07dd5ac8",
+    "v1/src/demos/lines.c": "51477f97648fc9327912d9d349196d9931543f331d728bc93e0f31f8c9d4a92b",
+    "v1/src/demos/mandel.c": "1c75bd91159948a602a4a91668f9f7bd5f252023d5c433f81e18a1db777c4f76",
+    "v1/src/demos/maze.c": "d3cf2b1f3c448532e1eef568be7534e47fab0eb9fd9f84feb9c319c9f92efefa",
+    "v1/src/demos/multi.c": "35883dc2f8471a50bcf1a4113b49f737e3ec91b3374442feeb78874173fff18a",
+    "v1/src/demos/pipe.c": "ba473f5522031678d9494df843a5f4757f29f4a133c5a20cb659d09b0fdd036c",
+    "v1/src/demos/ship.c": "7b90089f933154f2b72635190ef473fd413aed784cddfabf4792261ccccc2bd5",
+    "v1/src/demos/sine.c": "6b5024f0aac99e8fd5d9d4c87eca5c4b38f01667cd4fc47f6502f060334f2e02",
+    "v1/src/demos/stars.c": "200390ee12a11e4155ca61b5db648e39857ce1b7b76192aacf60000e05d98898",
+    "v1/src/demos/tune.c": "cc86717d10072c3473d1d91360110f04043617f01b81aae910ad842dc6dffaed",
+    "v1/tests/compiler/p1139-c-source-manifest.json": "e6b6eeab7ff9155f55303670b2a7e972ace810ab512c426a966d162830c17a58",
+    "v1/tests/compiler/p1139-sdk-test-map.json": "f2aa46ea65d9c117df9e33fd9042212e605abe1827f29eca17240083f4b8b900",
+    "v1/tests/compiler/p1139-three-way-map.json": "b4f7c26b67ab3ba75c8505005d1f663b4c09d287e1ba3d6417d71ef27dd7660e",
+    "v1/tests/compiler/sdk-reference/SDK-PROVENANCE.md": "c173ab6ccb5f158608a276ed74d75ed6646f37853e87c89958c3a42f25eb1488",
+    "v1/tests/compiler/sdk-reference/sdk/MANIFEST.sha256": "5967a600f5eb4231e963365edf4761225ce3a62b12a36c7b71ea3e7606b074b8",
+    "v1/tests/compiler/sdk-reference/sdk/compiler/release_expectations.json": "51d921bf63b50cfacdebadf12be200a2c691e6f9c82dea8fbdebee923518fb75",
+    "v1/tests/compiler/sdk-reference/sdk/compiler/run_tests.py": "f6eee0b70b11cc06d9ace9fc03a78b75ffc26e09f8fc6bdb0cceb1b2389e791f",
+    "v1/tests/compiler/sdk-reference/sdk/compiler/verify_release.py": "5b44cedb09214fe9a5457f5e05a8c441d96141c3ed5be2ee5c5acad867629bed",
+    "v1/tools-host/test-driver/phase11_step_39.py": "8254384fb035768317f9193e9c8f4e067fbeaf70b8cc5f77b929a437c16d12b2"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.38": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "2ce07b67580397afcfd74189f55f0c60c1966671",
+  "status": "PASS",
+  "step": "P11.39",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
