@@ -22,7 +22,7 @@ from fuse_harness import FAIL_PC, PASS_PC, run_sna
 
 
 class P1141Error(DriverError):
-    pass
+    """Fail closed on any built-in c48.h contract drift."""
 
 
 def require(ok, message):
