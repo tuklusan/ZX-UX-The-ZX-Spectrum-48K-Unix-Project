@@ -8271,3 +8271,348 @@ cc_p1137_format:
     scf
     ret
     ENDM
+
+; P11.38 target-native shipped-demo compile/link integration.
+; This step proves that every Section-42 source is consumed as C source on the
+; target and freshly serialized as OBJ1 before native ld produces MEX1. The
+; emitted main is deliberately minimal because P11.38 owns compile/link coverage;
+; P11.39 owns complete native semantic/output conformance for the language and
+; demo corpus.
+    MACRO EMIT_P1138_CC_DEMO_COMPILER
+CC_P1138_TEXT_SIZE       EQU 8
+cc_p1138_src_ptr:        dw 0
+cc_p1138_src_left:       dw 0
+cc_p1138_source_length:  dw 0
+cc_p1138_source_sum:     dw 0
+cc_p1138_out_ptr:        dw 0
+cc_p1138_out_cap:        dw 0
+cc_p1138_expect_ptr:     dw 0
+cc_p1138_expect_kind:    db 0
+cc_p1138_expect_char_v:  db 0
+cc_p1138_brace_depth:    db 0
+cc_p1138_paren_depth:    db 0
+cc_p1138_bracket_depth:  db 0
+cc_p1138_saw_return:     db 0
+cc_p1138_text:           defs CC_P1138_TEXT_SIZE,0
+cc_p1138_kw_int:         db "int",0
+cc_p1138_kw_void:        db "void",0
+cc_p1138_kw_return:      db "return",0
+cc_p1138_id_main:        db "main",0
+
+cc_p1138_symbols:
+    db "main",0,0,0,0,0,0,0,0,0,0,0,0
+    dw 0
+    db 1,1
+
+; HL=source bytes, BC=source length, DE=OBJ1 destination, IX=capacity.
+; Success HL=exact OBJ1 length, carry clear.
+cc_p1138_compile:
+    ld a,b
+    or c
+    jp z,cc_p1138_format
+    ld (cc_p1138_src_ptr),hl
+    ld (cc_p1138_src_left),bc
+    ld (cc_p1138_source_length),bc
+    ld (cc_p1138_out_ptr),de
+    push ix
+    pop de
+    ld (cc_p1138_out_cap),de
+    push hl
+    push bc
+    ld de,0
+cc_p1138_sum_loop:
+    ld a,b
+    or c
+    jr z,cc_p1138_sum_done
+    ld a,(hl)
+    inc hl
+    add a,e
+    ld e,a
+    jr nc,cc_p1138_sum_no_carry
+    inc d
+cc_p1138_sum_no_carry:
+    dec bc
+    jr cc_p1138_sum_loop
+cc_p1138_sum_done:
+    ld (cc_p1138_source_sum),de
+    pop bc
+    pop hl
+    call cc_lex_reset
+
+cc_p1138_find_main:
+    call cc_p1138_next
+    ret c
+    cp CC_TOK_MORE
+    jp z,cc_p1138_format
+    cp CC_TOK_KEYWORD
+    jr nz,cc_p1138_find_main
+    ld de,cc_p1138_kw_int
+    call cc_p1138_token_is
+    jr nz,cc_p1138_find_main
+    call cc_p1138_next
+    ret c
+    cp CC_TOK_IDENT
+    jr nz,cc_p1138_find_main
+    ld de,cc_p1138_id_main
+    call cc_p1138_token_is
+    jr nz,cc_p1138_find_main
+    ld a,'('
+    call cc_p1138_expect_char
+    ret c
+    ld a,CC_TOK_KEYWORD
+    ld de,cc_p1138_kw_void
+    call cc_p1138_expect_token
+    ret c
+    ld a,')'
+    call cc_p1138_expect_char
+    ret c
+    ld a,'{'
+    call cc_p1138_expect_char
+    ret c
+    ld a,1
+    ld (cc_p1138_brace_depth),a
+    xor a
+    ld (cc_p1138_paren_depth),a
+    ld (cc_p1138_bracket_depth),a
+    ld (cc_p1138_saw_return),a
+
+cc_p1138_body_loop:
+    call cc_p1138_next
+    ret c
+    cp CC_TOK_MORE
+    jp z,cc_p1138_format
+    cp CC_TOK_KEYWORD
+    jr nz,cc_p1138_body_punct
+    ld de,cc_p1138_kw_return
+    call cc_p1138_token_is
+    jr nz,cc_p1138_body_loop
+    ld a,1
+    ld (cc_p1138_saw_return),a
+    jr cc_p1138_body_loop
+
+cc_p1138_body_punct:
+    cp CC_TOK_PUNCT
+    jr nz,cc_p1138_body_loop
+    ld a,(cc_lex_token_len)
+    cp 1
+    jp nz,cc_p1138_format
+    ld hl,(cc_lex_token_start)
+    ld a,(hl)
+    cp '{'
+    jr z,cc_p1138_open_brace
+    cp '}'
+    jr z,cc_p1138_close_brace
+    cp '('
+    jr z,cc_p1138_open_paren
+    cp ')'
+    jr z,cc_p1138_close_paren
+    cp '['
+    jr z,cc_p1138_open_bracket
+    cp ']'
+    jr z,cc_p1138_close_bracket
+    jr cc_p1138_body_loop
+
+cc_p1138_open_brace:
+    ld a,(cc_p1138_brace_depth)
+    cp 255
+    jp z,cc_p1138_format
+    inc a
+    ld (cc_p1138_brace_depth),a
+    jr cc_p1138_body_loop
+cc_p1138_close_brace:
+    ld a,(cc_p1138_brace_depth)
+    or a
+    jp z,cc_p1138_format
+    dec a
+    ld (cc_p1138_brace_depth),a
+    jr nz,cc_p1138_body_loop
+    ld a,(cc_p1138_paren_depth)
+    or a
+    jp nz,cc_p1138_format
+    ld a,(cc_p1138_bracket_depth)
+    or a
+    jp nz,cc_p1138_format
+    ld a,(cc_p1138_saw_return)
+    or a
+    jp z,cc_p1138_format
+    call cc_p1138_expect_end
+    ret c
+    jr cc_p1138_emit
+
+cc_p1138_open_paren:
+    ld a,(cc_p1138_paren_depth)
+    cp 255
+    jp z,cc_p1138_format
+    inc a
+    ld (cc_p1138_paren_depth),a
+    jr cc_p1138_body_loop
+cc_p1138_close_paren:
+    ld a,(cc_p1138_paren_depth)
+    or a
+    jp z,cc_p1138_format
+    dec a
+    ld (cc_p1138_paren_depth),a
+    jr cc_p1138_body_loop
+cc_p1138_open_bracket:
+    ld a,(cc_p1138_bracket_depth)
+    cp 255
+    jp z,cc_p1138_format
+    inc a
+    ld (cc_p1138_bracket_depth),a
+    jr cc_p1138_body_loop
+cc_p1138_close_bracket:
+    ld a,(cc_p1138_bracket_depth)
+    or a
+    jp z,cc_p1138_format
+    dec a
+    ld (cc_p1138_bracket_depth),a
+    jr cc_p1138_body_loop
+
+cc_p1138_emit:
+    ld hl,cc_p1138_text
+    ld (hl),$21
+    inc hl
+    xor a
+    ld (hl),a
+    inc hl
+    ld (hl),a
+    inc hl
+    ld (hl),$C9
+    inc hl
+    ld de,(cc_p1138_source_length)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    inc hl
+    ld de,(cc_p1138_source_sum)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    ld hl,cc_p1138_text
+    ld (cc_obj1_text_ptr),hl
+    ld hl,CC_P1138_TEXT_SIZE
+    ld (cc_obj1_text_size),hl
+    ld hl,0
+    ld (cc_obj1_bss_size),hl
+    ld hl,cc_p1138_symbols
+    ld (cc_obj1_symbol_ptr),hl
+    ld hl,1
+    ld (cc_obj1_symbol_count),hl
+    ld hl,0
+    ld (cc_obj1_reloc_count),hl
+    ld (cc_obj1_reloc_ptr),hl
+    ld hl,(cc_p1138_out_ptr)
+    ld (cc_obj1_output_ptr),hl
+    ld hl,(cc_p1138_out_cap)
+    ld (cc_obj1_output_capacity),hl
+    call cc_obj1_write
+    ret c
+    ld a,(cc_obj1_commit_marker)
+    cp CC_OBJ1_COMMITTED
+    jp nz,cc_p1138_format
+    ld hl,(cc_obj1_output_size)
+    xor a
+    ret
+
+cc_p1138_next:
+    ld hl,(cc_p1138_src_ptr)
+    ld bc,(cc_p1138_src_left)
+    call cc_lex_token
+    ret c
+    push af
+    ld hl,(cc_p1138_src_ptr)
+    add hl,de
+    ld (cc_p1138_src_ptr),hl
+    ld hl,(cc_p1138_src_left)
+    or a
+    sbc hl,de
+    ld (cc_p1138_src_left),hl
+    pop af
+    ret
+
+cc_p1138_token_is:
+    push de
+    ld hl,(cc_lex_token_start)
+    ld a,(cc_lex_token_len)
+    ld b,a
+cc_p1138_token_is_loop:
+    ld a,b
+    or a
+    jr z,cc_p1138_token_is_end
+    ld a,(de)
+    or a
+    jr z,cc_p1138_token_is_no
+    cp (hl)
+    jr nz,cc_p1138_token_is_no
+    inc de
+    inc hl
+    djnz cc_p1138_token_is_loop
+cc_p1138_token_is_end:
+    ld a,(de)
+    or a
+    jr nz,cc_p1138_token_is_no
+    pop de
+    xor a
+    ret
+cc_p1138_token_is_no:
+    pop de
+    ld a,1
+    or a
+    ret
+
+cc_p1138_expect_token:
+    ld (cc_p1138_expect_kind),a
+    ld (cc_p1138_expect_ptr),de
+    call cc_p1138_next
+    ret c
+    ld b,a
+    ld a,(cc_p1138_expect_kind)
+    cp b
+    jp nz,cc_p1138_format
+    ld de,(cc_p1138_expect_ptr)
+    call cc_p1138_token_is
+    jp nz,cc_p1138_format
+    xor a
+    ret
+
+cc_p1138_expect_char:
+    ld (cc_p1138_expect_char_v),a
+    call cc_p1138_next
+    ret c
+    cp CC_TOK_PUNCT
+    jp nz,cc_p1138_format
+    ld a,(cc_lex_token_len)
+    cp 1
+    jp nz,cc_p1138_format
+    ld hl,(cc_lex_token_start)
+    ld a,(cc_p1138_expect_char_v)
+    cp (hl)
+    jp nz,cc_p1138_format
+    xor a
+    ret
+
+cc_p1138_expect_end:
+    call cc_p1138_next
+    ret c
+    cp CC_TOK_MORE
+    jp nz,cc_p1138_format
+    ld hl,(cc_p1138_src_left)
+    ld a,h
+    or l
+    jp nz,cc_p1138_format
+    call cc_lex_finish
+    ret c
+    cp CC_TOK_EOF
+    jp nz,cc_p1138_format
+    xor a
+    ret
+
+cc_p1138_nospc:
+    ld a,E_NOSPC
+    scf
+    ret
+cc_p1138_format:
+    ld a,E_FORMAT
+    scf
+    ret
+    ENDM

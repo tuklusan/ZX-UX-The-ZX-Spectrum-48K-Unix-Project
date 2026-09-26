@@ -1,0 +1,206 @@
+{
+  "license_header": [
+    "Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.",
+    "Proprietary rights reserved except as expressly licensed herein.",
+    "ZX-UX Sinclair ZX Spectrum Unix",
+    "This file is governed by the SANYALnet Labs Non-Commercial License in the root LICENSE file.",
+    "Non-Commercial use is permitted; Commercial Use and use for AI/ML model training are prohibited unless separately authorized.",
+    "Attribution is required: Based on original work by Supratim Sanyal of SANYALnet Labs.",
+    "See LICENSE for full terms, warranty disclaimer, termination, patent, trademark, and governing-law provisions."
+  ],
+  "schema": 1,
+  "step": "P11.38",
+  "sdk_commit": "84d144de2721cda5075c3a6610a422663b5e2f77",
+  "sources": [
+    {
+      "path": "v1/src/demos/lines.c",
+      "sdk_reference": {
+        "result": "REJECT",
+        "category": "declaration-error",
+        "detail": "target-only ZX-UX runtime built-ins are intentionally used without a physical SDK declaration header at P11.38",
+        "basis": [
+          "pinned SDK compiler rejects undeclared target runtime identifiers",
+          "REV17 Section 42 requires the target demo behavior and Section 57 requires native compilation/linking"
+        ]
+      },
+      "authority_resolution": "REV17/REV08 target-native demo/runtime contract wins for the shipped target source; pinned SDK remains the language/reference oracle.",
+      "target_native": {
+        "required_result": "PASS",
+        "compiler": "cc_p1138_compile",
+        "lifecycle": "C source bytes -> target-native cc -> fresh OBJ1 -> target-native ld -> MEX1",
+        "p1138_scope": "compile/link structural integration; complete language/runtime semantic conformance is owned by P11.39"
+      }
+    },
+    {
+      "path": "v1/src/demos/ship.c",
+      "sdk_reference": {
+        "result": "REJECT",
+        "category": "declaration-error",
+        "detail": "target-only ZX-UX runtime built-ins are intentionally used without a physical SDK declaration header at P11.38",
+        "basis": [
+          "pinned SDK compiler rejects undeclared target runtime identifiers",
+          "REV17 Section 42 requires the target demo behavior and Section 57 requires native compilation/linking"
+        ]
+      },
+      "authority_resolution": "REV17/REV08 target-native demo/runtime contract wins for the shipped target source; pinned SDK remains the language/reference oracle.",
+      "target_native": {
+        "required_result": "PASS",
+        "compiler": "cc_p1138_compile",
+        "lifecycle": "C source bytes -> target-native cc -> fresh OBJ1 -> target-native ld -> MEX1",
+        "p1138_scope": "compile/link structural integration; complete language/runtime semantic conformance is owned by P11.39"
+      }
+    },
+    {
+      "path": "v1/src/demos/ball.c",
+      "sdk_reference": {
+        "result": "REJECT",
+        "category": "declaration-error",
+        "detail": "target-only ZX-UX runtime built-ins are intentionally used without a physical SDK declaration header at P11.38",
+        "basis": [
+          "pinned SDK compiler rejects undeclared target runtime identifiers",
+          "REV17 Section 42 requires the target demo behavior and Section 57 requires native compilation/linking"
+        ]
+      },
+      "authority_resolution": "REV17/REV08 target-native demo/runtime contract wins for the shipped target source; pinned SDK remains the language/reference oracle.",
+      "target_native": {
+        "required_result": "PASS",
+        "compiler": "cc_p1138_compile",
+        "lifecycle": "C source bytes -> target-native cc -> fresh OBJ1 -> target-native ld -> MEX1",
+        "p1138_scope": "compile/link structural integration; complete language/runtime semantic conformance is owned by P11.39"
+      }
+    },
+    {
+      "path": "v1/src/demos/stars.c",
+      "sdk_reference": {
+        "result": "REJECT",
+        "category": "declaration-error",
+        "detail": "target-only ZX-UX runtime built-ins are intentionally used without a physical SDK declaration header at P11.38",
+        "basis": [
+          "pinned SDK compiler rejects undeclared target runtime identifiers",
+          "REV17 Section 42 requires the target demo behavior and Section 57 requires native compilation/linking"
+        ]
+      },
+      "authority_resolution": "REV17/REV08 target-native demo/runtime contract wins for the shipped target source; pinned SDK remains the language/reference oracle.",
+      "target_native": {
+        "required_result": "PASS",
+        "compiler": "cc_p1138_compile",
+        "lifecycle": "C source bytes -> target-native cc -> fresh OBJ1 -> target-native ld -> MEX1",
+        "p1138_scope": "compile/link structural integration; complete language/runtime semantic conformance is owned by P11.39"
+      }
+    },
+    {
+      "path": "v1/src/demos/life.c",
+      "sdk_reference": {
+        "result": "REJECT",
+        "category": "declaration-error",
+        "detail": "target-only ZX-UX runtime built-ins are intentionally used without a physical SDK declaration header at P11.38",
+        "basis": [
+          "pinned SDK compiler rejects undeclared target runtime identifiers",
+          "REV17 Section 42 requires the target demo behavior and Section 57 requires native compilation/linking"
+        ]
+      },
+      "authority_resolution": "REV17/REV08 target-native demo/runtime contract wins for the shipped target source; pinned SDK remains the language/reference oracle.",
+      "target_native": {
+        "required_result": "PASS",
+        "compiler": "cc_p1138_compile",
+        "lifecycle": "C source bytes -> target-native cc -> fresh OBJ1 -> target-native ld -> MEX1",
+        "p1138_scope": "compile/link structural integration; complete language/runtime semantic conformance is owned by P11.39"
+      }
+    },
+    {
+      "path": "v1/src/demos/maze.c",
+      "sdk_reference": {
+        "result": "REJECT",
+        "category": "declaration-error",
+        "detail": "target-only ZX-UX runtime built-ins are intentionally used without a physical SDK declaration header at P11.38",
+        "basis": [
+          "pinned SDK compiler rejects undeclared target runtime identifiers",
+          "REV17 Section 42 requires the target demo behavior and Section 57 requires native compilation/linking"
+        ]
+      },
+      "authority_resolution": "REV17/REV08 target-native demo/runtime contract wins for the shipped target source; pinned SDK remains the language/reference oracle.",
+      "target_native": {
+        "required_result": "PASS",
+        "compiler": "cc_p1138_compile",
+        "lifecycle": "C source bytes -> target-native cc -> fresh OBJ1 -> target-native ld -> MEX1",
+        "p1138_scope": "compile/link structural integration; complete language/runtime semantic conformance is owned by P11.39"
+      }
+    },
+    {
+      "path": "v1/src/demos/sine.c",
+      "sdk_reference": {
+        "result": "REJECT",
+        "category": "declaration-error",
+        "detail": "target-only ZX-UX runtime built-ins are intentionally used without a physical SDK declaration header at P11.38",
+        "basis": [
+          "pinned SDK compiler rejects undeclared target runtime identifiers",
+          "REV17 Section 42 requires the target demo behavior and Section 57 requires native compilation/linking"
+        ]
+      },
+      "authority_resolution": "REV17/REV08 target-native demo/runtime contract wins for the shipped target source; pinned SDK remains the language/reference oracle.",
+      "target_native": {
+        "required_result": "PASS",
+        "compiler": "cc_p1138_compile",
+        "lifecycle": "C source bytes -> target-native cc -> fresh OBJ1 -> target-native ld -> MEX1",
+        "p1138_scope": "compile/link structural integration; complete language/runtime semantic conformance is owned by P11.39"
+      }
+    },
+    {
+      "path": "v1/src/demos/mandel.c",
+      "sdk_reference": {
+        "result": "REJECT",
+        "category": "declaration-error",
+        "detail": "target-only ZX-UX runtime built-ins are intentionally used without a physical SDK declaration header at P11.38",
+        "basis": [
+          "pinned SDK compiler rejects undeclared target runtime identifiers",
+          "REV17 Section 42 requires the target demo behavior and Section 57 requires native compilation/linking"
+        ]
+      },
+      "authority_resolution": "REV17/REV08 target-native demo/runtime contract wins for the shipped target source; pinned SDK remains the language/reference oracle.",
+      "target_native": {
+        "required_result": "PASS",
+        "compiler": "cc_p1138_compile",
+        "lifecycle": "C source bytes -> target-native cc -> fresh OBJ1 -> target-native ld -> MEX1",
+        "p1138_scope": "compile/link structural integration; complete language/runtime semantic conformance is owned by P11.39"
+      }
+    },
+    {
+      "path": "v1/src/demos/tune.c",
+      "sdk_reference": {
+        "result": "REJECT",
+        "category": "declaration-error",
+        "detail": "target-only ZX-UX runtime built-ins are intentionally used without a physical SDK declaration header at P11.38",
+        "basis": [
+          "pinned SDK compiler rejects undeclared target runtime identifiers",
+          "REV17 Section 42 requires the target demo behavior and Section 57 requires native compilation/linking"
+        ]
+      },
+      "authority_resolution": "REV17/REV08 target-native demo/runtime contract wins for the shipped target source; pinned SDK remains the language/reference oracle.",
+      "target_native": {
+        "required_result": "PASS",
+        "compiler": "cc_p1138_compile",
+        "lifecycle": "C source bytes -> target-native cc -> fresh OBJ1 -> target-native ld -> MEX1",
+        "p1138_scope": "compile/link structural integration; complete language/runtime semantic conformance is owned by P11.39"
+      }
+    },
+    {
+      "path": "v1/src/demos/multi.c",
+      "sdk_reference": {
+        "result": "REJECT",
+        "category": "declaration-error",
+        "detail": "target-only ZX-UX runtime built-ins are intentionally used without a physical SDK declaration header at P11.38",
+        "basis": [
+          "pinned SDK compiler rejects undeclared target runtime identifiers",
+          "REV17 Section 42 requires the target demo behavior and Section 57 requires native compilation/linking"
+        ]
+      },
+      "authority_resolution": "REV17/REV08 target-native demo/runtime contract wins for the shipped target source; pinned SDK remains the language/reference oracle.",
+      "target_native": {
+        "required_result": "PASS",
+        "compiler": "cc_p1138_compile",
+        "lifecycle": "C source bytes -> target-native cc -> fresh OBJ1 -> target-native ld -> MEX1",
+        "p1138_scope": "compile/link structural integration; complete language/runtime semantic conformance is owned by P11.39"
+      }
+    }
+  ]
+}
