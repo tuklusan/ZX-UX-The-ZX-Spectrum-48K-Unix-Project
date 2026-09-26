@@ -227,7 +227,8 @@ p1124_break_eof:
     ld a,2
     ld (p1124_mode),a
     call getchar
-    ld de,$FFFF
+    ld de,0
+    dec de
     jp p1124_check_word
 
 p1124_strings:
@@ -245,7 +246,8 @@ p1124_strings:
     ld hl,p1124_s0
     ld de,p1124_s2
     call strcmp
-    ld de,$FFFF
+    ld de,0
+    dec de
     call p1124_check_word
     ret c
     ld hl,p1124_s2
