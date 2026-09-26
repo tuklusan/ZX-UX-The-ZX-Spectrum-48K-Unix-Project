@@ -12,11 +12,19 @@
 # patent, trademark, and governing-law provisions.
 
 set -euo pipefail
+readonly C48_SDK_REFERENCE_DIR="v1/tests/compiler/sdk-reference/sdk"
+readonly C48_SDK_REFERENCE_TREE_SHA1="1c6b5bae84035ee853be9142b440792881c9ca9f"
+actual_c48_sdk_reference_tree_sha1="$(git rev-parse "HEAD:$C48_SDK_REFERENCE_DIR")"
+if [[ "$actual_c48_sdk_reference_tree_sha1" != "$C48_SDK_REFERENCE_TREE_SHA1" ]]; then
+  echo "ERROR: pinned P11.39 SDK reference corpus identity changed: $C48_SDK_REFERENCE_DIR" >&2
+  exit 1
+fi
 required_files=(LICENSE README.md docs/03-ZX-UX-DEVELOPMENT-WORKFLOW.md .github/workflows/exact-head-regression.yml .github/workflows/quality-and-ci.yml .github/workflows/qualification-auto-dispatch.yml .github/actions/setup-zxux-runtime/action.yml tools/check_project_policy.py tools/check_license_headers.sh tools/check_reference_tree.py tools/scripts/record-bootstrap-provenance.py)
 for file in "${required_files[@]}"; do test -f "$file" || { echo "ERROR: required file missing: $file" >&2; exit 1; }; done
 python3 ./tools/check_reference_tree.py
 while IFS= read -r -d '' file; do
   [[ "$file" == "./reference/"* ]] && continue
+  [[ "$file" == "./$C48_SDK_REFERENCE_DIR/"* ]] && continue
   [[ "$file" == "./v1/tools-host/release-tzx/text-lines.txt" ]] && continue
   if grep -Iq '' "$file"; then
     if [[ ! "$file" =~ \.(md|markdown|mdown|mdx)$ ]] && grep -nE '[[:blank:]]+$' "$file"; then echo "ERROR: trailing whitespace in $file" >&2; exit 1; fi
