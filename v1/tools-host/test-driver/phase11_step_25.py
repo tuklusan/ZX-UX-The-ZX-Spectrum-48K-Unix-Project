@@ -86,6 +86,13 @@ p1125_check:
     jp nz,p1125_fail
     xor a
     ret
+zx48_alloc:
+    ld hl,p1125_bank
+    xor a
+    ret
+zx48_memory_pin_bytes:
+    xor a
+    ret
 zx48_cursor_hide: ret
 zx48_cursor_show: ret
 zx48_ula_set_border: and 7 : ld (ula_shadow),a : xor a : ret
