@@ -479,11 +479,10 @@ p1137_load_stage:
     ret c
     jp p1137_load
 
-p1137_syscalls_stage:
+p1137_pipe_stage:
     call p1137_load_stage
     ret c
-    ; Use the exact relocated BSS addresses but invoke the two syscalls here,
-    ; separating kernel/fixture behavior from emitted-main behavior.
+    ; Use the exact relocated BSS address and invoke SYS_PIPE independently.
     ld hl,(p1137_load_base)
     ld de,(ld_p1024_image_size)
     add hl,de
@@ -499,7 +498,17 @@ p1137_syscalls_stage:
     ld a,(hl)
     cp 1
     jp nz,p1137_fail
-    ld e,a
+    xor a
+    ret
+
+p1137_write_stage:
+    call p1137_pipe_stage
+    ret c
+    ld hl,(p1137_load_base)
+    ld de,(ld_p1024_image_size)
+    add hl,de
+    inc hl
+    ld e,(hl)
     ld d,0
     inc hl
     ld bc,300
@@ -512,6 +521,9 @@ p1137_syscalls_stage:
     jp nz,p1137_fail
     xor a
     ret
+
+p1137_syscalls_stage:
+    jp p1137_write_stage
 
 p1137_main_stage:
     call p1137_load_stage
@@ -609,7 +621,8 @@ p1137_end:
     syms = phase3_open_descriptions._symbols(
         build / "p1137-native-pipe.sym",
         ("p1137_compile", "p1137_link", "p1137_setup_stage", "p1137_load_stage",
-         "p1137_syscalls_stage", "p1137_main_stage", "p1137_lifecycle", "p1137_broken_pipe"),
+         "p1137_pipe_stage", "p1137_write_stage", "p1137_syscalls_stage",
+         "p1137_main_stage", "p1137_lifecycle", "p1137_broken_pipe"),
     )
 
     assertions = [
@@ -630,8 +643,8 @@ p1137_end:
             kernel_patch(ram)
 
         for name in ("p1137_compile", "p1137_link", "p1137_setup_stage", "p1137_load_stage",
-                     "p1137_syscalls_stage", "p1137_main_stage", "p1137_lifecycle",
-                     "p1137_broken_pipe"):
+                     "p1137_pipe_stage", "p1137_write_stage", "p1137_syscalls_stage",
+                     "p1137_main_stage", "p1137_lifecycle", "p1137_broken_pipe"):
             code = (b"\xF3" + phase1._ld_sp(0xBFC0) + phase1._call(syms[name])
                     + phase1._jp_c(FAIL_PC) + phase1._jp(PASS_PC))
             try:
