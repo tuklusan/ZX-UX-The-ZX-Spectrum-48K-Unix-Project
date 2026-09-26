@@ -277,6 +277,10 @@ p1129_names_negative:
 
 p1129_validate_direct:
     call p1129_reset
+    ld hl,p1129_candidate
+    ld (cc_p1129_candidate),hl
+    ld hl,p1129_candidate_end-p1129_candidate
+    ld (cc_p1129_length),hl
     call cc_p1129_validate_candidate
     ret
 
