@@ -1,0 +1,66 @@
+{
+  "license_header": [
+    "Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.",
+    "Proprietary rights reserved except as expressly licensed herein.",
+    "ZX-UX Sinclair ZX Spectrum Unix",
+    "This file is governed by the SANYALnet Labs Non-Commercial License in the root LICENSE file.",
+    "Non-Commercial use is permitted; Commercial Use and use for AI/ML model training are prohibited unless separately authorized.",
+    "Attribution is required: Based on original work by Supratim Sanyal of SANYALnet Labs.",
+    "See LICENSE for full terms, warranty disclaimer, termination, patent, trademark, and governing-law provisions."
+  ],
+  "schema": 1,
+  "step": "P11.42",
+  "cases": [
+    {
+      "name": "syntax-failure",
+      "native_entry": "p1142_syntax",
+      "errno": "E_FORMAT",
+      "prior_destination": "unchanged"
+    },
+    {
+      "name": "semantic-failure",
+      "native_entry": "p1142_semantic",
+      "errno": "E_FORMAT",
+      "prior_destination": "unchanged"
+    },
+    {
+      "name": "symbol-table-overflow",
+      "native_entry": "p1142_symbols",
+      "errno": "E_NOSPC",
+      "prior_destination": "unchanged"
+    },
+    {
+      "name": "source-too-large",
+      "native_entry": "p1142_source_large",
+      "errno": "E_NOSPC",
+      "prior_destination": "unchanged"
+    },
+    {
+      "name": "output-memory-exhaustion",
+      "native_entry": "p1142_output",
+      "errno": "E_NOSPC",
+      "prior_destination": "unchanged"
+    },
+    {
+      "name": "compiler-workspace-exhaustion",
+      "native_entry": "p1142_workspace",
+      "errno": "E_NOSPC",
+      "prior_destination": "unchanged"
+    },
+    {
+      "name": "final-rename-failure",
+      "native_entry": "p1142_rename",
+      "errno": "E_BUSY",
+      "prior_destination": "unchanged"
+    }
+  ],
+  "invariants": {
+    "compiler_owned_allocations_after_failure": 0,
+    "compiler_owned_open_descriptions_after_failure": 0,
+    "prior_destination_bytes": "16 bytes of 0xA5 remain exact",
+    "negatives": [
+      "swallowed compiler error is detected",
+      "one-byte prior-destination mutation is detected"
+    ]
+  }
+}
