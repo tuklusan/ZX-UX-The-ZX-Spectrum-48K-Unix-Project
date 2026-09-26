@@ -118,30 +118,30 @@ getenv:
     ld hl,(c48_env1_ptr)
     ld a,h
     or l
-    jr z,c48_getenv_null
+    jp z,c48_getenv_null
     ld de,(c48_env1_len)
     ld a,d
     or a
     jr nz,c48_getenv_len_ok
     ld a,e
     cp 8
-    jr c,c48_getenv_null
+    jp c,c48_getenv_null
 c48_getenv_len_ok:
     ld a,(hl)
     cp 'E'
-    jr nz,c48_getenv_null
+    jp nz,c48_getenv_null
     inc hl
     ld a,(hl)
     cp 'N'
-    jr nz,c48_getenv_null
+    jp nz,c48_getenv_null
     inc hl
     ld a,(hl)
     cp 'V'
-    jr nz,c48_getenv_null
+    jp nz,c48_getenv_null
     inc hl
     ld a,(hl)
     cp '1'
-    jr nz,c48_getenv_null
+    jp nz,c48_getenv_null
     inc hl
     ld a,(hl)
     cp 9
@@ -150,7 +150,7 @@ c48_getenv_len_ok:
     inc hl
     ld a,(hl)
     or a
-    jr nz,c48_getenv_null
+    jp nz,c48_getenv_null
     inc hl
     ld e,(hl)
     inc hl
@@ -161,13 +161,13 @@ c48_getenv_len_ok:
     or a
     sbc hl,de
     pop hl
-    jr nz,c48_getenv_null
+    jp nz,c48_getenv_null
     ld (c48_getenv_scan),hl
 
 c48_getenv_entry:
     ld a,(c48_getenv_count)
     or a
-    jr z,c48_getenv_null
+    jp z,c48_getenv_null
     ld hl,(c48_getenv_scan)
     ld de,(c48_getenv_query)
     ld b,80
