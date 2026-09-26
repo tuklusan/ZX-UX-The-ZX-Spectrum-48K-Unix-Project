@@ -143,6 +143,7 @@ p1126_end:
     require(0<len(main)<=0x2000,"P11.26 fixture exceeds C000-DFFF")
     syms=phase3_open_descriptions._symbols(build/"p1126-beep.sym",
                                            ("p1126_gateway","p1126_vectors","p1126_negative"))
+    # P11.26 assertions bind the public wrapper to the already-certified synchronous kernel path.
     assertions=[
       {"name":"public-beep-symbol-exact","passed":True},
       {"name":"beep-uses-synchronous-sys-beep","passed":True},
