@@ -1,0 +1,60 @@
+{
+  "action": "build",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "native-writer-is-obj1-only-no-mex-shortcut",
+      "passed": true
+    },
+    {
+      "name": "host-inspector-exact-on-deterministic-golden",
+      "passed": true
+    },
+    {
+      "name": "obj1-text-bss-symbol-reloc-layout-exact",
+      "passed": true
+    },
+    {
+      "name": "body-and-header-crc-contract-exact",
+      "passed": true
+    },
+    {
+      "name": "all-internal-state-validation-precedes-output-mutation",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1128-obj1.sym",
+        "p1128-obj1.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 7,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 6966 lines, work time: 0.007 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p1128-main.bin": "9e0119947a773067852583c988cfefb107905f910791b51323dbd49a1b9e7c71",
+    "v1/dist/certification/P11.27.build.json": "1e0d460b2d9b9c73d777fb51c091347ef0bbe999b66efd666d840088e350cbc1",
+    "v1/dist/certification/P11.27.test.json": "7d8fd308b95e88ecaa37425ed3bae4b29033c06610c3914885e8a7cc899220e7",
+    "v1/src/tools/cc.asm": "7b12086e821d3018cd8152534724f4ac42a99b6539a71333719cc1b7d02877e1",
+    "v1/tools-host/inspect-obj/inspect.py": "29b4eb6094ef4204486c6be044c4db799c982692e3aa3278849c60273d540566",
+    "v1/tools-host/test-driver/phase11_step_28.py": "643b6a0f66cdb01695f5cb8682b2bac38fb08bdb0f281a8a13607ffbcdf3fa2d"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.27": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "b06b04c3cf78e34308ac813786905cb36cbee4dd",
+  "status": "PASS",
+  "step": "P11.28",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
