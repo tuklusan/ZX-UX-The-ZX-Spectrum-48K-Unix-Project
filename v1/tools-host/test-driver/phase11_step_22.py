@@ -46,8 +46,11 @@ def dispatch(root, action, step, *, sha256_file, run_command, require_project_to
                 f"P11.22 symbolic syscall dependency missing: {sym}")
     require("c48_runtime_capture_env1:" in text and "c48_env1_ptr:" in text,
             "P11.22 ENV1 bootstrap capture missing")
-    require("ARG1 format:" in arch and "ENV1 format:" in arch
-            and "crt0 records the ENV1 pointer for `getenv()`" in arch,
+    require("ARG1 format:" in arch
+            and "## 8.5 Process environment block (ENV1)" in arch
+            and "DE points to a packed environment snapshot:" in arch
+            and "`crt0` records the ENV1 pointer for `getenv()` rather than copying the" in arch
+            and "strings onto the runtime stack." in arch,
             "REV17 bootstrap environment contract drift")
     require("## P11.22 - C48 process/environment runtime API" in plan
             and "including unset/missing getenv" in plan
