@@ -369,6 +369,21 @@ cc_pp_lookup_name:      defs 16,0
 cc_pp_builtin_header:
     db "int getpid(void);",10
     db "int getchar(void);",10
+    db "int open(char *path,int flags);",10
+    db "int open_typed(char *path,int flags,int type);",10
+    db "int close(int h);",10
+    db "int read(int h,void *p,unsigned int n);",10
+    db "int write(int h,void *p,unsigned int n);",10
+    db "int seek(int h,unsigned int pos);",10
+    db "int stat(char *path,void *out);",10
+    db "int remove(char *path);",10
+    db "int rename(char *oldp,char *newp);",10
+    db "int list(char *dir,int index,void *out);",10
+    db "int pipe(unsigned char *handles);",10
+    db "int dup(int source,int destination);",10
+    db "int ioctl(int h,int request,void *arg);",10
+    db "int read_full(int h,void *p,unsigned int n);",10
+    db "int write_full(int h,void *p,unsigned int n);",10
 cc_pp_builtin_header_end:
 CC_PP_BUILTIN_HEADER_SIZE EQU cc_pp_builtin_header_end-cc_pp_builtin_header
     ASSERT CC_PP_BUILTIN_HEADER_SIZE <= CC_SOURCE_WINDOW_SIZE
