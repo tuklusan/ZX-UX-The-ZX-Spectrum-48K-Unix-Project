@@ -196,7 +196,7 @@ c48_io_read_full_loop:
     or l
     jr z,c48_io_full_done
     call c48_io_full_advance
-    jr c,c48_io_read_full_loop
+    jr c48_io_read_full_loop
 
 write_full:
     call c48_io_full_init
