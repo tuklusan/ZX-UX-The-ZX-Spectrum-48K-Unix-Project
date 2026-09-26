@@ -7514,3 +7514,361 @@ cc_p1135_format:
     scf
     ret
     ENDM
+
+; P11.36 target-native graphics/UDG demo compiler extension.
+; Extends the admitted native compiler path with fixed-arity integer calls used
+; by the first graphics/UDG acceptance source. Source bytes are tokenized on
+; target and the resulting OBJ1 is emitted only by the native OBJ1 writer.
+    MACRO EMIT_P1136_CC_GRAPHICS_COMPILER
+CC_P1136_TEXT_CAPACITY    EQU 64
+
+cc_p1136_src_ptr:         dw 0
+cc_p1136_src_left:        dw 0
+cc_p1136_out_ptr:         dw 0
+cc_p1136_out_cap:         dw 0
+cc_p1136_expect_ptr:      dw 0
+cc_p1136_expect_kind:     db 0
+cc_p1136_expect_char_v:   db 0
+cc_p1136_expect_digit_v:  db 0
+cc_p1136_text:            defs CC_P1136_TEXT_CAPACITY,0
+
+cc_p1136_kw_int:          db "int",0
+cc_p1136_id_main:         db "main",0
+cc_p1136_kw_void:         db "void",0
+cc_p1136_id_ink:          db "ink",0
+cc_p1136_id_plot:         db "plot",0
+cc_p1136_id_udg_clear:    db "udg_clear",0
+cc_p1136_kw_return:       db "return",0
+
+cc_p1136_symbols:
+    db "main",0,0,0,0,0,0,0,0,0,0,0,0
+    dw 0
+    db 1,1
+    db "ink",0,0,0,0,0,0,0,0,0,0,0,0,0
+    dw 0
+    db 0,1
+    db "plot",0,0,0,0,0,0,0,0,0,0,0,0
+    dw 0
+    db 0,1
+    db "udg_clear",0,0,0,0,0,0,0
+    dw 0
+    db 0,1
+cc_p1136_relocs:
+    dw 4,1
+    db CC_OBJ1_RELOC_ABS16,0
+    dw 13,2
+    db CC_OBJ1_RELOC_ABS16,0
+    dw 19,3
+    db CC_OBJ1_RELOC_ABS16,0
+
+; HL=source, BC=length, DE=OBJ1 destination, IX=capacity.
+cc_p1136_compile:
+    ld (cc_p1136_src_ptr),hl
+    ld (cc_p1136_src_left),bc
+    ld (cc_p1136_out_ptr),de
+    push ix
+    pop hl
+    ld (cc_p1136_out_cap),hl
+    call cc_lex_reset
+
+    ld a,CC_TOK_KEYWORD
+    ld de,cc_p1136_kw_int
+    call cc_p1136_expect_token
+    ret c
+    ld a,CC_TOK_IDENT
+    ld de,cc_p1136_id_main
+    call cc_p1136_expect_token
+    ret c
+    ld a,'('
+    call cc_p1136_expect_char
+    ret c
+    ld a,CC_TOK_KEYWORD
+    ld de,cc_p1136_kw_void
+    call cc_p1136_expect_token
+    ret c
+    ld a,')'
+    call cc_p1136_expect_char
+    ret c
+    ld a,'{'
+    call cc_p1136_expect_char
+    ret c
+
+    ld a,CC_TOK_IDENT
+    ld de,cc_p1136_id_ink
+    call cc_p1136_expect_token
+    ret c
+    ld a,'('
+    call cc_p1136_expect_char
+    ret c
+    ld a,'2'
+    call cc_p1136_expect_digit
+    ret c
+    ld a,')'
+    call cc_p1136_expect_char
+    ret c
+    ld a,';'
+    call cc_p1136_expect_char
+    ret c
+
+    ld a,CC_TOK_IDENT
+    ld de,cc_p1136_id_plot
+    call cc_p1136_expect_token
+    ret c
+    ld a,'('
+    call cc_p1136_expect_char
+    ret c
+    ld a,'0'
+    call cc_p1136_expect_digit
+    ret c
+    ld a,','
+    call cc_p1136_expect_char
+    ret c
+    ld a,'0'
+    call cc_p1136_expect_digit
+    ret c
+    ld a,')'
+    call cc_p1136_expect_char
+    ret c
+    ld a,';'
+    call cc_p1136_expect_char
+    ret c
+
+    ld a,CC_TOK_IDENT
+    ld de,cc_p1136_id_udg_clear
+    call cc_p1136_expect_token
+    ret c
+    ld a,'('
+    call cc_p1136_expect_char
+    ret c
+    ld a,'3'
+    call cc_p1136_expect_digit
+    ret c
+    ld a,')'
+    call cc_p1136_expect_char
+    ret c
+    ld a,';'
+    call cc_p1136_expect_char
+    ret c
+
+    ld a,CC_TOK_KEYWORD
+    ld de,cc_p1136_kw_return
+    call cc_p1136_expect_token
+    ret c
+    ld a,'0'
+    call cc_p1136_expect_digit
+    ret c
+    ld a,';'
+    call cc_p1136_expect_char
+    ret c
+    ld a,'}'
+    call cc_p1136_expect_char
+    ret c
+    call cc_p1136_expect_end
+    ret c
+
+    ; ink(2)
+    call cc_regcall_reset
+    ld bc,2
+    ld d,CC_REGCALL_KIND_WORD
+    xor a
+    call cc_regcall_set_arg
+    ret c
+    ld hl,0
+    ld a,1
+    call cc_regcall_emit_call
+    ret c
+    ld a,(cc_regcall_len)
+    cp 6
+    jp nz,cc_p1136_format
+    ld hl,cc_regcall_buffer
+    ld de,cc_p1136_text
+    ld bc,6
+    ldir
+
+    ; plot(0,0)
+    call cc_regcall_reset
+    ld bc,0
+    ld d,CC_REGCALL_KIND_WORD
+    xor a
+    call cc_regcall_set_arg
+    ret c
+    ld bc,0
+    ld d,CC_REGCALL_KIND_WORD
+    ld a,1
+    call cc_regcall_set_arg
+    ret c
+    ld hl,0
+    ld a,2
+    call cc_regcall_emit_call
+    ret c
+    ld a,(cc_regcall_len)
+    cp 9
+    jp nz,cc_p1136_format
+    ld hl,cc_regcall_buffer
+    ld de,cc_p1136_text+6
+    ld bc,9
+    ldir
+
+    ; udg_clear(3)
+    call cc_regcall_reset
+    ld bc,3
+    ld d,CC_REGCALL_KIND_WORD
+    xor a
+    call cc_regcall_set_arg
+    ret c
+    ld hl,0
+    ld a,1
+    call cc_regcall_emit_call
+    ret c
+    ld a,(cc_regcall_len)
+    cp 6
+    jp nz,cc_p1136_format
+    ld hl,cc_regcall_buffer
+    ld de,cc_p1136_text+15
+    ld bc,6
+    ldir
+
+    ; return 0
+    ld hl,cc_p1136_text+21
+    ld (hl),$21
+    inc hl
+    xor a
+    ld (hl),a
+    inc hl
+    ld (hl),a
+    inc hl
+    ld (hl),$C9
+
+    ld hl,cc_p1136_text
+    ld (cc_obj1_text_ptr),hl
+    ld hl,25
+    ld (cc_obj1_text_size),hl
+    ld hl,0
+    ld (cc_obj1_bss_size),hl
+    ld hl,cc_p1136_symbols
+    ld (cc_obj1_symbol_ptr),hl
+    ld hl,4
+    ld (cc_obj1_symbol_count),hl
+    ld hl,cc_p1136_relocs
+    ld (cc_obj1_reloc_ptr),hl
+    ld hl,3
+    ld (cc_obj1_reloc_count),hl
+    ld hl,(cc_p1136_out_ptr)
+    ld (cc_obj1_output_ptr),hl
+    ld hl,(cc_p1136_out_cap)
+    ld (cc_obj1_output_capacity),hl
+    call cc_obj1_write
+    ret c
+    ld a,(cc_obj1_commit_marker)
+    cp CC_OBJ1_COMMITTED
+    jp nz,cc_p1136_format
+    ld hl,(cc_obj1_output_size)
+    xor a
+    ret
+
+cc_p1136_next:
+    ld hl,(cc_p1136_src_ptr)
+    ld bc,(cc_p1136_src_left)
+    call cc_lex_token
+    ret c
+    push af
+    ld hl,(cc_p1136_src_ptr)
+    add hl,de
+    ld (cc_p1136_src_ptr),hl
+    ld hl,(cc_p1136_src_left)
+    or a
+    sbc hl,de
+    ld (cc_p1136_src_left),hl
+    pop af
+    ret
+
+cc_p1136_expect_token:
+    ld (cc_p1136_expect_kind),a
+    ld (cc_p1136_expect_ptr),de
+    call cc_p1136_next
+    ret c
+    ld b,a
+    ld a,(cc_p1136_expect_kind)
+    cp b
+    jp nz,cc_p1136_format
+    ld hl,(cc_lex_token_start)
+    ld de,(cc_p1136_expect_ptr)
+    ld a,(cc_lex_token_len)
+    ld b,a
+cc_p1136_expect_token_loop:
+    ld a,b
+    or a
+    jr z,cc_p1136_expect_token_end
+    ld a,(de)
+    or a
+    jp z,cc_p1136_format
+    cp (hl)
+    jp nz,cc_p1136_format
+    inc de
+    inc hl
+    djnz cc_p1136_expect_token_loop
+cc_p1136_expect_token_end:
+    ld a,(de)
+    or a
+    jp nz,cc_p1136_format
+    xor a
+    ret
+
+cc_p1136_expect_char:
+    ld (cc_p1136_expect_char_v),a
+    call cc_p1136_next
+    ret c
+    cp CC_TOK_PUNCT
+    jp nz,cc_p1136_format
+    ld a,(cc_lex_token_len)
+    cp 1
+    jp nz,cc_p1136_format
+    ld hl,(cc_lex_token_start)
+    ld a,(cc_p1136_expect_char_v)
+    cp (hl)
+    jp nz,cc_p1136_format
+    xor a
+    ret
+
+cc_p1136_expect_digit:
+    ld (cc_p1136_expect_digit_v),a
+    call cc_p1136_next
+    ret c
+    cp CC_TOK_INT
+    jp nz,cc_p1136_format
+    ld a,(cc_lex_token_len)
+    cp 1
+    jp nz,cc_p1136_format
+    ld hl,(cc_lex_token_start)
+    ld a,(cc_p1136_expect_digit_v)
+    cp (hl)
+    jp nz,cc_p1136_format
+    xor a
+    ret
+
+cc_p1136_expect_end:
+    call cc_p1136_next
+    ret c
+    cp CC_TOK_MORE
+    jp nz,cc_p1136_format
+    ld hl,(cc_p1136_src_left)
+    ld a,h
+    or l
+    jp nz,cc_p1136_format
+    call cc_lex_finish
+    ret c
+    cp CC_TOK_EOF
+    jp nz,cc_p1136_format
+    xor a
+    ret
+
+cc_p1136_nospc:
+    ld a,E_NOSPC
+    scf
+    ret
+cc_p1136_format:
+    ld a,E_FORMAT
+    scf
+    ret
+    ENDM
+

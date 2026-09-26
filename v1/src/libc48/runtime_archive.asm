@@ -196,3 +196,74 @@ ld_p1135_archive_bad:
     scf
     ret
     ENDM
+
+; P11.36 native graphics/UDG archive members used by target-native cc/ld proof.
+; Each member is valid OBJ1 and calls only the frozen syscall gateway.
+P1136_GRAPHICS_MEMBER_COUNT EQU 3
+
+    MACRO EMIT_P1136_GRAPHICS_ARCHIVE
+p1136_graphics_archive:
+    db 'L','A','R','1'
+    db P1136_GRAPHICS_MEMBER_COUNT
+    db 0
+    dw p1136_graphics_archive_table_end-p1136_graphics_archive_table
+p1136_graphics_archive_table:
+    dw p1136_ink_obj
+    dw p1136_ink_obj_end-p1136_ink_obj
+    dw p1136_plot_obj
+    dw p1136_plot_obj_end-p1136_plot_obj
+    dw p1136_udg_clear_obj
+    dw p1136_udg_clear_obj_end-p1136_udg_clear_obj
+p1136_graphics_archive_table_end:
+
+p1136_ink_obj:
+    db $4F,$42,$4A,$31,$01,$00,$18,$00,$1D,$00,$00,$00,$01,$00,$00,$00
+    db $35,$00,$49,$00,$FA,$0B,$78,$DA,$7C,$B7,$20,$0F,$16,$00,$62,$3E
+    db $43,$CD,$00,$E0,$38,$0A,$21,$00,$00,$AF,$C9,$21,$01,$00,$AF,$C9
+    db $6F,$26,$00,$B7,$C9,$69,$6E,$6B,$00,$00,$00,$00,$00,$00,$00,$00
+    db $00,$00,$00,$00,$00,$00,$00,$01,$01
+p1136_ink_obj_end:
+
+p1136_plot_obj:
+    db $4F,$42,$4A,$31,$01,$00,$18,$00,$1C,$00,$00,$00,$01,$00,$00,$00
+    db $34,$00,$48,$00,$58,$E6,$51,$95,$7C,$B2,$20,$0E,$65,$6B,$3E,$40
+    db $CD,$00,$E0,$38,$0A,$21,$00,$00,$AF,$C9,$21,$01,$00,$AF,$C9,$6F
+    db $26,$00,$B7,$C9,$70,$6C,$6F,$74,$00,$00,$00,$00,$00,$00,$00,$00
+    db $00,$00,$00,$00,$00,$00,$01,$01
+p1136_plot_obj_end:
+
+p1136_udg_clear_obj:
+    db $4F,$42,$4A,$31,$01,$00,$18,$00,$1A,$00,$00,$00,$01,$00,$00,$00
+    db $32,$00,$46,$00,$AA,$82,$0C,$60,$7C,$B7,$20,$0C,$3E,$4B,$CD,$00
+    db $E0,$38,$0A,$21,$00,$00,$AF,$C9,$21,$01,$00,$AF,$C9,$6F,$26,$00
+    db $B7,$C9,$75,$64,$67,$5F,$63,$6C,$65,$61,$72,$00,$00,$00,$00,$00
+    db $00,$00,$00,$00,$01,$01
+p1136_udg_clear_obj_end:
+    ENDM
+
+    MACRO EMIT_P1136_GRAPHICS_ARCHIVE_ROUTINES
+ld_p1136_archive_get:
+    cp P1136_GRAPHICS_MEMBER_COUNT
+    jr nc,ld_p1136_archive_bad
+    ld l,a
+    ld h,0
+    add hl,hl
+    add hl,hl
+    ld de,p1136_graphics_archive_table
+    add hl,de
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    inc hl
+    ld c,(hl)
+    inc hl
+    ld b,(hl)
+    ex de,hl
+    xor a
+    ret
+ld_p1136_archive_bad:
+    ld a,E_INVAL
+    scf
+    ret
+    ENDM
+

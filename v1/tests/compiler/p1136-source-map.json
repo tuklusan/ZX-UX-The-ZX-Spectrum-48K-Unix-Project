@@ -1,0 +1,41 @@
+{
+  "license_header": [
+    "Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.",
+    "Proprietary rights reserved except as expressly licensed herein.",
+    "ZX-UX Sinclair ZX Spectrum Unix",
+    "This file is governed by the SANYALnet Labs Non-Commercial License in the root LICENSE file.",
+    "Non-Commercial use is permitted; Commercial Use and use for AI/ML model training are prohibited unless separately authorized.",
+    "Attribution is required: Based on original work by Supratim Sanyal of SANYALnet Labs.",
+    "See LICENSE for full terms, warranty disclaimer, termination, patent, trademark, and governing-law provisions."
+  ],
+  "schema": 1,
+  "step": "P11.36",
+  "sdk_commit": "84d144de2721cda5075c3a6610a422663b5e2f77",
+  "sources": [
+    {
+      "path": "v1/src/demos/colors.c",
+      "sdk_reference": {
+        "result": "REJECT",
+        "category": "declaration-error",
+        "detail": "undeclared identifier 'ink'",
+        "basis": [
+          "compiler/c48/semantics.py rejects undeclared identifiers",
+          "REV17 compiler-resident runtime surface permits canonical target demos without a physical host SDK header"
+        ]
+      },
+      "authority_resolution": "REV17/REV08 target contract wins for the native demo source; SDK remains the pinned language/runtime behavior oracle.",
+      "target_native": {
+        "step": "P11.36",
+        "required_result": "PASS",
+        "lifecycle": "C source bytes -> target-native cc lexer/ABI codegen -> OBJ1 -> target-native ld -> MEX1 -> execute",
+        "expected_screen_bytes": {
+          "0x4000": "0x80",
+          "0x5800": "0x02"
+        },
+        "expected_udg_slot": 3,
+        "expected_udg_bytes_hex": "0000000000000000",
+        "expected_status": 0
+      }
+    }
+  ]
+}
