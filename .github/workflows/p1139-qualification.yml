@@ -1,0 +1,276 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: P11.39 compiler complete golden qualification
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      ZXUX_EVIDENCE_DIR: /tmp/zxux-p1139-qualification
+      P1139_BASE: 5236c18422285f9d9bee96622a9f756614152956
+      ZXUX_REV17_SHA256: d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8
+      ZXUX_REV08_SHA256: 97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c
+      ZXUX_TOOLCHAIN_LOCK_SHA256: 1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: {fetch-depth: 0}
+
+      - name: Guard exact P11.39 candidate diff
+        run: |
+          set -euo pipefail
+          git diff --name-only "$P1139_BASE" HEAD | sort > /tmp/changed
+          printf '%s\n' \
+            '.github/workflows/p1139-qualification.yml' \
+            'tools/check_license_headers.sh' \
+            'tools/ci.sh' \
+            'v1/tests/compiler/p1139-c-source-manifest.json' \
+            'v1/tests/compiler/p1139-sdk-test-map.json' \
+            'v1/tests/compiler/p1139-three-way-map.json' \
+            'v1/tests/compiler/sdk-reference/SDK-PROVENANCE.md' \
+            'v1/tests/compiler/sdk-reference/sdk/.gitattributes' \
+            'v1/tests/compiler/sdk-reference/sdk/.github/workflows/verify.yml' \
+            'v1/tests/compiler/sdk-reference/sdk/.gitignore' \
+            'v1/tests/compiler/sdk-reference/sdk/LICENSE' \
+            'v1/tests/compiler/sdk-reference/sdk/MANIFEST.sha256' \
+            'v1/tests/compiler/sdk-reference/sdk/README.md' \
+            'v1/tests/compiler/sdk-reference/sdk/VERSION' \
+            'v1/tests/compiler/sdk-reference/sdk/c48' \
+            'v1/tests/compiler/sdk-reference/sdk/c48.bat' \
+            'v1/tests/compiler/sdk-reference/sdk/c48run' \
+            'v1/tests/compiler/sdk-reference/sdk/c48run.bat' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/README-font.txt' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/assets/font4x8-tasword.bin' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/assets/font4x8-zxux.bin' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/c48.py' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/c48/__init__.py' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/c48/astutil.py' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/c48/compiler.py' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/c48/errors.py' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/c48/float5.py' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/c48/format.py' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/c48/gui.py' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/c48/lexer.py' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/c48/limits.py' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/c48/memory.py' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/c48/parser.py' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/c48/preprocessor.py' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/c48/screen.py' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/c48/semantics.py' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/c48/typesys.py' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/c48/vm.py' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/c48run.py' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/check_license_headers.py' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/release_expectations.json' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/run_tests.py' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/tasword2-font4x8-raw-768.bin' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/tests/test_conformance.py' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/tests/test_game_regressions.py' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/tests/test_release_regressions.py' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/tests/test_security.py' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/verify_games.py' \
+            'v1/tests/compiler/sdk-reference/sdk/compiler/verify_release.py' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/bin/argv.c48b' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/bin/colors.c48b' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/bin/games/advent.c48b' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/bin/games/arith.c48b' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/bin/games/bgammon.c48b' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/bin/games/chess.c48b' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/bin/games/cribbage.c48b' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/bin/games/fish.c48b' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/bin/games/fortune.c48b' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/bin/games/hangman.c48b' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/bin/games/maze.c48b' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/bin/games/quiz.c48b' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/bin/games/rogue.c48b' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/bin/games/snake.c48b' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/bin/games/trek.c48b' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/bin/games/wump.c48b' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/bin/graphics.c48b' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/bin/hello.c48b' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/bin/maze.c48b' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/bin/secdbl.c48b' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/bin/secforge.c48b' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/bin/secfree.c48b' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/bin/secguard.c48b' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/bin/secloop.c48b' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/bin/secoob.c48b' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/bin/secrecur.c48b' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/bin/secuaf.c48b' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/bin/udg.c48b' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/argv.c' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/c48host.h' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/colors.c' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/games/advent.c' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/games/arith.c' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/games/bgammon.c' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/games/chess.c' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/games/cribbage.c' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/games/fish.c' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/games/fortune.c' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/games/gameapi.h' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/games/hangman.c' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/games/maze.c' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/games/quiz.c' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/games/rogue.c' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/games/snake.c' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/games/trek.c' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/games/wump.c' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/graphics.c' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/hello.c' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/maze.c' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/secdbl.c' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/secforge.c' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/secfree.c' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/secguard.c' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/seckern.c' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/secloop.c' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/secoob.c' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/secrecur.c' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/secuaf.c' \
+            'v1/tests/compiler/sdk-reference/sdk/dev/src/udg.c' \
+            'v1/tests/compiler/sdk-reference/sdk/doc/C48 Language Specification Rev 0.11.docx' \
+            'v1/tests/compiler/sdk-reference/sdk/doc/CONFORMANCE.md' \
+            'v1/tests/compiler/sdk-reference/sdk/doc/DEMO-HASHES.md' \
+            'v1/tests/compiler/sdk-reference/sdk/doc/FLOAT5-ORACLE.md' \
+            'v1/tests/compiler/sdk-reference/sdk/doc/GAMES.md' \
+            'v1/tests/compiler/sdk-reference/sdk/doc/HOST-DIVERGENCES.md' \
+            'v1/tests/compiler/sdk-reference/sdk/doc/LICENSE-HEADER-POLICY.md' \
+            'v1/tests/compiler/sdk-reference/sdk/doc/RELEASE-NOTES.md' \
+            'v1/tests/compiler/sdk-reference/sdk/doc/ZX-UX C48 Compiler User Manual Rev 0.11.docx' \
+            'v1/tests/compiler/sdk-reference/sdk/doc/ZX-UX C48 SDK Adversarial Security Review.docx' \
+            'v1/tools-host/test-driver/phase11_step_39.py' | sort > /tmp/expected
+          diff -u /tmp/expected /tmp/changed
+          git diff --check "$P1139_BASE" HEAD
+          test -z "$(git status --porcelain)"
+
+      - name: Three unchanged candidate scans
+        run: |
+          set -euo pipefail
+          baseline=""
+          tree="$(git rev-parse 'HEAD^{tree}')"
+          for scan in 1 2 3; do
+            python3 -m py_compile v1/tools-host/test-driver/phase11_step_39.py
+            find . -type d -name __pycache__ -prune -exec rm -rf {} +
+            ./tools/check_license_headers.sh
+            ./tools/check_project_policy.py
+            python3 tools/check_media_retention.py
+            test -z "$(git status --porcelain)"
+            test "$(git rev-parse 'HEAD^{tree}')" = "$tree"
+            digest="$(python3 - "$P1139_BASE" <<'PY'
+          import hashlib, pathlib, subprocess, sys
+          h=hashlib.sha256()
+          for rel in sorted(subprocess.check_output(
+                  ["git","diff","--name-only",sys.argv[1],"HEAD"], text=True
+              ).splitlines()):
+              data=pathlib.Path(rel).read_bytes()
+              h.update(rel.encode("utf-8")); h.update(b"\0")
+              h.update(len(data).to_bytes(8,"little")); h.update(data)
+          print(h.hexdigest())
+          PY
+            )"
+            if test -z "$baseline"; then baseline="$digest"; else test "$baseline" = "$digest"; fi
+          done
+
+      - name: Mandatory authority and prerequisite gates
+        run: |
+          set -euo pipefail
+          test "$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV17.md | awk '{print $1}')" = "$ZXUX_REV17_SHA256"
+          test "$(sha256sum docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV08.md | awk '{print $1}')" = "$ZXUX_REV08_SHA256"
+          test "$(sha256sum tools/manifest/toolchain.lock.json | awk '{print $1}')" = "$ZXUX_TOOLCHAIN_LOCK_SHA256"
+          python3 tools/check_phase10_evidence.py --require-active
+          python3 tools/check_media_retention.py
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          cert=Path("v1/dist/certification")
+          for action in ("build","test"):
+              r=json.loads((cert/f"P11.38.{action}.json").read_text())
+              assert r["schema"]==2 and r["step"]=="P11.38" and r["action"]==action
+              assert r["status"]=="PASS" and r["worktree_clean"] is True
+              assert r["prerequisites"]=={"P11.37":"PASS"}
+              assert r["architecture_sha256"]=="d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8"
+              assert r["implementation_plan_sha256"]=="97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c"
+          PY
+
+      - name: Restore or build certified ZX-UX runtime
+        uses: ./.github/actions/setup-zxux-runtime
+
+      - name: Execute P11.39 build
+        run: tools/runtime/python/bin/python v1/tools-host/test-driver/run.py build --step P11.39
+
+      - name: Execute P11.39 test
+        run: tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test --step P11.39
+
+      - name: Collect exact evidence
+        if: always()
+        run: |
+          mkdir -p "$ZXUX_EVIDENCE_DIR/meta"
+          git rev-parse HEAD > "$ZXUX_EVIDENCE_DIR/meta/candidate-commit.txt"
+          git rev-parse 'HEAD^{tree}' > "$ZXUX_EVIDENCE_DIR/meta/candidate-tree.txt"
+          git status --porcelain > "$ZXUX_EVIDENCE_DIR/meta/worktree-status.txt"
+
+      - name: Upload exact evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: zxux-p1139-qualification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: /tmp/zxux-p1139-qualification/
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Guard final exact current head
+        id: final
+        run: |
+          set -euo pipefail
+          git fetch --quiet origin main
+          if test "$(git rev-parse origin/main)" != "$GITHUB_SHA"; then
+            echo "ZX-UX P11.39 SUPERSEDED candidate=$GITHUB_SHA current=$(git rev-parse origin/main)"
+            echo "current=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          test -z "$(git status --porcelain)"
+          echo "current=true" >> "$GITHUB_OUTPUT"
+
+      - name: Dispatch exact admission
+        if: steps.final.outputs.current == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, urllib.request
+          payload=json.dumps({"ref":"main","inputs":{
+              "step":"P11.39",
+              "run_id":os.environ["GITHUB_RUN_ID"],
+              "source_commit":os.environ["GITHUB_SHA"],
+          }}).encode()
+          req=urllib.request.Request(
+              f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}/actions/workflows/phase11-step-admission.yml/dispatches",
+              data=payload,method="POST",
+              headers={
+                  "Authorization":f"Bearer {os.environ['GH_TOKEN']}",
+                  "Accept":"application/vnd.github+json",
+                  "X-GitHub-Api-Version":"2022-11-28",
+                  "Content-Type":"application/json",
+              })
+          with urllib.request.urlopen(req,timeout=30) as response:
+              assert response.status==204
+          PY

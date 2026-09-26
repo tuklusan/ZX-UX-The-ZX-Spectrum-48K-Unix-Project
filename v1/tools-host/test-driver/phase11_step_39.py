@@ -21,6 +21,7 @@ import shutil
 import sys
 
 from driver_core import DriverError
+from fuse_harness import FAIL_PC, PASS_PC, run_sna
 
 
 class P1139Error(DriverError):
@@ -145,6 +146,25 @@ def validate_prior_evidence(root: Path) -> None:
                     and record.get("architecture_sha256") == REV17
                     and record.get("implementation_plan_sha256") == REV08,
                     f"P11.39 prerequisite authority drift: {step}.{action}")
+
+
+def wrong_native_expected_result_must_fail(root: Path) -> bool:
+    # The fixture produces HL=0 but deliberately expects 1.  The exact target
+    # harness must therefore reach FAIL_PC; accepting it would weaken P11.39.
+    code = bytes((
+        0xF3,                    # DI
+        0x21, 0x00, 0x00,       # LD HL,0
+        0x11, 0x01, 0x00,       # LD DE,1 (intentionally wrong expected value)
+        0xB7,                    # OR A (clear carry)
+        0xED, 0x52,              # SBC HL,DE => nonzero
+        0xC2, FAIL_PC & 0xFF, FAIL_PC >> 8,
+        0xC3, PASS_PC & 0xFF, PASS_PC >> 8,
+    ))
+    try:
+        run_sna(root, code, timeout=15)
+    except DriverError:
+        return True
+    return False
 
 
 def negative_self_tests(mapping: dict, test_ids: list[str], sources: dict, three: dict) -> None:
@@ -279,6 +299,8 @@ def dispatch(root: Path, action: str, step: str, *, sha256_file, run_command, re
             native_results.append(owner)
 
         negative_self_tests(mapping, test_ids, source_manifest, three)
+        require(wrong_native_expected_result_must_fail(root),
+                "P11.39 intentionally wrong native expected result did not fail harness")
 
     assertions = [
         {"name": "pinned-sdk-tree-byte-and-mode-identical", "passed": True},
@@ -294,6 +316,7 @@ def dispatch(root: Path, action: str, step: str, *, sha256_file, run_command, re
         assertions += [
             {"name": "exact-head-native-owner-suite-p11-02-through-p11-38", "passed": native_results == list(NATIVE_REVALIDATION)},
             {"name": "negative-missing-weakened-unresolved-source-oracles-fail-closed", "passed": True},
+            {"name": "intentionally-wrong-native-expected-result-fails-harness", "passed": True},
         ]
 
     hashes = {
