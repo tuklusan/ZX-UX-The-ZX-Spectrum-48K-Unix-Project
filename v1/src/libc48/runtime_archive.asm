@@ -130,4 +130,3 @@ p1123_libc48_io_names:
     db "read_full",0
     db "write_full",0
     ENDM
-
