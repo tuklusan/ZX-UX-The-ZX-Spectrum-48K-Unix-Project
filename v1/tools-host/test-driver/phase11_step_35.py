@@ -145,7 +145,7 @@ p1135_source_end:
 
 p1135_user_obj: defs 192,$CC
 p1135_bad_source:
-    db "int Main(void){puts(",34,"hello",34,");return 0;}"
+    db "int Main(void)",123,"puts(",34,"hello",34,");return 0;",125
 p1135_bad_source_end:
 
 p1135_users: db 10
