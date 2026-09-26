@@ -38,9 +38,9 @@ jobs:
           git diff --name-only "$P1141_BASE" HEAD | sort > /tmp/changed
           printf '%s\n' \
             .github/workflows/p1141-qualification.yml \
-            v1/src/shell/sh.asm \
+            v1/docs/c48.md \
             v1/src/tools/cc.asm \
-            v1/tools-host/test-driver/phase11_step_40.py | sort > /tmp/expected
+            v1/tools-host/test-driver/phase11_step_41.py | sort > /tmp/expected
           diff -u /tmp/expected /tmp/changed
           git diff --check "$P1141_BASE" HEAD
           test -z "$(git status --porcelain)"
@@ -50,7 +50,7 @@ jobs:
           baseline=""
           tree="$(git rev-parse 'HEAD^{tree}')"
           for scan in 1 2 3; do
-            python3 -m py_compile v1/tools-host/test-driver/phase11_step_40.py
+            python3 -m py_compile v1/tools-host/test-driver/phase11_step_41.py
             find . -type d -name __pycache__ -prune -exec rm -rf {} +
             ./tools/check_license_headers.sh
             ./tools/check_project_policy.py
@@ -58,12 +58,12 @@ jobs:
             test -z "$(git status --porcelain)"
             test "$(git rev-parse 'HEAD^{tree}')" = "$tree"
             digest="$(sha256sum \
-              v1/src/shell/sh.asm \
+              v1/docs/c48.md \
               v1/src/tools/cc.asm \
-              v1/tools-host/test-driver/phase11_step_40.py \
+              v1/tools-host/test-driver/phase11_step_41.py \
               .github/workflows/p1141-qualification.yml \
-              v1/dist/certification/P11.39.build.json \
-              v1/dist/certification/P11.39.test.json | sha256sum | awk '{print $1}')"
+              v1/dist/certification/P11.40.build.json \
+              v1/dist/certification/P11.40.test.json | sha256sum | awk '{print $1}')"
             if test -z "$baseline"; then baseline="$digest"; else test "$baseline" = "$digest"; fi
           done
       - name: Mandatory authority and prerequisite gates
