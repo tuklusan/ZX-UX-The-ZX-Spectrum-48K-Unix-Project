@@ -1,0 +1,108 @@
+{
+  "action": "test",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "ten-required-public-process-environment-symbols-present",
+      "passed": true
+    },
+    {
+      "name": "all-kernel-calls-use-symbolic-syscall-include",
+      "passed": true
+    },
+    {
+      "name": "sleep-widens-u16-to-exact-u32-kernel-record",
+      "passed": true
+    },
+    {
+      "name": "getcwd-translates-c48-second-argument-to-bc-capacity",
+      "passed": true
+    },
+    {
+      "name": "getenv-reads-captured-immutable-env1-in-place",
+      "passed": true
+    },
+    {
+      "name": "no-host-posix-or-raw-syscall-number-substitution",
+      "passed": true
+    },
+    {
+      "name": "fuse-every-required-wrapper-executes-through-native-gateway",
+      "passed": true
+    },
+    {
+      "name": "fuse-unset-and-missing-getenv-return-null",
+      "passed": true
+    },
+    {
+      "name": "fuse-getenv-path-and-empty-values-return-env1-pointers",
+      "passed": true
+    },
+    {
+      "name": "fuse-cwd-buffer-capacity-and-nul-contract-exact",
+      "passed": true
+    },
+    {
+      "name": "fuse-spawn-wait-kill-register-contracts-exact",
+      "passed": true
+    },
+    {
+      "name": "fuse-exact-errno-propagation",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1122-syscall.sym",
+        "p1122-syscall.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 6,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 970 lines, work time: 0.004 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-fuse-cf0gs1to/fixture.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 64,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p1122-main.bin": "a99b595cc20549520ebbc64b1b602e19ae4614a27084b884aace9cdd3df5b888",
+    "v1/dist/certification/P11.21.build.json": "318084f6abaee22b2bb7e7430ee02a905eeaa4545de61f2a9955d35c712d6c69",
+    "v1/dist/certification/P11.21.test.json": "21a2c929512f0e54c3f4cb3af3a8cdcdd46af1daa9ac79b2ee7a4b000093f43f",
+    "v1/src/libc48/syscall.asm": "dbed456b73e1a10b98f013cac13fd5f9ce6032a890442d85a533f1e3ac0cbaf2",
+    "v1/tools-host/test-driver/phase11_step_22.py": "0b378c79d31c0dde05fac6f5825b3072a3102cb2ab5b5b13fae640b9d197eb6e"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.21": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "382eed5af90464a84f92fccde63823fede3f9f36",
+  "status": "PASS",
+  "step": "P11.22",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
