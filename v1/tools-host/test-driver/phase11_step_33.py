@@ -255,7 +255,7 @@ p1133_runtime_search:
     ld bc,6
     call cc_block_buffer
     jp nz,p1133_fail
-    ld de,p1133_search-1
+    ld de,p1133_search+4
     or a
     sbc hl,de
     jp nz,p1133_fail
