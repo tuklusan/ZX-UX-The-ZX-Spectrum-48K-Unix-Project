@@ -32,7 +32,10 @@ def require(ok, message):
 
 
 def _db(data: bytes) -> str:
-    return ",".join(f"$"+format(b, "02X") for b in data)
+    chunks = [data[i:i+24] for i in range(0, len(data), 24)]
+    return "\n    db ".join(
+        ",".join("$"+format(b, "02X") for b in chunk) for chunk in chunks
+    )
 
 
 def _crc16(data: bytes) -> int:
