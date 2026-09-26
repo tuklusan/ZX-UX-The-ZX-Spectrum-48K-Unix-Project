@@ -165,6 +165,7 @@ p1137_build_sizes:
     ld de,p1137_sizes
     ld b,3
 p1137_size_loop:
+    push bc
     ld l,(ix+0)
     ld h,(ix+1)
     push hl
@@ -189,6 +190,7 @@ p1137_size_loop:
     inc de
     inc ix
     inc ix
+    pop bc
     djnz p1137_size_loop
     xor a
     ret
