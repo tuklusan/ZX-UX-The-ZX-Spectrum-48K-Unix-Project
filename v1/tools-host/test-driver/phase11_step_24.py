@@ -197,11 +197,11 @@ p1124_stdio:
     call p1124_check_word
     ret c
     ld a,(p1124_outlen)
-    cp 4
+    cp 5
     jp nz,p1124_fail
     ld hl,p1124_out
     ld de,p1124_stdio_expected
-    ld b,4
+    ld b,5
 p1124_stdio_cmp:
     ld a,(de)
     cp (hl)
