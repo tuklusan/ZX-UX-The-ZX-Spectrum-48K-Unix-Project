@@ -40,6 +40,7 @@ jobs:
             .github/workflows/p1135-qualification.yml \
             v1/src/demos/hello.c \
             v1/src/libc48/runtime_archive.asm \
+            v1/src/tools/cc.asm \
             v1/tests/compiler/p1135-source-map.json \
             v1/tools-host/test-driver/phase11_step_35.py | sort > /tmp/expected
           diff -u /tmp/expected /tmp/changed

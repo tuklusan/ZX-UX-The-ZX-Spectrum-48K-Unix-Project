@@ -38,14 +38,6 @@ def _db(data: bytes) -> str:
     )
 
 
-def _crc16(data: bytes) -> int:
-    crc = 0xFFFF
-    for byte in data:
-        crc ^= byte << 8
-        for _ in range(8):
-            crc = (((crc << 1) ^ 0x1021) & 0xFFFF) if crc & 0x8000 else ((crc << 1) & 0xFFFF)
-    return crc
-
 
 def dispatch(root, action, step, *, sha256_file, run_command, require_project_tool):
     if step != "P11.35":
@@ -77,8 +69,13 @@ def dispatch(root, action, step, *, sha256_file, run_command, require_project_to
     require("#include" not in text, "P11.35 canonical hello unexpectedly requires a physical header")
     require("hello.c" in arch and "target-native" in arch and "OBJ1" in arch,
             "REV17 target-native lifecycle acceptance contract drift")
-    require("MACRO EMIT_P11_CC_REGCALL" in cc and "MACRO EMIT_P1128_CC_OBJ1_WRITER" in cc,
-            "native cc emission/OBJ1 prerequisites missing")
+    require("MACRO EMIT_P1135_CC_NATIVE_COMPILER" in cc
+            and "cc_p1135_compile:" in cc
+            and "MACRO EMIT_P11_CC_LEXER" in cc
+            and "MACRO EMIT_P11_CC_LITERALS" in cc
+            and "MACRO EMIT_P11_CC_REGCALL" in cc
+            and "MACRO EMIT_P1128_CC_OBJ1_WRITER" in cc,
+            "native cc integrated source-to-OBJ1 path missing")
     require("MACRO EMIT_P10_LD_ARCHIVE_SELECT_ROUTINES" in ld
             and "MACRO EMIT_P10_LD_MEX1_WRITER_ROUTINES" in ld,
             "native ld archive/MEX prerequisites missing")
@@ -103,7 +100,6 @@ def dispatch(root, action, step, *, sha256_file, run_command, require_project_to
     build = root / "v1/build"
     build.mkdir(parents=True, exist_ok=True)
     fixture = build / "p1135-lifecycle.asm"
-    source_crc = _crc16(source)
     fixture.write_text(f'''    DEVICE ZXSPECTRUM48
     INCLUDE "../include/zx48ux.inc"
     INCLUDE "../src/tools/cc.asm"
@@ -120,9 +116,13 @@ CC_TYPE_USHORT EQU 4
 CC_TYPE_INT   EQU 5
 CC_TYPE_UINT  EQU 6
 CC_TYPE_FLOAT EQU 7
+CC_IDENT_MAX  EQU 15
 p1135_start:
+    EMIT_P11_CC_LEXER
+    EMIT_P11_CC_LITERALS
     EMIT_P11_CC_REGCALL
     EMIT_P1128_CC_OBJ1_WRITER
+    EMIT_P1135_CC_NATIVE_COMPILER
     EMIT_P1129_CC_TRANSACTION_ROUTINES
     EMIT_P10_LD_ARCHIVE_SELECT_ROUTINES
     EMIT_P10_LD_LAYOUT_ROUTINES
@@ -143,23 +143,10 @@ p1135_source:
     db {_db(source)}
 p1135_source_end:
 
-p1135_user_text: defs 32,0
-p1135_user_symbols:
-    db "main",0,0,0,0,0,0,0,0,0,0,0,0
-    dw 0
-    db 1,1
-    db "puts",0,0,0,0,0,0,0,0,0,0,0,0
-    dw 0
-    db 0,1
-    db "msg",0,0,0,0,0,0,0,0,0,0,0,0,0
-    dw 10
-    db 1,1
-p1135_user_relocs:
-    dw 1,2
-    db 1,0
-    dw 4,1
-    db 1,0
 p1135_user_obj: defs 192,$CC
+p1135_bad_source:
+    db "int Main(void){puts(",34,"hello",34,");return 0;}"
+p1135_bad_source_end:
 
 p1135_users: db 10
 p1135_expected_order: db 0,10,2,3,1
@@ -220,210 +207,17 @@ p1135_wrong_case:
     xor a
     ret
 
-; Diagnostic contracts are target-native too; each isolates one compile stage.
-p1135_obj_setup:
-    ld hl,p1135_user_text
-    ld (cc_obj1_text_ptr),hl
-    ld hl,16
-    ld (cc_obj1_text_size),hl
-    ld hl,0
-    ld (cc_obj1_bss_size),hl
-    ld hl,p1135_user_symbols
-    ld (cc_obj1_symbol_ptr),hl
-    ld hl,3
-    ld (cc_obj1_symbol_count),hl
-    ld hl,p1135_user_relocs
-    ld (cc_obj1_reloc_ptr),hl
-    ld hl,2
-    ld (cc_obj1_reloc_count),hl
-    ld hl,p1135_user_obj
-    ld (cc_obj1_output_ptr),hl
-    ld hl,192
-    ld (cc_obj1_output_capacity),hl
-    xor a
-    ret
-
-p1135_symbol_diag:
-    call p1135_obj_setup
-    call cc_obj1_validate_symbols
-    ret
-
-p1135_reloc_diag:
-    call p1135_obj_setup
-    call cc_obj1_validate_relocs
-    ret
-
-p1135_writer_diag:
-    call p1135_obj_setup
-    call cc_obj1_write
-    ret c
-    ld a,(cc_obj1_commit_marker)
-    cp CC_OBJ1_COMMITTED
+p1135_compile_bad:
+    ld hl,p1135_bad_source
+    ld bc,p1135_bad_source_end-p1135_bad_source
+    ld de,p1135_user_obj
+    ld ix,192
+    call cc_p1135_compile
+    jp nc,p1135_fail
+    cp E_FORMAT
     jp nz,p1135_fail
     xor a
     ret
-
-p1135_crc_diag:
-    ld hl,p1135_source
-    ld bc,p1135_source_end-p1135_source
-    call cc_obj1_crc16
-    ld hl,{source_crc}
-    or a
-    sbc hl,de
-    jp nz,p1135_fail
-    xor a
-    ret
-
-p1135_regcall_diag:
-    call cc_regcall_reset
-    ld bc,0
-    ld d,CC_REGCALL_KIND_WORD
-    xor a
-    call cc_regcall_set_arg
-    ret c
-    ld hl,0
-    ld a,1
-    call cc_regcall_emit_call
-    ret c
-    ld a,(cc_regcall_len)
-    cp 6
-    jp nz,p1135_fail
-    xor a
-    ret
-
-p1135_literal_diag:
-    ld hl,p1135_source
-    ld bc,p1135_source_end-p1135_source
-p1135_diag_quote_scan:
-    ld a,b
-    or c
-    jp z,p1135_fail
-    ld a,(hl)
-    inc hl
-    dec bc
-    cp 34
-    jr nz,p1135_diag_quote_scan
-    ld de,p1135_expected_literal
-    ld b,5
-p1135_diag_literal_loop:
-    ld a,(de)
-    cp (hl)
-    jp nz,p1135_fail
-    inc de
-    inc hl
-    djnz p1135_diag_literal_loop
-    ld a,(hl)
-    cp 34
-    jp nz,p1135_fail
-    xor a
-    ret
-p1135_expected_literal: db "hello"
-
-; Native golden compiler. It consumes every source byte through the same CRC16
-; primitive used by the OBJ1 writer, extracts the string literal on target,
-; uses C48_REGCALL emission for puts(), then serializes a real relocatable OBJ1.
-p1135_compile:
-    ld hl,p1135_source
-    ld bc,p1135_source_end-p1135_source
-    call cc_obj1_crc16
-    ld hl,{source_crc}
-    or a
-    sbc hl,de
-    jp nz,p1135_fail
-
-    call cc_regcall_reset
-    ld bc,0
-    ld d,CC_REGCALL_KIND_WORD
-    xor a
-    call cc_regcall_set_arg
-    ret c
-    ld hl,0
-    ld a,1
-    call cc_regcall_emit_call
-    ret c
-    ld a,(cc_regcall_len)
-    cp 6
-    jp nz,p1135_fail
-    ld hl,cc_regcall_buffer
-    ld de,p1135_user_text
-    ld bc,6
-    ldir
-    ld hl,p1135_user_text+6
-    ld (hl),$21
-    inc hl
-    xor a
-    ld (hl),a
-    inc hl
-    ld (hl),a
-    inc hl
-    ld (hl),$C9
-
-    ; Extract the first quoted source string into text+10 and require exactly 5.
-    ld hl,p1135_source
-    ld bc,p1135_source_end-p1135_source
-p1135_quote_scan:
-    ld a,b
-    or c
-    jp z,p1135_fail
-    ld a,(hl)
-    inc hl
-    dec bc
-    cp 34
-    jr nz,p1135_quote_scan
-    ld de,p1135_user_text+10
-    ld a,5
-p1135_literal_loop:
-    push af
-    ld a,b
-    or c
-    jp z,p1135_literal_bad_pop
-    ld a,(hl)
-    cp 34
-    jp z,p1135_literal_bad_pop
-    ld (de),a
-    inc de
-    inc hl
-    dec bc
-    pop af
-    dec a
-    jr nz,p1135_literal_loop
-    ld a,b
-    or c
-    jp z,p1135_fail
-    ld a,(hl)
-    cp 34
-    jp nz,p1135_fail
-    xor a
-    ld (de),a
-
-    ld hl,p1135_user_text
-    ld (cc_obj1_text_ptr),hl
-    ld hl,16
-    ld (cc_obj1_text_size),hl
-    ld hl,0
-    ld (cc_obj1_bss_size),hl
-    ld hl,p1135_user_symbols
-    ld (cc_obj1_symbol_ptr),hl
-    ld hl,3
-    ld (cc_obj1_symbol_count),hl
-    ld hl,p1135_user_relocs
-    ld (cc_obj1_reloc_ptr),hl
-    ld hl,2
-    ld (cc_obj1_reloc_count),hl
-    ld hl,p1135_user_obj
-    ld (cc_obj1_output_ptr),hl
-    ld hl,192
-    ld (cc_obj1_output_capacity),hl
-    call cc_obj1_write
-    ret c
-    ld a,(cc_obj1_commit_marker)
-    cp CC_OBJ1_COMMITTED
-    jp nz,p1135_fail
-    xor a
-    ret
-p1135_literal_bad_pop:
-    pop af
-    jp p1135_fail
 
 p1135_check_archive_order:
     ld a,LD_P1023_NEED_PUTS|LD_P1023_NEED_EXIT
@@ -698,8 +492,16 @@ p1135_stdout_cmp:
 p1135_compile_stage:
     call p1135_names
     ret c
-    call p1135_compile
+    ld hl,p1135_source
+    ld bc,p1135_source_end-p1135_source
+    ld de,p1135_user_obj
+    ld ix,192
+    call cc_p1135_compile
     ret c
+    ld de,0
+    or a
+    sbc hl,de
+    jp z,p1135_fail
     xor a
     ret
 
@@ -773,14 +575,15 @@ p1135_gateway_end:
     require(0 < len(main) <= 0x5000, f"P11.35 native fixture too large: {len(main)}")
     syms = phase3_open_descriptions._symbols(
         build / "p1135-lifecycle.sym",
-        ("p1135_names", "p1135_crc_diag", "p1135_regcall_diag", "p1135_literal_diag", "p1135_symbol_diag", "p1135_reloc_diag", "p1135_writer_diag", "p1135_compile_stage", "p1135_link_stage", "p1135_lifecycle", "p1135_wrong_case")
+        ("p1135_compile_bad", "p1135_compile_stage", "p1135_link_stage", "p1135_lifecycle", "p1135_wrong_case")
     )
 
     assertions = [
         {"name": "canonical-hello-source-frozen", "passed": True},
         {"name": "pinned-sdk-reference-result-recorded", "passed": True},
         {"name": "rev17-over-sdk-built-in-puts-resolution-recorded", "passed": True},
-        {"name": "native-cc-emits-relocatable-obj1-on-target", "passed": True},
+        {"name": "native-cc-parses-source-and-emits-relocatable-obj1-on-target", "passed": True},
+        {"name": "native-cc-rejects-wrong-case-main-token", "passed": True},
         {"name": "native-ld-selects-built-in-archive-fixed-point", "passed": True},
         {"name": "native-ld-writes-mex1-on-target", "passed": True},
         {"name": "host-does-not-compile-or-link-hello", "passed": True},
@@ -792,7 +595,7 @@ p1135_gateway_end:
             ram[0x4000-0x4000:0x4000-0x4000+len(main)] = main
             ram[0xE000-0x4000:0xE000-0x4000+len(gateway)] = gateway
 
-        for name in ("p1135_names", "p1135_crc_diag", "p1135_regcall_diag", "p1135_literal_diag", "p1135_symbol_diag", "p1135_reloc_diag", "p1135_writer_diag", "p1135_compile_stage", "p1135_link_stage", "p1135_lifecycle", "p1135_wrong_case"):
+        for name in ("p1135_compile_bad", "p1135_compile_stage", "p1135_link_stage", "p1135_lifecycle", "p1135_wrong_case"):
             code = (b"\xF3" + phase1._ld_sp(0xBFC0) + phase1._call(syms[name])
                     + phase1._jp_c(FAIL_PC) + phase1._jp(PASS_PC))
             try:
