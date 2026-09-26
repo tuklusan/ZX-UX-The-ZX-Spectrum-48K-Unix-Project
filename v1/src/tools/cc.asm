@@ -6591,9 +6591,11 @@ cc_p1129_unique_advance:
     jp cc_p1129_unique_outer
 
 cc_p1129_bound:
+    push hl
     ld de,CC_P1129_MAX_STORED+1
     or a
     sbc hl,de
+    pop hl
     jp c,cc_p1129_bound_ok
     scf
     ret
