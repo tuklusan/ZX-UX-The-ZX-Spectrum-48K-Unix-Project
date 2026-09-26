@@ -198,8 +198,11 @@ free:
     ret z
     ld a,(c48_heap_ready)
     or a
-    call z,c48_heap_init_linker
-
+    jr nz,c48_free_ready
+    push hl
+    call c48_heap_init_linker
+    pop hl
+c48_free_ready:
     ld de,C48_HEAP_HEADER_SIZE
     or a
     sbc hl,de
