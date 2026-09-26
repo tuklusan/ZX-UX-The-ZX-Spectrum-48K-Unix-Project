@@ -99,7 +99,6 @@ def dispatch(root, action, step, *, sha256_file, run_command, require_project_to
     golden_asm = ",".join("$" + f"{byte:02X}" for byte in golden)
     fixture.write_text(f"""    DEVICE ZXSPECTRUM48
     INCLUDE "../include/zx48ux.inc"
-    INCLUDE "../include/obj1.inc"
     INCLUDE "../src/tools/cc.asm"
     ORG $C000
 p1128_start:
