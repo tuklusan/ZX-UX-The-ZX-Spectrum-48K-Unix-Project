@@ -1,0 +1,92 @@
+{
+  "action": "test",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "golden-leaf-return-documented-z80",
+      "passed": true
+    },
+    {
+      "name": "golden-ix-frame-documented-z80",
+      "passed": true
+    },
+    {
+      "name": "golden-regcall-three-documented-z80",
+      "passed": true
+    },
+    {
+      "name": "golden-regcall-stack-documented-z80",
+      "passed": true
+    },
+    {
+      "name": "golden-local-control-documented-z80",
+      "passed": true
+    },
+    {
+      "name": "golden-bit-rotate-documented-z80",
+      "passed": true
+    },
+    {
+      "name": "golden-wide-and-block-documented-z80",
+      "passed": true
+    },
+    {
+      "name": "golden-ix-memory-documented-z80",
+      "passed": true
+    },
+    {
+      "name": "negative-sll-rejected",
+      "passed": true
+    },
+    {
+      "name": "negative-ixh-rejected",
+      "passed": true
+    },
+    {
+      "name": "negative-iy-rejected",
+      "passed": true
+    },
+    {
+      "name": "negative-exx-rejected",
+      "passed": true
+    },
+    {
+      "name": "negative-ex-af-alt-rejected",
+      "passed": true
+    },
+    {
+      "name": "negative-ed-neg-alias-rejected",
+      "passed": true
+    },
+    {
+      "name": "negative-indexed-result-alias-rejected",
+      "passed": true
+    },
+    {
+      "name": "negative-indexed-sll-rejected",
+      "passed": true
+    },
+    {
+      "name": "negative-truncated-call-rejected",
+      "passed": true
+    }
+  ],
+  "commands": [],
+  "hashes": {
+    "v1/dist/certification/P11.29.build.json": "fcc033d801166815a1e1c743aea8468e851f7918baecfa944a956ea820823e90",
+    "v1/dist/certification/P11.29.test.json": "cb8382f20e8404c49a28f294ee40b40c75afbc7437ed3ea57348378728387ea8",
+    "v1/src/tools/cc.asm": "97020642f3b86e1aaf32c29c7aab836ea7d63cbb7a559fd6a6a8919e49d9a467",
+    "v1/tests/compiler/as-opcode-inventory": "9052d2f727116ab9d332b32b86683c14f0cda3b4ef11445a8e1d1f5aed7a9f9b",
+    "v1/tools-host/test-driver/phase11_step_30.py": "0fd136c51a4ba0970009d4340d4725843e31d71705c57b0d1db9a0f10c074682"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.29": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "a028492a85579dad0d3a58cade6e84b387928766",
+  "status": "PASS",
+  "step": "P11.30",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
