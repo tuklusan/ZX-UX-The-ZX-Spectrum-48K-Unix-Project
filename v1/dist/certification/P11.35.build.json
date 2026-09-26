@@ -1,0 +1,77 @@
+{
+  "action": "build",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "canonical-hello-source-frozen",
+      "passed": true
+    },
+    {
+      "name": "pinned-sdk-reference-result-recorded",
+      "passed": true
+    },
+    {
+      "name": "rev17-over-sdk-built-in-puts-resolution-recorded",
+      "passed": true
+    },
+    {
+      "name": "native-cc-parses-source-and-emits-relocatable-obj1-on-target",
+      "passed": true
+    },
+    {
+      "name": "native-cc-rejects-wrong-case-main-token",
+      "passed": true
+    },
+    {
+      "name": "native-ld-selects-built-in-archive-fixed-point",
+      "passed": true
+    },
+    {
+      "name": "native-ld-writes-mex1-on-target",
+      "passed": true
+    },
+    {
+      "name": "host-does-not-compile-or-link-hello",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1135-lifecycle.sym",
+        "p1135-lifecycle.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 34,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 15291 lines, work time: 0.033 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/ld.asm": "c182b44e26c8c4e5cc2c1d48e1a899a9fd0836180d4b4dee1d8ceccfa2109189",
+    "v1/build/p1135-gateway.bin": "41c0ad0e55768815cbe9e687414214b509a7bdd407cf9b90d695e67d298b09cb",
+    "v1/build/p1135-main.bin": "403b460928aff35df8e26a199845f0c3f415bd4802829bf0ea48a3fc050993a5",
+    "v1/dist/certification/P11.34.build.json": "f7f76cab32bb528f14493375b519ea13bfde83723f06589b17f13c69d39b702a",
+    "v1/dist/certification/P11.34.test.json": "bf38051daafe254477b471c8804d7fe6f821c4b0a8f05205f07a99d959818851",
+    "v1/src/demos/hello.c": "01638e6fa7d7d5e0e491d97cf6dc9ab8464a53d34fc469f8e6268b07a80a28db",
+    "v1/src/libc48/crt0.asm": "182375ec57e2af8d5f4eccbb2adb97212753ea16733fc3952f1a402388fee621",
+    "v1/src/libc48/runtime_archive.asm": "b63209a75ea554712a2d0116f76423f1e6022af456babcce3aa3458fd955605a",
+    "v1/src/tools/cc.asm": "d55a99680f29e94eaa2651202aa11858d88de4b00071a4ee09a1e4f061376ec4",
+    "v1/tests/compiler/p1135-source-map.json": "cc9a5f4e8ea1776cefa2a64a6532686d6f3253e4646bd20c61eb6db706bf3fc3",
+    "v1/tools-host/test-driver/phase11_step_35.py": "1b27fb1f1396ee20b3e0a2c799f176e7b1991f25d90050312d4644319d7d08b3"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.34": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "6c423d5ddae6a45b3999300fd019c51bca90c660",
+  "status": "PASS",
+  "step": "P11.35",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
