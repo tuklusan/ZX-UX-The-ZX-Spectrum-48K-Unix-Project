@@ -197,7 +197,7 @@ def dispatch(root, action, step, *, sha256_file, run_command, require_project_to
             and "second library/header tape" in plan and "physical" in plan,
             "REV08 P11.41 contract drift")
     require("Minimum C48 runtime:" in arch and "C48_REGCALL" in arch
-            and "float argument is a pointer to caller-owned five-byte storage" in arch,
+            and "A C48 `float` argument is passed as a 16-bit pointer to a caller-owned five-byte" in arch,
             "REV17 P11.41 ABI/runtime authority drift")
     require("P11.41 built-in" in doc and "c48.h" in doc
             and "free(void*);" in doc and "float pow(float,float);" in doc
