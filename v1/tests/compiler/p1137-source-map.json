@@ -1,0 +1,38 @@
+{
+  "license_header": [
+    "Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.",
+    "Proprietary rights reserved except as expressly licensed herein.",
+    "ZX-UX Sinclair ZX Spectrum Unix",
+    "This file is governed by the SANYALnet Labs Non-Commercial License in the root LICENSE file.",
+    "Non-Commercial use is permitted; Commercial Use and use for AI/ML model training are prohibited unless separately authorized.",
+    "Attribution is required: Based on original work by Supratim Sanyal of SANYALnet Labs.",
+    "See LICENSE for full terms, warranty disclaimer, termination, patent, trademark, and governing-law provisions."
+  ],
+  "schema": 1,
+  "step": "P11.37",
+  "sdk_commit": "84d144de2721cda5075c3a6610a422663b5e2f77",
+  "sources": [
+    {
+      "path": "v1/src/demos/pipe.c",
+      "sdk_reference": {
+        "result": "REJECT",
+        "category": "declaration-error",
+        "detail": "undeclared identifiers 'pipe' and 'write' without a host SDK declaration header",
+        "basis": [
+          "compiler/c48/semantics.py rejects undeclared identifiers",
+          "REV17 target C48 runtime surface provides pipe/write"
+        ]
+      },
+      "authority_resolution": "REV17/REV08 target-native process/pipe API contract wins for the shipped target demo; the pinned SDK remains the language/reference oracle.",
+      "target_native": {
+        "required_result": "PASS",
+        "compiler": "cc_p1137_compile",
+        "lifecycle": "C source bytes -> target-native cc -> OBJ1(TEXT+BSS+relocs) -> target-native ld -> MEX1 -> execute under the real ZX-UX kernel",
+        "expected_return": 256,
+        "expected_pipe_bytes_used": 256,
+        "bounded_write_request": 300,
+        "broken_pipe_errno": 9
+      }
+    }
+  ]
+}

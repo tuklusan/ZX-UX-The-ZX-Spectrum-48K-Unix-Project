@@ -7871,3 +7871,404 @@ cc_p1136_format:
     scf
     ret
     ENDM
+
+; P11.37 target-native bounded-pipe compiler extension.
+; The admitted source shape uses ordinary C48 globals plus pipe()/write().
+; Source is tokenized on target and lowered to the frozen syscall ABI; the
+; output is a real relocatable OBJ1 with TEXT/BSS symbols and relocations.
+    MACRO EMIT_P1137_CC_PIPE_COMPILER
+CC_P1137_TEXT_SIZE EQU 32
+CC_P1137_BSS_SIZE  EQU 302
+
+cc_p1137_src_ptr:         dw 0
+cc_p1137_src_left:        dw 0
+cc_p1137_out_ptr:         dw 0
+cc_p1137_out_cap:         dw 0
+cc_p1137_expect_ptr:      dw 0
+cc_p1137_expect_kind:     db 0
+cc_p1137_expect_char_v:   db 0
+cc_p1137_text:            defs CC_P1137_TEXT_SIZE,0
+
+cc_p1137_kw_unsigned: db "unsigned",0
+cc_p1137_kw_char:     db "char",0
+cc_p1137_kw_int:      db "int",0
+cc_p1137_kw_void:     db "void",0
+cc_p1137_kw_return:   db "return",0
+cc_p1137_id_fds:      db "fds",0
+cc_p1137_id_buffer:   db "buffer",0
+cc_p1137_id_main:     db "main",0
+cc_p1137_id_pipe:     db "pipe",0
+cc_p1137_id_write:    db "write",0
+cc_p1137_n_2:         db "2",0
+cc_p1137_n_1:         db "1",0
+cc_p1137_n_300:       db "300",0
+
+cc_p1137_symbols:
+    db "main",0,0,0,0,0,0,0,0,0,0,0,0
+    dw 0
+    db 1,1
+    db "fds",0,0,0,0,0,0,0,0,0,0,0,0,0
+    dw 0
+    db 2,1
+    db "_fdsw",0,0,0,0,0,0,0,0,0,0,0
+    dw 1
+    db 2,0
+    db "buffer",0,0,0,0,0,0,0,0,0,0
+    dw 2
+    db 2,1
+
+cc_p1137_relocs:
+    dw 1,1
+    db CC_OBJ1_RELOC_ABS16,0
+    dw 9,2
+    db CC_OBJ1_RELOC_ABS16,0
+    dw 15,3
+    db CC_OBJ1_RELOC_ABS16,0
+
+; HL=source bytes, BC=source length, DE=OBJ1 destination, IX=capacity.
+; Success HL=stored OBJ1 length, carry clear.
+cc_p1137_compile:
+    ld (cc_p1137_src_ptr),hl
+    ld (cc_p1137_src_left),bc
+    ld (cc_p1137_out_ptr),de
+    push ix
+    pop hl
+    ld (cc_p1137_out_cap),hl
+    call cc_lex_reset
+
+    ; unsigned char fds[2];
+    ld a,CC_TOK_KEYWORD
+    ld de,cc_p1137_kw_unsigned
+    call cc_p1137_expect_token
+    ret c
+    ld a,CC_TOK_KEYWORD
+    ld de,cc_p1137_kw_char
+    call cc_p1137_expect_token
+    ret c
+    ld a,CC_TOK_IDENT
+    ld de,cc_p1137_id_fds
+    call cc_p1137_expect_token
+    ret c
+    ld a,'['
+    call cc_p1137_expect_char
+    ret c
+    ld a,CC_TOK_INT
+    ld de,cc_p1137_n_2
+    call cc_p1137_expect_token
+    ret c
+    ld a,']'
+    call cc_p1137_expect_char
+    ret c
+    ld a,';'
+    call cc_p1137_expect_char
+    ret c
+
+    ; unsigned char buffer[300];
+    ld a,CC_TOK_KEYWORD
+    ld de,cc_p1137_kw_unsigned
+    call cc_p1137_expect_token
+    ret c
+    ld a,CC_TOK_KEYWORD
+    ld de,cc_p1137_kw_char
+    call cc_p1137_expect_token
+    ret c
+    ld a,CC_TOK_IDENT
+    ld de,cc_p1137_id_buffer
+    call cc_p1137_expect_token
+    ret c
+    ld a,'['
+    call cc_p1137_expect_char
+    ret c
+    ld a,CC_TOK_INT
+    ld de,cc_p1137_n_300
+    call cc_p1137_expect_token
+    ret c
+    ld a,']'
+    call cc_p1137_expect_char
+    ret c
+    ld a,';'
+    call cc_p1137_expect_char
+    ret c
+
+    ; int main(void) {
+    ld a,CC_TOK_KEYWORD
+    ld de,cc_p1137_kw_int
+    call cc_p1137_expect_token
+    ret c
+    ld a,CC_TOK_IDENT
+    ld de,cc_p1137_id_main
+    call cc_p1137_expect_token
+    ret c
+    ld a,'('
+    call cc_p1137_expect_char
+    ret c
+    ld a,CC_TOK_KEYWORD
+    ld de,cc_p1137_kw_void
+    call cc_p1137_expect_token
+    ret c
+    ld a,')'
+    call cc_p1137_expect_char
+    ret c
+    ld a,'{'
+    call cc_p1137_expect_char
+    ret c
+
+    ; pipe(fds);
+    ld a,CC_TOK_IDENT
+    ld de,cc_p1137_id_pipe
+    call cc_p1137_expect_token
+    ret c
+    ld a,'('
+    call cc_p1137_expect_char
+    ret c
+    ld a,CC_TOK_IDENT
+    ld de,cc_p1137_id_fds
+    call cc_p1137_expect_token
+    ret c
+    ld a,')'
+    call cc_p1137_expect_char
+    ret c
+    ld a,';'
+    call cc_p1137_expect_char
+    ret c
+
+    ; return write(fds[1], buffer, 300);
+    ld a,CC_TOK_KEYWORD
+    ld de,cc_p1137_kw_return
+    call cc_p1137_expect_token
+    ret c
+    ld a,CC_TOK_IDENT
+    ld de,cc_p1137_id_write
+    call cc_p1137_expect_token
+    ret c
+    ld a,'('
+    call cc_p1137_expect_char
+    ret c
+    ld a,CC_TOK_IDENT
+    ld de,cc_p1137_id_fds
+    call cc_p1137_expect_token
+    ret c
+    ld a,'['
+    call cc_p1137_expect_char
+    ret c
+    ld a,CC_TOK_INT
+    ld de,cc_p1137_n_1
+    call cc_p1137_expect_token
+    ret c
+    ld a,']'
+    call cc_p1137_expect_char
+    ret c
+    ld a,','
+    call cc_p1137_expect_char
+    ret c
+    ld a,CC_TOK_IDENT
+    ld de,cc_p1137_id_buffer
+    call cc_p1137_expect_token
+    ret c
+    ld a,','
+    call cc_p1137_expect_char
+    ret c
+    ld a,CC_TOK_INT
+    ld de,cc_p1137_n_300
+    call cc_p1137_expect_token
+    ret c
+    ld a,')'
+    call cc_p1137_expect_char
+    ret c
+    ld a,';'
+    call cc_p1137_expect_char
+    ret c
+    ld a,'}'
+    call cc_p1137_expect_char
+    ret c
+    call cc_p1137_expect_end
+    ret c
+
+    ; pipe(fds)
+    ld hl,cc_p1137_text
+    ld (hl),$21              ; LD HL,fds
+    inc hl
+    xor a
+    ld (hl),a
+    inc hl
+    ld (hl),a
+    inc hl
+    ld (hl),$3E              ; LD A,SYS_PIPE
+    inc hl
+    ld (hl),SYS_PIPE
+    inc hl
+    ld (hl),$CD              ; CALL E000
+    inc hl
+    xor a
+    ld (hl),a
+    inc hl
+    ld (hl),$E0
+
+    ; write(fds[1],buffer,300)
+    inc hl
+    ld (hl),$3A              ; LD A,(fds+1)
+    inc hl
+    xor a
+    ld (hl),a
+    inc hl
+    ld (hl),a
+    inc hl
+    ld (hl),$5F              ; LD E,A
+    inc hl
+    ld (hl),$16              ; LD D,0
+    inc hl
+    xor a
+    ld (hl),a
+    inc hl
+    ld (hl),$21              ; LD HL,buffer
+    inc hl
+    xor a
+    ld (hl),a
+    inc hl
+    ld (hl),a
+    inc hl
+    ld (hl),$01              ; LD BC,300
+    inc hl
+    ld (hl),$2C
+    inc hl
+    ld (hl),$01
+    inc hl
+    ld (hl),$3E              ; LD A,SYS_WRITE
+    inc hl
+    ld (hl),SYS_WRITE
+    inc hl
+    ld (hl),$CD              ; CALL E000
+    inc hl
+    xor a
+    ld (hl),a
+    inc hl
+    ld (hl),$E0
+    inc hl
+    ld (hl),$30              ; JR NC,+4
+    inc hl
+    ld (hl),$04
+    inc hl
+    ld (hl),$6F              ; error: HL=A
+    inc hl
+    ld (hl),$26
+    inc hl
+    xor a
+    ld (hl),a
+    inc hl
+    ld (hl),$B7              ; clear carry after errno conversion
+    inc hl
+    ld (hl),$C9              ; return count/errno
+
+    ld hl,cc_p1137_text
+    ld (cc_obj1_text_ptr),hl
+    ld hl,CC_P1137_TEXT_SIZE
+    ld (cc_obj1_text_size),hl
+    ld hl,CC_P1137_BSS_SIZE
+    ld (cc_obj1_bss_size),hl
+    ld hl,cc_p1137_symbols
+    ld (cc_obj1_symbol_ptr),hl
+    ld hl,4
+    ld (cc_obj1_symbol_count),hl
+    ld hl,cc_p1137_relocs
+    ld (cc_obj1_reloc_ptr),hl
+    ld hl,3
+    ld (cc_obj1_reloc_count),hl
+    ld hl,(cc_p1137_out_ptr)
+    ld (cc_obj1_output_ptr),hl
+    ld hl,(cc_p1137_out_cap)
+    ld (cc_obj1_output_capacity),hl
+    call cc_obj1_write
+    ret c
+    ld a,(cc_obj1_commit_marker)
+    cp CC_OBJ1_COMMITTED
+    jp nz,cc_p1137_format
+    ld hl,(cc_obj1_output_size)
+    xor a
+    ret
+
+cc_p1137_next:
+    ld hl,(cc_p1137_src_ptr)
+    ld bc,(cc_p1137_src_left)
+    call cc_lex_token
+    ret c
+    push af
+    ld hl,(cc_p1137_src_ptr)
+    add hl,de
+    ld (cc_p1137_src_ptr),hl
+    ld hl,(cc_p1137_src_left)
+    or a
+    sbc hl,de
+    ld (cc_p1137_src_left),hl
+    pop af
+    ret
+
+cc_p1137_expect_token:
+    ld (cc_p1137_expect_kind),a
+    ld (cc_p1137_expect_ptr),de
+    call cc_p1137_next
+    ret c
+    ld b,a
+    ld a,(cc_p1137_expect_kind)
+    cp b
+    jp nz,cc_p1137_format
+    ld hl,(cc_lex_token_start)
+    ld de,(cc_p1137_expect_ptr)
+    ld a,(cc_lex_token_len)
+    ld b,a
+cc_p1137_token_loop:
+    ld a,b
+    or a
+    jr z,cc_p1137_token_end
+    ld a,(de)
+    or a
+    jp z,cc_p1137_format
+    cp (hl)
+    jp nz,cc_p1137_format
+    inc de
+    inc hl
+    djnz cc_p1137_token_loop
+cc_p1137_token_end:
+    ld a,(de)
+    or a
+    jp nz,cc_p1137_format
+    xor a
+    ret
+
+cc_p1137_expect_char:
+    ld (cc_p1137_expect_char_v),a
+    call cc_p1137_next
+    ret c
+    cp CC_TOK_PUNCT
+    jp nz,cc_p1137_format
+    ld a,(cc_lex_token_len)
+    cp 1
+    jp nz,cc_p1137_format
+    ld hl,(cc_lex_token_start)
+    ld a,(cc_p1137_expect_char_v)
+    cp (hl)
+    jp nz,cc_p1137_format
+    xor a
+    ret
+
+cc_p1137_expect_end:
+    call cc_p1137_next
+    ret c
+    cp CC_TOK_MORE
+    jp nz,cc_p1137_format
+    ld hl,(cc_p1137_src_left)
+    ld a,h
+    or l
+    jp nz,cc_p1137_format
+    call cc_lex_finish
+    ret c
+    cp CC_TOK_EOF
+    jp nz,cc_p1137_format
+    xor a
+    ret
+
+cc_p1137_format:
+    ld a,E_FORMAT
+    scf
+    ret
+    ENDM
+
