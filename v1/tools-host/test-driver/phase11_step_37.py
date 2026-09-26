@@ -138,6 +138,17 @@ p1137_fail:
 
 p1137_setup_kernel:
     call ZXK_MEMORY_INIT
+    ; The FUSE qualification helper itself extends through 0x68F1 in the
+    ; 0x6000-0xDFFF arena. Reserve its containing 4 KiB before any target
+    ; allocation so the allocator cannot hand live helper bytes to the C image.
+    ld bc,$1000
+    ld a,ALLOC_ANY
+    call ZXK_ALLOC
+    ret c
+    ld de,ARENA_START
+    or a
+    sbc hl,de
+    jp nz,p1137_fail
     call ZXK_PROCESS_INIT
     call ZXK_HANDLES_INIT
     call ZXK_PIPE_INIT
