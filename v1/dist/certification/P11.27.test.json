@@ -1,0 +1,126 @@
+{
+  "action": "test",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "exact-five-public-cassette-time-symbols-present",
+      "passed": true
+    },
+    {
+      "name": "random-tape-seek-api-absent",
+      "passed": true
+    },
+    {
+      "name": "ticks-samples-exact-u32-kernel-record-and-returns-c48-low-word",
+      "passed": true
+    },
+    {
+      "name": "time-get-time-set-pass-exact-record-pointers",
+      "passed": true
+    },
+    {
+      "name": "zxpack-info-remains-private-target-adapter",
+      "passed": true
+    },
+    {
+      "name": "fuse-exact-case-tape-path-pointer-preserved",
+      "passed": true
+    },
+    {
+      "name": "fuse-controlled-tape-io-and-cancel-errors-propagate",
+      "passed": true
+    },
+    {
+      "name": "fuse-tick-wrap-fixture-exact",
+      "passed": true
+    },
+    {
+      "name": "fuse-boot-time1-revision-zero-exact",
+      "passed": true
+    },
+    {
+      "name": "fuse-time-set-revision-increment-subsecond-reset-exact",
+      "passed": true
+    },
+    {
+      "name": "fuse-invalid-time-state-eagain-exact",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1127-tape-time.sym",
+        "p1127-tape-time.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 4,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 696 lines, work time: 0.003 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-fuse-n1tnk_gp/fixture.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 56,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-fuse-21fehw_d/fixture.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 51,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p1127-main.bin": "6874702ce9aa48fa3f2e601e18c57ba4e4d1c662a5d6c18bd591e986e41a384d",
+    "v1/dist/certification/P11.26.build.json": "0b82d0f43712f25d7c6d85947150616bfbf57fef1b08bb00b49ae854cd97372d",
+    "v1/dist/certification/P11.26.test.json": "d9697afef11940ac677f0db3e024eff5dd0a49e7f6d7f4fc6427fb5c547fa347",
+    "v1/src/libc48/tape.asm": "e347b55bd9784002a343cbf2b8e328ea53af48095c7bf47c64412f7601359681",
+    "v1/src/libc48/zxpack.asm": "2321ccf8c33996dd75751ef3c1e6a662a1f6992e7ae4d19e167ec7df517e9412",
+    "v1/tools-host/test-driver/phase11_step_27.py": "f1aa8a44e103b0c38073114fb8b1822da27c099df9ea2e2bc7f4134c5c988a4d"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.26": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "674f63d312f365b0c187be0b1517275ca9f8a1fe",
+  "status": "PASS",
+  "step": "P11.27",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
