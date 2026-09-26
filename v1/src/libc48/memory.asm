@@ -383,13 +383,8 @@ memmove:
     jr z,c48_memmove_forward
 
     ; Overlap with destination inside source range: copy from high to low.
-    ld hl,(c48_mem_src)
+    ; Build destination end and source end, then copy high-to-low.
     ld bc,(c48_mem_count)
-    add hl,bc
-    dec hl
-    ld de,(c48_mem_dest)
-    add hl,bc
-    ; Reconstruct destination end without disturbing source end.
     ld hl,(c48_mem_dest)
     add hl,bc
     dec hl
