@@ -86,3 +86,48 @@ ld_p1022_archive_bad:
     scf
     ret
     ENDM
+
+; P11.23 native libc48 object/handle archive surface.
+; P10 archive bytes above remain frozen. This table binds every P11.23 public
+; symbol to its target-native implementation until the later OBJ1 archive
+; materialization steps consume the same canonical symbol set.
+P1123_LIBC48_IO_SYMBOL_COUNT EQU 15
+
+    MACRO EMIT_P1123_LIBC48_IO_ARCHIVE
+p1123_libc48_io_table:
+    dw open
+    dw open_typed
+    dw close
+    dw read
+    dw write
+    dw seek
+    dw stat
+    dw remove
+    dw rename
+    dw list
+    dw pipe
+    dw dup
+    dw ioctl
+    dw read_full
+    dw write_full
+p1123_libc48_io_table_end:
+    ASSERT (p1123_libc48_io_table_end-p1123_libc48_io_table)/2 = P1123_LIBC48_IO_SYMBOL_COUNT
+
+p1123_libc48_io_names:
+    db "open",0
+    db "open_typed",0
+    db "close",0
+    db "read",0
+    db "write",0
+    db "seek",0
+    db "stat",0
+    db "remove",0
+    db "rename",0
+    db "list",0
+    db "pipe",0
+    db "dup",0
+    db "ioctl",0
+    db "read_full",0
+    db "write_full",0
+    ENDM
+
