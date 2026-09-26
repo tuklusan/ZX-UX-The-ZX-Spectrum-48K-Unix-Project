@@ -76,8 +76,9 @@ def dispatch(root, action, step, *, sha256_file, run_command, require_project_to
     k = phase3_open_descriptions._symbols(
         listing.with_suffix(".sym"),
         (
-            "zx48_memory_init", "zx48_process_init", "zx48_handles_init",
-            "zx48_pipe_init", "zx48_process_prepare_pid1", "zx48_alloc", "current_pid",
+            "zx48_kernel_stack_init", "zx48_memory_init", "zx48_process_init",
+            "zx48_handles_init", "zx48_pipe_init", "zx48_process_prepare_pid1",
+            "zx48_alloc", "current_pid",
             "pipe_table", "PIPE_COUNT_O", "PIPE_BUFFER_SIZE",
         ),
     )
@@ -94,6 +95,7 @@ def dispatch(root, action, step, *, sha256_file, run_command, require_project_to
     INCLUDE "../src/libc48/crt0.asm"
     INCLUDE "../src/libc48/runtime_archive.asm"
 
+ZXK_STACK_INIT       EQU {k["zx48_kernel_stack_init"]}
 ZXK_MEMORY_INIT      EQU {k["zx48_memory_init"]}
 ZXK_PROCESS_INIT     EQU {k["zx48_process_init"]}
 ZXK_HANDLES_INIT     EQU {k["zx48_handles_init"]}
@@ -137,6 +139,7 @@ p1137_fail:
     ret
 
 p1137_setup_kernel:
+    call ZXK_STACK_INIT
     call ZXK_MEMORY_INIT
     ; The FUSE qualification helper itself extends through 0x68F1 in the
     ; 0x6000-0xDFFF arena. Reserve its containing 4 KiB before any target
