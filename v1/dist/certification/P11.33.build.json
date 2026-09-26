@@ -1,0 +1,70 @@
+{
+  "action": "build",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "eligible-copy-selects-ldir",
+      "passed": true
+    },
+    {
+      "name": "overlap-direction-selects-lddr",
+      "passed": true
+    },
+    {
+      "name": "eligible-search-selects-cpir-cpdr",
+      "passed": true
+    },
+    {
+      "name": "one-byte-dead-pointer-copy-measured-14t-vs-16t-repeat",
+      "passed": true
+    },
+    {
+      "name": "contended-timing-class-variable-not-correctness-source",
+      "passed": true
+    },
+    {
+      "name": "libc-memory-shares-canonical-p140-block-families",
+      "passed": true
+    },
+    {
+      "name": "all-goldens-pass-p1130-documented-opcode-scanner",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1133-block-ops.sym",
+        "p1133-block-ops.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 12,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8495 lines, work time: 0.011 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p1133-main.bin": "78f3b29ccfd14d89760ff7bfcbb34dd9ecf3eb284e3c343372acedd3a29fddb6",
+    "v1/dist/certification/P11.32.build.json": "2d15e7749d29bb5810a302d60f17dbb11723f2e8169891831f7e7a762024c9df",
+    "v1/dist/certification/P11.32.test.json": "5c1aba33c9626561a138dc6c315075ac9819ed1d09c1681b1d87dd56173bbf20",
+    "v1/src/kernel/z80_primitives.asm": "d750e98775f34f34456c38cd1e088f4d4d16461880484aea0aacf4eaa8c29a1e",
+    "v1/src/libc48/memory.asm": "f8e0ac9c7fd79f0d0e725eb1f4cf1f82927d5a8665e1b8e3c6124c8d367f66bc",
+    "v1/src/tools/cc.asm": "da0e14f9583ccc880b5d5fa0b9c9bb327a3ad72edf7c0e5377ae5151d7d9dc4a",
+    "v1/tools-host/test-driver/phase11_step_30.py": "0fd136c51a4ba0970009d4340d4725843e31d71705c57b0d1db9a0f10c074682",
+    "v1/tools-host/test-driver/phase11_step_33.py": "4006d8e9c5e844a06e442cfede8344a0cd93d9fe8a05b3aa8d8591a940a96dca"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.32": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "fd8120188c1c9b521e8e1c0dff51915b60d8d668",
+  "status": "PASS",
+  "step": "P11.33",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
