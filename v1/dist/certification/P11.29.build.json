@@ -1,0 +1,69 @@
+{
+  "action": "build",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "exactly-one-kernel-typed-c-input-required",
+      "passed": true
+    },
+    {
+      "name": "default-exact-lowercase-c-to-obj-name-bounded",
+      "passed": true
+    },
+    {
+      "name": "explicit-output-exact-case-sensitive-and-explicit-obj-type",
+      "passed": true
+    },
+    {
+      "name": "exclusive-unique-temp-and-owned-cleanup-contract",
+      "passed": true
+    },
+    {
+      "name": "complete-write-close-validate-atomic-rename-order",
+      "passed": true
+    },
+    {
+      "name": "serialized-obj1-revalidated-before-rename",
+      "passed": true
+    },
+    {
+      "name": "host-candidate-valid-obj1",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1129-transaction.sym",
+        "p1129-transaction.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 17,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8555 lines, work time: 0.016 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p1129-gateway.bin": "2cc81ff75073494fb088f14f8330f8fc6deea820885c9b3ae9fb4507e9bd4f88",
+    "v1/build/p1129-main.bin": "47a7cefe9662bf75c5125a50d259b7b2690bacb2a056c66fbff86e0e79087f3b",
+    "v1/dist/certification/P11.28.build.json": "5b9dcf7fa1a9deb540b9e3e9e1921013b40fe885157a82967d76da51a4029d5e",
+    "v1/dist/certification/P11.28.test.json": "054921fb6a1ef732b92370e679e2da30edc4f61f8d77ee44a030bc2a69b0bdc1",
+    "v1/src/tools/cc.asm": "97020642f3b86e1aaf32c29c7aab836ea7d63cbb7a559fd6a6a8919e49d9a467",
+    "v1/tools-host/inspect-obj/inspect.py": "29b4eb6094ef4204486c6be044c4db799c982692e3aa3278849c60273d540566",
+    "v1/tools-host/test-driver/phase11_step_29.py": "75fb336e3c913c60339e6965e522d97bb23f967d97cec1f83e8431e6c66eb85f"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.28": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "9edb039758ba84c328ce87f3694c4c7b256b5e3a",
+  "status": "PASS",
+  "step": "P11.29",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
