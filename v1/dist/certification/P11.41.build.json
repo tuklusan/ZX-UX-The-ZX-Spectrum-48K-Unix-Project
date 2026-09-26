@@ -1,0 +1,104 @@
+{
+  "action": "build",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "builtin-c48h-exact-73-case-sensitive-declarations",
+      "passed": true
+    },
+    {
+      "name": "builtin-c48h-no-physical-header-or-object-tape-lookup",
+      "passed": true
+    },
+    {
+      "name": "all-runtime-entry-points-owned-by-frozen-target-surface",
+      "passed": true
+    },
+    {
+      "name": "pinned-sdk-overlap-signatures-reconciled-exactly",
+      "passed": true
+    },
+    {
+      "name": "prototype-type-bytes-map-to-c48-regcall-return-classes",
+      "passed": true
+    },
+    {
+      "name": "compiler-footprint-remains-lte-20480-after-full-header",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1141-footprint.sym",
+        "p1141-footprint.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 40,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 16600 lines, work time: 0.039 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1141-header-parser.sym",
+        "p1141-header-parser.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 24,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 11818 lines, work time: 0.023 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1141-header-include.sym",
+        "p1141-header-include.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 13,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 9987 lines, work time: 0.013 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p1141-cc.bin": "403f49d328ceb156a1528971db86f11d50a8ddbe1f67fbf57b2226818f31a780",
+    "v1/build/p1141-include.bin": "0ccfbec9e081bfe5873579c16e9d624594d6fc4a8714384a2e14e39e81ea5de1",
+    "v1/build/p1141-parser.bin": "ec15579b5d3d04ae1349d339e5df8edfcc34130c62d5d2fef130a17ff842dbb5",
+    "v1/dist/certification/P11.40.build.json": "e4817cb790d312a24e7478059379979f2e253743253dabc7d1a3b30aa877108c",
+    "v1/dist/certification/P11.40.test.json": "21b864f27175350a33968e59767d40f1bcb0b291291eb3a9438027ca9251fa26",
+    "v1/docs/c48.md": "0389d9ca128ace12964e3f7ae4710491cdc6b55b50d0301ed18397ae94601aef",
+    "v1/src/libc48/graphics.asm": "12381494114270b9254cdac4f4d820573f21e62ec776719869da757e072ca901",
+    "v1/src/libc48/io.asm": "6c0a4a1be8ed269147669497f79765df5d08b92f22819ed006da6bcffb13a661",
+    "v1/src/libc48/math_runtime.asm": "99a16e6ffa810c6ba4d7a541febc77dce5fb5f07f6e649bb25c7faa85cefbe54",
+    "v1/src/libc48/memory.asm": "f8e0ac9c7fd79f0d0e725eb1f4cf1f82927d5a8665e1b8e3c6124c8d367f66bc",
+    "v1/src/libc48/sound.asm": "c5be0bcd6b71a5a5d442d40f90b7ba6956fe3853a7e805e39dd525b9a5b74923",
+    "v1/src/libc48/string.asm": "3efdb678de6b980c09881e529ee62e73b6291b8dfbc6ffe4bc7028804b1e74ce",
+    "v1/src/libc48/syscall.asm": "dbed456b73e1a10b98f013cac13fd5f9ce6032a890442d85a533f1e3ac0cbaf2",
+    "v1/src/libc48/tape.asm": "e347b55bd9784002a343cbf2b8e328ea53af48095c7bf47c64412f7601359681",
+    "v1/src/libc48/udg.asm": "676a4d833191b611872901d70a560d9c4562035f9336cef35517f3ad20c914f2",
+    "v1/src/tools/cc.asm": "a1617173bbb5c8eb41c8369f7578dc3dfcf617c2a4a4920d70721a1f217eb06d",
+    "v1/tests/compiler/sdk-reference/sdk/dev/src/c48host.h": "b14d2c7d2558e3016e712107c53692680b62f50b99fc6054660e22c0af02766f",
+    "v1/tools-host/test-driver/phase11_step_41.py": "ac572a5350b34c52e52b73a1a350d6f6f2190fe21fa918e29cf4f9a1302ad58d"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.40": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "f8d60dc84d14baf4b3e880600d60f91ce5cad312",
+  "status": "PASS",
+  "step": "P11.41",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
