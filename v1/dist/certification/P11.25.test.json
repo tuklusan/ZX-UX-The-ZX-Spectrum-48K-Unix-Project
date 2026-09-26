@@ -1,0 +1,118 @@
+{
+  "action": "test",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "all-eighteen-public-graphics-udg-symbols-present",
+      "passed": true
+    },
+    {
+      "name": "wrappers-use-frozen-console-graphics-udg-syscalls",
+      "passed": true
+    },
+    {
+      "name": "draw-fourth-argument-uses-regcall-stack-word",
+      "passed": true
+    },
+    {
+      "name": "pinned-sdk-signature-mapping-reviewed",
+      "passed": true
+    },
+    {
+      "name": "fuse-colors-lines-point-circle-screen-bytes-exact",
+      "passed": true
+    },
+    {
+      "name": "fuse-attribute-and-ula-shadow-exact",
+      "passed": true
+    },
+    {
+      "name": "fuse-udg-define-get-draw-clear-2x2-exact",
+      "passed": true
+    },
+    {
+      "name": "fuse-print-at-console-contract-exact",
+      "passed": true
+    },
+    {
+      "name": "fuse-iy-preserved-negative-coordinate-nonmutating",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1125-graphics-udg.sym",
+        "p1125-graphics-udg.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 11,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 2864 lines, work time: 0.009 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-fuse-1yxc64ex/fixture.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 86,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-fuse-8r2jswgp/fixture.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 59,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p1125-main.bin": "22fe7f85f6123c5c6af51f98eaafa25818ad01a804bdfa2804496bc5583a7efe",
+    "v1/dist/certification/P11.24.build.json": "f02530f18d075b5883a056e935677ecb6d5c311e9d14041c665ccc608e1a3a70",
+    "v1/dist/certification/P11.24.test.json": "acbd7deb5bdbb8538b90b4d8db41e87a70b05755d9cffeab3afcb8bda4076cfe",
+    "v1/src/libc48/graphics.asm": "12381494114270b9254cdac4f4d820573f21e62ec776719869da757e072ca901",
+    "v1/src/libc48/udg.asm": "676a4d833191b611872901d70a560d9c4562035f9336cef35517f3ad20c914f2",
+    "v1/tools-host/test-driver/phase11_step_25.py": "58a329e1e778df63a3b3c033810e36e885609e9febde72e623242d87ed7131fe"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.24": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "5332ad3091e5b3102a7dbaaad4e55fbb5c697704",
+  "status": "PASS",
+  "step": "P11.25",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
