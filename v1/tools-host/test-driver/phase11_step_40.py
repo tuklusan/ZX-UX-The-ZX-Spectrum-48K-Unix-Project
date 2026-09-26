@@ -188,6 +188,9 @@ P1140_BASELINE_FREE     EQU {remaining}
     ORG $4000
 p1140_residency_start:
     EMIT_MEMORY_ROUTINES
+; memory.asm's MINFO1 producer reads the live process count owned by process.asm.
+; This allocator-only fixture supplies the same external byte explicitly.
+zx48_process_count: db 0
 
 p1140_fail:
     ld a,E_FORMAT
