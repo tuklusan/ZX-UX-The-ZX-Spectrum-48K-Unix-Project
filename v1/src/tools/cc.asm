@@ -8652,3 +8652,59 @@ cc_p1138_format:
     scf
     ret
     ENDM
+
+; P11.40 compiler memory-pressure diagnostic. The compiler has no private
+; allocation syscall: image/BSS is normal MEX1 ANY placement, its process stack
+; is FAST_REQUIRED, source/output objects are ordinary object-store allocations,
+; and all compiler-internal workspaces are bounded in the image/BSS. Any
+; E_NOMEM returned while the compiler is running is reported exactly here.
+    MACRO EMIT_P1140_CC_MEMORY_DIAGNOSTIC
+P1140_CC_NOMEM_DIAG_LEN EQU 31
+cc_p1140_nomem_diag:
+    db "not enough memory for compiler",10
+
+; A=primary errno. Preserve the primary error. E_NOMEM writes the exact
+; diagnostic to stderr with positive-short-write handling.
+cc_p1140_report_error:
+    cp E_NOMEM
+    jr z,cc_p1140_report_nomem
+    scf
+    ret
+cc_p1140_report_nomem:
+    ld hl,cc_p1140_nomem_diag
+    ld bc,P1140_CC_NOMEM_DIAG_LEN
+cc_p1140_report_loop:
+    push hl
+    push bc
+    ld de,2
+    ld a,SYS_WRITE
+    call SYSCALL_GATEWAY
+    jr c,cc_p1140_report_write_failed
+    ld a,h
+    or l
+    jr z,cc_p1140_report_write_failed
+    ex de,hl
+    pop bc
+    pop hl
+    add hl,de
+    push hl
+    ld h,b
+    ld l,c
+    or a
+    sbc hl,de
+    ld b,h
+    ld c,l
+    pop hl
+    ld a,b
+    or c
+    jr nz,cc_p1140_report_loop
+    ld a,E_NOMEM
+    scf
+    ret
+cc_p1140_report_write_failed:
+    pop bc
+    pop hl
+    ld a,E_NOMEM
+    scf
+    ret
+    ENDM

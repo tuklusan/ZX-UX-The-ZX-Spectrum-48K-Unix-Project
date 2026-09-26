@@ -2599,10 +2599,63 @@ sh_p621_done:
 
 sh_p621_spawn_fail:
     ld (p621_error),a
+    cp E_NOMEM
+    call z,sh_p621_cc_nomem_if_current
     call sh_p621_kill_spawned
     call sh_p621_close_pipe_pair
     ld a,(p621_error)
     scf
+    ret
+
+; P11.40: a failed foreground launch of exact /bin/cc must make memory
+; exhaustion actionable. IX still names the failing stage descriptor here.
+; Other commands and all non-E_NOMEM failures remain byte-silent.
+sh_p621_cc_nomem_if_current:
+    ld l,(ix+0)
+    ld h,(ix+1)
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld hl,p621_cc_path
+    ld b,8
+sh_p621_cc_path_cmp:
+    ld a,(de)
+    cp (hl)
+    ret nz
+    inc de
+    inc hl
+    djnz sh_p621_cc_path_cmp
+    ld hl,p621_cc_nomem_diag
+    ld bc,31
+sh_p621_cc_nomem_write:
+    push hl
+    push bc
+    ld de,2
+    ld a,SYS_WRITE
+    call SYSCALL_GATEWAY
+    jr c,sh_p621_cc_nomem_done_pop
+    ld a,h
+    or l
+    jr z,sh_p621_cc_nomem_done_pop
+    ex de,hl
+    pop bc
+    pop hl
+    add hl,de
+    push hl
+    ld h,b
+    ld l,c
+    or a
+    sbc hl,de
+    ld b,h
+    ld c,l
+    pop hl
+    ld a,b
+    or c
+    jr nz,sh_p621_cc_nomem_write
+    ret
+sh_p621_cc_nomem_done_pop:
+    pop bc
+    pop hl
     ret
 
 sh_p621_rollback:
@@ -2677,6 +2730,8 @@ p621_spawned: db 0
 p621_wait_index: db 0
 p621_kill_left: db 0
 p621_error: db 0
+p621_cc_path: db '/bin/cc',0
+p621_cc_nomem_diag: db 'not enough memory for compiler',10
 p621_env_snapshot: defs 256,0
     ENDM
 
