@@ -45,6 +45,8 @@ def _word(value: int) -> bytes:
 def _source_contract(root):
     demos = root / "v1/src/demos"
     actual = tuple(sorted(path.name for path in demos.glob("*.c")))
+    require(all(name == name.lower() for name in actual),
+            "P11.38 Section-42 demo source names must be lower-case")
     require(actual == tuple(sorted(DEMOS)),
             f"P11.38 requires exactly the 13 Section-42 demo sources, found {actual}")
     text = {name: (demos / name).read_text(encoding="ascii") for name in DEMOS}
