@@ -180,6 +180,10 @@ p1123_gateway_rw_short:
     ld a,l
     cp 3
     jr nc,p1123_gateway_two
+    ld a,(p1123_last_a)
+    cp SYS_WRITE
+    jr z,p1123_gateway_rw_all
+    ld hl,0
     xor a
     ret
 p1123_gateway_two:
