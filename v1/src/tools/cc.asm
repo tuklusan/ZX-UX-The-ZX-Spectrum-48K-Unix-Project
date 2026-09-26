@@ -6084,3 +6084,547 @@ cc_obj1_format:
     scf
     ret
     ENDM
+
+
+; P11.29 compiler name resolution and transactional OBJ1 publication.
+; P11.28 owns serialization. This stage accepts only one kernel-typed C input,
+; derives or copies the exact destination name, and publishes the completed
+; in-memory OBJ1 through one owned O_CREATE|O_EXCL temporary followed by the
+; atomic SYS_RENAME commit barrier.
+    MACRO EMIT_P1129_CC_TRANSACTION_ROUTINES
+CC_P1129_MAX_OUTPUT       EQU 10
+CC_P1129_MAX_INPUT_SCAN   EQU 31
+CC_P1129_HEADER_SIZE      EQU 24
+CC_P1129_SYMBOL_SIZE      EQU 20
+CC_P1129_RELOC_SIZE       EQU 6
+CC_P1129_MAX_STORED       EQU 32768
+CC_P1129_SYMBOL_MAX_COUNT EQU 1638
+CC_P1129_RELOC_MAX_COUNT  EQU 5461
+
+cc_p1129_names:
+    ld (cc_p1129_input),hl
+    ld (cc_p1129_explicit),de
+    ld (cc_p1129_output),ix
+    ld b,a
+    ld a,c
+    cp 1
+    jp nz,cc_p1129_format
+    ld a,b
+    cp OBJ_C
+    jp nz,cc_p1129_format
+    ld a,h
+    or l
+    jp z,cc_p1129_format
+    ld hl,(cc_p1129_explicit)
+    ld a,h
+    or l
+    jr z,cc_p1129_default_name
+    call cc_p1129_measure_output
+    jp c,cc_p1129_format
+    ld hl,(cc_p1129_explicit)
+    jr cc_p1129_copy_exact
+
+cc_p1129_default_name:
+    ld hl,(cc_p1129_input)
+    ld b,0
+cc_p1129_measure_input:
+    ld a,(hl)
+    or a
+    jr z,cc_p1129_input_measured
+    inc b
+    ld a,b
+    cp CC_P1129_MAX_INPUT_SCAN+1
+    jp nc,cc_p1129_format
+    inc hl
+    jr cc_p1129_measure_input
+cc_p1129_input_measured:
+    ld a,b
+    cp 3
+    jp c,cc_p1129_format
+    add a,2
+    cp CC_P1129_MAX_OUTPUT+1
+    jp nc,cc_p1129_format
+    ld hl,(cc_p1129_input)
+    ld d,0
+    ld e,b
+    add hl,de
+    dec hl
+    ld a,(hl)
+    cp 'c'
+    jp nz,cc_p1129_format
+    dec hl
+    ld a,(hl)
+    cp '.'
+    jp nz,cc_p1129_format
+    ld hl,(cc_p1129_input)
+    push ix
+    pop de
+    ld a,b
+    sub 2
+    ld b,a
+cc_p1129_copy_stem:
+    ld a,b
+    or a
+    jr z,cc_p1129_append_obj
+    ld a,(hl)
+    ld (de),a
+    inc hl
+    inc de
+    djnz cc_p1129_copy_stem
+cc_p1129_append_obj:
+    ld hl,cc_p1129_obj_suffix
+    ld bc,5
+    ldir
+    ld a,OBJ_OBJ
+    or a
+    ret
+
+cc_p1129_measure_output:
+    ld b,0
+cc_p1129_measure_output_loop:
+    ld a,(hl)
+    or a
+    jr z,cc_p1129_measure_output_done
+    inc b
+    ld a,b
+    cp CC_P1129_MAX_OUTPUT+1
+    jr nc,cc_p1129_measure_output_bad
+    inc hl
+    jr cc_p1129_measure_output_loop
+cc_p1129_measure_output_done:
+    ld a,b
+    or a
+    jr z,cc_p1129_measure_output_bad
+    or a
+    ret
+cc_p1129_measure_output_bad:
+    scf
+    ret
+
+cc_p1129_copy_exact:
+    push ix
+    pop de
+cc_p1129_copy_exact_loop:
+    ld a,(hl)
+    ld (de),a
+    inc hl
+    inc de
+    or a
+    jr nz,cc_p1129_copy_exact_loop
+    ld a,OBJ_OBJ
+    or a
+    ret
+
+cc_p1129_commit:
+    or a
+    jp z,cc_p1129_publish
+    scf
+    ret
+
+cc_p1129_publish:
+    ld (cc_p1129_dest),hl
+    ld (cc_p1129_candidate),de
+    ld (cc_p1129_length),bc
+    xor a
+    ld (cc_p1129_owned),a
+    ld (cc_p1129_open),a
+
+    ld a,(cc_obj1_commit_marker)
+    cp CC_OBJ1_COMMITTED
+    jp nz,cc_p1129_format
+    ld hl,(cc_obj1_output_ptr)
+    ld de,(cc_p1129_candidate)
+    or a
+    sbc hl,de
+    jp nz,cc_p1129_format
+    ld hl,(cc_obj1_output_size)
+    ld de,(cc_p1129_length)
+    or a
+    sbc hl,de
+    jp nz,cc_p1129_format
+    call cc_p1129_validate_candidate
+    jp c,cc_p1129_format
+
+    ld a,SYS_GETPID
+    call SYSCALL_GATEWAY
+    ret c
+    ld a,h
+    or a
+    jp nz,cc_p1129_format
+    ld a,l
+    cp 10
+    jp nc,cc_p1129_format
+    add a,'0'
+    ld (cc_p1129_temp_name+8),a
+    xor a
+    ld (cc_p1129_temp_n),a
+
+cc_p1129_open_retry:
+    ld a,(cc_p1129_temp_n)
+    add a,'0'
+    ld (cc_p1129_temp_name+10),a
+    ld hl,cc_p1129_temp_name
+    ld c,O_WRITE|O_CREATE|O_EXCL
+    ld b,OBJ_OBJ
+    ld a,SYS_OPEN
+    call SYSCALL_GATEWAY
+    jr nc,cc_p1129_opened
+    cp E_EXIST
+    jr z,cc_p1129_collision
+    scf
+    ret
+cc_p1129_collision:
+    ld a,(cc_p1129_temp_n)
+    cp 9
+    jr z,cc_p1129_exist
+    inc a
+    ld (cc_p1129_temp_n),a
+    jr cc_p1129_open_retry
+
+cc_p1129_opened:
+    ld a,h
+    or a
+    jp nz,cc_p1129_format_created
+    ld a,l
+    ld (cc_p1129_handle),a
+    ld a,1
+    ld (cc_p1129_owned),a
+    ld (cc_p1129_open),a
+    ld e,l
+    ld d,0
+    ld hl,(cc_p1129_candidate)
+    ld bc,(cc_p1129_length)
+    ld a,SYS_WRITE
+    call SYSCALL_GATEWAY
+    jp c,cc_p1129_cleanup_error
+    ld de,(cc_p1129_length)
+    or a
+    sbc hl,de
+    jr z,cc_p1129_write_complete
+    ld a,E_IO
+    jp cc_p1129_cleanup_error
+
+cc_p1129_write_complete:
+    call cc_p1129_close_temp
+    jp c,cc_p1129_cleanup_error
+    call cc_p1129_validate_candidate
+    jr nc,cc_p1129_ready_rename
+    ld a,E_FORMAT
+    jp cc_p1129_cleanup_error
+
+cc_p1129_ready_rename:
+    ld hl,cc_p1129_temp_name
+    ld (cc_p1129_rename_req),hl
+    ld hl,(cc_p1129_dest)
+    ld (cc_p1129_rename_req+2),hl
+    ld hl,cc_p1129_rename_req
+    ld a,SYS_RENAME
+    call SYSCALL_GATEWAY
+    jp c,cc_p1129_cleanup_error
+    xor a
+    ld (cc_p1129_owned),a
+    ret
+
+cc_p1129_close_temp:
+    ld a,(cc_p1129_open)
+    or a
+    ret z
+    ld a,(cc_p1129_handle)
+    ld l,a
+    ld h,0
+    ld a,SYS_CLOSE
+    call SYSCALL_GATEWAY
+    ret c
+    xor a
+    ld (cc_p1129_open),a
+    ret
+
+cc_p1129_cleanup_error:
+    ld (cc_p1129_errno),a
+    call cc_p1129_close_temp
+    ld a,(cc_p1129_owned)
+    or a
+    jr z,cc_p1129_return_primary
+    xor a
+    ld (cc_p1129_owned),a
+    ld hl,cc_p1129_temp_name
+    ld a,SYS_REMOVE
+    call SYSCALL_GATEWAY
+cc_p1129_return_primary:
+    ld a,(cc_p1129_errno)
+    scf
+    ret
+
+cc_p1129_format_created:
+    ld a,1
+    ld (cc_p1129_owned),a
+    ld a,E_FORMAT
+    jp cc_p1129_cleanup_error
+cc_p1129_exist:
+    ld a,E_EXIST
+    scf
+    ret
+
+cc_p1129_validate_candidate:
+    ld hl,(cc_p1129_length)
+    ld de,CC_P1129_HEADER_SIZE
+    or a
+    sbc hl,de
+    jp c,cc_p1129_val_bad
+    ld ix,(cc_p1129_candidate)
+    ld a,(ix+0)
+    cp 'O'
+    jp nz,cc_p1129_val_bad
+    ld a,(ix+1)
+    cp 'B'
+    jp nz,cc_p1129_val_bad
+    ld a,(ix+2)
+    cp 'J'
+    jp nz,cc_p1129_val_bad
+    ld a,(ix+3)
+    cp '1'
+    jp nz,cc_p1129_val_bad
+    ld a,(ix+4)
+    cp 1
+    jp nz,cc_p1129_val_bad
+    ld a,(ix+5)
+    or a
+    jp nz,cc_p1129_val_bad
+    ld a,(ix+6)
+    cp CC_P1129_HEADER_SIZE
+    jp nz,cc_p1129_val_bad
+    ld a,(ix+7)
+    or a
+    jp nz,cc_p1129_val_bad
+    ld l,(ix+8)
+    ld h,(ix+9)
+    ld (cc_obj1_text_size),hl
+    ld l,(ix+10)
+    ld h,(ix+11)
+    ld (cc_obj1_bss_size),hl
+    ld l,(ix+12)
+    ld h,(ix+13)
+    ld (cc_obj1_symbol_count),hl
+    ld l,(ix+14)
+    ld h,(ix+15)
+    ld (cc_obj1_reloc_count),hl
+    ld l,(ix+16)
+    ld h,(ix+17)
+    ld (cc_obj1_symbol_offset),hl
+    ld l,(ix+18)
+    ld h,(ix+19)
+    ld (cc_obj1_reloc_offset),hl
+
+    ld hl,(cc_obj1_text_size)
+    ld de,(cc_obj1_bss_size)
+    add hl,de
+    jp c,cc_p1129_val_bad
+    call cc_p1129_bound
+    jp c,cc_p1129_val_bad
+
+    ld hl,(cc_obj1_symbol_count)
+    ld de,CC_P1129_SYMBOL_MAX_COUNT+1
+    or a
+    sbc hl,de
+    jp nc,cc_p1129_val_bad
+    ld bc,(cc_obj1_symbol_count)
+    ld de,CC_P1129_SYMBOL_SIZE
+    call cc_obj1_multiply
+    jp c,cc_p1129_val_bad
+    ld (cc_obj1_symbol_bytes),hl
+
+    ld hl,(cc_obj1_reloc_count)
+    ld de,CC_P1129_RELOC_MAX_COUNT+1
+    or a
+    sbc hl,de
+    jp nc,cc_p1129_val_bad
+    ld bc,(cc_obj1_reloc_count)
+    ld de,CC_P1129_RELOC_SIZE
+    call cc_obj1_multiply
+    jp c,cc_p1129_val_bad
+    ld (cc_obj1_reloc_bytes),hl
+
+    ld hl,(cc_obj1_text_size)
+    ld de,CC_P1129_HEADER_SIZE
+    add hl,de
+    jp c,cc_p1129_val_bad
+    ld de,(cc_obj1_symbol_offset)
+    or a
+    sbc hl,de
+    jp nz,cc_p1129_val_bad
+
+    ld hl,(cc_obj1_symbol_offset)
+    ld de,(cc_obj1_symbol_bytes)
+    add hl,de
+    jp c,cc_p1129_val_bad
+    ld de,(cc_obj1_reloc_offset)
+    or a
+    sbc hl,de
+    jp nz,cc_p1129_val_bad
+
+    ld hl,(cc_obj1_reloc_offset)
+    ld de,(cc_obj1_reloc_bytes)
+    add hl,de
+    jp c,cc_p1129_val_bad
+    call cc_p1129_bound
+    jp c,cc_p1129_val_bad
+    ld (cc_obj1_total_size),hl
+    ld de,(cc_p1129_length)
+    or a
+    sbc hl,de
+    jp nz,cc_p1129_val_bad
+
+    ld hl,(cc_obj1_reloc_count)
+    ld a,h
+    or l
+    jr z,cc_p1129_ptrs
+    ld hl,(cc_obj1_text_size)
+    ld a,h
+    or a
+    jr nz,cc_p1129_ptrs
+    ld a,l
+    cp 2
+    jp c,cc_p1129_val_bad
+
+cc_p1129_ptrs:
+    ld hl,(cc_p1129_candidate)
+    ld de,CC_P1129_HEADER_SIZE
+    add hl,de
+    ld (cc_obj1_text_ptr),hl
+    ld hl,(cc_p1129_candidate)
+    ld de,(cc_obj1_symbol_offset)
+    add hl,de
+    ld (cc_obj1_symbol_ptr),hl
+    ld hl,(cc_p1129_candidate)
+    ld de,(cc_obj1_reloc_offset)
+    add hl,de
+    ld (cc_obj1_reloc_ptr),hl
+
+    ld hl,(cc_p1129_length)
+    ld de,CC_P1129_HEADER_SIZE
+    or a
+    sbc hl,de
+    ld b,h
+    ld c,l
+    ld hl,(cc_obj1_text_ptr)
+    call cc_obj1_crc16
+    ld ix,(cc_p1129_candidate)
+    ld a,(ix+20)
+    cp e
+    jp nz,cc_p1129_val_bad
+    ld a,(ix+21)
+    cp d
+    jp nz,cc_p1129_val_bad
+
+    ld hl,(cc_p1129_candidate)
+    ld de,cc_p1129_header_copy
+    ld bc,CC_P1129_HEADER_SIZE
+    ldir
+    xor a
+    ld (cc_p1129_header_copy+22),a
+    ld (cc_p1129_header_copy+23),a
+    ld hl,cc_p1129_header_copy
+    ld bc,CC_P1129_HEADER_SIZE
+    call cc_obj1_crc16
+    ld ix,(cc_p1129_candidate)
+    ld a,(ix+22)
+    cp e
+    jp nz,cc_p1129_val_bad
+    ld a,(ix+23)
+    cp d
+    jp nz,cc_p1129_val_bad
+
+    call cc_obj1_validate_symbols
+    jp c,cc_p1129_val_bad
+    call cc_p1129_unique_symbols
+    jp c,cc_p1129_val_bad
+    call cc_obj1_validate_relocs
+    jp c,cc_p1129_val_bad
+    xor a
+    ret
+
+cc_p1129_unique_symbols:
+    ld hl,(cc_obj1_symbol_ptr)
+    ld (cc_p1129_sym_start),hl
+    ld (cc_p1129_sym_cur),hl
+    ld hl,(cc_obj1_symbol_count)
+    ld (cc_p1129_left),hl
+cc_p1129_unique_outer:
+    ld hl,(cc_p1129_left)
+    ld a,h
+    or l
+    ret z
+    ld hl,(cc_p1129_sym_start)
+    ld (cc_p1129_scan),hl
+cc_p1129_unique_inner:
+    ld hl,(cc_p1129_scan)
+    ld de,(cc_p1129_sym_cur)
+    or a
+    sbc hl,de
+    jr z,cc_p1129_unique_advance
+    ld hl,(cc_p1129_scan)
+    ld de,(cc_p1129_sym_cur)
+    ld b,16
+cc_p1129_unique_compare:
+    ld a,(de)
+    cp (hl)
+    jr nz,cc_p1129_unique_not_equal
+    inc de
+    inc hl
+    djnz cc_p1129_unique_compare
+    scf
+    ret
+cc_p1129_unique_not_equal:
+    ld hl,(cc_p1129_scan)
+    ld de,CC_P1129_SYMBOL_SIZE
+    add hl,de
+    ld (cc_p1129_scan),hl
+    jr cc_p1129_unique_inner
+cc_p1129_unique_advance:
+    ld hl,(cc_p1129_sym_cur)
+    ld de,CC_P1129_SYMBOL_SIZE
+    add hl,de
+    ld (cc_p1129_sym_cur),hl
+    ld hl,(cc_p1129_left)
+    dec hl
+    ld (cc_p1129_left),hl
+    jr cc_p1129_unique_outer
+
+cc_p1129_bound:
+    ld de,CC_P1129_MAX_STORED+1
+    or a
+    sbc hl,de
+    jr c,cc_p1129_bound_ok
+    scf
+    ret
+cc_p1129_bound_ok:
+    or a
+    ret
+cc_p1129_val_bad:
+    scf
+    ret
+cc_p1129_format:
+    ld a,E_FORMAT
+    scf
+    ret
+
+cc_p1129_obj_suffix: db '.obj',0
+cc_p1129_input:      dw 0
+cc_p1129_explicit:   dw 0
+cc_p1129_output:     dw 0
+cc_p1129_dest:       dw 0
+cc_p1129_candidate:  dw 0
+cc_p1129_length:     dw 0
+cc_p1129_handle:     db 0
+cc_p1129_open:       db 0
+cc_p1129_owned:      db 0
+cc_p1129_temp_n:     db 0
+cc_p1129_errno:      db 0
+cc_p1129_rename_req: defs 4,0
+cc_p1129_header_copy: defs CC_P1129_HEADER_SIZE,0
+cc_p1129_sym_start:  dw 0
+cc_p1129_sym_cur:    dw 0
+cc_p1129_scan:       dw 0
+cc_p1129_left:       dw 0
+cc_p1129_temp_name:  db '/','t','m','p','/','.','c','c','0','.','0',0
+    ENDM
