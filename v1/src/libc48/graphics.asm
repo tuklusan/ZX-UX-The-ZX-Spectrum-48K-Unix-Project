@@ -12,6 +12,8 @@
 ;
 ; P11.25 thin C48 graphics/console wrappers. Every visible operation crosses
 ; only the frozen ZX-UX console/graphics syscall boundary; IY is untouched.
+; Pinned SDK 84d144de2721cda5075c3a6610a422663b5e2f77 dev/src/c48host.h
+; provides the source-level signatures reconciled to these REV17 target ABIs.
 
     MACRO EMIT_P1125_C48_GRAPHICS_RUNTIME
 c48_gfx_draw1:       defs 4,0
