@@ -1,0 +1,230 @@
+{
+  "license_header": [
+    "Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.",
+    "Proprietary rights reserved except as expressly licensed herein.",
+    "ZX-UX Sinclair ZX Spectrum Unix",
+    "This file is governed by the SANYALnet Labs Non-Commercial License in the root LICENSE file.",
+    "Non-Commercial use is permitted; Commercial Use and use for AI/ML model training are prohibited unless separately authorized.",
+    "Attribution is required: Based on original work by Supratim Sanyal of SANYALnet Labs.",
+    "See LICENSE for full terms, warranty disclaimer, termination, patent, trademark, and governing-law provisions."
+  ],
+  "schema": 1,
+  "step": "P11.39",
+  "sdk_commit": "84d144de2721cda5075c3a6610a422663b5e2f77",
+  "docx": "docs/04-C48 Language Specification Rev 0.11.docx",
+  "status": "RESOLVED",
+  "unresolved": [],
+  "areas": [
+    {
+      "area": "preprocessor",
+      "authority": "REV17 §25.6 / corrected DOCX preprocessor subset",
+      "sdk_surface": "compiler/c48/preprocessor.py",
+      "native_steps": [
+        "P11.03"
+      ],
+      "resolution": "REV17/corrected DOCX controls target behavior; pinned SDK test/oracle is preserved and target-only mechanism differences are explicit.",
+      "unresolved": false
+    },
+    {
+      "area": "lexical grammar",
+      "authority": "REV17 §25 / corrected DOCX lexical grammar",
+      "sdk_surface": "compiler/c48/lexer.py",
+      "native_steps": [
+        "P11.04",
+        "P11.10"
+      ],
+      "resolution": "REV17/corrected DOCX controls target behavior; pinned SDK test/oracle is preserved and target-only mechanism differences are explicit.",
+      "unresolved": false
+    },
+    {
+      "area": "declarations and types",
+      "authority": "REV17 §25 / corrected DOCX type system",
+      "sdk_surface": "compiler/c48/parser.py; compiler/c48/typesys.py",
+      "native_steps": [
+        "P11.05",
+        "P11.11",
+        "P11.34"
+      ],
+      "resolution": "REV17/corrected DOCX controls target behavior; pinned SDK test/oracle is preserved and target-only mechanism differences are explicit.",
+      "unresolved": false
+    },
+    {
+      "area": "statements and control",
+      "authority": "REV17 §25 statement subset",
+      "sdk_surface": "compiler/c48/parser.py; compiler/c48/semantics.py",
+      "native_steps": [
+        "P11.06",
+        "P11.31"
+      ],
+      "resolution": "REV17/corrected DOCX controls target behavior; pinned SDK test/oracle is preserved and target-only mechanism differences are explicit.",
+      "unresolved": false
+    },
+    {
+      "area": "expression evaluation",
+      "authority": "REV17 §25 expression/evaluation rules",
+      "sdk_surface": "compiler/c48/semantics.py",
+      "native_steps": [
+        "P11.07"
+      ],
+      "resolution": "REV17/corrected DOCX controls target behavior; pinned SDK test/oracle is preserved and target-only mechanism differences are explicit.",
+      "unresolved": false
+    },
+    {
+      "area": "integer semantics",
+      "authority": "REV17 §25 integer widths/wrap/shift/division",
+      "sdk_surface": "compiler/c48/semantics.py",
+      "native_steps": [
+        "P11.08"
+      ],
+      "resolution": "REV17/corrected DOCX controls target behavior; pinned SDK test/oracle is preserved and target-only mechanism differences are explicit.",
+      "unresolved": false
+    },
+    {
+      "area": "pointer semantics",
+      "authority": "REV17 §25 pointer arithmetic and arrays",
+      "sdk_surface": "compiler/c48/typesys.py; compiler/c48/semantics.py",
+      "native_steps": [
+        "P11.09",
+        "P11.34"
+      ],
+      "resolution": "REV17/corrected DOCX controls target behavior; pinned SDK test/oracle is preserved and target-only mechanism differences are explicit.",
+      "unresolved": false
+    },
+    {
+      "area": "storage and frames",
+      "authority": "REV17 §25 storage/layout",
+      "sdk_surface": "compiler/c48/memory.py; compiler/c48/semantics.py",
+      "native_steps": [
+        "P11.11",
+        "P11.12"
+      ],
+      "resolution": "REV17/corrected DOCX controls target behavior; pinned SDK test/oracle is preserved and target-only mechanism differences are explicit.",
+      "unresolved": false
+    },
+    {
+      "area": "C48_REGCALL",
+      "authority": "REV17 §25 ABI",
+      "sdk_surface": "host SDK has no target register ABI",
+      "native_steps": [
+        "P11.13",
+        "P11.15",
+        "P11.16"
+      ],
+      "resolution": "REV17/corrected DOCX controls target behavior; pinned SDK test/oracle is preserved and target-only mechanism differences are explicit.",
+      "unresolved": false
+    },
+    {
+      "area": "Float5 representation",
+      "authority": "REV17 §25.9",
+      "sdk_surface": "compiler/c48/float5.py",
+      "native_steps": [
+        "P11.14"
+      ],
+      "resolution": "REV17/corrected DOCX controls target behavior; pinned SDK test/oracle is preserved and target-only mechanism differences are explicit.",
+      "unresolved": false
+    },
+    {
+      "area": "ROM float casts/compare/math",
+      "authority": "REV17 §25.9 target ROM calculator",
+      "sdk_surface": "Float5 host oracle",
+      "native_steps": [
+        "P11.17",
+        "P11.18",
+        "P11.19",
+        "P11.20"
+      ],
+      "resolution": "REV17/corrected DOCX controls target behavior; pinned SDK test/oracle is preserved and target-only mechanism differences are explicit.",
+      "unresolved": false
+    },
+    {
+      "area": "heap",
+      "authority": "REV17 §25.8 fixed BSS heap",
+      "sdk_surface": "compiler/c48/memory.py host safety model",
+      "native_steps": [
+        "P11.21"
+      ],
+      "resolution": "REV17/corrected DOCX controls target behavior; pinned SDK test/oracle is preserved and target-only mechanism differences are explicit.",
+      "unresolved": false
+    },
+    {
+      "area": "process/environment runtime",
+      "authority": "REV17 §25.8 target syscalls",
+      "sdk_surface": "host SDK runtime/VM adapters",
+      "native_steps": [
+        "P11.22"
+      ],
+      "resolution": "REV17/corrected DOCX controls target behavior; pinned SDK test/oracle is preserved and target-only mechanism differences are explicit.",
+      "unresolved": false
+    },
+    {
+      "area": "object/handle runtime",
+      "authority": "REV17 §25.8 target object/handle syscalls",
+      "sdk_surface": "host SDK runtime/VM adapters",
+      "native_steps": [
+        "P11.23"
+      ],
+      "resolution": "REV17/corrected DOCX controls target behavior; pinned SDK test/oracle is preserved and target-only mechanism differences are explicit.",
+      "unresolved": false
+    },
+    {
+      "area": "string/memory runtime",
+      "authority": "REV17 §25.8 byte semantics",
+      "sdk_surface": "compiler/c48/vm.py",
+      "native_steps": [
+        "P11.24"
+      ],
+      "resolution": "REV17/corrected DOCX controls target behavior; pinned SDK test/oracle is preserved and target-only mechanism differences are explicit.",
+      "unresolved": false
+    },
+    {
+      "area": "graphics/UDG/sound",
+      "authority": "REV17 §§16-17,25.8",
+      "sdk_surface": "compiler/c48/screen.py; VM built-ins",
+      "native_steps": [
+        "P11.25",
+        "P11.26",
+        "P11.36"
+      ],
+      "resolution": "REV17/corrected DOCX controls target behavior; pinned SDK test/oracle is preserved and target-only mechanism differences are explicit.",
+      "unresolved": false
+    },
+    {
+      "area": "tape/zxpack",
+      "authority": "REV17 target-only storage surface",
+      "sdk_surface": "host-only divergence",
+      "native_steps": [
+        "P11.27"
+      ],
+      "resolution": "REV17/corrected DOCX controls target behavior; pinned SDK test/oracle is preserved and target-only mechanism differences are explicit.",
+      "unresolved": false
+    },
+    {
+      "area": "native object/codegen",
+      "authority": "REV17 OBJ1/native Z80 documented-opcode contract",
+      "sdk_surface": "SDK C48B1 is host-only reference format",
+      "native_steps": [
+        "P11.28",
+        "P11.29",
+        "P11.30",
+        "P11.31",
+        "P11.32",
+        "P11.33"
+      ],
+      "resolution": "REV17/corrected DOCX controls target behavior; pinned SDK test/oracle is preserved and target-only mechanism differences are explicit.",
+      "unresolved": false
+    },
+    {
+      "area": "shipped demos",
+      "authority": "REV17 §42 and §57",
+      "sdk_surface": "SDK demo/game sources are reference programs",
+      "native_steps": [
+        "P11.35",
+        "P11.36",
+        "P11.37",
+        "P11.38"
+      ],
+      "resolution": "REV17/corrected DOCX controls target behavior; pinned SDK test/oracle is preserved and target-only mechanism differences are explicit.",
+      "unresolved": false
+    }
+  ]
+}

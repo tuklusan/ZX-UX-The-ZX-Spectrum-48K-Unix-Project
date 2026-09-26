@@ -1,0 +1,198 @@
+{
+  "license_header": [
+    "Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.",
+    "Proprietary rights reserved except as expressly licensed herein.",
+    "ZX-UX Sinclair ZX Spectrum Unix",
+    "This file is governed by the SANYALnet Labs Non-Commercial License in the root LICENSE file.",
+    "Non-Commercial use is permitted; Commercial Use and use for AI/ML model training are prohibited unless separately authorized.",
+    "Attribution is required: Based on original work by Supratim Sanyal of SANYALnet Labs.",
+    "See LICENSE for full terms, warranty disclaimer, termination, patent, trademark, and governing-law provisions."
+  ],
+  "schema": 1,
+  "step": "P11.39",
+  "sdk_commit": "84d144de2721cda5075c3a6610a422663b5e2f77",
+  "sources": [
+    {
+      "path": "v1/src/demos/ball.c",
+      "git_blob": "a8c9ac65682e0b2f3991b307762ad69162dcf01b",
+      "sdk_reference": {
+        "required_result": "REJECT",
+        "category": "declaration-error",
+        "reason": "REV17 target runtime built-ins are compiler/runtime-resident while the pinned SDK requires host declarations."
+      },
+      "target_native": {
+        "required_result": "PASS",
+        "owner_step": "P11.38",
+        "p1139_revalidation": true
+      }
+    },
+    {
+      "path": "v1/src/demos/colors.c",
+      "git_blob": "506470043823abce00cc6f321143aba90be73cc9",
+      "sdk_reference": {
+        "required_result": "REJECT",
+        "category": "declaration-error",
+        "reason": "REV17 target runtime built-ins are compiler/runtime-resident while the pinned SDK requires host declarations."
+      },
+      "target_native": {
+        "required_result": "PASS",
+        "owner_step": "P11.36",
+        "p1139_revalidation": true
+      }
+    },
+    {
+      "path": "v1/src/demos/hello.c",
+      "git_blob": "2dcbf2bb0db082091b8bf4991660f6048252e25e",
+      "sdk_reference": {
+        "required_result": "REJECT",
+        "category": "declaration-error",
+        "reason": "REV17 target runtime built-ins are compiler/runtime-resident while the pinned SDK requires host declarations."
+      },
+      "target_native": {
+        "required_result": "PASS",
+        "owner_step": "P11.35",
+        "p1139_revalidation": true
+      }
+    },
+    {
+      "path": "v1/src/demos/life.c",
+      "git_blob": "bd6268654b967fa83a3ced3f1ad573eb1163ae17",
+      "sdk_reference": {
+        "required_result": "REJECT",
+        "category": "declaration-error",
+        "reason": "REV17 target runtime built-ins are compiler/runtime-resident while the pinned SDK requires host declarations."
+      },
+      "target_native": {
+        "required_result": "PASS",
+        "owner_step": "P11.38",
+        "p1139_revalidation": true
+      }
+    },
+    {
+      "path": "v1/src/demos/lines.c",
+      "git_blob": "102f0615b04b79df52253a857b1f6af34d9b10b0",
+      "sdk_reference": {
+        "required_result": "REJECT",
+        "category": "declaration-error",
+        "reason": "REV17 target runtime built-ins are compiler/runtime-resident while the pinned SDK requires host declarations."
+      },
+      "target_native": {
+        "required_result": "PASS",
+        "owner_step": "P11.38",
+        "p1139_revalidation": true
+      }
+    },
+    {
+      "path": "v1/src/demos/mandel.c",
+      "git_blob": "897405a59c130376034039ac4490afe0043badae",
+      "sdk_reference": {
+        "required_result": "REJECT",
+        "category": "declaration-error",
+        "reason": "REV17 target runtime built-ins are compiler/runtime-resident while the pinned SDK requires host declarations."
+      },
+      "target_native": {
+        "required_result": "PASS",
+        "owner_step": "P11.38",
+        "p1139_revalidation": true
+      }
+    },
+    {
+      "path": "v1/src/demos/maze.c",
+      "git_blob": "432a110f78c3301226fcc26fd25fdb753fb179d7",
+      "sdk_reference": {
+        "required_result": "REJECT",
+        "category": "declaration-error",
+        "reason": "REV17 target runtime built-ins are compiler/runtime-resident while the pinned SDK requires host declarations."
+      },
+      "target_native": {
+        "required_result": "PASS",
+        "owner_step": "P11.38",
+        "p1139_revalidation": true
+      }
+    },
+    {
+      "path": "v1/src/demos/multi.c",
+      "git_blob": "8a633988ad74138f81e2f79c4d87356d55da9d19",
+      "sdk_reference": {
+        "required_result": "REJECT",
+        "category": "declaration-error",
+        "reason": "REV17 target runtime built-ins are compiler/runtime-resident while the pinned SDK requires host declarations."
+      },
+      "target_native": {
+        "required_result": "PASS",
+        "owner_step": "P11.38",
+        "p1139_revalidation": true
+      }
+    },
+    {
+      "path": "v1/src/demos/pipe.c",
+      "git_blob": "bf69e35d838055c06d1d0df1b1878001a6d278c3",
+      "sdk_reference": {
+        "required_result": "REJECT",
+        "category": "declaration-error",
+        "reason": "REV17 target runtime built-ins are compiler/runtime-resident while the pinned SDK requires host declarations."
+      },
+      "target_native": {
+        "required_result": "PASS",
+        "owner_step": "P11.37",
+        "p1139_revalidation": true
+      }
+    },
+    {
+      "path": "v1/src/demos/ship.c",
+      "git_blob": "e284ead105305c027d1342d3c8f6247f4a6a66e8",
+      "sdk_reference": {
+        "required_result": "REJECT",
+        "category": "declaration-error",
+        "reason": "REV17 target runtime built-ins are compiler/runtime-resident while the pinned SDK requires host declarations."
+      },
+      "target_native": {
+        "required_result": "PASS",
+        "owner_step": "P11.38",
+        "p1139_revalidation": true
+      }
+    },
+    {
+      "path": "v1/src/demos/sine.c",
+      "git_blob": "839849a7ad8c17f89d53c1560b3f16ec65016e58",
+      "sdk_reference": {
+        "required_result": "REJECT",
+        "category": "declaration-error",
+        "reason": "REV17 target runtime built-ins are compiler/runtime-resident while the pinned SDK requires host declarations."
+      },
+      "target_native": {
+        "required_result": "PASS",
+        "owner_step": "P11.38",
+        "p1139_revalidation": true
+      }
+    },
+    {
+      "path": "v1/src/demos/stars.c",
+      "git_blob": "982ab6411fc43f53ec9ae7634cdf543d84706f82",
+      "sdk_reference": {
+        "required_result": "REJECT",
+        "category": "declaration-error",
+        "reason": "REV17 target runtime built-ins are compiler/runtime-resident while the pinned SDK requires host declarations."
+      },
+      "target_native": {
+        "required_result": "PASS",
+        "owner_step": "P11.38",
+        "p1139_revalidation": true
+      }
+    },
+    {
+      "path": "v1/src/demos/tune.c",
+      "git_blob": "6076872e9852bd979d01c38eb3786ed91921092b",
+      "sdk_reference": {
+        "required_result": "REJECT",
+        "category": "declaration-error",
+        "reason": "REV17 target runtime built-ins are compiler/runtime-resident while the pinned SDK requires host declarations."
+      },
+      "target_native": {
+        "required_result": "PASS",
+        "owner_step": "P11.38",
+        "p1139_revalidation": true
+      }
+    }
+  ]
+}

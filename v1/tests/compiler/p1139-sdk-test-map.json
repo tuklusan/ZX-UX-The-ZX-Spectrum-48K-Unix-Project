@@ -1,0 +1,2410 @@
+{
+  "license_header": [
+    "Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.",
+    "Proprietary rights reserved except as expressly licensed herein.",
+    "ZX-UX Sinclair ZX Spectrum Unix",
+    "This file is governed by the SANYALnet Labs Non-Commercial License in the root LICENSE file.",
+    "Non-Commercial use is permitted; Commercial Use and use for AI/ML model training are prohibited unless separately authorized.",
+    "Attribution is required: Based on original work by Supratim Sanyal of SANYALnet Labs.",
+    "See LICENSE for full terms, warranty disclaimer, termination, patent, trademark, and governing-law provisions."
+  ],
+  "schema": 1,
+  "step": "P11.39",
+  "sdk_commit": "84d144de2721cda5075c3a6610a422663b5e2f77",
+  "expected_test_count": 205,
+  "tests": [
+    {
+      "id": "compiler/tests/test_conformance.py::test_required_identifiers",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_required_identifiers",
+      "native_owner_steps": [
+        "P11.04",
+        "P11.10"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_required_integer_literals",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_required_integer_literals",
+      "native_owner_steps": [
+        "P11.04",
+        "P11.08",
+        "P11.10"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_required_char_literals",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_required_char_literals",
+      "native_owner_steps": [
+        "P11.04",
+        "P11.10"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_required_strings",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_required_strings",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.07",
+        "P11.08"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_required_float_literals",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_required_float_literals",
+      "native_owner_steps": [
+        "P11.04",
+        "P11.10",
+        "P11.14",
+        "P11.17",
+        "P11.18",
+        "P11.19",
+        "P11.20"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_supported_operator_program",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_supported_operator_program",
+      "native_owner_steps": [
+        "P11.07",
+        "P11.34"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_required_bad_literals_and_tokens",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_required_bad_literals_and_tokens",
+      "native_owner_steps": [
+        "P11.04",
+        "P11.10"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_repeated_exponent_is_lexical_error",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_repeated_exponent_is_lexical_error",
+      "native_owner_steps": [
+        "P11.04",
+        "P11.10"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_long_identifier",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_long_identifier",
+      "native_owner_steps": [
+        "P11.04",
+        "P11.10"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_unsupported_operators",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_unsupported_operators",
+      "native_owner_steps": [
+        "P11.07",
+        "P11.34"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_every_reserved_keyword_rejected",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_every_reserved_keyword_rejected",
+      "native_owner_steps": [
+        "P11.04",
+        "P11.10"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_unsupported_directives",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_unsupported_directives",
+      "native_owner_steps": [
+        "P11.03"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_unsupported_type_spellings",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_unsupported_type_spellings",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.07",
+        "P11.08"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_other_required_negative_forms",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_other_required_negative_forms",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.07",
+        "P11.08"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_8bit_assignment_wrap",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_8bit_assignment_wrap",
+      "native_owner_steps": [
+        "P11.07",
+        "P11.08",
+        "P11.34"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_signed_wrap_boundaries",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_signed_wrap_boundaries",
+      "native_owner_steps": [
+        "P11.08"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_int_min_division_special_case",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_int_min_division_special_case",
+      "native_owner_steps": [
+        "P11.08"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_signed_division_remainder",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_signed_division_remainder",
+      "native_owner_steps": [
+        "P11.08"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_divide_by_zero_exits_one",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_divide_by_zero_exits_one",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.07",
+        "P11.08"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_shift_count_mask_8_bit",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_shift_count_mask_8_bit",
+      "native_owner_steps": [
+        "P11.08"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_shift_count_mask_16_bit",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_shift_count_mask_16_bit",
+      "native_owner_steps": [
+        "P11.08"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_signed_and_unsigned_right_shift",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_signed_and_unsigned_right_shift",
+      "native_owner_steps": [
+        "P11.08"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_signed_unsigned_comparisons",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_signed_unsigned_comparisons",
+      "native_owner_steps": [
+        "P11.08"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_bare_minus_32768_is_unsigned",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_bare_minus_32768_is_unsigned",
+      "native_owner_steps": [
+        "P11.08"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_function_arguments_left_to_right",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_function_arguments_left_to_right",
+      "native_owner_steps": [
+        "P11.07",
+        "P11.34"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_binary_left_before_right",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_binary_left_before_right",
+      "native_owner_steps": [
+        "P11.07",
+        "P11.34"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_argument_value_capture",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_argument_value_capture",
+      "native_owner_steps": [
+        "P11.07",
+        "P11.34"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_assignment_destination_then_rhs_i_postinc",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_assignment_destination_then_rhs_i_postinc",
+      "native_owner_steps": [
+        "P11.07",
+        "P11.34"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_short_circuit",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_short_circuit",
+      "native_owner_steps": [
+        "P11.07",
+        "P11.34"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_sizeof_suppresses_side_effect",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_sizeof_suppresses_side_effect",
+      "native_owner_steps": [
+        "P11.07",
+        "P11.34"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_sizeof_null_deref_no_access",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_sizeof_null_deref_no_access",
+      "native_owner_steps": [
+        "P11.07",
+        "P11.34"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_sizeof_array_index_suppresses_increment",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_sizeof_array_index_suppresses_increment",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.07",
+        "P11.09",
+        "P11.11",
+        "P11.34"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_pointer_scaling_char_int_float",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_pointer_scaling_char_int_float",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11",
+        "P11.14",
+        "P11.17",
+        "P11.18",
+        "P11.19",
+        "P11.20"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_integer_plus_pointer_and_minus",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_integer_plus_pointer_and_minus",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.08",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_pointer_inc_dec",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_pointer_inc_dec",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_pointer_subtraction_signs",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_pointer_subtraction_signs",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_null_equality",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_null_equality",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.07",
+        "P11.08"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_void_pointer_conversion",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_void_pointer_conversion",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_array_decay_and_sizeof_no_decay",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_array_decay_and_sizeof_no_decay",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.07",
+        "P11.09",
+        "P11.11",
+        "P11.34"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_address_of_array_rejected",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_address_of_array_rejected",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_base_index_and_index_base",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_base_index_and_index_base",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.07",
+        "P11.08"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_argv_double_index",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_argv_double_index",
+      "native_owner_steps": [
+        "P11.22"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_void_pointer_arithmetic_and_deref_rejected",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_void_pointer_arithmetic_and_deref_rejected",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_pointer_cast_rejected",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_pointer_cast_rejected",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_function_pointer_rejected",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_function_pointer_rejected",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_multidimensional_array_rejected",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_multidimensional_array_rejected",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_scalars_storage_and_multiple_declarators",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_scalars_storage_and_multiple_declarators",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_exact_function_type_distinctions",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_exact_function_type_distinctions",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.07",
+        "P11.08"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_declarator_binding",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_declarator_binding",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_repeated_compatible_externs_and_definition_both_orders",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_repeated_compatible_externs_and_definition_both_orders",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_duplicate_definition",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_duplicate_definition",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_static_external_conflict",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_static_external_conflict",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_prototype_definition_mismatch",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_prototype_definition_mismatch",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_undeclared_call",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_undeclared_call",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.07",
+        "P11.08"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_block_scope_function_declaration",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_block_scope_function_declaration",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_old_style_empty_parameter_list",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_old_style_empty_parameter_list",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_main_forms",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_main_forms",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_invalid_main",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_invalid_main",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_parameter_scope",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_parameter_scope",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_scalar_initializers",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_scalar_initializers",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_address_of_global",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_address_of_global",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.07",
+        "P11.08"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_fixed_inferred_and_partial_arrays",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_fixed_inferred_and_partial_arrays",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_trailing_initializer_comma",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_trailing_initializer_comma",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_character_array_from_string",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_character_array_from_string",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_string_too_long_rejected",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_string_too_long_rejected",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.07",
+        "P11.08"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_designated_nested_rejected",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_designated_nested_rejected",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.07",
+        "P11.08"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_runtime_initializer_rejected",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_runtime_initializer_rejected",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_constant_macro_kinds_and_parentheses",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_constant_macro_kinds_and_parentheses",
+      "native_owner_steps": [
+        "P11.03"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_backward_macro_expansion",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_backward_macro_expansion",
+      "native_owner_steps": [
+        "P11.03"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_forward_and_self_macro_rejected",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_forward_and_self_macro_rejected",
+      "native_owner_steps": [
+        "P11.03"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_invalid_fragment_macro_rejected",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_invalid_fragment_macro_rejected",
+      "native_owner_steps": [
+        "P11.03"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_identical_and_different_redefinition",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_identical_and_different_redefinition",
+      "native_owner_steps": [
+        "P11.03",
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_no_expansion_in_literal_comment_char",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_no_expansion_in_literal_comment_char",
+      "native_owner_steps": [
+        "P11.04",
+        "P11.10"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_definition_visibility",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_definition_visibility",
+      "native_owner_steps": [
+        "P11.03",
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_local_include_macro_visibility_both_directions",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_local_include_macro_visibility_both_directions",
+      "native_owner_steps": [
+        "P11.03"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_nested_include_rejected",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_nested_include_rejected",
+      "native_owner_steps": [
+        "P11.03"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_include_exact_name_and_missing_are_io",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_include_exact_name_and_missing_are_io",
+      "native_owner_steps": [
+        "P11.03"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_include_name_validation",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_include_name_validation",
+      "native_owner_steps": [
+        "P11.03"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_builtin_header_repeat_idempotent",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_builtin_header_repeat_idempotent",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.07",
+        "P11.08"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_unknown_header_and_trailing_tokens",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_unknown_header_and_trailing_tokens",
+      "native_owner_steps": [
+        "P11.04",
+        "P11.10"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_macro_include_operand_not_expanded",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_macro_include_operand_not_expanded",
+      "native_owner_steps": [
+        "P11.03"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_multiline_comment_and_directive_comment_rules",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_multiline_comment_and_directive_comment_rules",
+      "native_owner_steps": [
+        "P11.03"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_function_object_entity_conflicts_both_orders",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_function_object_entity_conflicts_both_orders",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_parenthesized_pointer_declarators_rejected",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_parenthesized_pointer_declarators_rejected",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_array_of_pointers_and_pointer_returns",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_array_of_pointers_and_pointer_returns",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_static_and_extern_object_function_entities",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_static_and_extern_object_function_entities",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_macro_names_are_case_sensitive",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_macro_names_are_case_sensitive",
+      "native_owner_steps": [
+        "P11.03"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_backward_only_indirect_macro_dependency",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_backward_only_indirect_macro_dependency",
+      "native_owner_steps": [
+        "P11.03"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_local_include_may_include_builtin_header",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_local_include_may_include_builtin_header",
+      "native_owner_steps": [
+        "P11.03"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_builtin_header_compatible_user_declaration_coexists",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_builtin_header_compatible_user_declaration_coexists",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.07",
+        "P11.08"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_builtin_header_incompatible_user_declaration_rejected",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_builtin_header_incompatible_user_declaration_rejected",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.07",
+        "P11.08"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_macro_builtin_header_name_collision_is_rejected",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_macro_builtin_header_name_collision_is_rejected",
+      "native_owner_steps": [
+        "P11.03"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_repeated_local_include_compatible_declarations",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_repeated_local_include_compatible_declarations",
+      "native_owner_steps": [
+        "P11.03"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_invalid_udg_operations_return_einval_before_memory_access",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_invalid_udg_operations_return_einval_before_memory_access",
+      "native_owner_steps": [
+        "P11.21",
+        "P11.24",
+        "P11.25",
+        "P11.36"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_required_exact_golden_representations",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_required_exact_golden_representations",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.07",
+        "P11.08"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_roundtrip_representative_fraction_exponents",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_roundtrip_representative_fraction_exponents",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.07",
+        "P11.08"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_arithmetic_quantizes_to_float5",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_arithmetic_quantizes_to_float5",
+      "native_owner_steps": [
+        "P11.14",
+        "P11.17",
+        "P11.18",
+        "P11.19",
+        "P11.20"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_domain_range_failures",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_domain_range_failures",
+      "native_owner_steps": [
+        "P11.14",
+        "P11.17",
+        "P11.18",
+        "P11.19",
+        "P11.20"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_strict_transcendental_runtime_is_bounded",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_strict_transcendental_runtime_is_bounded",
+      "native_owner_steps": [
+        "P11.14",
+        "P11.17",
+        "P11.18",
+        "P11.19",
+        "P11.20"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_font_exact_hash_and_shape",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_font_exact_hash_and_shape",
+      "native_owner_steps": [
+        "P11.25"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_native_bitmap_interleave",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_native_bitmap_interleave",
+      "native_owner_steps": [
+        "P11.25",
+        "P11.36"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_tty64_shares_bitmap_byte_nibbles",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_tty64_shares_bitmap_byte_nibbles",
+      "native_owner_steps": [
+        "P11.25",
+        "P11.36"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_graphics_invalid_arguments_return_positive_einval",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_graphics_invalid_arguments_return_positive_einval",
+      "native_owner_steps": [
+        "P11.25",
+        "P11.36"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_graphics_point_draw_circle",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_graphics_point_draw_circle",
+      "native_owner_steps": [
+        "P11.25",
+        "P11.36"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_graphics_origin_is_spectrum_bottom_left",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_graphics_origin_is_spectrum_bottom_left",
+      "native_owner_steps": [
+        "P11.25",
+        "P11.36"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_plot_over_inverse_truth_table",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_plot_over_inverse_truth_table",
+      "native_owner_steps": [
+        "P11.25",
+        "P11.36"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_attributes_and_udg",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_attributes_and_udg",
+      "native_owner_steps": [
+        "P11.25",
+        "P11.36"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_format_deterministic_across_source_paths",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_format_deterministic_across_source_paths",
+      "native_owner_steps": [
+        "P11.28",
+        "P11.29",
+        "P11.30"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_format_integrity_rejects_corruption",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_format_integrity_rejects_corruption",
+      "native_owner_steps": [
+        "P11.28",
+        "P11.29",
+        "P11.30"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_host_header_and_hello",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_host_header_and_hello",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.07",
+        "P11.08"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_cli_compile_run_and_deterministic_recompile",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_cli_compile_run_and_deterministic_recompile",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.07",
+        "P11.08"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_stale_temp_is_neither_used_nor_deleted",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_stale_temp_is_neither_used_nor_deleted",
+      "native_owner_steps": [
+        "P11.21",
+        "P11.24",
+        "P11.29"
+      ],
+      "adapter": "Pinned SDK host safety/provenance mechanism is executed unchanged; native mapping checks corresponding admitted bounded heap/runtime/control behavior rather than Python VM internals.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_noncanonical_c48b_payload_is_rejected_even_with_valid_digest",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_noncanonical_c48b_payload_is_rejected_even_with_valid_digest",
+      "native_owner_steps": [
+        "P11.28",
+        "P11.29",
+        "P11.30"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_rehashed_structurally_invalid_c48b_is_rejected_cleanly",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_rehashed_structurally_invalid_c48b_is_rejected_cleanly",
+      "native_owner_steps": [
+        "P11.28",
+        "P11.29",
+        "P11.30"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_c48run_preserves_exact_program_token_as_argv0",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_c48run_preserves_exact_program_token_as_argv0",
+      "native_owner_steps": [
+        "P11.04",
+        "P11.10",
+        "P11.22"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_c48run_rejects_nonascii_argv_cleanly",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_c48run_rejects_nonascii_argv_cleanly",
+      "native_owner_steps": [
+        "P11.04",
+        "P11.10",
+        "P11.22"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_c48run_cli_rejects_rehashed_bad_schema_without_traceback",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_c48run_cli_rejects_rehashed_bad_schema_without_traceback",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.07",
+        "P11.08"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_compile_failure_preserves_previous_output",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_compile_failure_preserves_previous_output",
+      "native_owner_steps": [
+        "P11.29"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_diagnostic_class_and_stderr",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_diagnostic_class_and_stderr",
+      "native_owner_steps": [
+        "P11.29"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_empty_and_all_comment_translation_units",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_empty_and_all_comment_translation_units",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.07",
+        "P11.08"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_global_bss_zero_semantics",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_global_bss_zero_semantics",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_nonvoid_fallthrough_is_status_one",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_nonvoid_fallthrough_is_status_one",
+      "native_owner_steps": [
+        "P11.06",
+        "P11.12",
+        "P11.31"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_void_call_is_valid_expression_statement",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_void_call_is_valid_expression_statement",
+      "native_owner_steps": [
+        "P11.07",
+        "P11.34"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_void_value_used_as_value_rejected",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_void_value_used_as_value_rejected",
+      "native_owner_steps": [
+        "P11.07",
+        "P11.34"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_float_parameter_is_source_pass_by_value",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_float_parameter_is_source_pass_by_value",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11",
+        "P11.14",
+        "P11.17",
+        "P11.18",
+        "P11.19",
+        "P11.20"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_char_function_return_narrows_before_promotion",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_char_function_return_narrows_before_promotion",
+      "native_owner_steps": [
+        "P11.08"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_main_status_uses_low_eight_bits",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_main_status_uses_low_eight_bits",
+      "native_owner_steps": [
+        "P11.08"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_negative_shift_counts_are_masked",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_negative_shift_counts_are_masked",
+      "native_owner_steps": [
+        "P11.08"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_distinct_live_objects_have_distinct_addresses",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_distinct_live_objects_have_distinct_addresses",
+      "native_owner_steps": [
+        "P11.21",
+        "P11.24"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_stale_automatic_pointer_is_trapped_by_host_checker",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_stale_automatic_pointer_is_trapped_by_host_checker",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11",
+        "P11.21",
+        "P11.24"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_argv_storage_is_read_only",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_argv_storage_is_read_only",
+      "native_owner_steps": [
+        "P11.22"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_automatic_initializer_runs_each_block_activation",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_automatic_initializer_runs_each_block_activation",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_strncpy_is_bounded_and_zero_count_touches_no_memory",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_strncpy_is_bounded_and_zero_count_touches_no_memory",
+      "native_owner_steps": [
+        "P11.21",
+        "P11.24"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_zero_length_memory_primitives_touch_no_pointer_memory",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_zero_length_memory_primitives_touch_no_pointer_memory",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11",
+        "P11.21",
+        "P11.24"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_free_rejects_interior_malloc_pointer",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_free_rejects_interior_malloc_pointer",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11",
+        "P11.21",
+        "P11.24"
+      ],
+      "adapter": "Pinned SDK host safety/provenance mechanism is executed unchanged; native mapping checks corresponding admitted bounded heap/runtime/control behavior rather than Python VM internals.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_invalid_print_at_returns_einval_before_text_dereference",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_invalid_print_at_returns_einval_before_text_dereference",
+      "native_owner_steps": [
+        "P11.25",
+        "P11.36"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_malloc_free_and_void_call_runtime",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_malloc_free_and_void_call_runtime",
+      "native_owner_steps": [
+        "P11.07",
+        "P11.21",
+        "P11.24",
+        "P11.34"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_float_to_char_conversion_order_and_range",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_float_to_char_conversion_order_and_range",
+      "native_owner_steps": [
+        "P11.14",
+        "P11.17",
+        "P11.18",
+        "P11.19",
+        "P11.20"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_redundant_float_cast_is_not_in_c48",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_redundant_float_cast_is_not_in_c48",
+      "native_owner_steps": [
+        "P11.14",
+        "P11.17",
+        "P11.18",
+        "P11.19",
+        "P11.20"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_implementation_reserved_identifiers",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_implementation_reserved_identifiers",
+      "native_owner_steps": [
+        "P11.04",
+        "P11.10"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_nonreserved_modern_identifiers_remain_ordinary",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_nonreserved_modern_identifiers_remain_ordinary",
+      "native_owner_steps": [
+        "P11.04",
+        "P11.10"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_crlf_host_normalization_is_semantically_identical",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_crlf_host_normalization_is_semantically_identical",
+      "native_owner_steps": [
+        "P11.04",
+        "P11.10"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_lexical_error_physical_position",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_lexical_error_physical_position",
+      "native_owner_steps": [
+        "P11.04",
+        "P11.10"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_nonascii_error_physical_position",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_nonascii_error_physical_position",
+      "native_owner_steps": [
+        "P11.04",
+        "P11.10"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_missing_include_is_anchored_at_operand",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_missing_include_is_anchored_at_operand",
+      "native_owner_steps": [
+        "P11.03"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_define_inside_function_has_preprocessing_visibility",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_define_inside_function_has_preprocessing_visibility",
+      "native_owner_steps": [
+        "P11.03"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_comment_before_directive_still_allows_directive",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_comment_before_directive_still_allows_directive",
+      "native_owner_steps": [
+        "P11.03"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_comment_marker_inside_string_macro_is_data",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_comment_marker_inside_string_macro_is_data",
+      "native_owner_steps": [
+        "P11.03"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_unterminated_block_comment_reports_actual_opening_marker",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_unterminated_block_comment_reports_actual_opening_marker",
+      "native_owner_steps": [
+        "P11.04",
+        "P11.10"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_unterminated_block_comment_after_prior_line_tracks_original_open",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_unterminated_block_comment_after_prior_line_tracks_original_open",
+      "native_owner_steps": [
+        "P11.04",
+        "P11.10"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_canonicalized_macro_redefinition",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_canonicalized_macro_redefinition",
+      "native_owner_steps": [
+        "P11.03",
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_direct_screen_layout_is_6912_bytes",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_direct_screen_layout_is_6912_bytes",
+      "native_owner_steps": [
+        "P11.25",
+        "P11.36"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_memory_alignment_for_scalar_objects",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_memory_alignment_for_scalar_objects",
+      "native_owner_steps": [
+        "P11.21",
+        "P11.24"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_float_known_manual_0_1_pattern",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_float_known_manual_0_1_pattern",
+      "native_owner_steps": [
+        "P11.14",
+        "P11.17",
+        "P11.18",
+        "P11.19",
+        "P11.20"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_float_large_integer_promotes_to_normalized_form",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_float_large_integer_promotes_to_normalized_form",
+      "native_owner_steps": [
+        "P11.08",
+        "P11.14",
+        "P11.17",
+        "P11.18",
+        "P11.19",
+        "P11.20"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_host_argv_obeys_native_arg1_256_byte_limit",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_host_argv_obeys_native_arg1_256_byte_limit",
+      "native_owner_steps": [
+        "P11.22"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_conformance.py::test_host_argv_exact_boundary_and_terminator",
+      "file": "compiler/tests/test_conformance.py",
+      "name": "test_host_argv_exact_boundary_and_terminator",
+      "native_owner_steps": [
+        "P11.22"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_game_regressions.py::test_c48b1_string_array_initializer_roundtrip",
+      "file": "compiler/tests/test_game_regressions.py",
+      "name": "test_c48b1_string_array_initializer_roundtrip",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11",
+        "P11.28",
+        "P11.29",
+        "P11.30"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_game_regressions.py::test_c48b1_string_pointer_initializer_roundtrip",
+      "file": "compiler/tests/test_game_regressions.py",
+      "name": "test_c48b1_string_pointer_initializer_roundtrip",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11",
+        "P11.28",
+        "P11.29",
+        "P11.30"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_game_regressions.py::test_release_column_gate_recurses_into_game_sources",
+      "file": "compiler/tests/test_game_regressions.py",
+      "name": "test_release_column_gate_recurses_into_game_sources",
+      "native_owner_steps": [
+        "P11.38"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_game_regressions.py::test_arithmetic_echo_and_backspace",
+      "file": "compiler/tests/test_game_regressions.py",
+      "name": "test_arithmetic_echo_and_backspace",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.07",
+        "P11.08"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_release_regressions.py::test_recursion",
+      "file": "compiler/tests/test_release_regressions.py",
+      "name": "test_recursion",
+      "native_owner_steps": [
+        "P11.06",
+        "P11.12",
+        "P11.31"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_release_regressions.py::test_nested_shadowing_and_parameter_scope",
+      "file": "compiler/tests/test_release_regressions.py",
+      "name": "test_nested_shadowing_and_parameter_scope",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.06",
+        "P11.09",
+        "P11.11",
+        "P11.12",
+        "P11.31"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_release_regressions.py::test_break_continue_for_while_do",
+      "file": "compiler/tests/test_release_regressions.py",
+      "name": "test_break_continue_for_while_do",
+      "native_owner_steps": [
+        "P11.06",
+        "P11.12",
+        "P11.31"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_release_regressions.py::test_six_argument_call_and_capture",
+      "file": "compiler/tests/test_release_regressions.py",
+      "name": "test_six_argument_call_and_capture",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.07",
+        "P11.08"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_release_regressions.py::test_pointer_return_and_array_of_pointers_runtime",
+      "file": "compiler/tests/test_release_regressions.py",
+      "name": "test_pointer_return_and_array_of_pointers_runtime",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_release_regressions.py::test_global_pointer_initializer",
+      "file": "compiler/tests/test_release_regressions.py",
+      "name": "test_global_pointer_initializer",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_release_regressions.py::test_extern_address_initializer_may_precede_definition",
+      "file": "compiler/tests/test_release_regressions.py",
+      "name": "test_extern_address_initializer_may_precede_definition",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_release_regressions.py::test_string_literals_are_read_only",
+      "file": "compiler/tests/test_release_regressions.py",
+      "name": "test_string_literals_are_read_only",
+      "native_owner_steps": [
+        "P11.04",
+        "P11.10"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_release_regressions.py::test_memmove_overlap",
+      "file": "compiler/tests/test_release_regressions.py",
+      "name": "test_memmove_overlap",
+      "native_owner_steps": [
+        "P11.21",
+        "P11.24"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_release_regressions.py::test_malloc_free_reuses_space_without_aliasing_live_object",
+      "file": "compiler/tests/test_release_regressions.py",
+      "name": "test_malloc_free_reuses_space_without_aliasing_live_object",
+      "native_owner_steps": [
+        "P11.21",
+        "P11.24"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_release_regressions.py::test_function_static_linkage_runtime",
+      "file": "compiler/tests/test_release_regressions.py",
+      "name": "test_function_static_linkage_runtime",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_release_regressions.py::test_gui_control_key_mapping_prefers_keysym",
+      "file": "compiler/tests/test_release_regressions.py",
+      "name": "test_gui_control_key_mapping_prefers_keysym",
+      "native_owner_steps": [
+        "P11.25"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_release_regressions.py::test_gui_numeric_keypad_sequence",
+      "file": "compiler/tests/test_release_regressions.py",
+      "name": "test_gui_numeric_keypad_sequence",
+      "native_owner_steps": [
+        "P11.25"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_release_regressions.py::test_cli_rejects_same_input_output_without_modifying_source",
+      "file": "compiler/tests/test_release_regressions.py",
+      "name": "test_cli_rejects_same_input_output_without_modifying_source",
+      "native_owner_steps": [
+        "P11.29"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_release_regressions.py::test_native_default_heap_budget_and_override",
+      "file": "compiler/tests/test_release_regressions.py",
+      "name": "test_native_default_heap_budget_and_override",
+      "native_owner_steps": [
+        "P11.25",
+        "P11.36"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_release_regressions.py::test_c48b1_roundtrip_accepts_block_scope_declarations",
+      "file": "compiler/tests/test_release_regressions.py",
+      "name": "test_c48b1_roundtrip_accepts_block_scope_declarations",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11",
+        "P11.28",
+        "P11.29",
+        "P11.30"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_release_regressions.py::test_all_noncanonical_ascii_controls_rejected_before_line_splitting",
+      "file": "compiler/tests/test_release_regressions.py",
+      "name": "test_all_noncanonical_ascii_controls_rejected_before_line_splitting",
+      "native_owner_steps": [
+        "P11.04",
+        "P11.10"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_release_regressions.py::test_c48run_defaults_to_tasword_font_and_accepts_override",
+      "file": "compiler/tests/test_release_regressions.py",
+      "name": "test_c48run_defaults_to_tasword_font_and_accepts_override",
+      "native_owner_steps": [
+        "P11.25"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_release_regressions.py::test_c48run_invalid_font_path_fails_cleanly",
+      "file": "compiler/tests/test_release_regressions.py",
+      "name": "test_c48run_invalid_font_path_fails_cleanly",
+      "native_owner_steps": [
+        "P11.25"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_security.py::test_nested_parentheses_are_controlled_resource_limit",
+      "file": "compiler/tests/test_security.py",
+      "name": "test_nested_parentheses_are_controlled_resource_limit",
+      "native_owner_steps": [
+        "P11.02",
+        "P11.29"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_security.py::test_nested_blocks_are_controlled_resource_limit",
+      "file": "compiler/tests/test_security.py",
+      "name": "test_nested_blocks_are_controlled_resource_limit",
+      "native_owner_steps": [
+        "P11.02",
+        "P11.06",
+        "P11.12",
+        "P11.29",
+        "P11.31"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_security.py::test_extreme_pointer_depth_is_controlled_resource_limit",
+      "file": "compiler/tests/test_security.py",
+      "name": "test_extreme_pointer_depth_is_controlled_resource_limit",
+      "native_owner_steps": [
+        "P11.02",
+        "P11.05",
+        "P11.09",
+        "P11.11",
+        "P11.29"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_security.py::test_macro_doubling_bomb_is_controlled_resource_limit",
+      "file": "compiler/tests/test_security.py",
+      "name": "test_macro_doubling_bomb_is_controlled_resource_limit",
+      "native_owner_steps": [
+        "P11.02",
+        "P11.03",
+        "P11.29"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_security.py::test_source_object_is_rejected_before_oversized_parse",
+      "file": "compiler/tests/test_security.py",
+      "name": "test_source_object_is_rejected_before_oversized_parse",
+      "native_owner_steps": [
+        "P11.02",
+        "P11.29"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_security.py::test_single_physical_line_has_host_safety_ceiling",
+      "file": "compiler/tests/test_security.py",
+      "name": "test_single_physical_line_has_host_safety_ceiling",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.07",
+        "P11.08"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_security.py::test_cli_hostile_source_never_leaks_python_traceback",
+      "file": "compiler/tests/test_security.py",
+      "name": "test_cli_hostile_source_never_leaks_python_traceback",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.07",
+        "P11.08"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_security.py::test_oversized_c48b1_is_rejected_before_json_parse",
+      "file": "compiler/tests/test_security.py",
+      "name": "test_oversized_c48b1_is_rejected_before_json_parse",
+      "native_owner_steps": [
+        "P11.02",
+        "P11.28",
+        "P11.29",
+        "P11.30"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_security.py::test_excessive_json_nesting_is_rejected_before_json_load",
+      "file": "compiler/tests/test_security.py",
+      "name": "test_excessive_json_nesting_is_rejected_before_json_load",
+      "native_owner_steps": [
+        "P11.28",
+        "P11.29",
+        "P11.30"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_security.py::test_wrong_json_type_in_schema_is_controlled_rejection",
+      "file": "compiler/tests/test_security.py",
+      "name": "test_wrong_json_type_in_schema_is_controlled_rejection",
+      "native_owner_steps": [
+        "P11.28",
+        "P11.29",
+        "P11.30"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_security.py::test_function_definition_without_function_suffix_is_rejected",
+      "file": "compiler/tests/test_security.py",
+      "name": "test_function_definition_without_function_suffix_is_rejected",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_security.py::test_runtime_cli_oversized_file_has_no_traceback",
+      "file": "compiler/tests/test_security.py",
+      "name": "test_runtime_cli_oversized_file_has_no_traceback",
+      "native_owner_steps": [
+        "P11.02",
+        "P11.29"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_security.py::test_recoverable_security_dashboard_passes_on_screen",
+      "file": "compiler/tests/test_security.py",
+      "name": "test_recoverable_security_dashboard_passes_on_screen",
+      "native_owner_steps": [
+        "P11.25",
+        "P11.36"
+      ],
+      "adapter": null,
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_security.py::test_one_past_write_is_trapped_after_visible_warning",
+      "file": "compiler/tests/test_security.py",
+      "name": "test_one_past_write_is_trapped_after_visible_warning",
+      "native_owner_steps": [
+        "P11.21",
+        "P11.24"
+      ],
+      "adapter": "Pinned SDK host safety/provenance mechanism is executed unchanged; native mapping checks corresponding admitted bounded heap/runtime/control behavior rather than Python VM internals.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_security.py::test_use_after_free_is_trapped_after_visible_warning",
+      "file": "compiler/tests/test_security.py",
+      "name": "test_use_after_free_is_trapped_after_visible_warning",
+      "native_owner_steps": [
+        "P11.21",
+        "P11.24"
+      ],
+      "adapter": "Pinned SDK host safety/provenance mechanism is executed unchanged; native mapping checks corresponding admitted bounded heap/runtime/control behavior rather than Python VM internals.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_security.py::test_interior_free_is_trapped_after_visible_warning",
+      "file": "compiler/tests/test_security.py",
+      "name": "test_interior_free_is_trapped_after_visible_warning",
+      "native_owner_steps": [
+        "P11.21",
+        "P11.24"
+      ],
+      "adapter": "Pinned SDK host safety/provenance mechanism is executed unchanged; native mapping checks corresponding admitted bounded heap/runtime/control behavior rather than Python VM internals.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_security.py::test_double_free_is_trapped_after_visible_warning",
+      "file": "compiler/tests/test_security.py",
+      "name": "test_double_free_is_trapped_after_visible_warning",
+      "native_owner_steps": [
+        "P11.21",
+        "P11.24"
+      ],
+      "adapter": "Pinned SDK host safety/provenance mechanism is executed unchanged; native mapping checks corresponding admitted bounded heap/runtime/control behavior rather than Python VM internals.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_security.py::test_infinite_loop_is_stopped_by_deterministic_step_budget",
+      "file": "compiler/tests/test_security.py",
+      "name": "test_infinite_loop_is_stopped_by_deterministic_step_budget",
+      "native_owner_steps": [
+        "P11.02",
+        "P11.21",
+        "P11.24",
+        "P11.25",
+        "P11.29",
+        "P11.36"
+      ],
+      "adapter": "Pinned SDK host safety/provenance mechanism is executed unchanged; native mapping checks corresponding admitted bounded heap/runtime/control behavior rather than Python VM internals.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_security.py::test_recursive_program_is_stopped_by_call_depth_budget",
+      "file": "compiler/tests/test_security.py",
+      "name": "test_recursive_program_is_stopped_by_call_depth_budget",
+      "native_owner_steps": [
+        "P11.02",
+        "P11.21",
+        "P11.24",
+        "P11.25",
+        "P11.29",
+        "P11.36"
+      ],
+      "adapter": "Pinned SDK host safety/provenance mechanism is executed unchanged; native mapping checks corresponding admitted bounded heap/runtime/control behavior rather than Python VM internals.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_security.py::test_raw_pointer_byte_forgery_has_no_provenance",
+      "file": "compiler/tests/test_security.py",
+      "name": "test_raw_pointer_byte_forgery_has_no_provenance",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11",
+        "P11.21",
+        "P11.24"
+      ],
+      "adapter": "Pinned SDK host safety/provenance mechanism is executed unchanged; native mapping checks corresponding admitted bounded heap/runtime/control behavior rather than Python VM internals.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_security.py::test_reserved_address_forgery_fixture_does_not_compile",
+      "file": "compiler/tests/test_security.py",
+      "name": "test_reserved_address_forgery_fixture_does_not_compile",
+      "native_owner_steps": [
+        "P11.04",
+        "P11.10",
+        "P11.21",
+        "P11.24"
+      ],
+      "adapter": "Pinned SDK host safety/provenance mechanism is executed unchanged; native mapping checks corresponding admitted bounded heap/runtime/control behavior rather than Python VM internals.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_security.py::test_stale_pointer_does_not_revive_after_heap_reuse",
+      "file": "compiler/tests/test_security.py",
+      "name": "test_stale_pointer_does_not_revive_after_heap_reuse",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11",
+        "P11.21",
+        "P11.24"
+      ],
+      "adapter": "Pinned SDK host safety/provenance mechanism is executed unchanged; native mapping checks corresponding admitted bounded heap/runtime/control behavior rather than Python VM internals.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_security.py::test_stale_pointer_cannot_bypass_memset_after_reuse",
+      "file": "compiler/tests/test_security.py",
+      "name": "test_stale_pointer_cannot_bypass_memset_after_reuse",
+      "native_owner_steps": [
+        "P11.05",
+        "P11.09",
+        "P11.11",
+        "P11.21",
+        "P11.24"
+      ],
+      "adapter": "Pinned SDK host safety/provenance mechanism is executed unchanged; native mapping checks corresponding admitted bounded heap/runtime/control behavior rather than Python VM internals.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_security.py::test_c48run_max_steps_cli_is_controlled",
+      "file": "compiler/tests/test_security.py",
+      "name": "test_c48run_max_steps_cli_is_controlled",
+      "native_owner_steps": [
+        "P11.02",
+        "P11.29"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    },
+    {
+      "id": "compiler/tests/test_security.py::test_all_shipped_c48_source_lines_fit_64_columns",
+      "file": "compiler/tests/test_security.py",
+      "name": "test_all_shipped_c48_source_lines_fit_64_columns",
+      "native_owner_steps": [
+        "P11.38"
+      ],
+      "adapter": "Pinned SDK host-only C48B1/GUI/CLI/release mechanism is executed unchanged; target-native intent is checked by admitted OBJ1/runtime/demo owner steps and is not represented as host format.",
+      "original_intent_preserved": true
+    }
+  ]
+}
