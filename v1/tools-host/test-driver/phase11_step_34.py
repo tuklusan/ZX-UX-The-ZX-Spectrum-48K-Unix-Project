@@ -453,7 +453,7 @@ p1134_twos:
 
 fixture_end:
     SAVEBIN "p1134-main.bin",fixture,fixture_end-fixture
-''', encoding="utf-8", newline="\\n")
+''', encoding="utf-8", newline="\n")
 
     result = run_command(
         [assembler, "--nologo", "--sym=p1134-data-model.sym", fixture.name],
