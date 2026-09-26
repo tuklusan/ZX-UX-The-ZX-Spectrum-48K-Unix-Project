@@ -19,6 +19,7 @@ from pathlib import Path
 import re
 import shutil
 import sys
+import tempfile
 
 from driver_core import DriverError
 from fuse_harness import FAIL_PC, PASS_PC, run_sna
@@ -278,25 +279,25 @@ def dispatch(root: Path, action: str, step: str, *, sha256_file, run_command, re
 
     native_results = []
     if action == "test":
-        native_root = build / "p1139-native-suite"
-        if native_root.exists():
-            shutil.rmtree(native_root)
-        native_root.mkdir(parents=True)
+        native_root = Path(tempfile.mkdtemp(prefix="zxux-p1139-native-suite-"))
         runner = root / "v1/tools-host/test-driver/run.py"
-        for owner in NATIVE_REVALIDATION:
-            evidence = native_root / owner.replace(".", "")
-            result = run_command(
-                [sys.executable, str(runner), "test", "--step", owner,
-                 "--evidence-dir", str(evidence)],
-                cwd=root, timeout_seconds=180,
-            )
-            require(not result.timed_out and result.exit_code == 0,
-                    f"P11.39 exact-head native owner revalidation failed: {owner}: "
-                    f"{result.stdout}\n{result.stderr}")
-            require(f"ZX-UX {owner} TEST PASS" in result.stdout,
-                    f"P11.39 native owner missing PASS marker: {owner}")
-            commands.append(result)
-            native_results.append(owner)
+        try:
+            for owner in NATIVE_REVALIDATION:
+                evidence = native_root / owner.replace(".", "")
+                result = run_command(
+                    [sys.executable, str(runner), "test", "--step", owner,
+                     "--evidence-dir", str(evidence)],
+                    cwd=root, timeout_seconds=180,
+                )
+                require(not result.timed_out and result.exit_code == 0,
+                        f"P11.39 exact-head native owner revalidation failed: {owner}: "
+                        f"{result.stdout}\n{result.stderr}")
+                require(f"ZX-UX {owner} TEST PASS" in result.stdout,
+                        f"P11.39 native owner missing PASS marker: {owner}")
+                commands.append(result)
+                native_results.append(owner)
+        finally:
+            shutil.rmtree(native_root, ignore_errors=True)
 
         negative_self_tests(mapping, test_ids, source_manifest, three)
         require(wrong_native_expected_result_must_fail(root),
