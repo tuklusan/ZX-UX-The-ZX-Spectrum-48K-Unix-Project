@@ -7098,3 +7098,116 @@ cc_data_inval:
     scf
     ret
     ENDM
+
+
+; P11.33 block primitive selection shared with the canonical P1.40 policy.
+; Repeated block operations are interruptible between iterations. Contended
+; timing is deliberately classified as variable and never used for correctness.
+    MACRO EMIT_P1133_CC_BLOCK_OPS
+CC_BLOCK_FORWARD         EQU 0
+CC_BLOCK_BACKWARD        EQU 1
+CC_BLOCK_PROOF_ONE       EQU 1
+CC_BLOCK_PROOF_PTRS_DEAD EQU 2
+CC_BLOCK_TINY_UNCONTENDED_T EQU 14
+CC_BLOCK_LDIR_ONE_UNCONTENDED_T EQU 16
+CC_BLOCK_CONTENDED_TIMING_VARIABLE EQU 1
+CC_BLOCK_BUFFER_CAPACITY EQU 8
+
+cc_block_buffer:         defs CC_BLOCK_BUFFER_CAPACITY,0
+cc_block_len:            db 0
+cc_block_flags:          db 0
+cc_block_direction:      db 0
+
+cc_block_reset:
+    xor a
+    ld (cc_block_len),a
+    ret
+
+; A=proof flags. A one-byte fixed copy with dead post-copy pointers uses the
+; measured 14T ordinary pair LD A,(HL) / LD (DE),A instead of a 16T LDIR
+; iteration. Otherwise the canonical eligible copy is LDIR.
+cc_block_emit_copy:
+    ld (cc_block_flags),a
+    and $FC
+    jp nz,cc_block_inval
+    call cc_block_reset
+    ld a,(cc_block_flags)
+    and CC_BLOCK_PROOF_ONE|CC_BLOCK_PROOF_PTRS_DEAD
+    cp CC_BLOCK_PROOF_ONE|CC_BLOCK_PROOF_PTRS_DEAD
+    jr nz,cc_block_copy_repeat
+    ld a,$7E
+    call cc_block_put
+    ret c
+    ld a,$12
+    jp cc_block_put
+cc_block_copy_repeat:
+    ld a,$ED
+    call cc_block_put
+    ret c
+    ld a,$B0
+    jp cc_block_put
+
+; A=direction. Overlap analysis is performed before this selector.
+cc_block_emit_move:
+    ld (cc_block_direction),a
+    cp CC_BLOCK_BACKWARD+1
+    jp nc,cc_block_inval
+    call cc_block_reset
+    ld a,$ED
+    call cc_block_put
+    ret c
+    ld a,(cc_block_direction)
+    or a
+    ld a,$B0
+    jr z,cc_block_put
+    ld a,$B8
+    jp cc_block_put
+
+; A=direction. Forward searches use CPIR; reverse searches use CPDR.
+cc_block_emit_search:
+    ld (cc_block_direction),a
+    cp CC_BLOCK_BACKWARD+1
+    jp nc,cc_block_inval
+    call cc_block_reset
+    ld a,$ED
+    call cc_block_put
+    ret c
+    ld a,(cc_block_direction)
+    or a
+    ld a,$B1
+    jr z,cc_block_put
+    ld a,$B9
+    jp cc_block_put
+
+cc_block_put:
+    push de
+    push hl
+    push af
+    ld a,(cc_block_len)
+    cp CC_BLOCK_BUFFER_CAPACITY
+    jr nc,cc_block_put_full
+    ld e,a
+    ld d,0
+    ld hl,cc_block_buffer
+    add hl,de
+    pop af
+    ld (hl),a
+    ld a,(cc_block_len)
+    inc a
+    ld (cc_block_len),a
+    pop hl
+    pop de
+    xor a
+    ret
+cc_block_put_full:
+    pop af
+    pop hl
+    pop de
+    ld a,E_NOSPC
+    scf
+    ret
+cc_block_inval:
+    ld a,E_INVAL
+    scf
+    ret
+    ENDM

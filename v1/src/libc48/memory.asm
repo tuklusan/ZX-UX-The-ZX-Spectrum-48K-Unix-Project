@@ -411,20 +411,33 @@ memchr:
     ld a,b
     or c
     jr z,c48_memchr_miss
-c48_memchr_loop:
     ld a,(c48_mem_char)
-    cp (hl)
-    jr z,c48_memchr_hit
-    inc hl
-    dec bc
-    ld a,b
-    or c
-    jr nz,c48_memchr_loop
+    cpir
+    jr nz,c48_memchr_miss
+    dec hl
+    xor a
+    ret
 c48_memchr_miss:
     ld hl,0
     xor a
     ret
-c48_memchr_hit:
+
+; Internal reverse-search primitive used by compiler/runtime code-selection
+; tests. HL=end byte, DE low byte=needle, BC=count; result matches memchr.
+c48_memrchr:
+    ld a,e
+    ld (c48_mem_char),a
+    ld a,b
+    or c
+    jr z,c48_memrchr_miss
+    ld a,(c48_mem_char)
+    cpdr
+    jr nz,c48_memrchr_miss
+    inc hl
+    xor a
+    ret
+c48_memrchr_miss:
+    ld hl,0
     xor a
     ret
 
