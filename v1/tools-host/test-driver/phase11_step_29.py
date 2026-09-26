@@ -275,6 +275,15 @@ p1129_names_negative:
     xor a
     ret
 
+p1129_validate_direct:
+    call p1129_reset
+    call cc_p1129_validate_candidate
+    ret
+
+p1129_publish_raw:
+    call p1129_reset
+    jp p1129_call
+
 p1129_publish_success:
     call p1129_reset
     call p1129_call
@@ -687,7 +696,8 @@ p1129_gateway_end:
     main = (build / "p1129-main.bin").read_bytes()
     gateway = (build / "p1129-gateway.bin").read_bytes()
     require(0 < len(main) <= 0x2000, "P11.29 fixture overlaps syscall gateway")
-    names = ("p1129_names_positive","p1129_names_negative","p1129_publish_success",
+    names = ("p1129_names_positive","p1129_names_negative","p1129_validate_direct",
+             "p1129_publish_raw","p1129_publish_success",
              "p1129_collision","p1129_compile_fail","p1129_alloc_fail","p1129_write_fail",
              "p1129_close_fail","p1129_postvalidate_fail","p1129_rename_fail",
              "p1129_collision_exhausted","p1129_short_write")
