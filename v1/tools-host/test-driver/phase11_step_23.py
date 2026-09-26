@@ -375,7 +375,7 @@ p1123_full:
     ld de,p1123_buf
     ld bc,5
     call write_full
-    ld de,4
+    ld de,5
     call p1123_check_word
     ret c
 
