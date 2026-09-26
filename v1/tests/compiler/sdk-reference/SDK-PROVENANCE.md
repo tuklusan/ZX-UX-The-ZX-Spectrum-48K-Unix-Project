@@ -163,3 +163,27 @@ while satisfying REV17 Sections 25.5-25.6 and the <=20 KiB compiler residency
 budget. Host C48B1/VM memory structures remain reference oracles only; the
 native compiler is a streaming Z80 implementation feeding symbolic emission and
 the native OBJ1 writer.
+
+## P11.39 complete pinned SDK corpus import
+
+P11.39 imports the complete pinned SDK tree, without editing its contents, at:
+
+`v1/tests/compiler/sdk-reference/sdk/`
+
+The imported subtree is Git-tree-identical to the read-only SDK baseline:
+
+- SDK commit: `84d144de2721cda5075c3a6610a422663b5e2f77`
+- SDK root tree: `1c6b5bae84035ee853be9142b440792881c9ca9f`
+- imported regular files: 111
+- imported test methods reported by the frozen release expectation: 205
+
+The original executable modes are preserved. The imported `compiler/run_tests.py`
+and `compiler/verify_release.py` are run directly from this repository. The
+project license gate verifies the entire imported subtree by its exact Git tree
+identity before exempting its original SDK headers/binary assets from the
+project-header scan; this does not weaken scanning outside that exact subtree.
+
+No imported test is skipped, xfail-marked, rewritten, or expectation-weakened.
+P11.39's native mapping, Phase-11 C-source manifest, and three-way
+DOCX/SDK/native comparison remain separate project-authored records adjacent to
+this preserved subtree.

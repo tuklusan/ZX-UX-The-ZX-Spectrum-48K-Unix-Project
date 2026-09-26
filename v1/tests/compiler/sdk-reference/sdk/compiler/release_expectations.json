@@ -1,0 +1,121 @@
+{
+  "version": "0.9.0-dev",
+  "test_count": 205,
+  "font": {
+    "tasword_sha256": "90f6818cf81cf3f13509cff32c091075691195d9638dbe801d12daceec1c9339",
+    "zxux_sha256": "90f6818cf81cf3f13509cff32c091075691195d9638dbe801d12daceec1c9339",
+    "raw_sha256": "0ccd55f30450231b4219f15c945af53a3eb418082a28b5062589723d8fa1834d"
+  },
+  "host_header_sha256": "b14d2c7d2558e3016e712107c53692680b62f50b99fc6054660e22c0af02766f",
+  "game_header_sha256": "d052b9b6d58d13effa3c9ef87322b2dfdd8f4bb1a9a5c02b48e37c34d5686d1f",
+  "demos": {
+    "hello": {
+      "args": [],
+      "source_sha256": "314c973f97449348fcafe02d27b8df3f91ecdd41665a2cf2d7baffcb4c5ba7e3",
+      "binary_sha256": "4dfbcdb0bc821a94054ef468f5ebe32e59e05e34e6e203284cce6ddceb842665",
+      "screen_sha256": "20e491b86cb68ca65eef144c760feaef80995242b258dc2421beda30a68a69f9"
+    },
+    "colors": {
+      "args": [],
+      "source_sha256": "d691336881de1f29f6b236e49bbd2b14b41843a6bf1472dd33f7dfef00f60d8c",
+      "binary_sha256": "5e9411e2b3f818017373ba389039c169a5d757f913df045443e15410c7eefab4",
+      "screen_sha256": "82687c81ba0208c728b1a4643f03b67745b947a39cd252929f4b383d9fba6d55"
+    },
+    "graphics": {
+      "args": [],
+      "source_sha256": "1981324b45387acd98e9be80e6800d97e8ccd9937f6af31715b370da0fc4c3e7",
+      "binary_sha256": "5d667ab8c3841d91cd97eb4ddd82389c98568dc23bbd979607af4fe7ce4c12ac",
+      "screen_sha256": "d2611838b3071ed7e658178d38a7bdd11a0d7fdf2aeffbb15bd65803a878053c"
+    },
+    "udg": {
+      "args": [],
+      "source_sha256": "dd15548be86d79b48ca8c5d9d0d87a1425236ccff7e548ef32952eaa031ffeff",
+      "binary_sha256": "e6a33f15c8b0990d0c1dab06fddaa38ffdb431dff98f8cf05243dc7e124ffc23",
+      "screen_sha256": "297ef51aa92911f090027668d02bc5bd92eac82c72678a708cc9a1097b13081c"
+    },
+    "maze": {
+      "args": [],
+      "source_sha256": "982ef55dc51dbaf3566efb5f9af98f98729138c53df8a837b7d435f0b0016ddb",
+      "binary_sha256": "635375320159a6c44079d5066ad91d8f8c7f3189614271661e41cabf71389562",
+      "screen_sha256": "ca337377f9e1073e895d6ad9240072c37577e6dd16d8c3cd43620c0bec1c2335"
+    },
+    "argv": {
+      "args": [
+        "alpha",
+        "beta",
+        "gamma"
+      ],
+      "source_sha256": "b56debabcbc3fe09d8b370f863d673627c3c591db08f87a80fb2d1e8df3cbf8e",
+      "binary_sha256": "f9e33f5d72c69a637daf1c863f343095c36df239a3ad4c048f61b5af87f677ea",
+      "screen_sha256": "c5fdbdb1e1ee4eeca9df25cf07f2d8747ad9c622befaf9a176398329fa962898"
+    }
+  },
+  "security_programs": {
+    "secguard": "d99bf57105e54edad73fac8f7d3558744ab08f02576b03bfcc9c4b69293f8325",
+    "secoob": "349168f84c3591e3391339b935194369f343e34fe35854a3a2d91705606fcaaa",
+    "secuaf": "d7ea7af597698c8741da08cd72c3004aa08bae1b8f326be0b48f83202996e764",
+    "secfree": "854c4fe9ff427b065ebb7d96037e59303b4b1403aeade0868731e65732b243ea",
+    "secdbl": "77536aa5fa854916c372bc8f24c570abfcc4ddd52f7ba1a3a649467b09be3df4",
+    "secloop": "08d6fbd9115510fcc2f19e70a0084ed2eb85226eaa7b49eb7599888d0750af10",
+    "secrecur": "8c3b482b7994601ad34ee2e577333e8653763d0f8caff9797de7f431a0ad8b19",
+    "secforge": "d0f1abbe4e8658618976b5edfabcd585f482fdac9a02603011dbaf0422e4b50c"
+  },
+  "games": {
+    "advent": {
+      "source_sha256": "27ceffcdaa7d54ce0d8a36e48e2605dea2d740691fc2d7f52e39549d5b115ac1",
+      "binary_sha256": "a3a5f07001863a493a8c805fe19f0c97651b153e8281a96fe3527546fb9f9cb2"
+    },
+    "arith": {
+      "source_sha256": "4e69c9b1154464fdd120cd7476a72b88229bc83b897e304df277229974670875",
+      "binary_sha256": "2d42b6c252b712da8e425f8aba7ed6507e5da3bb8684ce5ff43248e093ab6868"
+    },
+    "bgammon": {
+      "source_sha256": "c8ec95d89c55cd10e6810813de4c21c20fb8d93fd66c30a36d45a0d57d03f090",
+      "binary_sha256": "944ed85163dede59dcd75b1ea3a48e410fb5d42a56068b02c416c1a543c73fa8"
+    },
+    "chess": {
+      "source_sha256": "8b05f112dea3f1607864be5bc6dba7f17c767e72dfa23089427e7d2d16e2316c",
+      "binary_sha256": "ab56bf6a85f1d84e8e6d14267759f0a778627d9eda51d166ce8654a4f990514b"
+    },
+    "cribbage": {
+      "source_sha256": "469f0eddec655d926781f0a37506ff1be8aec476dfd7f689cd8c447ba598f08f",
+      "binary_sha256": "b5473f4e60f9ba2f5f2987281b1af99ae0e3a49aa63b5ad5e6e9cafb463ea15c"
+    },
+    "fish": {
+      "source_sha256": "ee245ed760807ca9b303f54343eadf36f59bd3e3e88c4c0a3b228564c33e163e",
+      "binary_sha256": "c89da109b46c4e2af6fba9d2248050d8636794ffd5b34225e4ab3a8d80b8b25a"
+    },
+    "fortune": {
+      "source_sha256": "b68261029261d071ee1db629416bcfff9a44ffb53012beda3cab36b7b31d0153",
+      "binary_sha256": "ee4d8139ac15dfd7914927b0dcad39a9cff7ddd209c30c004e20590b3c719955"
+    },
+    "hangman": {
+      "source_sha256": "5b118bdf44964b0a029fc26a87f0e871616a993ee3de101a1610ca70d78c2cd8",
+      "binary_sha256": "2971c189149dd34c1015ff6ed858c54f03b0878c2dcc75bce0e36e96edb66486"
+    },
+    "maze": {
+      "source_sha256": "6af13217edef3133b67e5d162b2cddbd2a64b8b4525a1d9625ee74bb4005e026",
+      "binary_sha256": "ae0ebf5b2897c61b285c42fdc5fad026fbed347e12f4cad1a3b30cfa84348e89"
+    },
+    "quiz": {
+      "source_sha256": "00245e34505761f297a011ffeb5d0e86ab54c07d7d8e8a65db1446cd61bb10f3",
+      "binary_sha256": "5c01a0d08fa1fc6ab56f678e05502a74df04dfea6c01731b62371b9c99c03044"
+    },
+    "rogue": {
+      "source_sha256": "fe3b9860e52f02824e7c833df7523bcddb33bd872359048f35a68e1900495e74",
+      "binary_sha256": "5ec4ebdc258bb6972b894a4a9ff26da42f8e1dfdcd62d700a03b4111a2cbffa8"
+    },
+    "snake": {
+      "source_sha256": "02181e9f1b1ab799c19c6801cce9934d95d000132d54fc21869d0d11a92bb015",
+      "binary_sha256": "792427ab9c92742ea01f9ce2d19b26aca467b68b70cf12950e8b389e0926cbf7"
+    },
+    "trek": {
+      "source_sha256": "c382110cc34ad5f53cfd4ff02a2a7672f378a6570a4458863be986a3348db31f",
+      "binary_sha256": "72c84efe4bb634b4531bc2126266795ec1e5334ca04a05588c0c6f612c34e816"
+    },
+    "wump": {
+      "source_sha256": "36c1a459587bf2b2e07b39d14db84ad58335f5c3b81169ea4a271dd9de25aeff",
+      "binary_sha256": "f3793743e497ba407ad837412a5790153e987b9c6d37b46ac2ec71442bee29ec"
+    }
+  }
+}

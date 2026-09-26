@@ -25,6 +25,10 @@ readonly PRESERVED_REFERENCE_TREE_SHA1="a4e06de3b8b193b43597cdb4d259b5b206e7e3ad
 readonly C48_SPEC_DOCX_PATH="docs/04-C48 Language Specification Rev 0.11.docx"
 # P11.01 authority reconciliation corrects the C48 specification under REV17/REV08.
 readonly C48_SPEC_DOCX_BLOB_SHA1="a84c314a6d2957835efdc916a49e5289718140c2"
+# P11.39 preserves the complete pinned C48 SDK baseline byte-for-byte so its
+# original test/release gates run from this repository without rewritten tests.
+readonly C48_SDK_REFERENCE_DIR="v1/tests/compiler/sdk-reference/sdk"
+readonly C48_SDK_REFERENCE_TREE_SHA1="1c6b5bae84035ee853be9142b440792881c9ca9f"
 # H04 preserves these SDK compiler assets byte-for-byte from the read-only source.
 # Source: tuklusan/zx-ux-c48-sdk-sinclair-zx-spectrum-48k-unix-c-compiler-software-development-kit
 # at 1bebc6288a1cdfa1bdfb5a6694e1986b6c3d7ee0; compiler/assets tree
@@ -210,6 +214,17 @@ print(tree_id.hex())
 PYTREE
 }
 
+if [[ -L "$C48_SDK_REFERENCE_DIR" || ! -d "$C48_SDK_REFERENCE_DIR" ]]; then
+  echo "ERROR: pinned P11.39 SDK reference corpus must exist as a real directory: $C48_SDK_REFERENCE_DIR" >&2
+  exit 1
+fi
+actual_c48_sdk_reference_tree_sha1="$(compute_git_tree_sha1 "$C48_SDK_REFERENCE_DIR")"
+if [[ "$actual_c48_sdk_reference_tree_sha1" != "$C48_SDK_REFERENCE_TREE_SHA1" ]]; then
+  echo "ERROR: pinned P11.39 SDK reference corpus identity changed: $C48_SDK_REFERENCE_DIR" >&2
+  echo "ERROR: expected tree $C48_SDK_REFERENCE_TREE_SHA1, got $actual_c48_sdk_reference_tree_sha1" >&2
+  exit 1
+fi
+
 for exempt_path in "${!explicit_header_exemptions[@]}"; do
   if [[ -z "$exempt_path" || -z "${explicit_header_exemptions[$exempt_path]}" ]]; then
     echo "ERROR: each license-header exemption must have an exact non-empty path and reason" >&2
@@ -295,6 +310,11 @@ while IFS= read -r -d '' file; do
   fi
 
   if [[ "$file" == "$PRESERVED_REFERENCE_DIR"/* ]]; then
+    explicitly_exempt=$((explicitly_exempt + 1))
+    continue
+  fi
+
+  if [[ "$file" == "$C48_SDK_REFERENCE_DIR"/* ]]; then
     explicitly_exempt=$((explicitly_exempt + 1))
     continue
   fi
