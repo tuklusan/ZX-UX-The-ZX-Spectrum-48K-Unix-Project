@@ -6630,3 +6630,232 @@ cc_p1129_scan:       dw 0
 cc_p1129_left:       dw 0
 cc_p1129_temp_name:  db '/','t','m','p','/','.','c','c','0','.','0',0
     ENDM
+
+
+; P11.31 mandatory C48 Z80-native control-flow selection.
+; Near conditionals use JR, suitable exact 8-bit B-count loops use DJNZ,
+; safe return branches use conditional RET, and jump-table dispatch uses
+; JP (HL) only when bounded/range/size analysis all prove it. Every rejected
+; suitability case has an explicit documented fallback or fails closed.
+    MACRO EMIT_P1131_CC_CONTROL_FLOW
+CC_CF_COND_NZ            EQU 0
+CC_CF_COND_Z             EQU 1
+CC_CF_COND_NC            EQU 2
+CC_CF_COND_C             EQU 3
+
+CC_CF_LOOP_COUNT8        EQU 1
+CC_CF_LOOP_EXACT         EQU 2
+CC_CF_LOOP_B_FREE        EQU 4
+CC_CF_LOOP_COUNTER_B     EQU 8
+CC_CF_LOOP_FALLBACK_C    EQU 16
+
+CC_CF_JT_BOUNDED         EQU 1
+CC_CF_JT_IN_RANGE        EQU 2
+CC_CF_JT_SIZE_WIN        EQU 4
+
+CC_CF_BUFFER_CAPACITY    EQU 16
+
+cc_cf_buffer:            defs CC_CF_BUFFER_CAPACITY,0
+cc_cf_len:               db 0
+cc_cf_target:            dw 0
+cc_cf_relative:          dw 0
+cc_cf_flags:             db 0
+cc_cf_cond:              db 0
+
+cc_cf_reset:
+    xor a
+    ld (cc_cf_len),a
+    ret
+
+; DE is a signed displacement relative to the end of a two-byte JR/DJNZ.
+; Success returns A=the exact signed displacement byte; failure sets carry.
+cc_cf_rel8:
+    ld a,d
+    or a
+    jr z,cc_cf_rel8_positive
+    cp $FF
+    jr nz,cc_cf_rel8_fail
+    ld a,e
+    bit 7,a
+    jr z,cc_cf_rel8_fail
+    or a
+    ret
+cc_cf_rel8_positive:
+    ld a,e
+    bit 7,a
+    jr nz,cc_cf_rel8_fail
+    or a
+    ret
+cc_cf_rel8_fail:
+    scf
+    ret
+
+; A=CC_CF_COND_*, DE=signed relative displacement, HL=absolute fallback target.
+; Near branches emit JR cc,rel. Out-of-range branches emit JP cc,nn.
+cc_cf_emit_branch:
+    ld (cc_cf_cond),a
+    ld (cc_cf_relative),de
+    ld (cc_cf_target),hl
+    cp CC_CF_COND_C+1
+    jp nc,cc_cf_inval
+    call cc_cf_reset
+    ld de,(cc_cf_relative)
+    call cc_cf_rel8
+    jr c,cc_cf_emit_branch_far
+    ld e,a
+    ld a,(cc_cf_cond)
+    add a,a
+    add a,a
+    add a,a
+    add a,$20
+    call cc_cf_put
+    ret c
+    ld a,e
+    jp cc_cf_put
+cc_cf_emit_branch_far:
+    ld a,(cc_cf_cond)
+    add a,a
+    add a,a
+    add a,a
+    add a,$C2
+    call cc_cf_put
+    ret c
+    jp cc_cf_put_target
+
+; A=loop suitability flags, DE=signed back-edge displacement, HL=fallback target.
+; Exact COUNT8+B-counter+B-free loops use DJNZ only when the back edge is in
+; range. An out-of-range B-counter loop uses DEC B / JP NZ. If B is live, the
+; caller may explicitly stage the same exact 8-bit count in C and request the
+; DEC C / JP NZ fallback. Non-exact semantics are rejected rather than guessed.
+cc_cf_emit_counted_loop:
+    ld (cc_cf_flags),a
+    ld (cc_cf_relative),de
+    ld (cc_cf_target),hl
+    call cc_cf_reset
+
+    ld a,(cc_cf_flags)
+    and CC_CF_LOOP_COUNT8|CC_CF_LOOP_EXACT|CC_CF_LOOP_B_FREE|CC_CF_LOOP_COUNTER_B
+    cp CC_CF_LOOP_COUNT8|CC_CF_LOOP_EXACT|CC_CF_LOOP_B_FREE|CC_CF_LOOP_COUNTER_B
+    jr nz,cc_cf_counted_try_c
+    ld de,(cc_cf_relative)
+    call cc_cf_rel8
+    jr c,cc_cf_counted_b_far
+    ld e,a
+    ld a,$10
+    call cc_cf_put
+    ret c
+    ld a,e
+    jp cc_cf_put
+
+cc_cf_counted_b_far:
+    ld a,$05
+    call cc_cf_put
+    ret c
+    ld a,$C2
+    call cc_cf_put
+    ret c
+    jp cc_cf_put_target
+
+cc_cf_counted_try_c:
+    ld a,(cc_cf_flags)
+    and CC_CF_LOOP_COUNT8|CC_CF_LOOP_EXACT|CC_CF_LOOP_FALLBACK_C
+    cp CC_CF_LOOP_COUNT8|CC_CF_LOOP_EXACT|CC_CF_LOOP_FALLBACK_C
+    jp nz,cc_cf_notsup
+    ld a,$0D
+    call cc_cf_put
+    ret c
+    ld a,$C2
+    call cc_cf_put
+    ret c
+    jp cc_cf_put_target
+
+; A=condition, B=1 only when a conditional return is proven safe; HL=fallback
+; target. Safe cases emit RET cc, otherwise the ordinary JP cc fallback.
+cc_cf_emit_cond_ret:
+    ld (cc_cf_cond),a
+    ld (cc_cf_target),hl
+    cp CC_CF_COND_C+1
+    jp nc,cc_cf_inval
+    ld a,b
+    cp 2
+    jp nc,cc_cf_inval
+    call cc_cf_reset
+    ld a,b
+    or a
+    jr z,cc_cf_cond_ret_fallback
+    ld a,(cc_cf_cond)
+    add a,a
+    add a,a
+    add a,a
+    add a,$C0
+    jp cc_cf_put
+cc_cf_cond_ret_fallback:
+    ld a,(cc_cf_cond)
+    add a,a
+    add a,a
+    add a,a
+    add a,$C2
+    call cc_cf_put
+    ret c
+    jp cc_cf_put_target
+
+; A=jump-table proof flags, HL=ordinary absolute fallback target.
+; JP (HL) is emitted only when every bounded/range/size proof is present.
+cc_cf_emit_jump_table:
+    ld (cc_cf_flags),a
+    ld (cc_cf_target),hl
+    and $F8
+    jp nz,cc_cf_inval
+    call cc_cf_reset
+    ld a,(cc_cf_flags)
+    and CC_CF_JT_BOUNDED|CC_CF_JT_IN_RANGE|CC_CF_JT_SIZE_WIN
+    cp CC_CF_JT_BOUNDED|CC_CF_JT_IN_RANGE|CC_CF_JT_SIZE_WIN
+    jr nz,cc_cf_jump_table_fallback
+    ld a,$E9
+    jp cc_cf_put
+cc_cf_jump_table_fallback:
+    ld a,$C3
+    call cc_cf_put
+    ret c
+    jp cc_cf_put_target
+
+cc_cf_put_target:
+    ld hl,(cc_cf_target)
+    ld a,l
+    call cc_cf_put
+    ret c
+    ld hl,(cc_cf_target)
+    ld a,h
+    jp cc_cf_put
+
+cc_cf_put:
+    push af
+    ld a,(cc_cf_len)
+    cp CC_CF_BUFFER_CAPACITY
+    jr nc,cc_cf_put_full
+    ld e,a
+    ld d,0
+    ld hl,cc_cf_buffer
+    add hl,de
+    pop af
+    ld (hl),a
+    ld a,(cc_cf_len)
+    inc a
+    ld (cc_cf_len),a
+    xor a
+    ret
+cc_cf_put_full:
+    pop af
+    ld a,E_NOSPC
+    scf
+    ret
+
+cc_cf_notsup:
+    ld a,E_NOTSUP
+    scf
+    ret
+cc_cf_inval:
+    ld a,E_INVAL
+    scf
+    ret
+    ENDM
