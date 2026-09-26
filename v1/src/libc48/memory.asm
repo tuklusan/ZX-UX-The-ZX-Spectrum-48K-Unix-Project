@@ -89,14 +89,14 @@ c48_heap_bad_bounds:
 malloc:
     ld a,h
     or l
-    jr z,c48_malloc_null
+    jp z,c48_malloc_null
     bit 0,l
     jr z,c48_malloc_even
     inc hl
 c48_malloc_even:
     ld de,C48_HEAP_HEADER_SIZE
     add hl,de
-    jr c,c48_malloc_null
+    jp c,c48_malloc_null
     ld (c48_heap_request),hl
 
     ld a,(c48_heap_ready)
@@ -110,7 +110,7 @@ c48_malloc_scan:
     ld de,(c48_heap_end_ptr)
     or a
     sbc hl,de
-    jr nc,c48_malloc_null
+    jp nc,c48_malloc_null
 
     ld hl,(c48_heap_scan)
     ld e,(hl)
