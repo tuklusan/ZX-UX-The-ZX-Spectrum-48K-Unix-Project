@@ -5619,3 +5619,469 @@ cc_fp_compare_notsup:
     scf
     ret
     ENDM
+
+; P11.28 deterministic native OBJ1 writer.
+; The writer validates all internal state before touching destination bytes.
+; cc_obj1_commit_marker becomes $A5 only after the complete OBJ1 image and both
+; CRCs have been written successfully.
+    MACRO EMIT_P1128_CC_OBJ1_WRITER
+CC_OBJ1_HEADER_SIZE       EQU 24
+CC_OBJ1_SYMBOL_SIZE       EQU 20
+CC_OBJ1_RELOC_SIZE        EQU 6
+CC_OBJ1_MAX_STORED        EQU $8000
+CC_OBJ1_SYMBOL_MAX_COUNT  EQU 1638
+CC_OBJ1_RELOC_MAX_COUNT   EQU 5461
+CC_OBJ1_RELOC_ABS16       EQU 1
+CC_OBJ1_COMMITTED         EQU $A5
+
+cc_obj1_text_ptr:         dw 0
+cc_obj1_text_size:        dw 0
+cc_obj1_bss_size:         dw 0
+cc_obj1_symbol_ptr:       dw 0
+cc_obj1_symbol_count:     dw 0
+cc_obj1_reloc_ptr:        dw 0
+cc_obj1_reloc_count:      dw 0
+cc_obj1_output_ptr:       dw 0
+cc_obj1_output_capacity:  dw 0
+cc_obj1_output_size:      dw 0
+cc_obj1_symbol_bytes:     dw 0
+cc_obj1_reloc_bytes:      dw 0
+cc_obj1_body_size:        dw 0
+cc_obj1_symbol_offset:    dw 0
+cc_obj1_reloc_offset:     dw 0
+cc_obj1_total_size:       dw 0
+cc_obj1_current_offset:   dw 0
+cc_obj1_previous_offset:  dw 0
+cc_obj1_previous_valid:   db 0
+cc_obj1_commit_marker:    db 0
+
+cc_obj1_write:
+    xor a
+    ld (cc_obj1_commit_marker),a
+    ld (cc_obj1_output_size),a
+    ld (cc_obj1_output_size+1),a
+
+    ld hl,(cc_obj1_output_ptr)
+    ld a,h
+    or l
+    jp z,cc_obj1_format
+
+    ld hl,(cc_obj1_text_size)
+    ld de,(cc_obj1_bss_size)
+    add hl,de
+    jp c,cc_obj1_format
+    ld de,CC_OBJ1_MAX_STORED+1
+    or a
+    sbc hl,de
+    jp nc,cc_obj1_format
+
+    ld hl,(cc_obj1_symbol_count)
+    ld de,CC_OBJ1_SYMBOL_MAX_COUNT+1
+    or a
+    sbc hl,de
+    jp nc,cc_obj1_format
+    ld bc,(cc_obj1_symbol_count)
+    ld de,CC_OBJ1_SYMBOL_SIZE
+    call cc_obj1_multiply
+    jp c,cc_obj1_format
+    ld (cc_obj1_symbol_bytes),hl
+
+    ld hl,(cc_obj1_reloc_count)
+    ld de,CC_OBJ1_RELOC_MAX_COUNT+1
+    or a
+    sbc hl,de
+    jp nc,cc_obj1_format
+    ld bc,(cc_obj1_reloc_count)
+    ld de,CC_OBJ1_RELOC_SIZE
+    call cc_obj1_multiply
+    jp c,cc_obj1_format
+    ld (cc_obj1_reloc_bytes),hl
+
+    ld hl,(cc_obj1_text_size)
+    ld de,CC_OBJ1_HEADER_SIZE
+    add hl,de
+    jp c,cc_obj1_format
+    ld (cc_obj1_symbol_offset),hl
+    ld de,(cc_obj1_symbol_bytes)
+    add hl,de
+    jp c,cc_obj1_format
+    ld (cc_obj1_reloc_offset),hl
+    ld de,(cc_obj1_reloc_bytes)
+    add hl,de
+    jp c,cc_obj1_format
+    ld (cc_obj1_total_size),hl
+    ld de,CC_OBJ1_MAX_STORED+1
+    or a
+    sbc hl,de
+    jp nc,cc_obj1_format
+
+    ld hl,(cc_obj1_text_size)
+    ld de,(cc_obj1_symbol_bytes)
+    add hl,de
+    jp c,cc_obj1_format
+    ld de,(cc_obj1_reloc_bytes)
+    add hl,de
+    jp c,cc_obj1_format
+    ld (cc_obj1_body_size),hl
+
+    ld hl,(cc_obj1_output_capacity)
+    ld de,(cc_obj1_total_size)
+    or a
+    sbc hl,de
+    jp c,cc_obj1_nospc
+
+    ld hl,(cc_obj1_text_size)
+    ld a,h
+    or l
+    jr z,cc_obj1_text_ptr_ok
+    ld hl,(cc_obj1_text_ptr)
+    ld a,h
+    or l
+    jp z,cc_obj1_format
+cc_obj1_text_ptr_ok:
+    ld hl,(cc_obj1_symbol_count)
+    ld a,h
+    or l
+    jr z,cc_obj1_symbol_ptr_ok
+    ld hl,(cc_obj1_symbol_ptr)
+    ld a,h
+    or l
+    jp z,cc_obj1_format
+cc_obj1_symbol_ptr_ok:
+    ld hl,(cc_obj1_reloc_count)
+    ld a,h
+    or l
+    jr z,cc_obj1_reloc_ptr_ok
+    ld hl,(cc_obj1_reloc_ptr)
+    ld a,h
+    or l
+    jp z,cc_obj1_format
+cc_obj1_reloc_ptr_ok:
+    call cc_obj1_validate_symbols
+    ret c
+    call cc_obj1_validate_relocs
+    ret c
+
+    ld ix,(cc_obj1_output_ptr)
+    ld (ix+0),'O'
+    ld (ix+1),'B'
+    ld (ix+2),'J'
+    ld (ix+3),'1'
+    ld (ix+4),1
+    ld (ix+5),0
+    ld (ix+6),CC_OBJ1_HEADER_SIZE
+    ld (ix+7),0
+    ld hl,(cc_obj1_text_size)
+    ld (ix+8),l
+    ld (ix+9),h
+    ld hl,(cc_obj1_bss_size)
+    ld (ix+10),l
+    ld (ix+11),h
+    ld hl,(cc_obj1_symbol_count)
+    ld (ix+12),l
+    ld (ix+13),h
+    ld hl,(cc_obj1_reloc_count)
+    ld (ix+14),l
+    ld (ix+15),h
+    ld hl,(cc_obj1_symbol_offset)
+    ld (ix+16),l
+    ld (ix+17),h
+    ld hl,(cc_obj1_reloc_offset)
+    ld (ix+18),l
+    ld (ix+19),h
+    xor a
+    ld (ix+20),a
+    ld (ix+21),a
+    ld (ix+22),a
+    ld (ix+23),a
+
+    ld hl,(cc_obj1_output_ptr)
+    ld de,CC_OBJ1_HEADER_SIZE
+    add hl,de
+    ex de,hl
+    ld bc,(cc_obj1_text_size)
+    ld a,b
+    or c
+    jr z,cc_obj1_copy_symbols
+    ld hl,(cc_obj1_text_ptr)
+    ldir
+cc_obj1_copy_symbols:
+    ld bc,(cc_obj1_symbol_bytes)
+    ld a,b
+    or c
+    jr z,cc_obj1_copy_relocs
+    ld hl,(cc_obj1_symbol_ptr)
+    ldir
+cc_obj1_copy_relocs:
+    ld bc,(cc_obj1_reloc_bytes)
+    ld a,b
+    or c
+    jr z,cc_obj1_body_copied
+    ld hl,(cc_obj1_reloc_ptr)
+    ldir
+cc_obj1_body_copied:
+    ld hl,(cc_obj1_output_ptr)
+    ld de,CC_OBJ1_HEADER_SIZE
+    add hl,de
+    ld bc,(cc_obj1_body_size)
+    call cc_obj1_crc16
+    ld ix,(cc_obj1_output_ptr)
+    ld (ix+20),e
+    ld (ix+21),d
+
+    ld hl,(cc_obj1_output_ptr)
+    ld bc,CC_OBJ1_HEADER_SIZE
+    call cc_obj1_crc16
+    ld ix,(cc_obj1_output_ptr)
+    ld (ix+22),e
+    ld (ix+23),d
+
+    ld hl,(cc_obj1_total_size)
+    ld (cc_obj1_output_size),hl
+    ld a,CC_OBJ1_COMMITTED
+    ld (cc_obj1_commit_marker),a
+    xor a
+    ret
+
+cc_obj1_multiply:
+    ld hl,0
+cc_obj1_multiply_loop:
+    ld a,b
+    or c
+    ret z
+    add hl,de
+    ret c
+    dec bc
+    jr cc_obj1_multiply_loop
+
+cc_obj1_validate_symbols:
+    ld bc,(cc_obj1_symbol_count)
+    ld ix,(cc_obj1_symbol_ptr)
+cc_obj1_validate_symbols_loop:
+    ld a,b
+    or c
+    ret z
+    push bc
+    call cc_obj1_validate_symbol
+    pop bc
+    ret c
+    ld de,CC_OBJ1_SYMBOL_SIZE
+    add ix,de
+    dec bc
+    jr cc_obj1_validate_symbols_loop
+
+cc_obj1_validate_symbol:
+    push ix
+    ld a,(ix+0)
+    call cc_obj1_name_first
+    jr c,cc_obj1_symbol_bad
+    inc ix
+    ld b,15
+cc_obj1_symbol_name_loop:
+    ld a,(ix+0)
+    or a
+    jr z,cc_obj1_symbol_zero_tail
+    ld a,b
+    cp 1
+    jr z,cc_obj1_symbol_bad
+    ld a,(ix+0)
+    call cc_obj1_name_tail
+    jr c,cc_obj1_symbol_bad
+    inc ix
+    djnz cc_obj1_symbol_name_loop
+    jr cc_obj1_symbol_bad
+cc_obj1_symbol_zero_tail:
+    ld a,(ix+0)
+    or a
+    jr nz,cc_obj1_symbol_bad
+    inc ix
+    djnz cc_obj1_symbol_zero_tail
+    ld a,(ix+3)
+    and $FE
+    jr nz,cc_obj1_symbol_bad
+    ld e,(ix+0)
+    ld d,(ix+1)
+    ld a,(ix+2)
+    or a
+    jr z,cc_obj1_symbol_undef
+    cp 1
+    jr z,cc_obj1_symbol_text
+    cp 2
+    jr z,cc_obj1_symbol_bss
+    cp 3
+    jr z,cc_obj1_symbol_good
+    jr cc_obj1_symbol_bad
+cc_obj1_symbol_undef:
+    ld a,d
+    or e
+    jr nz,cc_obj1_symbol_bad
+    ld a,(ix+3)
+    cp 1
+    jr nz,cc_obj1_symbol_bad
+    jr cc_obj1_symbol_good
+cc_obj1_symbol_text:
+    ld h,d
+    ld l,e
+    ld de,(cc_obj1_text_size)
+    or a
+    sbc hl,de
+    jr c,cc_obj1_symbol_good
+    jr z,cc_obj1_symbol_good
+    jr cc_obj1_symbol_bad
+cc_obj1_symbol_bss:
+    ld h,d
+    ld l,e
+    ld de,(cc_obj1_bss_size)
+    or a
+    sbc hl,de
+    jr c,cc_obj1_symbol_good
+    jr z,cc_obj1_symbol_good
+    jr cc_obj1_symbol_bad
+cc_obj1_symbol_good:
+    pop ix
+    xor a
+    ret
+cc_obj1_symbol_bad:
+    pop ix
+    ld a,E_FORMAT
+    scf
+    ret
+
+cc_obj1_validate_relocs:
+    xor a
+    ld (cc_obj1_previous_valid),a
+    ld bc,(cc_obj1_reloc_count)
+    ld ix,(cc_obj1_reloc_ptr)
+cc_obj1_validate_relocs_loop:
+    ld a,b
+    or c
+    ret z
+    push bc
+    call cc_obj1_validate_reloc
+    pop bc
+    ret c
+    ld de,CC_OBJ1_RELOC_SIZE
+    add ix,de
+    dec bc
+    jr cc_obj1_validate_relocs_loop
+
+cc_obj1_validate_reloc:
+    push ix
+    ld a,(ix+4)
+    cp CC_OBJ1_RELOC_ABS16
+    jr nz,cc_obj1_reloc_bad
+    ld a,(ix+5)
+    or a
+    jr nz,cc_obj1_reloc_bad
+    ld l,(ix+2)
+    ld h,(ix+3)
+    ld de,(cc_obj1_symbol_count)
+    or a
+    sbc hl,de
+    jr nc,cc_obj1_reloc_bad
+    ld l,(ix+0)
+    ld h,(ix+1)
+    ld (cc_obj1_current_offset),hl
+    ld de,2
+    add hl,de
+    jr c,cc_obj1_reloc_bad
+    ld de,(cc_obj1_text_size)
+    or a
+    sbc hl,de
+    jr c,cc_obj1_reloc_range_ok
+    jr z,cc_obj1_reloc_range_ok
+    jr cc_obj1_reloc_bad
+cc_obj1_reloc_range_ok:
+    ld a,(cc_obj1_previous_valid)
+    or a
+    jr z,cc_obj1_reloc_order_ok
+    ld hl,(cc_obj1_previous_offset)
+    ld de,2
+    add hl,de
+    jr c,cc_obj1_reloc_bad
+    ex de,hl
+    ld hl,(cc_obj1_current_offset)
+    or a
+    sbc hl,de
+    jr c,cc_obj1_reloc_bad
+cc_obj1_reloc_order_ok:
+    ld hl,(cc_obj1_current_offset)
+    ld (cc_obj1_previous_offset),hl
+    ld a,1
+    ld (cc_obj1_previous_valid),a
+    pop ix
+    xor a
+    ret
+cc_obj1_reloc_bad:
+    pop ix
+    ld a,E_FORMAT
+    scf
+    ret
+
+cc_obj1_name_first:
+    cp 'A'
+    jr c,cc_obj1_name_first_under
+    cp 'Z'+1
+    jr c,cc_obj1_name_ok
+    cp 'a'
+    jr c,cc_obj1_name_first_under
+    cp 'z'+1
+    jr c,cc_obj1_name_ok
+cc_obj1_name_first_under:
+    cp '_'
+    jr z,cc_obj1_name_ok
+    scf
+    ret
+cc_obj1_name_tail:
+    cp '0'
+    jr c,cc_obj1_name_first
+    cp '9'+1
+    jr c,cc_obj1_name_ok
+    jp cc_obj1_name_first
+cc_obj1_name_ok:
+    or a
+    ret
+
+cc_obj1_crc16:
+    ld de,$FFFF
+cc_obj1_crc_byte_loop:
+    ld a,b
+    or c
+    ret z
+    ld a,(hl)
+    inc hl
+    xor d
+    ld d,a
+    push bc
+    ld b,8
+cc_obj1_crc_bit_loop:
+    bit 7,d
+    jr z,cc_obj1_crc_shift_only
+    sla e
+    rl d
+    ld a,d
+    xor $10
+    ld d,a
+    ld a,e
+    xor $21
+    ld e,a
+    jr cc_obj1_crc_bit_done
+cc_obj1_crc_shift_only:
+    sla e
+    rl d
+cc_obj1_crc_bit_done:
+    djnz cc_obj1_crc_bit_loop
+    pop bc
+    dec bc
+    jr cc_obj1_crc_byte_loop
+
+cc_obj1_nospc:
+    ld a,E_NOSPC
+    scf
+    ret
+cc_obj1_format:
+    ld a,E_FORMAT
+    scf
+    ret
+    ENDM
+
