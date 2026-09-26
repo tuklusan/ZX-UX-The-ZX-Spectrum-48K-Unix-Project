@@ -221,6 +221,48 @@ p1135_wrong_case:
     ret
 
 ; Diagnostic contracts are target-native too; each isolates one compile stage.
+p1135_obj_setup:
+    ld hl,p1135_user_text
+    ld (cc_obj1_text_ptr),hl
+    ld hl,16
+    ld (cc_obj1_text_size),hl
+    ld hl,0
+    ld (cc_obj1_bss_size),hl
+    ld hl,p1135_user_symbols
+    ld (cc_obj1_symbol_ptr),hl
+    ld hl,3
+    ld (cc_obj1_symbol_count),hl
+    ld hl,p1135_user_relocs
+    ld (cc_obj1_reloc_ptr),hl
+    ld hl,2
+    ld (cc_obj1_reloc_count),hl
+    ld hl,p1135_user_obj
+    ld (cc_obj1_output_ptr),hl
+    ld hl,192
+    ld (cc_obj1_output_capacity),hl
+    xor a
+    ret
+
+p1135_symbol_diag:
+    call p1135_obj_setup
+    call cc_obj1_validate_symbols
+    ret
+
+p1135_reloc_diag:
+    call p1135_obj_setup
+    call cc_obj1_validate_relocs
+    ret
+
+p1135_writer_diag:
+    call p1135_obj_setup
+    call cc_obj1_write
+    ret c
+    ld a,(cc_obj1_commit_marker)
+    cp CC_OBJ1_COMMITTED
+    jp nz,p1135_fail
+    xor a
+    ret
+
 p1135_crc_diag:
     ld hl,p1135_source
     ld bc,p1135_source_end-p1135_source
@@ -731,7 +773,7 @@ p1135_gateway_end:
     require(0 < len(main) <= 0x5000, f"P11.35 native fixture too large: {len(main)}")
     syms = phase3_open_descriptions._symbols(
         build / "p1135-lifecycle.sym",
-        ("p1135_crc_diag", "p1135_regcall_diag", "p1135_literal_diag", "p1135_compile_stage", "p1135_link_stage", "p1135_lifecycle", "p1135_wrong_case")
+        ("p1135_names", "p1135_crc_diag", "p1135_regcall_diag", "p1135_literal_diag", "p1135_symbol_diag", "p1135_reloc_diag", "p1135_writer_diag", "p1135_compile_stage", "p1135_link_stage", "p1135_lifecycle", "p1135_wrong_case")
     )
 
     assertions = [
@@ -750,7 +792,7 @@ p1135_gateway_end:
             ram[0x4000-0x4000:0x4000-0x4000+len(main)] = main
             ram[0xE000-0x4000:0xE000-0x4000+len(gateway)] = gateway
 
-        for name in ("p1135_crc_diag", "p1135_regcall_diag", "p1135_literal_diag", "p1135_compile_stage", "p1135_link_stage", "p1135_lifecycle", "p1135_wrong_case"):
+        for name in ("p1135_names", "p1135_crc_diag", "p1135_regcall_diag", "p1135_literal_diag", "p1135_symbol_diag", "p1135_reloc_diag", "p1135_writer_diag", "p1135_compile_stage", "p1135_link_stage", "p1135_lifecycle", "p1135_wrong_case"):
             code = (b"\xF3" + phase1._ld_sp(0xBFC0) + phase1._call(syms[name])
                     + phase1._jp_c(FAIL_PC) + phase1._jp(PASS_PC))
             try:
