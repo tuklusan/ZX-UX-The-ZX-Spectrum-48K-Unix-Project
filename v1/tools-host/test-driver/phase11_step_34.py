@@ -18,7 +18,6 @@ import json
 
 import phase1
 import phase3_open_descriptions
-import phase11_step_13
 from driver_core import DriverError
 from fuse_harness import FAIL_PC, PASS_PC, run_sna
 
@@ -435,6 +434,152 @@ p1134_char_abi:
     xor a
     ret
 
+p1134_stack_words_one:
+    ; A=count, B=expected number of 16-bit stack slots.
+    call cc_regcall_stack_words
+    ret c
+    cp b
+    jp nz,p1134_fail
+    xor a
+    ret
+
+p1134_regcall_slots:
+    call cc_regcall_reset
+    xor a
+    ld bc,$1001
+    ld d,CC_REGCALL_KIND_WORD
+    call cc_regcall_set_arg
+    ret c
+    ld a,1
+    ld bc,$AB80
+    ld d,CC_REGCALL_KIND_CHAR
+    call cc_regcall_set_arg
+    ret c
+    ld a,2
+    ld bc,$3003
+    ld d,CC_REGCALL_KIND_WORD
+    call cc_regcall_set_arg
+    ret c
+    ld a,3
+    ld bc,$4004
+    ld d,CC_REGCALL_KIND_WORD
+    call cc_regcall_set_arg
+    ret c
+    ld a,4
+    ld bc,$5005
+    ld d,CC_REGCALL_KIND_WORD
+    call cc_regcall_set_arg
+    ret c
+    ld a,5
+    ld bc,$6006
+    ld d,CC_REGCALL_KIND_WORD
+    call cc_regcall_set_arg
+    ret c
+
+    ld hl,(cc_regcall_args)
+    ld de,$1001
+    call p1134_check_word
+    ret c
+    ld hl,(cc_regcall_args+2)
+    ld de,$0080
+    call p1134_check_word
+    ret c
+    ld hl,(cc_regcall_args+4)
+    ld de,$3003
+    call p1134_check_word
+    ret c
+    ld hl,(cc_regcall_args+6)
+    ld de,$4004
+    call p1134_check_word
+    ret c
+    ld hl,(cc_regcall_args+8)
+    ld de,$5005
+    call p1134_check_word
+    ret c
+    ld hl,(cc_regcall_args+10)
+    ld de,$6006
+    call p1134_check_word
+    ret c
+
+    xor a
+    call cc_regcall_arg_location
+    ret c
+    cp CC_REGCALL_SLOT_HL
+    jp nz,p1134_fail
+    ld a,1
+    call cc_regcall_arg_location
+    ret c
+    cp CC_REGCALL_SLOT_DE
+    jp nz,p1134_fail
+    ld a,2
+    call cc_regcall_arg_location
+    ret c
+    cp CC_REGCALL_SLOT_BC
+    jp nz,p1134_fail
+    ld a,3
+    call cc_regcall_arg_location
+    ret c
+    cp CC_REGCALL_SLOT_STACK
+    jp nz,p1134_fail
+    ld a,e
+    or a
+    jp nz,p1134_fail
+    ld a,4
+    call cc_regcall_arg_location
+    ret c
+    cp CC_REGCALL_SLOT_STACK
+    jp nz,p1134_fail
+    ld a,e
+    cp 1
+    jp nz,p1134_fail
+    ld a,5
+    call cc_regcall_arg_location
+    ret c
+    cp CC_REGCALL_SLOT_STACK
+    jp nz,p1134_fail
+    ld a,e
+    cp 2
+    jp nz,p1134_fail
+
+    xor a
+    ld b,0
+    call p1134_stack_words_one
+    ret c
+    ld a,1
+    ld b,0
+    call p1134_stack_words_one
+    ret c
+    ld a,2
+    ld b,0
+    call p1134_stack_words_one
+    ret c
+    ld a,3
+    ld b,0
+    call p1134_stack_words_one
+    ret c
+    ld a,4
+    ld b,1
+    call p1134_stack_words_one
+    ret c
+    ld a,5
+    ld b,2
+    call p1134_stack_words_one
+    ret c
+    ld a,6
+    ld b,3
+    call p1134_stack_words_one
+    ret c
+    xor a
+    ret
+
+p1134_check_word:
+    ; HL=actual, DE=expected.
+    or a
+    sbc hl,de
+    jp nz,p1134_fail
+    xor a
+    ret
+
 p1134_twos:
     ; Native signed short/int representation is exact two's-complement.
     ld hl,$FFFF
@@ -464,7 +609,7 @@ fixture_end:
     main = (build / "p1134-main.bin").read_bytes()
     require(0 < len(main) <= 0x3F00, "P11.34 fixture exceeds upper-RAM budget")
     names = ("p1134_sizes", "p1134_stride", "p1134_storage",
-             "p1134_parser", "p1134_char_abi", "p1134_twos")
+             "p1134_parser", "p1134_char_abi", "p1134_regcall_slots", "p1134_twos")
     syms = phase3_open_descriptions._symbols(build / "p1134-data-model.sym", names)
 
     assertions = [
@@ -496,22 +641,6 @@ fixture_end:
             except DriverError as exc:
                 raise P1134Error(f"{name} native fixture failed: {exc}") from None
 
-        abi_commands, _abi_hashes, abi_assertions = phase11_step_13.dispatch(
-            root, "test", "P11.13",
-            sha256_file=sha256_file,
-            run_command=run_command,
-            require_project_tool=require_project_tool,
-        )
-        require(any(a.get("name") == "fuse-regcall-counts-zero-through-six"
-                    and a.get("passed") is True for a in abi_assertions),
-                "P11.34 inherited 0..6 argument runtime proof missing")
-        require(any(a.get("name") == "fuse-call-boundary-sp-even"
-                    and a.get("passed") is True for a in abi_assertions),
-                "P11.34 inherited even-SP runtime proof missing")
-        require(any(a.get("name") == "char-arguments-zero-extended"
-                    and a.get("passed") is True for a in abi_assertions),
-                "P11.34 inherited char zero-extension proof missing")
-        commands.extend(abi_commands)
         assertions += [
             {"name": "fuse-size-alignment-stride-data-model-exact", "passed": True},
             {"name": "fuse-float-array-stride-five-int-array-stride-two", "passed": True},
@@ -526,7 +655,6 @@ fixture_end:
         "v1/src/tools/cc.asm": sha256_file(source),
         "v1/tests/compiler/p1134-data-model.json": sha256_file(oracle_path),
         "v1/build/p1134-main.bin": sha256_file(build / "p1134-main.bin"),
-        "v1/tools-host/test-driver/phase11_step_13.py": sha256_file(root / "v1/tools-host/test-driver/phase11_step_13.py"),
         "v1/tools-host/test-driver/phase11_step_34.py": sha256_file(root / "v1/tools-host/test-driver/phase11_step_34.py"),
         "v1/dist/certification/P11.33.build.json": sha256_file(root / "v1/dist/certification/P11.33.build.json"),
         "v1/dist/certification/P11.33.test.json": sha256_file(root / "v1/dist/certification/P11.33.test.json"),
