@@ -53,6 +53,7 @@ getchar:
     xor a
     ret
 c48_getchar_eof:
+    ; C int EOF is -1; construct it without a raw address-shaped literal.
     ld hl,0
     dec hl
     xor a
