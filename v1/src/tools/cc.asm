@@ -6118,11 +6118,11 @@ cc_p1129_names:
     ld hl,(cc_p1129_explicit)
     ld a,h
     or l
-    jr z,cc_p1129_default_name
+    jp z,cc_p1129_default_name
     call cc_p1129_measure_output
     jp c,cc_p1129_format
     ld hl,(cc_p1129_explicit)
-    jr cc_p1129_copy_exact
+    jp cc_p1129_copy_exact
 
 cc_p1129_default_name:
     ld hl,(cc_p1129_input)
@@ -6130,13 +6130,13 @@ cc_p1129_default_name:
 cc_p1129_measure_input:
     ld a,(hl)
     or a
-    jr z,cc_p1129_input_measured
+    jp z,cc_p1129_input_measured
     inc b
     ld a,b
     cp CC_P1129_MAX_INPUT_SCAN+1
     jp nc,cc_p1129_format
     inc hl
-    jr cc_p1129_measure_input
+    jp cc_p1129_measure_input
 cc_p1129_input_measured:
     ld a,b
     cp 3
@@ -6165,7 +6165,7 @@ cc_p1129_input_measured:
 cc_p1129_copy_stem:
     ld a,b
     or a
-    jr z,cc_p1129_append_obj
+    jp z,cc_p1129_append_obj
     ld a,(hl)
     ld (de),a
     inc hl
@@ -6184,17 +6184,17 @@ cc_p1129_measure_output:
 cc_p1129_measure_output_loop:
     ld a,(hl)
     or a
-    jr z,cc_p1129_measure_output_done
+    jp z,cc_p1129_measure_output_done
     inc b
     ld a,b
     cp CC_P1129_MAX_OUTPUT+1
-    jr nc,cc_p1129_measure_output_bad
+    jp nc,cc_p1129_measure_output_bad
     inc hl
-    jr cc_p1129_measure_output_loop
+    jp cc_p1129_measure_output_loop
 cc_p1129_measure_output_done:
     ld a,b
     or a
-    jr z,cc_p1129_measure_output_bad
+    jp z,cc_p1129_measure_output_bad
     or a
     ret
 cc_p1129_measure_output_bad:
@@ -6210,7 +6210,7 @@ cc_p1129_copy_exact_loop:
     inc hl
     inc de
     or a
-    jr nz,cc_p1129_copy_exact_loop
+    jp nz,cc_p1129_copy_exact_loop
     ld a,OBJ_OBJ
     or a
     ret
@@ -6268,18 +6268,18 @@ cc_p1129_open_retry:
     ld b,OBJ_OBJ
     ld a,SYS_OPEN
     call SYSCALL_GATEWAY
-    jr nc,cc_p1129_opened
+    jp nc,cc_p1129_opened
     cp E_EXIST
-    jr z,cc_p1129_collision
+    jp z,cc_p1129_collision
     scf
     ret
 cc_p1129_collision:
     ld a,(cc_p1129_temp_n)
     cp 9
-    jr z,cc_p1129_exist
+    jp z,cc_p1129_exist
     inc a
     ld (cc_p1129_temp_n),a
-    jr cc_p1129_open_retry
+    jp cc_p1129_open_retry
 
 cc_p1129_opened:
     ld a,h
@@ -6300,7 +6300,7 @@ cc_p1129_opened:
     ld de,(cc_p1129_length)
     or a
     sbc hl,de
-    jr z,cc_p1129_write_complete
+    jp z,cc_p1129_write_complete
     ld a,E_IO
     jp cc_p1129_cleanup_error
 
@@ -6308,7 +6308,7 @@ cc_p1129_write_complete:
     call cc_p1129_close_temp
     jp c,cc_p1129_cleanup_error
     call cc_p1129_validate_candidate
-    jr nc,cc_p1129_ready_rename
+    jp nc,cc_p1129_ready_rename
     ld a,E_FORMAT
     jp cc_p1129_cleanup_error
 
@@ -6344,7 +6344,7 @@ cc_p1129_cleanup_error:
     call cc_p1129_close_temp
     ld a,(cc_p1129_owned)
     or a
-    jr z,cc_p1129_return_primary
+    jp z,cc_p1129_return_primary
     xor a
     ld (cc_p1129_owned),a
     ld hl,cc_p1129_temp_name
@@ -6477,11 +6477,11 @@ cc_p1129_validate_candidate:
     ld hl,(cc_obj1_reloc_count)
     ld a,h
     or l
-    jr z,cc_p1129_ptrs
+    jp z,cc_p1129_ptrs
     ld hl,(cc_obj1_text_size)
     ld a,h
     or a
-    jr nz,cc_p1129_ptrs
+    jp nz,cc_p1129_ptrs
     ld a,l
     cp 2
     jp c,cc_p1129_val_bad
@@ -6561,14 +6561,14 @@ cc_p1129_unique_inner:
     ld de,(cc_p1129_sym_cur)
     or a
     sbc hl,de
-    jr z,cc_p1129_unique_advance
+    jp z,cc_p1129_unique_advance
     ld hl,(cc_p1129_scan)
     ld de,(cc_p1129_sym_cur)
     ld b,16
 cc_p1129_unique_compare:
     ld a,(de)
     cp (hl)
-    jr nz,cc_p1129_unique_not_equal
+    jp nz,cc_p1129_unique_not_equal
     inc de
     inc hl
     djnz cc_p1129_unique_compare
@@ -6579,7 +6579,7 @@ cc_p1129_unique_not_equal:
     ld de,CC_P1129_SYMBOL_SIZE
     add hl,de
     ld (cc_p1129_scan),hl
-    jr cc_p1129_unique_inner
+    jp cc_p1129_unique_inner
 cc_p1129_unique_advance:
     ld hl,(cc_p1129_sym_cur)
     ld de,CC_P1129_SYMBOL_SIZE
@@ -6588,13 +6588,13 @@ cc_p1129_unique_advance:
     ld hl,(cc_p1129_left)
     dec hl
     ld (cc_p1129_left),hl
-    jr cc_p1129_unique_outer
+    jp cc_p1129_unique_outer
 
 cc_p1129_bound:
     ld de,CC_P1129_MAX_STORED+1
     or a
     sbc hl,de
-    jr c,cc_p1129_bound_ok
+    jp c,cc_p1129_bound_ok
     scf
     ret
 cc_p1129_bound_ok:
