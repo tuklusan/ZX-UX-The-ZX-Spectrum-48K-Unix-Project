@@ -1,0 +1,37 @@
+{
+  "files": [
+    {
+      "action": "test",
+      "path": "test/fixture-0df1974b125c6ffe970f859cf412715b15ca9b84d7aaa5978ac7f038902a6396.sna",
+      "sha256": "0df1974b125c6ffe970f859cf412715b15ca9b84d7aaa5978ac7f038902a6396",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-37207acc533c61bb74fbf216b254c59d8cb27ce911b46e668e26fdcadb4adb24.sna",
+      "sha256": "37207acc533c61bb74fbf216b254c59d8cb27ce911b46e668e26fdcadb4adb24",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-a650e56dc83c85723df6eef0f748336e3d90477bff6dbda521e75b4259c93778.sna",
+      "sha256": "a650e56dc83c85723df6eef0f748336e3d90477bff6dbda521e75b4259c93778",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-a66218ce479b0b6d76d62f845ed09ca11511f100863965faa6c990fc068c2f4a.sna",
+      "sha256": "a66218ce479b0b6d76d62f845ed09ca11511f100863965faa6c990fc068c2f4a",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-f894384f757cf4384188ff4705467c75c6c9cd278730ebdcdff1ba3c11e91bd9.sna",
+      "sha256": "f894384f757cf4384188ff4705467c75c6c9cd278730ebdcdff1ba3c11e91bd9",
+      "size": 49179
+    }
+  ],
+  "schema": 1,
+  "source_commit": "2b23b0bd57cd24423bbb667e0d7a0026724eee36",
+  "step": "P11.24"
+}
