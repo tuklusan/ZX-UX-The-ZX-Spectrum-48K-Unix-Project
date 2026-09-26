@@ -220,6 +220,63 @@ p1135_wrong_case:
     xor a
     ret
 
+; Diagnostic contracts are target-native too; each isolates one compile stage.
+p1135_crc_diag:
+    ld hl,p1135_source
+    ld bc,p1135_source_end-p1135_source
+    call cc_obj1_crc16
+    ld hl,{source_crc}
+    or a
+    sbc hl,de
+    jp nz,p1135_fail
+    xor a
+    ret
+
+p1135_regcall_diag:
+    call cc_regcall_reset
+    ld bc,0
+    ld d,CC_REGCALL_KIND_WORD
+    xor a
+    call cc_regcall_set_arg
+    ret c
+    ld hl,0
+    ld a,1
+    call cc_regcall_emit_call
+    ret c
+    ld a,(cc_regcall_len)
+    cp 6
+    jp nz,p1135_fail
+    xor a
+    ret
+
+p1135_literal_diag:
+    ld hl,p1135_source
+    ld bc,p1135_source_end-p1135_source
+p1135_diag_quote_scan:
+    ld a,b
+    or c
+    jp z,p1135_fail
+    ld a,(hl)
+    inc hl
+    dec bc
+    cp 34
+    jr nz,p1135_diag_quote_scan
+    ld de,p1135_expected_literal
+    ld b,5
+p1135_diag_literal_loop:
+    ld a,(de)
+    cp (hl)
+    jp nz,p1135_fail
+    inc de
+    inc hl
+    djnz p1135_diag_literal_loop
+    ld a,(hl)
+    cp 34
+    jp nz,p1135_fail
+    xor a
+    ret
+p1135_expected_literal: db "hello"
+
 ; Native golden compiler. It consumes every source byte through the same CRC16
 ; primitive used by the OBJ1 writer, extracts the string literal on target,
 ; uses C48_REGCALL emission for puts(), then serializes a real relocatable OBJ1.
@@ -674,7 +731,7 @@ p1135_gateway_end:
     require(0 < len(main) <= 0x5000, f"P11.35 native fixture too large: {len(main)}")
     syms = phase3_open_descriptions._symbols(
         build / "p1135-lifecycle.sym",
-        ("p1135_compile_stage", "p1135_link_stage", "p1135_lifecycle", "p1135_wrong_case")
+        ("p1135_crc_diag", "p1135_regcall_diag", "p1135_literal_diag", "p1135_compile_stage", "p1135_link_stage", "p1135_lifecycle", "p1135_wrong_case")
     )
 
     assertions = [
@@ -693,7 +750,7 @@ p1135_gateway_end:
             ram[0x4000-0x4000:0x4000-0x4000+len(main)] = main
             ram[0xE000-0x4000:0xE000-0x4000+len(gateway)] = gateway
 
-        for name in ("p1135_compile_stage", "p1135_link_stage", "p1135_lifecycle", "p1135_wrong_case"):
+        for name in ("p1135_crc_diag", "p1135_regcall_diag", "p1135_literal_diag", "p1135_compile_stage", "p1135_link_stage", "p1135_lifecycle", "p1135_wrong_case"):
             code = (b"\xF3" + phase1._ld_sp(0xBFC0) + phase1._call(syms[name])
                     + phase1._jp_c(FAIL_PC) + phase1._jp(PASS_PC))
             try:
