@@ -77,7 +77,7 @@ def dispatch(root, action, step, *, sha256_file, run_command, require_project_to
         listing.with_suffix(".sym"),
         (
             "zx48_memory_init", "zx48_process_init", "zx48_handles_init",
-            "zx48_pipe_init", "zx48_process_prepare_pid1", "current_pid",
+            "zx48_pipe_init", "zx48_process_prepare_pid1", "zx48_alloc", "current_pid",
             "pipe_table", "PIPE_COUNT_O", "PIPE_BUFFER_SIZE",
         ),
     )
@@ -99,6 +99,7 @@ ZXK_PROCESS_INIT     EQU {k["zx48_process_init"]}
 ZXK_HANDLES_INIT     EQU {k["zx48_handles_init"]}
 ZXK_PIPE_INIT        EQU {k["zx48_pipe_init"]}
 ZXK_PREP_PID1        EQU {k["zx48_process_prepare_pid1"]}
+ZXK_ALLOC             EQU {k["zx48_alloc"]}
 ZXK_CURRENT_PID      EQU {k["current_pid"]}
 ZXK_PIPE_TABLE       EQU {k["pipe_table"]}
 ZXK_PIPE_COUNT_O     EQU {k["PIPE_COUNT_O"]}
@@ -126,7 +127,7 @@ p1137_sizes: defs 12,0
 p1137_image: defs 256,0
 p1137_mex: defs 384,0
 p1137_copy_base_ptr: dw 0
-p1137_loaded: EQU $C000
+p1137_load_base: dw 0
 p1137_neg_fds: db $A5,$5A
 p1137_neg_byte: db $7A
 
@@ -375,23 +376,35 @@ p1137_link:
     ret
 
 p1137_load:
+    ; The executable must occupy a real arena allocation before pipe creation.
+    ; A hard-coded address in 0x6000-0xDFFF would be allocator-owned free memory
+    ; and could be overwritten by the pipe's FAST_REQUIRED buffer.
+    ld hl,(ld_p1024_image_size)
+    ld de,(ld_p1031_mex1_bss_size)
+    add hl,de
+    jp c,p1137_fail
+    ld b,h
+    ld c,l
+    ld a,ALLOC_ANY
+    call ZXK_ALLOC
+    ret c
+    ld (p1137_load_base),hl
+
     ld hl,p1137_mex+24
-    ld de,p1137_loaded
+    ld de,(p1137_load_base)
     ld bc,(ld_p1024_image_size)
     ldir
 
-    ; Zero complete linked BSS.
-    ld hl,p1137_loaded
+    ; Zero complete linked BSS in the reserved process allocation.
+    ld hl,(p1137_load_base)
     ld de,(ld_p1024_image_size)
     add hl,de
-    ld de,p1137_loaded
-    push hl
-    ex de,hl
-    pop hl
-    ld bc,(ld_p1031_mex1_bss_size)
-    ld a,b
-    or c
+    ld de,(ld_p1031_mex1_bss_size)
+    ld a,d
+    or e
     jr z,p1137_bss_zero_done
+    ld b,d
+    ld c,e
     xor a
     ld (hl),a
     dec bc
@@ -405,19 +418,19 @@ p1137_load:
     ldir
 p1137_bss_zero_done:
 
-    ; Apply MEX base relocations.
+    ; Apply MEX base relocations against the exact allocated load base.
     ld ix,ld_p1026_rel_locs
     ld b,5
 p1137_load_reloc_loop:
     push bc
     ld e,(ix+0)
     ld d,(ix+1)
-    ld hl,p1137_loaded
+    ld hl,(p1137_load_base)
     add hl,de
     ld e,(hl)
     inc hl
     ld d,(hl)
-    ld bc,p1137_loaded
+    ld bc,(p1137_load_base)
     ex de,hl
     add hl,bc
     ex de,hl
@@ -431,21 +444,25 @@ p1137_load_reloc_loop:
     xor a
     ret
 
+p1137_call_loaded:
+    ld hl,(p1137_load_base)
+    jp (hl)
+
 p1137_lifecycle:
     call p1137_link
     ret c
-    call p1137_load
-    ret c
     call p1137_setup_kernel
     ret c
-    call p1137_loaded
+    call p1137_load
+    ret c
+    call p1137_call_loaded
     ld de,256
     or a
     sbc hl,de
     jp nz,p1137_fail
 
     ; Exact C BSS result fds[] contains read=0 and write=1.
-    ld hl,p1137_loaded
+    ld hl,(p1137_load_base)
     ld de,(ld_p1024_image_size)
     add hl,de
     ld a,(hl)
