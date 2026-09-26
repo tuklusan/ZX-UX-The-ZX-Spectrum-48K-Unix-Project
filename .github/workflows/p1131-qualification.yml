@@ -102,7 +102,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: zxux-p1131-qualification-\${{ github.run_id }}-\${{ github.run_attempt }}
+          name: zxux-p1131-qualification-${{ github.run_id }}-${{ github.run_attempt }}
           path: /tmp/zxux-p1131-qualification/
           retention-days: 90
           if-no-files-found: error
@@ -121,7 +121,7 @@ jobs:
       - name: Dispatch exact admission
         if: steps.final.outputs.current == 'true'
         env:
-          GH_TOKEN: \${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           python3 - <<'PY'

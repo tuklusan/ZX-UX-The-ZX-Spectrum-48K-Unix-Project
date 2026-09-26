@@ -96,8 +96,8 @@ p1131_compare_loop:
     ld a,b
     or a
     ret z
-    ld a,(hl)
-    cp (de)
+    ld a,(de)
+    cp (hl)
     jp nz,p1131_fail
     inc hl
     inc de
