@@ -290,7 +290,7 @@ p1133_runtime_libc_search:
     ld de,$0011
     ld bc,6
     call c48_memrchr
-    ld de,p1133_search
+    ld de,p1133_search+5
     or a
     sbc hl,de
     jp nz,p1133_fail
