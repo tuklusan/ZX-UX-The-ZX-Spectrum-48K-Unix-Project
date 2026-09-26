@@ -72,7 +72,7 @@ def dispatch(root, action, step, *, sha256_file, run_command, require_project_to
     require("int main(void)" in text and 'puts("hello");' in text and "return 0;" in text,
             "canonical hello.c body drift")
     require("#include" not in text, "P11.35 canonical hello unexpectedly requires a physical header")
-    require("hello.c full target-native lifecycle" in arch,
+    require("hello.c" in arch and "target-native" in arch and "OBJ1" in arch,
             "REV17 target-native lifecycle acceptance contract drift")
     require("MACRO EMIT_P11_CC_REGCALL" in cc and "MACRO EMIT_P1128_CC_OBJ1_WRITER" in cc,
             "native cc emission/OBJ1 prerequisites missing")
