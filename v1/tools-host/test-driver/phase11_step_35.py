@@ -596,12 +596,24 @@ p1135_stdout_cmp:
     xor a
     ret
 
-p1135_lifecycle:
+p1135_compile_stage:
     call p1135_names
     ret c
     call p1135_compile
     ret c
+    xor a
+    ret
+
+p1135_link_stage:
+    call p1135_compile_stage
+    ret c
     call p1135_link
+    ret c
+    xor a
+    ret
+
+p1135_lifecycle:
+    call p1135_link_stage
     ret c
     call p1135_load_run
     ret c
@@ -680,7 +692,7 @@ p1135_gateway_end:
             ram[0x4000-0x4000:0x4000-0x4000+len(main)] = main
             ram[0xE000-0x4000:0xE000-0x4000+len(gateway)] = gateway
 
-        for name in ("p1135_lifecycle", "p1135_wrong_case"):
+        for name in ("p1135_compile_stage", "p1135_link_stage", "p1135_lifecycle", "p1135_wrong_case"):
             code = (b"\xF3" + phase1._ld_sp(0xBFC0) + phase1._call(syms[name])
                     + phase1._jp_c(FAIL_PC) + phase1._jp(PASS_PC))
             try:
