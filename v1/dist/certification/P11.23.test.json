@@ -1,0 +1,194 @@
+{
+  "action": "test",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "all-fifteen-public-object-handle-symbols-present",
+      "passed": true
+    },
+    {
+      "name": "all-fifteen-symbols-bound-in-libc48-archive-registry",
+      "passed": true
+    },
+    {
+      "name": "open-dat-only-on-create-and-open-typed-explicit-type",
+      "passed": true
+    },
+    {
+      "name": "exact-packed-syscall-record-layouts",
+      "passed": true
+    },
+    {
+      "name": "read-write-seek-register-contracts-exact",
+      "passed": true
+    },
+    {
+      "name": "read-full-write-full-use-short-transfer-loops",
+      "passed": true
+    },
+    {
+      "name": "builtin-c48-header-declares-owned-object-io-surface",
+      "passed": true
+    },
+    {
+      "name": "fuse-all-fifteen-native-symbols-execute-or-resolve",
+      "passed": true
+    },
+    {
+      "name": "fuse-open-default-and-typed-creation-registers-exact",
+      "passed": true
+    },
+    {
+      "name": "fuse-short-read-write-loops-advance-buffer-and-count",
+      "passed": true
+    },
+    {
+      "name": "fuse-short-transfer-then-error-returns-exact-errno",
+      "passed": true
+    },
+    {
+      "name": "fuse-record-wrappers-preserve-packed-layouts",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1123-io.sym",
+        "p1123-io.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 7,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 1325 lines, work time: 0.006 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-fuse-920qslov/fixture.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 70,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-fuse-u71v54x5/fixture.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 57,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-fuse-apkmeidw/fixture.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 59,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-fuse-lv_covzu/fixture.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 57,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-fuse-cmycvwoo/fixture.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 53,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p1123-main.bin": "1fd329fc5ead92ef8b31946c6b1ca55a66e84e9b367df8c48fa8d889f4b62be4",
+    "v1/dist/certification/P11.22.build.json": "08e92944901b7eba66ef6127e0b2b8d3b7d61128eb7103614a995d7d69fbc0db",
+    "v1/dist/certification/P11.22.test.json": "24b50e3d09f95af93a4f3b22e0d6651681150771db45f05eb1d5f572f4239ed1",
+    "v1/src/libc48/io.asm": "6c0a4a1be8ed269147669497f79765df5d08b92f22819ed006da6bcffb13a661",
+    "v1/src/libc48/runtime_archive.asm": "4d10472aafd012d3fb20cf32f982d72cea1e7f747494694908eca564ecd4d2fb",
+    "v1/src/tools/cc.asm": "32c76db03f9d287c9344ab86c9e94214670e6b8af0c9d3c0b718801e0b89964f",
+    "v1/tools-host/test-driver/phase11_step_23.py": "ddf859ecd6e968c305b2464fe68caa79159e2b1eaf3a76141b4d523f15d5e916"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.22": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "7f120d96408a0c4597ebbf28fd62b629312b553d",
+  "status": "PASS",
+  "step": "P11.23",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
