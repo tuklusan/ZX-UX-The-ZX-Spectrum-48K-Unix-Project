@@ -81,6 +81,8 @@ c48_heap_bad_bounds:
     xor a
     ld (c48_heap_ready),a
     ld hl,0
+    ld (c48_heap_start_ptr),hl
+    ld (c48_heap_end_ptr),hl
     ret
 
 ; HL=request bytes. Returns aligned payload pointer in HL or NULL.
