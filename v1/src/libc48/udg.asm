@@ -106,3 +106,135 @@ udg2_row: db 0
 udg2_col: db 0
 udg2_record: defs 3,0
     ENDM
+
+; P11.25 public C48 UDG wrappers over the validated kernel UDG syscalls.
+    MACRO EMIT_P1125_C48_UDG_RUNTIME
+c48_udg_record: db 0,0,0
+c48_udg_base:   db 0
+c48_udg_row:    db 0
+c48_udg_col:    db 0
+
+c48_udg_errno:
+    ld l,a
+    ld h,0
+    or a
+    ret
+c48_udg_zero:
+    ld hl,0
+    xor a
+    ret
+c48_udg_invalid:
+    ld hl,E_INVAL
+    xor a
+    ret
+
+udg_define:
+    ld a,h
+    or a
+    jp nz,c48_udg_invalid
+    ld c,l
+    ld b,0
+    ex de,hl
+    ld a,SYS_UDG_DEFINE
+    call SYSCALL_GATEWAY
+    jp c,c48_udg_errno
+    jp c48_udg_zero
+
+udg_get:
+    ld a,h
+    or a
+    jp nz,c48_udg_invalid
+    ld c,l
+    ld b,0
+    ex de,hl
+    ld a,SYS_UDG_GET
+    call SYSCALL_GATEWAY
+    jp c,c48_udg_errno
+    jp c48_udg_zero
+
+udg_draw:
+    ld a,h
+    or d
+    or b
+    jp nz,c48_udg_invalid
+    ld a,l
+    ld (c48_udg_record+0),a
+    ld a,e
+    ld (c48_udg_record+1),a
+    ld a,c
+    ld (c48_udg_record+2),a
+    ld hl,c48_udg_record
+    ld a,SYS_UDG_DRAW
+    call SYSCALL_GATEWAY
+    jp c,c48_udg_errno
+    jp c48_udg_zero
+
+udg_clear:
+    ld a,h
+    or a
+    jp nz,c48_udg_invalid
+    ld a,SYS_UDG_CLEAR
+    call SYSCALL_GATEWAY
+    jp c,c48_udg_errno
+    jp c48_udg_zero
+
+udg_draw_2x2:
+    ld a,h
+    or d
+    or b
+    jp nz,c48_udg_invalid
+    ld a,l
+    cp 29
+    jp nc,c48_udg_invalid
+    ld (c48_udg_base),a
+    ld a,e
+    cp 23
+    jp nc,c48_udg_invalid
+    ld (c48_udg_row),a
+    ld a,c
+    cp 31
+    jp nc,c48_udg_invalid
+    ld (c48_udg_col),a
+    ld a,(c48_udg_base)
+    ld (c48_udg_record+0),a
+    ld a,(c48_udg_row)
+    ld (c48_udg_record+1),a
+    ld a,(c48_udg_col)
+    ld (c48_udg_record+2),a
+    call c48_udg_draw_one
+    ret nz
+    ld a,(c48_udg_base)
+    inc a
+    ld (c48_udg_record+0),a
+    ld a,(c48_udg_col)
+    inc a
+    ld (c48_udg_record+2),a
+    call c48_udg_draw_one
+    ret nz
+    ld a,(c48_udg_base)
+    add a,2
+    ld (c48_udg_record+0),a
+    ld a,(c48_udg_row)
+    inc a
+    ld (c48_udg_record+1),a
+    ld a,(c48_udg_col)
+    ld (c48_udg_record+2),a
+    call c48_udg_draw_one
+    ret nz
+    ld a,(c48_udg_base)
+    add a,3
+    ld (c48_udg_record+0),a
+    ld a,(c48_udg_col)
+    inc a
+    ld (c48_udg_record+2),a
+    call c48_udg_draw_one
+    ret
+
+c48_udg_draw_one:
+    ld hl,c48_udg_record
+    ld a,SYS_UDG_DRAW
+    call SYSCALL_GATEWAY
+    jr c,c48_udg_errno
+    jp c48_udg_zero
+    ENDM
+
