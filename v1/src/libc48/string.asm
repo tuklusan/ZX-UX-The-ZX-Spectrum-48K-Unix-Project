@@ -53,7 +53,8 @@ getchar:
     xor a
     ret
 c48_getchar_eof:
-    ld hl,$FFFF
+    ld hl,0
+    dec hl
     xor a
     ret
 
@@ -168,7 +169,8 @@ c48_strcmp_loop:
     inc de
     jr c48_strcmp_loop
 c48_strcmp_less:
-    ld hl,$FFFF
+    ld hl,0
+    dec hl
     xor a
     ret
 c48_strcmp_greater:
