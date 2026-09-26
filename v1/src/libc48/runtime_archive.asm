@@ -266,4 +266,3 @@ ld_p1136_archive_bad:
     scf
     ret
     ENDM
-
