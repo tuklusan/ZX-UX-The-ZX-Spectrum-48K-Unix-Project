@@ -6857,3 +6857,244 @@ cc_cf_inval:
     scf
     ret
     ENDM
+
+
+; P11.32 mandatory C48 Z80-native data-operation selection.
+; Exact 16-bit ALU forms, legal DE/HL exchange, documented BIT/SET/RES and
+; documented rotate/shift sequences are emitted only when their visible
+; register/flag and signedness contracts are exact.
+    MACRO EMIT_P1132_CC_DATA_OPS
+CC_DATA_ALU_ADD          EQU 0
+CC_DATA_ALU_ADC          EQU 1
+CC_DATA_ALU_SBC          EQU 2
+
+CC_DATA_RR_BC            EQU 0
+CC_DATA_RR_DE            EQU 1
+CC_DATA_RR_HL            EQU 2
+CC_DATA_RR_SP            EQU 3
+
+CC_DATA_BIT_TEST         EQU 0
+CC_DATA_BIT_SET          EQU 1
+CC_DATA_BIT_RES          EQU 2
+
+CC_DATA_SHIFT_SLA        EQU 0
+CC_DATA_SHIFT_SRL        EQU 1
+CC_DATA_SHIFT_SRA        EQU 2
+CC_DATA_SHIFT_RLC        EQU 3
+CC_DATA_SHIFT_RRC        EQU 4
+
+CC_DATA_UNSIGNED         EQU 0
+CC_DATA_SIGNED           EQU 1
+
+CC_DATA_BUFFER_CAPACITY  EQU 20
+
+cc_data_buffer:          defs CC_DATA_BUFFER_CAPACITY,0
+cc_data_len:             db 0
+cc_data_op:              db 0
+cc_data_rr:              db 0
+cc_data_bit:             db 0
+cc_data_reg:             db 0
+cc_data_count:           db 0
+cc_data_signedness:      db 0
+
+cc_data_reset:
+    xor a
+    ld (cc_data_len),a
+    ret
+
+; A=CC_DATA_ALU_*, B=CC_DATA_RR_*.
+cc_data_emit_alu16:
+    ld (cc_data_op),a
+    ld a,b
+    ld (cc_data_rr),a
+    cp CC_DATA_RR_SP+1
+    jp nc,cc_data_inval
+    ld a,(cc_data_op)
+    cp CC_DATA_ALU_SBC+1
+    jp nc,cc_data_inval
+    call cc_data_reset
+    ld a,(cc_data_op)
+    or a
+    jr z,cc_data_emit_add16
+    ld a,$ED
+    call cc_data_put
+    ret c
+    ld a,(cc_data_rr)
+    rlca
+    rlca
+    rlca
+    rlca
+    ld b,a
+    ld a,(cc_data_op)
+    cp CC_DATA_ALU_ADC
+    ld a,$42
+    jr nz,cc_data_emit_alu16_base
+    ld a,$4A
+cc_data_emit_alu16_base:
+    add a,b
+    jp cc_data_put
+
+cc_data_emit_add16:
+    ld a,(cc_data_rr)
+    rlca
+    rlca
+    rlca
+    rlca
+    add a,$09
+    jp cc_data_put
+
+; A=1 only when EX DE,HL is a legal register-pair rename/exchange.
+cc_data_emit_exchange:
+    cp 1
+    jp nz,cc_data_notsup
+    call cc_data_reset
+    ld a,$EB
+    jp cc_data_put
+
+; A=CC_DATA_BIT_*, B=bit 0..7, C=Z80 register code 0..7.
+cc_data_emit_bitop:
+    ld (cc_data_op),a
+    ld a,b
+    ld (cc_data_bit),a
+    cp 8
+    jp nc,cc_data_inval
+    ld a,c
+    ld (cc_data_reg),a
+    cp 8
+    jp nc,cc_data_inval
+    ld a,(cc_data_op)
+    cp CC_DATA_BIT_RES+1
+    jp nc,cc_data_inval
+    call cc_data_reset
+    ld a,$CB
+    call cc_data_put
+    ret c
+
+    ld a,(cc_data_bit)
+    add a,a
+    add a,a
+    add a,a
+    ld b,a
+    ld a,(cc_data_op)
+    or a
+    ld a,$40
+    jr z,cc_data_bit_base_ready
+    ld a,(cc_data_op)
+    cp CC_DATA_BIT_SET
+    ld a,$80
+    jr nz,cc_data_bit_base_ready
+    ld a,$C0
+cc_data_bit_base_ready:
+    add a,b
+    ld b,a
+    ld a,(cc_data_reg)
+    add a,b
+    jp cc_data_put
+
+; A=CC_DATA_SHIFT_*, B=count 1..4, C=register code 0..7,
+; D=CC_DATA_UNSIGNED/SIGNED. SRL is unsigned-only; SRA is signed-only.
+cc_data_emit_shift:
+    ld (cc_data_op),a
+    ld a,b
+    ld (cc_data_count),a
+    or a
+    jp z,cc_data_inval
+    cp 5
+    jp nc,cc_data_inval
+    ld a,c
+    ld (cc_data_reg),a
+    cp 8
+    jp nc,cc_data_inval
+    ld a,d
+    ld (cc_data_signedness),a
+    cp CC_DATA_SIGNED+1
+    jp nc,cc_data_inval
+    ld a,(cc_data_op)
+    cp CC_DATA_SHIFT_RRC+1
+    jp nc,cc_data_inval
+    cp CC_DATA_SHIFT_SRL
+    jr nz,cc_data_shift_check_sra
+    ld a,(cc_data_signedness)
+    or a
+    jp nz,cc_data_inval
+    jr cc_data_shift_ready
+cc_data_shift_check_sra:
+    ld a,(cc_data_op)
+    cp CC_DATA_SHIFT_SRA
+    jr nz,cc_data_shift_ready
+    ld a,(cc_data_signedness)
+    cp CC_DATA_SIGNED
+    jp nz,cc_data_inval
+cc_data_shift_ready:
+    call cc_data_reset
+cc_data_shift_loop:
+    ld a,$CB
+    call cc_data_put
+    ret c
+    ld a,(cc_data_op)
+    or a
+    ld a,$20
+    jr z,cc_data_shift_base
+    ld a,(cc_data_op)
+    cp CC_DATA_SHIFT_SRL
+    ld a,$38
+    jr z,cc_data_shift_base
+    ld a,(cc_data_op)
+    cp CC_DATA_SHIFT_SRA
+    ld a,$28
+    jr z,cc_data_shift_base
+    ld a,(cc_data_op)
+    cp CC_DATA_SHIFT_RLC
+    ld a,$00
+    jr z,cc_data_shift_base
+    ld a,$08
+cc_data_shift_base:
+    ld b,a
+    ld a,(cc_data_reg)
+    add a,b
+    call cc_data_put
+    ret c
+    ld a,(cc_data_count)
+    dec a
+    ld (cc_data_count),a
+    jr nz,cc_data_shift_loop
+    xor a
+    ret
+
+cc_data_put:
+    push de
+    push hl
+    push af
+    ld a,(cc_data_len)
+    cp CC_DATA_BUFFER_CAPACITY
+    jr nc,cc_data_put_full
+    ld e,a
+    ld d,0
+    ld hl,cc_data_buffer
+    add hl,de
+    pop af
+    ld (hl),a
+    ld a,(cc_data_len)
+    inc a
+    ld (cc_data_len),a
+    pop hl
+    pop de
+    xor a
+    ret
+cc_data_put_full:
+    pop af
+    pop hl
+    pop de
+    ld a,E_NOSPC
+    scf
+    ret
+
+cc_data_notsup:
+    ld a,E_NOTSUP
+    scf
+    ret
+cc_data_inval:
+    ld a,E_INVAL
+    scf
+    ret
+    ENDM
