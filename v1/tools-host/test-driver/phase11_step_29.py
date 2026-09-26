@@ -189,7 +189,7 @@ p1129_streq:
     ret z
     inc de
     inc hl
-    jr p1129_streq
+    jp p1129_streq
 
 p1129_names_positive:
     ld c,1
@@ -467,17 +467,17 @@ p1129_end:
     ORG $E000
 p1129_gateway:
     cp SYS_GETPID
-    jr z,p1129_sys_getpid
+    jp z,p1129_sys_getpid
     cp SYS_OPEN
-    jr z,p1129_sys_open
+    jp z,p1129_sys_open
     cp SYS_WRITE
-    jr z,p1129_sys_write
+    jp z,p1129_sys_write
     cp SYS_CLOSE
-    jr z,p1129_sys_close
+    jp z,p1129_sys_close
     cp SYS_RENAME
-    jr z,p1129_sys_rename
+    jp z,p1129_sys_rename
     cp SYS_REMOVE
-    jr z,p1129_sys_remove
+    jp z,p1129_sys_remove
     ld a,E_NOTSUP
     scf
     ret
@@ -493,27 +493,27 @@ p1129_check_temp:
 p1129_check_temp_prefix:
     ld a,(de)
     cp (hl)
-    jr nz,p1129_sys_format
+    jp nz,p1129_sys_format
     inc de
     inc hl
     djnz p1129_check_temp_prefix
     ld a,(hl)
     cp '3'
-    jr nz,p1129_sys_format
+    jp nz,p1129_sys_format
     inc hl
     ld a,(hl)
     cp '.'
-    jr nz,p1129_sys_format
+    jp nz,p1129_sys_format
     inc hl
     ld a,(hl)
     cp '0'
-    jr c,p1129_sys_format
+    jp c,p1129_sys_format
     cp '9'+1
-    jr nc,p1129_sys_format
+    jp nc,p1129_sys_format
     inc hl
     ld a,(hl)
     or a
-    jr nz,p1129_sys_format
+    jp nz,p1129_sys_format
     xor a
     ret
 
@@ -526,23 +526,23 @@ p1129_sys_open:
     ret c
     ld a,c
     cp O_WRITE|O_CREATE|O_EXCL
-    jr nz,p1129_sys_format
+    jp nz,p1129_sys_format
     ld a,b
     cp OBJ_OBJ
-    jr nz,p1129_sys_format
+    jp nz,p1129_sys_format
     ld a,(p1129_open_calls)
     inc a
     ld (p1129_open_calls),a
     ld a,(p1129_mode)
     cp 7
-    jr z,p1129_sys_exist
+    jp z,p1129_sys_exist
     cp 2
-    jr z,p1129_sys_nospc
+    jp z,p1129_sys_nospc
     cp 1
-    jr nz,p1129_sys_open_ok
+    jp nz,p1129_sys_open_ok
     ld a,(p1129_open_calls)
     cp 1
-    jr z,p1129_sys_exist
+    jp z,p1129_sys_exist
 p1129_sys_open_ok:
     ld hl,4
     xor a
@@ -554,29 +554,29 @@ p1129_sys_write:
     ld (p1129_write_calls),a
     ld a,d
     or a
-    jr nz,p1129_sys_format
+    jp nz,p1129_sys_format
     ld a,e
     cp 4
-    jr nz,p1129_sys_format
+    jp nz,p1129_sys_format
     ld de,p1129_candidate
     or a
     sbc hl,de
-    jr nz,p1129_sys_format
+    jp nz,p1129_sys_format
     ld hl,p1129_candidate_end-p1129_candidate
     or a
     sbc hl,bc
-    jr nz,p1129_sys_format
+    jp nz,p1129_sys_format
     ld a,(p1129_mode)
     cp 3
-    jr z,p1129_sys_nospc
+    jp z,p1129_sys_nospc
     cp 5
-    jr nz,p1129_sys_write_short_check
+    jp nz,p1129_sys_write_short_check
     ld a,2
     ld (p1129_candidate+4),a
 p1129_sys_write_short_check:
     ld a,(p1129_mode)
     cp 8
-    jr nz,p1129_sys_write_ok
+    jp nz,p1129_sys_write_ok
     push bc
     pop hl
     dec hl
@@ -594,16 +594,16 @@ p1129_sys_close:
     ld (p1129_close_calls),a
     ld a,h
     or a
-    jr nz,p1129_sys_format
+    jp nz,p1129_sys_format
     ld a,l
     cp 4
-    jr nz,p1129_sys_format
+    jp nz,p1129_sys_format
     ld a,(p1129_mode)
     cp 4
-    jr nz,p1129_sys_close_ok
+    jp nz,p1129_sys_close_ok
     ld a,(p1129_close_calls)
     cp 1
-    jr nz,p1129_sys_close_ok
+    jp nz,p1129_sys_close_ok
     ld a,E_IO
     scf
     ret
@@ -629,14 +629,14 @@ p1129_sys_rename:
     or a
     sbc hl,de
     pop de
-    jr nz,p1129_sys_format
+    jp nz,p1129_sys_format
     ld hl,p1129_dest
     or a
     sbc hl,de
-    jr nz,p1129_sys_format
+    jp nz,p1129_sys_format
     ld a,(p1129_mode)
     cp 6
-    jr z,p1129_sys_busy
+    jp z,p1129_sys_busy
     ld hl,p1129_dest_bytes
     ld b,16
     ld a,$5A
@@ -654,7 +654,7 @@ p1129_sys_remove:
     ld de,cc_p1129_temp_name
     or a
     sbc hl,de
-    jr nz,p1129_sys_format
+    jp nz,p1129_sys_format
     xor a
     ret
 
