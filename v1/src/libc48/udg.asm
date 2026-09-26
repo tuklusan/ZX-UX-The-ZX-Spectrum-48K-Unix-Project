@@ -234,6 +234,6 @@ c48_udg_draw_one:
     ld hl,c48_udg_record
     ld a,SYS_UDG_DRAW
     call SYSCALL_GATEWAY
-    jr c,c48_udg_errno
+    jp c,c48_udg_errno
     jp c48_udg_zero
     ENDM
