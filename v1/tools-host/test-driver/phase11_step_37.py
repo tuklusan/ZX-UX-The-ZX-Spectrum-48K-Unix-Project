@@ -441,7 +441,7 @@ p1137_lifecycle:
     sbc hl,de
     jp nz,p1137_fail
 
-    ; Exact C BSS result fds[] is {read=0,write=1}.
+    ; Exact C BSS result fds[] contains read=0 and write=1.
     ld hl,p1137_loaded
     ld de,(ld_p1024_image_size)
     add hl,de
