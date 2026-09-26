@@ -1,0 +1,233 @@
+{
+  "action": "test",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "compiler-image-bss-workspace-measured-as-one-native-process-image",
+      "passed": true
+    },
+    {
+      "name": "compiler-complete-process-owned-footprint-lte-20480",
+      "passed": true
+    },
+    {
+      "name": "compiler-bounded-workspace-resident-inside-measured-image",
+      "passed": true
+    },
+    {
+      "name": "compiler-image-is-any-not-fast-required",
+      "passed": true
+    },
+    {
+      "name": "compiler-stack-is-fast-required",
+      "passed": true
+    },
+    {
+      "name": "hello-source-output-use-cold-preferred",
+      "passed": true
+    },
+    {
+      "name": "shell-compiler-packed-reader-pinned-resources-physically-coexist",
+      "passed": true
+    },
+    {
+      "name": "exact-memory-short-diagnostic-present",
+      "passed": true
+    },
+    {
+      "name": "heap8192-pressure-case-is-recoverable",
+      "passed": true
+    },
+    {
+      "name": "fuse-real-allocator-simultaneous-residency-pass",
+      "passed": true
+    },
+    {
+      "name": "fuse-compiler-image-crosses-contended-fast-boundary-under-any",
+      "passed": true
+    },
+    {
+      "name": "fuse-fast-stacks-and-font-remain-fast",
+      "passed": true
+    },
+    {
+      "name": "fuse-cold-source-output-resources-prefer-cold",
+      "passed": true
+    },
+    {
+      "name": "fuse-heap8192-fails-enomem-without-accounting-corruption",
+      "passed": true
+    },
+    {
+      "name": "fuse-free-pressure-and-retry-succeeds",
+      "passed": true
+    },
+    {
+      "name": "fuse-shell-cc-launch-enomem-exact-diagnostic-short-write-safe",
+      "passed": true
+    },
+    {
+      "name": "fuse-non-cc-launch-enomem-does-not-claim-compiler-diagnostic",
+      "passed": true
+    },
+    {
+      "name": "fuse-compiler-runtime-enomem-exact-diagnostic-short-write-safe",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1140-cc-footprint.sym",
+        "p1140-cc-footprint.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 45,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 16470 lines, work time: 0.044 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1140-residency.sym",
+        "p1140-residency.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 7,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 1547 lines, work time: 0.006 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1140-shell-nomem.sym",
+        "p1140-shell-nomem.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 9,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 5649 lines, work time: 0.008 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-fuse-aa4ejgjz/fixture.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 100,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-fuse-ibeknnjv/fixture.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 57,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-fuse-cnz4bm2t/fixture.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 56,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-fuse-aawvt2_g/fixture.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 60,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/assets/bincat.bin": "130762f290dad7169ed9e55cc31da09449548ee9156b658a644487d3d611c939",
+    "v1/assets/font4x8.bin": "1f29bb201828bbb6f0c0945c9677eb495b7b99592bd9c05ed10c0597caa69114",
+    "v1/build/p1140-cc.bin": "830aabc771fe22ec37a8dcee81fd3086b1821812ddc8df811dbb18e359311314",
+    "v1/build/p1140-gateway.bin": "cd60461550cfd3bc4f60f4758a503a8506a3bb5d9fad9284bba8375c742aad5d",
+    "v1/build/p1140-residency.bin": "f5d27764071df3e681212c97e36758b0602e7cf2c4792569666b3bc6a99c4f0b",
+    "v1/build/p1140-shell.bin": "8fc43b918ce8bbe3a4a57facfe13a453abcb49b0356c933adfec04c22a0c89c2",
+    "v1/dist/certification/P11.39.build.json": "df8c1d465aad2a1f879003ec7c6eb417989b9c2fce3f013f9de23e50fb4898e1",
+    "v1/dist/certification/P11.39.test.json": "3716b644a8a439e3a42448630ba1705a04148e9020f1c2a08f4def19b9376b20",
+    "v1/docs/abi.md": "35975363b6d678d9622549fbc7c168e4b5bec86f9fdb32f052e306952bc7e156",
+    "v1/src/demos/hello.c": "01638e6fa7d7d5e0e491d97cf6dc9ab8464a53d34fc469f8e6268b07a80a28db",
+    "v1/src/kernel/memory.asm": "79fc65b02520e8c78d85db23d699e9d71604a0273d1f256e9e71acc6b879dcfe",
+    "v1/src/kernel/process.asm": "819b77622b90abc4386897a3544ba78b16ab045ffab16b8bad5dfe2f12ec338c",
+    "v1/src/shell/sh.asm": "385e6f012463ecc7951c3cc11aac9d90748b6be43c29f31dfd118be316f35eea",
+    "v1/src/tools/cc.asm": "24b5a0e3094b600e9a0f77f47a686fa97ca31357002460047bae8ea4ae7d8e46",
+    "v1/tools-host/test-driver/phase11_step_40.py": "0b877b6e38d7e6259086c8b1bbb6dc5d9f274c328aea05454ca8ec2a7696b1c5"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.39": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "6b9d8bb9f103990f713073b2f2173d82228fee87",
+  "status": "PASS",
+  "step": "P11.40",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
