@@ -459,6 +459,71 @@ p1137_call_loaded:
     ld hl,(p1137_load_base)
     jp (hl)
 
+p1137_call_main:
+    ld hl,(p1137_load_base)
+    ld de,(ld_p1024_text_bases+2)
+    add hl,de
+    ld de,p1137_call_main_return
+    push de
+    jp (hl)
+p1137_call_main_return:
+    ret
+
+p1137_setup_stage:
+    jp p1137_setup_kernel
+
+p1137_load_stage:
+    call p1137_link
+    ret c
+    call p1137_setup_kernel
+    ret c
+    jp p1137_load
+
+p1137_syscalls_stage:
+    call p1137_load_stage
+    ret c
+    ; Use the exact relocated BSS addresses but invoke the two syscalls here,
+    ; separating kernel/fixture behavior from emitted-main behavior.
+    ld hl,(p1137_load_base)
+    ld de,(ld_p1024_image_size)
+    add hl,de
+    push hl
+    ld a,SYS_PIPE
+    call SYSCALL_GATEWAY
+    pop hl
+    ret c
+    ld a,(hl)
+    or a
+    jp nz,p1137_fail
+    inc hl
+    ld a,(hl)
+    cp 1
+    jp nz,p1137_fail
+    ld e,a
+    ld d,0
+    inc hl
+    ld bc,300
+    ld a,SYS_WRITE
+    call SYSCALL_GATEWAY
+    ret c
+    ld de,256
+    or a
+    sbc hl,de
+    jp nz,p1137_fail
+    xor a
+    ret
+
+p1137_main_stage:
+    call p1137_load_stage
+    ret c
+    call p1137_call_main
+    ld de,256
+    or a
+    sbc hl,de
+    jp nz,p1137_fail
+    xor a
+    ret
+
 p1137_lifecycle:
     call p1137_link
     ret c
@@ -543,7 +608,8 @@ p1137_end:
             f"P11.37 helper overlaps FUSE trampoline: {len(main)}")
     syms = phase3_open_descriptions._symbols(
         build / "p1137-native-pipe.sym",
-        ("p1137_compile", "p1137_link", "p1137_lifecycle", "p1137_broken_pipe"),
+        ("p1137_compile", "p1137_link", "p1137_setup_stage", "p1137_load_stage",
+         "p1137_syscalls_stage", "p1137_main_stage", "p1137_lifecycle", "p1137_broken_pipe"),
     )
 
     assertions = [
@@ -563,7 +629,9 @@ p1137_end:
             ram[0:len(main)] = main
             kernel_patch(ram)
 
-        for name in ("p1137_compile", "p1137_link", "p1137_lifecycle", "p1137_broken_pipe"):
+        for name in ("p1137_compile", "p1137_link", "p1137_setup_stage", "p1137_load_stage",
+                     "p1137_syscalls_stage", "p1137_main_stage", "p1137_lifecycle",
+                     "p1137_broken_pipe"):
             code = (b"\xF3" + phase1._ld_sp(0xBFC0) + phase1._call(syms[name])
                     + phase1._jp_c(FAIL_PC) + phase1._jp(PASS_PC))
             try:
