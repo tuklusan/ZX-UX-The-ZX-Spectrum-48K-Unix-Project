@@ -163,7 +163,7 @@ def dispatch(root, action, step, *, sha256_file, run_command, require_project_to
     require("Portable baseline only: undocumented SLL and indexed-result aliases are absent." in inventory,
             "documented assembler inventory drift")
     require("EMIT_P11_CC_FRAME_LAYOUT" in cc and "EMIT_P11_CC_REGCALL" in cc
-            and "EMIT_P1116_CC_FLOAT_RETURN" in cc,
+            and "EMIT_P11_CC_FLOAT_RETURN" in cc,
             "P11.30 prerequisite codegen surfaces missing")
 
     goldens = {
