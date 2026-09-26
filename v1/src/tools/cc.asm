@@ -6702,7 +6702,6 @@ cc_cf_emit_branch:
     ld de,(cc_cf_relative)
     call cc_cf_rel8
     jr c,cc_cf_emit_branch_far
-    ld e,a
     ld a,(cc_cf_cond)
     add a,a
     add a,a
@@ -6710,7 +6709,7 @@ cc_cf_emit_branch:
     add a,$20
     call cc_cf_put
     ret c
-    ld a,e
+    ld a,(cc_cf_relative)
     jp cc_cf_put
 cc_cf_emit_branch_far:
     ld a,(cc_cf_cond)
@@ -6740,11 +6739,10 @@ cc_cf_emit_counted_loop:
     ld de,(cc_cf_relative)
     call cc_cf_rel8
     jr c,cc_cf_counted_b_far
-    ld e,a
     ld a,$10
     call cc_cf_put
     ret c
-    ld a,e
+    ld a,(cc_cf_relative)
     jp cc_cf_put
 
 cc_cf_counted_b_far:
