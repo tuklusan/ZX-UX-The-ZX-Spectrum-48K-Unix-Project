@@ -219,8 +219,8 @@ c48_strncpy_pad_check:
     ld a,b
     or c
     jr z,c48_strncpy_done
-    xor a
 c48_strncpy_pad:
+    xor a
     ld (hl),a
     inc hl
     dec bc
