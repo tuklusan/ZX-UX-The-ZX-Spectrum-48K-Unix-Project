@@ -448,4 +448,3 @@ c48_memset_done:
     xor a
     ret
     ENDM
-
