@@ -1,0 +1,64 @@
+{
+  "action": "build",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "add-adc-sbc-hl-rr-selected-exactly",
+      "passed": true
+    },
+    {
+      "name": "legal-ex-de-hl-selected-exactly",
+      "passed": true
+    },
+    {
+      "name": "bit-set-res-documented-cb-sequences-exact",
+      "passed": true
+    },
+    {
+      "name": "documented-rotate-shift-power-of-two-sequences-exact",
+      "passed": true
+    },
+    {
+      "name": "signed-right-shift-uses-sra-unsigned-uses-srl",
+      "passed": true
+    },
+    {
+      "name": "all-goldens-pass-p1130-documented-opcode-scanner",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1132-data-ops.sym",
+        "p1132-data-ops.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 12,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 8010 lines, work time: 0.011 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p1132-main.bin": "3fb0e9cf29dd6ebf7e9bf919200d0d4fa0cd396e39b729d0995ef7b402c7393c",
+    "v1/dist/certification/P11.31.build.json": "d4243567b69523556f8c56d335393501930885bd19b3aa93404b05fa1de781d3",
+    "v1/dist/certification/P11.31.test.json": "14ed41c55b35142b26407294f18ccb9cf9374370d89783ca13bc4c2fb9065e41",
+    "v1/src/tools/cc.asm": "f3cf2088538204689dfb9ecdec0e3bb23dd27f2c4d9c6305bd0023632252eb70",
+    "v1/tools-host/test-driver/phase11_step_30.py": "0fd136c51a4ba0970009d4340d4725843e31d71705c57b0d1db9a0f10c074682",
+    "v1/tools-host/test-driver/phase11_step_32.py": "bbdfd0d337455b857c65b1bc67d3f0940375093ffb5e96c67d5154879c6a3e82"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.31": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "13c45a4329b4bc383010ef31707e343f552ca81f",
+  "status": "PASS",
+  "step": "P11.32",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
