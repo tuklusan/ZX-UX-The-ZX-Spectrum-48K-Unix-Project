@@ -337,3 +337,120 @@ c48_free_prev_found:
     ld (hl),d
     ret
     ENDM
+
+; P11.24 C48 byte-exact memory primitives.
+; C48_REGCALL: HL=destination/pointer, DE=source/byte, BC=count.
+    MACRO EMIT_P1124_C48_MEMORY_RUNTIME
+c48_mem_dest:   dw 0
+c48_mem_src:    dw 0
+c48_mem_count:  dw 0
+c48_mem_char:   db 0
+
+memcpy:
+    push hl
+    ld a,b
+    or c
+    jr z,c48_memcpy_done
+    ex de,hl
+    ldir
+c48_memcpy_done:
+    pop hl
+    xor a
+    ret
+
+memmove:
+    ld (c48_mem_dest),hl
+    ld (c48_mem_src),de
+    ld (c48_mem_count),bc
+    ld a,b
+    or c
+    jr z,c48_memmove_return
+
+    ld hl,(c48_mem_dest)
+    ld de,(c48_mem_src)
+    or a
+    sbc hl,de
+    jr c,c48_memmove_forward
+    jr z,c48_memmove_return
+
+    ld hl,(c48_mem_src)
+    ld bc,(c48_mem_count)
+    add hl,bc
+    ld de,(c48_mem_dest)
+    or a
+    sbc hl,de
+    jr c,c48_memmove_forward
+    jr z,c48_memmove_forward
+
+    ; Overlap with destination inside source range: copy from high to low.
+    ld hl,(c48_mem_src)
+    ld bc,(c48_mem_count)
+    add hl,bc
+    dec hl
+    ld de,(c48_mem_dest)
+    add hl,bc
+    ; Reconstruct destination end without disturbing source end.
+    ld hl,(c48_mem_dest)
+    add hl,bc
+    dec hl
+    ex de,hl
+    ld hl,(c48_mem_src)
+    add hl,bc
+    dec hl
+    lddr
+    jr c48_memmove_return
+
+c48_memmove_forward:
+    ld hl,(c48_mem_src)
+    ld de,(c48_mem_dest)
+    ld bc,(c48_mem_count)
+    ldir
+c48_memmove_return:
+    ld hl,(c48_mem_dest)
+    xor a
+    ret
+
+memchr:
+    ld a,e
+    ld (c48_mem_char),a
+    ld a,b
+    or c
+    jr z,c48_memchr_miss
+c48_memchr_loop:
+    ld a,(c48_mem_char)
+    cp (hl)
+    jr z,c48_memchr_hit
+    inc hl
+    dec bc
+    ld a,b
+    or c
+    jr nz,c48_memchr_loop
+c48_memchr_miss:
+    ld hl,0
+    xor a
+    ret
+c48_memchr_hit:
+    xor a
+    ret
+
+memset:
+    ld a,e
+    ld (c48_mem_char),a
+    push hl
+    ld a,b
+    or c
+    jr z,c48_memset_done
+c48_memset_loop:
+    ld a,(c48_mem_char)
+    ld (hl),a
+    inc hl
+    dec bc
+    ld a,b
+    or c
+    jr nz,c48_memset_loop
+c48_memset_done:
+    pop hl
+    xor a
+    ret
+    ENDM
+
