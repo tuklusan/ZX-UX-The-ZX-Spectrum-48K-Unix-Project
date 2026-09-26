@@ -112,6 +112,14 @@ def dispatch(root, action, step, *, sha256_file, run_command, require_project_to
     INCLUDE "../src/libc48/runtime_archive.asm"
 
     ORG $4000
+CC_TYPE_VOID  EQU 0
+CC_TYPE_CHAR  EQU 1
+CC_TYPE_UCHAR EQU 2
+CC_TYPE_SHORT EQU 3
+CC_TYPE_USHORT EQU 4
+CC_TYPE_INT   EQU 5
+CC_TYPE_UINT  EQU 6
+CC_TYPE_FLOAT EQU 7
 p1135_start:
     EMIT_P11_CC_REGCALL
     EMIT_P1128_CC_OBJ1_WRITER
@@ -165,6 +173,7 @@ p1135_stdout: defs 8,$CC
 p1135_stdout_len: db 0
 p1135_expected_stdout: db "hello",10
 p1135_gate_count: dw 0
+p1135_copy_base_ptr: dw 0
 
 p1135_fail:
     ld a,E_FORMAT
