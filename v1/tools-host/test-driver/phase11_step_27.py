@@ -131,8 +131,8 @@ p1127_surface:
 
     ld hl,p1127_time : call time_get
     ld de,0 : call p1127_check : ret c
-    ld hl,p1127_time : ld de,$0680 : call p1127_check : ret c
-    ld hl,p1127_time+2 : ld de,$1726 : call p1127_check : ret c
+    ld hl,(p1127_time) : ld de,$0680 : call p1127_check : ret c
+    ld hl,(p1127_time+2) : ld de,$1726 : call p1127_check : ret c
     ld hl,(p1127_time+4) : ld de,0 : call p1127_check : ret c
 
     ld hl,p1127_set : call time_set
