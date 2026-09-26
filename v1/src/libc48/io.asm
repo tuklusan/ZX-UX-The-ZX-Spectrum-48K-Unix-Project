@@ -187,14 +187,14 @@ c48_io_read_full_loop:
     ld bc,(c48_io_full_left)
     ld a,b
     or c
-    jr z,c48_io_full_done
+    jp z,c48_io_full_done
     ld hl,(c48_io_full_handle)
     ld de,(c48_io_full_ptr)
     call c48_io_read_raw
     jp c,c48_io_errno
     ld a,h
     or l
-    jr z,c48_io_full_done
+    jp z,c48_io_full_done
     call c48_io_full_advance
     jr c48_io_read_full_loop
 
@@ -204,7 +204,7 @@ c48_io_write_full_loop:
     ld bc,(c48_io_full_left)
     ld a,b
     or c
-    jr z,c48_io_full_done
+    jp z,c48_io_full_done
     ld hl,(c48_io_full_handle)
     ld de,(c48_io_full_ptr)
     call c48_io_write_raw
