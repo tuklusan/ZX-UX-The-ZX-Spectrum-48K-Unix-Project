@@ -1,0 +1,36 @@
+{
+  "license_header": [
+    "Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.",
+    "Proprietary rights reserved except as expressly licensed herein.",
+    "ZX-UX Sinclair ZX Spectrum Unix",
+    "This file is governed by the SANYALnet Labs Non-Commercial License in the root LICENSE file.",
+    "Non-Commercial use is permitted; Commercial Use and use for AI/ML model training are prohibited unless separately authorized.",
+    "Attribution is required: Based on original work by Supratim Sanyal of SANYALnet Labs.",
+    "See LICENSE for full terms, warranty disclaimer, termination, patent, trademark, and governing-law provisions."
+  ],
+  "schema": 1,
+  "step": "P11.35",
+  "sdk_commit": "84d144de2721cda5075c3a6610a422663b5e2f77",
+  "sources": [
+    {
+      "path": "v1/src/demos/hello.c",
+      "sdk_reference": {
+        "result": "REJECT",
+        "category": "declaration-error",
+        "detail": "undeclared identifier 'puts'",
+        "basis": [
+          "compiler/c48/semantics.py: lookup rejects undeclared identifiers",
+          "canonical REV17 hello.c intentionally has no physical header dependency"
+        ]
+      },
+      "authority_resolution": "REV17/REV08 target contract wins: native cc resolves the compiler/runtime built-in puts surface and must compile the canonical source without a physical c48.h file.",
+      "target_native": {
+        "step": "P11.35",
+        "required_result": "PASS",
+        "lifecycle": "C source bytes -> target-native cc stages -> OBJ1 -> target-native ld with built-in runtime archive -> MEX1 -> execute",
+        "expected_stdout_hex": "68656c6c6f0a",
+        "expected_status": 0
+      }
+    }
+  ]
+}

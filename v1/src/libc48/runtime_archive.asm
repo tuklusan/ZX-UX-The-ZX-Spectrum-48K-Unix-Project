@@ -130,3 +130,69 @@ p1123_libc48_io_names:
     db "read_full",0
     db "write_full",0
     ENDM
+
+; P11.35 target-native lifecycle archive.
+; P10 bytes above remain frozen.  This overlay keeps the same member IDs/order
+; while replacing only the C48 puts member with a real target-native stdout
+; implementation for native cc -> OBJ1 -> ld -> executable lifecycle proof.
+P1135_RUNTIME_MEMBER_COUNT EQU 4
+
+    MACRO EMIT_P1135_C48_RUNTIME_ARCHIVE
+p1135_runtime_archive:
+    db 'L','A','R','1'
+    db P1135_RUNTIME_MEMBER_COUNT
+    db 0
+    dw p1135_runtime_archive_table_end-p1135_runtime_archive_table
+p1135_runtime_archive_table:
+    dw p10_crt0_obj
+    dw p10_crt0_obj_end-p10_crt0_obj
+    dw p10_runtime_write_obj
+    dw p10_runtime_write_obj_end-p10_runtime_write_obj
+    dw p1135_runtime_puts_obj
+    dw p1135_runtime_puts_obj_end-p1135_runtime_puts_obj
+    dw p10_runtime_exit_obj
+    dw p10_runtime_exit_obj_end-p10_runtime_exit_obj
+p1135_runtime_archive_table_end:
+
+; OBJ1 puts(char *).  The code is position independent except for the frozen
+; syscall gateway at E000.  It writes the whole NUL-terminated byte string and
+; then one LF.  No host service participates.
+p1135_runtime_puts_obj:
+    db $4F,$42,$4A,$31,$01,$00,$18,$00,$36,$00,$00,$00,$01,$00,$00,$00
+    db $4E,$00,$62,$00,$DD,$AB,$52,$2E
+    db $E5,$01,$00,$00,$7E,$B7,$28,$04,$23,$03,$18,$F8,$E1,$11,$01,$00
+    db $3E,$13,$CD,$00,$E0,$38,$1A,$21,$0A,$00,$E5,$21,$00,$00,$39,$11
+    db $01,$00,$01,$01,$00,$3E,$13,$CD,$00,$E0,$C1,$38,$04,$21,$00,$00
+    db $C9,$6F,$26,$00,$B7,$C9
+    db "puts",0,0,0,0,0,0,0,0,0,0,0,0
+    dw 0
+    db 1,1
+p1135_runtime_puts_obj_end:
+    ENDM
+
+; A=member ID 0..3. Success HL=OBJ1 pointer, BC=stored length.
+    MACRO EMIT_P1135_C48_RUNTIME_ARCHIVE_ROUTINES
+ld_p1135_archive_get:
+    cp P1135_RUNTIME_MEMBER_COUNT
+    jr nc,ld_p1135_archive_bad
+    ld l,a
+    ld h,0
+    add hl,hl
+    add hl,hl
+    ld de,p1135_runtime_archive_table
+    add hl,de
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    inc hl
+    ld c,(hl)
+    inc hl
+    ld b,(hl)
+    ex de,hl
+    xor a
+    ret
+ld_p1135_archive_bad:
+    ld a,E_INVAL
+    scf
+    ret
+    ENDM
