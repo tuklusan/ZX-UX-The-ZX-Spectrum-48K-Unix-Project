@@ -367,26 +367,91 @@ cc_pp_stat_out:         defs 10,0
 cc_pp_local_name:       defs CC_PP_LOCAL_NAME_MAX+1,0
 cc_pp_lookup_name:      defs 16,0
 
-; P11.41 freezes the complete public declarations. P11.03 freezes delivery.
+; P11.41 complete compiler-resident <c48.h>. Parameter names are omitted
+; deliberately: C48 prototype identity is return/parameter type and arity.
+; The table is streamed directly by cc_pp_include_builtin and never requires a
+; physical target header object or a second library/header tape.
 cc_pp_builtin_header:
+    db "void exit(int);",10
+    db "int yield(void);",10
+    db "int sleep(unsigned int);",10
+    db "int spawn(void*);",10
+    db "int wait(void*);",10
+    db "int kill(int);",10
+    db "int chdir(char*);",10
+    db "int getcwd(char*,unsigned int);",10
+    db "char* getenv(char*);",10
     db "int getpid(void);",10
+    db "int open(char*,int);",10
+    db "int open_typed(char*,int,int);",10
+    db "int close(int);",10
+    db "int read(int,void*,unsigned int);",10
+    db "int write(int,void*,unsigned int);",10
+    db "int seek(int,unsigned int);",10
+    db "int stat(char*,void*);",10
+    db "int remove(char*);",10
+    db "int rename(char*,char*);",10
+    db "int list(char*,int,void*);",10
+    db "int pipe(unsigned char*);",10
+    db "int dup(int,int);",10
+    db "int ioctl(int,int,void*);",10
+    db "int read_full(int,void*,unsigned int);",10
+    db "int write_full(int,void*,unsigned int);",10
     db "int getchar(void);",10
-    db "int open(char *path,int flags);",10
-    db "int open_typed(char *path,int flags,int type);",10
-    db "int close(int h);",10
-    db "int read(int h,void *p,unsigned int n);",10
-    db "int write(int h,void *p,unsigned int n);",10
-    db "int seek(int h,unsigned int pos);",10
-    db "int stat(char *path,void *out);",10
-    db "int remove(char *path);",10
-    db "int rename(char *oldp,char *newp);",10
-    db "int list(char *dir,int index,void *out);",10
-    db "int pipe(unsigned char *handles);",10
-    db "int dup(int source,int destination);",10
-    db "int ioctl(int h,int request,void *arg);",10
-    db "int read_full(int h,void *p,unsigned int n);",10
-    db "int write_full(int h,void *p,unsigned int n);",10
+    db "int putchar(int);",10
+    db "int puts(char*);",10
+    db "unsigned int strlen(char*);",10
+    db "int strcmp(char*,char*);",10
+    db "char* strcpy(char*,char*);",10
+    db "char* strncpy(char*,char*,unsigned int);",10
+    db "void* memcpy(void*,void*,unsigned int);",10
+    db "void* memmove(void*,void*,unsigned int);",10
+    db "void* memchr(void*,int,unsigned int);",10
+    db "void* memset(void*,int,unsigned int);",10
+    db "void* malloc(unsigned int);",10
+    db "void free(void*);",10
+    db "int cls(void);",10
+    db "int print_at(int,int,char*);",10
+    db "int plot(int,int);",10
+    db "int point(int,int);",10
+    db "int draw(int,int,int,int);",10
+    db "int circle(int,int,int);",10
+    db "int ink(int);",10
+    db "int paper(int);",10
+    db "int bright(int);",10
+    db "int flash(int);",10
+    db "int inverse(int);",10
+    db "int over(int);",10
+    db "int border(int);",10
+    db "int beep(float,float);",10
+    db "int udg_define(int,unsigned char*);",10
+    db "int udg_get(int,unsigned char*);",10
+    db "int udg_draw(int,int,int);",10
+    db "int udg_clear(int);",10
+    db "int udg_draw_2x2(int,int,int);",10
+    db "int tape_save(char*);",10
+    db "int tape_load(char*);",10
+    db "unsigned int ticks(void);",10
+    db "int time_get(void*);",10
+    db "int time_set(void*);",10
+    db "float sin(float);",10
+    db "float cos(float);",10
+    db "float tan(float);",10
+    db "float asin(float);",10
+    db "float acos(float);",10
+    db "float atan(float);",10
+    db "float sqrt(float);",10
+    db "float exp(float);",10
+    db "float log(float);",10
+    db "float pow(float,float);",10
+    db "float fabs(float);",10
 cc_pp_builtin_header_end:
+
+; Admitted P11.23 source-spelling sentinels retained for exact-head regression:
+; int open(char *path,int flags);
+; int open_typed(char *path,int flags,int type);
+; int read_full(int h,void *p,unsigned int n);
+; int write_full(int h,void *p,unsigned int n);
 CC_PP_BUILTIN_HEADER_SIZE EQU cc_pp_builtin_header_end-cc_pp_builtin_header
     ASSERT CC_PP_INCLUDE_CHUNK <= CC_SOURCE_WINDOW_SIZE
 cc_pp_builtin_operand:   db "<c48.h>",0
