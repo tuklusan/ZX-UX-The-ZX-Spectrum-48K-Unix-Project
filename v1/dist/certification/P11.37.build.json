@@ -1,0 +1,78 @@
+{
+  "action": "build",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "pipe-c-source-mapped-to-pinned-sdk-reference",
+      "passed": true
+    },
+    {
+      "name": "native-cc-emits-text-bss-relocatable-obj1",
+      "passed": true
+    },
+    {
+      "name": "native-ld-links-bss-relocations-to-mex1",
+      "passed": true
+    },
+    {
+      "name": "real-kernel-pipe-capacity-exact-256",
+      "passed": true
+    },
+    {
+      "name": "host-does-not-compile-or-link-pipe-demo",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 39,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 16257 lines, work time: 0.037 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1137-native-pipe.sym",
+        "p1137-native-pipe.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 29,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 15218 lines, work time: 0.028 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/ld.asm": "c182b44e26c8c4e5cc2c1d48e1a899a9fd0836180d4b4dee1d8ceccfa2109189",
+    "v1/build/kernel.bin": "ae3c54f9cd50eade1e543d9ac3c6ff58c83d63d6951c707b192ef5f9e26d4806",
+    "v1/build/p1137-main.bin": "5cf9abbb005ff78da74a6fac8f40fa3f0e84c493889e5d04fd7c0638757058bb",
+    "v1/dist/certification/P11.36.build.json": "644d6377bcd8336b2244831a2ed762ca065df632f5d04a81b80d1179e684e68a",
+    "v1/dist/certification/P11.36.test.json": "f0ea8f34e39e4b8a813218e9289dde83fb80534d0877d0dc76f1234a6342fb82",
+    "v1/src/demos/pipe.c": "ba473f5522031678d9494df843a5f4757f29f4a133c5a20cb659d09b0fdd036c",
+    "v1/src/tools/cc.asm": "59f571881f8c117273ce7a85bf0aac024200f6d4d91e06bca1e55705d68ae465",
+    "v1/tests/compiler/p1137-source-map.json": "bbc75205c358b2be44a732a0a2ca4cd0f7f1d6602dd8d46fefbdc1b86738bc19",
+    "v1/tools-host/test-driver/phase11_step_37.py": "5970f8b6cbd98429ea8891d8d23b5d77571eea884ed6a4241dc514e2d24b472b"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.36": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "6d5a94790a35a1b199c0a95bf2c28b6cb2fc129e",
+  "status": "PASS",
+  "step": "P11.37",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
