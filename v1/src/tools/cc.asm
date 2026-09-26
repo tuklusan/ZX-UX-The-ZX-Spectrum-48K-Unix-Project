@@ -360,6 +360,8 @@ cc_pp_local_len:        db 0
 cc_pp_work_name:        dw 0
 cc_pp_work_repl:        dw 0
 cc_pp_work_dest:        dw 0
+cc_pp_builtin_ptr:      dw 0
+cc_pp_builtin_left:     dw 0
 cc_pp_stat_req:         defs 4,0
 cc_pp_stat_out:         defs 10,0
 cc_pp_local_name:       defs CC_PP_LOCAL_NAME_MAX+1,0
@@ -386,7 +388,7 @@ cc_pp_builtin_header:
     db "int write_full(int h,void *p,unsigned int n);",10
 cc_pp_builtin_header_end:
 CC_PP_BUILTIN_HEADER_SIZE EQU cc_pp_builtin_header_end-cc_pp_builtin_header
-    ASSERT CC_PP_BUILTIN_HEADER_SIZE <= CC_SOURCE_WINDOW_SIZE
+    ASSERT CC_PP_INCLUDE_CHUNK <= CC_SOURCE_WINDOW_SIZE
 cc_pp_builtin_operand:   db "<c48.h>",0
 
 cc_pp_reset:
@@ -610,11 +612,45 @@ cc_pp_include_builtin:
     ld a,(cc_pp_builtin_seen)
     or a
     ret nz
+    ld hl,cc_pp_builtin_header
+    ld (cc_pp_builtin_ptr),hl
+    ld hl,CC_PP_BUILTIN_HEADER_SIZE
+    ld (cc_pp_builtin_left),hl
+cc_pp_builtin_feed_loop:
+    ld hl,(cc_pp_builtin_left)
+    ld a,h
+    or l
+    jr z,cc_pp_builtin_feed_done
+    ld c,CC_PP_INCLUDE_CHUNK
+    ld a,h
+    or a
+    jr nz,cc_pp_builtin_chunk_ready
+    ld a,l
+    cp CC_PP_INCLUDE_CHUNK+1
+    jr nc,cc_pp_builtin_chunk_ready
+    ld c,a
+cc_pp_builtin_chunk_ready:
+    ld a,c
+    ld (cc_pp_work_len),a
+    ld b,0
+    ld hl,(cc_pp_builtin_ptr)
+    call cc_pipeline_feed
+    ret c
+    ld hl,(cc_pp_builtin_ptr)
+    ld a,(cc_pp_work_len)
+    ld e,a
+    ld d,0
+    add hl,de
+    ld (cc_pp_builtin_ptr),hl
+    ld hl,(cc_pp_builtin_left)
+    or a
+    sbc hl,de
+    ld (cc_pp_builtin_left),hl
+    jr cc_pp_builtin_feed_loop
+cc_pp_builtin_feed_done:
     ld a,1
     ld (cc_pp_builtin_seen),a
-    ld hl,cc_pp_builtin_header
-    ld bc,CC_PP_BUILTIN_HEADER_SIZE
-    call cc_pipeline_feed
+    xor a
     ret
 
 ; Local C/TXT include: current cwd basename, streamed in <=64-byte reads.
