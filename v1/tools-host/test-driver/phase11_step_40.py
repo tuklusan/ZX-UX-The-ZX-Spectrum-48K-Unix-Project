@@ -112,7 +112,7 @@ def dispatch(root, action, step, *, sha256_file, run_command, require_project_to
     cc_fixture.write_text(r'''    DEVICE ZXSPECTRUM48
     INCLUDE "../include/zx48ux.inc"
     INCLUDE "../src/tools/cc.asm"
-    ORG $6000
+    ORG $4000
 p1140_cc_image_start:
     EMIT_P11_CC_STREAMING_CORE
     EMIT_P11_CC_PREPROCESSOR
@@ -527,7 +527,7 @@ p1140_gate_end:
             raise P1140Error(f"non-cc E_NOMEM diagnostic negative failed: {exc}") from None
 
         def cc_diag_patch(ram):
-            ram[0x6000-0x4000:0x6000-0x4000+len(cc_bin)] = cc_bin
+            ram[0:len(cc_bin)] = cc_bin
             ram[0xE000-0x4000:0xE000-0x4000+len(gateway_bin)] = gateway_bin
             ram[OUTPUT_ADDR-0x4000:OUTPUT_ADDR-0x4000+64] = b"\xA5" * 64
 
