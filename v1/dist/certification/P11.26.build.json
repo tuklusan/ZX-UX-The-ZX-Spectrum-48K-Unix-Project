@@ -1,0 +1,55 @@
+{
+  "action": "build",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "public-beep-symbol-exact",
+      "passed": true
+    },
+    {
+      "name": "beep-uses-synchronous-sys-beep",
+      "passed": true
+    },
+    {
+      "name": "float-pointer-abi-preserved",
+      "passed": true
+    },
+    {
+      "name": "fractional-negative-octave-domain-not-narrowed",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1126-beep.sym",
+        "p1126-beep.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 7,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 515 lines, work time: 0.006 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p1126-main.bin": "47b00149ce074774741df0ba651c9e1302af29614e4d73c469a99666b7c92332",
+    "v1/dist/certification/P11.25.build.json": "e039240d0bb0f296580f84980df70045e7155e03ba5942336799677c2ac6c221",
+    "v1/dist/certification/P11.25.test.json": "47b33a82ddd9043793b561fd851e96b7345d11394093fb70807b2f09391c3aad",
+    "v1/src/libc48/sound.asm": "c5be0bcd6b71a5a5d442d40f90b7ba6956fe3853a7e805e39dd525b9a5b74923",
+    "v1/tools-host/test-driver/phase11_step_26.py": "11519e182b32c90afb875285f5c55f6925c6ceff9ced14e9e3e08a7c1f390af7"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.25": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "a6f69b9a83366a78d737da00dac2b2f10b7de605",
+  "status": "PASS",
+  "step": "P11.26",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
