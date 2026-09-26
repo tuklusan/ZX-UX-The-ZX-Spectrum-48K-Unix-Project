@@ -73,7 +73,7 @@ def dispatch(root, action, step, *, sha256_file, run_command, require_project_to
             and "read_full()" in arch and "write_full()" in arch,
             "REV17 P11.23 object I/O contract drift")
     require("## P11.23 - C48 object/handle runtime API" in plan
-            and "all fifteen symbols resolve from the built-in libc48 archive" in plan
+            and "All fifteen symbols resolve from the built-in libc48 archive" in plan
             and "force short read/write then error" in plan,
             "REV08 P11.23 acceptance contract drift")
 
