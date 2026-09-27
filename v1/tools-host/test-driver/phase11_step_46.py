@@ -259,7 +259,9 @@ p1146_pos15_bytes:
     ld b,4
 p1146_pos15_bytes_loop:
     ld a,(hl)
-    cp (de)
+    ex de,hl
+    cp (hl)
+    ex de,hl
     jp nz,p1146_fail
     inc hl
     inc de
