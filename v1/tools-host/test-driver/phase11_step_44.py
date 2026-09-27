@@ -20,7 +20,7 @@ import sys
 
 from driver_core import DriverError
 from fuse_harness import FAIL_PC, PASS_PC, run_sna
-import phase1_boot
+import phase1
 import phase3_open_descriptions
 
 
@@ -771,16 +771,16 @@ p1144_end:
             ram[start:start+len(payload)] = payload
 
         for name in ("p1144_compile", "p1144_link", "p1144_lifecycle", "p1144_touch_positive"):
-            code = (b"\xF3" + phase1_boot._ld_sp(0xBFC0) + phase1_boot._call(syms[name])
-                    + phase1_boot._jp_c(FAIL_PC) + phase1_boot._jp(PASS_PC))
+            code = (b"\xF3" + phase1._ld_sp(0xBFC0) + phase1._call(syms[name])
+                    + phase1._jp_c(FAIL_PC) + phase1._jp(PASS_PC))
             try:
                 commands.append(run_sna(root, code, patch=patch, timeout=30))
             except DriverError as exc:
                 raise P1144Error(f"{name} target-native recursion/control fixture failed: {exc}") from None
 
-        code = (b"\xF3" + phase1_boot._ld_sp(0xBFC0)
-                + phase1_boot._call(syms["p1144_stack_negative"])
-                + phase1_boot._jp_c(FAIL_PC) + phase1_boot._jp(PASS_PC))
+        code = (b"\xF3" + phase1._ld_sp(0xBFC0)
+                + phase1._call(syms["p1144_stack_negative"])
+                + phase1._jp_c(FAIL_PC) + phase1._jp(PASS_PC))
         try:
             commands.append(run_sna(root, code, patch=patch, timeout=30))
         except DriverError as exc:
@@ -797,9 +797,9 @@ p1144_end:
             start = SOURCE_ADDR - 0x4000
             ram[start:start+len(mutated)] = mutated
 
-        code = (b"\xF3" + phase1_boot._ld_sp(0xBFC0)
-                + phase1_boot._call(syms["p1144_compile_negative"])
-                + phase1_boot._jp_c(FAIL_PC) + phase1_boot._jp(PASS_PC))
+        code = (b"\xF3" + phase1._ld_sp(0xBFC0)
+                + phase1._call(syms["p1144_compile_negative"])
+                + phase1._jp_c(FAIL_PC) + phase1._jp(PASS_PC))
         try:
             commands.append(run_sna(root, code, patch=negative_patch, timeout=30))
         except DriverError as exc:
