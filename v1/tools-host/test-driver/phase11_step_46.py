@@ -24,6 +24,8 @@ from fuse_harness import FAIL_PC, PASS_PC, run_sna
 class P1146Error(DriverError):
     pass
 
+# P11.46 canonical exact-head qualification candidate.
+
 
 def require(ok, message):
     if not ok:
