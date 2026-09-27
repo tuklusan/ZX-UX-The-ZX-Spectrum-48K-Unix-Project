@@ -83,15 +83,15 @@ altreg_busy: db 0
     EMIT_P1147_ROM_FP_FROM_TEXT_ROUTINES
 
 p1147_s_zero:     db "0"
-p1147_s_pos15:    db "+.15E+1"
-p1147_s_neg15:    db "-15e-1"
+p1147_s_pos15:    db "+.5"
+p1147_s_neg15:    db "-1.5"
 p1147_s_bad_stmt: db "1+2"
 p1147_s_bad_exp:  db "1e+"
 p1147_s_token:    db "1",$F5
 p1147_s_overflow: db "1e99"
 p1147_expect_zero:  db $00,$00,$00,$00,$00
-p1147_expect_pos15: db $81,$40,$00,$00,$00
-p1147_expect_neg15: db $81,$C0,$00,$00,$00
+p1147_expect_pos15: db $80,$00,$00,$00,$00
+p1147_expect_neg15: db $81,$C0,$00,$00,$00\np1147_s_exp0:     db "1E+0"\np1147_expect_exp0: db $00,$00,$01,$00,$00
 p1147_out: defs 8,$A5
 
 p1147_fail:
@@ -374,7 +374,7 @@ p1147_end:
             f"P11.47 assemble: {assembled.stderr or assembled.stdout}")
     main = (build / "p1147-main.bin").read_bytes()
     require(0 < len(main) <= 0x2000, "P11.47 fixture exceeds C000-DFFF user range")
-    names = ("p1147_zero", "p1147_pos15_call", "p1147_pos15_bytes", "p1147_neg15", "p1147_bad_stmt",
+    names = ("p1147_zero", "p1147_pos15_call", "p1147_pos15_bytes", "p1147_exp0", "p1147_neg15", "p1147_bad_stmt",
              "p1147_bad_exp", "p1147_token", "p1147_ranges", "p1147_overflow",
              "p1147_state")
     syms = phase3_open_descriptions._symbols(
