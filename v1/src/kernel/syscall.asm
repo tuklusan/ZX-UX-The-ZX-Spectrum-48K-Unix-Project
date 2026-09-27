@@ -1637,3 +1637,46 @@ p1119_cmp_invalid:
     scf
     ret
     ENDM
+
+; P11.46 exact staged SYS_FP_TO_TEXT ABI.
+    MACRO EMIT_P1146_FP_TO_TEXT_SYSCALL_ROUTINES
+p1146_sys_text_in:        dw 0
+p1146_sys_text_out:       dw 0
+p1146_sys_text_capacity:  dw 0
+
+zx48_p1146_sys_fp_to_text:
+    ld hl,(syscall_arg_hl)
+    ld (p1146_sys_text_in),hl
+    ld de,(syscall_arg_de)
+    ld (p1146_sys_text_out),de
+    ld bc,(syscall_arg_bc)
+    ld (p1146_sys_text_capacity),bc
+
+    ; The five-byte value is always dereferenced.
+    ld hl,(p1146_sys_text_in)
+    ld bc,5
+    call zx48_user_range_validate
+    ret c
+
+    ; Zero capacity cannot hold even the terminating NUL. It performs no
+    ; destination dereference and therefore follows the common zero-range rule.
+    ld bc,(p1146_sys_text_capacity)
+    ld a,b
+    or c
+    jr z,p1146_sys_text_nospc
+
+    ; Validate the complete caller-provided output range before entering ROM.
+    ld hl,(p1146_sys_text_out)
+    call zx48_user_range_validate
+    ret c
+
+    ld hl,(p1146_sys_text_in)
+    ld de,(p1146_sys_text_out)
+    ld bc,(p1146_sys_text_capacity)
+    jp zx48_p1146_rom_fp_to_text
+
+p1146_sys_text_nospc:
+    ld a,E_NOSPC
+    scf
+    ret
+    ENDM
