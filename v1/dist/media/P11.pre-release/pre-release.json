@@ -1,0 +1,295 @@
+{
+  "authority": {
+    "architecture": "REV17",
+    "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+    "implementation_plan": "REV08",
+    "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c"
+  },
+  "boot_contract": {
+    "distribution": "TZX-only",
+    "final_loader_after": "0x5EB4",
+    "handoff": "0xE003",
+    "kernel_address": "0xE000",
+    "kernel_end": "0xFFFF",
+    "kernel_size": 8192,
+    "loader_display": "24x32 loader-owned",
+    "post_kernel_m48o_stream": false,
+    "pre_beep_pause_nominal_tstates": 3500009,
+    "scope": "Phase-11 pre-release transport plus exact-head compiler acceptance; final integrated system tape remains Phase 12",
+    "screen_file": null,
+    "zx48uxscr": false
+  },
+  "candidate_source_commit": "fde156b9f351bd351742c09bd065ca30d8d5b137",
+  "fast_loader": {
+    "builder_sha256": "addfd771a82f0e1eb15fa55b3691a1acd0e50344b58b9453de092627efa613fd",
+    "hook_sha256": "9c05b4d2e1c23f44a4e3d059a1313116a8f7c12380e4ba1f2ccf645cf5e0e475",
+    "inspector_sha256": "4722eb0fb42d438b163e30316f1b24d7d7d1f58c5e008ef83b4362fc33e6a32c",
+    "pasmo_executable_sha256": "d510ff3942203c010b6b299c7ba138480a55f16297a3bd2f9ee9ed3fb3f76ded",
+    "pasmo_version": "0.5.3-7",
+    "portable_zip_sha256": "4c83a681f718192db9ebb32f0c8bc565baf2e68eb85de480322a1102d32f00c7",
+    "runtime_acceptance_sha256": "fba728d51da67c1654a570ab855f174791a589bda5b42a11d322a9c82dac2e58",
+    "seed_sha256": "7ffe2f90b58e87a19a090ca0e0f1323605754af7d8809f3f051662f9faaec6f1",
+    "text_lines_sha256": "610f0b6d8cadf7ed0c3935fc66b889aee2f89fbb5e278d580813686402c72f10"
+  },
+  "files": [
+    {
+      "path": "zx-ux-phase11-pre-release.tzx",
+      "sha256": "fdb9dbf3ffb004163567ceda46831c4ee72ade7b1d308e22e45eeb4bd137a0ed",
+      "size": 11993
+    }
+  ],
+  "kernel_identity": {
+    "host_built_sha256": "ae3c54f9cd50eade1e543d9ac3c6ff58c83d63d6951c707b192ef5f9e26d4806",
+    "native_rebuilt_sha256": "ae3c54f9cd50eade1e543d9ac3c6ff58c83d63d6951c707b192ef5f9e26d4806",
+    "size": 8192,
+    "tzx_embedded_sha256": "ae3c54f9cd50eade1e543d9ac3c6ff58c83d63d6951c707b192ef5f9e26d4806"
+  },
+  "kind": "phase11-fast-loader-tzx-pre-release",
+  "phase11": {
+    "activated_aggregate_sha256": "24196a84f61a68ba83c9d340e2abb1242c6740d2701e72637fabc4d7a95488a6",
+    "activated_pass_marker": "ZX-UX PHASE 11 CERTIFICATION PASS",
+    "activated_source_commit": "8278c26dfb2d9620b4f3e00d43fa6c70d6f15244",
+    "exact_head_revalidation_pass_marker": "ZX-UX PHASE 11 ACCEPTANCE PASS",
+    "exact_head_revalidation_result_sha256": "1b9d39a67a8725dfb6a4fe868e0bc1b083dd23d1b396f658486325e42df517ff",
+    "exact_head_revalidation_source_commit": "fde156b9f351bd351742c09bd065ca30d8d5b137",
+    "p1148_result_sha256": "d9d825e585d0dcde205054fb7ae537ad5f21433ad09fbbf05f0e4145235b26dd",
+    "p1148_sdk_admission_sha256": "bc17afbf54a901f1f66cb9ff04c6d9f7db42748701c514a8963a9e12c6f228f8"
+  },
+  "runtime_acceptance": {
+    "assertions": {
+      "final_row_attributes_correct_before_beep": "PASS",
+      "final_row_attributes_intact_at_handoff": "PASS",
+      "final_row_intact_at_handoff": "PASS",
+      "final_row_rendered_before_beep": "PASS",
+      "finalizer_completed_row_24": "PASS",
+      "finalizer_entered_with_consistent_pending_rows": "PASS",
+      "handoff_reached_once": "PASS",
+      "handoff_state_complete": "PASS",
+      "interblock_display_callback_count_valid": "PASS",
+      "interblock_display_callback_state_sequence": "PASS",
+      "no_timeout": "PASS",
+      "one_second_final_row_hold_before_beep": "PASS",
+      "ordered_final_path": "PASS",
+      "real_rom_basic_path_seen": "PASS",
+      "real_rom_ld_bytes_seen": "PASS",
+      "rom_beeper_parameters_exact": "PASS",
+      "rom_beeper_reached_once": "PASS",
+      "rom_beeper_returns_to_startup_beep": "PASS",
+      "startup_beep_reached_once": "PASS"
+    },
+    "expected_final_line": "starting ZX-UX...               ",
+    "final_hold": {
+      "line_index": 22,
+      "lines_left": 2,
+      "text_ptr": 25209
+    },
+    "final_render_done": {
+      "line_index": 24,
+      "lines_left": 0,
+      "text_ptr": 25273
+    },
+    "handoff": {
+      "address": 57347,
+      "line_index": 24,
+      "lines_left": 0,
+      "text_ptr": 25273
+    },
+    "hook_count": 22,
+    "hook_states": [
+      {
+        "line_index": 0,
+        "lines_left": 24,
+        "text_ptr": 24505
+      },
+      {
+        "line_index": 1,
+        "lines_left": 23,
+        "text_ptr": 24537
+      },
+      {
+        "line_index": 2,
+        "lines_left": 22,
+        "text_ptr": 24569
+      },
+      {
+        "line_index": 3,
+        "lines_left": 21,
+        "text_ptr": 24601
+      },
+      {
+        "line_index": 4,
+        "lines_left": 20,
+        "text_ptr": 24633
+      },
+      {
+        "line_index": 5,
+        "lines_left": 19,
+        "text_ptr": 24665
+      },
+      {
+        "line_index": 6,
+        "lines_left": 18,
+        "text_ptr": 24697
+      },
+      {
+        "line_index": 7,
+        "lines_left": 17,
+        "text_ptr": 24729
+      },
+      {
+        "line_index": 8,
+        "lines_left": 16,
+        "text_ptr": 24761
+      },
+      {
+        "line_index": 9,
+        "lines_left": 15,
+        "text_ptr": 24793
+      },
+      {
+        "line_index": 10,
+        "lines_left": 14,
+        "text_ptr": 24825
+      },
+      {
+        "line_index": 11,
+        "lines_left": 13,
+        "text_ptr": 24857
+      },
+      {
+        "line_index": 12,
+        "lines_left": 12,
+        "text_ptr": 24889
+      },
+      {
+        "line_index": 13,
+        "lines_left": 11,
+        "text_ptr": 24921
+      },
+      {
+        "line_index": 14,
+        "lines_left": 10,
+        "text_ptr": 24953
+      },
+      {
+        "line_index": 15,
+        "lines_left": 9,
+        "text_ptr": 24985
+      },
+      {
+        "line_index": 16,
+        "lines_left": 8,
+        "text_ptr": 25017
+      },
+      {
+        "line_index": 17,
+        "lines_left": 7,
+        "text_ptr": 25049
+      },
+      {
+        "line_index": 18,
+        "lines_left": 6,
+        "text_ptr": 25081
+      },
+      {
+        "line_index": 19,
+        "lines_left": 5,
+        "text_ptr": 25113
+      },
+      {
+        "line_index": 20,
+        "lines_left": 4,
+        "text_ptr": 25145
+      },
+      {
+        "line_index": 21,
+        "lines_left": 3,
+        "text_ptr": 25177
+      }
+    ],
+    "hook_trace_present": true,
+    "pre_beep_pause": {
+      "beep_frame": 1756,
+      "frames": 61,
+      "nominal_tstates": 3500009,
+      "render_done_frame": 1695,
+      "routine_address": 24377
+    },
+    "rom_beeper": {
+      "de": 224,
+      "hl": 458,
+      "return_address": 24373,
+      "sp": 32730
+    },
+    "schema": 4
+  },
+  "runtime_detect_loader_compatibility": {
+    "assertions": {
+      "final_row_attributes_correct_before_beep": "PASS",
+      "final_row_attributes_intact_at_handoff": "PASS",
+      "final_row_intact_at_handoff": "PASS",
+      "final_row_rendered_before_beep": "PASS",
+      "finalizer_completed_row_24": "PASS",
+      "finalizer_entered_with_consistent_pending_rows": "PASS",
+      "handoff_reached_once": "PASS",
+      "handoff_state_complete": "PASS",
+      "interblock_display_callback_count_valid": "PASS",
+      "interblock_display_callback_state_sequence": "PASS",
+      "no_timeout": "PASS",
+      "one_second_final_row_hold_before_beep": "PASS",
+      "ordered_final_path": "PASS",
+      "real_rom_basic_path_seen": "PASS",
+      "real_rom_ld_bytes_seen": "PASS",
+      "rom_beeper_parameters_exact": "PASS",
+      "rom_beeper_reached_once": "PASS",
+      "rom_beeper_returns_to_startup_beep": "PASS",
+      "startup_beep_reached_once": "PASS"
+    },
+    "expected_final_line": "starting ZX-UX...               ",
+    "final_hold": {
+      "line_index": 24,
+      "lines_left": 0,
+      "text_ptr": 25273
+    },
+    "final_render_done": {
+      "line_index": 24,
+      "lines_left": 0,
+      "text_ptr": 25273
+    },
+    "handoff": {
+      "address": 57347,
+      "line_index": 24,
+      "lines_left": 0,
+      "text_ptr": 25273
+    },
+    "hook_count": 0,
+    "hook_states": [],
+    "hook_trace_present": false,
+    "pre_beep_pause": {
+      "beep_frame": 1681,
+      "frames": 62,
+      "nominal_tstates": 3500009,
+      "render_done_frame": 1619,
+      "routine_address": 24377
+    },
+    "rom_beeper": {
+      "de": 224,
+      "hl": 458,
+      "return_address": 24373,
+      "sp": 32730
+    },
+    "schema": 4
+  },
+  "schema": 1,
+  "tests": {
+    "controlled-mismatch-negative": "PASS",
+    "detect-loader-compatibility": "PASS",
+    "deterministic-double-build": "PASS",
+    "independent-kernel-reconstruction": "PASS",
+    "native-kernel-self-rebuild": "PASS",
+    "phase11-activated-aggregate": "PASS",
+    "phase11-exact-head-p1148": "PASS",
+    "real-time-loader-shortcuts-disabled": "PASS",
+    "zero-phase12-state": "PASS"
+  }
+}
