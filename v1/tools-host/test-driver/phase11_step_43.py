@@ -500,7 +500,7 @@ p1143_gateway:
     cp SYS_READ
     jr z,p1143_gate_read
     cp SYS_CLOSE
-    jr z,p1143_gate_close
+    jp z,p1143_gate_close
     ld a,E_NOTSUP
     scf
     ret
@@ -523,7 +523,7 @@ p1143_gate_raw:
     ld de,(p1143_raw_pos)
     or a
     sbc hl,de
-    jr z,p1143_gate_eof
+    jp z,p1143_gate_eof
     jp c,p1143_gate_bad
     ld de,17
     or a
