@@ -69,6 +69,10 @@ def dispatch(root, action, step, *, sha256_file, run_command, require_project_to
             "P11.42 matrix rows drift")
     require(all(row["prior_destination"] == "unchanged" for row in matrix["cases"]),
             "P11.42 prior-destination invariant missing")
+    invariants = matrix.get("invariants", {})
+    require(invariants.get("compiler_owned_allocations_after_failure") == 0
+            and invariants.get("compiler_owned_open_descriptions_after_failure") == 0,
+            "P11.42 failure resource-release invariants missing")
 
     for token in (
         "CC_GLOBAL_CAPACITY       EQU 32",
