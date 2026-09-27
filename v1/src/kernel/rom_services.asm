@@ -163,7 +163,7 @@ zx48_rom_decimal_literal:
     ld hl,ROM_CALC_STACK
     ld (ROM_STKBOT),hl
     ld (ROM_STKEND),hl
-    ld hl,p1147_text_calc_mem
+    ld hl,ROM_MEMBOT
     ld (ROM_MEM),hl
     ld hl,(rom_decimal_input_ptr)
     ld (ROM_CH_ADD),hl
@@ -1258,7 +1258,7 @@ zx48_p1147_rom_fp_from_text:
     ld hl,ROM_CALC_STACK
     ld (ROM_STKBOT),hl
     ld (ROM_STKEND),hl
-    ld hl,ROM_MEMBOT
+    ld hl,p1147_text_calc_mem
     ld (ROM_MEM),hl
     ld hl,p1147_text_scratch
     ld (ROM_CH_ADD),hl
