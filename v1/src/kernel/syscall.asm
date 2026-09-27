@@ -1680,3 +1680,148 @@ p1146_sys_text_nospc:
     scf
     ret
     ENDM
+
+; P11.47 exact staged SYS_FP_FROM_TEXT ABI.
+; Grammar is validated byte-for-byte before any ROM entry:
+; [+-]? ( DIGITS ('.' DIGITS*)? | '.' DIGITS+ ) ([eE][+-]?DIGITS+)?
+    MACRO EMIT_P1147_FP_FROM_TEXT_SYSCALL_ROUTINES
+p1147_sys_src:            dw 0
+p1147_sys_out:            dw 0
+p1147_sys_length:         dw 0
+p1147_sys_rom_src:        dw 0
+p1147_sys_rom_length:     dw 0
+p1147_sys_sign:           db 0
+p1147_sys_seen_digit:     db 0
+p1147_sys_seen_dot:       db 0
+
+zx48_p1147_sys_fp_from_text:
+    ld hl,(syscall_arg_hl)
+    ld (p1147_sys_src),hl
+    ld de,(syscall_arg_de)
+    ld (p1147_sys_out),de
+    ld bc,(syscall_arg_bc)
+    ld (p1147_sys_length),bc
+
+    ld a,b
+    or c
+    jp z,p1147_sys_invalid
+    ; The private ROM token buffer is deliberately bounded to one byte of length.
+    ld a,b
+    or a
+    jp nz,p1147_sys_invalid
+
+    ld hl,(p1147_sys_src)
+    ld bc,(p1147_sys_length)
+    call zx48_user_range_validate
+    ret c
+    ld hl,(p1147_sys_out)
+    ld bc,5
+    call zx48_user_range_validate
+    ret c
+
+    xor a
+    ld (p1147_sys_sign),a
+    ld (p1147_sys_seen_digit),a
+    ld (p1147_sys_seen_dot),a
+    ld hl,(p1147_sys_src)
+    ld bc,(p1147_sys_length)
+
+    ld a,(hl)
+    cp '+'
+    jr z,p1147_sys_skip_sign
+    cp '-'
+    jr nz,p1147_sys_unsigned_ready
+    ld a,1
+    ld (p1147_sys_sign),a
+p1147_sys_skip_sign:
+    inc hl
+    dec bc
+    ld a,b
+    or c
+    jp z,p1147_sys_invalid
+p1147_sys_unsigned_ready:
+    ld (p1147_sys_rom_src),hl
+    ld (p1147_sys_rom_length),bc
+
+p1147_sys_mantissa:
+    ld a,b
+    or c
+    jr z,p1147_sys_mantissa_end
+    ld a,(hl)
+    cp 'e'
+    jr z,p1147_sys_exponent
+    cp 'E'
+    jr z,p1147_sys_exponent
+    cp '.'
+    jr z,p1147_sys_dot
+    cp '0'
+    jp c,p1147_sys_invalid
+    cp '9'+1
+    jp nc,p1147_sys_invalid
+    ld a,1
+    ld (p1147_sys_seen_digit),a
+    inc hl
+    dec bc
+    jr p1147_sys_mantissa
+
+p1147_sys_dot:
+    ld a,(p1147_sys_seen_dot)
+    or a
+    jp nz,p1147_sys_invalid
+    ld a,1
+    ld (p1147_sys_seen_dot),a
+    inc hl
+    dec bc
+    jr p1147_sys_mantissa
+
+p1147_sys_mantissa_end:
+    ld a,(p1147_sys_seen_digit)
+    or a
+    jp z,p1147_sys_invalid
+    jr p1147_sys_publish
+
+p1147_sys_exponent:
+    ld a,(p1147_sys_seen_digit)
+    or a
+    jp z,p1147_sys_invalid
+    inc hl
+    dec bc
+    ld a,b
+    or c
+    jp z,p1147_sys_invalid
+    ld a,(hl)
+    cp '+'
+    jr z,p1147_sys_exp_sign
+    cp '-'
+    jr nz,p1147_sys_exp_digits
+p1147_sys_exp_sign:
+    inc hl
+    dec bc
+    ld a,b
+    or c
+    jp z,p1147_sys_invalid
+
+p1147_sys_exp_digits:
+    ld a,(hl)
+    cp '0'
+    jp c,p1147_sys_invalid
+    cp '9'+1
+    jp nc,p1147_sys_invalid
+    inc hl
+    dec bc
+    ld a,b
+    or c
+    jr nz,p1147_sys_exp_digits
+
+p1147_sys_publish:
+    ld a,(p1147_sys_sign)
+    ld hl,(p1147_sys_rom_src)
+    ld bc,(p1147_sys_rom_length)
+    ld de,(p1147_sys_out)
+    jp zx48_p1147_rom_fp_from_text
+
+p1147_sys_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+    ENDM

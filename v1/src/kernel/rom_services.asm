@@ -1187,3 +1187,158 @@ p1146_text_busy:
     scf
     ret
     ENDM
+
+; P11.47 exact bounded decimal-text to Spectrum five-byte floating gateway.
+; The public syscall validates the complete grammar and all user ranges first.
+; Only the unsigned decimal token is copied into private kernel storage; the ROM
+; decimal parser never sees BASIC statements, tokens, or caller memory beyond BC.
+    MACRO EMIT_P1147_ROM_FP_FROM_TEXT_ROUTINES
+P1147_TEXT_MAX            EQU 255
+P1147_TEXT_SCRATCH        EQU 256
+P1147_MEM_WORK            EQU $5C92
+P1147_MEM_WORK_SIZE       EQU 30
+
+p1147_text_in_ptr:        dw 0
+p1147_text_out_ptr:       dw 0
+p1147_text_length:        dw 0
+p1147_text_sign:          db 0
+p1147_text_saved_sp:      dw 0
+p1147_text_saved_err_sp:  dw 0
+p1147_text_saved_stkbot:  dw 0
+p1147_text_saved_stkend:  dw 0
+p1147_text_saved_mem:     dw 0
+p1147_text_saved_chadd:   dw 0
+p1147_text_saved_flags:   db 0
+p1147_text_saved_errnr:   db 0
+p1147_text_saved_breg:    db 0
+p1147_text_saved_work:    defs P1147_MEM_WORK_SIZE,0
+p1147_text_scratch:       defs P1147_TEXT_SCRATCH,0
+p1147_text_result:        defs 5,0
+
+; A=0 positive / 1 negative, HL=unsigned decimal token, BC=exact token length,
+; DE=writable five-byte destination. Grammar/ranges are already validated.
+zx48_p1147_rom_fp_from_text:
+    ld (p1147_text_sign),a
+    ld (p1147_text_in_ptr),hl
+    ld (p1147_text_out_ptr),de
+    ld (p1147_text_length),bc
+    ld a,(altreg_busy)
+    or a
+    jp nz,p1147_text_busy
+
+    ; Freeze caller bytes before any ROM entry so output may alias input safely.
+    ld hl,(p1147_text_in_ptr)
+    ld de,p1147_text_scratch
+    ld bc,(p1147_text_length)
+    ldir
+    xor a
+    ld (de),a
+
+    ld hl,0
+    add hl,sp
+    ld (p1147_text_saved_sp),hl
+    ld hl,(ROM_ERR_SP)
+    ld (p1147_text_saved_err_sp),hl
+    ld hl,(ROM_STKBOT)
+    ld (p1147_text_saved_stkbot),hl
+    ld hl,(ROM_STKEND)
+    ld (p1147_text_saved_stkend),hl
+    ld hl,(ROM_MEM)
+    ld (p1147_text_saved_mem),hl
+    ld hl,(ROM_CH_ADD)
+    ld (p1147_text_saved_chadd),hl
+    ld a,(ROM_FLAGS)
+    ld (p1147_text_saved_flags),a
+    ld a,(ROM_IY_ANCHOR)
+    ld (p1147_text_saved_errnr),a
+    ld a,(ROM_BREG)
+    ld (p1147_text_saved_breg),a
+    ld hl,P1147_MEM_WORK
+    ld de,p1147_text_saved_work
+    ld bc,P1147_MEM_WORK_SIZE
+    ldir
+
+    ld a,1
+    ld (altreg_busy),a
+    ld hl,ROM_CALC_STACK
+    ld (ROM_STKBOT),hl
+    ld (ROM_STKEND),hl
+    ld hl,ROM_MEMBOT
+    ld (ROM_MEM),hl
+    ld hl,p1147_text_scratch
+    ld (ROM_CH_ADD),hl
+    ld a,$FF
+    ld (ROM_IY_ANCHOR),a
+
+    ld hl,p1147_text_error
+    push hl
+    ld hl,0
+    add hl,sp
+    ld (ROM_ERR_SP),hl
+    ld iy,ROM_IY_ANCHOR
+    ld hl,p1147_text_scratch
+    ld a,(hl)
+    call ROM_DEC_TO_FP
+    ld a,(p1147_text_sign)
+    or a
+    jr z,p1147_text_sign_done
+    call ROM_CALCULATE
+    db $1B,$38
+p1147_text_sign_done:
+    pop hl
+
+    ld hl,(ROM_STKEND)
+    ld bc,5
+    or a
+    sbc hl,bc
+    ld de,p1147_text_result
+    ldir
+    call p1147_text_cleanup
+
+    ld hl,p1147_text_result
+    ld de,(p1147_text_out_ptr)
+    ld bc,5
+    ldir
+    ld hl,0
+    xor a
+    ret
+
+p1147_text_error:
+    ld hl,(p1147_text_saved_sp)
+    ld sp,hl
+    call p1147_text_cleanup
+    ld a,E_INVAL
+    scf
+    ret
+
+p1147_text_cleanup:
+    ld hl,p1147_text_saved_work
+    ld de,P1147_MEM_WORK
+    ld bc,P1147_MEM_WORK_SIZE
+    ldir
+    ld hl,(p1147_text_saved_err_sp)
+    ld (ROM_ERR_SP),hl
+    ld hl,(p1147_text_saved_stkbot)
+    ld (ROM_STKBOT),hl
+    ld hl,(p1147_text_saved_stkend)
+    ld (ROM_STKEND),hl
+    ld hl,(p1147_text_saved_mem)
+    ld (ROM_MEM),hl
+    ld hl,(p1147_text_saved_chadd)
+    ld (ROM_CH_ADD),hl
+    ld a,(p1147_text_saved_flags)
+    ld (ROM_FLAGS),a
+    ld a,(p1147_text_saved_breg)
+    ld (ROM_BREG),a
+    ld a,(p1147_text_saved_errnr)
+    ld (ROM_IY_ANCHOR),a
+    xor a
+    ld (altreg_busy),a
+    ld iy,ROM_IY_ANCHOR
+    ret
+
+p1147_text_busy:
+    ld a,E_BUSY
+    scf
+    ret
+    ENDM
