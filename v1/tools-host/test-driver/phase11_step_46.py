@@ -486,13 +486,25 @@ p1146_state_mem:
     xor a
     ret
 
+p1146_forced_output_error:
+    rst $08
+    db $05
+
 p1146_rom_error:
     call p1146_reset_out
-    ld hl,p1146_f_bad
+    ; Force a genuine ROM error after PRINT-FP enters the private channel.
+    ; RST $08 unwinds through the formatter-owned ERR_SP recovery frame.
+    ld hl,p1146_forced_output_error
+    ld (p1146_text_channel),hl
+    ld hl,p1146_f_pos15
     ld de,p1146_out
     ld bc,16
     ld a,SYS_FP_TO_TEXT
     call p1146_gateway
+    push af
+    ld hl,p1146_text_capture
+    ld (p1146_text_channel),hl
+    pop af
     jp nc,p1146_fail
     cp E_INVAL
     jp nz,p1146_fail
