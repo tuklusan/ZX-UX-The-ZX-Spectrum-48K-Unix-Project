@@ -16,6 +16,7 @@ on:
     paths:
       - '.github/workflows/p11-prerelease-build.yml'
       - 'tools/p11-prerelease/**'
+      - 'tools/check_media_retention.py'
   workflow_dispatch: {}
 permissions:
   contents: write
