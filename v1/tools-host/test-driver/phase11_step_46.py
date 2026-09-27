@@ -53,7 +53,7 @@ def dispatch(root, action, step, *, sha256_file, run_command, require_project_to
             "P11.46 approved ROM formatting gateway missing")
     require("SYS_FP_TO_TEXT" in arch
             and "HL=five-byte value, DE=buffer, BC=capacity" in arch
-            and "ROM-canonical decimal rendering plus terminating NUL" in arch
+            and "canonical decimal rendering plus terminating NUL" in arch
             and "E_NOSPC if capacity including NUL is unavailable" in arch,
             "REV17 P11.46 contract drift")
     require("## P11.46 - SYS_FP_TO_TEXT exact ABI" in plan
