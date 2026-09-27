@@ -26,6 +26,8 @@ from fuse_harness import FAIL_PC, PASS_PC, make_sna, run_sna
 class P1147Error(DriverError):
     pass
 
+# Qualification evidence is admitted only from the exact successful run artifact.
+
 
 def require(ok, message):
     if not ok:
