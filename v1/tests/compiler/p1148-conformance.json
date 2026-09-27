@@ -1,0 +1,94 @@
+{
+  "license_header": [
+    "Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.",
+    "Proprietary rights reserved except as expressly licensed herein.",
+    "ZX-UX Sinclair ZX Spectrum Unix",
+    "This file is governed by the SANYALnet Labs Non-Commercial License in the root LICENSE file.",
+    "Non-Commercial use is permitted; Commercial Use and use for AI/ML model training are prohibited unless separately authorized.",
+    "Attribution is required: Based on original work by Supratim Sanyal of SANYALnet Labs.",
+    "See LICENSE for full terms, warranty disclaimer, termination, patent, trademark, and governing-law provisions."
+  ],
+  "schema": 1,
+  "step": "P11.48",
+  "status": "RESOLVED",
+  "unresolved": [],
+  "areas": [
+    {
+      "area": "baseline-sdk-corpus",
+      "owner": "P11.39",
+      "authority": "84d144de2721cda5075c3a6610a422663b5e2f77",
+      "resolution": "205 tests and release verifier imported byte-for-byte and mapped",
+      "unresolved": false
+    },
+    {
+      "area": "docx-sdk-native-reconciliation",
+      "owner": "P11.39",
+      "authority": "REV17/DOCX/SDK/native",
+      "resolution": "p1139-three-way-map status RESOLVED with zero unresolved discrepancies",
+      "unresolved": false
+    },
+    {
+      "area": "native-demo-lifecycle",
+      "owner": "P11.35-P11.38",
+      "authority": "target-native cc/ld",
+      "resolution": "all thirteen shipped lower-case demos compile to OBJ1 and link to MEX1",
+      "unresolved": false
+    },
+    {
+      "area": "edit-break-separation",
+      "owner": "P11.24",
+      "authority": "REV17 §25.8",
+      "resolution": "getchar preserves EDIT 0x1B and BREAK remains E_INTR",
+      "unresolved": false
+    },
+    {
+      "area": "documented-z80-codegen",
+      "owner": "P11.30-P11.33",
+      "authority": "REV17 §25.4",
+      "resolution": "documented opcode and Z80-native code-selection gates admitted",
+      "unresolved": false
+    },
+    {
+      "area": "resource-and-error-gates",
+      "owner": "P11.40-P11.42",
+      "authority": "REV17 §25.10",
+      "resolution": "20KiB residency, c48.h ABI, and failure matrix admitted",
+      "unresolved": false
+    },
+    {
+      "area": "streaming-source",
+      "owner": "P11.43",
+      "authority": "REV17 source-stream pipeline",
+      "resolution": "ordinary SYS_READ streaming compiler emits native OBJ1",
+      "unresolved": false
+    },
+    {
+      "area": "recursion-control",
+      "owner": "P11.44",
+      "authority": "REV17 C48 control subset",
+      "resolution": "recursive/control-flow native compile-link-execute admitted",
+      "unresolved": false
+    },
+    {
+      "area": "h06-native-canary",
+      "owner": "P11.45",
+      "authority": "9ca3c6d6b5dd4b6e2351c1800afbd47d1d77e411",
+      "resolution": "exact hello.c/exapi.h target-native cc -> OBJ1 -> native ld -> execute with retained visual proof",
+      "unresolved": false
+    },
+    {
+      "area": "fp-to-text",
+      "owner": "P11.46",
+      "authority": "REV17 §10.1/§25.9",
+      "resolution": "exact SYS_FP_TO_TEXT ABI admitted",
+      "unresolved": false
+    },
+    {
+      "area": "fp-from-text",
+      "owner": "P11.47",
+      "authority": "REV17 §10.1/§25.9",
+      "resolution": "exact bounded SYS_FP_FROM_TEXT grammar and ABI admitted",
+      "unresolved": false
+    }
+  ]
+}
