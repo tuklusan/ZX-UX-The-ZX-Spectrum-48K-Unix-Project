@@ -11,6 +11,7 @@
 # patent, trademark, and governing-law provisions.
 
 name: ZX-UX Phase 11 Aggregate Validation
+# Phase-11 aggregate validation is intentionally independent of Phase-12.
 on:
   push:
     branches: [main]
