@@ -273,7 +273,14 @@ for h06_path in "${!preserved_p1145_h06_files[@]}"; do
   fi
   index_record="$(git ls-files --stage -- "$h06_path")"
   expected_record_prefix="100644 $expected_blob 0"
-  if [[ "$index_record" != "$expected_record_prefix"  expected_blob="${preserved_h04_sdk_assets[$asset_path]}"
+  if [[ "$index_record" != "$expected_record_prefix"$'\t'"$h06_path" ]]; then
+    echo "ERROR: preserved P11.45 H06 SDK Git mode/index identity changed: $h06_path" >&2
+    exit 1
+  fi
+done
+
+for asset_path in "${!preserved_h04_sdk_assets[@]}"; do
+  expected_blob="${preserved_h04_sdk_assets[$asset_path]}"
   if [[ -L "$asset_path" || ! -f "$asset_path" ]]; then
     echo "ERROR: preserved H04 SDK asset must exist as a real regular file: $asset_path" >&2
     exit 1
