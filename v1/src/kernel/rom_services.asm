@@ -51,6 +51,7 @@ ROM_MEMBOT                EQU $5C92
 ROM_BEEP_STACK            EQU $5D00
 ROM_FLAGS                 EQU $5C3B
 ROM_CH_ADD                EQU $5C5D
+ROM_CURCHL                EQU $5C51
 ROM_SCANNING              EQU $24FB
 ROM_DEC_TO_FP             EQU $2C9B
 ROM_CALC_STACK            EQU $5D80
@@ -966,6 +967,222 @@ p1119_rom_cleanup:
     ret
 
 p1119_rom_busy:
+    ld a,E_BUSY
+    scf
+    ret
+    ENDM
+
+; P11.46 isolated ROM-backed floating text formatter. The caller owns all
+; user-range validation. This gateway copies the five-byte value into protected
+; calculator workspace, redirects RST 10 through a private capture channel, and
+; commits caller bytes only after ROM success and a complete capacity check.
+    MACRO EMIT_P1146_ROM_FP_TO_TEXT_ROUTINES
+P1146_TEXT_MAX            EQU 14
+P1146_TEXT_SCRATCH        EQU 16
+P1146_MEM35               EQU $5CA1
+P1146_MEM35_SIZE          EQU 15
+
+p1146_text_in_ptr:        dw 0
+p1146_text_out_ptr:       dw 0
+p1146_text_capacity:      dw 0
+p1146_text_saved_sp:      dw 0
+p1146_text_saved_err_sp:  dw 0
+p1146_text_saved_stkbot:  dw 0
+p1146_text_saved_stkend:  dw 0
+p1146_text_saved_mem:     dw 0
+p1146_text_saved_chadd:   dw 0
+p1146_text_saved_curchl:  dw 0
+p1146_text_saved_flags:   db 0
+p1146_text_saved_errnr:   db 0
+p1146_text_saved_breg:    db 0
+p1146_text_saved_mem35:   defs P1146_MEM35_SIZE,0
+p1146_text_scratch:       defs P1146_TEXT_SCRATCH,0
+p1146_text_count:         db 0
+p1146_text_overflow:      db 0
+p1146_text_char:          db 0
+
+p1146_text_channel:
+    dw p1146_text_capture
+    dw p1146_text_input_stub
+    db 'R'
+
+p1146_text_input_stub:
+    xor a
+    ret
+
+; Called by ROM PRINT-A while its alternate BC/DE/HL bank is live. Preserve that
+; bank so PRINT-FP can continue using it between emitted characters.
+p1146_text_capture:
+    ld (p1146_text_char),a
+    push af
+    push bc
+    push de
+    push hl
+    ld a,(p1146_text_count)
+    cp P1146_TEXT_SCRATCH
+    jr nc,p1146_text_capture_overflow
+    ld e,a
+    ld d,0
+    ld hl,p1146_text_scratch
+    add hl,de
+    ld a,(p1146_text_char)
+    ld (hl),a
+    ld hl,p1146_text_count
+    inc (hl)
+    jr p1146_text_capture_done
+p1146_text_capture_overflow:
+    ld a,1
+    ld (p1146_text_overflow),a
+p1146_text_capture_done:
+    pop hl
+    pop de
+    pop bc
+    pop af
+    ret
+
+; HL=five-byte source, DE=destination, BC=capacity. Source and destination
+; ranges have already been validated by the syscall surface.
+zx48_p1146_rom_fp_to_text:
+    ld (p1146_text_in_ptr),hl
+    ld (p1146_text_out_ptr),de
+    ld (p1146_text_capacity),bc
+    ld a,(altreg_busy)
+    or a
+    jp nz,p1146_text_busy
+
+    ld hl,0
+    add hl,sp
+    ld (p1146_text_saved_sp),hl
+    ld hl,(ROM_ERR_SP)
+    ld (p1146_text_saved_err_sp),hl
+    ld hl,(ROM_STKBOT)
+    ld (p1146_text_saved_stkbot),hl
+    ld hl,(ROM_STKEND)
+    ld (p1146_text_saved_stkend),hl
+    ld hl,(ROM_MEM)
+    ld (p1146_text_saved_mem),hl
+    ld hl,(ROM_CH_ADD)
+    ld (p1146_text_saved_chadd),hl
+    ld hl,(ROM_CURCHL)
+    ld (p1146_text_saved_curchl),hl
+    ld a,(ROM_FLAGS)
+    ld (p1146_text_saved_flags),a
+    ld a,(ROM_IY_ANCHOR)
+    ld (p1146_text_saved_errnr),a
+    ld a,(ROM_BREG)
+    ld (p1146_text_saved_breg),a
+    ld hl,P1146_MEM35
+    ld de,p1146_text_saved_mem35
+    ld bc,P1146_MEM35_SIZE
+    ldir
+
+    ld a,1
+    ld (altreg_busy),a
+    xor a
+    ld (p1146_text_count),a
+    ld (p1146_text_overflow),a
+    ld hl,ROM_CALC_STACK
+    ld (ROM_STKBOT),hl
+    ld (ROM_STKEND),hl
+    ld hl,ROM_MEMBOT
+    ld (ROM_MEM),hl
+    ld hl,p1146_text_channel
+    ld (ROM_CURCHL),hl
+    ld a,$FF
+    ld (ROM_IY_ANCHOR),a
+
+    ld hl,(p1146_text_in_ptr)
+    ld de,ROM_CALC_STACK
+    ld bc,5
+    ldir
+    ld hl,ROM_CALC_STACK+5
+    ld (ROM_STKEND),hl
+
+    ld hl,p1146_text_error
+    push hl
+    ld hl,0
+    add hl,sp
+    ld (ROM_ERR_SP),hl
+    ld iy,ROM_IY_ANCHOR
+    call ROM_FP_PRINT
+    pop hl
+
+    ld a,(p1146_text_overflow)
+    or a
+    jr nz,p1146_text_internal_overflow
+    call p1146_text_cleanup
+
+    ld a,(p1146_text_count)
+    ld e,a
+    ld d,0
+    inc de
+    ld hl,(p1146_text_capacity)
+    or a
+    sbc hl,de
+    jr c,p1146_text_nospc
+
+    ld a,(p1146_text_count)
+    ld c,a
+    ld b,0
+    ld hl,p1146_text_scratch
+    ld de,(p1146_text_out_ptr)
+    ldir
+    xor a
+    ld (de),a
+    ld a,(p1146_text_count)
+    ld l,a
+    ld h,0
+    xor a
+    ret
+
+p1146_text_internal_overflow:
+    call p1146_text_cleanup
+    ld a,E_FORMAT
+    scf
+    ret
+
+p1146_text_nospc:
+    ld a,E_NOSPC
+    scf
+    ret
+
+p1146_text_error:
+    ld hl,(p1146_text_saved_sp)
+    ld sp,hl
+    call p1146_text_cleanup
+    ld a,E_INVAL
+    scf
+    ret
+
+p1146_text_cleanup:
+    ld hl,p1146_text_saved_mem35
+    ld de,P1146_MEM35
+    ld bc,P1146_MEM35_SIZE
+    ldir
+    ld hl,(p1146_text_saved_err_sp)
+    ld (ROM_ERR_SP),hl
+    ld hl,(p1146_text_saved_stkbot)
+    ld (ROM_STKBOT),hl
+    ld hl,(p1146_text_saved_stkend)
+    ld (ROM_STKEND),hl
+    ld hl,(p1146_text_saved_mem)
+    ld (ROM_MEM),hl
+    ld hl,(p1146_text_saved_chadd)
+    ld (ROM_CH_ADD),hl
+    ld hl,(p1146_text_saved_curchl)
+    ld (ROM_CURCHL),hl
+    ld a,(p1146_text_saved_flags)
+    ld (ROM_FLAGS),a
+    ld a,(p1146_text_saved_breg)
+    ld (ROM_BREG),a
+    ld a,(p1146_text_saved_errnr)
+    ld (ROM_IY_ANCHOR),a
+    xor a
+    ld (altreg_busy),a
+    ld iy,ROM_IY_ANCHOR
+    ret
+
+p1146_text_busy:
     ld a,E_BUSY
     scf
     ret
