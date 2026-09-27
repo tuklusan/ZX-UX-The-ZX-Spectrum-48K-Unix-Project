@@ -177,12 +177,48 @@ p1146_channel:
     xor a
     ret
 
-p1146_zero:
+p1146_zero_call:
+    call p1146_reset_out
     ld hl,p1146_f_zero
-    ld de,p1146_expect_zero
+    ld de,p1146_out
     ld bc,2
-    ld a,1
-    jp p1146_expect
+    ld a,SYS_FP_TO_TEXT
+    call p1146_gateway
+    ret
+
+p1146_zero_count:
+    call p1146_reset_out
+    ld hl,p1146_f_zero
+    ld de,p1146_out
+    ld bc,2
+    ld a,SYS_FP_TO_TEXT
+    call p1146_gateway
+    ret c
+    ld a,h
+    or a
+    jp nz,p1146_fail
+    ld a,l
+    cp 1
+    jp nz,p1146_fail
+    xor a
+    ret
+
+p1146_zero_bytes:
+    call p1146_reset_out
+    ld hl,p1146_f_zero
+    ld de,p1146_out
+    ld bc,2
+    ld a,SYS_FP_TO_TEXT
+    call p1146_gateway
+    ret c
+    ld a,(p1146_out)
+    cp '0'
+    jp nz,p1146_fail
+    ld a,(p1146_out+1)
+    or a
+    jp nz,p1146_fail
+    xor a
+    ret
 
 p1146_pos15:
     ld hl,p1146_f_pos15
@@ -408,7 +444,7 @@ p1146_end:
             f"P11.46 assemble: {assembled.stderr or assembled.stdout}")
     main = (build / "p1146-main.bin").read_bytes()
     require(0 < len(main) <= 0x2000, "P11.46 fixture exceeds C000-DFFF user range")
-    names = ("p1146_channel", "p1146_zero", "p1146_pos15", "p1146_neg15", "p1146_short", "p1146_ranges", "p1146_state", "p1146_rom_error")
+    names = ("p1146_channel", "p1146_zero_call", "p1146_zero_count", "p1146_zero_bytes", "p1146_pos15", "p1146_neg15", "p1146_short", "p1146_ranges", "p1146_state", "p1146_rom_error")
     syms = phase3_open_descriptions._symbols(
         build / "p1146-fp-to-text.sym", ("p1146_gateway",) + names
     )
