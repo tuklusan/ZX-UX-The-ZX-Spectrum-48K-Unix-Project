@@ -1,0 +1,212 @@
+{
+  "action": "test",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "p11-01-through-p11-47-durable-evidence-clean-pass",
+      "passed": true
+    },
+    {
+      "name": "p11-24-edit-1b-break-separation-admitted",
+      "passed": true
+    },
+    {
+      "name": "baseline-sdk-tree-and-205-tests-byte-accounted",
+      "passed": true
+    },
+    {
+      "name": "no-imported-sdk-skip-xfail-or-weakened-intent",
+      "passed": true
+    },
+    {
+      "name": "all-sdk-expectations-have-native-owner-mapping",
+      "passed": true
+    },
+    {
+      "name": "docx-sdk-native-zero-unresolved-discrepancies",
+      "passed": true
+    },
+    {
+      "name": "complete-phase11-c-source-sdk-native-manifest",
+      "passed": true
+    },
+    {
+      "name": "h06-pinned-source-header-identities-exact",
+      "passed": true
+    },
+    {
+      "name": "h06-target-native-cc-obj1-ld-execute-proof-admitted",
+      "passed": true
+    },
+    {
+      "name": "h06-retained-sna-scr-png-fmf-visual-proof-present",
+      "passed": true
+    },
+    {
+      "name": "p11-40-through-p11-47-late-acceptance-areas-resolved",
+      "passed": true
+    },
+    {
+      "name": "negative-missing-source-sdk-test-unresolved-oracles-fail-closed",
+      "passed": true
+    },
+    {
+      "name": "exact-head-p11-45-transitive-native-compiler-matrix-pass",
+      "passed": true
+    },
+    {
+      "name": "exact-head-p11-46-fp-to-text-pass",
+      "passed": true
+    },
+    {
+      "name": "exact-head-p11-47-fp-from-text-pass",
+      "passed": true
+    },
+    {
+      "name": "p11-48-final-target-sna-execution-pass",
+      "passed": true
+    },
+    {
+      "name": "phase11-acceptance-stops-before-phase12",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "git",
+        "rev-parse",
+        "HEAD:v1/tests/compiler/sdk-reference/sdk"
+      ],
+      "cwd": ".",
+      "duration_ms": 1,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "1c6b5bae84035ee853be9142b440792881c9ca9f\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "-B",
+        "v1/tests/compiler/sdk-reference/sdk/compiler/verify_release.py"
+      ],
+      "cwd": "v1/tests/compiler/sdk-reference/sdk",
+      "duration_ms": 7128,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "VERIFY: clean-tree preflight ...\nVERIFY: clean-tree preflight PASS\nVERIFY: required files ...\nVERIFY: required files PASS\nVERIFY: Python source ...\nVERIFY: Python source PASS\nVERIFY: license/header policy ...\nVERIFY: license/header policy PASS\nVERIFY: font assets ...\nVERIFY: font assets PASS\nVERIFY: C48 64-column sources ...\nVERIFY: C48 64-column sources PASS\nVERIFY: launchers ...\nVERIFY: launchers PASS\nVERIFY: version/about ...\nVERIFY: version/about PASS\nVERIFY: manifest ...\nVERIFY: manifest PASS\nVERIFY: automated tests ...\nVERIFY: automated tests PASS\nVERIFY: game corpus ...\nVERIFY: game corpus PASS\nVERIFY: security fixture binaries ...\nVERIFY: security fixture binaries PASS\nVERIFY: deterministic demos ...\nVERIFY: demo hello ...\nVERIFY: demo hello PASS\nVERIFY: demo colors ...\nVERIFY: demo colors PASS\nVERIFY: demo graphics ...\nVERIFY: demo graphics PASS\nVERIFY: demo udg ...\nVERIFY: demo udg PASS\nVERIFY: demo maze ...\nVERIFY: demo maze PASS\nVERIFY: demo argv ...\nVERIFY: demo argv PASS\nVERIFY: deterministic demos PASS\nVERIFY: clean-tree postflight ...\nVERIFY: clean-tree postflight PASS\nVERIFY PASS: C48 SDK 0.9.0-dev | 205 tests | 6 deterministic demos | 14 games\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.45",
+        "--evidence-dir",
+        "/tmp/zxux-p1148-native-s3hbwvz9/P1145"
+      ],
+      "cwd": ".",
+      "duration_ms": 78377,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.45 TEST PASS\nevidence=/tmp/zxux-p1148-native-s3hbwvz9/P1145/P11.45.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.46",
+        "--evidence-dir",
+        "/tmp/zxux-p1148-native-s3hbwvz9/P1146"
+      ],
+      "cwd": ".",
+      "duration_ms": 1424,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.46 TEST PASS\nevidence=/tmp/zxux-p1148-native-s3hbwvz9/P1146/P11.46.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.47",
+        "--evidence-dir",
+        "/tmp/zxux-p1148-native-s3hbwvz9/P1147"
+      ],
+      "cwd": ".",
+      "duration_ms": 1308,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.47 TEST PASS\nevidence=/tmp/zxux-p1148-native-s3hbwvz9/P1147/P11.47.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-fuse-llc6fyx7/fixture.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 57,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "docs/04-C48 Language Specification Rev 0.11.docx": "981eeb963d59e7ce2fd5e0fb73866f8a734fd33746a5ee0fce32d84fdec41903",
+    "v1/dist/certification/P11.47.build.json": "5bc0efafb8c647612c9952bcd9cc33abd77d89ae0245f6bd9e11a73e1c374098",
+    "v1/dist/certification/P11.47.test.json": "425621ede05d5c77154b704a737465b4a5a935d98547362dd834f2424c2052d5",
+    "v1/dist/certification/P11.48-sdk-admission.json": "bc17afbf54a901f1f66cb9ff04c6d9f7db42748701c514a8963a9e12c6f228f8",
+    "v1/src/demos/ball.c": "c0664238caab012e192c7fdb4ce8f045af314f74d94e7efb4b0607876b3d862f",
+    "v1/src/demos/colors.c": "ca38d7dfc1bb21def550147906698cdfc2cbaf898d8b5bf2405166e93ed5e9f9",
+    "v1/src/demos/hello.c": "01638e6fa7d7d5e0e491d97cf6dc9ab8464a53d34fc469f8e6268b07a80a28db",
+    "v1/src/demos/life.c": "2ef86763d7e997f2b6cbb0d63a9be7c620a2acdf6a21ed7b1cfd3cbb07dd5ac8",
+    "v1/src/demos/lines.c": "51477f97648fc9327912d9d349196d9931543f331d728bc93e0f31f8c9d4a92b",
+    "v1/src/demos/mandel.c": "1c75bd91159948a602a4a91668f9f7bd5f252023d5c433f81e18a1db777c4f76",
+    "v1/src/demos/maze.c": "d3cf2b1f3c448532e1eef568be7534e47fab0eb9fd9f84feb9c319c9f92efefa",
+    "v1/src/demos/multi.c": "35883dc2f8471a50bcf1a4113b49f737e3ec91b3374442feeb78874173fff18a",
+    "v1/src/demos/pipe.c": "ba473f5522031678d9494df843a5f4757f29f4a133c5a20cb659d09b0fdd036c",
+    "v1/src/demos/ship.c": "7b90089f933154f2b72635190ef473fd413aed784cddfabf4792261ccccc2bd5",
+    "v1/src/demos/sine.c": "6b5024f0aac99e8fd5d9d4c87eca5c4b38f01667cd4fc47f6502f060334f2e02",
+    "v1/src/demos/stars.c": "200390ee12a11e4155ca61b5db648e39857ce1b7b76192aacf60000e05d98898",
+    "v1/src/demos/tune.c": "cc86717d10072c3473d1d91360110f04043617f01b81aae910ad842dc6dffaed",
+    "v1/tests/compiler/p1139-sdk-test-map.json": "f2aa46ea65d9c117df9e33fd9042212e605abe1827f29eca17240083f4b8b900",
+    "v1/tests/compiler/p1139-three-way-map.json": "b4f7c26b67ab3ba75c8505005d1f663b4c09d287e1ba3d6417d71ef27dd7660e",
+    "v1/tests/compiler/p1148-c-source-manifest.json": "5cfea71e0ef81035b4e70c226b1aef011d529c6d88c009e0ea1fa7251478fe6a",
+    "v1/tests/compiler/p1148-conformance.json": "31e3bf0af46b560c1eea069377921bd24d00e2bce91ad5874fb22210d5b9b080",
+    "v1/tests/compiler/packed_source.c": "70e749c8abca04f48c85eeda278a94f899cbdbf41e9a21cec385190698df744a",
+    "v1/tests/compiler/recursion_control.c": "7eafdad2f0fd0715a6e2fe30d3c8dd2f49963c15ea6d719bab00120649a96d55",
+    "v1/tests/compiler/sdk-reference/SDK-PROVENANCE.md": "c173ab6ccb5f158608a276ed74d75ed6646f37853e87c89958c3a42f25eb1488",
+    "v1/tests/compiler/sdk-reference/h06/usr/src/examples/hello.c": "6f94a735f230dadf5928993f9a071f3f47e98b63d18230eef102f6ae7b63e4b2",
+    "v1/tests/compiler/sdk-reference/sdk/MANIFEST.sha256": "5967a600f5eb4231e963365edf4761225ce3a62b12a36c7b71ea3e7606b074b8"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.47": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "8278c26dfb2d9620b4f3e00d43fa6c70d6f15244",
+  "status": "PASS",
+  "step": "P11.48",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
