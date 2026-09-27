@@ -1,0 +1,44 @@
+{
+  "license_header": [
+    "Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.",
+    "Proprietary rights reserved except as expressly licensed herein.",
+    "ZX-UX Sinclair ZX Spectrum Unix",
+    "This file is governed by the SANYALnet Labs Non-Commercial License in the root LICENSE file.",
+    "Non-Commercial use is permitted; Commercial Use and use for AI/ML model training are prohibited unless separately authorized.",
+    "Attribution is required: Based on original work by Supratim Sanyal of SANYALnet Labs.",
+    "See LICENSE for full terms, warranty disclaimer, termination, patent, trademark, and governing-law provisions."
+  ],
+  "schema": 1,
+  "step": "P11.48",
+  "status": "PASS",
+  "baseline_sdk": {
+    "commit": "84d144de2721cda5075c3a6610a422663b5e2f77",
+    "imported_tree": "1c6b5bae84035ee853be9142b440792881c9ca9f",
+    "test_count": 205,
+    "tests_skipped": 0,
+    "xfails": 0
+  },
+  "h06": {
+    "commit": "9ca3c6d6b5dd4b6e2351c1800afbd47d1d77e411",
+    "usr_src_tree": "f629dcc1d156b83bf08ed171b9273e3cbb621ad1",
+    "source": "v1/tests/compiler/sdk-reference/h06/usr/src/examples/hello.c",
+    "header": "v1/tests/compiler/sdk-reference/h06/usr/src/examples/exapi.h",
+    "source_sha256": "6f94a735f230dadf5928993f9a071f3f47e98b63d18230eef102f6ae7b63e4b2",
+    "header_sha256": "2fa0edc593832d3ab57bc105233f41fd81a02b1f3ea022cefc42da01a6084bb8",
+    "pipeline": "target-native cc -> OBJ1 -> target-native ld -> MEX1 -> execute",
+    "expected_status": 0,
+    "retained_visual_media": [
+      "h06-screen.scr",
+      "h06-screen.png",
+      "h06-screen-capture.fmf",
+      "h06-visual-fixture.sna"
+    ]
+  },
+  "mappings": {
+    "sdk_tests": "v1/tests/compiler/p1139-sdk-test-map.json",
+    "three_way": "v1/tests/compiler/p1139-three-way-map.json",
+    "phase11_sources": "v1/tests/compiler/p1148-c-source-manifest.json",
+    "final_conformance": "v1/tests/compiler/p1148-conformance.json"
+  },
+  "unresolved": []
+}
