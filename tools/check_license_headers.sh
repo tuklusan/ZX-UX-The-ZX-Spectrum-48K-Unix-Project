@@ -452,3 +452,4 @@ fi
 
 printf 'License header gate passed: %d text file(s) checked; %d explicitly exempt header-inapplicable artifact(s).\n' \
   "$checked" "$explicitly_exempt"
+# P11.45 H06 exact-byte exemptions are validated above before the generic header scan.
