@@ -1,0 +1,50 @@
+{
+  "license_header": [
+    "Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.",
+    "Proprietary rights reserved except as expressly licensed herein.",
+    "ZX-UX Sinclair ZX Spectrum Unix",
+    "This file is governed by the SANYALnet Labs Non-Commercial License in the root LICENSE file.",
+    "Non-Commercial use is permitted; Commercial Use and use for AI/ML model training are prohibited unless separately authorized.",
+    "Attribution is required: Based on original work by Supratim Sanyal of SANYALnet Labs.",
+    "See LICENSE for full terms, warranty disclaimer, termination, patent, trademark, and governing-law provisions."
+  ],
+  "schema": 1,
+  "step": "P11.45",
+  "sdk_commit": "9ca3c6d6b5dd4b6e2351c1800afbd47d1d77e411",
+  "sdk_commit_tree": "1a35048f5250929fe1cc0832098799c653290883",
+  "usr_src_tree": "f629dcc1d156b83bf08ed171b9273e3cbb621ad1",
+  "canary": {
+    "source": {
+      "sdk_path": "usr/src/examples/hello.c",
+      "retained_path": "v1/tests/compiler/sdk-reference/h06/usr/src/examples/hello.c",
+      "git_blob": "95fa0186bda3f7636774f5885988d78a13f6450b",
+      "size": 703,
+      "sha256": "6f94a735f230dadf5928993f9a071f3f47e98b63d18230eef102f6ae7b63e4b2"
+    },
+    "header": {
+      "sdk_path": "usr/src/examples/exapi.h",
+      "retained_path": "v1/tests/compiler/sdk-reference/h06/usr/src/examples/exapi.h",
+      "git_blob": "57b26d28e13d560c9903c0edc3732b36cd89b088",
+      "size": 2056,
+      "sha256": "2fa0edc593832d3ab57bc105233f41fd81a02b1f3ea022cefc42da01a6084bb8"
+    },
+    "target_native": {
+      "compiler": "cc_p1145_compile",
+      "pipeline": "exact SDK hello.c+exapi.h -> target-native cc -> OBJ1 -> target-native ld -> MEX1 -> ZX-UX execution",
+      "host_compile_substitute_allowed": false,
+      "native_execute_required": true,
+      "screenshot_required": true,
+      "expected_status": 0,
+      "screen_writes": [
+        {"row": 10, "col": 22, "text": "hello from c48"},
+        {"row": 12, "col": 14, "text": "zx-ux portable host sdk"}
+      ],
+      "evidence": [
+        "deterministic target SNA execution with exact screen-RAM CRC/register/state assertions",
+        "retained h06-screen.scr",
+        "retained h06-screen.png",
+        "retained h06-screen-capture.fmf"
+      ]
+    }
+  }
+}

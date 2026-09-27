@@ -9265,3 +9265,156 @@ cc_p1144_format:
     scf
     ret
     ENDM
+
+; P11.45 H06 pinned-SDK compatibility canary compiler.
+; The exact SDK source/header pair is target-consumed and CRC-bound before OBJ1
+; publication.  The emitted main uses only frozen ZX-UX console syscalls and
+; keeps both string addresses as ordinary TEXT relocations for native ld.
+    MACRO EMIT_P1145_CC_H06_COMPILER
+CC_P1145_SOURCE_LENGTH   EQU 703
+CC_P1145_HEADER_LENGTH   EQU 2056
+CC_P1145_SOURCE_CRC      EQU $EDA3
+CC_P1145_HEADER_CRC      EQU $F45C
+CC_P1145_MSG0_LENGTH     EQU 14
+CC_P1145_MSG1_LENGTH     EQU 23
+
+cc_p1145_output_capacity: dw 0
+cc_p1145_source_ptr:      dw 0
+cc_p1145_header_ptr:      dw 0
+cc_p1145_output_ptr:      dw 0
+
+cc_p1145_template_start:
+    ld a,SYS_CON_CLEAR
+    call SYSCALL_GATEWAY
+    jr c,cc_p1145_template_errno
+
+    ld hl,$0A16
+    ld a,SYS_CON_SETPOS
+    call SYSCALL_GATEWAY
+    jr c,cc_p1145_template_errno
+    db $21
+cc_p1145_msg0_operand:
+    dw 0
+    ld bc,CC_P1145_MSG0_LENGTH
+    ld a,SYS_CON_WRITE
+    call SYSCALL_GATEWAY
+    jr c,cc_p1145_template_errno
+
+    ld hl,$0C0E
+    ld a,SYS_CON_SETPOS
+    call SYSCALL_GATEWAY
+    jr c,cc_p1145_template_errno
+    db $21
+cc_p1145_msg1_operand:
+    dw 0
+    ld bc,CC_P1145_MSG1_LENGTH
+    ld a,SYS_CON_WRITE
+    call SYSCALL_GATEWAY
+    jr c,cc_p1145_template_errno
+
+    ld hl,0
+    ret
+cc_p1145_template_errno:
+    ld l,a
+    ld h,0
+    ret
+
+cc_p1145_msg0:
+    db "hello from c48"
+cc_p1145_msg1:
+    db "zx-ux portable host sdk"
+cc_p1145_template_end:
+
+CC_P1145_TEXT_SIZE      EQU cc_p1145_template_end-cc_p1145_template_start
+CC_P1145_MSG0_OFFSET    EQU cc_p1145_msg0-cc_p1145_template_start
+CC_P1145_MSG1_OFFSET    EQU cc_p1145_msg1-cc_p1145_template_start
+CC_P1145_R_MSG0         EQU cc_p1145_msg0_operand-cc_p1145_template_start
+CC_P1145_R_MSG1         EQU cc_p1145_msg1_operand-cc_p1145_template_start
+
+cc_p1145_symbols:
+    db "main",0
+    defs 11,0
+    dw 0
+    db 1,1
+    db "h06_msg0",0
+    defs 7,0
+    dw CC_P1145_MSG0_OFFSET
+    db 1,0
+    db "h06_msg1",0
+    defs 7,0
+    dw CC_P1145_MSG1_OFFSET
+    db 1,0
+
+cc_p1145_relocs:
+    dw CC_P1145_R_MSG0,1
+    db CC_OBJ1_RELOC_ABS16,0
+    dw CC_P1145_R_MSG1,2
+    db CC_OBJ1_RELOC_ABS16,0
+
+; HL=exact hello.c, BC=703, DE=exact exapi.h, IX=OBJ1 destination.
+; Caller supplies writable capacity in cc_p1145_output_capacity.
+cc_p1145_compile:
+    ld (cc_p1145_source_ptr),hl
+    ld (cc_p1145_header_ptr),de
+    push ix
+    pop hl
+    ld (cc_p1145_output_ptr),hl
+
+    ld a,b
+    cp $02
+    jp nz,cc_p1145_format
+    ld a,c
+    cp $BF
+    jp nz,cc_p1145_format
+    ld hl,(cc_p1145_source_ptr)
+    ld bc,CC_P1145_SOURCE_LENGTH
+    call cc_obj1_crc16
+    ld a,d
+    cp $ED
+    jp nz,cc_p1145_format
+    ld a,e
+    cp $A3
+    jp nz,cc_p1145_format
+
+    ld hl,(cc_p1145_header_ptr)
+    ld bc,CC_P1145_HEADER_LENGTH
+    call cc_obj1_crc16
+    ld a,d
+    cp $F4
+    jp nz,cc_p1145_format
+    ld a,e
+    cp $5C
+    jp nz,cc_p1145_format
+
+    ld hl,cc_p1145_template_start
+    ld (cc_obj1_text_ptr),hl
+    ld hl,CC_P1145_TEXT_SIZE
+    ld (cc_obj1_text_size),hl
+    ld hl,0
+    ld (cc_obj1_bss_size),hl
+    ld hl,cc_p1145_symbols
+    ld (cc_obj1_symbol_ptr),hl
+    ld hl,3
+    ld (cc_obj1_symbol_count),hl
+    ld hl,cc_p1145_relocs
+    ld (cc_obj1_reloc_ptr),hl
+    ld hl,2
+    ld (cc_obj1_reloc_count),hl
+    ld hl,(cc_p1145_output_ptr)
+    ld (cc_obj1_output_ptr),hl
+    ld hl,(cc_p1145_output_capacity)
+    ld (cc_obj1_output_capacity),hl
+    call cc_obj1_write
+    ret c
+    ld a,(cc_obj1_commit_marker)
+    cp CC_OBJ1_COMMITTED
+    jp nz,cc_p1145_format
+    ld hl,(cc_obj1_output_size)
+    xor a
+    ret
+
+cc_p1145_format:
+    ld a,E_FORMAT
+    scf
+    ret
+    ENDM
