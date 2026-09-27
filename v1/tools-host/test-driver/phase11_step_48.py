@@ -29,6 +29,8 @@ from fuse_harness import FAIL_PC, PASS_PC, run_sna
 class P1148Error(DriverError):
     pass
 
+# P11.48 final acceptance candidate; qualification owns exact-head admission.
+
 
 REV17 = "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8"
 REV08 = "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c"
