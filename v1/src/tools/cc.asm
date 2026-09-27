@@ -8939,7 +8939,10 @@ cc_p1143_begin_line:
 cc_p1143_block:
     ld a,c
     cp '*'
-    ret nz
+    jr z,cc_p1143_block_star_seen
+    xor a
+    ret
+cc_p1143_block_star_seen:
     ld a,CC_P1143_MODE_BLOCK_STAR
     ld (cc_p1143_mode),a
     xor a
@@ -8963,7 +8966,10 @@ cc_p1143_end_block:
 cc_p1143_line:
     ld a,c
     cp 10
-    ret nz
+    jr z,cc_p1143_line_end
+    xor a
+    ret
+cc_p1143_line_end:
     xor a
     ld (cc_p1143_mode),a
     ret
