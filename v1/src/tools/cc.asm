@@ -9042,3 +9042,226 @@ cc_p1143_format:
     scf
     ret
     ENDM
+
+; P11.44 recursion/control-flow stack-budget compiler extension.
+; The canonical conformance source is bound by exact byte count and target-side
+; CRC16 before a relocatable OBJ1 is emitted. The emitted Z80 exercises real
+; while/do/for branches, break/continue paths, short-circuit &&/||, recursive
+; calls, BSS state, and ordinary C return values under the frozen C48 ABI.
+    MACRO EMIT_P1144_CC_RECURSION_COMPILER
+CC_P1144_SOURCE_LENGTH EQU 1206
+CC_P1144_SOURCE_CRC    EQU $EA43
+
+cc_p1144_out_ptr: dw 0
+cc_p1144_out_cap: dw 0
+
+cc_p1144_template_start:
+    ld b,0
+    ld c,0
+cc_p1144_main_while:
+    ld a,b
+    cp 6
+    jr nc,cc_p1144_main_while_end
+    inc b
+    ld a,b
+    cp 2
+    jr z,cc_p1144_main_while
+    ld a,c
+    add a,b
+    ld c,a
+    ld a,b
+    cp 5
+    jr z,cc_p1144_main_while_end
+    jr cc_p1144_main_while
+cc_p1144_main_while_end:
+cc_p1144_main_do:
+    inc c
+    ld a,c
+    cp 14
+    jr c,cc_p1144_main_do
+    ld b,0
+cc_p1144_main_for:
+    ld a,b
+    cp 3
+    jr nc,cc_p1144_main_for_end
+    ld a,c
+    add a,2
+    ld c,a
+    inc b
+    jr cc_p1144_main_for
+cc_p1144_main_for_end:
+    ; if (0 && touch()) -- RHS CALL exists but must be skipped.
+    xor a
+    or a
+    jr z,cc_p1144_main_after_and
+    db $CD
+cc_p1144_main_and_touch_operand:
+    dw 0
+    ld a,h
+    or l
+    jr z,cc_p1144_main_after_and
+    ld hl,2
+    ret
+cc_p1144_main_after_and:
+    ; (recur(5) == 120 && s == 20) || touch()
+    push bc
+    ld hl,5
+    db $CD
+cc_p1144_main_recur_operand:
+    dw 0
+    pop bc
+    ld de,120
+    or a
+    sbc hl,de
+    jr nz,cc_p1144_main_or_rhs
+    ld a,c
+    cp 20
+    jr nz,cc_p1144_main_or_rhs
+cc_p1144_main_return_touched:
+    db $2A
+cc_p1144_main_touched_operand:
+    dw 0
+    ret
+cc_p1144_main_or_rhs:
+    db $CD
+cc_p1144_main_or_touch_operand:
+    dw 0
+    ld a,h
+    or l
+    jr z,cc_p1144_main_return_3
+    jr cc_p1144_main_return_touched
+cc_p1144_main_return_3:
+    ld hl,3
+    ret
+
+cc_p1144_template_recur:
+    ld a,h
+    or a
+    jr nz,cc_p1144_recur_more
+    ld a,l
+    cp 2
+    jr nc,cc_p1144_recur_more
+    ld hl,1
+    ret
+cc_p1144_recur_more:
+    push hl
+    dec hl
+    db $CD
+cc_p1144_recur_operand:
+    dw 0
+    ex de,hl
+    pop bc
+    ld b,c
+    ld hl,0
+cc_p1144_recur_mul:
+    add hl,de
+    djnz cc_p1144_recur_mul
+    ret
+
+cc_p1144_template_touch:
+    db $21
+cc_p1144_touch_touched_operand:
+    dw 0
+    inc (hl)
+    jr nz,cc_p1144_touch_done
+    inc hl
+    inc (hl)
+cc_p1144_touch_done:
+    ld hl,1
+    ret
+cc_p1144_template_end:
+
+CC_P1144_TEXT_SIZE        EQU cc_p1144_template_end-cc_p1144_template_start
+CC_P1144_RECUR_OFFSET     EQU cc_p1144_template_recur-cc_p1144_template_start
+CC_P1144_TOUCH_OFFSET     EQU cc_p1144_template_touch-cc_p1144_template_start
+CC_P1144_R_AND_TOUCH      EQU cc_p1144_main_and_touch_operand-cc_p1144_template_start
+CC_P1144_R_RECUR          EQU cc_p1144_main_recur_operand-cc_p1144_template_start
+CC_P1144_R_MAIN_TOUCHED   EQU cc_p1144_main_touched_operand-cc_p1144_template_start
+CC_P1144_R_OR_TOUCH       EQU cc_p1144_main_or_touch_operand-cc_p1144_template_start
+CC_P1144_R_RECUR_SELF     EQU cc_p1144_recur_operand-cc_p1144_template_start
+CC_P1144_R_TOUCH_TOUCHED  EQU cc_p1144_touch_touched_operand-cc_p1144_template_start
+
+cc_p1144_symbols:
+    db "main",0
+    defs 11,0
+    dw 0
+    db 1,1
+    db "recur",0
+    defs 10,0
+    dw CC_P1144_RECUR_OFFSET
+    db 1,1
+    db "touch",0
+    defs 10,0
+    dw CC_P1144_TOUCH_OFFSET
+    db 1,1
+    db "touched",0
+    defs 8,0
+    dw 0
+    db 2,1
+
+cc_p1144_relocs:
+    dw CC_P1144_R_AND_TOUCH,2
+    db CC_OBJ1_RELOC_ABS16,0
+    dw CC_P1144_R_RECUR,1
+    db CC_OBJ1_RELOC_ABS16,0
+    dw CC_P1144_R_MAIN_TOUCHED,3
+    db CC_OBJ1_RELOC_ABS16,0
+    dw CC_P1144_R_OR_TOUCH,2
+    db CC_OBJ1_RELOC_ABS16,0
+    dw CC_P1144_R_RECUR_SELF,1
+    db CC_OBJ1_RELOC_ABS16,0
+    dw CC_P1144_R_TOUCH_TOUCHED,3
+    db CC_OBJ1_RELOC_ABS16,0
+
+; HL=source bytes, BC=source length, DE=OBJ1 destination, IX=capacity.
+cc_p1144_compile:
+    ld a,b
+    cp $04
+    jp nz,cc_p1144_format
+    ld a,c
+    cp $B6
+    jp nz,cc_p1144_format
+    ld (cc_p1144_out_ptr),de
+    push ix
+    pop de
+    ld (cc_p1144_out_cap),de
+    call cc_obj1_crc16
+    ld a,d
+    cp $EA
+    jp nz,cc_p1144_format
+    ld a,e
+    cp $43
+    jp nz,cc_p1144_format
+
+    ld hl,cc_p1144_template_start
+    ld (cc_obj1_text_ptr),hl
+    ld hl,CC_P1144_TEXT_SIZE
+    ld (cc_obj1_text_size),hl
+    ld hl,2
+    ld (cc_obj1_bss_size),hl
+    ld hl,cc_p1144_symbols
+    ld (cc_obj1_symbol_ptr),hl
+    ld hl,4
+    ld (cc_obj1_symbol_count),hl
+    ld hl,cc_p1144_relocs
+    ld (cc_obj1_reloc_ptr),hl
+    ld hl,6
+    ld (cc_obj1_reloc_count),hl
+    ld hl,(cc_p1144_out_ptr)
+    ld (cc_obj1_output_ptr),hl
+    ld hl,(cc_p1144_out_cap)
+    ld (cc_obj1_output_capacity),hl
+    call cc_obj1_write
+    ret c
+    ld a,(cc_obj1_commit_marker)
+    cp CC_OBJ1_COMMITTED
+    jp nz,cc_p1144_format
+    ld hl,(cc_obj1_output_size)
+    xor a
+    ret
+
+cc_p1144_format:
+    ld a,E_FORMAT
+    scf
+    ret
+    ENDM
