@@ -97,7 +97,7 @@ def dispatch(root: Path, action: str, step: str, *, sha256_file, run_command, re
             and "intentionally undersized stack/depth fixture" in plan,
             "REV08 P11.44 contract drift")
     require("## 8.2 Allocation and entry contract" in arch
-            and "minimum_stack_size is therefore the application's" in arch
+            and "`minimum_stack_size` is therefore the application's" in arch
             and "guaranteed usable stack budget" in arch
             and "IY contains the frozen 0x5C3A (ERR_NR) ROM-compatible anchor and must be preserved." in arch
             and "## 41.9 Compiler" in arch
