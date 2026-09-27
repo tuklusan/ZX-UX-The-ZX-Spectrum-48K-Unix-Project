@@ -1,0 +1,61 @@
+{
+  "files": [
+    {
+      "action": "test",
+      "path": "test/fixture-36bc547c195b8ae1fdaf4c48b3aa0c9f651a2a981cc036d4ca9a8d811f1a3e00.sna",
+      "sha256": "36bc547c195b8ae1fdaf4c48b3aa0c9f651a2a981cc036d4ca9a8d811f1a3e00",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-37731192c05ea5bc3f083184171644634200effc2dc1fc44ab5d12bac1112520.sna",
+      "sha256": "37731192c05ea5bc3f083184171644634200effc2dc1fc44ab5d12bac1112520",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-3a94884b476bca3609cafa2dceb5ba6e32899110779879e1c99ac8c70c4d84cd.sna",
+      "sha256": "3a94884b476bca3609cafa2dceb5ba6e32899110779879e1c99ac8c70c4d84cd",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-5835cebf2a0e32f43fc93345df6588e9bed8f2c21139e225a2b5cfd10a6b903a.sna",
+      "sha256": "5835cebf2a0e32f43fc93345df6588e9bed8f2c21139e225a2b5cfd10a6b903a",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/fixture-7e0d29adecb4972e0882f358e05ca0bcd28b4ad0215d3eef410d2c0040c8c7a9.sna",
+      "sha256": "7e0d29adecb4972e0882f358e05ca0bcd28b4ad0215d3eef410d2c0040c8c7a9",
+      "size": 49179
+    },
+    {
+      "action": "test",
+      "path": "test/h06-screen-20e491b86cb68ca65eef144c760feaef80995242b258dc2421beda30a68a69f9.scr",
+      "sha256": "20e491b86cb68ca65eef144c760feaef80995242b258dc2421beda30a68a69f9",
+      "size": 6912
+    },
+    {
+      "action": "test",
+      "path": "test/h06-screen-573cf92e435b73be3c509cc6dd4f099433fd807dc8ee2b4a9f2d7989625f7bc6.png",
+      "sha256": "573cf92e435b73be3c509cc6dd4f099433fd807dc8ee2b4a9f2d7989625f7bc6",
+      "size": 558
+    },
+    {
+      "action": "test",
+      "path": "test/h06-screen-capture-d7ba15437625f2fbf7de38bbe402a034b886bbde05ad5ae2d48ebaefccc1e93e.fmf",
+      "sha256": "d7ba15437625f2fbf7de38bbe402a034b886bbde05ad5ae2d48ebaefccc1e93e",
+      "size": 260
+    },
+    {
+      "action": "test",
+      "path": "test/h06-visual-fixture-ce3926a273aee781ee088295ca2f20f7df53c10cdde54d2f7601207a34a7efc3.sna",
+      "sha256": "ce3926a273aee781ee088295ca2f20f7df53c10cdde54d2f7601207a34a7efc3",
+      "size": 49179
+    }
+  ],
+  "schema": 1,
+  "source_commit": "bf1242d9d1212167e07ba09672cf0952fec8be71",
+  "step": "P11.45"
+}

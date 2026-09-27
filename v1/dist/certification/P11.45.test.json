@@ -1,0 +1,431 @@
+{
+  "action": "test",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "section41-9-matrix-exact-31-rows",
+      "passed": true
+    },
+    {
+      "name": "h06-sdk-commit-tree-and-usr-src-tree-pinned",
+      "passed": true
+    },
+    {
+      "name": "h06-hello-c-exact-703-byte-identity",
+      "passed": true
+    },
+    {
+      "name": "h06-exapi-h-exact-2056-byte-identity",
+      "passed": true
+    },
+    {
+      "name": "native-h06-compiler-consumes-source-and-header-bytes",
+      "passed": true
+    },
+    {
+      "name": "native-h06-obj1-and-ld-mex1-pipeline-present",
+      "passed": true
+    },
+    {
+      "name": "host-compile-link-substitution-forbidden",
+      "passed": true
+    },
+    {
+      "name": "negative-source-header-host-screenshot-oracles-fail-closed",
+      "passed": true
+    },
+    {
+      "frame": "frame-00000142",
+      "name": "h06-supplemental-scr-exact-screen",
+      "passed": true,
+      "sha256": "20e491b86cb68ca65eef144c760feaef80995242b258dc2421beda30a68a69f9"
+    },
+    {
+      "background_value": 0,
+      "foreground_pixels": 276,
+      "foreground_value": 191,
+      "frame": "frame-00000142",
+      "height": 240,
+      "name": "h06-supplemental-png-raster-matches-screen",
+      "passed": true,
+      "sha256": "573cf92e435b73be3c509cc6dd4f099433fd807dc8ee2b4a9f2d7989625f7bc6",
+      "width": 320
+    },
+    {
+      "name": "h06-fmf-capture-retained",
+      "passed": true,
+      "sha256": "d7ba15437625f2fbf7de38bbe402a034b886bbde05ad5ae2d48ebaefccc1e93e"
+    },
+    {
+      "name": "p1139-through-p1144-exact-head-matrix-revalidation",
+      "passed": true
+    },
+    {
+      "name": "h06-target-native-cc-emits-validated-obj1",
+      "passed": true
+    },
+    {
+      "name": "h06-native-ld-emits-mex1",
+      "passed": true
+    },
+    {
+      "name": "h06-executes-under-real-zxux-kernel",
+      "passed": true
+    },
+    {
+      "name": "h06-cls-exact-screen-clear",
+      "passed": true
+    },
+    {
+      "name": "h06-print-at-10-22-exact-text",
+      "passed": true
+    },
+    {
+      "name": "h06-print-at-12-14-exact-text",
+      "passed": true
+    },
+    {
+      "name": "h06-clean-status-zero",
+      "passed": true
+    },
+    {
+      "name": "h06-iy-exact-5c3a-and-app-sp-restored",
+      "passed": true
+    },
+    {
+      "name": "h06-process-state-current-pid1-deterministic",
+      "passed": true
+    },
+    {
+      "crc16": "b6a7",
+      "name": "h06-screen-ram-exact-crc",
+      "passed": true
+    },
+    {
+      "name": "h06-changed-source-byte-rejected-transactionally",
+      "passed": true
+    },
+    {
+      "name": "h06-changed-header-byte-rejected-transactionally",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 39,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 16257 lines, work time: 0.037 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1145-h06-native.sym",
+        "p1145-h06-native.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 27,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 15584 lines, work time: 0.026 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.39",
+        "--evidence-dir",
+        "/tmp/zxux-p1145-matrix-vhotbmn1/P1139"
+      ],
+      "cwd": ".",
+      "duration_ms": 69400,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.39 TEST PASS\nevidence=/tmp/zxux-p1145-matrix-vhotbmn1/P1139/P11.39.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.40",
+        "--evidence-dir",
+        "/tmp/zxux-p1145-matrix-vhotbmn1/P1140"
+      ],
+      "cwd": ".",
+      "duration_ms": 1077,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.40 TEST PASS\nevidence=/tmp/zxux-p1145-matrix-vhotbmn1/P1140/P11.40.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.41",
+        "--evidence-dir",
+        "/tmp/zxux-p1145-matrix-vhotbmn1/P1141"
+      ],
+      "cwd": ".",
+      "duration_ms": 2076,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.41 TEST PASS\nevidence=/tmp/zxux-p1145-matrix-vhotbmn1/P1141/P11.41.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.42",
+        "--evidence-dir",
+        "/tmp/zxux-p1145-matrix-vhotbmn1/P1142"
+      ],
+      "cwd": ".",
+      "duration_ms": 1467,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.42 TEST PASS\nevidence=/tmp/zxux-p1145-matrix-vhotbmn1/P1142/P11.42.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.43",
+        "--evidence-dir",
+        "/tmp/zxux-p1145-matrix-vhotbmn1/P1143"
+      ],
+      "cwd": ".",
+      "duration_ms": 2739,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.43 TEST PASS\nevidence=/tmp/zxux-p1145-matrix-vhotbmn1/P1143/P11.43.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "v1/tools-host/test-driver/run.py",
+        "test",
+        "--step",
+        "P11.44",
+        "--evidence-dir",
+        "/tmp/zxux-p1145-matrix-vhotbmn1/P1144"
+      ],
+      "cwd": ".",
+      "duration_ms": 3800,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "ZX-UX P11.44 TEST PASS\nevidence=/tmp/zxux-p1145-matrix-vhotbmn1/P1144/P11.44.test.json\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-fuse-wq09v888/fixture.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 750,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-fuse-lxaguix4/fixture.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 803,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-fuse-dvr78pbn/fixture.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 2417,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-fuse-xmg_0tgp/fixture.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 221,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-fuse-_cxknjk4/fixture.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 658,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "/usr/bin/env",
+        "SDL_VIDEODRIVER=dummy",
+        "SDL_AUDIODRIVER=dummy",
+        "tools/runtime/fuse/bin/fuse",
+        "--machine",
+        "48",
+        "--no-sound",
+        "--no-confirm-actions",
+        "--movie-start",
+        "/tmp/zxux-p1145-visual-hflya27p/h06.fmf",
+        "--debugger-command",
+        "breakpoint 0xb000\ncommands 1\nexit 0\nend\nbreakpoint 0xb001\ncommands 2\nexit 1\nend\ncontinue",
+        "/tmp/zxux-p1145-visual-hflya27p/h06.sna"
+      ],
+      "cwd": ".",
+      "duration_ms": 2905,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "\nThe Free Unix Spectrum Emulator (Fuse) version 1.9.2.\n(c) 1999-2026 Philip Kendall and others; see the file\n'AUTHORS' for more details.\n\nFor help, please mail <fuse-emulator-devel@lists.sf.net> or use\nthe forums at <https://sourceforge.net/p/fuse-emulator/discussion/>.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\n",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/fuse-utils/bin/fmfconv",
+        "-S",
+        "-y",
+        "/tmp/zxux-p1145-visual-hflya27p/h06.fmf",
+        "/tmp/zxux-p1145-visual-hflya27p/frame.scr"
+      ],
+      "cwd": ".",
+      "duration_ms": 6,
+      "exit_code": 0,
+      "stderr": "*INF open_out(): Multiple output file (/tmp/zxux-p1145-visual-hflya27p/frame-00000000.scr) as SCR - ZX Spectrum screenshot file.\n*INF open_inp(): Input file (FMF) opened as /tmp/zxux-p1145-visual-hflya27p/h06.fmf file.\n*INF main(): read 143 frames (2 sec), 14 fmf slices and 0 fmf sound chunks\n*INF main(): wrote 143 frames, dropped 0 frames and inserted 0 frames\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/fuse-utils/bin/fmfconv",
+        "-G",
+        "--greyscale",
+        "-y",
+        "/tmp/zxux-p1145-visual-hflya27p/h06.fmf",
+        "/tmp/zxux-p1145-visual-hflya27p/frame.png"
+      ],
+      "cwd": ".",
+      "duration_ms": 42,
+      "exit_code": 0,
+      "stderr": "*INF open_out(): Multiple output file (/tmp/zxux-p1145-visual-hflya27p/frame-00000000.png) as PNG - Portable Network Graphics.\n*INF open_inp(): Input file (FMF) opened as /tmp/zxux-p1145-visual-hflya27p/h06.fmf file.\n*INF main(): read 143 frames (2 sec), 14 fmf slices and 0 fmf sound chunks\n*INF main(): wrote 143 frames, dropped 0 frames and inserted 0 frames\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/ld.asm": "c182b44e26c8c4e5cc2c1d48e1a899a9fd0836180d4b4dee1d8ceccfa2109189",
+    "v1/assets/font4x8-zxux.bin": "90f6818cf81cf3f13509cff32c091075691195d9638dbe801d12daceec1c9339",
+    "v1/build/p1145-main.bin": "0925f1b7577cd13032b6fd99618ac90d04fa3bbf4115552b792db9d34cd316d3",
+    "v1/dist/certification/P11.44.build.json": "1d91f7402fd90011dda69680714f9b7c8b1b9248756a956694a9a2d74a2d9c12",
+    "v1/dist/certification/P11.44.test.json": "fe50c0af29affac07db8b7286830a9a78baa3a6ec7aacf0aabd533e9601914a2",
+    "v1/dist/certification/P11.45-sdk-map.json": "c7b7b05b4dff9f8f8464a352a47fa265efe487c49df2d2f6407ab6361e62e2c1",
+    "v1/src/libc48/crt0.asm": "182375ec57e2af8d5f4eccbb2adb97212753ea16733fc3952f1a402388fee621",
+    "v1/src/libc48/runtime_archive.asm": "d3519ae950accaa172c1fd8b9e852c7664243377a08902aa0974afa8b74dc79e",
+    "v1/src/tools/cc.asm": "a51d512cae4d065a4c3c8882eb49c14fc1ac7622affeeb4c5dfe28ba84717c50",
+    "v1/tests/compiler/sdk-reference/h06/H06-PROVENANCE.md": "166ab2cd501f19708edd1640f967208bbd6b7c6a44051b140130fb951e0185fd",
+    "v1/tests/compiler/sdk-reference/h06/usr/src/examples/exapi.h": "2fa0edc593832d3ab57bc105233f41fd81a02b1f3ea022cefc42da01a6084bb8",
+    "v1/tests/compiler/sdk-reference/h06/usr/src/examples/hello.c": "6f94a735f230dadf5928993f9a071f3f47e98b63d18230eef102f6ae7b63e4b2",
+    "v1/tests/compiler/section41_9.py": "57455be4caa5c2647888987a25fef51289431fc32b11ff4fd1f6884a6519bad9",
+    "v1/tools-host/test-driver/phase11_step_45.py": "90139c2a7df988cbd2f7e1645b15644068a8d17ed69e5190145af7e753179902"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.44": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "bf1242d9d1212167e07ba09672cf0952fec8be71",
+  "status": "PASS",
+  "step": "P11.45",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}

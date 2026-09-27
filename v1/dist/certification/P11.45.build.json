@@ -1,0 +1,95 @@
+{
+  "action": "build",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "section41-9-matrix-exact-31-rows",
+      "passed": true
+    },
+    {
+      "name": "h06-sdk-commit-tree-and-usr-src-tree-pinned",
+      "passed": true
+    },
+    {
+      "name": "h06-hello-c-exact-703-byte-identity",
+      "passed": true
+    },
+    {
+      "name": "h06-exapi-h-exact-2056-byte-identity",
+      "passed": true
+    },
+    {
+      "name": "native-h06-compiler-consumes-source-and-header-bytes",
+      "passed": true
+    },
+    {
+      "name": "native-h06-obj1-and-ld-mex1-pipeline-present",
+      "passed": true
+    },
+    {
+      "name": "host-compile-link-substitution-forbidden",
+      "passed": true
+    },
+    {
+      "name": "negative-source-header-host-screenshot-oracles-fail-closed",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--lst=../../build/kernel-p1.lst",
+        "--sym=../../build/kernel-p1.sym",
+        "kernel.asm"
+      ],
+      "cwd": "v1/src/kernel",
+      "duration_ms": 39,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 16257 lines, work time: 0.037 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1145-h06-native.sym",
+        "p1145-h06-native.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 28,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 15584 lines, work time: 0.026 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "tools/ld.asm": "c182b44e26c8c4e5cc2c1d48e1a899a9fd0836180d4b4dee1d8ceccfa2109189",
+    "v1/assets/font4x8-zxux.bin": "90f6818cf81cf3f13509cff32c091075691195d9638dbe801d12daceec1c9339",
+    "v1/build/p1145-main.bin": "0925f1b7577cd13032b6fd99618ac90d04fa3bbf4115552b792db9d34cd316d3",
+    "v1/dist/certification/P11.44.build.json": "1d91f7402fd90011dda69680714f9b7c8b1b9248756a956694a9a2d74a2d9c12",
+    "v1/dist/certification/P11.44.test.json": "fe50c0af29affac07db8b7286830a9a78baa3a6ec7aacf0aabd533e9601914a2",
+    "v1/dist/certification/P11.45-sdk-map.json": "c7b7b05b4dff9f8f8464a352a47fa265efe487c49df2d2f6407ab6361e62e2c1",
+    "v1/src/libc48/crt0.asm": "182375ec57e2af8d5f4eccbb2adb97212753ea16733fc3952f1a402388fee621",
+    "v1/src/libc48/runtime_archive.asm": "d3519ae950accaa172c1fd8b9e852c7664243377a08902aa0974afa8b74dc79e",
+    "v1/src/tools/cc.asm": "a51d512cae4d065a4c3c8882eb49c14fc1ac7622affeeb4c5dfe28ba84717c50",
+    "v1/tests/compiler/sdk-reference/h06/H06-PROVENANCE.md": "166ab2cd501f19708edd1640f967208bbd6b7c6a44051b140130fb951e0185fd",
+    "v1/tests/compiler/sdk-reference/h06/usr/src/examples/exapi.h": "2fa0edc593832d3ab57bc105233f41fd81a02b1f3ea022cefc42da01a6084bb8",
+    "v1/tests/compiler/sdk-reference/h06/usr/src/examples/hello.c": "6f94a735f230dadf5928993f9a071f3f47e98b63d18230eef102f6ae7b63e4b2",
+    "v1/tests/compiler/section41_9.py": "57455be4caa5c2647888987a25fef51289431fc32b11ff4fd1f6884a6519bad9",
+    "v1/tools-host/test-driver/phase11_step_45.py": "90139c2a7df988cbd2f7e1645b15644068a8d17ed69e5190145af7e753179902"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.44": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "bf1242d9d1212167e07ba09672cf0952fec8be71",
+  "status": "PASS",
+  "step": "P11.45",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
