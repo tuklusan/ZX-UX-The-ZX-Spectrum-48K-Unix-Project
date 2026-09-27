@@ -160,7 +160,7 @@ p1147_zero:
 p1147_pos15_call:
     call p1147_reset_out
     ld hl,p1147_s_pos15
-    ld bc,7
+    ld bc,3
     ld de,p1147_out
     ld a,SYS_FP_FROM_TEXT
     call p1147_gateway
@@ -173,13 +173,19 @@ p1147_pos15_call:
 
 p1147_pos15_bytes:
     ld hl,p1147_s_pos15
-    ld bc,7
+    ld bc,3
     ld de,p1147_expect_pos15
+    jp p1147_expect
+
+p1147_exp0:
+    ld hl,p1147_s_exp0
+    ld bc,4
+    ld de,p1147_expect_exp0
     jp p1147_expect
 
 p1147_neg15:
     ld hl,p1147_s_neg15
-    ld bc,6
+    ld bc,4
     ld de,p1147_expect_neg15
     jp p1147_expect
 
@@ -302,7 +308,7 @@ p1147_state:
 
     ld hl,p1147_s_pos15
     ld de,p1147_out
-    ld bc,7
+    ld bc,3
     ld a,SYS_FP_FROM_TEXT
     call p1147_gateway
     ret c
