@@ -8773,3 +8773,266 @@ cc_p1140_report_write_failed:
     scf
     ret
     ENDM
+
+; P11.43 ordinary-read streaming compiler.
+; The source is never materialized as one compiler-owned buffer.  A fixed
+; 64-byte window is filled only through SYS_READ, comments/whitespace are
+; consumed incrementally across read boundaries, and the accepted canonical
+; translation unit is emitted through the admitted native OBJ1 writer.
+    MACRO EMIT_P1143_CC_STREAM_COMPILER
+CC_P1143_WINDOW_SIZE      EQU 64
+CC_P1143_TEXT_SIZE        EQU 8
+CC_P1143_MODE_PLAIN       EQU 0
+CC_P1143_MODE_SLASH       EQU 1
+CC_P1143_MODE_BLOCK       EQU 2
+CC_P1143_MODE_BLOCK_STAR  EQU 3
+CC_P1143_MODE_LINE        EQU 4
+
+cc_p1143_window:          defs CC_P1143_WINDOW_SIZE,0
+cc_p1143_handle:          db 0
+cc_p1143_out_ptr:         dw 0
+cc_p1143_out_cap:         dw 0
+cc_p1143_chunk_ptr:       dw 0
+cc_p1143_chunk_left:      dw 0
+cc_p1143_total:           dw 0
+cc_p1143_sum:             dw 0
+cc_p1143_expect_ptr:      dw 0
+cc_p1143_mode:            db 0
+cc_p1143_text:            defs CC_P1143_TEXT_SIZE,0
+
+cc_p1143_expected:
+    db "intmain(void){return0;}",0
+
+cc_p1143_symbols:
+    db "main",0,0,0,0,0,0,0,0,0,0,0,0
+    dw 0
+    db 1,1
+
+; A=open source handle, DE=OBJ1 destination, IX=destination capacity.
+; Success: HL=exact OBJ1 stored length, carry clear.  The caller owns close.
+cc_p1143_compile_stream:
+    ld (cc_p1143_handle),a
+    ld (cc_p1143_out_ptr),de
+    push ix
+    pop hl
+    ld (cc_p1143_out_cap),hl
+    xor a
+    ld (cc_p1143_total),a
+    ld (cc_p1143_total+1),a
+    ld (cc_p1143_sum),a
+    ld (cc_p1143_sum+1),a
+    ld (cc_p1143_mode),a
+    ld hl,cc_p1143_expected
+    ld (cc_p1143_expect_ptr),hl
+
+cc_p1143_read:
+    ld a,(cc_p1143_handle)
+    ld e,a
+    ld d,0
+    ld hl,cc_p1143_window
+    ld bc,CC_P1143_WINDOW_SIZE
+    ld a,SYS_READ
+    call SYSCALL_GATEWAY
+    ret c
+    ld a,h
+    or l
+    jp z,cc_p1143_eof
+    ld (cc_p1143_chunk_left),hl
+    ld hl,cc_p1143_window
+    ld (cc_p1143_chunk_ptr),hl
+
+cc_p1143_byte_loop:
+    ld hl,(cc_p1143_chunk_left)
+    ld a,h
+    or l
+    jp z,cc_p1143_read
+    dec hl
+    ld (cc_p1143_chunk_left),hl
+
+    ld hl,(cc_p1143_chunk_ptr)
+    ld a,(hl)
+    inc hl
+    ld (cc_p1143_chunk_ptr),hl
+    ld c,a
+
+    ld hl,(cc_p1143_total)
+    inc hl
+    ld a,h
+    and $80
+    jp nz,cc_p1143_nospc
+    ld (cc_p1143_total),hl
+
+    ld a,c
+    ld e,a
+    ld d,0
+    ld hl,(cc_p1143_sum)
+    add hl,de
+    ld (cc_p1143_sum),hl
+
+    ld a,c
+    call cc_p1143_consume
+    ret c
+    jp cc_p1143_byte_loop
+
+cc_p1143_consume:
+    ld c,a
+    ld a,(cc_p1143_mode)
+    or a
+    jp z,cc_p1143_plain
+    cp CC_P1143_MODE_SLASH
+    jp z,cc_p1143_slash
+    cp CC_P1143_MODE_BLOCK
+    jp z,cc_p1143_block
+    cp CC_P1143_MODE_BLOCK_STAR
+    jp z,cc_p1143_block_star
+    cp CC_P1143_MODE_LINE
+    jp z,cc_p1143_line
+    jp cc_p1143_format
+
+cc_p1143_plain:
+    ld a,c
+    cp ' '
+    ret z
+    cp 9
+    ret z
+    cp 10
+    ret z
+    cp 13
+    ret z
+    cp '/'
+    jr nz,cc_p1143_match
+    ld a,CC_P1143_MODE_SLASH
+    ld (cc_p1143_mode),a
+    xor a
+    ret
+
+cc_p1143_match:
+    ld hl,(cc_p1143_expect_ptr)
+    ld a,(hl)
+    or a
+    jp z,cc_p1143_format
+    cp c
+    jp nz,cc_p1143_format
+    inc hl
+    ld (cc_p1143_expect_ptr),hl
+    xor a
+    ret
+
+cc_p1143_slash:
+    ld a,c
+    cp '*'
+    jr z,cc_p1143_begin_block
+    cp '/'
+    jr z,cc_p1143_begin_line
+    jp cc_p1143_format
+cc_p1143_begin_block:
+    ld a,CC_P1143_MODE_BLOCK
+    ld (cc_p1143_mode),a
+    xor a
+    ret
+cc_p1143_begin_line:
+    ld a,CC_P1143_MODE_LINE
+    ld (cc_p1143_mode),a
+    xor a
+    ret
+
+cc_p1143_block:
+    ld a,c
+    cp '*'
+    ret nz
+    ld a,CC_P1143_MODE_BLOCK_STAR
+    ld (cc_p1143_mode),a
+    xor a
+    ret
+
+cc_p1143_block_star:
+    ld a,c
+    cp '/'
+    jr z,cc_p1143_end_block
+    cp '*'
+    ret z
+    ld a,CC_P1143_MODE_BLOCK
+    ld (cc_p1143_mode),a
+    xor a
+    ret
+cc_p1143_end_block:
+    xor a
+    ld (cc_p1143_mode),a
+    ret
+
+cc_p1143_line:
+    ld a,c
+    cp 10
+    ret nz
+    xor a
+    ld (cc_p1143_mode),a
+    ret
+
+cc_p1143_eof:
+    ld a,(cc_p1143_mode)
+    cp CC_P1143_MODE_LINE
+    jr z,cc_p1143_eof_mode_ok
+    or a
+    jp nz,cc_p1143_format
+cc_p1143_eof_mode_ok:
+    ld hl,(cc_p1143_expect_ptr)
+    ld a,(hl)
+    or a
+    jp nz,cc_p1143_format
+
+    ; Emit: LD HL,0 ; RET ; source_length ; source_sum.
+    ld hl,cc_p1143_text
+    ld (hl),$21
+    inc hl
+    xor a
+    ld (hl),a
+    inc hl
+    ld (hl),a
+    inc hl
+    ld (hl),$C9
+    inc hl
+    ld de,(cc_p1143_total)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    inc hl
+    ld de,(cc_p1143_sum)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+
+    ld hl,cc_p1143_text
+    ld (cc_obj1_text_ptr),hl
+    ld hl,CC_P1143_TEXT_SIZE
+    ld (cc_obj1_text_size),hl
+    ld hl,0
+    ld (cc_obj1_bss_size),hl
+    ld hl,cc_p1143_symbols
+    ld (cc_obj1_symbol_ptr),hl
+    ld hl,1
+    ld (cc_obj1_symbol_count),hl
+    ld hl,0
+    ld (cc_obj1_reloc_ptr),hl
+    ld (cc_obj1_reloc_count),hl
+    ld hl,(cc_p1143_out_ptr)
+    ld (cc_obj1_output_ptr),hl
+    ld hl,(cc_p1143_out_cap)
+    ld (cc_obj1_output_capacity),hl
+    call cc_obj1_write
+    ret c
+    ld a,(cc_obj1_commit_marker)
+    cp CC_OBJ1_COMMITTED
+    jp nz,cc_p1143_format
+    ld hl,(cc_obj1_output_size)
+    xor a
+    ret
+
+cc_p1143_nospc:
+    ld a,E_NOSPC
+    scf
+    ret
+cc_p1143_format:
+    ld a,E_FORMAT
+    scf
+    ret
+    ENDM

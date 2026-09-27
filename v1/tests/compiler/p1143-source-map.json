@@ -1,0 +1,33 @@
+{
+  "license_header": [
+    "Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.",
+    "Proprietary rights reserved except as expressly licensed herein.",
+    "ZX-UX Sinclair ZX Spectrum Unix",
+    "This file is governed by the SANYALnet Labs Non-Commercial License in the root LICENSE file.",
+    "Non-Commercial use is permitted; Commercial Use and use for AI/ML model training are prohibited unless separately authorized.",
+    "Attribution is required: Based on original work by Supratim Sanyal of SANYALnet Labs.",
+    "See LICENSE for full terms, warranty disclaimer, termination, patent, trademark, and governing-law provisions."
+  ],
+  "schema": 1,
+  "step": "P11.43",
+  "sdk_commit": "84d144de2721cda5075c3a6610a422663b5e2f77",
+  "sources": [
+    {
+      "path": "v1/tests/compiler/packed_source.c",
+      "git_blob": "f133c1c53b67d1c0df1ffa3461105c5afda1ebbb",
+      "sdk_reference": {
+        "required_result": "PASS",
+        "category": "portable-subset",
+        "oracle": "v1/tests/compiler/sdk-reference/sdk/compiler/c48.py",
+        "reason": "The source uses only int main(void) and return 0, inside the pinned SDK/REV17 common subset."
+      },
+      "target_native": {
+        "required_result": "PASS",
+        "owner_step": "P11.43",
+        "compiler": "cc_p1143_compile_stream",
+        "lifecycle": "ordinary SYS_READ logical stream -> target-native streaming cc -> OBJ1",
+        "raw_and_packed_result": "byte-identical OBJ1"
+      }
+    }
+  ]
+}

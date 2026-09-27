@@ -1,0 +1,29 @@
+{
+  "license_header": [
+    "Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.",
+    "Proprietary rights reserved except as expressly licensed herein.",
+    "ZX-UX Sinclair ZX Spectrum Unix",
+    "This file is governed by the SANYALnet Labs Non-Commercial License in the root LICENSE file.",
+    "Non-Commercial use is permitted; Commercial Use and use for AI/ML model training are prohibited unless separately authorized.",
+    "Attribution is required: Based on original work by Supratim Sanyal of SANYALnet Labs.",
+    "See LICENSE for full terms, warranty disclaimer, termination, patent, trademark, and governing-law provisions."
+  ],
+  "schema": 1,
+  "step": "P11.43",
+  "source": "v1/tests/compiler/packed_source.c",
+  "source_git_blob": "f133c1c53b67d1c0df1ffa3461105c5afda1ebbb",
+  "logical_length": 640,
+  "logical_sha256": "70e749c8abca04f48c85eeda278a94f899cbdbf41e9a21cec385190698df744a",
+  "codec": "zxp1-host-dp-1",
+  "packed_length": 562,
+  "packed_sha256": "72251f17964d188f57352df1f4fbdafc20164cb60e3364d48cd3ad1fa4dc582a",
+  "expected_obj1_length": 52,
+  "expected_obj1_sha256": "7890260f81bfaec9f55f4faa603c8e993383e6b2152bcb359c58b363916ec2c6",
+  "target_contract": {
+    "raw_read_chunk_max": 17,
+    "packed_read_chunk_max": 13,
+    "packed_reader_state_bytes": 272,
+    "whole_source_materialization_forbidden": true,
+    "raw_and_packed_obj1": "byte-identical"
+  }
+}

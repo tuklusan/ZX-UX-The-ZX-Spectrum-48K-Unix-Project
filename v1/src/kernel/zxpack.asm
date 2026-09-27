@@ -2753,3 +2753,80 @@ zx48_p505_validate_zxp1:
     call zx48_p416_decode
     ret
     ENDM
+
+; P11.43 ordinary packed-object read adapter.
+; IX=kernel-owned persistent P417/P418 state, HL=destination, BC=request count,
+; DE=declared logical length. Returns HL=bytes read. It decodes directly into
+; the caller's bounded read buffer and never allocates/materializes the source.
+    MACRO EMIT_P1143_PACKED_READ_ADAPTER
+p1143_read_state:       dw 0
+p1143_read_dst:         dw 0
+p1143_read_request:     dw 0
+p1143_read_logical:     dw 0
+p1143_read_transfer:    dw 0
+p1143_read_done:        dw 0
+
+zx48_p1143_packed_read:
+    ld (p1143_read_dst),hl
+    push ix
+    pop hl
+    ld (p1143_read_state),hl
+    ld (p1143_read_request),bc
+    ld (p1143_read_logical),de
+    ld hl,0
+    ld (p1143_read_done),hl
+
+    ; available = logical_length - current logical decoder position.
+    ld hl,(p1143_read_state)
+    ld de,P417_CTRL_LOGICAL_POS_O
+    add hl,de
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld hl,(p1143_read_logical)
+    or a
+    sbc hl,de
+    jp c,zx48_p1143_packed_read_inval
+
+    ; transfer = min(available, request).
+    ld de,(p1143_read_request)
+    or a
+    sbc hl,de
+    jr c,zx48_p1143_use_available
+    ld hl,(p1143_read_request)
+    jr zx48_p1143_transfer_ready
+zx48_p1143_use_available:
+    add hl,de
+zx48_p1143_transfer_ready:
+    ld (p1143_read_transfer),hl
+    ld a,h
+    or l
+    jr z,zx48_p1143_packed_read_done
+
+zx48_p1143_read_loop:
+    ld ix,(p1143_read_state)
+    call zx48_p418_step
+    ret c
+    ld a,(p418_byte)
+    ld hl,(p1143_read_dst)
+    ld (hl),a
+    inc hl
+    ld (p1143_read_dst),hl
+    ld hl,(p1143_read_done)
+    inc hl
+    ld (p1143_read_done),hl
+    ld de,(p1143_read_transfer)
+    or a
+    sbc hl,de
+    jr nz,zx48_p1143_read_loop
+
+zx48_p1143_packed_read_done:
+    ld hl,(p1143_read_done)
+    xor a
+    ret
+
+zx48_p1143_packed_read_inval:
+    ld a,E_INVAL
+    scf
+    ret
+    ENDM
