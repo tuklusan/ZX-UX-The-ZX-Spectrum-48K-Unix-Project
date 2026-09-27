@@ -430,6 +430,14 @@ p1143_compile_packed:
     xor a
     ret
 
+p1143_raw_probe:
+    call p1143_reset
+    jp p1143_compile_raw
+
+p1143_packed_probe:
+    call p1143_reset
+    jp p1143_compile_packed
+
 p1143_equivalence:
     call p1143_reset
     call p1143_compile_raw
@@ -635,7 +643,8 @@ p1143_gateway_end:
     require(0 < len(module) <= 0x5000, f"P11.43 fixture too large: {len(module)}")
     syms = phase3_open_descriptions._symbols(
         build / "p1143-packed-source.sym",
-        ("p1143_equivalence", "p1143_negative_materialize", "p1143_negative_perturb"),
+        ("p1143_raw_probe", "p1143_packed_probe", "p1143_equivalence",
+         "p1143_negative_materialize", "p1143_negative_perturb"),
     )
 
     commands = [sdk_cmd, asm_cmd]
@@ -656,7 +665,8 @@ p1143_gateway_end:
             ram[PACKED_BASE-0x4000:PACKED_BASE-0x4000+len(packed)] = packed
             ram[STATE_BASE-0x4000:STATE_BASE-0x4000+272] = b"\xA5" * 272
 
-        for name in ("p1143_equivalence", "p1143_negative_materialize", "p1143_negative_perturb"):
+        for name in ("p1143_raw_probe", "p1143_packed_probe", "p1143_equivalence",
+                     "p1143_negative_materialize", "p1143_negative_perturb"):
             code = (
                 b"\xF3" + phase1._ld_sp(0xBFC0)
                 + phase1._call(syms[name])
