@@ -1,0 +1,68 @@
+{
+  "action": "build",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "fp-to-text-register-abi-exact",
+      "passed": true
+    },
+    {
+      "name": "rom-print-fp-is-formatting-authority",
+      "passed": true
+    },
+    {
+      "name": "rom-output-captured-through-private-channel",
+      "passed": true
+    },
+    {
+      "name": "maximum-rom-rendering-bounded-14-bytes",
+      "passed": true
+    },
+    {
+      "name": "destination-commit-after-full-capacity-check",
+      "passed": true
+    },
+    {
+      "name": "calculator-print-buffer-state-saved-and-restored",
+      "passed": true
+    },
+    {
+      "name": "zero-capacity-fails-without-destination-dereference",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1146-fp-to-text.sym",
+        "p1146-fp-to-text.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 8,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 4561 lines, work time: 0.008 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p1146-main.bin": "615737275d008bb59f1e0c4aad098f2e1a899cf0263256399e2a2d00c2878a2c",
+    "v1/dist/certification/P11.45.build.json": "e69140dd481fc373b47fbebfda4d17226f7b2724aacdb56b4ebdb68641b1c1d1",
+    "v1/dist/certification/P11.45.test.json": "9342345986c1490ccb3d7c85bd8cd0be555a3eb2c0af9345d75b097230722fe8",
+    "v1/src/kernel/rom_services.asm": "521f551e45cf6fb01a9ce8a09e83fbbf8d538f9e33e8f3e0a8fd404aa06bc0f4",
+    "v1/src/kernel/syscall.asm": "a1947cd7e4d4bf984ae4c66bf9f913025445b53fee9974bb8341c3aa82c1b2a7",
+    "v1/tools-host/test-driver/phase11_step_46.py": "80c2084ef1b529adf432b113a5790ebec8975ee6ff0368a2b70e78a08ae7a908"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.45": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "13b095a8d234972916c409a904d6f7b174e1ddf9",
+  "status": "PASS",
+  "step": "P11.46",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
