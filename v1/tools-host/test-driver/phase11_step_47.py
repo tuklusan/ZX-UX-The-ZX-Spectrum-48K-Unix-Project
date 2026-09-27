@@ -93,7 +93,8 @@ p1147_s_token:    db "1",$F5
 p1147_s_overflow: db "1e99"
 p1147_expect_zero:  db $00,$00,$00,$00,$00
 p1147_expect_half: db $7F,$7F,$FF,$FF,$FF
-; DEC-TO-FP computes decimal .5 through finite ROM arithmetic; this is its exact 48K-ROM byte result.\np1147_expect_neg15: db $81,$C0,$00,$00,$00
+; DEC-TO-FP computes decimal .5 through finite ROM arithmetic; this is its exact 48K-ROM byte result.
+p1147_expect_neg15: db $81,$C0,$00,$00,$00
 p1147_s_exp0:      db "1E+0"
 p1147_expect_exp0: db $00,$00,$01,$00,$00
 p1147_out: defs 8,$A5
