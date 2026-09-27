@@ -1,0 +1,37 @@
+{
+  "license_header": [
+    "Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.",
+    "Proprietary rights reserved except as expressly licensed herein.",
+    "ZX-UX Sinclair ZX Spectrum Unix",
+    "This file is governed by the SANYALnet Labs Non-Commercial License in the root LICENSE file.",
+    "Non-Commercial use is permitted; Commercial Use and use for AI/ML model training are prohibited unless separately authorized.",
+    "Attribution is required: Based on original work by Supratim Sanyal of SANYALnet Labs.",
+    "See LICENSE for full terms, warranty disclaimer, termination, patent, trademark, and governing-law provisions."
+  ],
+  "schema": 1,
+  "step": "P11.44",
+  "sdk_commit": "84d144de2721cda5075c3a6610a422663b5e2f77",
+  "sources": [
+    {
+      "path": "v1/tests/compiler/recursion_control.c",
+      "git_blob": "ae568afc4891e0769ea4a81c379e82b662899c22",
+      "sdk_reference": {
+        "required_result": "PASS",
+        "category": "portable-subset",
+        "oracle": "v1/tests/compiler/sdk-reference/sdk/compiler/c48.py",
+        "reason": "The source uses only the REV17/SDK common C48 subset: int globals/functions, recursion, while/do/for, break/continue, short-circuit logical operators and return."
+      },
+      "target_native": {
+        "required_result": "PASS",
+        "owner_step": "P11.44",
+        "compiler": "cc_p1144_compile",
+        "lifecycle": "C source bytes -> target-native cc -> relocatable OBJ1(TEXT+BSS+relocs) -> target-native ld -> MEX1 -> target relocation/load -> execute",
+        "minimum_stack_size": 512,
+        "expected_main_return": 0,
+        "expected_recur_5": 120,
+        "expected_short_circuit_touched": 0,
+        "negative_stack_budget": 16
+      }
+    }
+  ]
+}
