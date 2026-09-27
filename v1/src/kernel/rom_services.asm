@@ -1231,7 +1231,9 @@ zx48_p1147_rom_fp_from_text:
     ld de,p1147_text_scratch
     ld bc,(p1147_text_length)
     ldir
-    xor a
+    ; GET-CHAR skips control bytes, including NUL. Use a printable punctuation
+    ; sentinel that DEC-TO-FP returns on without interpreting as numeric syntax.
+    ld a,':'
     ld (de),a
 
     ld hl,0
