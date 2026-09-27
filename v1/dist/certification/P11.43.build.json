@@ -1,0 +1,86 @@
+{
+  "action": "build",
+  "architecture_sha256": "d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8",
+  "assertions": [
+    {
+      "name": "pinned-sdk-reference-source-pass-recorded-and-executed",
+      "passed": true
+    },
+    {
+      "name": "raw-and-packed-use-same-ordinary-sys-read-compiler-entry",
+      "passed": true
+    },
+    {
+      "name": "compiler-read-window-exact-64-no-whole-source-buffer",
+      "passed": true
+    },
+    {
+      "name": "packed-reader-state-kernel-owned-exact-272",
+      "passed": true
+    },
+    {
+      "name": "packed-read-adapter-no-allocation-or-materialization",
+      "passed": true
+    },
+    {
+      "name": "host-zxp1-encoding-deterministic-and-genuinely-smaller",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "tools/runtime/python/bin/python3.13",
+        "-B",
+        "v1/tests/compiler/sdk-reference/sdk/compiler/c48.py",
+        "v1/tests/compiler/packed_source.c",
+        "-o",
+        "v1/build/p1143-sdk-packed-source.c48b"
+      ],
+      "cwd": "v1/tests/compiler/sdk-reference/sdk",
+      "duration_ms": 76,
+      "exit_code": 0,
+      "stderr": "",
+      "stdout": "",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "tools/runtime/sjasmplus/bin/sjasmplus",
+        "--nologo",
+        "--sym=p1143-packed-source.sym",
+        "p1143-packed-source.asm"
+      ],
+      "cwd": "v1/build",
+      "duration_ms": 17,
+      "exit_code": 0,
+      "stderr": "Pass 1 complete (0 errors)\nPass 2 complete (0 errors)\nPass 3 complete\nErrors: 0, warnings: 0, compiled: 13782 lines, work time: 0.015 seconds\n",
+      "stdout": "",
+      "timed_out": false
+    }
+  ],
+  "hashes": {
+    "v1/build/p1143-gateway.bin": "96724e8addd11c213c912134dd4b0de4638ac82f793ad21966b96b06d74862df",
+    "v1/build/p1143-main.bin": "71707a1e80e9f62c7d3ca719514fdd9fd24baf897d349d8194a787db9ec72b91",
+    "v1/dist/certification/P11.42.build.json": "ae52ee47bd2207483bfa925688ad8023ddf88dd82f2a0a0c7298a6696bf980c2",
+    "v1/dist/certification/P11.42.test.json": "412e9b547ab8dd3f1a5608ee28384f289735e98442485d1693508933dd693d3e",
+    "v1/src/kernel/handles.asm": "0c4051d934a502d96d3cb95501dc12e0e922aa99a14007dd62b7a096e1bfb9ac",
+    "v1/src/kernel/zxpack.asm": "992b36ec17b9a3a616fb129ace0f14c4f8db9b1dab035b277a73b5154a9a0ccb",
+    "v1/src/tools/cc.asm": "bdc282581f577ef71a2bc45dc7f1fd55e831772736715d3b31cc0dd11351116f",
+    "v1/tests/compiler/p1143-source-map.json": "69ce488a76153bfbe9e0a5978ccbe4a0d968b6ff9d104a0d5cdd01a463782d92",
+    "v1/tests/compiler/packed_source.c": "70e749c8abca04f48c85eeda278a94f899cbdbf41e9a21cec385190698df744a",
+    "v1/tests/compiler/packed_source.json": "29694dc44128abdb9935f6abf7d72d20a14e3cf474de4e88e66aa4ec7ed133f8",
+    "v1/tools-host/test-driver/phase11_step_43.py": "111644553e25dec813ec984ceae31fae76191e475c0dc39c144f89838b48b421",
+    "v1/tools-host/zxpack/zxpack.py": "6683dd91f6cd214393881baf1f50621f4f7cca36543468ea84783d0dd75c09c8"
+  },
+  "implementation_plan_sha256": "97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c",
+  "prerequisites": {
+    "P11.42": "PASS"
+  },
+  "schema": 2,
+  "source_commit": "dc46b9447ad35a6499a6628af2a218fdb40b7a68",
+  "status": "PASS",
+  "step": "P11.43",
+  "toolchain_lock_sha256": "1cb5226fbbf702d704a007982cdd6e91cf7b6c4b145d25c788f29e12712c4244",
+  "worktree_clean": true
+}
