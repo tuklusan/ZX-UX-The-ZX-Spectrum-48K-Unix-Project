@@ -91,7 +91,9 @@ p1147_s_token:    db "1",$F5
 p1147_s_overflow: db "1e99"
 p1147_expect_zero:  db $00,$00,$00,$00,$00
 p1147_expect_pos15: db $80,$00,$00,$00,$00
-p1147_expect_neg15: db $81,$C0,$00,$00,$00\np1147_s_exp0:     db "1E+0"\np1147_expect_exp0: db $00,$00,$01,$00,$00
+p1147_expect_neg15: db $81,$C0,$00,$00,$00
+p1147_s_exp0:      db "1E+0"
+p1147_expect_exp0: db $00,$00,$01,$00,$00
 p1147_out: defs 8,$A5
 
 p1147_fail:
