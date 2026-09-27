@@ -85,15 +85,15 @@ altreg_busy: db 0
     EMIT_P1147_ROM_FP_FROM_TEXT_ROUTINES
 
 p1147_s_zero:     db "0"
-p1147_s_pos15:    db "+.5"
+p1147_s_half:    db "+.5"
 p1147_s_neg15:    db "-1.5"
 p1147_s_bad_stmt: db "1+2"
 p1147_s_bad_exp:  db "1e+"
 p1147_s_token:    db "1",$F5
 p1147_s_overflow: db "1e99"
 p1147_expect_zero:  db $00,$00,$00,$00,$00
-p1147_expect_pos15: db $80,$00,$00,$00,$00
-p1147_expect_neg15: db $81,$C0,$00,$00,$00
+p1147_expect_half: db $7F,$7F,$FF,$FF,$FF
+; DEC-TO-FP computes decimal .5 through finite ROM arithmetic; this is its exact 48K-ROM byte result.\np1147_expect_neg15: db $81,$C0,$00,$00,$00
 p1147_s_exp0:      db "1E+0"
 p1147_expect_exp0: db $00,$00,$01,$00,$00
 p1147_out: defs 8,$A5
@@ -161,9 +161,9 @@ p1147_zero:
     ld de,p1147_expect_zero
     jp p1147_expect
 
-p1147_pos15_call:
+p1147_half_call:
     call p1147_reset_out
-    ld hl,p1147_s_pos15
+    ld hl,p1147_s_half
     ld bc,3
     ld de,p1147_out
     ld a,SYS_FP_FROM_TEXT
@@ -175,10 +175,10 @@ p1147_pos15_call:
     xor a
     ret
 
-p1147_pos15_bytes:
-    ld hl,p1147_s_pos15
+p1147_half_bytes:
+    ld hl,p1147_s_half
     ld bc,3
-    ld de,p1147_expect_pos15
+    ld de,p1147_expect_half
     jp p1147_expect
 
 p1147_exp0:
@@ -310,7 +310,7 @@ p1147_state:
     ld (hl),a
     ldir
 
-    ld hl,p1147_s_pos15
+    ld hl,p1147_s_half
     ld de,p1147_out
     ld bc,3
     ld a,SYS_FP_FROM_TEXT
@@ -384,7 +384,7 @@ p1147_end:
             f"P11.47 assemble: {assembled.stderr or assembled.stdout}")
     main = (build / "p1147-main.bin").read_bytes()
     require(0 < len(main) <= 0x2000, "P11.47 fixture exceeds C000-DFFF user range")
-    names = ("p1147_zero", "p1147_pos15_call", "p1147_pos15_bytes", "p1147_exp0", "p1147_neg15", "p1147_bad_stmt",
+    names = ("p1147_zero", "p1147_half_call", "p1147_half_bytes", "p1147_exp0", "p1147_neg15", "p1147_bad_stmt",
              "p1147_bad_exp", "p1147_token", "p1147_ranges", "p1147_overflow",
              "p1147_state")
     syms = phase3_open_descriptions._symbols(
@@ -412,7 +412,7 @@ p1147_end:
         # Exact-byte diagnostic uses the emulator debugger's memory
         # dereference as an independent observation of the committed output.
         diag_code = (b"\xF3" + phase1._ld_sp(0xBFC0)
-                     + phase1._call(syms["p1147_pos15_call"])
+                     + phase1._call(syms["p1147_half_call"])
                      + phase1._jp_c(FAIL_PC) + phase1._jp(PASS_PC))
         fuse = root / "tools/runtime/fuse/bin/fuse"
         with tempfile.TemporaryDirectory(prefix="zxux-p1147-diag-") as td:
@@ -452,8 +452,8 @@ p1147_end:
             actual = bytes(values[-5:])
             require(len(actual) == 5,
                     f"P11.47 exact-byte diagnostic parse failed: stdout={result.stdout!r}")
-        require(actual == bytes((0x80,0,0,0,0)),
-                f"P11.47 ROM .5 byte diagnostic: actual={actual.hex()} expected=8000000000")
+        require(actual == bytes((0x7F,0x7F,0xFF,0xFF,0xFF)),
+                f"P11.47 ROM .5 byte diagnostic: actual={actual.hex()} expected=7f7fffffff")
 
         for name in names:
             code = (b"\xF3" + phase1._ld_sp(0xBFC0) + phase1._call(syms[name])
