@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+set -euo pipefail
+
+export DISPLAY=:99
+work=/tmp/p11-prerelease
+tape="$work/P11.pre-release/zx-ux-phase11-pre-release.tzx"
+py=tools/runtime/python/bin/python
+
+run_mode() {
+  local name="$1" detect="$2" hook="$3" diag="$work/$1"
+  mkdir -p "$diag"
+  if test "$hook" = omit; then "$py" v1/tools-host/release-tzx/runtime_acceptance.py debugger --omit-hook-trace --output "$diag/debugger.txt"
+  else "$py" v1/tools-host/release-tzx/runtime_acceptance.py debugger --output "$diag/debugger.txt"; fi
+  Xvfb :99 -screen 0 1280x900x24 >"$diag/xvfb.log" 2>&1 & local xvfb_pid=$!
+  local fuse_pid="" window="" result=""
+  trap 'kill "$fuse_pid" "$xvfb_pid" 2>/dev/null || true' RETURN
+  sleep 1
+  stdbuf -oL -eL tools/runtime/fuse/bin/fuse --machine 48 --rom-48 tools/runtime/fuse/roms/48.rom \
+    --tape "$tape" --no-accelerate-loader --no-fastload --no-traps "$detect" --no-confirm-actions --no-sound \
+    --debugger-command "$(cat "$diag/debugger.txt")" >"$diag/fuse-state.log" 2>&1 & fuse_pid=$!
+  for _ in $(seq 1 40); do window="$(xdotool search --onlyvisible --name 'Fuse' 2>/dev/null | head -n1 || true)"; test -n "$window" && break; sleep 0.25; done
+  test -n "$window"
+  xdotool windowfocus --sync "$window" || true; xdotool mousemove --window "$window" 160 145 click 1 || true
+  sleep 0.75; xdotool keydown Shift_L; sleep 0.25; xdotool keyup Shift_L; sleep 0.60
+  xdotool keydown j; sleep 0.45; xdotool keyup j; sleep 0.60
+  xdotool key --delay 300 ctrl+p; sleep 0.60; xdotool key --delay 300 ctrl+p; sleep 0.60
+  xdotool keydown Return; sleep 0.45; xdotool keyup Return
+  if test "$detect" = --no-detect-loader; then
+    local waiting=""
+    for _ in $(seq 1 40); do grep -q '0xa00002' "$diag/fuse-state.log" && { waiting=yes; break; }; kill -0 "$fuse_pid" 2>/dev/null || break; sleep 0.25; done
+    test "$waiting" = yes; xdotool windowfocus --sync "$window" || true; xdotool key F8
+  fi
+  for _ in $(seq 1 130); do
+    grep -q '0xa50001' "$diag/fuse-state.log" && { result=E003_REACHED; break; }
+    grep -q '0xaf0001' "$diag/fuse-state.log" && { result=TIMEOUT; break; }
+    kill -0 "$fuse_pid" 2>/dev/null || { result=FUSE_EXITED; break; }; sleep 1
+  done
+  wait "$fuse_pid" || true; fuse_pid=""; kill "$xvfb_pid" 2>/dev/null || true; xvfb_pid=""; trap - RETURN
+  test "$result" = E003_REACHED
+  "$py" v1/tools-host/release-tzx/runtime_acceptance.py verify --log "$diag/fuse-state.log" \
+    --rom tools/runtime/fuse/roms/48.rom --text v1/tools-host/release-tzx/text-lines.txt --report "$diag/runtime-acceptance.json"
+}
+run_mode realtime --no-detect-loader trace
+run_mode realtime-detect-loader --detect-loader omit

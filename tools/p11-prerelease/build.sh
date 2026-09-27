@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+set -euo pipefail
+
+: "${GITHUB_SHA:?}" "${GITHUB_WORKSPACE:?}"
+work=/tmp/p11-prerelease
+rm -rf "$work"
+mkdir -p "$work"/{evidence,a,b,P11.pre-release} v1/build
+py=tools/runtime/python/bin/python
+"$py" v1/tools-host/test-driver/run.py build --step P11.48 --evidence-dir "$work/evidence"
+"$py" v1/tools-host/test-driver/run.py test --step P11.48 --evidence-dir "$work/evidence"
+"$py" - <<'PY'
+import json, os
+from pathlib import Path
+p=Path('/tmp/p11-prerelease/evidence')
+for name in ('P11.48.build.json','P11.48.test.json','P11.48.result.json'):
+    d=json.loads((p/name).read_text())
+    assert d['status']=='PASS' and d['source_commit']==os.environ['GITHUB_SHA'], name
+assert json.loads((p/'P11.48.result.json').read_text())['pass_marker']=='ZX-UX PHASE 11 ACCEPTANCE PASS'
+PY
+
+sudo apt-get update
+sudo apt-get install -y --no-install-recommends pasmo=0.5.3-7 xvfb=2:21.1.12-1ubuntu1.6 xdotool=1:3.20160805.1-5build1
+test "$(dpkg-query -W -f='${Version}' pasmo)" = 0.5.3-7
+test "$(dpkg-query -W -f='${Version}' xvfb)" = 2:21.1.12-1ubuntu1.6
+test "$(dpkg-query -W -f='${Version}' xdotool)" = 1:3.20160805.1-5build1
+command -v pasmo > "$work/pasmo-path"
+
+(cd v1/src/kernel && "$GITHUB_WORKSPACE/tools/runtime/sjasmplus/bin/sjasmplus" --nologo --lst=../../build/kernel-prerelease.lst --sym=../../build/kernel-prerelease.sym kernel.asm)
+test "$(wc -c < v1/build/kernel.bin)" -eq 8192
+test "$(xxd -p -l 3 v1/build/kernel.bin)" != 000000
+"$py" -m py_compile v1/tools-host/release-tzx/{build,inspect_tzx,runtime_acceptance,kernel_native_projection,native_rebuild_test}.py
+pasmo="$(cat "$work/pasmo-path")"
+for d in a b; do
+  "$py" v1/tools-host/release-tzx/build.py --kernel v1/build/kernel.bin \
+    --output "$work/$d/zx-ux-phase11-pre-release.tzx" --hook-output "$work/$d/hook.bin" \
+    --manifest "$work/$d/build.json" --pasmo "$pasmo"
+done
+cmp "$work/a/zx-ux-phase11-pre-release.tzx" "$work/b/zx-ux-phase11-pre-release.tzx"
+cmp "$work/a/hook.bin" "$work/b/hook.bin"
+cmp "$work/a/build.json" "$work/b/build.json"
+test -z "$(find "$work" -type f -iname '*.tap' -print -quit)"
+cp "$work/a/zx-ux-phase11-pre-release.tzx" "$work/P11.pre-release/"
+
+"$py" v1/tools-host/release-tzx/inspect_tzx.py "$work/P11.pre-release/zx-ux-phase11-pre-release.tzx" \
+  --kernel v1/build/kernel.bin --extract "$work/embedded-kernel.bin" > "$work/inspection.txt"
+test "$(wc -c < "$work/embedded-kernel.bin")" -eq 8192
+cmp v1/build/kernel.bin "$work/embedded-kernel.bin"
+test "$(sha256sum v1/build/kernel.bin | awk '{print $1}')" = "$(sha256sum "$work/embedded-kernel.bin" | awk '{print $1}')"
+grep -q '^final_loader_after=0x5EB4$' "$work/inspection.txt"
+grep -q '^pre_beep_pause_nominal_tstates=3500009$' "$work/inspection.txt"
+grep -q '^handoff=0xE003$' "$work/inspection.txt"
+grep -q '^kernel_size=8192$' "$work/inspection.txt"
+grep -q '^standard_speed_blocks=2$' "$work/inspection.txt"
+grep -q '^generalized_blocks=48$' "$work/inspection.txt"
+
+"$py" v1/tools-host/release-tzx/kernel_native_projection.py --listing v1/build/kernel-prerelease.lst \
+  --symbols v1/build/kernel-prerelease.sym --output "$work/kernel.nsp" --audit "$work/projection.json" --kernel v1/build/kernel.bin
+"$py" v1/tools-host/release-tzx/native_rebuild_test.py --kernel v1/build/kernel.bin \
+  --projection "$work/kernel.nsp" --report "$work/native-rebuild.json"
+"$py" - <<'PY'
+import hashlib,json
+from pathlib import Path
+w=Path('/tmp/p11-prerelease')
+host=Path('v1/build/kernel.bin').read_bytes(); embedded=(w/'embedded-kernel.bin').read_bytes()
+n=json.loads((w/'native-rebuild.json').read_text()); p=json.loads((w/'projection.json').read_text())
+h=hashlib.sha256(host).hexdigest()
+assert len(host)==len(embedded)==n['native_rebuilt_kernel_size']==8192
+assert host==embedded and h==n['native_rebuilt_kernel_sha256']==n['host_kernel_sha256']
+assert n['resident_kernel_overwritten'] is False and all(v=='PASS' for v in n['assertions'].values())
+assert p['text_size']==8192 and p['contains_preassembled_kernel_payload'] is False and p['semantic_reference_equals_kernel_oracle'] is True
+PY

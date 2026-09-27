@@ -1,0 +1,52 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+name: Phase-11 fast-loader TZX pre-release
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/p11-prerelease-build.yml'
+      - 'tools/p11-prerelease/**'
+  workflow_dispatch: {}
+permissions:
+  contents: write
+concurrency:
+  group: zxux-p11-prerelease-build
+  cancel-in-progress: true
+jobs:
+  build-test-publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      DISPLAY: ":99"
+      ZXUX_SOURCE_EPOCH: current
+      ZXUX_EVIDENCE_DIR: /tmp/p11-prerelease/evidence
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: {fetch-depth: 0}
+      - name: Guard activated Phase 11 and zero Phase 12 state
+        run: bash tools/p11-prerelease/guard.sh
+      - uses: ./.github/actions/setup-zxux-runtime
+      - name: Exact-head compiler, loader, kernel, and native rebuild proof
+        run: bash tools/p11-prerelease/build.sh
+      - name: Real-time Fuse acceptance
+        run: bash tools/p11-prerelease/runtime.sh
+      - name: Publish tested compact pre-release and stop before Phase 12
+        run: bash tools/p11-prerelease/publish.sh
+      - name: Upload tested pre-release bundle
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: zxux-phase11-fast-loader-pre-release
+          path: /tmp/p11-prerelease/P11.pre-release/
+          retention-days: 30
+          if-no-files-found: error
