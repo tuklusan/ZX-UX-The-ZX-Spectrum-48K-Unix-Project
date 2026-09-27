@@ -163,7 +163,7 @@ zx48_rom_decimal_literal:
     ld hl,ROM_CALC_STACK
     ld (ROM_STKBOT),hl
     ld (ROM_STKEND),hl
-    ld hl,ROM_MEMBOT
+    ld hl,p1147_text_calc_mem
     ld (ROM_MEM),hl
     ld hl,(rom_decimal_input_ptr)
     ld (ROM_CH_ADD),hl
@@ -1211,7 +1211,7 @@ p1147_text_saved_chadd:   dw 0
 p1147_text_saved_flags:   db 0
 p1147_text_saved_errnr:   db 0
 p1147_text_saved_breg:    db 0
-p1147_text_saved_work:    defs P1147_MEM_WORK_SIZE,0
+p1147_text_calc_mem:      defs P1147_MEM_WORK_SIZE,0
 p1147_text_scratch:       defs P1147_TEXT_SCRATCH,0
 p1147_text_result:        defs 5,0
 
@@ -1253,11 +1253,6 @@ zx48_p1147_rom_fp_from_text:
     ld (p1147_text_saved_errnr),a
     ld a,(ROM_BREG)
     ld (p1147_text_saved_breg),a
-    ld hl,P1147_MEM_WORK
-    ld de,p1147_text_saved_work
-    ld bc,P1147_MEM_WORK_SIZE
-    ldir
-
     ld a,1
     ld (altreg_busy),a
     ld hl,ROM_CALC_STACK
@@ -1312,10 +1307,6 @@ p1147_text_error:
     ret
 
 p1147_text_cleanup:
-    ld hl,p1147_text_saved_work
-    ld de,P1147_MEM_WORK
-    ld bc,P1147_MEM_WORK_SIZE
-    ldir
     ld hl,(p1147_text_saved_err_sp)
     ld (ROM_ERR_SP),hl
     ld hl,(p1147_text_saved_stkbot)
