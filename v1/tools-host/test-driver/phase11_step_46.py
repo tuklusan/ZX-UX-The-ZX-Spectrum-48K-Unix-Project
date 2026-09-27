@@ -159,6 +159,24 @@ p1146_expect_loop:
     xor a
     ret
 
+p1146_channel:
+    xor a
+    ld (p1146_text_count),a
+    ld (p1146_text_overflow),a
+    ld hl,p1146_text_channel
+    ld (ROM_CURCHL),hl
+    ld iy,ROM_IY_ANCHOR
+    ld a,'X'
+    rst $10
+    ld a,(p1146_text_count)
+    cp 1
+    jp nz,p1146_fail
+    ld a,(p1146_text_scratch)
+    cp 'X'
+    jp nz,p1146_fail
+    xor a
+    ret
+
 p1146_zero:
     ld hl,p1146_f_zero
     ld de,p1146_expect_zero
@@ -390,7 +408,7 @@ p1146_end:
             f"P11.46 assemble: {assembled.stderr or assembled.stdout}")
     main = (build / "p1146-main.bin").read_bytes()
     require(0 < len(main) <= 0x2000, "P11.46 fixture exceeds C000-DFFF user range")
-    names = ("p1146_zero", "p1146_pos15", "p1146_neg15", "p1146_short", "p1146_ranges", "p1146_state", "p1146_rom_error")
+    names = ("p1146_channel", "p1146_zero", "p1146_pos15", "p1146_neg15", "p1146_short", "p1146_ranges", "p1146_state", "p1146_rom_error")
     syms = phase3_open_descriptions._symbols(
         build / "p1146-fp-to-text.sym", ("p1146_gateway",) + names
     )
