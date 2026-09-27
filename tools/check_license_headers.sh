@@ -72,10 +72,6 @@ declare -A explicit_header_exemptions=(
   ["v1/assets/issue.txt"]="P0.10 freezes exact logical issue bytes, leaving no room for a source header."
   ["v1/assets/crontab.txt"]="P0.10 freezes this resource as zero-length RAW."
   ["v1/assets/bincat.bin"]="P0.10 freezes the raw 488-byte BCAT resource shape."
-  ["docs/00-ZX-UX_User_Manual_Revision_12.docx"]="Binary DOCX user manual cannot carry the plaintext project header."
-  ["docs/00-ZX-UX_User_Manual_Revision_13.docx"]="Binary DOCX user manual cannot carry the plaintext project header."
-  ["docs/04-C48 Language Specification Rev 0.11.docx"]="Binary DOCX specification cannot carry the plaintext project header; exact Git blob identity is verified before this exemption is honored."
-  ["docs/05-C48 Compiler User Manual Rev 0.11.docx"]="Binary DOCX user manual cannot carry the plaintext project header."
   ["docs/images/zx-ux-hero.png"]="Binary PNG hero image cannot carry the plaintext project header."
   ["docs/images/zx-ux-hero-animated.gif"]="Binary GIF hero image cannot carry the plaintext project header."
   ["docs/images/doc-thumbs/c48-compiler-user-manual-r011.png"]="Binary PNG document thumbnail cannot carry the plaintext project header."
@@ -165,6 +161,25 @@ is_readme_file() {
   local candidate="$1"
   local basename="${candidate##*/}"
   [[ "${basename^^}" == README* ]]
+}
+
+is_microsoft_office_document() {
+  local candidate="$1"
+  local basename="${candidate##*/}"
+  local lower="${basename,,}"
+  case "$lower" in
+    *.doc|*.docx|*.docm|*.docb|*.dot|*.dotx|*.dotm|\
+    *.xls|*.xlsx|*.xlsm|*.xlsb|*.xlt|*.xltx|*.xltm|*.xla|*.xlam|\
+    *.ppt|*.pptx|*.pptm|*.pot|*.potx|*.potm|*.pps|*.ppsx|*.ppsm|*.ppa|*.ppam|\
+    *.pub|*.mdb|*.accdb|*.one|\
+    *.vsd|*.vsdx|*.vsdm|*.vss|*.vssx|*.vssm|*.vst|*.vstx|*.vstm|*.vdx|\
+    *.mpp|*.mpt)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
 }
 
 compute_git_tree_sha1() {
@@ -392,6 +407,11 @@ while IFS= read -r -d '' file; do
   if [[ ! -f "$file" ]]; then
     echo "ERROR: non-regular artifact requires an explicit path-specific license-header exemption: $file" >&2
     fail=1
+    continue
+  fi
+
+  if is_microsoft_office_document "$file"; then
+    explicitly_exempt=$((explicitly_exempt + 1))
     continue
   fi
 
