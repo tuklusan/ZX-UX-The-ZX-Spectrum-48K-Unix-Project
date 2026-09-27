@@ -51,7 +51,7 @@ def dispatch(root, action, step, *, sha256_file, run_command, require_project_to
             "P11.47 approved ROM parser gateway missing")
     require("SYS_FP_FROM_TEXT" in arch
             and "HL=text, DE=five-byte output, BC=exact text length" in arch
-            and "input need not be NUL terminated" in arch
+            and "BC=exact text length; input\nneed not be NUL terminated." in arch
             and "Anything else is E_INVAL." in arch,
             "REV17 P11.47 contract drift")
     require("## P11.47 - SYS_FP_FROM_TEXT exact ABI" in plan
