@@ -44,7 +44,8 @@ jobs:
             v1/tests/compiler/sdk-reference/h06/H06-PROVENANCE.md \
             v1/tests/compiler/sdk-reference/h06/usr/src/examples/exapi.h \
             v1/tests/compiler/sdk-reference/h06/usr/src/examples/hello.c \
-            v1/tools-host/test-driver/phase11_step_45.py | sort > /tmp/expected
+            v1/tools-host/test-driver/phase11_step_45.py \
+            tools/check_license_headers.sh | sort > /tmp/expected
           diff -u /tmp/expected /tmp/changed
           git diff --check "$P1145_BASE" HEAD
           test -z "$(git status --porcelain)"
@@ -70,6 +71,7 @@ jobs:
               v1/tests/compiler/sdk-reference/h06/usr/src/examples/hello.c \
               v1/tools-host/test-driver/phase11_step_45.py \
               .github/workflows/p1145-qualification.yml \
+              tools/check_license_headers.sh \
               v1/dist/certification/P11.44.build.json \
               v1/dist/certification/P11.44.test.json | sha256sum | awk '{print $1}')"
             if test -z "$baseline"; then baseline="$digest"; else test "$baseline" = "$digest"; fi

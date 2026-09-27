@@ -29,6 +29,13 @@ readonly C48_SPEC_DOCX_BLOB_SHA1="a84c314a6d2957835efdc916a49e5289718140c2"
 # original test/release gates run from this repository without rewritten tests.
 readonly C48_SDK_REFERENCE_DIR="v1/tests/compiler/sdk-reference/sdk"
 readonly C48_SDK_REFERENCE_TREE_SHA1="1c6b5bae84035ee853be9142b440792881c9ca9f"
+# P11.45 preserves the exact H06 source and its direct declaration dependency
+# from the later mandatory read-only compatibility pin.  Their original bytes
+# are exempt only while both exact Git blob identities and regular-file modes hold.
+declare -A preserved_p1145_h06_files=(
+  ["v1/tests/compiler/sdk-reference/h06/usr/src/examples/hello.c"]="95fa0186bda3f7636774f5885988d78a13f6450b"
+  ["v1/tests/compiler/sdk-reference/h06/usr/src/examples/exapi.h"]="57b26d28e13d560c9903c0edc3732b36cd89b088"
+)
 # H04 preserves these SDK compiler assets byte-for-byte from the read-only source.
 # Source: tuklusan/zx-ux-c48-sdk-sinclair-zx-spectrum-48k-unix-c-compiler-software-development-kit
 # at 1bebc6288a1cdfa1bdfb5a6694e1986b6c3d7ee0; compiler/assets tree
@@ -251,6 +258,198 @@ if [[ "$c48_spec_index_record" != "$c48_spec_expected_record_prefix"$'\t'"$C48_S
   echo "ERROR: approved C48 DOCX specification Git mode/index identity changed: $C48_SPEC_DOCX_PATH" >&2
   exit 1
 fi
+
+for h06_path in "${!preserved_p1145_h06_files[@]}"; do
+  expected_blob="${preserved_p1145_h06_files[$h06_path]}"
+  if [[ -L "$h06_path" || ! -f "$h06_path" ]]; then
+    echo "ERROR: preserved P11.45 H06 SDK file must exist as a real regular file: $h06_path" >&2
+    exit 1
+  fi
+  actual_blob="$(git hash-object -- "$h06_path")"
+  if [[ "$actual_blob" != "$expected_blob" ]]; then
+    echo "ERROR: preserved P11.45 H06 SDK bytes changed: $h06_path" >&2
+    echo "ERROR: expected blob $expected_blob, got $actual_blob" >&2
+    exit 1
+  fi
+  index_record="$(git ls-files --stage -- "$h06_path")"
+  expected_record_prefix="100644 $expected_blob 0"
+  if [[ "$index_record" != "$expected_record_prefix"  expected_blob="${preserved_h04_sdk_assets[$asset_path]}"
+  if [[ -L "$asset_path" || ! -f "$asset_path" ]]; then
+    echo "ERROR: preserved H04 SDK asset must exist as a real regular file: $asset_path" >&2
+    exit 1
+  fi
+  actual_blob="$(git hash-object -- "$asset_path")"
+  if [[ "$actual_blob" != "$expected_blob" ]]; then
+    echo "ERROR: preserved H04 SDK asset bytes changed: $asset_path" >&2
+    echo "ERROR: expected blob $expected_blob, got $actual_blob" >&2
+    exit 1
+  fi
+  index_record="$(git ls-files --stage -- "$asset_path")"
+  expected_record_prefix="100644 $expected_blob 0"
+  if [[ "$index_record" != "$expected_record_prefix"$'\t'"$asset_path" ]]; then
+    echo "ERROR: preserved H04 SDK asset Git mode/index identity changed: $asset_path" >&2
+    exit 1
+  fi
+done
+
+if ! python3 tools/check_media_retention.py; then
+  exit 1
+fi
+
+if [[ -e .gitmodules ]]; then
+  echo "ERROR: submodules are not permitted unless the license-header gate is explicitly extended and approved" >&2
+  exit 1
+fi
+
+if [[ -L "$LICENSE_PATH" || ! -f "$LICENSE_PATH" ]]; then
+  echo "ERROR: root LICENSE must be a real regular file, not a symlink or other artifact type" >&2
+  exit 1
+fi
+
+actual_license_sha256="$(sha256sum "$LICENSE_PATH" | awk '{print $1}')"
+if [[ "$actual_license_sha256" != "$LICENSE_SHA256" ]]; then
+  echo "ERROR: root LICENSE does not match the approved license bytes" >&2
+  exit 1
+fi
+
+if [[ -L "$PRESERVED_REFERENCE_DIR" || ! -d "$PRESERVED_REFERENCE_DIR" ]]; then
+  echo "ERROR: approved H03 reference corpus must exist as a real directory" >&2
+  exit 1
+fi
+actual_reference_tree_sha1="$(compute_git_tree_sha1 "$PRESERVED_REFERENCE_DIR")"
+if [[ "$actual_reference_tree_sha1" != "$PRESERVED_REFERENCE_TREE_SHA1" ]]; then
+  echo "ERROR: preserved reference corpus does not match the approved H03 tree identity" >&2
+  echo "ERROR: expected tree $PRESERVED_REFERENCE_TREE_SHA1, got $actual_reference_tree_sha1" >&2
+  exit 1
+fi
+
+while IFS= read -r -d '' file; do
+  file="${file#./}"
+  [[ "$file" == "$LICENSE_PATH" ]] && continue
+
+  if is_readme_file "$file"; then
+    explicitly_exempt=$((explicitly_exempt + 1))
+    continue
+  fi
+
+  if [[ "$file" == "$PRESERVED_REFERENCE_DIR"/* ]]; then
+    explicitly_exempt=$((explicitly_exempt + 1))
+    continue
+  fi
+
+  if [[ "$file" == "$C48_SDK_REFERENCE_DIR"/* ]]; then
+    explicitly_exempt=$((explicitly_exempt + 1))
+    continue
+  fi
+
+  if [[ -n "${preserved_p1145_h06_files[$file]+approved}" ]]; then
+    explicitly_exempt=$((explicitly_exempt + 1))
+    continue
+  fi
+
+  if [[ -n "${preserved_h04_sdk_assets[$file]+approved}" ]]; then
+    explicitly_exempt=$((explicitly_exempt + 1))
+    continue
+  fi
+
+  if is_retained_spectrum_media "$file"; then
+    explicitly_exempt=$((explicitly_exempt + 1))
+    continue
+  fi
+
+  if is_generated_certification_json "$file"; then
+    # Durable certification records are machine-generated strict JSON whose exact
+    # bytes are independently hash-verified by tools/check_phase0_evidence.py.
+    # JSON comments would invalidate the records and destroy evidence identity.
+    # Defer parsing so all exempt JSON is validated in one interpreter process;
+    # cloud Python startup is expensive enough that one process per file turns this
+    # gate into minutes of overhead without increasing coverage.
+    generated_certification_jsons+=("$file")
+    explicitly_exempt=$((explicitly_exempt + 1))
+    continue
+  fi
+
+  if is_explicit_header_exemption "$file"; then
+    explicitly_exempt=$((explicitly_exempt + 1))
+    continue
+  fi
+
+  if [[ -L "$file" ]]; then
+    echo "ERROR: symlink requires an explicit path-specific license-header exemption: $file" >&2
+    fail=1
+    continue
+  fi
+
+  if [[ ! -f "$file" ]]; then
+    echo "ERROR: non-regular artifact requires an explicit path-specific license-header exemption: $file" >&2
+    fail=1
+    continue
+  fi
+
+  if [[ ! -s "$file" ]]; then
+    echo "ERROR: empty project file cannot contain required license header: $file" >&2
+    fail=1
+    continue
+  fi
+
+  if ! grep -Iq '' "$file"; then
+    echo "ERROR: non-text/binary artifact requires an explicit path-specific license-header exemption: $file" >&2
+    fail=1
+    continue
+  fi
+
+  checked=$((checked + 1))
+  header="$(head -n "$HEADER_SCAN_LINES" "$file")"
+
+  # Keep this check in-process. Spawning one grep per phrase multiplied the gate
+  # into thousands of child processes and made cloud rebaseline diagnostics
+  # needlessly slow without adding any coverage.
+  for phrase in "${required_phrases[@]}"; do
+    if [[ "$header" != *"$phrase"* ]]; then
+      echo "ERROR: required license-header phrase missing near top of $file" >&2
+      fail=1
+    fi
+  done
+done < <(find . -path './.git' -prune -o -type d -name '__pycache__' -prune -o ! -type d -print0)
+
+if (( ${#generated_certification_jsons[@]} > 0 )); then
+  if ! python3 - "${generated_certification_jsons[@]}" <<'PYJSON'
+import json
+from pathlib import Path
+import sys
+
+failed = False
+for arg in sys.argv[1:]:
+    path = Path(arg)
+    try:
+        with path.open("r", encoding="utf-8") as stream:
+            json.load(stream)
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        print(f"ERROR: generated certification exemption is only valid for parseable JSON: {path}: {exc}", file=sys.stderr)
+        failed = True
+raise SystemExit(1 if failed else 0)
+PYJSON
+  then
+    exit 1
+  fi
+fi
+
+if (( checked == 0 )); then
+  echo "ERROR: no project text files were checked" >&2
+  exit 1
+fi
+
+if (( fail != 0 )); then
+  exit 1
+fi
+
+printf 'License header gate passed: %d text file(s) checked; %d explicitly exempt header-inapplicable artifact(s).\n' \
+  "$checked" "$explicitly_exempt"
+\t'"$h06_path" ]]; then
+    echo "ERROR: preserved P11.45 H06 SDK Git mode/index identity changed: $h06_path" >&2
+    exit 1
+  fi
+done
 
 for asset_path in "${!preserved_h04_sdk_assets[@]}"; do
   expected_blob="${preserved_h04_sdk_assets[$asset_path]}"
