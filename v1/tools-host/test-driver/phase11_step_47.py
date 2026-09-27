@@ -14,11 +14,13 @@
 from __future__ import annotations
 
 import re
+import tempfile
+from pathlib import Path
 
 import phase1
 import phase3_open_descriptions
 from driver_core import DriverError
-from fuse_harness import FAIL_PC, PASS_PC, run_sna
+from fuse_harness import FAIL_PC, PASS_PC, make_sna, run_sna
 
 
 class P1147Error(DriverError):
@@ -386,7 +388,7 @@ p1147_end:
              "p1147_bad_exp", "p1147_token", "p1147_ranges", "p1147_overflow",
              "p1147_state")
     syms = phase3_open_descriptions._symbols(
-        build / "p1147-fp-from-text.sym", ("p1147_gateway",) + names
+        build / "p1147-fp-from-text.sym", ("p1147_gateway", "p1147_out") + names
     )
 
     assertions = [
@@ -406,6 +408,40 @@ p1147_end:
         def patch(ram):
             ram[0xC000-0x4000:0xC000-0x4000+len(main)] = main
             ram[0xE000-0x4000:0xE000-0x4000+len(gateway)] = gateway
+
+        # Exact-byte diagnostic uses the emulator debugger's memory
+        # dereference as an independent observation of the committed output.
+        diag_code = (b"\\xF3" + phase1._ld_sp(0xBFC0)
+                     + phase1._call(syms["p1147_pos15_call"])
+                     + phase1._jp_c(FAIL_PC) + phase1._jp(PASS_PC))
+        actual = []
+        fuse = root / "tools/runtime/fuse/bin/fuse"
+        with tempfile.TemporaryDirectory(prefix="zxux-p1147-diag-") as td:
+            sna = Path(td) / "diag.sna"
+            sna.write_bytes(make_sna(diag_code, patch=patch))
+            for offset in range(5):
+                command = (
+                    f"breakpoint 0x{PASS_PC:04x}\\n"
+                    "commands 1\\n"
+                    f"exit [0x{syms['p1147_out'] + offset:04x}]\\n"
+                    "end\\n"
+                    f"breakpoint 0x{FAIL_PC:04x}\\n"
+                    "commands 2\\n"
+                    "exit 255\\n"
+                    "end\\n"
+                    "continue"
+                )
+                result = run_command(
+                    ["/usr/bin/env", "SDL_VIDEODRIVER=dummy", "SDL_AUDIODRIVER=dummy",
+                     fuse, "--machine", "48", "--no-sound", "--no-confirm-actions",
+                     "--debugger-command", command, sna],
+                    cwd=root, timeout_seconds=30,
+                )
+                require(not result.timed_out and result.exit_code != 255,
+                        "P11.47 exact-byte diagnostic execution failed")
+                actual.append(result.exit_code & 0xFF)
+        require(bytes(actual) == bytes((0x80,0,0,0,0)),
+                f"P11.47 ROM .5 byte diagnostic: actual={bytes(actual).hex()} expected=8000000000")
 
         for name in names:
             code = (b"\xF3" + phase1._ld_sp(0xBFC0) + phase1._call(syms[name])
