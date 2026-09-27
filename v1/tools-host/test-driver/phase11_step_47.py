@@ -157,7 +157,21 @@ p1147_zero:
     ld de,p1147_expect_zero
     jp p1147_expect
 
-p1147_pos15:
+p1147_pos15_call:
+    call p1147_reset_out
+    ld hl,p1147_s_pos15
+    ld bc,7
+    ld de,p1147_out
+    ld a,SYS_FP_FROM_TEXT
+    call p1147_gateway
+    ret c
+    ld a,h
+    or l
+    jp nz,p1147_fail
+    xor a
+    ret
+
+p1147_pos15_bytes:
     ld hl,p1147_s_pos15
     ld bc,7
     ld de,p1147_expect_pos15
@@ -360,7 +374,7 @@ p1147_end:
             f"P11.47 assemble: {assembled.stderr or assembled.stdout}")
     main = (build / "p1147-main.bin").read_bytes()
     require(0 < len(main) <= 0x2000, "P11.47 fixture exceeds C000-DFFF user range")
-    names = ("p1147_zero", "p1147_pos15", "p1147_neg15", "p1147_bad_stmt",
+    names = ("p1147_zero", "p1147_pos15_call", "p1147_pos15_bytes", "p1147_neg15", "p1147_bad_stmt",
              "p1147_bad_exp", "p1147_token", "p1147_ranges", "p1147_overflow",
              "p1147_state")
     syms = phase3_open_descriptions._symbols(
