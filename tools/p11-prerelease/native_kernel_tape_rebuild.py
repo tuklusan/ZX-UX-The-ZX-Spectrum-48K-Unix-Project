@@ -261,6 +261,10 @@ r17e_mismatch:
     jp z,r17e_fail
     jp r17e_pass
 
+zx48_process_count:
+    xor a
+    ret
+
 zx48_tape_load_block:
     ld a,M48O_ROM_DATA_FLAG
     scf
@@ -288,7 +292,7 @@ r17e_resident_crc: dw 0
 r17e_loaded_namespace_valid: db 0
 r17e_negative_mode: db 0
 r17e_end:
-    ASSERT r17e_end <= $6700
+    ASSERT r17e_end <= $67E0
     SAVEBIN "r17e-fixture.bin",$4000,r17e_end-$4000
 """
 
