@@ -40,7 +40,7 @@ command -v pasmo > "$work/pasmo-path"
 (cd v1/src/kernel && "$GITHUB_WORKSPACE/tools/runtime/sjasmplus/bin/sjasmplus" --nologo --lst=../../build/kernel-prerelease.lst --sym=../../build/kernel-prerelease.sym kernel.asm)
 test "$(wc -c < v1/build/kernel.bin)" -eq 8192
 test "$(xxd -p -l 3 v1/build/kernel.bin)" != 000000
-"$py" -m py_compile v1/tools-host/release-tzx/{build,inspect_tzx,runtime_acceptance,kernel_native_projection,kernel_text_projection,native_rebuild_test}.py tools/p11-prerelease/{source_tap,native_text_assemble_test}.py
+"$py" -m py_compile v1/tools-host/release-tzx/{build,inspect_tzx,runtime_acceptance,kernel_native_projection,kernel_text_projection,native_rebuild_test}.py tools/p11-prerelease/{source_tap,native_text_assemble_test,native_kernel_tape_rebuild}.py
 pasmo="$(cat "$work/pasmo-path")"
 for d in a b; do
   "$py" v1/tools-host/release-tzx/build.py --kernel v1/build/kernel.bin \
@@ -81,6 +81,29 @@ mkdir -p "$work/P11.pre-release/kernel"
   --source "$work/P11.pre-release/kernel/kernel-native-source.asm" \
   --kernel v1/build/kernel.bin \
   --report "$work/P11.pre-release/kernel/kernel-native-text-as.json"
+cp v1/build/kernel.bin "$work/P11.pre-release/kernel/kernel-host.bin"
+cp "$work/embedded-kernel.bin" "$work/P11.pre-release/kernel/kernel-tzx-embedded.bin"
+"$py" tools/p11-prerelease/native_kernel_tape_rebuild.py \
+  --source "$work/P11.pre-release/kernel/kernel-native-source.asm" \
+  --tap "$work/P11.pre-release/kernel/kernel-native-source.tap" \
+  --host-kernel v1/build/kernel.bin \
+  --embedded-kernel "$work/embedded-kernel.bin" \
+  --obj-output "$work/P11.pre-release/kernel/kernel-native.obj1" \
+  --kernel-output "$work/P11.pre-release/kernel/kernel-native.bin" \
+  --report "$work/P11.pre-release/kernel/kernel-native-build.json"
+mkdir -p "$work/native-tzx"
+"$py" v1/tools-host/release-tzx/build.py \
+  --kernel "$work/P11.pre-release/kernel/kernel-native.bin" \
+  --output "$work/native-tzx/zx-ux-phase11-pre-release.tzx" \
+  --hook-output "$work/native-tzx/hook.bin" \
+  --manifest "$work/native-tzx/build.json" --pasmo "$pasmo"
+cmp "$work/a/zx-ux-phase11-pre-release.tzx" "$work/native-tzx/zx-ux-phase11-pre-release.tzx"
+cp "$work/native-tzx/zx-ux-phase11-pre-release.tzx" "$work/P11.pre-release/zx-ux-phase11-pre-release.tzx"
+"$py" v1/tools-host/release-tzx/inspect_tzx.py \
+  "$work/P11.pre-release/zx-ux-phase11-pre-release.tzx" \
+  --kernel "$work/P11.pre-release/kernel/kernel-native.bin" \
+  --extract "$work/native-tzx-embedded.bin" > "$work/native-tzx-inspection.txt"
+cmp "$work/P11.pre-release/kernel/kernel-native.bin" "$work/native-tzx-embedded.bin"
 "$py" - <<'PY'
 import hashlib,json
 from pathlib import Path
