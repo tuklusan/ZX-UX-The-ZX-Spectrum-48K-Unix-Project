@@ -9727,9 +9727,9 @@ cc_p11pr_sdk_compile_visual:
     ld a,(cc_p11pr_program_id)
     ld l,a
     ld h,0
-    add hl,hl
     ld e,l
     ld d,h
+    add hl,hl
     add hl,hl
     add hl,de
     ld de,cc_p11pr_visual_desc
