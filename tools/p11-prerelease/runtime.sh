@@ -56,7 +56,10 @@ run_mode() {
     fi
     xdotool windowfocus --sync "$window" || true; xdotool key F8
   fi
-  for _ in $(seq 1 300); do
+  # The exact unaccelerated 48K cassette path is slightly over five minutes
+  # on the certified Fuse runtime. Keep margin for hosted-runner GUI/input jitter
+  # without weakening the debugger-side E003 proof or enabling fast-load traps.
+  for _ in $(seq 1 420); do
     grep -q '0xa50001' "$diag/fuse-state.log" && { result=E003_REACHED; break; }
     grep -q '0xaf0001' "$diag/fuse-state.log" && { result=TIMEOUT; break; }
     kill -0 "$fuse_pid" 2>/dev/null || { result=FUSE_EXITED; break; }; sleep 1
