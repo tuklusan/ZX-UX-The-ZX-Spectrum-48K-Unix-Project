@@ -22,8 +22,8 @@ ROOT=Path(__file__).resolve().parents[2]
 FIXTURE_BASE=0x4000
 FIXTURE_CODE1_END=0x5B00
 FIXTURE_CODE2_BASE=0x6000
-FIXTURE_CODE2_END=0x6700
-STACK_TOP=0x67F0
+FIXTURE_CODE2_END=0x6800
+STACK_TOP=0x5FF0
 SOURCE_BASE=0x6800
 OBJ_SIZE=8216
 KERNEL_SIZE=8192
@@ -93,7 +93,7 @@ r17e_negative:
     ld (r17e_negative_mode),a
 r17e_common:
     di
-    ld sp,$67F0
+    ld sp,$5FF0
     ld iy,$5C3A
     call zx48_memory_init
     ld bc,$0800
@@ -292,7 +292,7 @@ r17e_resident_crc: dw 0
 r17e_loaded_namespace_valid: db 0
 r17e_negative_mode: db 0
 r17e_end:
-    ASSERT r17e_end <= $67E0
+    ASSERT r17e_end <= $6800
     SAVEBIN "r17e-fixture.bin",$4000,r17e_end-$4000
 """
 
