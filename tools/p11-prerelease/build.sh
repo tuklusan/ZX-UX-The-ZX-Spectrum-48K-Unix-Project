@@ -40,7 +40,7 @@ command -v pasmo > "$work/pasmo-path"
 (cd v1/src/kernel && "$GITHUB_WORKSPACE/tools/runtime/sjasmplus/bin/sjasmplus" --nologo --lst=../../build/kernel-prerelease.lst --sym=../../build/kernel-prerelease.sym kernel.asm)
 test "$(wc -c < v1/build/kernel.bin)" -eq 8192
 test "$(xxd -p -l 3 v1/build/kernel.bin)" != 000000
-"$py" -m py_compile v1/tools-host/release-tzx/{build,inspect_tzx,runtime_acceptance,kernel_native_projection,kernel_text_projection,native_rebuild_test}.py tools/p11-prerelease/{source_tap,native_text_assemble_test,native_kernel_tape_rebuild,sdk_source_tapes,sdk_source_tape_native_build,sdk_native_process_run,sdk_native_cc_preflight,sdk_native_ld_preflight,sdk_stage_bundle}.py
+"$py" -m py_compile v1/tools-host/release-tzx/{build,inspect_tzx,runtime_acceptance,kernel_native_projection,kernel_text_projection,native_rebuild_test}.py tools/p11-prerelease/{source_tap,native_text_assemble_test,native_kernel_tape_rebuild,sdk_source_tapes,sdk_source_tape_native_build,sdk_source_tape_native_visual_build,sdk_native_process_run,sdk_native_cc_preflight,sdk_native_ld_preflight,sdk_stage_bundle}.py
 pasmo="$(cat "$work/pasmo-path")"
 for d in a b; do
   "$py" v1/tools-host/release-tzx/build.py --kernel v1/build/kernel.bin \
@@ -143,6 +143,22 @@ PY
   --native "$work/sdk-native-source-tape-build" \
   --native-report "$work/sdk-native-source-tape-build.json" \
   --report "$work/sdk-native-process-run.json"
+
+mkdir -p "$work/sdk-native-visual-build"
+"$py" tools/p11-prerelease/sdk_source_tape_native_visual_build.py \
+  --root "$work/sdk-reference-pre-release-1.0.2" \
+  --output "$work/sdk-native-visual-build" \
+  --report "$work/sdk-native-visual-build.json"
+"$py" - <<'PY'
+import json
+from pathlib import Path
+w=Path("/tmp/p11-prerelease")
+d=json.loads((w/"sdk-native-visual-build.json").read_text())
+assert d["program_count"]==30 and len(d["programs"])==30
+assert all(row["tape_load"]=="PASS" and row["native_visual_cc"]=="PASS" and row["native_ld"]=="PASS" for row in d["programs"])
+assert all(v=="PASS" for v in d["assertions"].values())
+assert len([p for p in (w/"sdk-native-visual-build").rglob("*") if p.is_file()])==60
+PY
 "$py" - <<'PY'
 import json
 from pathlib import Path
