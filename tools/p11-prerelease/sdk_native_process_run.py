@@ -210,10 +210,10 @@ p11pr_con_setpos:
     ld hl,(syscall_arg_hl)
     ld a,h
     cp 24
-    jr nc,p11pr_vis_bad
+    jp nc,p11pr_vis_bad
     ld a,l
     cp 64
-    jr nc,p11pr_vis_bad
+    jp nc,p11pr_vis_bad
     ld a,h
     ld (p11pr_vis_row),a
     ld a,l
@@ -247,9 +247,9 @@ p11pr_vis_write_done:
 
 p11pr_vis_putchar:
     cp $20
-    jr c,p11pr_vis_bad
+    jp c,p11pr_vis_bad
     cp $80
-    jr nc,p11pr_vis_bad
+    jp nc,p11pr_vis_bad
     sub $20
     ld l,a
     ld h,0
@@ -337,7 +337,7 @@ p11pr_vis_attr:
     ld a,(p11pr_vis_col)
     inc a
     cp 64
-    jr nc,p11pr_vis_bad
+    jp nc,p11pr_vis_bad
     ld (p11pr_vis_col),a
     xor a
     ret
@@ -346,7 +346,7 @@ p11pr_gfx_plot:
     ld hl,(syscall_arg_hl)
     ld a,l
     cp 192
-    jr nc,p11pr_vis_bad
+    jp nc,p11pr_vis_bad
     ld (p11pr_vis_xy),hl
     ld b,l
     ld a,h
