@@ -40,7 +40,7 @@ command -v pasmo > "$work/pasmo-path"
 (cd v1/src/kernel && "$GITHUB_WORKSPACE/tools/runtime/sjasmplus/bin/sjasmplus" --nologo --lst=../../build/kernel-prerelease.lst --sym=../../build/kernel-prerelease.sym kernel.asm)
 test "$(wc -c < v1/build/kernel.bin)" -eq 8192
 test "$(xxd -p -l 3 v1/build/kernel.bin)" != 000000
-"$py" -m py_compile v1/tools-host/release-tzx/{build,inspect_tzx,runtime_acceptance,kernel_native_projection,kernel_text_projection,native_rebuild_test}.py tools/p11-prerelease/{source_tap,native_text_assemble_test,native_kernel_tape_rebuild,sdk_source_tapes,sdk_source_tape_native_build,sdk_native_process_run,sdk_native_cc_preflight,sdk_native_ld_preflight}.py
+"$py" -m py_compile v1/tools-host/release-tzx/{build,inspect_tzx,runtime_acceptance,kernel_native_projection,kernel_text_projection,native_rebuild_test}.py tools/p11-prerelease/{source_tap,native_text_assemble_test,native_kernel_tape_rebuild,sdk_source_tapes,sdk_source_tape_native_build,sdk_native_process_run,sdk_native_cc_preflight,sdk_native_ld_preflight,sdk_stage_bundle}.py
 pasmo="$(cat "$work/pasmo-path")"
 for d in a b; do
   "$py" v1/tools-host/release-tzx/build.py --kernel v1/build/kernel.bin \
@@ -183,4 +183,26 @@ assert d["program_count"]==30 and len(d["programs"])==30
 assert all(row["compile_obj1"]=="PASS" and row["native_mex1_writer"]=="PASS" for row in d["programs"])
 assert all(v=="PASS" for v in d["assertions"].values())
 assert len([p for p in (w/"sdk-native-ld-preflight").rglob("*") if p.is_file()])==30
+PY
+
+"$py" tools/p11-prerelease/sdk_stage_bundle.py \
+  --root "$work/sdk-reference-pre-release-1.0.2" \
+  --native "$work/sdk-native-source-tape-build" \
+  --source-tape-report "$work/sdk-source-tape-corpus.json" \
+  --native-report "$work/sdk-native-source-tape-build.json" \
+  --process-report "$work/sdk-native-process-run.json" \
+  --cc-preflight-report "$work/sdk-native-cc-preflight.json" \
+  --ld-preflight-report "$work/sdk-native-ld-preflight.json" \
+  --output "$work/P11.pre-release"
+"$py" - <<'PY'
+import json
+from pathlib import Path
+w=Path("/tmp/p11-prerelease/P11.pre-release/sdk")
+d=json.loads((w/"PROVENANCE.json").read_text())
+assert d["program_count"]==30 and len(d["programs"])==30
+assert all(v=="PASS" for v in d["assertions"].values())
+assert len(list((w/"tapes").rglob("*.src.tap")))==30
+assert len([p for p in (w/"native").rglob("*") if p.is_file()])==60
+assert len(list((w/"reference-lfs").rglob("*.png")))==30
+assert len(list((w/"reference-png").rglob("*.png")))==30
 PY
