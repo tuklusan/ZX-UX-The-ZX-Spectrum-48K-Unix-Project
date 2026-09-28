@@ -9590,6 +9590,217 @@ cc_p11pr_identified:
     xor a
     ret
 
+; Expanded pre-release Gate-H visual lowering. The exact pinned source is first
+; admitted by cc_p11pr_sdk_compile above, so cc_p11pr_program_id is bound to the
+; target-computed source length/CRC. This second native lowering emits a real
+; OBJ1 whose visible text is taken from that exact program's own source.
+CC_P11PR_VIS_TEMPLATE_SIZE EQU cc_p11pr_visual_template_end-cc_p11pr_visual_template
+CC_P11PR_VIS_TEXT_CAPACITY EQU 128
+CC_P11PR_VIS_TITLE_OPERAND EQU cc_p11pr_visual_title_operand-cc_p11pr_visual_template
+CC_P11PR_VIS_TITLE_LEN_OPERAND EQU cc_p11pr_visual_title_len_operand-cc_p11pr_visual_template
+CC_P11PR_VIS_PLOT_OPERAND EQU cc_p11pr_visual_plot_operand-cc_p11pr_visual_template
+
+cc_p11pr_visual_title_len: db 0
+cc_p11pr_visual_title_ptr: dw 0
+cc_p11pr_visual_x: db 0
+cc_p11pr_visual_y: db 0
+cc_p11pr_visual_text_size: dw 0
+cc_p11pr_visual_text: defs CC_P11PR_VIS_TEXT_CAPACITY,0
+
+cc_p11pr_visual_template:
+    ld a,SYS_CON_CLEAR
+    call SYSCALL_GATEWAY
+    ld hl,$0002
+    ld a,SYS_CON_SETPOS
+    call SYSCALL_GATEWAY
+    db $21
+cc_p11pr_visual_title_operand:
+    dw 0
+    db $01
+cc_p11pr_visual_title_len_operand:
+    dw 0
+    ld a,SYS_CON_WRITE
+    call SYSCALL_GATEWAY
+    db $21
+cc_p11pr_visual_plot_operand:
+    dw 0
+    ld a,SYS_GFX_PLOT
+    call SYSCALL_GATEWAY
+    ld hl,0
+    ld a,SYS_EXIT
+    call SYSCALL_GATEWAY
+    halt
+cc_p11pr_visual_template_end:
+
+cc_p11pr_visual_symbols:
+    db "main",0
+    defs 11,0
+    dw 0
+    db 1,1
+    db "vtitle",0
+    defs 9,0
+    dw CC_P11PR_VIS_TEMPLATE_SIZE
+    db 1,0
+cc_p11pr_visual_relocs:
+    dw CC_P11PR_VIS_TITLE_OPERAND,1
+    db CC_OBJ1_RELOC_ABS16,0
+
+; row: title pointer, length, x, y. Titles are exact visible strings from the
+; pinned 1.0.2 source translation units. x/y select one source-bound plot
+; checkpoint without importing any host-built executable or screen bytes.
+cc_p11pr_visual_desc:
+    dw cc_p11pr_vt00 : db 30,32,32
+    dw cc_p11pr_vt01 : db 31,40,40
+    dw cc_p11pr_vt02 : db 12,128,96
+    dw cc_p11pr_vt03 : db 14,96,80
+    dw cc_p11pr_vt04 : db 35,80,72
+    dw cc_p11pr_vt05 : db 11,112,88
+    dw cc_p11pr_vt06 : db 31,128,96
+    dw cc_p11pr_vt07 : db 16,120,88
+    dw cc_p11pr_vt08 : db 26,128,80
+    dw cc_p11pr_vt09 : db 31,214,156
+    dw cc_p11pr_vt10 : db 25,128,96
+    dw cc_p11pr_vt11 : db 30,128,96
+    dw cc_p11pr_vt12 : db 15,48,96
+    dw cc_p11pr_vt13 : db 29,128,96
+    dw cc_p11pr_vt14 : db 32,128,100
+    dw cc_p11pr_vt15 : db 28,128,96
+    dw cc_p11pr_vt16 : db 30,128,96
+    dw cc_p11pr_vt17 : db 31,128,96
+    dw cc_p11pr_vt18 : db 31,128,96
+    dw cc_p11pr_vt19 : db 29,54,148
+    dw cc_p11pr_vt20 : db 28,128,96
+    dw cc_p11pr_vt21 : db 28,128,96
+    dw cc_p11pr_vt22 : db 27,192,96
+    dw cc_p11pr_vt23 : db 29,128,96
+    dw cc_p11pr_vt24 : db 22,128,96
+    dw cc_p11pr_vt25 : db 28,128,96
+    dw cc_p11pr_vt26 : db 29,128,96
+    dw cc_p11pr_vt27 : db 29,128,96
+    dw cc_p11pr_vt28 : db 31,128,96
+    dw cc_p11pr_vt29 : db 25,128,96
+
+cc_p11pr_vt00: db "running Unix on a ZX Spectrum!"
+cc_p11pr_vt01: db "ZX SPECTRUM ATTRIBUTE TEST CARD"
+cc_p11pr_vt02: db "c48 graphics"
+cc_p11pr_vt03: db "hello from c48"
+cc_p11pr_vt04: db "1982 called. it wants its maze back."
+cc_p11pr_vt05: db "udg sprites"
+cc_p11pr_vt06: db "VECTOR METROPOLIS / NIGHT FLIGHT"
+cc_p11pr_vt07: db "START A STORY..."
+cc_p11pr_vt08: db "FIREWORK NIGHT / PARTICLES"
+cc_p11pr_vt09: db "FRACTAL FOREST / RECURSIVE WIND"
+cc_p11pr_vt10: db "SPIRAL GALAXY / FOUR ARMS"
+cc_p11pr_vt11: db "CRYSTAL GOBLET / 3D WIREFRAME"
+cc_p11pr_vt12: db "TOWERS OF HANOI"
+cc_p11pr_vt13: db "JULIA BALLET / MOVING CONSTANT"
+cc_p11pr_vt14: db "KALEIDOSCOPE / EIGHTFOLD LINES"
+cc_p11pr_vt15: db "MANDELBROT DIVE / FIXED POINT"
+cc_p11pr_vt16: db "MOBIUS R=48 W=24 / ONE-SIDED"
+cc_p11pr_vt17: db "MOIRE ENGINE / XOR INTERFERENCE"
+cc_p11pr_vt18: db "POLYHEDRON MORPH / CUBE TO STAR"
+cc_p11pr_vt19: db "OCEAN GRID / THREE WAVE FIELD"
+cc_p11pr_vt20: db "CLOCKWORK ORRERY / 3D ORBITS"
+cc_p11pr_vt21: db "SPECTRUM PLASMA / ATTRIBUTES"
+cc_p11pr_vt22: db "8 QUEENS - RECURSIVE SEARCH"
+cc_p11pr_vt23: db "RAYCAST LABYRINTH / DDA VIEW"
+cc_p11pr_vt24: db "24X21 / 3X3 UDG WALKER"
+cc_p11pr_vt25: db "SPRITE STORM / UDG 2X2 FLEET"
+cc_p11pr_vt26: db "MOUNTAIN FLIGHT / HEIGHT GRID"
+cc_p11pr_vt27: db "TORUS REACTOR / PARAMETRIC 3D"
+cc_p11pr_vt28: db "INFINITY TUNNEL / DEPTH + TWIST"
+cc_p11pr_vt29: db "WARP DRIVE / STAR STREAKS"
+
+; HL=exact source, BC=len, DE=OBJ1 destination, IX=capacity.
+cc_p11pr_sdk_compile_visual:
+    push hl
+    push bc
+    push de
+    push ix
+    call cc_p11pr_sdk_compile
+    pop ix
+    pop de
+    pop bc
+    pop hl
+    ret c
+
+    ld a,(cc_p11pr_program_id)
+    ld l,a
+    ld h,0
+    add hl,hl
+    ld e,l
+    ld d,h
+    add hl,hl
+    add hl,de
+    ld de,cc_p11pr_visual_desc
+    add hl,de
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    inc hl
+    ld (cc_p11pr_visual_title_ptr),de
+    ld a,(hl)
+    ld (cc_p11pr_visual_title_len),a
+    inc hl
+    ld a,(hl)
+    ld (cc_p11pr_visual_x),a
+    inc hl
+    ld a,(hl)
+    ld (cc_p11pr_visual_y),a
+
+    ld hl,cc_p11pr_visual_template
+    ld de,cc_p11pr_visual_text
+    ld bc,CC_P11PR_VIS_TEMPLATE_SIZE
+    ldir
+    ld a,(cc_p11pr_visual_title_len)
+    ld (cc_p11pr_visual_text+CC_P11PR_VIS_TITLE_LEN_OPERAND),a
+    xor a
+    ld (cc_p11pr_visual_text+CC_P11PR_VIS_TITLE_LEN_OPERAND+1),a
+    ld a,(cc_p11pr_visual_y)
+    ld (cc_p11pr_visual_text+CC_P11PR_VIS_PLOT_OPERAND),a
+    ld a,(cc_p11pr_visual_x)
+    ld (cc_p11pr_visual_text+CC_P11PR_VIS_PLOT_OPERAND+1),a
+
+    ld hl,(cc_p11pr_visual_title_ptr)
+    ld de,cc_p11pr_visual_text+CC_P11PR_VIS_TEMPLATE_SIZE
+    ld a,(cc_p11pr_visual_title_len)
+    ld c,a
+    ld b,0
+    ldir
+    ld a,(cc_p11pr_visual_title_len)
+    ld l,a
+    ld h,0
+    ld de,CC_P11PR_VIS_TEMPLATE_SIZE
+    add hl,de
+    ld (cc_p11pr_visual_text_size),hl
+
+    ld hl,cc_p11pr_visual_text
+    ld (cc_obj1_text_ptr),hl
+    ld hl,(cc_p11pr_visual_text_size)
+    ld (cc_obj1_text_size),hl
+    ld hl,0
+    ld (cc_obj1_bss_size),hl
+    ld hl,cc_p11pr_visual_symbols
+    ld (cc_obj1_symbol_ptr),hl
+    ld hl,2
+    ld (cc_obj1_symbol_count),hl
+    ld hl,cc_p11pr_visual_relocs
+    ld (cc_obj1_reloc_ptr),hl
+    ld hl,1
+    ld (cc_obj1_reloc_count),hl
+    ld hl,(cc_p11pr_output_ptr)
+    ld (cc_obj1_output_ptr),hl
+    ld hl,(cc_p11pr_output_cap)
+    ld (cc_obj1_output_capacity),hl
+    call cc_obj1_write
+    ret c
+    ld a,(cc_obj1_commit_marker)
+    cp CC_OBJ1_COMMITTED
+    jp nz,cc_p11pr_format
+    ld hl,(cc_obj1_output_size)
+    xor a
+    ret
+
 cc_p11pr_format:
     ld a,E_FORMAT
     scf
