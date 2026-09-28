@@ -18,6 +18,7 @@ on:
       - 'tools/p11-prerelease/**'
       - 'v1/tools-host/release-tzx/**'
       - 'tools/as.asm'
+      - 'tools/as_text.asm'
       - 'tools/ld.asm'
       - 'v1/src/tools/cc.asm'
       - 'tools/check_media_retention.py'
