@@ -11,7 +11,7 @@
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
 from __future__ import annotations
-import argparse, hashlib, json, os, shutil, struct, subprocess, sys, urllib.request, zipfile
+import argparse, base64, hashlib, json, os, shutil, struct, subprocess, sys, urllib.request, zipfile
 from pathlib import Path
 
 REPO="tuklusan/zx-ux-c48-sdk-sinclair-zx-spectrum-48k-unix-c-compiler-software-development-kit"
@@ -116,6 +116,9 @@ def acquire(out):
  if ci.get("sha")!=COMMIT or ci.get("commit",{}).get("tree",{}).get("sha")!=TREE:fail("SDK tag/commit/tree mismatch")
  mf=getj(f"https://api.github.com/repos/{REPO}/contents/compiler/source_tape_manifest.json?ref={TAG}")
  if mf.get("sha")!=TAPE_BLOB:fail("source tape manifest Git blob mismatch")
+ treej=getj(f"https://api.github.com/repos/{REPO}/git/trees/{TREE}?recursive=1")
+ if treej.get("truncated"):fail("SDK release tree API result truncated")
+ image_blobs={x["path"]:x["sha"] for x in treej.get("tree",[]) if x.get("type")=="blob" and x.get("path","").startswith("docs/images/")}
  remote={a["name"]:a for a in rel.get("assets",[])}
  for k,(name,size,digest) in ASSETS.items():
   a=remote.get(name)
@@ -148,10 +151,14 @@ def acquire(out):
    if x["name"] not in got or got[x["name"]][3]!=(sdk/x["path"]).read_bytes():fail("independent tape decode mismatch: "+tr)
   if got[target][1:3]!=(5,5) or got[target][3]!=s.read_bytes():fail("C source tape envelope mismatch: "+tr)
   shutil.copyfile(s,out/f"sources/{c}/{n}.c");shutil.copyfile(t,out/f"tapes/{c}/{n}.src.tap")
-  ptr=sdk/f"docs/images/{c}/{n}.png";oid,sz=lfs(ptr.read_bytes());matches=[p for p in (work/"gui").rglob(n+".png") if p.stat().st_size==sz and sha(p)==oid]
+  ip=f"docs/images/{c}/{n}.png";bsha=image_blobs.get(ip)
+  if not bsha:fail("missing reference-image Git blob: "+ip)
+  bj=getj(f"https://api.github.com/repos/{REPO}/git/blobs/{bsha}")
+  ptr_bytes=base64.b64decode(bj.get("content",""))
+  oid,sz=lfs(ptr_bytes);matches=[p for p in (work/"gui").rglob(n+".png") if p.stat().st_size==sz and sha(p)==oid]
   if len(matches)!=1:fail("GUI evidence PNG mismatch: "+c+"/"+n)
-  shutil.copyfile(ptr,out/f"reference-lfs/{c}/{n}.png");shutil.copyfile(matches[0],out/f"reference-png/{c}/{n}.png")
-  progs.append({"category":c,"name":n,"source_path":sr,"source_sha256":sha(s),"tape_path":tr,"tape_sha256":sha(t),"target_source":target,"reference_lfs_oid_sha256":oid,"reference_png_sha256":sha(matches[0]),"objects":[{"name":a,"type":b,"target":d,"size":len(e),"sha256":shab(e)} for a,b,d,e in objs]})
+  (out/f"reference-lfs/{c}/{n}.png").write_bytes(ptr_bytes);shutil.copyfile(matches[0],out/f"reference-png/{c}/{n}.png")
+  progs.append({"category":c,"name":n,"source_path":sr,"source_sha256":sha(s),"tape_path":tr,"tape_sha256":sha(t),"target_source":target,"reference_lfs_git_blob":bsha,"reference_lfs_oid_sha256":oid,"reference_png_sha256":sha(matches[0]),"objects":[{"name":a,"type":b,"target":d,"size":len(e),"sha256":shab(e)} for a,b,d,e in objs]})
  for r in HEADERS:shutil.copyfile(sdk/r,out/"sources/headers"/Path(r).name)
  shutil.copyfile(sdk/"compiler/source_tape_manifest.json",out/"SOURCE-TAPE-MANIFEST.json")
  shutil.copyfile(sdk/"compiler/release_expectations.json",out/"release_expectations.json")
