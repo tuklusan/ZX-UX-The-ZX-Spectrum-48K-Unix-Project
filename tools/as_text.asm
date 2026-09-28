@@ -1818,8 +1818,10 @@ r17_txt_rec8:
     ret
 
 r17_txt_rec16:
+    push de
     ld a,e
     call r17_txt_rec8
+    pop de
     ld a,d
     jp r17_txt_rec8
 
