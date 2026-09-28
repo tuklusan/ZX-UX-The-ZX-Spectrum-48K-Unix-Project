@@ -65,21 +65,28 @@ def blocks(data:bytes)->list[bytes]:
     if p!=len(data):raise ValueError("TAP trailing bytes")
     return o
 
-def decode(data:bytes)->tuple[bytes,bytes]:
+def decode(data:bytes,expected_name:str)->tuple[bytes,bytes,int]:
     bs=blocks(data)
     if not bs or len(bs[0])!=32:raise ValueError("missing exact M48O header")
-    h=bytearray(bs[0])
+    raw_h=bytes(bs[0]);h=bytearray(raw_h)
     if h[:5]!=MAGIC or h[5]!=TYPE_ASM or h[6]!=0 or h[7]!=USERHOME:raise ValueError("wrong M48O source envelope")
     if any(h[28:]):raise ValueError("reserved M48O bytes nonzero")
+    field=bytes(h[16:26]);name=field.split(b"\0",1)[0]
+    if name!=expected_name.encode("ascii"):raise ValueError("wrong M48O source name")
+    if len(name)<10 and any(field[len(name)+1:]):raise ValueError("nonzero M48O name padding")
     hc=struct.unpack_from("<H",h,26)[0];h[26:28]=b"\0\0"
     if crc16(h)!=hc:raise ValueError("M48O header CRC mismatch")
     storage,logical,codec,pcrc=struct.unpack_from("<HHHH",h,8)
     if codec or storage!=logical:raise ValueError("source M48O is not RAW")
-    payload=b"".join(bs[1:])
+    chunks=bs[1:]
+    expected_chunks=(logical+CHUNK-1)//CHUNK if logical else 0
+    if len(chunks)!=expected_chunks:raise ValueError("M48O payload block count mismatch")
+    if any(not 1<=len(x)<=CHUNK for x in chunks):raise ValueError("invalid M48O payload chunk size")
+    if chunks and any(len(x)!=CHUNK for x in chunks[:-1]):raise ValueError("short non-final M48O payload chunk")
+    payload=b"".join(chunks)
     if len(payload)!=logical:raise ValueError("M48O chunk coverage mismatch")
-    if any(len(x)>CHUNK for x in bs[1:]):raise ValueError("oversize M48O payload chunk")
     if crc16(payload)!=pcrc:raise ValueError("M48O payload CRC mismatch")
-    return bytes(h),payload
+    return raw_h,payload,hc
 
 def sha(b:bytes)->str:return hashlib.sha256(b).hexdigest()
 
@@ -87,13 +94,15 @@ def main()->int:
     ap=argparse.ArgumentParser();ap.add_argument("--source",type=Path,required=True);ap.add_argument("--output",type=Path,required=True);ap.add_argument("--report",type=Path,required=True);ap.add_argument("--name",default="kernel.asm")
     a=ap.parse_args();src=a.source.read_bytes()
     if b"\r" in src or not src.endswith(b"\n"):raise SystemExit("source is not canonical LF text")
-    tap=make(a.name,src);h,out=decode(tap)
+    if a.name!="kernel.asm":raise SystemExit("expanded pre-release kernel source name must be kernel.asm")
+    tap=make(a.name,src);h,out,hcrc=decode(tap,a.name)
     if out!=src:raise SystemExit("independent TAP decode differs from source")
+    if hashlib.sha256(out).digest()!=hashlib.sha256(src).digest():raise SystemExit("decoded source SHA-256 mismatch")
     a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_bytes(tap)
     d={"schema":1,"kind":"phase11-pre-release-native-kernel-source-tap","name":a.name,
        "object_type":TYPE_ASM,"target":USERHOME,"flags":0,"codec":0,
        "source_size":len(src),"source_sha256":sha(src),"tap_size":len(tap),"tap_sha256":sha(tap),
-       "header_crc16":struct.unpack_from("<H",h,26)[0],"payload_crc16":crc16(src),
+       "header_crc16":hcrc,"payload_crc16":crc16(src),
        "payload_blocks":(len(src)+CHUNK-1)//CHUNK,"max_payload_chunk":CHUNK,
        "decoded_source_identity":"PASS"}
     a.report.write_text(json.dumps(d,indent=2,sort_keys=True)+"\n",encoding="utf-8",newline="\n")
