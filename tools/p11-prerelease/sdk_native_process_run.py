@@ -122,17 +122,17 @@ p11pr_gateway:
 p11pr_exit:
     ld a,(current_pid)
     cp 2
-    jp nz,$${FAIL_PC:04X}
+    jp nz,${FAIL_PC:04X}
     ld ix,process_table+2*PROC_DESC_SIZE
     ld a,(ix+PROC_STATE)
     cp PROC_RUNNING
-    jp nz,$${FAIL_PC:04X}
+    jp nz,${FAIL_PC:04X}
     ld a,(ix+PROC_PRIVATE_FLAGS)
     and PROC_PRIVATE_STARTED
-    jp z,$${FAIL_PC:04X}
+    jp z,${FAIL_PC:04X}
     ld a,1
     ld (p11pr_exit_seen),a
-    jp $${PASS_PC:04X}
+    jp ${PASS_PC:04X}
 
 p11pr_start:
     EMIT_MEMORY_ROUTINES
@@ -151,7 +151,7 @@ p11pr_run_child:
     ld ix,process_table+2*PROC_DESC_SIZE
     ld a,(ix+PROC_STATE)
     cp PROC_READY
-    jp nz,$${FAIL_PC:04X}
+    jp nz,${FAIL_PC:04X}
     ld a,2
     ld (current_pid),a
     ld a,PROC_RUNNING
@@ -219,7 +219,7 @@ zx48_pipe_endpoint_closed:
     ret
 
 zx48_panic:
-    jp $${FAIL_PC:04X}
+    jp ${FAIL_PC:04X}
 
 current_pid: db 0
 process_table: defs MAX_PROCESSES*PROC_DESC_SIZE,0
