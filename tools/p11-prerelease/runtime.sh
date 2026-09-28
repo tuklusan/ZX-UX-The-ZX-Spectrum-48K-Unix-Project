@@ -31,25 +31,19 @@ run_mode() {
     --debugger-command "$(cat "$diag/debugger.txt")" >"$diag/fuse-state.log" 2>&1 & fuse_pid=$!
   for _ in $(seq 1 40); do window="$(xdotool search --onlyvisible --name 'Fuse' 2>/dev/null | head -n1 || true)"; test -n "$window" && break; sleep 0.25; done
   test -n "$window"
-  local basic_ready="" waiting=""
-  for _ in $(seq 1 80); do
-    grep -q '0xa00001' "$diag/fuse-state.log" && { basic_ready=yes; break; }
-    kill -0 "$fuse_pid" 2>/dev/null || break
-    sleep 0.25
-  done
-  test "$basic_ready" = yes
   xdotool windowfocus --sync "$window" || true; xdotool mousemove --window "$window" 160 145 click 1 || true
   sleep 0.75; xdotool keydown Shift_L; sleep 0.25; xdotool keyup Shift_L; sleep 0.60
   xdotool keydown j; sleep 0.45; xdotool keyup j; sleep 0.60
   xdotool key --delay 300 ctrl+p; sleep 0.60; xdotool key --delay 300 ctrl+p; sleep 0.60
   xdotool keydown Return; sleep 0.45; xdotool keyup Return
-  for _ in $(seq 1 80); do
-    grep -q '0xa00002' "$diag/fuse-state.log" && { waiting=yes; break; }
-    kill -0 "$fuse_pid" 2>/dev/null || break
-    sleep 0.25
-  done
-  test "$waiting" = yes
   if test "$detect" = --no-detect-loader; then
+    local waiting=""
+    for _ in $(seq 1 40); do grep -q '0xa00002' "$diag/fuse-state.log" && { waiting=yes; break; }; kill -0 "$fuse_pid" 2>/dev/null || break; sleep 0.25; done
+    if test "$waiting" != yes; then
+      printf 'runtime mode %s did not reach ROM load wait\n' "$name" >&2
+      cat "$diag/fuse-state.log" >&2
+      return 1
+    fi
     xdotool windowfocus --sync "$window" || true; xdotool key F8
   fi
   for _ in $(seq 1 130); do
