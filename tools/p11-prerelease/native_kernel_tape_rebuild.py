@@ -23,7 +23,7 @@ FIXTURE_BASE=0x4000
 FIXTURE_CODE1_END=0x5B00
 FIXTURE_CODE2_BASE=0x6000
 FIXTURE_CODE2_END=0x6800
-STACK_TOP=0x5FF0
+STACK_TOP=0x67F0
 SOURCE_BASE=0x6800
 OBJ_SIZE=8216
 KERNEL_SIZE=8192
@@ -90,7 +90,7 @@ r17e_negative:
     ld (r17e_negative_mode),a
 r17e_common:
     di
-    ld sp,$5FF0
+    ld sp,$67F0
     ld iy,$5C3A
     xor a
     ld (r17e_alloc_phase),a
