@@ -3034,6 +3034,10 @@ r17_as_nsp1_obj1:
     ld (r17_as_source),hl
     ld (r17_as_source_len),de
     ld (r17_as_obj),bc
+    xor a
+    ld (r17_as_single_mode),a
+    ld (r17_as_measure_mode),a
+    ld (r17_as_guard_mode),a
 
     ; Exact NSP1 framing.
     ld h,d
@@ -3168,6 +3172,9 @@ r17_as_record_loop:
     ret
 
 r17_as_record_done:
+    ld a,(r17_as_single_mode)
+    or a
+    ret nz
     jp r17_as_record_loop
 
 r17_as_records_done:
@@ -3281,8 +3288,31 @@ r17_as_put8:
 r17_as_put_room:
     pop de
     pop af
+    push af
+    ld a,(r17_as_measure_mode)
+    or a
+    jr nz,r17_as_put_advance_out
+    ld a,(r17_as_guard_mode)
+    or a
+    jr z,r17_as_put_write
+    push de
+    ld hl,(r17_as_out)
+    ld de,(r17_as_guard_limit)
+    or a
+    sbc hl,de
+    pop de
+    jr c,r17_as_put_write
+    pop af
+    jp r17_as_error
+r17_as_put_write:
+    pop af
     ld hl,(r17_as_out)
     ld (hl),a
+    jr r17_as_put_advance_out_common
+r17_as_put_advance_out:
+    pop af
+    ld hl,(r17_as_out)
+r17_as_put_advance_out_common:
     inc hl
     ld (r17_as_out),hl
     ld hl,(r17_as_produced)
@@ -4252,4 +4282,8 @@ r17_as_v0:           db 0
 r17_as_v1:           db 0
 r17_as_v2:           db 0
 r17_as_v3:           db 0
+r17_as_single_mode:  db 0
+r17_as_measure_mode: db 0
+r17_as_guard_mode:   db 0
+r17_as_guard_limit:  dw 0
     ENDM
