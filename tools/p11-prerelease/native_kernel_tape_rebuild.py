@@ -54,7 +54,7 @@ def make_sna(entry:int,fixture:bytes,kernel:bytes)->bytes:
     h=bytearray(27);h[0]=0xFE;h[19]=0x04;struct.pack_into("<H",h,23,SNAP_STACK);h[25]=1
     return bytes(h)+bytes(ram)
 
-def fixture_source(source_size:int)->str:
+def fixture_source(source_size:int,object_validate:int)->str:
     tail=source_size-OBJ_SIZE
     require(tail>0 and not tail&1,"source/OBJ tail must be positive even")
     return f"""    DEVICE ZXSPECTRUM48
@@ -76,7 +76,6 @@ r17e_seg1:
     ORG $6000
 r17e_seg2:
     EMIT_R17_LD_ABSOLUTE_OBJ1
-    EMIT_OBJECT_RECORD_ROUTINES
     EMIT_P502_CRC16_ROUTINES
     EMIT_P503_FRAMING_ROUTINES
     EMIT_P504_RAW_LOADER_ROUTINES
@@ -94,7 +93,6 @@ r17e_common:
     ld iy,$5C3A
     xor a
     ld (r17e_alloc_phase),a
-    call zx48_object_records_init
 
     ld hl,$E000
     ld bc,8192
@@ -140,8 +138,7 @@ r17e_name_check:
     inc hl
     djnz r17e_name_check
 
-    call zx48_object_record_claim
-    jp c,r17e_fail
+    ld ix,r17e_namespace_record
     push ix
     pop de
     ld hl,r17e_source_name
@@ -160,7 +157,7 @@ r17e_name_check:
     ld hl,(r17e_source_ptr)
     ld (ix+OBJ_ALLOCATION_PTR),l
     ld (ix+OBJ_ALLOCATION_PTR+1),h
-    call zx48_object_record_validate
+    call ${object_validate}
     jp c,r17e_fail
     ld a,1
     ld (r17e_loaded_namespace_valid),a
@@ -181,9 +178,7 @@ r17e_name_check:
     call zx48_free
     jp c,r17e_fail
 
-    xor a
-    call zx48_object_record_ptr
-    jp c,r17e_fail
+    ld ix,r17e_namespace_record
     push ix
     pop de
     ld hl,r17e_obj_name
@@ -195,7 +190,7 @@ r17e_name_check:
     ld (ix+OBJ_LOGICAL_LENGTH+1),h
     ld (ix+OBJ_STORAGE_LENGTH),l
     ld (ix+OBJ_STORAGE_LENGTH+1),h
-    call zx48_object_record_validate
+    call ${object_validate}
     jp c,r17e_fail
 
     ld bc,8192
@@ -342,6 +337,7 @@ r17e_fail:
 
 r17e_source_name: db "kernel.asm"
 r17e_obj_name: db "kernel.obj"
+r17e_namespace_record: defs 20,0
 r17e_header: defs M48O_HDR_SIZE,0
 r17e_source_ptr: dw 0
 r17e_source_len: dw 0
@@ -358,7 +354,10 @@ r17e_end:
 
 def build_fixture(source_size:int)->tuple[bytes,dict[str,int]]:
     build=ROOT/"v1/build";build.mkdir(parents=True,exist_ok=True)
-    src=build/"r17e-fixture.asm";src.write_text(fixture_source(source_size),encoding="utf-8",newline="\n")
+    kernel_symbols=symbols(build/"kernel-prerelease.sym",("zx48_object_record_validate",))
+    object_validate=kernel_symbols["zx48_object_record_validate"]
+    require(KERNEL_BASE<=object_validate<0xFB00,"resident object validator outside kernel code/data pool")
+    src=build/"r17e-fixture.asm";src.write_text(fixture_source(source_size,object_validate),encoding="utf-8",newline="\n")
     sj=ROOT/"tools/runtime/sjasmplus/bin/sjasmplus";require(sj.is_file(),"project sjasmplus missing")
     p=subprocess.run([str(sj),"--nologo","--sym=r17e-fixture.sym",src.name],cwd=build,text=True,capture_output=True,timeout=60)
     require(p.returncode==0,f"Stage-E fixture assembly failed:\n{p.stdout}\n{p.stderr}")
