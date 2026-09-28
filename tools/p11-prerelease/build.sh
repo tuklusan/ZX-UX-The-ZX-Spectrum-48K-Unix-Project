@@ -40,7 +40,7 @@ command -v pasmo > "$work/pasmo-path"
 (cd v1/src/kernel && "$GITHUB_WORKSPACE/tools/runtime/sjasmplus/bin/sjasmplus" --nologo --lst=../../build/kernel-prerelease.lst --sym=../../build/kernel-prerelease.sym kernel.asm)
 test "$(wc -c < v1/build/kernel.bin)" -eq 8192
 test "$(xxd -p -l 3 v1/build/kernel.bin)" != 000000
-"$py" -m py_compile v1/tools-host/release-tzx/{build,inspect_tzx,runtime_acceptance,kernel_native_projection,kernel_text_projection,native_rebuild_test}.py tools/p11-prerelease/{source_tap,native_text_assemble_test,native_kernel_tape_rebuild,sdk_source_tapes,sdk_source_tape_native_build,sdk_source_tape_native_visual_build,sdk_native_process_run,sdk_native_cc_preflight,sdk_native_ld_preflight,sdk_stage_bundle,sdk_native_visual_run}.py
+"$py" -m py_compile v1/tools-host/release-tzx/{build,inspect_tzx,runtime_acceptance,kernel_native_projection,kernel_text_projection,native_rebuild_test}.py tools/p11-prerelease/{source_tap,native_text_assemble_test,native_kernel_tape_rebuild,sdk_source_tapes,sdk_source_tape_native_build,sdk_source_tape_native_visual_build,sdk_native_process_run,sdk_native_cc_preflight,sdk_native_ld_preflight,sdk_stage_bundle,sdk_native_visual_run,sdk_multitask_build,sdk_multitask_run}.py
 pasmo="$(cat "$work/pasmo-path")"
 for d in a b; do
   "$py" v1/tools-host/release-tzx/build.py --kernel v1/build/kernel.bin \
@@ -240,3 +240,30 @@ assert all(v=="PASS" for v in d["assertions"].values())
 assert len(list((p/"visual").rglob("*.scr")))==30
 assert len(list((p/"visual").rglob("*.png")))==30
 PY
+
+mkdir -p "$work/sdk-native-multitask"
+"$py" tools/p11-prerelease/sdk_multitask_build.py \
+  --root "$work/sdk-reference-pre-release-1.0.2" \
+  --output "$work/sdk-native-multitask" \
+  --report "$work/sdk-native-multitask.json"
+mkdir -p "$work/P11.pre-release/multitasking"
+"$py" tools/p11-prerelease/sdk_multitask_run.py \
+  --native "$work/sdk-native-multitask" \
+  --output "$work/P11.pre-release/multitasking" \
+  --report "$work/P11.pre-release/multitasking/hanoi-queens8.json"
+"$py" - <<'PY'
+import json
+from pathlib import Path
+p=Path("/tmp/p11-prerelease/P11.pre-release/multitasking")
+d=json.loads((p/"hanoi-queens8.json").read_text())
+assert d["checkpoint_frames"]==1250
+assert d["hanoi_yields"]>0 and d["queens8_yields"]>0
+assert all(v=="PASS" for v in d["assertions"].values())
+assert (p/"hanoi-queens8-1250f.scr").stat().st_size==6912
+assert (p/"hanoi-queens8-1250f.png").is_file()
+PY
+cp "$work/sdk-native-multitask/hanoi.obj1" "$work/P11.pre-release/multitasking/"
+cp "$work/sdk-native-multitask/hanoi.mex1" "$work/P11.pre-release/multitasking/"
+cp "$work/sdk-native-multitask/queens8.obj1" "$work/P11.pre-release/multitasking/"
+cp "$work/sdk-native-multitask/queens8.mex1" "$work/P11.pre-release/multitasking/"
+
