@@ -23,6 +23,9 @@ test -z "$(git ls-files | grep -Ei '(^|/)(P12(\.|/)|p12[^/]*qualification|phase-
 test -z "$(git status --porcelain)"
 rm -rf v1/dist/media/P11.pre-release
 cp -a /tmp/p11-prerelease/P11.pre-release v1/dist/media/P11.pre-release
+rm -rf v1/tests/compiler/sdk-reference/pre-release-1.0.2
+cp -a /tmp/p11-prerelease/sdk-reference-pre-release-1.0.2 v1/tests/compiler/sdk-reference/pre-release-1.0.2
+python3 tools/p11-prerelease/sdk_acquire.py verify --root v1/tests/compiler/sdk-reference/pre-release-1.0.2 >/dev/null
 test -z "$(find v1/dist/media/P11.pre-release -type f -iname '*.tap' -print -quit)"
 python3 tools/check_media_retention.py
 rm -rf v1/build
@@ -31,7 +34,7 @@ hold=/tmp/zxux-runtime-policy-check; rm -rf "$hold"; mv tools/runtime "$hold"; t
 ./tools/check_license_headers.sh
 mv "$hold" tools/runtime; trap - EXIT
 test -z "$(git ls-files | grep -Ei '(^|/)(P12(\.|/)|p12[^/]*qualification|phase-?12[^/]*\.yml|phase12_step_)' || true)"
-git add -A v1/dist/media/P11.pre-release
+git add -A v1/dist/media/P11.pre-release v1/tests/compiler/sdk-reference/pre-release-1.0.2
 git config user.name "github-actions[bot]"
 git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 if ! git diff --cached --quiet; then

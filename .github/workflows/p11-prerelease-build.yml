@@ -9,7 +9,7 @@
 # Attribution is required: "Based on original work by Supratim Sanyal of
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
-name: Phase-11 fast-loader TZX pre-release
+name: Phase-11 expanded pre-release
 on:
   push:
     branches: [main]
@@ -17,6 +17,7 @@ on:
       - '.github/workflows/p11-prerelease-build.yml'
       - 'tools/p11-prerelease/**'
       - 'tools/check_media_retention.py'
+      - 'tools/check_license_headers.sh'
   workflow_dispatch: {}
 permissions:
   contents: write

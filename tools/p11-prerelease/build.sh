@@ -17,6 +17,7 @@ work=/tmp/p11-prerelease
 rm -rf "$work"
 mkdir -p "$work"/{evidence,a,b,P11.pre-release} v1/build
 py=tools/runtime/python/bin/python
+"$py" tools/p11-prerelease/sdk_acquire.py acquire --output "$work/sdk-reference-pre-release-1.0.2"
 "$py" v1/tools-host/test-driver/run.py build --step P11.48 --evidence-dir "$work/evidence"
 "$py" v1/tools-host/test-driver/run.py test --step P11.48 --evidence-dir "$work/evidence"
 "$py" - <<'PY'

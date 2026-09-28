@@ -29,6 +29,7 @@ readonly C48_SPEC_DOCX_BLOB_SHA1="a84c314a6d2957835efdc916a49e5289718140c2"
 # original test/release gates run from this repository without rewritten tests.
 readonly C48_SDK_REFERENCE_DIR="v1/tests/compiler/sdk-reference/sdk"
 readonly C48_SDK_REFERENCE_TREE_SHA1="1c6b5bae84035ee853be9142b440792881c9ca9f"
+readonly P11_PRERELEASE_SDK_REFERENCE_DIR="v1/tests/compiler/sdk-reference/pre-release-1.0.2"
 # P11.45 preserves the exact H06 source and its direct declaration dependency
 # from the later mandatory read-only compatibility pin.  Their original bytes
 # are exempt only while both exact Git blob identities and regular-file modes hold.
@@ -252,6 +253,14 @@ if [[ "$actual_c48_sdk_reference_tree_sha1" != "$C48_SDK_REFERENCE_TREE_SHA1" ]]
   exit 1
 fi
 
+if [[ -e "$P11_PRERELEASE_SDK_REFERENCE_DIR" ]]; then
+  if [[ -L "$P11_PRERELEASE_SDK_REFERENCE_DIR" || ! -d "$P11_PRERELEASE_SDK_REFERENCE_DIR" ]]; then
+    echo "ERROR: Phase-11 pre-release SDK reference must be a real directory: $P11_PRERELEASE_SDK_REFERENCE_DIR" >&2
+    exit 1
+  fi
+  python3 tools/p11-prerelease/sdk_acquire.py verify --root "$P11_PRERELEASE_SDK_REFERENCE_DIR" >/dev/null
+fi
+
 for exempt_path in "${!explicit_header_exemptions[@]}"; do
   if [[ -z "$exempt_path" || -z "${explicit_header_exemptions[$exempt_path]}" ]]; then
     echo "ERROR: each license-header exemption must have an exact non-empty path and reason" >&2
@@ -362,6 +371,11 @@ while IFS= read -r -d '' file; do
   fi
 
   if [[ "$file" == "$C48_SDK_REFERENCE_DIR"/* ]]; then
+    explicitly_exempt=$((explicitly_exempt + 1))
+    continue
+  fi
+
+  if [[ "$file" == "$P11_PRERELEASE_SDK_REFERENCE_DIR"/* ]]; then
     explicitly_exempt=$((explicitly_exempt + 1))
     continue
   fi
