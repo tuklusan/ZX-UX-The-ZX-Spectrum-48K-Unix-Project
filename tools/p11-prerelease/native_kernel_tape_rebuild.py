@@ -60,7 +60,6 @@ def fixture_source(source_size:int)->str:
     return f"""    DEVICE ZXSPECTRUM48
     INCLUDE "../include/zx48ux.inc"
     INCLUDE "../include/tapeobj.inc"
-    INCLUDE "../src/kernel/memory.asm"
     INCLUDE "../src/kernel/objects.asm"
     INCLUDE "../src/kernel/rom_services.asm"
     INCLUDE "../src/kernel/tape.asm"
@@ -77,7 +76,6 @@ r17e_seg1:
     ORG $6000
 r17e_seg2:
     EMIT_R17_LD_ABSOLUTE_OBJ1
-    EMIT_MEMORY_ROUTINES
     EMIT_OBJECT_RECORD_ROUTINES
     EMIT_P502_CRC16_ROUTINES
     EMIT_P503_FRAMING_ROUTINES
