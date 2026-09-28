@@ -99,6 +99,7 @@ def build_fixture() -> tuple[bytes, dict[str, int]]:
     sym = build / "p11pr-sdk-process.sym"
     source.write_text(
         f"""    DEVICE ZXSPECTRUM48
+PANIC_SCHEDULER EQU $03
     INCLUDE "../include/zx48ux.inc"
     INCLUDE "../include/mex1.inc"
     INCLUDE "../src/kernel/syscall.asm"
