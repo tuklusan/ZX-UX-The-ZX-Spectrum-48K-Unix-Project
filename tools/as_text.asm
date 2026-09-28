@@ -1597,7 +1597,7 @@ r17_txt_hex_loop:
     call r17_txt_peek_soft
     call r17_txt_hex_nibble
     jr c,r17_txt_hex_done
-    ld (r17_txt_tmp0),a
+    ld (r17_txt_hex_value),a
     ld a,(r17_txt_hex_count)
     cp 4
     jp nc,r17_as_error
@@ -1612,7 +1612,7 @@ r17_txt_hex_loop:
     rl d
     sla e
     rl d
-    ld a,(r17_txt_tmp0)
+    ld a,(r17_txt_hex_value)
     add a,e
     ld e,a
     jr nc,r17_txt_hex_loop
@@ -1933,6 +1933,7 @@ r17_txt_id:          db 0
 r17_txt_saw_org:     db 0
 r17_txt_char:        db 0
 r17_txt_hex_count:   db 0
+r17_txt_hex_value:   db 0
 r17_txt_family:      db 0
 r17_txt_tmp0:        db 0
 r17_txt_tmp1:        db 0
