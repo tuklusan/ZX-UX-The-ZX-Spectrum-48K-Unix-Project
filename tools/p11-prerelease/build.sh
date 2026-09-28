@@ -40,7 +40,7 @@ command -v pasmo > "$work/pasmo-path"
 (cd v1/src/kernel && "$GITHUB_WORKSPACE/tools/runtime/sjasmplus/bin/sjasmplus" --nologo --lst=../../build/kernel-prerelease.lst --sym=../../build/kernel-prerelease.sym kernel.asm)
 test "$(wc -c < v1/build/kernel.bin)" -eq 8192
 test "$(xxd -p -l 3 v1/build/kernel.bin)" != 000000
-"$py" -m py_compile v1/tools-host/release-tzx/{build,inspect_tzx,runtime_acceptance,kernel_native_projection,kernel_text_projection,native_rebuild_test}.py tools/p11-prerelease/{source_tap,native_text_assemble_test,native_kernel_tape_rebuild,sdk_source_tapes,sdk_native_cc_preflight}.py
+"$py" -m py_compile v1/tools-host/release-tzx/{build,inspect_tzx,runtime_acceptance,kernel_native_projection,kernel_text_projection,native_rebuild_test}.py tools/p11-prerelease/{source_tap,native_text_assemble_test,native_kernel_tape_rebuild,sdk_source_tapes,sdk_native_cc_preflight,sdk_native_ld_preflight}.py
 pasmo="$(cat "$work/pasmo-path")"
 for d in a b; do
   "$py" v1/tools-host/release-tzx/build.py --kernel v1/build/kernel.bin \
@@ -135,4 +135,20 @@ assert d["program_count"]==30 and len(d["programs"])==30
 assert all(row["compile"]=="PASS" and row["mutation_rejected"]=="PASS" for row in d["programs"])
 assert all(v=="PASS" for v in d["assertions"].values())
 assert len(list((w/"sdk-native-cc-preflight").rglob("*.obj")))==30
+PY
+
+mkdir -p "$work/sdk-native-ld-preflight"
+"$py" tools/p11-prerelease/sdk_native_ld_preflight.py \
+  --root "$work/sdk-reference-pre-release-1.0.2" \
+  --output "$work/sdk-native-ld-preflight" \
+  --report "$work/sdk-native-ld-preflight.json"
+"$py" - <<'PY'
+import json
+from pathlib import Path
+w=Path("/tmp/p11-prerelease")
+d=json.loads((w/"sdk-native-ld-preflight.json").read_text())
+assert d["program_count"]==30 and len(d["programs"])==30
+assert all(row["compile_obj1"]=="PASS" and row["native_mex1_writer"]=="PASS" for row in d["programs"])
+assert all(v=="PASS" for v in d["assertions"].values())
+assert len([p for p in (w/"sdk-native-ld-preflight").rglob("*") if p.is_file()])==30
 PY
