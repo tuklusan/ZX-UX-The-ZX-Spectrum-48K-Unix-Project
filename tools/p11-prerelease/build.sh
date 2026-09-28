@@ -40,7 +40,7 @@ command -v pasmo > "$work/pasmo-path"
 (cd v1/src/kernel && "$GITHUB_WORKSPACE/tools/runtime/sjasmplus/bin/sjasmplus" --nologo --lst=../../build/kernel-prerelease.lst --sym=../../build/kernel-prerelease.sym kernel.asm)
 test "$(wc -c < v1/build/kernel.bin)" -eq 8192
 test "$(xxd -p -l 3 v1/build/kernel.bin)" != 000000
-"$py" -m py_compile v1/tools-host/release-tzx/{build,inspect_tzx,runtime_acceptance,kernel_native_projection,kernel_text_projection,native_rebuild_test}.py tools/p11-prerelease/source_tap.py
+"$py" -m py_compile v1/tools-host/release-tzx/{build,inspect_tzx,runtime_acceptance,kernel_native_projection,kernel_text_projection,native_rebuild_test}.py tools/p11-prerelease/{source_tap,native_text_assemble_test}.py
 pasmo="$(cat "$work/pasmo-path")"
 for d in a b; do
   "$py" v1/tools-host/release-tzx/build.py --kernel v1/build/kernel.bin \
@@ -77,6 +77,10 @@ mkdir -p "$work/P11.pre-release/kernel"
   --source "$work/P11.pre-release/kernel/kernel-native-source.asm" \
   --output "$work/P11.pre-release/kernel/kernel-native-source.tap" \
   --report "$work/P11.pre-release/kernel/kernel-native-source-tap.json"
+"$py" tools/p11-prerelease/native_text_assemble_test.py \
+  --source "$work/P11.pre-release/kernel/kernel-native-source.asm" \
+  --kernel v1/build/kernel.bin \
+  --report "$work/P11.pre-release/kernel/kernel-native-text-as.json"
 "$py" - <<'PY'
 import hashlib,json
 from pathlib import Path
