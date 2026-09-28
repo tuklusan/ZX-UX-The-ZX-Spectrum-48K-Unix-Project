@@ -62,6 +62,7 @@ def fixture_source(source_size:int)->str:
     INCLUDE "../include/tapeobj.inc"
     INCLUDE "../src/kernel/memory.asm"
     INCLUDE "../src/kernel/objects.asm"
+    INCLUDE "../src/kernel/rom_services.asm"
     INCLUDE "../src/kernel/tape.asm"
     INCLUDE "../../tools/as.asm"
     INCLUDE "../../tools/as_text.asm"
