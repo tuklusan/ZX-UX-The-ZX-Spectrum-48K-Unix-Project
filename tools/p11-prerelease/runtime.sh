@@ -22,6 +22,10 @@ run_mode() {
   mkdir -p "$diag"
   if test "$hook" = omit; then "$py" v1/tools-host/release-tzx/runtime_acceptance.py debugger --omit-hook-trace --output "$diag/debugger.txt"
   else "$py" v1/tools-host/release-tzx/runtime_acceptance.py debugger --output "$diag/debugger.txt"; fi
+  # The debugger's absolute frame cap starts before the scripted ROM-load input.
+  # Replace it with a remote fail-safe; runtime.sh owns the deterministic wall
+  # timeout so variable pre-load GUI/input latency cannot consume the tape budget.
+  sed -i 's/spectrum:frames > 0x1964/spectrum:frames > 0xffffff/' "$diag/debugger.txt"
   Xvfb :99 -screen 0 1280x900x24 >"$diag/xvfb.log" 2>&1 & local xvfb_pid=$!
   local fuse_pid="" window="" result=""
   trap 'kill "$fuse_pid" "$xvfb_pid" 2>/dev/null || true' RETURN
@@ -46,11 +50,15 @@ run_mode() {
     fi
     xdotool windowfocus --sync "$window" || true; xdotool key F8
   fi
-  for _ in $(seq 1 130); do
+  for _ in $(seq 1 180); do
     grep -q '0xa50001' "$diag/fuse-state.log" && { result=E003_REACHED; break; }
     grep -q '0xaf0001' "$diag/fuse-state.log" && { result=TIMEOUT; break; }
     kill -0 "$fuse_pid" 2>/dev/null || { result=FUSE_EXITED; break; }; sleep 1
   done
+  if test -z "$result"; then
+    result=TIMEOUT
+    kill "$fuse_pid" 2>/dev/null || true
+  fi
   wait "$fuse_pid" || true; fuse_pid=""; kill "$xvfb_pid" 2>/dev/null || true; xvfb_pid=""; trap - RETURN
   if test "$result" != E003_REACHED; then
     printf 'runtime mode %s failed: %s\n' "$name" "$result" >&2
