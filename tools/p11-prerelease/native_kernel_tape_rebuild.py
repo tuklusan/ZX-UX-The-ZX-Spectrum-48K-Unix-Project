@@ -94,15 +94,8 @@ r17e_common:
     di
     ld sp,$5FF0
     ld iy,$5C3A
-    call zx48_memory_init
-    ld bc,$0800
-    ld a,ALLOC_ANY
-    call zx48_alloc
-    jp c,r17e_fail
-    ld de,$6000
-    or a
-    sbc hl,de
-    jp nz,r17e_fail
+    xor a
+    ld (r17e_alloc_phase),a
     call zx48_object_records_init
 
     ld hl,$E000
@@ -260,6 +253,74 @@ r17e_mismatch:
     jp z,r17e_fail
     jp r17e_pass
 
+; Deterministic proof-session allocator.  The production M48O loader and
+; object-record validation remain exact admitted target code; only placement is
+; pinned so the 30,554-byte source and its native outputs fit the 48K proof
+; session without overwriting resident kernel or proof helpers.
+zx48_alloc:
+    ld (r17e_alloc_class),a
+    ld a,(r17e_alloc_phase)
+    or a
+    jr z,r17e_alloc_source
+    cp 2
+    jr z,r17e_alloc_output
+    ld a,E_NOMEM
+    scf
+    ret
+r17e_alloc_source:
+    ld hl,{source_size}
+    or a
+    sbc hl,bc
+    jr nz,r17e_alloc_bad
+    ld a,(r17e_alloc_class)
+    and $03
+    cp ALLOC_COLD_PREFERRED
+    jr nz,r17e_alloc_bad
+    ld a,1
+    ld (r17e_alloc_phase),a
+    ld hl,$6800
+    xor a
+    ret
+r17e_alloc_output:
+    ld hl,8192
+    or a
+    sbc hl,bc
+    jr nz,r17e_alloc_bad
+    ld a,3
+    ld (r17e_alloc_phase),a
+    ld hl,$8818
+    xor a
+    ret
+r17e_alloc_bad:
+    ld a,E_NOMEM
+    scf
+    ret
+
+zx48_free:
+    ld a,(r17e_alloc_phase)
+    cp 1
+    jr nz,r17e_free_bad
+    push hl
+    ld de,$8818
+    or a
+    sbc hl,de
+    pop hl
+    jr nz,r17e_free_bad
+    push bc
+    ld hl,{tail}
+    or a
+    sbc hl,bc
+    pop bc
+    jr nz,r17e_free_bad
+    ld a,2
+    ld (r17e_alloc_phase),a
+    xor a
+    ret
+r17e_free_bad:
+    ld a,E_INVAL
+    scf
+    ret
+
 zx48_process_count:
     xor a
     ret
@@ -290,6 +351,8 @@ r17e_output_ptr: dw 0
 r17e_resident_crc: dw 0
 r17e_loaded_namespace_valid: db 0
 r17e_negative_mode: db 0
+r17e_alloc_phase: db 0
+r17e_alloc_class: db 0
 r17e_end:
     ASSERT r17e_end <= $6800
     SAVEBIN "r17e-fixture.bin",$4000,r17e_end-$4000
