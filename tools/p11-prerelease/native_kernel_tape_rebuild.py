@@ -54,7 +54,7 @@ def make_sna(entry:int,fixture:bytes,kernel:bytes)->bytes:
     h=bytearray(27);h[0]=0xFE;h[19]=0x04;struct.pack_into("<H",h,23,SNAP_STACK);h[25]=1
     return bytes(h)+bytes(ram)
 
-def fixture_source(source_size:int,object_validate:int)->str:
+def fixture_source(source_size:int)->str:
     tail=source_size-OBJ_SIZE
     require(tail>0 and not tail&1,"source/OBJ tail must be positive even")
     return f"""    DEVICE ZXSPECTRUM48
@@ -157,7 +157,7 @@ r17e_name_check:
     ld hl,(r17e_source_ptr)
     ld (ix+OBJ_ALLOCATION_PTR),l
     ld (ix+OBJ_ALLOCATION_PTR+1),h
-    call ${object_validate}
+    call r17e_object_record_validate
     jp c,r17e_fail
     ld a,1
     ld (r17e_loaded_namespace_valid),a
@@ -190,7 +190,7 @@ r17e_name_check:
     ld (ix+OBJ_LOGICAL_LENGTH+1),h
     ld (ix+OBJ_STORAGE_LENGTH),l
     ld (ix+OBJ_STORAGE_LENGTH+1),h
-    call ${object_validate}
+    call r17e_object_record_validate
     jp c,r17e_fail
 
     ld bc,8192
@@ -245,6 +245,78 @@ r17e_mismatch:
     or a
     jp z,r17e_fail
     jp r17e_pass
+
+; Exact admitted P4.03 object-record validation logic, emitted here without the
+; unrelated 32-record table/claim helpers so the deterministic 48K proof
+; session remains below SOURCE_BASE. IX points at the proof namespace record.
+r17e_object_record_validate:
+    ld a,(ix+OBJ_RESERVED_BYTE)
+    or a
+    jr nz,r17e_object_bad
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    and $fe
+    jr nz,r17e_object_bad
+
+    ld l,(ix+OBJ_LOGICAL_LENGTH)
+    ld h,(ix+OBJ_LOGICAL_LENGTH+1)
+    ld e,(ix+OBJ_STORAGE_LENGTH)
+    ld d,(ix+OBJ_STORAGE_LENGTH+1)
+    ld a,(ix+OBJ_FLAGS_BYTE)
+    and OBJ_PACKED
+    jr nz,r17e_object_packed
+    or a
+    sbc hl,de
+    jr nz,r17e_object_bad
+    jr r17e_object_allocation
+r17e_object_packed:
+    or a
+    sbc hl,de
+    jr c,r17e_object_bad
+    jr z,r17e_object_bad
+r17e_object_allocation:
+    ld l,(ix+OBJ_ALLOCATION_PTR)
+    ld h,(ix+OBJ_ALLOCATION_PTR+1)
+    ld a,d
+    or e
+    jr nz,r17e_object_resident
+    ld a,h
+    or l
+    jr nz,r17e_object_bad
+    xor a
+    ret
+r17e_object_resident:
+    bit 0,l
+    jr nz,r17e_object_bad
+    ld a,h
+    cp $60
+    jr c,r17e_object_bad
+    cp $e0
+    jr nc,r17e_object_bad
+    ld b,d
+    ld c,e
+    bit 0,c
+    jr z,r17e_object_rounded
+    inc bc
+    ld a,b
+    or c
+    jr z,r17e_object_bad
+r17e_object_rounded:
+    add hl,bc
+    jr c,r17e_object_bad
+    ld a,h
+    cp $e0
+    jr c,r17e_object_ok
+    jr nz,r17e_object_bad
+    ld a,l
+    or a
+    jr nz,r17e_object_bad
+r17e_object_ok:
+    xor a
+    ret
+r17e_object_bad:
+    ld a,E_INVAL
+    scf
+    ret
 
 ; Deterministic proof-session allocator.  The production M48O loader and
 ; object-record validation remain exact admitted target code; only placement is
@@ -354,10 +426,7 @@ r17e_end:
 
 def build_fixture(source_size:int)->tuple[bytes,dict[str,int]]:
     build=ROOT/"v1/build";build.mkdir(parents=True,exist_ok=True)
-    kernel_symbols=symbols(build/"kernel-prerelease.sym",("zx48_object_record_validate",))
-    object_validate=kernel_symbols["zx48_object_record_validate"]
-    require(KERNEL_BASE<=object_validate<0xFB00,"resident object validator outside kernel code/data pool")
-    src=build/"r17e-fixture.asm";src.write_text(fixture_source(source_size,object_validate),encoding="utf-8",newline="\n")
+    src=build/"r17e-fixture.asm";src.write_text(fixture_source(source_size),encoding="utf-8",newline="\n")
     sj=ROOT/"tools/runtime/sjasmplus/bin/sjasmplus";require(sj.is_file(),"project sjasmplus missing")
     p=subprocess.run([str(sj),"--nologo","--sym=r17e-fixture.sym",src.name],cwd=build,text=True,capture_output=True,timeout=60)
     require(p.returncode==0,f"Stage-E fixture assembly failed:\n{p.stdout}\n{p.stderr}")
