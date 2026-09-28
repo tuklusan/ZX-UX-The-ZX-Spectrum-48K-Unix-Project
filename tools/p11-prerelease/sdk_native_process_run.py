@@ -142,6 +142,16 @@ p11pr_exit:
     jp z,${FAIL_PC:04X}
     ld a,1
     ld (p11pr_exit_seen),a
+    ; Hold the completed target screen for three nominal PAL frames before the
+    ; debugger PASS trap.  FMF commits display state at frame boundaries; without
+    ; this deterministic settle the program can clear, draw, exit, and stop Fuse
+    ; within one frame, leaving only the pre-run blank frame in the retained movie.
+    ld bc,$2000
+p11pr_exit_frame_settle:
+    dec bc
+    ld a,b
+    or c
+    jr nz,p11pr_exit_frame_settle
     jp ${PASS_PC:04X}
 
 p11pr_start:
