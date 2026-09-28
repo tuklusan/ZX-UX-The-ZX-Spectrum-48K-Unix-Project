@@ -223,6 +223,7 @@ zx48_panic:
     jp ${FAIL_PC:04X}
 
 current_pid: db 0
+tty_input_owner: db 0
 process_table: defs MAX_PROCESSES*PROC_DESC_SIZE,0
 p11pr_exit_seen: db 0
 p11pr_end:
