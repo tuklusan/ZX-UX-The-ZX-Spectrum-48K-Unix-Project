@@ -39,6 +39,7 @@ SNAP_STACK=0x67F0
 KERNEL_BASE=0xE000
 KERNEL_SIZE=8192
 OBJ_SIZE=8216
+LINK_BASE=0xA000
 PASS=0
 FAIL=0
 
@@ -119,11 +120,13 @@ def main()->int:
     INCLUDE "../include/zx48ux.inc"
     INCLUDE "../../tools/as.asm"
     INCLUDE "../../tools/as_text.asm"
+    INCLUDE "../../tools/ld.asm"
 
     ORG $4000
 r17_txt_fixture_start:
     EMIT_R17_AS_NSP1_OBJ1
     EMIT_R17_AS_TEXT_OBJ1
+    EMIT_R17_LD_ABSOLUTE_OBJ1
 
 r17_txt_positive:
     di
@@ -136,7 +139,16 @@ r17_txt_positive:
     or a
     sbc hl,de
     jp nz,r17_txt_fail
-    ld hl,$68BE
+    ld hl,$68A6
+    ld bc,{OBJ_SIZE}
+    ld de,$A000
+    call r17_ld_obj1_absolute
+    jp c,r17_txt_fail
+    ld de,8192
+    or a
+    sbc hl,de
+    jp nz,r17_txt_fail
+    ld hl,$A000
     ld de,$E000
     ld bc,8192
 r17_txt_cmp:
@@ -158,7 +170,12 @@ r17_txt_negative:
     ld de,{len(source)}
     call r17_as_text_obj1_inplace
     jp c,r17_txt_fail
-    ld hl,$68BE
+    ld hl,$68A6
+    ld bc,{OBJ_SIZE}
+    ld de,$A000
+    call r17_ld_obj1_absolute
+    jp c,r17_txt_fail
+    ld hl,$A000
     ld de,$E000
     ld bc,8192
 r17_txt_neg_cmp:
@@ -232,6 +249,8 @@ r17_txt_fixture_end:
         "documented_mnemonics_and_directives_only":"PASS",
         "native_semantic_encoder_emitted_obj1":"PASS",
         "native_obj1_text_equals_exact_8192_kernel":"PASS",
+        "native_ld_consumed_textual_native_obj1":"PASS",
+        "native_ld_emitted_exact_8192_kernel":"PASS",
         "controlled_source_mutation_changes_native_output":"PASS",
         "inplace_emission_never_overtook_unconsumed_source":"PASS",
       }}
