@@ -28,6 +28,10 @@ ASSETS={
 EXAMPLES=("argv","colors","graphics","hello","maze","udg")
 DEMOS=("city","dizzy4k","firework","forest","galaxy","goblet","hanoi","julia","kaleido","mandel","mobius","moire","morph3d","ocean","orrery","plasma","queens8","raymaze","spriteanim","sprites","terrain","torus","tunnel","warp")
 HEADERS=("usr/src/examples/exapi.h","usr/src/demos/demoapi.h","usr/src/demos/recapi.h")
+TOOLING=(
+"c48srctap","c48srctap.bat","compiler/c48srctap.py",
+"compiler/refresh_source_tapes.py","compiler/c48/__init__.py",
+"compiler/tests/test_c48srctap.py","compiler/tests/test_source_tape_manifest.py")
 
 def fail(s): raise SystemExit("ERROR: "+s)
 def sha(p):
@@ -107,9 +111,9 @@ def verify(root):
   if not p.is_file() or p.is_symlink() or p.stat().st_size!=e.get("size") or sha(p)!=e.get("sha256"):fail("SDK artifact mismatch: "+r)
  actual={p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file() and p.name!="SDK-RELEASE.json"}
  if actual!=paths:fail("SDK manifest/file-set mismatch")
- if len(list((root/"tapes/examples").glob("*.src.tap")))!=6 or len(list((root/"tapes/demos").glob("*.src.tap")))!=24:fail("SDK tape count mismatch")
+ if len(list((root/"usr/bin/examples").glob("*.src.tap")))!=6 or len(list((root/"usr/bin/demos").glob("*.src.tap")))!=24:fail("SDK tape count mismatch")
  for c,n in programs():
-  oid,sz=lfs((root/f"reference-lfs/{c}/{n}.png").read_bytes());p=root/f"reference-png/{c}/{n}.png"
+  oid,sz=lfs((root/f"docs/images/{c}/{n}.png").read_bytes());p=root/f"reference-png/{c}/{n}.png"
   if p.stat().st_size!=sz or sha(p)!=oid:fail("reference PNG/LFS mismatch: "+c+"/"+n)
 def bundle(root):
  h=hashlib.sha256()
@@ -147,7 +151,7 @@ def acquire(out):
  tm=json.loads((sdk/"compiler/source_tape_manifest.json").read_text());ts=tm.get("tapes",[])
  if tm.get("tape_count")!=57 or len(ts)!=57:fail("source tape count mismatch")
  by={x["output"]:x for x in ts};out.mkdir()
- for d in ("sources/examples","sources/demos","sources/headers","tapes/examples","tapes/demos","reference-lfs/examples","reference-lfs/demos","reference-png/examples","reference-png/demos"):(out/d).mkdir(parents=True)
+ for d in ("usr/src/examples","usr/src/demos","usr/bin/examples","usr/bin/demos","compiler/c48","compiler/tests","docs/images/examples","docs/images/demos","reference-png/examples","reference-png/demos"):(out/d).mkdir(parents=True)
  progs=[]
  for c,n in programs():
   sr=f"usr/src/{c}/{n}.c";tr=f"usr/bin/{c}/{n}.src.tap";mi=by.get(tr)
@@ -158,18 +162,19 @@ def acquire(out):
   for x in mi["sources"]:
    if x["name"] not in got or got[x["name"]][3]!=(sdk/x["path"]).read_bytes():fail("independent tape decode mismatch: "+tr)
   if got[target][1:3]!=(5,5) or got[target][3]!=s.read_bytes():fail("C source tape envelope mismatch: "+tr)
-  shutil.copyfile(s,out/f"sources/{c}/{n}.c");shutil.copyfile(t,out/f"tapes/{c}/{n}.src.tap")
+  shutil.copyfile(s,out/sr);shutil.copyfile(t,out/tr)
   ip=f"docs/images/{c}/{n}.png";bsha=image_blobs.get(ip)
   if not bsha:fail("missing reference-image Git blob: "+ip)
   bj=getj(f"https://api.github.com/repos/{REPO}/git/blobs/{bsha}")
   ptr_bytes=base64.b64decode(bj.get("content",""))
   oid,sz=lfs(ptr_bytes);payload=sdk/ip
   if not payload.is_file() or payload.stat().st_size!=sz or sha(payload)!=oid:fail("materialized SDK reference PNG mismatch: "+c+"/"+n)
-  (out/f"reference-lfs/{c}/{n}.png").write_bytes(ptr_bytes);shutil.copyfile(payload,out/f"reference-png/{c}/{n}.png")
+  (out/ip).write_bytes(ptr_bytes);shutil.copyfile(payload,out/f"reference-png/{c}/{n}.png")
   progs.append({"category":c,"name":n,"source_path":sr,"source_sha256":sha(s),"tape_path":tr,"tape_sha256":sha(t),"target_source":target,"reference_lfs_git_blob":bsha,"reference_lfs_oid_sha256":oid,"reference_png_sha256":sha(payload),"reference_payload_package":"sdk","objects":[{"name":a,"type":b,"target":d,"size":len(e),"sha256":shab(e)} for a,b,d,e in objs]})
- for r in HEADERS:shutil.copyfile(sdk/r,out/"sources/headers"/Path(r).name)
- shutil.copyfile(sdk/"compiler/source_tape_manifest.json",out/"SOURCE-TAPE-MANIFEST.json")
- shutil.copyfile(sdk/"compiler/release_expectations.json",out/"release_expectations.json")
+ for r in HEADERS:shutil.copyfile(sdk/r,out/r)
+ for r in TOOLING:shutil.copyfile(sdk/r,out/r)
+ shutil.copyfile(sdk/"compiler/source_tape_manifest.json",out/"compiler/source_tape_manifest.json")
+ shutil.copyfile(sdk/"compiler/release_expectations.json",out/"compiler/release_expectations.json")
  for k in ("metadata","sums"):shutil.copyfile(work/"d"/ASSETS[k][0],out/ASSETS[k][0])
  (out/"TARGET-NAME-MAP.json").write_text(json.dumps({"schema":1,"programs":[{"source":f"usr/src/{c}/{n}.c","target_source":"sprani.c" if n=="spriteanim" else n+".c","target_object":"sprani.obj" if n=="spriteanim" else n+".obj","target_executable":"sprani" if n=="spriteanim" else n} for c,n in programs()]},indent=2,sort_keys=True)+"\n")
  files=[{"path":p.relative_to(out).as_posix(),"size":p.stat().st_size,"sha256":sha(p)} for p in sorted(x for x in out.rglob("*") if x.is_file())]
