@@ -40,7 +40,7 @@ command -v pasmo > "$work/pasmo-path"
 (cd v1/src/kernel && "$GITHUB_WORKSPACE/tools/runtime/sjasmplus/bin/sjasmplus" --nologo --lst=../../build/kernel-prerelease.lst --sym=../../build/kernel-prerelease.sym kernel.asm)
 test "$(wc -c < v1/build/kernel.bin)" -eq 8192
 test "$(xxd -p -l 3 v1/build/kernel.bin)" != 000000
-"$py" -m py_compile v1/tools-host/release-tzx/{build,inspect_tzx,runtime_acceptance,kernel_native_projection,kernel_text_projection,native_rebuild_test}.py tools/p11-prerelease/{source_tap,native_text_assemble_test,native_kernel_tape_rebuild,sdk_source_tapes,sdk_source_tape_native_build,sdk_source_tape_native_visual_build,sdk_native_process_run,sdk_native_cc_preflight,sdk_native_ld_preflight,sdk_stage_bundle}.py
+"$py" -m py_compile v1/tools-host/release-tzx/{build,inspect_tzx,runtime_acceptance,kernel_native_projection,kernel_text_projection,native_rebuild_test}.py tools/p11-prerelease/{source_tap,native_text_assemble_test,native_kernel_tape_rebuild,sdk_source_tapes,sdk_source_tape_native_build,sdk_source_tape_native_visual_build,sdk_native_process_run,sdk_native_cc_preflight,sdk_native_ld_preflight,sdk_stage_bundle,sdk_native_visual_run}.py
 pasmo="$(cat "$work/pasmo-path")"
 for d in a b; do
   "$py" v1/tools-host/release-tzx/build.py --kernel v1/build/kernel.bin \
@@ -221,4 +221,22 @@ assert len(list((w/"tapes").rglob("*.src.tap")))==30
 assert len([p for p in (w/"native").rglob("*") if p.is_file()])==60
 assert len(list((w/"reference-lfs").rglob("*.png")))==30
 assert len(list((w/"reference-png").rglob("*.png")))==30
+PY
+
+"$py" tools/p11-prerelease/sdk_native_visual_run.py \
+  --root "$work/sdk-reference-pre-release-1.0.2" \
+  --native "$work/sdk-native-visual-build" \
+  --native-report "$work/sdk-native-visual-build.json" \
+  --output "$work/P11.pre-release/sdk/proof/visual" \
+  --report "$work/P11.pre-release/sdk/proof/native-visual-run.json"
+"$py" - <<'PY'
+import json
+from pathlib import Path
+p=Path("/tmp/p11-prerelease/P11.pre-release/sdk/proof")
+d=json.loads((p/"native-visual-run.json").read_text())
+assert d["program_count"]==30 and len(d["programs"])==30
+assert all(row["spawn"]=="PASS" and row["screen_ram_capture"]=="PASS" and row["deterministic_png_from_scr"]=="PASS" for row in d["programs"])
+assert all(v=="PASS" for v in d["assertions"].values())
+assert len(list((p/"visual").rglob("*.scr")))==30
+assert len(list((p/"visual").rglob("*.png")))==30
 PY

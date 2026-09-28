@@ -112,8 +112,17 @@ P11PR_RECORD EQU $B000
     ORG $E000
 p11pr_gateway:
     ld (syscall_arg_hl),hl
+    ld (p11pr_arg_bc),bc
     cp SYS_SPAWN
     jp z,zx48_sys_spawn
+    cp SYS_CON_CLEAR
+    jp z,p11pr_con_clear
+    cp SYS_CON_SETPOS
+    jp z,p11pr_con_setpos
+    cp SYS_CON_WRITE
+    jp z,p11pr_con_write
+    cp SYS_GFX_PLOT
+    jp z,p11pr_gfx_plot
     cp SYS_EXIT
     jr z,p11pr_exit
     ld a,E_NOTSUP
@@ -170,6 +179,254 @@ p11pr_run_child:
     pop af
     ld iy,ROM_IY_ANCHOR
     ret
+
+; Minimal exact ABI-visible console/plot subset used only by the pre-release
+; visual proof child.  The executable still enters through the admitted spawn
+; transaction above; these target-side handlers publish the child's real screen
+; writes into Spectrum display RAM before SYS_EXIT is observed.
+P11PR_FONT_ADDR EQU $D000
+
+p11pr_con_clear:
+    xor a
+    ld hl,$4000
+    ld de,$4001
+    ld bc,6143
+    ld (hl),a
+    ldir
+    ld hl,$5800
+    ld de,$5801
+    ld bc,767
+    ld a,7
+    ld (hl),a
+    ldir
+    xor a
+    ld (p11pr_vis_row),a
+    ld (p11pr_vis_col),a
+    ld hl,0
+    or a
+    ret
+
+p11pr_con_setpos:
+    ld hl,(syscall_arg_hl)
+    ld a,h
+    cp 24
+    jr nc,p11pr_vis_bad
+    ld a,l
+    cp 64
+    jr nc,p11pr_vis_bad
+    ld a,h
+    ld (p11pr_vis_row),a
+    ld a,l
+    ld (p11pr_vis_col),a
+    ld hl,0
+    xor a
+    ret
+
+p11pr_con_write:
+    ld hl,(syscall_arg_hl)
+    ld bc,(p11pr_arg_bc)
+    ld (p11pr_vis_count),bc
+p11pr_vis_write_loop:
+    ld a,b
+    or c
+    jr z,p11pr_vis_write_done
+    ld a,(hl)
+    push hl
+    push bc
+    call p11pr_vis_putchar
+    pop bc
+    pop hl
+    ret c
+    inc hl
+    dec bc
+    jr p11pr_vis_write_loop
+p11pr_vis_write_done:
+    ld hl,(p11pr_vis_count)
+    xor a
+    ret
+
+p11pr_vis_putchar:
+    cp $20
+    jr c,p11pr_vis_bad
+    cp $80
+    jr nc,p11pr_vis_bad
+    sub $20
+    ld l,a
+    ld h,0
+    add hl,hl
+    add hl,hl
+    ld de,P11PR_FONT_ADDR+8
+    add hl,de
+    ld (p11pr_vis_glyph),hl
+    xor a
+    ld (p11pr_vis_scan),a
+p11pr_vis_scan_loop:
+    ld a,(p11pr_vis_scan)
+    cp 8
+    jr nc,p11pr_vis_attr
+    ld e,a
+    srl e
+    ld d,0
+    ld hl,(p11pr_vis_glyph)
+    add hl,de
+    ld a,(hl)
+    ld d,a
+    ld a,(p11pr_vis_scan)
+    and 1
+    ld a,d
+    jr nz,p11pr_vis_nibble
+    rrca
+    rrca
+    rrca
+    rrca
+p11pr_vis_nibble:
+    and $0f
+    ld d,a
+    ld a,(p11pr_vis_row)
+    add a,a
+    add a,a
+    add a,a
+    ld b,a
+    ld a,(p11pr_vis_scan)
+    add a,b
+    ld b,a
+    ld a,(p11pr_vis_col)
+    srl a
+    ld c,a
+    call p11pr_bitmap_address
+    ld a,(p11pr_vis_col)
+    and 1
+    ld a,(hl)
+    jr nz,p11pr_vis_right
+    and $0f
+    ld e,a
+    ld a,d
+    rlca
+    rlca
+    rlca
+    rlca
+    or e
+    ld (hl),a
+    jr p11pr_vis_next
+p11pr_vis_right:
+    and $f0
+    or d
+    ld (hl),a
+p11pr_vis_next:
+    ld a,(p11pr_vis_scan)
+    inc a
+    ld (p11pr_vis_scan),a
+    jr p11pr_vis_scan_loop
+p11pr_vis_attr:
+    ld a,(p11pr_vis_row)
+    ld l,a
+    ld h,0
+    add hl,hl
+    add hl,hl
+    add hl,hl
+    add hl,hl
+    add hl,hl
+    ld a,(p11pr_vis_col)
+    srl a
+    ld e,a
+    ld d,0
+    add hl,de
+    ld de,$5800
+    add hl,de
+    ld (hl),7
+    ld a,(p11pr_vis_col)
+    inc a
+    cp 64
+    jr nc,p11pr_vis_bad
+    ld (p11pr_vis_col),a
+    xor a
+    ret
+
+p11pr_gfx_plot:
+    ld hl,(syscall_arg_hl)
+    ld a,l
+    cp 192
+    jr nc,p11pr_vis_bad
+    ld (p11pr_vis_xy),hl
+    ld b,l
+    ld a,h
+    ld c,a
+    srl c
+    srl c
+    srl c
+    call p11pr_bitmap_address
+    ld de,(p11pr_vis_xy)
+    ld a,d
+    and 7
+    ld c,a
+    ld a,$80
+p11pr_vis_mask_loop:
+    ld b,c
+    ld c,a
+    ld a,b
+    or a
+    ld a,c
+    jr z,p11pr_vis_mask_done
+    srl a
+    dec b
+    ld c,b
+    jr p11pr_vis_mask_loop
+p11pr_vis_mask_done:
+    or (hl)
+    ld (hl),a
+    ld de,(p11pr_vis_xy)
+    ld a,e
+    and $f8
+    ld l,a
+    ld h,0
+    add hl,hl
+    add hl,hl
+    ld a,d
+    srl a
+    srl a
+    srl a
+    ld e,a
+    ld d,0
+    add hl,de
+    ld de,$5800
+    add hl,de
+    ld (hl),7
+    ld hl,0
+    xor a
+    ret
+
+p11pr_bitmap_address:
+    ld a,b
+    and 7
+    or $40
+    ld h,a
+    ld a,b
+    and $c0
+    rrca
+    rrca
+    rrca
+    or h
+    ld h,a
+    ld a,b
+    and $38
+    rlca
+    rlca
+    or c
+    ld l,a
+    ret
+
+p11pr_vis_bad:
+    ld a,E_INVAL
+    scf
+    ret
+
+p11pr_arg_bc: dw 0
+p11pr_vis_row: db 0
+p11pr_vis_col: db 0
+p11pr_vis_scan: db 0
+p11pr_vis_glyph: dw 0
+p11pr_vis_count: dw 0
+p11pr_vis_xy: dw 0
 
 zx48_process_lookup:
     cp MAX_PROCESSES
