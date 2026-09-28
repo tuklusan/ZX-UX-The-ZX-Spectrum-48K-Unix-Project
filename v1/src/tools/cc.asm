@@ -9653,26 +9653,26 @@ cc_p11pr_visual_desc:
     dw cc_p11pr_vt01 : db 31,40,40
     dw cc_p11pr_vt02 : db 12,128,96
     dw cc_p11pr_vt03 : db 14,96,80
-    dw cc_p11pr_vt04 : db 35,80,72
+    dw cc_p11pr_vt04 : db 36,80,72
     dw cc_p11pr_vt05 : db 11,112,88
-    dw cc_p11pr_vt06 : db 31,128,96
+    dw cc_p11pr_vt06 : db 32,128,96
     dw cc_p11pr_vt07 : db 16,120,88
     dw cc_p11pr_vt08 : db 26,128,80
     dw cc_p11pr_vt09 : db 31,214,156
     dw cc_p11pr_vt10 : db 25,128,96
-    dw cc_p11pr_vt11 : db 30,128,96
+    dw cc_p11pr_vt11 : db 29,128,96
     dw cc_p11pr_vt12 : db 15,48,96
-    dw cc_p11pr_vt13 : db 29,128,96
-    dw cc_p11pr_vt14 : db 32,128,100
-    dw cc_p11pr_vt15 : db 28,128,96
-    dw cc_p11pr_vt16 : db 30,128,96
+    dw cc_p11pr_vt13 : db 30,128,96
+    dw cc_p11pr_vt14 : db 30,128,100
+    dw cc_p11pr_vt15 : db 29,128,96
+    dw cc_p11pr_vt16 : db 28,128,96
     dw cc_p11pr_vt17 : db 31,128,96
     dw cc_p11pr_vt18 : db 31,128,96
     dw cc_p11pr_vt19 : db 29,54,148
     dw cc_p11pr_vt20 : db 28,128,96
     dw cc_p11pr_vt21 : db 28,128,96
     dw cc_p11pr_vt22 : db 27,192,96
-    dw cc_p11pr_vt23 : db 29,128,96
+    dw cc_p11pr_vt23 : db 28,128,96
     dw cc_p11pr_vt24 : db 22,128,96
     dw cc_p11pr_vt25 : db 28,128,96
     dw cc_p11pr_vt26 : db 29,128,96
