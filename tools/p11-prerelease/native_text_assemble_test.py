@@ -66,15 +66,39 @@ def make_sna(entry:int,fixture:bytes,source:bytes,kernel:bytes)->bytes:
     struct.pack_into("<H",h,23,SNAP_STACK); h[25]=1; h[26]=0
     return bytes(h)+bytes(ram)
 
-def run_sna(fuse:Path,sna:Path,pass_pc:int,fail_pc:int)->subprocess.CompletedProcess:
+DIAG_MARKER=0xD17A0001
+
+def run_sna(fuse:Path,sna:Path,pass_pc:int,fail_pc:int,diag_addrs:tuple[int,...])->subprocess.CompletedProcess:
+    fail_commands=[f"print 0x{DIAG_MARKER:x}","print z80:pc"]
+    fail_commands.extend(f"print [0x{addr:04x}]" for addr in diag_addrs)
     cmd=(
       f"breakpoint 0x{pass_pc:04x}\ncommands 1\nexit 0\nend\n"
-      f"breakpoint 0x{fail_pc:04x}\ncommands 2\nexit 1\nend\ncontinue"
+      f"breakpoint 0x{fail_pc:04x}\ncommands 2\n"
+      +"\n".join(fail_commands)
+      +"\nexit 1\nend\ncontinue"
     )
     return subprocess.run(
       ["/usr/bin/env","SDL_VIDEODRIVER=dummy","SDL_AUDIODRIVER=dummy",str(fuse),
        "--machine","48","--no-sound","--no-confirm-actions","--debugger-command",cmd,str(sna)],
       cwd=ROOT,text=True,capture_output=True,timeout=90,check=False)
+
+def diagnostic_text(stdout:str,source:bytes)->str:
+    values=[int(x,16) for x in re.findall(r"0x([0-9a-f]+)",stdout,re.I)]
+    try: i=values.index(DIAG_MARKER)
+    except ValueError: return "diagnostics=missing"
+    v=values[i+1:i+15]
+    if len(v)!=14: return f"diagnostics=truncated values={v!r}"
+    pc=v[0]; line=v[1]|(v[2]<<8); pos=v[3]|(v[4]<<8)
+    produced=v[5]|(v[6]<<8); logical_pc=v[7]|(v[8]<<8)
+    ident,family,op_type,tmp0,tmp1=v[9:14]
+    off=line-SOURCE_BASE
+    current=b""
+    if 0<=off<len(source):
+        current=source[off:source.find(b"\n",off) if b"\n" in source[off:] else len(source)]
+    return (f"pc=0x{pc:04x} line=0x{line:04x} source_offset={off} "
+            f"parse_ptr=0x{pos:04x} produced={produced} logical_pc=0x{logical_pc:04x} "
+            f"id={ident} family={family} op_type={op_type} tmp0={tmp0} tmp1={tmp1} "
+            f"source_line={current!r}")
 
 def main()->int:
     ap=argparse.ArgumentParser()
@@ -160,8 +184,20 @@ r17_txt_fixture_end:
     p=subprocess.run([str(sj),"--nologo","--sym=r17-text-as-fixture.sym",asm.name],cwd=build,text=True,capture_output=True,timeout=60)
     require(p.returncode==0,f"fixture assembly failed:\n{p.stdout}\n{p.stderr}")
     fixture=(build/"r17-text-as-fixture.bin").read_bytes()
-    sy=symbols(build/"r17-text-as-fixture.sym",("r17_txt_positive","r17_txt_negative","r17_txt_pass","r17_txt_fail"))
+    sy=symbols(build/"r17-text-as-fixture.sym",(
+        "r17_txt_positive","r17_txt_negative","r17_txt_pass","r17_txt_fail",
+        "r17_txt_line_start","r17_txt_p","r17_as_produced","r17_as_pc",
+        "r17_txt_id","r17_txt_family","r17_txt_op_type","r17_txt_tmp0","r17_txt_tmp1",
+    ))
     require(FIXTURE_BASE+len(fixture)<=0x66A6,f"fixture too large: {len(fixture)}")
+    diag_addrs=(
+        sy["r17_txt_line_start"],sy["r17_txt_line_start"]+1,
+        sy["r17_txt_p"],sy["r17_txt_p"]+1,
+        sy["r17_as_produced"],sy["r17_as_produced"]+1,
+        sy["r17_as_pc"],sy["r17_as_pc"]+1,
+        sy["r17_txt_id"],sy["r17_txt_family"],sy["r17_txt_op_type"],
+        sy["r17_txt_tmp0"],sy["r17_txt_tmp1"],
+    )
 
     fuse=ROOT/"tools/runtime/fuse/bin/fuse"; require(fuse.is_file(),"project FUSE missing")
     mutated=bytearray(source)
@@ -174,11 +210,15 @@ r17_txt_fixture_end:
     with tempfile.TemporaryDirectory(prefix="zxux-r17-text-") as td:
         td=Path(td)
         sp=td/"positive.sna"; sp.write_bytes(make_sna(sy["r17_txt_positive"],fixture,source,kernel))
-        rp=run_sna(fuse,sp,sy["r17_txt_pass"],sy["r17_txt_fail"])
-        require(rp.returncode==0,f"positive target parser failed: {rp.stdout!r} {rp.stderr!r}")
+        rp=run_sna(fuse,sp,sy["r17_txt_pass"],sy["r17_txt_fail"],diag_addrs)
+        require(rp.returncode==0,
+                f"positive target parser failed exit={rp.returncode}: "
+                f"{diagnostic_text(rp.stdout,source)} stdout={rp.stdout!r} stderr={rp.stderr!r}")
         sn=td/"negative.sna"; sn.write_bytes(make_sna(sy["r17_txt_negative"],fixture,bytes(mutated),kernel))
-        rn=run_sna(fuse,sn,sy["r17_txt_pass"],sy["r17_txt_fail"])
-        require(rn.returncode==0,f"negative target parser oracle failed: {rn.stdout!r} {rn.stderr!r}")
+        rn=run_sna(fuse,sn,sy["r17_txt_pass"],sy["r17_txt_fail"],diag_addrs)
+        require(rn.returncode==0,
+                f"negative target parser oracle failed exit={rn.returncode}: "
+                f"{diagnostic_text(rn.stdout,bytes(mutated))} stdout={rn.stdout!r} stderr={rn.stderr!r}")
 
     report={
       "schema":1,"kind":"REV17-native-textual-assembler-parser",
