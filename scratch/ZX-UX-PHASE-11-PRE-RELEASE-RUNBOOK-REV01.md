@@ -102,10 +102,14 @@ observed on 2026-09-27:
   `ed9e2b2643481c3a58e46fdc054c3524fb7fe300827cb3e2c2b4c2833dd5ef01`.
 
 The SDK marks `docs/images/**` as Git LFS. The Git-tree `*.png` bytes at this
-release are LFS pointer records, not the image payloads. Reference-image
-provenance therefore consists of both the exact pointer record (including LFS
-OID and declared size) and the resolved PNG payload from the pinned GUI/evidence
-release package. A Git LFS pointer record must never be treated as a PNG payload.
+release are LFS pointer records, not the image payloads. Reference-image provenance therefore consists of both the exact pointer record
+(including LFS OID and declared size) and the resolved PNG payload from the
+materialized-LFS main SDK release package. The separately pinned GUI/evidence
+package remains an acquired, hashed provenance input for its own GUI evidence,
+but it does not contain the docs/images reference payloads. This was verified
+fail-closed during execution on 2026-09-27 by an exhaustive exact-size/SHA-256
+scan of every file in that archive after the original wording proved false. A
+Git LFS pointer record must never be treated as a PNG payload.
 
 Release `1.0.2` also publishes a locked native source-transfer-tape corpus:
 `compiler/source_tape_manifest.json` is Git blob
@@ -233,9 +237,10 @@ pinned source-tape manifest/tooling needed to verify them, and the exact Git LFS
 pointer records for reference images, with a project-authored provenance manifest
 binding every imported file to SDK release `1.0.2`, commit
 `b1621338565ac3bd9d4eff4ecb5a2a77aee2ab6a`, and the release package
-SHA-256. Resolved reference PNG payloads belong in the pre-release media bundle,
-with each payload bound to its SDK LFS pointer OID/size and to the pinned
-GUI/evidence package.
+SHA-256. Resolved reference PNG payloads belong in the pre-release media bundle, with
+each payload bound to its SDK LFS pointer OID/size and to the pinned main SDK
+release package. The pinned GUI/evidence package must still be acquired and
+identity-verified, and its separate provenance recorded.
 
 If project license/header machinery needs an exemption for exact upstream bytes,
 the exemption must be exact-path and exact-identity fail-closed. It may not
@@ -344,8 +349,11 @@ scheduled for mutation.
 9. Independently decode every in-scope release source tape and prove that its
    M48O objects reconstruct the exact pinned local header and C source bytes,
    including the manifest-declared target names.
-10. Resolve each required reference PNG from the pinned GUI/evidence package and
-    verify its bytes against the pointer OID and declared size.
+10. Resolve each required docs reference PNG from the materialized-LFS pinned
+    main SDK release package and verify its bytes against the Git-tree pointer
+    OID and declared size. Independently acquire and identity-verify the pinned
+    GUI/evidence package; record that it is separate GUI evidence and is not the
+    docs reference payload source.
 11. Preserve the exact release inputs durably in a project-approved provenance
     location, or preserve equivalent exact immutable copies whose hashes are
     checked before every use.
