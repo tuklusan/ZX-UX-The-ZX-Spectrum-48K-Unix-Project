@@ -36,7 +36,7 @@ IDX=("ix","iy")
 ALU=("add","adc","sub","sbc","and","xor","or","cp")
 BIT=("bit","res","set")
 SHIFT=("rlc","rrc","rl","rr","sla","sra","srl")
-FIXED={v:k for k,v in n.FIXED_ID.items()}
+FIXED={v:k for k,v in n.FIXED_ID.items()} | {23:"jp (hl)",24:"ld sp,hl"}
 
 def hx8(v:int)->str: return f"${v&255:02x}"
 def hx16(v:int)->str: return f"${v&0xffff:04x}"
