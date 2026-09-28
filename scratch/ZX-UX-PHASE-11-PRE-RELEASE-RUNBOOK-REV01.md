@@ -77,42 +77,49 @@ The SDK repository is READ-ONLY:
 
 `tuklusan/zx-ux-c48-sdk-sinclair-zx-spectrum-48k-unix-c-compiler-software-development-kit`
 
-This runbook is pinned to the latest published SDK release observed at creation:
+This runbook is explicitly re-pinned to the latest published SDK release
+observed on 2026-09-27:
 
-- release/tag: `1.0.0`;
-- published timestamp: `2026-09-15T20:18:30Z`;
+- release/tag: `1.0.2`;
+- published timestamp: `2026-09-27T23:46:38Z`;
 - tag target commit:
-  `6f964408a67bff074f2f4ef5785f6aaaee9e3373`;
+  `b1621338565ac3bd9d4eff4ecb5a2a77aee2ab6a`;
 - release root tree:
-  `a268dde2912e68bcd59326f8e0b45f23ee1adad7`;
+  `ced96ea0a4b2f6cdd6080fc6f48e07738252af17`;
 - main release package:
-  `zx-ux-c48-sdk-1.0.0-6f964408a67bff074f2f4ef5785f6aaaee9e3373.zip`;
-- package size: `15292931` bytes;
+  `zx-ux-c48-sdk-1.0.2-b1621338565ac3bd9d4eff4ecb5a2a77aee2ab6a.zip`;
+- package size: `15432637` bytes;
 - package SHA-256:
-  `0b026839bb4bd9c3fdad474a782510515e17341d04e9975c276982c64e29e336`;
+  `8efd465928048b050c0cff9d93ddaf13127eabb12b837a33aa1c2c44e913a98a`;
 - release metadata asset SHA-256:
-  `30353f627f855fe1bc5335109da9e2923bb16d0bb6ba983948553a88671b3cf4`;
+  `668911b54f20625ea8a7efa5219261146e4ef5a76a2f055a7990f019d59f555d`;
 - release SHA256SUMS asset SHA-256:
-  `889d5b39a7b512ef28d63fde7f22af9730436cb5d2245591d4232f1710c06676`;
+  `1981aa83cd1796894a380d2751cbc534483b244868d28c97f69c922f30672990`;
 - SDK GUI/reference-evidence package:
-  `c48-1.0.0-gui-evidence-6f964408a67bff074f2f4ef5785f6aaaee9e3373.zip`;
-- GUI/reference-evidence package size: `3719473` bytes;
+  `c48-1.0.2-gui-evidence-b1621338565ac3bd9d4eff4ecb5a2a77aee2ab6a.zip`;
+- GUI/reference-evidence package size: `3700008` bytes;
 - GUI/reference-evidence package SHA-256:
-  `82950a8af26f523c2f228c9bf2d11ec792cd791d611e73bfb455c25f2f17c2ea`.
+  `ed9e2b2643481c3a58e46fdc054c3524fb7fe300827cb3e2c2b4c2833dd5ef01`.
 
 The SDK marks `docs/images/**` as Git LFS. The Git-tree `*.png` bytes at this
 release are LFS pointer records, not the image payloads. Reference-image
 provenance therefore consists of both the exact pointer record (including LFS
 OID and declared size) and the resolved PNG payload from the pinned GUI/evidence
-release package. A 129/130/131-byte LFS pointer must never be treated as a PNG.
+release package. A Git LFS pointer record must never be treated as a PNG payload.
 
-At runbook creation, SDK `main` was
-`783da8e47ede152e8734ceb41f4a27f16781bfdb`, ten commits ahead of the pinned
-release. That moving `main` is not an input to this runbook. Among those
-post-release changes are relocation/reclassification of `hanoi.c` and
-`queens8.c` from examples to demos and addition of recursive-demo support
-material. The official `1.0.0` tag still contains both recursive programs and
-is the byte authority here.
+Release `1.0.2` also publishes a locked native source-transfer-tape corpus:
+`compiler/source_tape_manifest.json` is Git blob
+`8275c5b4985abb74d66a8eb43428fda9d8884809` and declares exactly 57
+`.src.tap` files. The release package contains the pinned `c48srctap` builder
+plus verifier tests. The 30 examples/demos in this runbook each have an SDK-published source
+TAP carrying the exact local support header plus the exact C source bytes. Those
+release-provided tapes are authoritative pre-release inputs; project code must
+not silently regenerate different canonical tapes.
+
+At this re-pin, SDK `main` is
+`f8d44fd0aa7fe54d691bfd13638ba6e8802ad453`, three commits ahead of the
+`1.0.2` tag target. Moving `main` is not an input to this runbook. The
+formal `1.0.2` tag/release above is the byte authority.
 
 If a newer formal SDK release is published before this runbook is executed,
 STOP. Do not silently consume it. Create the next runbook revision or obtain an
@@ -124,8 +131,9 @@ to this release pin. The SDK repository itself must never be modified.
 
 ## 4. Pinned SDK source corpus
 
-At SDK release `1.0.0`, the complete program corpus in scope is exactly 30 C
-programs plus two direct support headers.
+At SDK release `1.0.2`, the complete program corpus in scope remains exactly
+30 C programs, now split as 6 examples and 24 demos, plus three direct support
+headers.
 
 ### 4.1 Examples
 
@@ -134,22 +142,13 @@ Exact `usr/src/examples/` program set:
 - `argv.c`
 - `colors.c`
 - `graphics.c`
-- `hanoi.c`
 - `hello.c`
 - `maze.c`
-- `queens8.c`
 - `udg.c`
 
 Direct support header:
 
 - `exapi.h`
-
-Pinned recursive source identities:
-
-- `hanoi.c` Git blob:
-  `7f64e4375ada0322b767a4fbd4b71cdb1321e5bd`;
-- `queens8.c` Git blob:
-  `f42449c43825d8a658de4ad53b4fe3f5df49c828`.
 
 ### 4.2 Demos
 
@@ -161,6 +160,7 @@ Exact `usr/src/demos/` program set:
 - `forest.c`
 - `galaxy.c`
 - `goblet.c`
+- `hanoi.c`
 - `julia.c`
 - `kaleido.c`
 - `mandel.c`
@@ -170,6 +170,7 @@ Exact `usr/src/demos/` program set:
 - `ocean.c`
 - `orrery.c`
 - `plasma.c`
+- `queens8.c`
 - `raymaze.c`
 - `spriteanim.c`
 - `sprites.c`
@@ -178,16 +179,33 @@ Exact `usr/src/demos/` program set:
 - `tunnel.c`
 - `warp.c`
 
-Direct support header:
+Direct support headers:
 
-- `demoapi.h`
+- `demoapi.h` for the ordinary visual demos;
+- `recapi.h` for the recursive `hanoi.c` and `queens8.c` demos.
+
+Pinned recursive source identities:
+
+- `hanoi.c` Git blob:
+  `57e9419a56fca83656f574de6fa4d994b5eadae1`;
+- `queens8.c` Git blob:
+  `38cff8912e1bced21c01f3ee050063ce19afe35e`;
+- `recapi.h` Git blob:
+  `29e170e5c10aee80f09ed9eb7f273b8c9c9aedbc`.
 
 The release trees are:
 
 - `usr/src/examples/`:
-  `84d277c0f33b4587c8b87b06c02073265617aaaa`;
+  `042a1b302646957c223b955a9d967ca690a2b33f`;
 - `usr/src/demos/`:
-  `ed9aa1659a6783515d950ce9a4c1e819ea3eaa7f`.
+  `c8363270a6da92661f43650933d5b4848521f54d`.
+
+The pinned `compiler/source_tape_manifest.json` supplies exactly one canonical
+release source tape for each of these 30 programs. Example tapes carry
+`exapi.h`; ordinary demo tapes carry `demoapi.h`; the recursive Hanoi and
+8-Queens tapes carry `recapi.h`. For `spriteanim.c`, that manifest preserves
+the SDK source path and bytes but maps the target source object name to
+`sprani.c` so the ZX-UX 10-byte namespace limit is respected.
 
 No program may be skipped, xfail-marked, substituted, shortened, rewritten, or
 silently replaced by a project-authored lookalike merely to make native `cc`
@@ -207,14 +225,17 @@ The expanded pre-release must therefore extend the project SDK-reference area
 without editing or replacing the P11.39 tree. Use a separate, clearly named
 pre-release reference subtree, recommended:
 
-`v1/tests/compiler/sdk-reference/pre-release-1.0.0/`
+`v1/tests/compiler/sdk-reference/pre-release-1.0.2/`
 
 It must preserve original SDK relative paths and bytes for the pinned examples,
-demos, direct headers, and the exact Git LFS pointer records for reference images,
-with a project-authored provenance manifest binding every imported file to SDK
-release `1.0.0`, commit `6f964408...`, and the release package SHA-256. Resolved
-reference PNG payloads belong in the pre-release media bundle, with each payload
-bound to its SDK LFS pointer OID/size and to the pinned GUI/evidence package.
+demos, direct headers, the 30 in-scope release-provided `.src.tap` files, the
+pinned source-tape manifest/tooling needed to verify them, and the exact Git LFS
+pointer records for reference images, with a project-authored provenance manifest
+binding every imported file to SDK release `1.0.2`, commit
+`b1621338565ac3bd9d4eff4ecb5a2a77aee2ab6a`, and the release package
+SHA-256. Resolved reference PNG payloads belong in the pre-release media bundle,
+with each payload bound to its SDK LFS pointer OID/size and to the pinned
+GUI/evidence package.
 
 If project license/header machinery needs an exemption for exact upstream bytes,
 the exemption must be exact-path and exact-identity fail-closed. It may not
@@ -233,8 +254,9 @@ The entire runbook is fail-closed around these rules:
 5. No Phase-12 source, workflow, qualification, evidence, media, admission,
    activation, dispatch, or speculative implementation is created.
 6. The official boot/pre-release product remains TZX-only under REV17.
-7. TAP files created by this runbook are source-transfer/evidence sidecars only;
-   they are not a TAP counterpart of the official boot distribution.
+7. TAP files retained or created by this runbook are source-transfer/evidence
+   sidecars only; they are not a TAP counterpart of the official boot
+   distribution.
 8. The expanded pre-release must revalidate P11.48 at the exact current source
    head without rewriting admitted historical P11.48 evidence.
 9. SDK release bytes are reference/oracle material. REV17/REV08 remain the
@@ -304,28 +326,37 @@ scheduled for mutation.
 
 ## 8. Stage B - acquire and preserve pinned SDK release
 
-1. Acquire the exact SDK `1.0.0` release package named in Section 3.
+1. Acquire the exact SDK `1.0.2` release package named in Section 3.
 2. Acquire the exact GUI/reference-evidence package, release metadata, and
    SHA256SUMS asset named/pinned in Section 3.
 3. Verify exact package sizes and SHA-256 values before extraction.
-4. Verify tag `1.0.0` resolves to the pinned commit and root tree.
+4. Verify tag `1.0.2` resolves to the pinned commit and root tree.
 5. Extract release inputs to isolated workspaces.
-6. Inventory and hash all in-scope source/header files and all reference-image
-   LFS pointer records. Resolve each required reference PNG from the pinned
-   GUI/evidence package and verify its bytes against the pointer OID and declared
-   size.
-7. Preserve the exact release inputs durably in a project-approved provenance
-   location, or preserve equivalent exact immutable copies whose hashes are
-   checked before every use.
-8. Populate the separate pre-release SDK reference subtree without changing the
-   historical P11.39 import.
-9. Add a provenance manifest with exact SDK path, size, Git blob/LFS identity
-   where applicable, and SHA-256 for every imported/resolved byte.
-10. Run the SDK's own release verifier/oracle from the pinned package as a
-    reference check only.
+6. Run the pinned SDK release verifier/oracle and require its locked
+   `compiler/release_expectations.json` contract to report version `1.0.2`,
+   test count `371`, and PASS.
+7. Verify `compiler/source_tape_manifest.json` declares exactly 57 release
+   source tapes and that the release package manifest contains every declared
+   `.src.tap` plus the pinned `c48srctap` builder/support files.
+8. Inventory and hash all 30 in-scope example/demo C sources, the three direct
+   support headers, their 30 release-provided source tapes, and all required
+   reference-image LFS pointer records.
+9. Independently decode every in-scope release source tape and prove that its
+   M48O objects reconstruct the exact pinned local header and C source bytes,
+   including the manifest-declared target names.
+10. Resolve each required reference PNG from the pinned GUI/evidence package and
+    verify its bytes against the pointer OID and declared size.
+11. Preserve the exact release inputs durably in a project-approved provenance
+    location, or preserve equivalent exact immutable copies whose hashes are
+    checked before every use.
+12. Populate the separate pre-release SDK reference subtree without changing the
+    historical P11.39 import.
+13. Add a provenance manifest with exact SDK path, size, Git blob/LFS identity
+    where applicable, and SHA-256 for every imported/resolved byte.
 
 **Gate B:** the exact pinned SDK release is reproducible locally, the full
-30-program source set is present, and the original P11.39 import is unchanged.
+30-program source set and its 30 canonical release source tapes are present and
+independently verified, and the original P11.39 import is unchanged.
 
 ## 9. Stage C - textual native kernel-source projection
 
@@ -442,57 +473,56 @@ Phase-12 post-kernel object ordering is introduced by this step.
 8192-byte kernel PASS, with exact three-way identity, mutation negative PASS, and
 a rebuilt pre-release TZX that consumes and embeds the retained native kernel.
 
-## 12. Stage F - native source-TAP format for SDK programs
+## 12. Stage F - pinned SDK source-TAP corpus for native programs
 
-For every pinned SDK C program, create a ZX-UX-loadable source-transfer TAP
-sidecar using existing M48O transport:
+Release `1.0.2` already contains the authoritative ZX-UX source-transfer TAP
+for every in-scope example/demo program. Preserve and use those exact release
+bytes from `usr/bin/examples/*.src.tap` and `usr/bin/demos/*.src.tap`; do not
+replace them with project-authored canonical tapes.
 
-- `.c` source object type: `C` / type 5;
-- target directory: `USERHOME` / target 5;
-- logical bytes: exact pinned SDK source bytes with no project rewrite;
-- RAW M48O transport with exact logical/physical source length;
-- target object base name: a deterministic <=10-byte ZX-UX namespace name,
-  recorded in the manifest.
+Each canonical release tape is governed by the pinned
+`compiler/source_tape_manifest.json` and carries RAW M48O version-1 objects
+targeted at `USERHOME`:
 
-The M48O/namespace base-name limit is 10 bytes. All pinned program filenames fit
-unchanged except `usr/src/demos/spriteanim.c`. Its retained SDK source path and
-bytes remain exactly `spriteanim.c`, but its target namespace alias is fixed as:
+- each `.c` source object is type `C` / type 5;
+- each local `.h` support object is type `TXT` / type 1;
+- logical source/header payload bytes are exactly the pinned SDK bytes;
+- example tapes carry `exapi.h`;
+- ordinary demo tapes carry `demoapi.h`;
+- `hanoi.src.tap` and `queens8.src.tap` carry `recapi.h`.
 
-`usr/src/demos/spriteanim.c -> spranim.c`
+The M48O/namespace base-name limit is 10 bytes. The pinned SDK source-tape
+manifest already resolves the only in-scope source-name collision:
 
-Use `spranim.o` for its target OBJ1 name and `spranim` for its target executable
-name. All other program source names remain their exact SDK lower-case filenames;
-derived target OBJ/executable names must also be <=10 bytes. The provenance and
-program matrix must record SDK path, retained host filename, target source name,
-target OBJ name, and target executable name. Aliases must be unique and may not
-change source payload bytes.
+`usr/src/demos/spriteanim.c -> sprani.c`
 
-Create both shared direct-header sidecars unconditionally:
+The retained host source path and bytes remain exactly `spriteanim.c`. Use
+`sprani.obj` for the target OBJ1 name and `sprani` for the target executable
+name. All other program source names remain the exact lower-case SDK filenames;
+derived target OBJ/executable names must also satisfy the ZX-UX namespace limit.
+The provenance/program matrix must record SDK path, retained host filename,
+manifest target source name, target OBJ name, and target executable name.
 
-- `exapi.h`: `TXT` / type 1 object preserving exact release bytes;
-- `demoapi.h`: `TXT` / type 1 object preserving exact release bytes.
+Each of the 30 canonical release TAPs must be independently decoded and checked
+against the pinned source/header bytes, including TAP framing/ROM checksums and
+all M48O header/payload checks. The project may run the pinned `c48srctap`
+builder in an isolated comparison workspace, but any regenerated tape is only a
+reproducibility cross-check: it must either match the release tape exactly or
+fail the gate. It never replaces the release-provided canonical bytes.
 
-Both header sidecars use RAW M48O transport. No new public object type is allowed.
-Local include resolution must consume the loaded exact header bytes from the same
-`USERHOME` directory.
-
-Each TAP must be independently decoded and checked against its pinned source
-bytes, including TAP framing/ROM checksums and all M48O header/payload checks. The
-runbook may additionally create one aggregate convenience source tape, but
-per-program source identity and proof remain mandatory.
-
-**Gate F:** every native compile input can be obtained from a retained,
-independently verified ZX-UX source TAP without changing SDK source bytes.
+**Gate F:** every native compile input is obtained from its retained,
+independently verified SDK `1.0.2` release source TAP without changing SDK
+source/header bytes or manifest target names.
 
 ## 13. Stage G - native compile/link/run matrix for all SDK examples and demos
 
 For each of the 30 C programs in Section 4, perform a real target-native
 lifecycle from source loaded into ZX-UX:
 
-`source TAP -> M48O C object -> native cc -> OBJ1 -> native ld -> executable -> run`
+`release source TAP -> M48O TXT header + C source objects -> native cc -> OBJ1 -> native ld -> executable -> run`
 
 Each program proof starts from a clean deterministic Section-6.1 proof session,
-loads only its required source/header tapes, and may not reuse compiler output or
+loads only its required canonical release source tape, and may not reuse compiler output or
 application state from another program. Retained OBJ1/MEX1 bytes must be extracted
 after native creation from the validated target object/image; host tooling may copy
 and hash them but may not construct or repair them.
@@ -566,7 +596,7 @@ compile/link/run record and a deterministic capture point.
 
 ## 15. Stage I - recursive Hanoi + 8-Queens concurrent proof
 
-Use the exact pinned SDK `hanoi.c` and `queens8.c` bytes from release `1.0.0`.
+Use the exact pinned SDK `hanoi.c`, `queens8.c`, and `recapi.h` bytes from release `1.0.2`.
 They intentionally use different screen halves and explicitly yield/sleep.
 
 1. Load both exact source programs and required support material through their
@@ -623,6 +653,7 @@ P11.pre-release/
     kernel-native-build.json
   sdk/
     SDK-RELEASE.json
+    SOURCE-TAPE-MANIFEST.json
     TARGET-NAME-MAP.json
     sources/
       examples/
@@ -631,7 +662,6 @@ P11.pre-release/
     tapes/
       examples/
       demos/
-      headers/
     native/
       examples/
       demos/
@@ -663,6 +693,7 @@ path, size, and SHA-256 and must include:
 - Phase-11 aggregate/P11.48 identities;
 - prior compact pre-release TZX identity being superseded;
 - pinned SDK release/tag/commit/tree/package identity;
+- pinned 57-tape source-tape manifest identity and the exact 30 in-scope release TAP hashes;
 - complete 30-program matrix and collision-free target-name mapping;
 - kernel host/TZX/native three-way hashes;
 - kernel textual source, source map, source-TAP, native OBJ1, and native kernel
@@ -692,7 +723,7 @@ Require byte identity for every deterministic artifact, including:
 - main pre-release TZX;
 - kernel textual projection;
 - kernel source TAP;
-- all SDK source TAPs;
+- all 30 retained SDK release source TAPs, with any pinned-tool regeneration required to match those canonical bytes;
 - all retained native OBJ1/executable outputs;
 - all canonical SCR captures;
 - generated manifests/reports;
@@ -797,12 +828,14 @@ For every implementation checkpoint under this runbook:
 
 This runbook is DONE only when all of the following are simultaneously true:
 
-- SDK release `1.0.0` is pinned by exact tag, commit, tree, package size, and
+- SDK release `1.0.2` is pinned by exact tag, commit, tree, package size, and
   SHA-256;
 - the historical P11.39 SDK import is unchanged;
-- all 8 pinned examples and all 22 pinned demos are present with exact source
+- the pinned source-tape manifest declares 57 release tapes and the exact 30
+  in-scope example/demo release tapes are retained and independently verified;
+- all 6 pinned examples and all 24 pinned demos are present with exact source
   provenance;
-- every one of the 30 programs loads from retained ZX-UX source TAP material,
+- every one of the 30 programs loads from its retained canonical SDK `1.0.2` ZX-UX source TAP,
   compiles with native `cc`, emits native OBJ1, links with native `ld`, and runs
   on ZX-UX;
 - all 30 have retained deterministic SCR+PNG visual proof bound to native
