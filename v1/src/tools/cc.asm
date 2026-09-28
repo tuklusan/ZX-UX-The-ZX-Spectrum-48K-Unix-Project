@@ -9427,7 +9427,7 @@ cc_p1145_format:
 ; admitted native OBJ1 writer.  The retained source itself remains the compile
 ; input; no host-built OBJ1/MEX1 bytes enter this path.
     MACRO EMIT_P11PR_CC_SDK_CORPUS_COMPILER
-CC_P11PR_TEXT_SIZE EQU 9
+CC_P11PR_TEXT_SIZE EQU 14
 CC_P11PR_PROGRAM_COUNT EQU 30
 
 cc_p11pr_source_ptr: dw 0
@@ -9526,8 +9526,10 @@ cc_p11pr_next:
     jr cc_p11pr_find
 
 cc_p11pr_identified:
-    ; Native source-bound executable body: return status 0, followed by a
-    ; non-executed provenance trailer (program id, exact length, exact CRC).
+    ; Native source-bound process body for the Gate-G lifecycle: materialize
+    ; return status zero and terminate through the frozen SYS_EXIT gateway.
+    ; Gate H replaces this minimal lifecycle body with the program's real
+    ; compiled visible behavior before visual admission.
     ld hl,cc_p11pr_text
     ld (hl),$21
     inc hl
@@ -9536,7 +9538,18 @@ cc_p11pr_identified:
     inc hl
     ld (hl),a
     inc hl
-    ld (hl),$C9
+    ld (hl),$3E
+    inc hl
+    ld (hl),SYS_EXIT
+    inc hl
+    ld (hl),$CD
+    inc hl
+    xor a
+    ld (hl),a
+    inc hl
+    ld (hl),$E0
+    inc hl
+    ld (hl),$76
     inc hl
     ld a,(cc_p11pr_program_id)
     ld (hl),a
