@@ -42,6 +42,14 @@ def getj(url):
 def dl(url,p):
  r=urllib.request.Request(url,headers={"User-Agent":"zxux-p11"})
  with urllib.request.urlopen(r,timeout=300) as x,Path(p).open("wb") as f: shutil.copyfileobj(x,f,1<<20)
+def extract_zip(src,dst):
+ with zipfile.ZipFile(src) as z:
+  z.extractall(dst)
+  for i in z.infolist():
+   mode=(i.external_attr>>16)&0o7777
+   if mode&0o111:
+    p=Path(dst)/i.filename
+    if p.is_file(): p.chmod(p.stat().st_mode|(mode&0o111))
 def crc16(data):
  c=0xffff
  for v in data:
@@ -125,8 +133,8 @@ def acquire(out):
   if not a or a.get("size")!=size or a.get("digest")!="sha256:"+digest:fail("release asset metadata mismatch: "+name)
   p=work/"d"/name;dl(a["browser_download_url"],p)
   if p.stat().st_size!=size or sha(p)!=digest:fail("release asset bytes mismatch: "+name)
- with zipfile.ZipFile(work/"d"/ASSETS["sdk"][0]) as z:z.extractall(work/"sdk")
- with zipfile.ZipFile(work/"d"/ASSETS["gui"][0]) as z:z.extractall(work/"gui")
+ extract_zip(work/"d"/ASSETS["sdk"][0],work/"sdk")
+ extract_zip(work/"d"/ASSETS["gui"][0],work/"gui")
  roots=[p.parent.parent for p in (work/"sdk").rglob("compiler/release_expectations.json") if (p.parent.parent/"VERSION").is_file()]
  if len(roots)!=1:fail("SDK ZIP root mismatch")
  sdk=roots[0]
