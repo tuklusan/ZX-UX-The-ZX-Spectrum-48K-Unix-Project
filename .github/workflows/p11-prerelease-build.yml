@@ -16,6 +16,10 @@ on:
     paths:
       - '.github/workflows/p11-prerelease-build.yml'
       - 'tools/p11-prerelease/**'
+      - 'v1/tools-host/release-tzx/**'
+      - 'tools/as.asm'
+      - 'tools/ld.asm'
+      - 'v1/src/tools/cc.asm'
       - 'tools/check_media_retention.py'
       - 'tools/check_license_headers.sh'
   workflow_dispatch: {}
