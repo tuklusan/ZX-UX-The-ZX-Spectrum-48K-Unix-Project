@@ -69,7 +69,7 @@ r17_as_text_obj1_inplace:
     ld a,d
     cp $80
     jr c,r17_txt_source_span
-    jr nz,r17_as_error
+    jp nz,r17_as_error
     ld a,e
     or a
     jp nz,r17_as_error
@@ -313,7 +313,7 @@ r17_txt_alu:
     call r17_txt_save_first
     call r17_txt_peek_comma_or_end
     ret c
-    jr z,r17_txt_alu_one
+    jp z,r17_txt_alu_one
     ld a,','
     call r17_txt_consume
     ret c
@@ -1085,32 +1085,32 @@ r17_txt_parse_operand:
     cp '('
     jp z,r17_txt_parse_paren
     cp '$'
-    jr z,r17_txt_operand_imm
+    jp z,r17_txt_operand_imm
     cp '0'
-    jr c,r17_txt_operand_word
+    jp c,r17_txt_operand_word
     cp '9'+1
-    jr c,r17_txt_operand_imm
+    jp c,r17_txt_operand_imm
 r17_txt_operand_word:
     cp 'a'
-    jr z,r17_txt_operand_a
+    jp z,r17_txt_operand_a
     cp 'b'
-    jr z,r17_txt_operand_b
+    jp z,r17_txt_operand_b
     cp 'c'
-    jr z,r17_txt_operand_c
+    jp z,r17_txt_operand_c
     cp 'd'
-    jr z,r17_txt_operand_d
+    jp z,r17_txt_operand_d
     cp 'e'
-    jr z,r17_txt_operand_e
+    jp z,r17_txt_operand_e
     cp 'h'
-    jr z,r17_txt_operand_h
+    jp z,r17_txt_operand_h
     cp 'l'
-    jr z,r17_txt_operand_l
+    jp z,r17_txt_operand_l
     cp 's'
-    jr z,r17_txt_operand_sp
+    jp z,r17_txt_operand_sp
     cp 'i'
-    jr z,r17_txt_operand_i
+    jp z,r17_txt_operand_i
     cp 'r'
-    jr z,r17_txt_operand_r
+    jp z,r17_txt_operand_r
     jp r17_as_error
 
 r17_txt_operand_a:
