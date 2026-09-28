@@ -16,6 +16,12 @@ export DISPLAY=:99
 work=/tmp/p11-prerelease
 tape="$work/P11.pre-release/zx-ux-phase11-pre-release.tzx"
 py=tools/runtime/python/bin/python
+runtime_home="$work/runtime-home"
+rm -rf "$runtime_home"
+mkdir -p "$runtime_home"
+export HOME="$runtime_home"
+export XDG_CONFIG_HOME="$runtime_home/.config"
+mkdir -p "$XDG_CONFIG_HOME"
 
 run_mode() {
   local name="$1" detect="$2" hook="$3" diag="$work/$1"
