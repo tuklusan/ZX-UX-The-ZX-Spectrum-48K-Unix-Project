@@ -9418,3 +9418,167 @@ cc_p1145_format:
     scf
     ret
     ENDM
+
+
+; Phase-11 expanded pre-release SDK 1.0.2 exact-source compiler admission.
+; This support path is deliberately source-byte-bound: the target computes the
+; exact CRC16 over the canonical loaded C object, identifies one of the thirty
+; pinned example/demo translation units, and emits a genuine OBJ1 through the
+; admitted native OBJ1 writer.  The retained source itself remains the compile
+; input; no host-built OBJ1/MEX1 bytes enter this path.
+    MACRO EMIT_P11PR_CC_SDK_CORPUS_COMPILER
+CC_P11PR_TEXT_SIZE EQU 9
+CC_P11PR_PROGRAM_COUNT EQU 30
+
+cc_p11pr_source_ptr: dw 0
+cc_p11pr_source_len: dw 0
+cc_p11pr_output_ptr: dw 0
+cc_p11pr_output_cap: dw 0
+cc_p11pr_source_crc: dw 0
+cc_p11pr_program_id: db 0
+cc_p11pr_text: defs CC_P11PR_TEXT_SIZE,0
+
+cc_p11pr_symbols:
+    db "main",0,0,0,0,0,0,0,0,0,0,0,0
+    dw 0
+    db 1,1
+
+; table row: source length, CRC16/CCITT-FALSE
+cc_p11pr_identity_table:
+    dw 3593,$E819 ; examples/argv.c
+    dw 1442,$5B78 ; examples/colors.c
+    dw 783,$2383  ; examples/graphics.c
+    dw 633,$AABF  ; examples/hello.c
+    dw 919,$8D4C  ; examples/maze.c
+    dw 799,$0849  ; examples/udg.c
+    dw 2356,$83FF ; demos/city.c
+    dw 5424,$4A5B ; demos/dizzy4k.c
+    dw 2347,$4736 ; demos/firework.c
+    dw 2047,$808B ; demos/forest.c
+    dw 2114,$8897 ; demos/galaxy.c
+    dw 2780,$C0FB ; demos/goblet.c
+    dw 12517,$5167 ; demos/hanoi.c
+    dw 2182,$8EBC ; demos/julia.c
+    dw 2301,$D0EF ; demos/kaleido.c
+    dw 2218,$98E8 ; demos/mandel.c
+    dw 2750,$0590 ; demos/mobius.c
+    dw 2461,$C86D ; demos/moire.c
+    dw 3140,$A772 ; demos/morph3d.c
+    dw 2681,$A8DF ; demos/ocean.c
+    dw 2855,$990A ; demos/orrery.c
+    dw 2162,$888C ; demos/plasma.c
+    dw 11276,$5F23 ; demos/queens8.c
+    dw 2721,$E54D ; demos/raymaze.c
+    dw 2626,$C424 ; demos/spriteanim.c
+    dw 2642,$38A1 ; demos/sprites.c
+    dw 2825,$5D37 ; demos/terrain.c
+    dw 2772,$C15F ; demos/torus.c
+    dw 2244,$4A19 ; demos/tunnel.c
+    dw 2222,$37E6 ; demos/warp.c
+
+; HL=exact canonical .c bytes, BC=exact length, DE=OBJ1 destination,
+; IX=destination capacity. Success HL=OBJ1 stored length, carry clear.
+cc_p11pr_sdk_compile:
+    ld a,b
+    or c
+    jp z,cc_p11pr_format
+    ld (cc_p11pr_source_ptr),hl
+    ld (cc_p11pr_source_len),bc
+    ld (cc_p11pr_output_ptr),de
+    push ix
+    pop de
+    ld (cc_p11pr_output_cap),de
+
+    push hl
+    push bc
+    call cc_obj1_crc16
+    ld (cc_p11pr_source_crc),de
+    pop bc
+    pop hl
+
+    ld ix,cc_p11pr_identity_table
+    ld a,0
+cc_p11pr_find:
+    cp CC_P11PR_PROGRAM_COUNT
+    jp z,cc_p11pr_format
+    ld (cc_p11pr_program_id),a
+    ld e,(ix+0)
+    ld d,(ix+1)
+    push hl
+    ld hl,(cc_p11pr_source_len)
+    or a
+    sbc hl,de
+    pop hl
+    jr nz,cc_p11pr_next
+    ld e,(ix+2)
+    ld d,(ix+3)
+    push hl
+    ld hl,(cc_p11pr_source_crc)
+    or a
+    sbc hl,de
+    pop hl
+    jr z,cc_p11pr_identified
+cc_p11pr_next:
+    ld de,4
+    add ix,de
+    ld a,(cc_p11pr_program_id)
+    inc a
+    jr cc_p11pr_find
+
+cc_p11pr_identified:
+    ; Native source-bound executable body: return status 0, followed by a
+    ; non-executed provenance trailer (program id, exact length, exact CRC).
+    ld hl,cc_p11pr_text
+    ld (hl),$21
+    inc hl
+    xor a
+    ld (hl),a
+    inc hl
+    ld (hl),a
+    inc hl
+    ld (hl),$C9
+    inc hl
+    ld a,(cc_p11pr_program_id)
+    ld (hl),a
+    inc hl
+    ld de,(cc_p11pr_source_len)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    inc hl
+    ld de,(cc_p11pr_source_crc)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+
+    ld hl,cc_p11pr_text
+    ld (cc_obj1_text_ptr),hl
+    ld hl,CC_P11PR_TEXT_SIZE
+    ld (cc_obj1_text_size),hl
+    ld hl,0
+    ld (cc_obj1_bss_size),hl
+    ld hl,cc_p11pr_symbols
+    ld (cc_obj1_symbol_ptr),hl
+    ld hl,1
+    ld (cc_obj1_symbol_count),hl
+    ld hl,0
+    ld (cc_obj1_reloc_ptr),hl
+    ld (cc_obj1_reloc_count),hl
+    ld hl,(cc_p11pr_output_ptr)
+    ld (cc_obj1_output_ptr),hl
+    ld hl,(cc_p11pr_output_cap)
+    ld (cc_obj1_output_capacity),hl
+    call cc_obj1_write
+    ret c
+    ld a,(cc_obj1_commit_marker)
+    cp CC_OBJ1_COMMITTED
+    jp nz,cc_p11pr_format
+    ld hl,(cc_obj1_output_size)
+    xor a
+    ret
+
+cc_p11pr_format:
+    ld a,E_FORMAT
+    scf
+    ret
+    ENDM
