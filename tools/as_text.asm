@@ -523,6 +523,8 @@ r17_txt_ld_dst_reg:
     jr z,r17_txt_ld_rr8
     cp R17_TXT_OP_IMM
     jr z,r17_txt_ld_r_imm
+    cp R17_TXT_OP_INDEXED
+    jr z,r17_txt_ld_r_indexed
     ld a,(r17_txt_f_v0)
     cp 7
     jp nz,r17_as_error
@@ -533,8 +535,6 @@ r17_txt_ld_dst_reg:
     jr z,r17_txt_ld_a_special
     cp R17_TXT_OP_MEMABS
     jr z,r17_txt_ld_a_memabs
-    cp R17_TXT_OP_INDEXED
-    jr z,r17_txt_ld_r_indexed
     jp r17_as_error
 r17_txt_ld_rr8:
     ld a,2
