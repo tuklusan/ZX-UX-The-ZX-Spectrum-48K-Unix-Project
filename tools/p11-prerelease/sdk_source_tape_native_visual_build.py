@@ -173,8 +173,13 @@ p11h_positive:
     ld (ld_p1026_image_size),hl
     call ld_p1026_reset
     ld hl,CC_P11PR_VIS_TITLE_OPERAND
-    ld de,CC_P11PR_VIS_TEMPLATE_SIZE
+    ld (ld_p1026_patch_loc),hl
+    ld hl,CC_P11PR_VIS_TEMPLATE_SIZE
+    ld (ld_p1026_symbol_value),hl
+    ld hl,0
+    ld (ld_p1026_addend),hl
     ld a,1
+    ld (ld_p1026_symbol_section),a
     call ld_p1026_apply
     jp c,p11h_fail
     call ld_p1026_finalize
