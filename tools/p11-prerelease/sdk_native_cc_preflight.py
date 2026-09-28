@@ -152,7 +152,7 @@ def objlen(d):
     text,bss,ns,nr=struct.unpack_from("<HHHH",d,8)
     so,ro=struct.unpack_from("<HH",d,16)
     req((text,bss,ns,nr)==(14,0,1,0),"native OBJ1 shape")
-    req(so==24+text and ro==so+16,"native OBJ1 offsets")
+    req(so==24+text and ro==so+20,"native OBJ1 offsets")
     return ro
 
 def main():
