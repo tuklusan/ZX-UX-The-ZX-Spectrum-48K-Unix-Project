@@ -9900,9 +9900,9 @@ cc_p11pr_mt_have_desc:
     ld de,cc_p11pr_mt_text
     ld bc,CC_P11PR_MT_TEMPLATE_SIZE
     ldir
-    ld a,(cc_p11pr_mt_y)
-    ld (cc_p11pr_mt_text+1),a
     ld a,(cc_p11pr_mt_x)
+    ld (cc_p11pr_mt_text+1),a
+    ld a,(cc_p11pr_mt_y)
     ld (cc_p11pr_mt_text+2),a
     ld a,(cc_p11pr_mt_title_len)
     ld (cc_p11pr_mt_text+CC_P11PR_MT_TITLE_LEN_OPERAND),a
