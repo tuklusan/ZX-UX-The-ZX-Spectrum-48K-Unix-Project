@@ -100,6 +100,13 @@ def lfs(data):
  if not oid or len(oid)!=64 or not sz:fail("bad LFS fields")
  return oid,int(sz)
 def programs():return [("examples",n) for n in EXAMPLES]+[("demos",n) for n in DEMOS]
+def target_names(name):
+ source="sprani.c" if name=="spriteanim" else name+".c"
+ exe="sprani" if name=="spriteanim" else name
+ obj=("sprani" if name=="spriteanim" else (name if len(name)<=6 else name[:6]))+".obj"
+ for value in (source,obj,exe):
+  if not 1<=len(value.encode("ascii"))<=10: fail("derived target name outside ZX-UX namespace: "+value)
+ return source,obj,exe
 def verify(root):
  root=Path(root);m=json.loads((root/"SDK-RELEASE.json").read_text())
  if m.get("schema")!=1 or m.get("tag")!=TAG or m.get("commit")!=COMMIT or m.get("tree")!=TREE or m.get("program_count")!=30:fail("SDK provenance identity mismatch")
@@ -156,7 +163,7 @@ def acquire(out):
  for c,n in programs():
   sr=f"usr/src/{c}/{n}.c";tr=f"usr/bin/{c}/{n}.src.tap";mi=by.get(tr)
   if not mi:fail("missing canonical tape declaration: "+tr)
-  s=sdk/sr;t=sdk/tr;objs=decode(t.read_bytes());target="sprani.c" if n=="spriteanim" else n+".c";decl={x["path"]:x["name"] for x in mi["sources"]}
+  s=sdk/sr;t=sdk/tr;objs=decode(t.read_bytes());target,_,_=target_names(n);decl={x["path"]:x["name"] for x in mi["sources"]}
   if decl.get(sr)!=target:fail("target alias mismatch: "+sr)
   got={x[0]:x for x in objs}
   for x in mi["sources"]:
@@ -176,7 +183,7 @@ def acquire(out):
  shutil.copyfile(sdk/"compiler/source_tape_manifest.json",out/"compiler/source_tape_manifest.json")
  shutil.copyfile(sdk/"compiler/release_expectations.json",out/"compiler/release_expectations.json")
  for k in ("metadata","sums"):shutil.copyfile(work/"d"/ASSETS[k][0],out/ASSETS[k][0])
- (out/"TARGET-NAME-MAP.json").write_text(json.dumps({"schema":1,"programs":[{"source":f"usr/src/{c}/{n}.c","target_source":"sprani.c" if n=="spriteanim" else n+".c","target_object":"sprani.obj" if n=="spriteanim" else n+".obj","target_executable":"sprani" if n=="spriteanim" else n} for c,n in programs()]},indent=2,sort_keys=True)+"\n")
+ (out/"TARGET-NAME-MAP.json").write_text(json.dumps({"schema":1,"programs":[{"source":f"usr/src/{c}/{n}.c","target_source":target_names(n)[0],"target_object":target_names(n)[1],"target_executable":target_names(n)[2]} for c,n in programs()]},indent=2,sort_keys=True)+"\n")
  files=[{"path":p.relative_to(out).as_posix(),"size":p.stat().st_size,"sha256":sha(p)} for p in sorted(x for x in out.rglob("*") if x.is_file())]
  m={"schema":1,"kind":"phase11-pre-release-sdk-reference","repository":REPO,"tag":TAG,"commit":COMMIT,"tree":TREE,"source_tape_manifest_git_blob":TAPE_BLOB,"formal_release_test_count":TESTS,"source_tape_count":57,"program_count":30,"assets":{k:{"name":v[0],"size":v[1],"sha256":v[2]} for k,v in ASSETS.items()},"programs":progs,"headers":[{"path":r,"sha256":sha(sdk/r)} for r in HEADERS],"release_verifier":{"status":"PASS","test_count":TESTS,"log_sha256":sha(work/"verify-release.log")},"files":files}
  (out/"SDK-RELEASE.json").write_text(json.dumps(m,indent=2,sort_keys=True)+"\n")
