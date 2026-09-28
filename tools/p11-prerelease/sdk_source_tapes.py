@@ -57,7 +57,7 @@ def main() -> int:
         canonical=(root/tape_rel).read_bytes()
         decoded=sdk.decode(canonical)
         got={x[0]:x for x in decoded}
-        source_name="sprani.c" if name=="spriteanim" else name+".c"
+        source_name,target_obj,target_exe=sdk.target_names(name)
         expected_sources=item.get("sources")
         if not isinstance(expected_sources,list) or len(expected_sources)!=2:
             fail("in-scope source tape must contain exactly header+C source: "+tape_rel)
@@ -89,8 +89,6 @@ def main() -> int:
         regenerated=builder.build_tape(specs)
         if regenerated!=canonical:
             fail("pinned c48srctap regeneration differs from release tape: "+tape_rel)
-        target_obj="sprani.obj" if name=="spriteanim" else name+".obj"
-        target_exe="sprani" if name=="spriteanim" else name
         for target in (source_name,target_obj,target_exe):
             if not 1<=len(target.encode("ascii"))<=10:
                 fail("derived target name outside ZX-UX namespace: "+target)
