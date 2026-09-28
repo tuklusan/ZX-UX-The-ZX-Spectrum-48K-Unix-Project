@@ -1358,18 +1358,18 @@ r17_txt_paren_index_selected:
     cp '-'
     jp nz,r17_as_error
     ld a,1
-    ld (r17_txt_tmp0),a
+    ld (r17_txt_disp_negative),a
     jr r17_txt_paren_disp_num
 r17_txt_paren_disp_plus:
     xor a
-    ld (r17_txt_tmp0),a
+    ld (r17_txt_disp_negative),a
 r17_txt_paren_disp_num:
     call r17_txt_parse_num
     ret c
     ld a,d
     or a
     jp nz,r17_as_error
-    ld a,(r17_txt_tmp0)
+    ld a,(r17_txt_disp_negative)
     or a
     jr z,r17_txt_paren_disp_positive
     ld a,e
@@ -1795,7 +1795,7 @@ r17_txt_rec_start:
     ret
 
 r17_txt_rec8:
-    ld (r17_txt_tmp0),a
+    ld (r17_txt_rec_value),a
     ld a,(r17_txt_rec_len)
     cp 5
     jp nc,r17_as_error
@@ -1803,7 +1803,7 @@ r17_txt_rec8:
     ld d,0
     ld hl,r17_txt_rec
     add hl,de
-    ld a,(r17_txt_tmp0)
+    ld a,(r17_txt_rec_value)
     ld (hl),a
     ld a,(r17_txt_rec_len)
     inc a
@@ -1934,6 +1934,7 @@ r17_txt_saw_org:     db 0
 r17_txt_char:        db 0
 r17_txt_hex_count:   db 0
 r17_txt_hex_value:   db 0
+r17_txt_disp_negative: db 0
 r17_txt_family:      db 0
 r17_txt_tmp0:        db 0
 r17_txt_tmp1:        db 0
@@ -1948,5 +1949,6 @@ r17_txt_f_v0:        db 0
 r17_txt_f_v1:        db 0
 r17_txt_f_w:         dw 0
 r17_txt_rec_len:     db 0
+r17_txt_rec_value:   db 0
 r17_txt_rec:         defs 5,0
     ENDM
