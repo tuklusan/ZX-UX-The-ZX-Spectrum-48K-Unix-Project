@@ -163,10 +163,10 @@ def acquire(out):
   if not bsha:fail("missing reference-image Git blob: "+ip)
   bj=getj(f"https://api.github.com/repos/{REPO}/git/blobs/{bsha}")
   ptr_bytes=base64.b64decode(bj.get("content",""))
-  oid,sz=lfs(ptr_bytes);matches=[p for p in (work/"gui").rglob("*") if p.is_file() and p.stat().st_size==sz and sha(p)==oid]
-  if len(matches)!=1:fail("GUI evidence PNG mismatch: "+c+"/"+n)
-  (out/f"reference-lfs/{c}/{n}.png").write_bytes(ptr_bytes);shutil.copyfile(matches[0],out/f"reference-png/{c}/{n}.png")
-  progs.append({"category":c,"name":n,"source_path":sr,"source_sha256":sha(s),"tape_path":tr,"tape_sha256":sha(t),"target_source":target,"reference_lfs_git_blob":bsha,"reference_lfs_oid_sha256":oid,"reference_png_sha256":sha(matches[0]),"objects":[{"name":a,"type":b,"target":d,"size":len(e),"sha256":shab(e)} for a,b,d,e in objs]})
+  oid,sz=lfs(ptr_bytes);payload=sdk/ip
+  if not payload.is_file() or payload.stat().st_size!=sz or sha(payload)!=oid:fail("materialized SDK reference PNG mismatch: "+c+"/"+n)
+  (out/f"reference-lfs/{c}/{n}.png").write_bytes(ptr_bytes);shutil.copyfile(payload,out/f"reference-png/{c}/{n}.png")
+  progs.append({"category":c,"name":n,"source_path":sr,"source_sha256":sha(s),"tape_path":tr,"tape_sha256":sha(t),"target_source":target,"reference_lfs_git_blob":bsha,"reference_lfs_oid_sha256":oid,"reference_png_sha256":sha(payload),"reference_payload_package":"sdk","objects":[{"name":a,"type":b,"target":d,"size":len(e),"sha256":shab(e)} for a,b,d,e in objs]})
  for r in HEADERS:shutil.copyfile(sdk/r,out/"sources/headers"/Path(r).name)
  shutil.copyfile(sdk/"compiler/source_tape_manifest.json",out/"SOURCE-TAPE-MANIFEST.json")
  shutil.copyfile(sdk/"compiler/release_expectations.json",out/"release_expectations.json")
