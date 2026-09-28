@@ -12,6 +12,14 @@
 # patent, trademark, and governing-law provisions.
 set -euo pipefail
 : "${GITHUB_SHA:?}"
+
+# Intermediate strengthening checkpoints must never replace the durable bundle.
+# Gate L creates this marker only after the complete expanded candidate passes.
+if test ! -f /tmp/p11-prerelease/final-ready.json; then
+  echo "ZX-UX PHASE-11 EXPANDED PRE-RELEASE CANDIDATE ONLY; PUBLICATION DEFERRED"
+  exit 0
+fi
+
 python3 tools/p11-prerelease/manifest.py
 python3 tools/check_phase10_evidence.py --require-active
 python3 tools/check_phase11_evidence.py --require-active
