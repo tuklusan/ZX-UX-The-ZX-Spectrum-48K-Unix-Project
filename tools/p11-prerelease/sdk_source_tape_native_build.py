@@ -429,7 +429,7 @@ def obj_bytes(data: bytes) -> bytes:
     text_size, bss, symbol_count, reloc_count = struct.unpack_from("<HHHH", data, 8)
     symbol_off, reloc_off = struct.unpack_from("<HH", data, 16)
     req((text_size, bss, symbol_count, reloc_count) == (14, 0, 1, 0), "native OBJ1 shape")
-    req(symbol_off == 24 + text_size and reloc_off == symbol_off + 16, "native OBJ1 offsets")
+    req(symbol_off == 24 + text_size and reloc_off == symbol_off + 20, "native OBJ1 offsets")
     return data[:reloc_off]
 
 
