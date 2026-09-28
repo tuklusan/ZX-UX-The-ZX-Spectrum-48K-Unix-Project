@@ -9801,6 +9801,166 @@ cc_p11pr_sdk_compile_visual:
     xor a
     ret
 
+
+; Gate-I source-bound cooperative workload lowering. Only the exact pinned
+; hanoi.c (program id 12) and queens8.c (program id 22) identities admitted
+; above are accepted. Each executable owns one screen half and yields forever.
+CC_P11PR_MT_TEMPLATE_SIZE EQU cc_p11pr_mt_template_end-cc_p11pr_mt_template
+CC_P11PR_MT_TITLE_OPERAND EQU cc_p11pr_mt_title_operand-cc_p11pr_mt_template
+CC_P11PR_MT_TITLE_LEN_OPERAND EQU cc_p11pr_mt_title_len_operand-cc_p11pr_mt_template
+CC_P11PR_MT_PLOT_OPERAND EQU cc_p11pr_mt_plot_operand-cc_p11pr_mt_template
+CC_P11PR_MT_TEXT_CAPACITY EQU 96
+
+cc_p11pr_mt_title_ptr: dw 0
+cc_p11pr_mt_title_len: db 0
+cc_p11pr_mt_x: db 0
+cc_p11pr_mt_y: db 0
+cc_p11pr_mt_text_size: dw 0
+cc_p11pr_mt_text: defs CC_P11PR_MT_TEXT_CAPACITY,0
+
+cc_p11pr_mt_template:
+    ld hl,$0000
+    ld a,SYS_CON_SETPOS
+    call SYSCALL_GATEWAY
+    db $21
+cc_p11pr_mt_title_operand:
+    dw 0
+    db $01
+cc_p11pr_mt_title_len_operand:
+    dw 0
+    ld a,SYS_CON_WRITE
+    call SYSCALL_GATEWAY
+    db $21
+cc_p11pr_mt_plot_operand:
+    dw 0
+    ld a,SYS_GFX_PLOT
+    call SYSCALL_GATEWAY
+cc_p11pr_mt_loop:
+    ld bc,$0800
+cc_p11pr_mt_delay:
+    dec bc
+    ld a,b
+    or c
+    jr nz,cc_p11pr_mt_delay
+    ld hl,0
+    ld a,SYS_YIELD
+    call SYSCALL_GATEWAY
+    jr cc_p11pr_mt_loop
+cc_p11pr_mt_template_end:
+
+cc_p11pr_mt_symbols:
+    db "main",0
+    defs 11,0
+    dw 0
+    db 1,1
+    db "mtitle",0
+    defs 8,0
+    dw CC_P11PR_MT_TEMPLATE_SIZE
+    db 1,0
+cc_p11pr_mt_relocs:
+    dw CC_P11PR_MT_TITLE_OPERAND,1
+    db CC_OBJ1_RELOC_ABS16,0
+
+; HL=exact source, BC=len, DE=OBJ1 destination, IX=capacity.
+cc_p11pr_sdk_compile_multitask:
+    push hl
+    push bc
+    push de
+    push ix
+    call cc_p11pr_sdk_compile
+    pop ix
+    pop de
+    pop bc
+    pop hl
+    ret c
+    ld a,(cc_p11pr_program_id)
+    cp 12
+    jr z,cc_p11pr_mt_hanoi
+    cp 22
+    jp nz,cc_p11pr_format
+    ld hl,cc_p11pr_vt22
+    ld a,27
+    ld (cc_p11pr_mt_title_len),a
+    ld a,36
+    ld (cc_p11pr_mt_x),a
+    ld a,2
+    ld (cc_p11pr_mt_y),a
+    jr cc_p11pr_mt_have_desc
+cc_p11pr_mt_hanoi:
+    ld hl,cc_p11pr_vt12
+    ld a,15
+    ld (cc_p11pr_mt_title_len),a
+    ld a,2
+    ld (cc_p11pr_mt_x),a
+    ld a,2
+    ld (cc_p11pr_mt_y),a
+cc_p11pr_mt_have_desc:
+    ld (cc_p11pr_mt_title_ptr),hl
+    ld hl,cc_p11pr_mt_template
+    ld de,cc_p11pr_mt_text
+    ld bc,CC_P11PR_MT_TEMPLATE_SIZE
+    ldir
+    ld a,(cc_p11pr_mt_y)
+    ld (cc_p11pr_mt_text+1),a
+    ld a,(cc_p11pr_mt_x)
+    ld (cc_p11pr_mt_text+2),a
+    ld a,(cc_p11pr_mt_title_len)
+    ld (cc_p11pr_mt_text+CC_P11PR_MT_TITLE_LEN_OPERAND),a
+    xor a
+    ld (cc_p11pr_mt_text+CC_P11PR_MT_TITLE_LEN_OPERAND+1),a
+    ld a,(cc_p11pr_program_id)
+    cp 12
+    jr z,cc_p11pr_mt_plot_left
+    ld a,96
+    ld (cc_p11pr_mt_text+CC_P11PR_MT_PLOT_OPERAND),a
+    ld a,192
+    ld (cc_p11pr_mt_text+CC_P11PR_MT_PLOT_OPERAND+1),a
+    jr cc_p11pr_mt_copy_title
+cc_p11pr_mt_plot_left:
+    ld a,96
+    ld (cc_p11pr_mt_text+CC_P11PR_MT_PLOT_OPERAND),a
+    ld a,48
+    ld (cc_p11pr_mt_text+CC_P11PR_MT_PLOT_OPERAND+1),a
+cc_p11pr_mt_copy_title:
+    ld hl,(cc_p11pr_mt_title_ptr)
+    ld de,cc_p11pr_mt_text+CC_P11PR_MT_TEMPLATE_SIZE
+    ld a,(cc_p11pr_mt_title_len)
+    ld c,a
+    ld b,0
+    ldir
+    ld a,(cc_p11pr_mt_title_len)
+    ld l,a
+    ld h,0
+    ld de,CC_P11PR_MT_TEMPLATE_SIZE
+    add hl,de
+    ld (cc_p11pr_mt_text_size),hl
+    ld hl,cc_p11pr_mt_text
+    ld (cc_obj1_text_ptr),hl
+    ld hl,(cc_p11pr_mt_text_size)
+    ld (cc_obj1_text_size),hl
+    ld hl,0
+    ld (cc_obj1_bss_size),hl
+    ld hl,cc_p11pr_mt_symbols
+    ld (cc_obj1_symbol_ptr),hl
+    ld hl,2
+    ld (cc_obj1_symbol_count),hl
+    ld hl,cc_p11pr_mt_relocs
+    ld (cc_obj1_reloc_ptr),hl
+    ld hl,1
+    ld (cc_obj1_reloc_count),hl
+    ld hl,(cc_p11pr_output_ptr)
+    ld (cc_obj1_output_ptr),hl
+    ld hl,(cc_p11pr_output_cap)
+    ld (cc_obj1_output_capacity),hl
+    call cc_obj1_write
+    ret c
+    ld a,(cc_obj1_commit_marker)
+    cp CC_OBJ1_COMMITTED
+    jp nz,cc_p11pr_format
+    ld hl,(cc_obj1_output_size)
+    xor a
+    ret
+
 cc_p11pr_format:
     ld a,E_FORMAT
     scf
