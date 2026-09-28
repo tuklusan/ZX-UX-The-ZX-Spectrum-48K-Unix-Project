@@ -40,7 +40,7 @@ command -v pasmo > "$work/pasmo-path"
 (cd v1/src/kernel && "$GITHUB_WORKSPACE/tools/runtime/sjasmplus/bin/sjasmplus" --nologo --lst=../../build/kernel-prerelease.lst --sym=../../build/kernel-prerelease.sym kernel.asm)
 test "$(wc -c < v1/build/kernel.bin)" -eq 8192
 test "$(xxd -p -l 3 v1/build/kernel.bin)" != 000000
-"$py" -m py_compile v1/tools-host/release-tzx/{build,inspect_tzx,runtime_acceptance,kernel_native_projection,kernel_text_projection,native_rebuild_test}.py tools/p11-prerelease/{source_tap,native_text_assemble_test,native_kernel_tape_rebuild}.py
+"$py" -m py_compile v1/tools-host/release-tzx/{build,inspect_tzx,runtime_acceptance,kernel_native_projection,kernel_text_projection,native_rebuild_test}.py tools/p11-prerelease/{source_tap,native_text_assemble_test,native_kernel_tape_rebuild,sdk_source_tapes}.py
 pasmo="$(cat "$work/pasmo-path")"
 for d in a b; do
   "$py" v1/tools-host/release-tzx/build.py --kernel v1/build/kernel.bin \
@@ -116,3 +116,7 @@ assert host==embedded and h==n['native_rebuilt_kernel_sha256']==n['host_kernel_s
 assert n['resident_kernel_overwritten'] is False and all(v=='PASS' for v in n['assertions'].values())
 assert p['text_size']==8192 and p['contains_preassembled_kernel_payload'] is False and p['semantic_reference_equals_kernel_oracle'] is True
 PY
+
+"$py" tools/p11-prerelease/sdk_source_tapes.py \
+  --root "$work/sdk-reference-pre-release-1.0.2" \
+  --report "$work/sdk-source-tape-corpus.json"
