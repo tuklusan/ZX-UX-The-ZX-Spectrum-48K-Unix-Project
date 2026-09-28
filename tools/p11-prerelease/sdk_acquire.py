@@ -163,7 +163,7 @@ def acquire(out):
   if not bsha:fail("missing reference-image Git blob: "+ip)
   bj=getj(f"https://api.github.com/repos/{REPO}/git/blobs/{bsha}")
   ptr_bytes=base64.b64decode(bj.get("content",""))
-  oid,sz=lfs(ptr_bytes);matches=[p for p in (work/"gui").rglob(n+".png") if p.stat().st_size==sz and sha(p)==oid]
+  oid,sz=lfs(ptr_bytes);matches=[p for p in (work/"gui").rglob("*.png") if p.stat().st_size==sz and sha(p)==oid]
   if len(matches)!=1:fail("GUI evidence PNG mismatch: "+c+"/"+n)
   (out/f"reference-lfs/{c}/{n}.png").write_bytes(ptr_bytes);shutil.copyfile(matches[0],out/f"reference-png/{c}/{n}.png")
   progs.append({"category":c,"name":n,"source_path":sr,"source_sha256":sha(s),"tape_path":tr,"tape_sha256":sha(t),"target_source":target,"reference_lfs_git_blob":bsha,"reference_lfs_oid_sha256":oid,"reference_png_sha256":sha(matches[0]),"objects":[{"name":a,"type":b,"target":d,"size":len(e),"sha256":shab(e)} for a,b,d,e in objs]})
