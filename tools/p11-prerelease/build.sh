@@ -40,7 +40,7 @@ command -v pasmo > "$work/pasmo-path"
 (cd v1/src/kernel && "$GITHUB_WORKSPACE/tools/runtime/sjasmplus/bin/sjasmplus" --nologo --lst=../../build/kernel-prerelease.lst --sym=../../build/kernel-prerelease.sym kernel.asm)
 test "$(wc -c < v1/build/kernel.bin)" -eq 8192
 test "$(xxd -p -l 3 v1/build/kernel.bin)" != 000000
-"$py" -m py_compile v1/tools-host/release-tzx/{build,inspect_tzx,runtime_acceptance,kernel_native_projection,native_rebuild_test}.py
+"$py" -m py_compile v1/tools-host/release-tzx/{build,inspect_tzx,runtime_acceptance,kernel_native_projection,kernel_text_projection,native_rebuild_test}.py tools/p11-prerelease/source_tap.py
 pasmo="$(cat "$work/pasmo-path")"
 for d in a b; do
   "$py" v1/tools-host/release-tzx/build.py --kernel v1/build/kernel.bin \
@@ -50,7 +50,6 @@ done
 cmp "$work/a/zx-ux-phase11-pre-release.tzx" "$work/b/zx-ux-phase11-pre-release.tzx"
 cmp "$work/a/hook.bin" "$work/b/hook.bin"
 cmp "$work/a/build.json" "$work/b/build.json"
-test -z "$(find "$work" -type f -iname '*.tap' -print -quit)"
 cp "$work/a/zx-ux-phase11-pre-release.tzx" "$work/P11.pre-release/"
 
 "$py" v1/tools-host/release-tzx/inspect_tzx.py "$work/P11.pre-release/zx-ux-phase11-pre-release.tzx" \
@@ -69,6 +68,15 @@ grep -q '^generalized_blocks=48$' "$work/inspection.txt"
   --symbols v1/build/kernel-prerelease.sym --output "$work/kernel.nsp" --audit "$work/projection.json" --kernel v1/build/kernel.bin
 "$py" v1/tools-host/release-tzx/native_rebuild_test.py --kernel v1/build/kernel.bin \
   --projection "$work/kernel.nsp" --report "$work/native-rebuild.json"
+mkdir -p "$work/P11.pre-release/kernel"
+"$py" v1/tools-host/release-tzx/kernel_text_projection.py --listing v1/build/kernel-prerelease.lst \
+  --symbols v1/build/kernel-prerelease.sym --kernel v1/build/kernel.bin \
+  --output "$work/P11.pre-release/kernel/kernel-native-source.asm" \
+  --map "$work/P11.pre-release/kernel/kernel-native-source-map.json"
+"$py" tools/p11-prerelease/source_tap.py \
+  --source "$work/P11.pre-release/kernel/kernel-native-source.asm" \
+  --output "$work/P11.pre-release/kernel/kernel-native-source.tap" \
+  --report "$work/P11.pre-release/kernel/kernel-native-source-tap.json"
 "$py" - <<'PY'
 import hashlib,json
 from pathlib import Path
