@@ -69,7 +69,7 @@ def make_sna(entry:int,fixture:bytes,source:bytes,kernel:bytes)->bytes:
 DIAG_MARKER=0xD17A0001
 
 def run_sna(fuse:Path,sna:Path,pass_pc:int,fail_pc:int,diag_addrs:tuple[int,...])->subprocess.CompletedProcess:
-    fail_commands=[f"print 0x{DIAG_MARKER:x}","print z80:pc"]
+    fail_commands=[f"print 0x{DIAG_MARKER:x}","print z80:pc","print z80:hl","print z80:de","print z80:bc"]
     fail_commands.extend(f"print [0x{addr:04x}]" for addr in diag_addrs)
     cmd=(
       f"breakpoint 0x{pass_pc:04x}\ncommands 1\nexit 0\nend\n"
@@ -86,17 +86,19 @@ def diagnostic_text(stdout:str,source:bytes)->str:
     values=[int(x,16) for x in re.findall(r"0x([0-9a-f]+)",stdout,re.I)]
     try: i=values.index(DIAG_MARKER)
     except ValueError: return "diagnostics=missing"
-    v=values[i+1:i+15]
-    if len(v)!=14: return f"diagnostics=truncated values={v!r}"
-    pc=v[0]; line=v[1]|(v[2]<<8); pos=v[3]|(v[4]<<8)
-    produced=v[5]|(v[6]<<8); logical_pc=v[7]|(v[8]<<8)
-    ident,family,op_type,tmp0,tmp1=v[9:14]
+    v=values[i+1:i+18]
+    if len(v)!=17: return f"diagnostics=truncated values={v!r}"
+    pc,hl_reg,de_reg,bc_reg=v[:4]
+    line=v[4]|(v[5]<<8); pos=v[6]|(v[7]<<8)
+    produced=v[8]|(v[9]<<8); logical_pc=v[10]|(v[11]<<8)
+    ident,family,op_type,tmp0,tmp1=v[12:17]
     off=line-SOURCE_BASE
     current=b""
     if 0<=off<len(source):
         current=source[off:source.find(b"\n",off) if b"\n" in source[off:] else len(source)]
-    return (f"pc=0x{pc:04x} line=0x{line:04x} source_offset={off} "
-            f"parse_ptr=0x{pos:04x} produced={produced} logical_pc=0x{logical_pc:04x} "
+    return (f"pc=0x{pc:04x} hl=0x{hl_reg:04x} de=0x{de_reg:04x} bc=0x{bc_reg:04x} "
+            f"line=0x{line:04x} source_offset={off} parse_ptr=0x{pos:04x} "
+            f"produced={produced} logical_pc=0x{logical_pc:04x} "
             f"id={ident} family={family} op_type={op_type} tmp0={tmp0} tmp1={tmp1} "
             f"source_line={current!r}")
 
