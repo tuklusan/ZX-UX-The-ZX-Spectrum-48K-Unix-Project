@@ -700,7 +700,8 @@ r17_txt_ld_dst_indexed:
     call r17_txt_rec8
     ld a,(r17_txt_f_v1)
     call r17_txt_rec8
-    ld a,e
+    ld hl,(r17_txt_op_w)
+    ld a,l
     call r17_txt_rec8
     jp r17_txt_rec_emit
 r17_txt_ld_indexed_reg:
