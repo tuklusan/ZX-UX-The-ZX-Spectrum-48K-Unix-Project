@@ -22,13 +22,16 @@ import struct
 import subprocess
 import tempfile
 import zlib
+import sys
 from pathlib import Path
+
+ROOT=Path(__file__).resolve().parents[2]
+sys.path.insert(0,str(ROOT/"v1/tools-host/test-driver"))
 
 import sdk_acquire as sdk
 import sdk_native_process_run as proc
 from fuse_harness import FAIL_PC, PASS_PC, make_sna
 
-ROOT=Path(__file__).resolve().parents[2]
 FONT=0xD000
 SCREEN=6912
 PALETTE_NORMAL=((0,0,0),(0,0,205),(205,0,0),(205,0,205),(0,205,0),(0,205,205),(205,205,0),(205,205,205))
