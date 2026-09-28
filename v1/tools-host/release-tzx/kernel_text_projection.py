@@ -148,7 +148,8 @@ def main()->int:
         else:
             line=render(r);pc+=emitted_len(r,pc);i+=1
         lines.append(line)
-        mapping.append({"line":len(lines),"address":start,"size":pc-start,"semantic_records":used,"text":line})
+        mapping.append({"line":len(lines),"address":start,"size":pc-start,
+          "semantic_records":used,"source_provenance":[audit[x] for x in used],"text":line})
     source=("\n".join(lines)+"\n").encode("ascii")
     if b"\r" in source or len(source)>32768: raise SystemExit(f"native text source size invalid: {len(source)}")
     if pc!=n.KERNEL_BASE+n.KERNEL_SIZE: raise SystemExit(f"native text source emitted span invalid: {pc:#x}")
@@ -160,7 +161,9 @@ def main()->int:
       "base":n.KERNEL_BASE,"kernel_size":n.KERNEL_SIZE,"source_size":len(source),
       "source_sha256":hashlib.sha256(source).hexdigest(),"semantic_projection_sha256":hashlib.sha256(sem).hexdigest(),
       "kernel_sha256":hashlib.sha256(kernel).hexdigest(),"contains_preassembled_kernel_payload":False,
-      "lf_only":True,"ordinary_documented_syntax_only":True,"lines":mapping}
+      "lf_only":True,"ordinary_documented_syntax_only":True,
+      "provenance_contract":"Each projected line binds to the semantic source statement(s) derived from the canonical kernel listing.",
+      "lines":mapping}
     a.map.write_text(json.dumps(report,indent=2,sort_keys=True)+"\n",encoding="utf-8",newline="\n")
     print(f"source_size={len(source)}")
     print(f"source_sha256={report['source_sha256']}")
