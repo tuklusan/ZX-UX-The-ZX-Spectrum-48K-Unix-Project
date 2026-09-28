@@ -31,15 +31,26 @@ run_mode() {
     --debugger-command "$(cat "$diag/debugger.txt")" >"$diag/fuse-state.log" 2>&1 & fuse_pid=$!
   for _ in $(seq 1 40); do window="$(xdotool search --onlyvisible --name 'Fuse' 2>/dev/null | head -n1 || true)"; test -n "$window" && break; sleep 0.25; done
   test -n "$window"
+  local basic_ready="" waiting=""
+  for _ in $(seq 1 80); do
+    grep -q '0xa00001' "$diag/fuse-state.log" && { basic_ready=yes; break; }
+    kill -0 "$fuse_pid" 2>/dev/null || break
+    sleep 0.25
+  done
+  test "$basic_ready" = yes
   xdotool windowfocus --sync "$window" || true; xdotool mousemove --window "$window" 160 145 click 1 || true
   sleep 0.75; xdotool keydown Shift_L; sleep 0.25; xdotool keyup Shift_L; sleep 0.60
   xdotool keydown j; sleep 0.45; xdotool keyup j; sleep 0.60
   xdotool key --delay 300 ctrl+p; sleep 0.60; xdotool key --delay 300 ctrl+p; sleep 0.60
   xdotool keydown Return; sleep 0.45; xdotool keyup Return
+  for _ in $(seq 1 80); do
+    grep -q '0xa00002' "$diag/fuse-state.log" && { waiting=yes; break; }
+    kill -0 "$fuse_pid" 2>/dev/null || break
+    sleep 0.25
+  done
+  test "$waiting" = yes
   if test "$detect" = --no-detect-loader; then
-    local waiting=""
-    for _ in $(seq 1 40); do grep -q '0xa00002' "$diag/fuse-state.log" && { waiting=yes; break; }; kill -0 "$fuse_pid" 2>/dev/null || break; sleep 0.25; done
-    test "$waiting" = yes; xdotool windowfocus --sync "$window" || true; xdotool key F8
+    xdotool windowfocus --sync "$window" || true; xdotool key F8
   fi
   for _ in $(seq 1 130); do
     grep -q '0xa50001' "$diag/fuse-state.log" && { result=E003_REACHED; break; }
@@ -47,7 +58,11 @@ run_mode() {
     kill -0 "$fuse_pid" 2>/dev/null || { result=FUSE_EXITED; break; }; sleep 1
   done
   wait "$fuse_pid" || true; fuse_pid=""; kill "$xvfb_pid" 2>/dev/null || true; xvfb_pid=""; trap - RETURN
-  test "$result" = E003_REACHED
+  if test "$result" != E003_REACHED; then
+    printf 'runtime mode %s failed: %s\n' "$name" "$result" >&2
+    cat "$diag/fuse-state.log" >&2
+    return 1
+  fi
   "$py" v1/tools-host/release-tzx/runtime_acceptance.py verify --log "$diag/fuse-state.log" \
     --rom tools/runtime/fuse/roms/48.rom --text v1/tools-host/release-tzx/text-lines.txt --report "$diag/runtime-acceptance.json"
 }
