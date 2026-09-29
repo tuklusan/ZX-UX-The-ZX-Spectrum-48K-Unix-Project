@@ -206,6 +206,8 @@ The following are forbidden for satisfying any positive acceptance gate:
 - proof SNA injection of the C source, OBJ1, MEX1, application, kernel rebuild
   output, or result screen under test;
 - changing SDK C source/header bytes so they fit ZX-UX;
+- mutating the loaded canonical C/header namespace objects before, during, or after
+  compilation so the compiler actually consumes different bytes;
 - a cc48.asm or other parallel compiler fork created solely for this pre-release;
 - any other source fingerprint, prefix/suffix signature, token signature, AST
   signature, basename/path class, hidden lookup table, or equivalent corpus
@@ -229,8 +231,10 @@ proof records that binary's SHA-256 and source/build dependency closure. Calling
 tool routine directly from a fixture is not command execution.
 
 Static provenance tables may contain SDK hashes and names. Executable compiler,
-assembler, linker, runtime, shell, and acceptance behavior may not use them to
-select program semantics.
+assembler, linker, runtime/library archive, shell, and acceptance behavior may not
+use them to select program semantics. The ordinary process loader must load the
+retained executable bytes themselves; command-name or basename dispatch in the
+shell/kernel may not substitute a built-in/canned application.
 
 ## 7. Generality rule: prove a compiler, not a memorizer
 
@@ -256,7 +260,9 @@ cc is source-semantic and not source-identity driven:
    include path, rather than ignored or replaced by source-specific built-ins;
 9. run held-out legal C48 challenge programs whose concrete bytes are generated
    only after the candidate product-tool hashes are frozen, using an independent
-   deterministic generator/oracle and a recorded seed;
+   deterministic generator/oracle. Derive the concrete challenge seed from a
+   domain-separated SHA-256 over the frozen source-head plus cc/as/ld binary hashes
+   and record the derivation;
 10. apply equivalent anti-specialization checks to `ld`: renamed/changed legal
     OBJ1 modules and relocation/symbol mutations must be linked semantically, with
     no OBJ hash/name/application table or prebuilt executable dispatch;
@@ -499,7 +505,8 @@ Require:
 - no use of moving SDK main;
 - independent static classification of every source/header construct against the
   frozen C48 contract, with zero unexplained/unsupported construct before any
-  product defect classification.
+  product defect classification. This classifier/oracle must be independent of the
+  product cc parser/code generator and may not infer legality from "cc accepted it".
 
 Build a machine-readable 30-program matrix containing only facts/oracles:
 
@@ -612,7 +619,8 @@ walking the 30 program list and adding one special case per failure.
 A new legal C48 source that combines already-supported features must compile
 without modifying cc.
 
-**Gate E:** ordinary current cc implements the required frozen C48 behavior
+**Gate E:** ordinary current cc and any already-authorized runtime/link/tool
+dependencies touched by the correction implement the required frozen behavior
 generically.
 
 ## 16. Stage F — compiler generality and anti-cheat gate
@@ -648,14 +656,24 @@ Static negatives must fail if the reachable production compiler contains or reac
 
 Require equivalent production-reachability and mutation negatives for `as` and
 `ld`, including rejection of a kernel-source fingerprint emitter, OBJ1 hash/name
-to executable dispatch, and prebuilt application/kernel payload tables. Historical
-unexpanded fixture macros may exist only outside all production dependency closures.
+to executable dispatch, and prebuilt application/kernel payload tables. Extend the
+static/reachability review through the linker's built-in crt0/runtime archive,
+libc48/runtime dependencies, shell command dispatch, and executable loader so no
+SDK/demo name, generated special symbol, title/output table, or application-specific
+runtime member can recreate canned semantics downstream of an otherwise generic cc.
+Historical unexpanded fixture macros may exist only outside all production
+dependency closures.
 
 For selected header-dependent programs, mutate one ephemeral header token while
 keeping the C source unchanged and prove ordinary cc behavior/diagnostics changes as
 the frozen semantics require; restore exact canonical bytes before acceptance.
 
 **Gate F:** generic source-semantic cc plus generic as/ld production paths PASS.
+
+Freeze the exact Gate-F product `cc`, `as`, `ld`, shell/loader and relevant
+runtime/archive hashes. Gates G-P must use those exact bytes. Any change to one of
+them invalidates Gate F and every downstream result and returns through the
+Stage-C/D/E/F loop.
 
 ## 17. Stage G — construct a real ZX-UX developer proof session
 
@@ -706,18 +724,22 @@ For each exact canonical release source TAP, from a clean deterministic session:
 3. verify namespace object type/name/hash and ordinary quoted-header resolution;
 4. invoke the shell-visible ordinary `cc source.c` (or already-frozen explicit
    output form where required);
-5. require genuine target-produced OBJ1 committed through the ordinary transaction;
-6. inspect OBJ1 format/symbol/relocation validity and retain the exact bytes;
-7. invoke shell-visible ordinary `ld source.obj -o name`;
-8. require genuine target-produced executable committed through the ordinary
+5. re-hash every canonical loaded C/header object after cc and require it
+   byte-identical to the verified pre-compile object;
+6. require genuine target-produced OBJ1 committed through the ordinary transaction;
+7. inspect OBJ1 format/symbol/relocation validity and retain the exact bytes;
+8. invoke shell-visible ordinary `ld source.obj -o name`;
+9. require genuine target-produced executable committed through the ordinary
    transaction and retain the exact bytes;
-9. launch it through ordinary shell/SYS_SPAWN/SYS_EXEC behavior;
-10. prove start and correct exit or bounded live execution;
-11. retain exact command/argv, tool hashes, namespace/transaction, process and
+10. launch it through ordinary shell/SYS_SPAWN/SYS_EXEC behavior;
+11. prove the process image/entry loaded by the kernel is derived from the exact
+    retained executable bytes and not a command-name/builtin substitute;
+12. prove start and correct exit or bounded live execution;
+13. retain exact command/argv, tool hashes, namespace/transaction, process and
     memory evidence;
-12. prove a selected legal semantic source mutation changes target-produced
+14. prove a selected legal semantic source mutation changes target-produced
     object/executable/runtime behavior as the frozen oracle predicts;
-13. repeat the canonical build from clean state so no program consumes another
+15. repeat the canonical build from clean state so no program consumes another
     program's build output or a stale destination.
 
 The compiler and linker binaries must be identical across all 30 runs.
@@ -777,7 +799,10 @@ For every program:
 - bind SCR/PNG to the exact executable hash and process/session record;
 - bind executable to exact OBJ1 hash;
 - bind OBJ1 to exact loaded source/header hashes;
-- bind reference-image provenance and comparison result.
+- bind reference-image provenance and comparison result;
+- where the program changes display RAM, prove the relevant writes occur while the
+  expected retained executable/PID is running and are not produced by a harness or
+  unrelated background process.
 
 Retain SCR+PNG for every visual checkpoint used by Stage I, not merely one
 representative image. Each SCR is exactly 6912 target display bytes.
@@ -971,7 +996,11 @@ losslessly summarized by a retained hash-bound record that identifies the raw
 artifact.
 
 The final manifest must bind every retained file except itself by path, size and
-SHA-256 and separately record its own SHA-256 in closure.
+SHA-256, record the recursive digest of the separately published
+`v1/tests/compiler/sdk-reference/pre-release-1.0.2` tree, record the immutable
+historical P11.39 SDK-reference digest/anchor used for non-mutation proof, and bind
+the exact publication path set. Closure separately records the final manifest's own
+SHA-256 and both frozen publication-tree digests.
 
 ## 25. Stage O — deterministic rebuild and strong negatives
 
@@ -1011,6 +1040,7 @@ negatives plus:
 - linker OBJ hash/name/application dispatch or prebuilt executable -> FAIL;
 - assembler kernel fingerprint/prebuilt payload dispatch -> FAIL;
 - quoted local header ignored/replaced while canonical source still "passes" -> FAIL;
+- loaded canonical C/header object mutated by cc or proof machinery -> FAIL;
 - stale/pre-existing OBJ1 or executable accepted as new output -> FAIL;
 - behavior/visual contract changed after observing target output -> FAIL;
 - missing retained checkpoint used by a behavior assertion -> FAIL;
@@ -1147,7 +1177,8 @@ simultaneously true:
 - REV01 remains FAILED-CLOSED and historically unchanged except that status marker;
 - SDK 1.0.2 exact pin/provenance PASS;
 - historical P11.39 SDK material unchanged;
-- no SDK source/header bytes changed;
+- no SDK source/header bytes changed, including verified target-loaded canonical
+  source/header objects across each ordinary cc invocation;
 - the failed REV01 write-capable publisher is quarantined before recovery product
   edits and cannot republish failed acceptance on push;
 - ordinary current ZX-UX cc/as/ld production paths are generic, hash-bound to their
