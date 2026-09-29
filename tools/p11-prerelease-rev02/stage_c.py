@@ -140,7 +140,10 @@ def main():
        "planned_paths":["v1/src/kernel/kernel.asm"],"blocks":["source-defined program behavior"]},
       {"id":"C013","failure":"ordinary production libc48/runtime link closure is incomplete",
        "observed":"runtime_archive.asm contains historical minimal/step overlays but no one product archive materialization resolving the full frozen C48 API for ordinary ld",
-       "planned_paths":["v1/src/libc48/runtime_archive.asm","tools/ld.asm","tools/p11-prerelease-rev02/product_tools.py"],"blocks":["all API-complete links"]}
+       "planned_paths":["v1/src/libc48/runtime_archive.asm","tools/ld.asm","tools/p11-prerelease-rev02/product_tools.py"],"blocks":["all API-complete links"]},
+      {"id":"C014","failure":"shell-visible fixed/absolute ld mode has no frozen public CLI syntax",
+       "observed":"REV17 and v1/docs/assembler.md require the fixed/absolute linker capability and EMIT_R17_LD_ABSOLUTE_OBJ1 exists, but the frozen authorities define no ordinary shell-visible invocation syntax for selecting that mode",
+       "planned_paths":[],"blocks":["Stage-L shell-visible fixed/absolute native kernel rebuild"]}
     ]
     for g in gaps: g["class_pending"]="Stage-D"
 
@@ -163,6 +166,7 @@ def main():
         "object_tape_spawn_gap_recorded":"PASS",
         "generic_cli_gaps_recorded":"PASS",
         "runtime_api_closure_gap_recorded":"PASS",
+        "fixed_ld_public_cli_authority_gap_recorded":"PASS",
         "no_p11pr_compiler_invoked":"PASS",
         "no_internal_cc_or_ld_invoked":"PASS",
         "ordinary_product_path_reproduced_as_unavailable":"PASS",
