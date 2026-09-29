@@ -49,6 +49,15 @@ def main():
         "historical P11PR identity-bound fixture unexpectedly absent")
     req("EMIT_P1145_CC_H06_COMPILER" in cc and "CC_P1145_SOURCE_CRC" in cc,
         "historical H06 fixture unexpectedly absent")
+    req("EMIT_REV02_CC_PRODUCT_CLI" in cc and "Stage-E continuation point" in cc,
+        "REV02 cc generic CLI scaffold missing")
+    req("EMIT_REV02_AS_PRODUCT_CLI" in ass and "Stage-E continuation: ordinary source reader/parser/OBJ1 transaction." in ass,
+        "REV02 as generic CLI scaffold missing")
+    req("EMIT_REV02_LD_PRODUCT_CLI" in ld and "Stage-E continuation: ordinary OBJ1 reader/linker/MEX1 transaction." in ld,
+        "REV02 ld generic CLI scaffold missing")
+    product_builder=(root/"tools/p11-prerelease-rev02/product_tools.py").read_text()
+    req("cc.m48o.tap" in product_builder and "as.m48o.tap" in product_builder and "ld.m48o.tap" in product_builder,
+        "REV02 deterministic product-tool packaging closure missing")
 
     product_specs={
       "sh":{"source":"v1/src/shell/sh.asm","text":shell},
@@ -96,17 +105,17 @@ def main():
       {"id":"C001","failure":"ordinary shell executable/product build+delivery path absent",
        "observed":"sh.asm is a macro library; no current installable /bin/sh MEX1/M48O exists",
        "planned_paths":["v1/src/shell/sh.asm","tools/p11-prerelease-rev02/product_tools.py"],"blocks":["developer session"]},
-      {"id":"C002","failure":"ordinary /bin/cc executable absent",
-       "observed":"cc.asm is a macro library/fixture collection; no current product cc MEX1/M48O exists",
+      {"id":"C002","failure":"ordinary /bin/cc semantic compiler route incomplete",
+       "observed":"REV02 now packages a generic cc MEX1/M48O scaffold, but its ordinary source-open path still fails E_NOTSUP before generic parsing/codegen/OBJ1 publication",
        "planned_paths":["v1/src/tools/cc.asm","tools/p11-prerelease-rev02/product_tools.py"],"blocks":["cc","OBJ1"]},
-      {"id":"C003","failure":"ordinary /bin/as executable absent",
-       "observed":"tools/as.asm is a macro library; no current product as MEX1/M48O exists",
+      {"id":"C003","failure":"ordinary /bin/as semantic assembler route incomplete",
+       "observed":"REV02 now packages a generic as MEX1/M48O scaffold, but its ordinary source-open path still fails E_NOTSUP before generic parsing/OBJ1 publication",
        "planned_paths":["tools/as.asm","tools/p11-prerelease-rev02/product_tools.py"],"blocks":["generic as","kernel rebuild"]},
-      {"id":"C004","failure":"ordinary /bin/ld executable absent",
-       "observed":"tools/ld.asm is a macro library; no current product ld MEX1/M48O exists",
+      {"id":"C004","failure":"ordinary /bin/ld semantic linker route incomplete",
+       "observed":"REV02 now packages a generic ld MEX1/M48O scaffold, but its ordinary OBJ1-open path still fails E_NOTSUP before generic linking/MEX1 publication",
        "planned_paths":["tools/ld.asm","tools/p11-prerelease-rev02/product_tools.py"],"blocks":["ld","MEX1","kernel rebuild"]},
-      {"id":"C005","failure":"no current developer-sidecar build/delivery closure for sh/cc/as/ld",
-       "observed":"no product-tool sidecar builder binds target binaries to current product sources",
+      {"id":"C005","failure":"developer-sidecar build exists but real delivery/session closure is incomplete",
+       "observed":"product_tools.py now hash-binds deterministic sh/cc/as/ld MEX1/M48O scaffolds to current sources; real ordinary cassette load/install/execute in a booted developer session is not yet reachable",
        "planned_paths":["tools/p11-prerelease-rev02/product_tools.py",".github/workflows/p11-prerelease-rev02-product-tools.yml"],"blocks":["normal command path"]},
       {"id":"C006","failure":"production boot never starts PID1 shell",
        "observed":"EMIT_BOOT_IMPL initializes base subsystems then jumps directly to zx48_idle_loop; no PID1 bootstrap/session handoff",
