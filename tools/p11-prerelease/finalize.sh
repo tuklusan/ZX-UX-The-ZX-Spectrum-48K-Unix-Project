@@ -40,6 +40,7 @@ done
 rm -rf v1/build
 hold=/tmp/zxux-runtime-policy-check; rm -rf "$hold"; mv tools/runtime "$hold"; trap 'mv "$hold" tools/runtime' EXIT
 ./tools/check_project_policy.py
+rm -rf v1/build
 ./tools/check_license_headers.sh
 mv "$hold" tools/runtime; trap - EXIT
 git fetch --quiet origin main
