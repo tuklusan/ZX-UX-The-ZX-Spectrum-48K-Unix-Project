@@ -29,7 +29,9 @@ def main():
     c=json.loads(ns.stage_c.read_text())
     req(c.get("kind")=="rev02-stage-c-product-gap-inventory" and c.get("status")=="PASS-INVENTORY-ROOT-BLOCKER","Stage-C identity")
     gaps=c.get("gaps",[])
-    req([g.get("id") for g in gaps]==IDS,"Stage-C root-gap set")
+    gap_ids=[g.get("id") for g in gaps]
+    req(gap_ids==[gid for gid in IDS if gid in gap_ids],"Stage-C root-gap ordering")
+    req(len(gap_ids)==len(set(gap_ids)) and set(gap_ids).issubset(IDS),"Stage-C root-gap set")
 
     archp=root/"docs/01-ZX-UX-ARCHITECTURE-REV18.md"
     planp=root/"docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV09.md"
@@ -107,6 +109,7 @@ def main():
       "authority":{"rev18_sha256":sha(archp),"rev09_sha256":sha(planp),
                    "historical_rev17_sha256":sha(hist_archp),"historical_rev08_sha256":sha(hist_planp)},
       "classifications":rows,
+      "resolved_authorized_defects":[gid for gid in IDS if gid not in gap_ids],
       "assertions":{
         "all_stage_c_gaps_classified":"PASS",
         "authorized_planned_fixes_existing_authority":"PASS",
@@ -115,5 +118,5 @@ def main():
         "zero_desired_result_used_as_authority":"PASS",
         "product_edits_authorized_only_for_listed_paths":"PASS"}}
     (out/"STAGE-D.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
-    print("REV02 STAGE D PASS authorized=14 authority_gaps=0")
+    print(f"REV02 STAGE D PASS authorized={len(rows)} resolved={len(IDS)-len(rows)} authority_gaps=0")
 if __name__=="__main__": main()

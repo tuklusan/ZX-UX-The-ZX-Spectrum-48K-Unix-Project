@@ -2791,20 +2791,62 @@ r17_ld_header_copy: defs R17_LD_OBJ1_HEADER,0
     ENDM
 
 
-; REV02 prospective ordinary /bin/ld product command scaffold.
-; Generic ARG1/OBJ1-open path only. No object hash/name application dispatch.
+; REV02 ordinary /bin/ld product command entry.
+; Normal MEX1 linkage remains attached in the Stage-E continuation below.  REV18
+; additionally freezes the generic one-input fixed-image form:
+;
+;     ld input.obj -o output -abs
+;
+; The -abs path is deliberately source/name/hash agnostic.  It streams one
+; validated TEXT-only OBJ1 into an exclusive DAT /tmp/.ld<pid>.<n> object,
+; verifies the written bytes by reopening them, and commits only by SYS_RENAME.
     MACRO EMIT_REV02_LD_PRODUCT_CLI
-LD_REV02_ARG1_MIN EQU 17
-ld_rev02_arg1_ptr:    dw 0
-ld_rev02_arg1_len:    dw 0
-ld_rev02_input_ptr:   dw 0
-ld_rev02_output_ptr:  dw 0
-ld_rev02_input_handle: db HANDLE_FREE
+LD_REV02_ARG1_MIN       EQU 17
+LD_REV02_OBJ1_HEADER    EQU 24
+LD_REV02_ABS_MAX        EQU 8192
+LD_REV02_IO_CHUNK       EQU 64
+ld_rev02_arg1_ptr:      dw 0
+ld_rev02_arg1_len:      dw 0
+ld_rev02_input_ptr:     dw 0
+ld_rev02_output_ptr:    dw 0
+ld_rev02_input_handle:  db HANDLE_FREE
+ld_rev02_temp_handle:   db HANDLE_FREE
+ld_rev02_temp_created:  db 0
+ld_rev02_abs_mode:      db 0
+ld_rev02_try_n:         db 0
+ld_rev02_dec_started:   db 0
+ld_rev02_errno:         db 0
+ld_rev02_text_len:      dw 0
+ld_rev02_remaining:     dw 0
+ld_rev02_count:         dw 0
+ld_rev02_pid:           dw 0
+ld_rev02_body_crc:      dw 0
+ld_rev02_body_expected: dw 0
+ld_rev02_head_expected: dw 0
+ld_rev02_stat_req:      defs 4,0
+ld_rev02_stat_out:      defs 10,0
+ld_rev02_rename_req:    defs 4,0
+ld_rev02_header:        defs LD_REV02_OBJ1_HEADER,0
+ld_rev02_buffer:        defs LD_REV02_IO_CHUNK,0
+ld_rev02_verify_buffer: defs LD_REV02_IO_CHUNK,0
+ld_rev02_read_ptr:      dw 0
+ld_rev02_read_left:     dw 0
+ld_rev02_probe:         db 0
+ld_rev02_temp_prefix:   db '/tmp/.ld'
+ld_rev02_temp_name:     defs 24,0
 
 ; MEX1 entry: HL=ARG1, BC=ARG1 length, DE=ENV1.
 ld_rev02_product_entry:
     ld (ld_rev02_arg1_ptr),hl
     ld (ld_rev02_arg1_len),bc
+    xor a
+    ld (ld_rev02_abs_mode),a
+    ld a,HANDLE_FREE
+    ld (ld_rev02_input_handle),a
+    ld (ld_rev02_temp_handle),a
+    xor a
+    ld (ld_rev02_temp_created),a
+
     ld a,b
     or a
     jr nz,ld_rev02_size_ok
@@ -2834,18 +2876,28 @@ ld_rev02_size_ok:
     or a
     sbc hl,de
     jp nz,ld_rev02_inval
+
     ld a,(ix+4)
     cp 4
+    jr z,ld_rev02_parse_common
+    cp 5
     jp nz,ld_rev02_inval
+    ld a,1
+    ld (ld_rev02_abs_mode),a
+
+ld_rev02_parse_common:
     push ix
     pop hl
     ld de,8
     add hl,de
+    ; argv[0] = ld
     call ld_rev02_skip_arg
-    ret c
+    jp c,ld_rev02_exit_errno
+    ; argv[1] = one input
     ld (ld_rev02_input_ptr),hl
     call ld_rev02_skip_arg
-    ret c
+    jp c,ld_rev02_exit_errno
+    ; argv[2] = exact -o
     ld a,(hl)
     cp '-'
     jp nz,ld_rev02_inval
@@ -2858,9 +2910,49 @@ ld_rev02_size_ok:
     or a
     jp nz,ld_rev02_inval
     inc hl
+    ; argv[3] = output basename
     ld (ld_rev02_output_ptr),hl
+    ld a,(ld_rev02_abs_mode)
+    or a
+    jr nz,ld_rev02_parse_abs_tail
     call ld_rev02_require_last
-    ret c
+    jp c,ld_rev02_exit_errno
+    jp ld_rev02_normal_open
+
+ld_rev02_parse_abs_tail:
+    call ld_rev02_skip_arg
+    jp c,ld_rev02_exit_errno
+    ; argv[4] = exact final -abs
+    ld a,(hl)
+    cp '-'
+    jp nz,ld_rev02_inval
+    inc hl
+    ld a,(hl)
+    cp 'a'
+    jp nz,ld_rev02_inval
+    inc hl
+    ld a,(hl)
+    cp 'b'
+    jp nz,ld_rev02_inval
+    inc hl
+    ld a,(hl)
+    cp 's'
+    jp nz,ld_rev02_inval
+    inc hl
+    ld a,(hl)
+    or a
+    jp nz,ld_rev02_inval
+    ; require_last expects the first byte of the final argument.
+    ld hl,(ld_rev02_output_ptr)
+    call ld_rev02_skip_arg
+    jp c,ld_rev02_exit_errno
+    call ld_rev02_require_last
+    jp c,ld_rev02_exit_errno
+    jp ld_rev02_abs_start
+
+; Existing normal-output route remains fail-closed until the ordinary generic
+; linker pipeline is connected by its own authorized Stage-E correction.
+ld_rev02_normal_open:
     ld hl,(ld_rev02_input_ptr)
     ld c,O_READ
     ld b,0
@@ -2869,13 +2961,598 @@ ld_rev02_size_ok:
     jp c,ld_rev02_exit_errno
     ld a,l
     ld (ld_rev02_input_handle),a
-    ; Stage-E continuation: ordinary OBJ1 reader/linker/MEX1 transaction.
     ld a,E_NOTSUP
-    push af
-    call ld_rev02_close
-    pop af
+    ld (ld_rev02_errno),a
+    call ld_rev02_close_input
+    ld a,(ld_rev02_errno)
     jp ld_rev02_exit_errno
 
+; Generic REV18 fixed-image linker path.  It does not inspect input/output names,
+; source identity, SDK identity, object hashes, or proof-session state.
+ld_rev02_abs_start:
+    call ld_rev02_validate_output_name
+    jp c,ld_rev02_exit_errno
+
+    ; Kernel object metadata, not filename spelling, determines input type.
+    ld hl,(ld_rev02_input_ptr)
+    ld (ld_rev02_stat_req),hl
+    ld hl,ld_rev02_stat_out
+    ld (ld_rev02_stat_req+2),hl
+    ld hl,ld_rev02_stat_req
+    ld a,SYS_STAT
+    call SYSCALL_GATEWAY
+    jp c,ld_rev02_exit_errno
+    ld a,(ld_rev02_stat_out+0)
+    cp OBJ_OBJ
+    jp nz,ld_rev02_format_exit
+
+    ld hl,(ld_rev02_input_ptr)
+    ld c,O_READ
+    ld b,0
+    ld a,SYS_OPEN
+    call SYSCALL_GATEWAY
+    jp c,ld_rev02_exit_errno
+    ld a,h
+    or a
+    jp nz,ld_rev02_format_cleanup
+    ld a,l
+    ld (ld_rev02_input_handle),a
+
+    ; Read the complete fixed-size OBJ1 header before creating output state.
+    ld hl,ld_rev02_header
+    ld bc,LD_REV02_OBJ1_HEADER
+    call ld_rev02_read_input_exact
+    jp c,ld_rev02_cleanup_error
+    call ld_rev02_validate_abs_header
+    jp c,ld_rev02_cleanup_error
+
+    ; Create /tmp/.ld<pid>.<n> as DAT with O_EXCL.  Existing destination is
+    ; never opened or truncated.
+    ld a,SYS_GETPID
+    call SYSCALL_GATEWAY
+    jp c,ld_rev02_cleanup_error
+    ld (ld_rev02_pid),hl
+    xor a
+    ld (ld_rev02_try_n),a
+ld_rev02_abs_open_retry:
+    call ld_rev02_build_temp
+    ld hl,ld_rev02_temp_name
+    ld c,O_WRITE|O_CREATE|O_EXCL
+    ld b,OBJ_DAT
+    ld a,SYS_OPEN
+    call SYSCALL_GATEWAY
+    jr nc,ld_rev02_abs_opened
+    cp E_EXIST
+    jp nz,ld_rev02_cleanup_error
+    ld a,(ld_rev02_try_n)
+    inc a
+    ld (ld_rev02_try_n),a
+    cp 10
+    jr c,ld_rev02_abs_open_retry
+    ld a,E_EXIST
+    jp ld_rev02_cleanup_error
+
+ld_rev02_abs_opened:
+    ld a,h
+    or a
+    jp nz,ld_rev02_format_created
+    ld a,l
+    ld (ld_rev02_temp_handle),a
+    ld a,1
+    ld (ld_rev02_temp_created),a
+
+    ld hl,(ld_rev02_text_len)
+    ld (ld_rev02_remaining),hl
+    ld de,$FFFF
+    ld (ld_rev02_body_crc),de
+
+ld_rev02_copy_loop:
+    ld hl,(ld_rev02_remaining)
+    ld a,h
+    or l
+    jr z,ld_rev02_copy_done
+    ld bc,LD_REV02_IO_CHUNK
+    ld a,h
+    or a
+    jr nz,ld_rev02_have_chunk
+    ld a,l
+    cp LD_REV02_IO_CHUNK
+    jr nc,ld_rev02_have_chunk
+    ld b,0
+    ld c,l
+ld_rev02_have_chunk:
+    ld a,(ld_rev02_input_handle)
+    ld e,a
+    ld d,0
+    ld hl,ld_rev02_buffer
+    ld a,SYS_READ
+    call SYSCALL_GATEWAY
+    jp c,ld_rev02_cleanup_error
+    ld a,h
+    or l
+    jp z,ld_rev02_format_cleanup
+    ld (ld_rev02_count),hl
+
+    ; Defensive short/over-read bound: returned count may be short but never
+    ; exceed remaining bytes in the fixed image.
+    ex de,hl
+    ld hl,(ld_rev02_remaining)
+    or a
+    sbc hl,de
+    jp c,ld_rev02_format_cleanup
+    ld (ld_rev02_remaining),hl
+
+    ; Incremental CRC-16/CCITT-FALSE over exactly the TEXT bytes.
+    ld bc,(ld_rev02_count)
+    ld hl,ld_rev02_buffer
+    ld de,(ld_rev02_body_crc)
+    call ld_rev02_crc16_update
+    ld (ld_rev02_body_crc),de
+
+    ; Exact write of the bytes just read.
+    ld a,(ld_rev02_temp_handle)
+    ld e,a
+    ld d,0
+    ld hl,ld_rev02_buffer
+    ld bc,(ld_rev02_count)
+    ld a,SYS_WRITE
+    call SYSCALL_GATEWAY
+    jp c,ld_rev02_cleanup_error
+    ld de,(ld_rev02_count)
+    or a
+    sbc hl,de
+    jp nz,ld_rev02_io_cleanup
+    jr ld_rev02_copy_loop
+
+ld_rev02_copy_done:
+    ; Exact EOF is part of OBJ1 framing; trailing bytes are rejected.
+    ld a,(ld_rev02_input_handle)
+    ld e,a
+    ld d,0
+    ld hl,ld_rev02_probe
+    ld bc,1
+    ld a,SYS_READ
+    call SYSCALL_GATEWAY
+    jp c,ld_rev02_cleanup_error
+    ld a,h
+    or l
+    jp nz,ld_rev02_format_cleanup
+
+    ld hl,(ld_rev02_body_crc)
+    ld de,(ld_rev02_body_expected)
+    or a
+    sbc hl,de
+    jp nz,ld_rev02_format_cleanup
+
+    call ld_rev02_close_temp
+    jp c,ld_rev02_cleanup_error
+
+    ; Rewind the validated source to TEXT and re-open the staged DAT.  The
+    ; publication gate below compares every staged byte directly with the OBJ1
+    ; TEXT byte that produced it; a checksum match alone is not exact-byte proof.
+    ld a,(ld_rev02_input_handle)
+    ld e,a
+    ld d,0
+    ld hl,LD_REV02_OBJ1_HEADER
+    ld a,SYS_SEEK
+    call SYSCALL_GATEWAY
+    jp c,ld_rev02_cleanup_error
+    ld de,LD_REV02_OBJ1_HEADER
+    or a
+    sbc hl,de
+    jp nz,ld_rev02_format_cleanup
+
+    ld hl,ld_rev02_temp_name
+    ld (ld_rev02_stat_req),hl
+    ld hl,ld_rev02_stat_out
+    ld (ld_rev02_stat_req+2),hl
+    ld hl,ld_rev02_stat_req
+    ld a,SYS_STAT
+    call SYSCALL_GATEWAY
+    jp c,ld_rev02_cleanup_error
+    ld a,(ld_rev02_stat_out+0)
+    cp OBJ_DAT
+    jp nz,ld_rev02_format_cleanup
+
+    ld hl,ld_rev02_temp_name
+    ld c,O_READ
+    ld b,0
+    ld a,SYS_OPEN
+    call SYSCALL_GATEWAY
+    jp c,ld_rev02_cleanup_error
+    ld a,h
+    or a
+    jp nz,ld_rev02_format_cleanup
+    ld a,l
+    ld (ld_rev02_temp_handle),a
+    ld hl,(ld_rev02_text_len)
+    ld (ld_rev02_remaining),hl
+
+ld_rev02_verify_loop:
+    ld hl,(ld_rev02_remaining)
+    ld a,h
+    or l
+    jr z,ld_rev02_verify_eof
+    ld bc,LD_REV02_IO_CHUNK
+    ld a,h
+    or a
+    jr nz,ld_rev02_verify_chunk
+    ld a,l
+    cp LD_REV02_IO_CHUNK
+    jr nc,ld_rev02_verify_chunk
+    ld b,0
+    ld c,l
+ld_rev02_verify_chunk:
+    ld a,(ld_rev02_temp_handle)
+    ld e,a
+    ld d,0
+    ld hl,ld_rev02_buffer
+    ld a,SYS_READ
+    call SYSCALL_GATEWAY
+    jp c,ld_rev02_cleanup_error
+    ld a,h
+    or l
+    jp z,ld_rev02_format_cleanup
+    ld (ld_rev02_count),hl
+    ex de,hl
+    ld hl,(ld_rev02_remaining)
+    or a
+    sbc hl,de
+    jp c,ld_rev02_format_cleanup
+    ld (ld_rev02_remaining),hl
+
+    ; Read the matching source range exactly, then compare it byte-for-byte.
+    ld hl,ld_rev02_verify_buffer
+    ld bc,(ld_rev02_count)
+    call ld_rev02_read_input_exact
+    jp c,ld_rev02_cleanup_error
+    ld hl,ld_rev02_buffer
+    ld de,ld_rev02_verify_buffer
+    ld bc,(ld_rev02_count)
+ld_rev02_verify_compare:
+    ld a,b
+    or c
+    jr z,ld_rev02_verify_loop
+    ld a,(de)
+    cp (hl)
+    jp nz,ld_rev02_format_cleanup
+    inc hl
+    inc de
+    dec bc
+    jr ld_rev02_verify_compare
+
+ld_rev02_verify_eof:
+    ld a,(ld_rev02_temp_handle)
+    ld e,a
+    ld d,0
+    ld hl,ld_rev02_probe
+    ld bc,1
+    ld a,SYS_READ
+    call SYSCALL_GATEWAY
+    jp c,ld_rev02_cleanup_error
+    ld a,h
+    or l
+    jp nz,ld_rev02_format_cleanup
+
+    ; The source stream must also end exactly after the compared TEXT bytes.
+    ld a,(ld_rev02_input_handle)
+    ld e,a
+    ld d,0
+    ld hl,ld_rev02_probe
+    ld bc,1
+    ld a,SYS_READ
+    call SYSCALL_GATEWAY
+    jp c,ld_rev02_cleanup_error
+    ld a,h
+    or l
+    jp nz,ld_rev02_format_cleanup
+
+    call ld_rev02_close_input
+    jp c,ld_rev02_cleanup_error
+    call ld_rev02_close_temp
+    jp c,ld_rev02_cleanup_error
+
+    ; Commit the exact-byte-verified staged DAT atomically.
+    ld hl,ld_rev02_temp_name
+    ld (ld_rev02_rename_req),hl
+    ld hl,(ld_rev02_output_ptr)
+    ld (ld_rev02_rename_req+2),hl
+    ld hl,ld_rev02_rename_req
+    ld a,SYS_RENAME
+    call SYSCALL_GATEWAY
+    jp c,ld_rev02_cleanup_error
+    xor a
+    ld (ld_rev02_temp_created),a
+    jp ld_rev02_success
+
+; Validate fixed-image OBJ1 header and both header/body CRC declarations.
+ld_rev02_validate_abs_header:
+    ld ix,ld_rev02_header
+    ld a,(ix+0)
+    cp 'O'
+    jp nz,ld_rev02_format_ret
+    ld a,(ix+1)
+    cp 'B'
+    jp nz,ld_rev02_format_ret
+    ld a,(ix+2)
+    cp 'J'
+    jp nz,ld_rev02_format_ret
+    ld a,(ix+3)
+    cp '1'
+    jp nz,ld_rev02_format_ret
+    ld a,(ix+4)
+    cp 1
+    jp nz,ld_rev02_format_ret
+    ld a,(ix+5)
+    or a
+    jp nz,ld_rev02_format_ret
+    ld a,(ix+6)
+    cp LD_REV02_OBJ1_HEADER
+    jp nz,ld_rev02_format_ret
+    ld a,(ix+7)
+    or a
+    jp nz,ld_rev02_format_ret
+
+    ld l,(ix+8)
+    ld h,(ix+9)
+    ld a,h
+    or l
+    jp z,ld_rev02_format_ret
+    ld de,LD_REV02_ABS_MAX+1
+    or a
+    sbc hl,de
+    jp nc,ld_rev02_format_ret
+    ld l,(ix+8)
+    ld h,(ix+9)
+    ld (ld_rev02_text_len),hl
+
+    ; Fixed image is TEXT only: no BSS, symbol requirements, or relocations.
+    ld a,(ix+10)
+    or (ix+11)
+    jp nz,ld_rev02_format_ret
+    ld a,(ix+12)
+    or (ix+13)
+    jp nz,ld_rev02_format_ret
+    ld a,(ix+14)
+    or (ix+15)
+    jp nz,ld_rev02_format_ret
+
+    ld hl,(ld_rev02_text_len)
+    ld de,LD_REV02_OBJ1_HEADER
+    add hl,de
+    jp c,ld_rev02_format_ret
+    ld a,(ix+16)
+    cp l
+    jp nz,ld_rev02_format_ret
+    ld a,(ix+17)
+    cp h
+    jp nz,ld_rev02_format_ret
+    ld a,(ix+18)
+    cp l
+    jp nz,ld_rev02_format_ret
+    ld a,(ix+19)
+    cp h
+    jp nz,ld_rev02_format_ret
+
+    ld l,(ix+20)
+    ld h,(ix+21)
+    ld (ld_rev02_body_expected),hl
+    ld l,(ix+22)
+    ld h,(ix+23)
+    ld (ld_rev02_head_expected),hl
+    xor a
+    ld (ix+22),a
+    ld (ix+23),a
+    ld hl,ld_rev02_header
+    ld bc,LD_REV02_OBJ1_HEADER
+    ld de,$FFFF
+    call ld_rev02_crc16_update
+    ld hl,(ld_rev02_head_expected)
+    or a
+    sbc hl,de
+    jp nz,ld_rev02_format_ret
+    or a
+    ret
+
+; Read exactly BC bytes from the already-open input into HL.  Short reads are
+; accepted; premature EOF and an impossible over-read fail closed.
+ld_rev02_read_input_exact:
+    ld (ld_rev02_read_ptr),hl
+    ld (ld_rev02_read_left),bc
+ld_rev02_read_exact_loop:
+    ld bc,(ld_rev02_read_left)
+    ld a,b
+    or c
+    ret z
+    ld a,(ld_rev02_input_handle)
+    ld e,a
+    ld d,0
+    ld hl,(ld_rev02_read_ptr)
+    ld a,SYS_READ
+    call SYSCALL_GATEWAY
+    ret c
+    ld a,h
+    or l
+    jp z,ld_rev02_format_ret
+    ex de,hl                 ; DE=returned count
+    ld hl,(ld_rev02_read_left)
+    or a
+    sbc hl,de
+    jp c,ld_rev02_format_ret
+    ld (ld_rev02_read_left),hl
+    ld hl,(ld_rev02_read_ptr)
+    add hl,de
+    ld (ld_rev02_read_ptr),hl
+    jr ld_rev02_read_exact_loop
+
+; HL points at output basename.  Exact case is preserved.  Paths are rejected:
+; REV18 freezes one <=10-byte base name, not a directory operand.
+ld_rev02_validate_output_name:
+    ld hl,(ld_rev02_output_ptr)
+    ld b,0
+ld_rev02_output_name_loop:
+    ld a,(hl)
+    or a
+    jr z,ld_rev02_output_name_done
+    cp '/'
+    jp z,ld_rev02_format_ret
+    inc b
+    ld a,b
+    cp 11
+    jp nc,ld_rev02_format_ret
+    inc hl
+    jr ld_rev02_output_name_loop
+ld_rev02_output_name_done:
+    ld a,b
+    or a
+    jp z,ld_rev02_format_ret
+    or a
+    ret
+
+ld_rev02_build_temp:
+    ld hl,ld_rev02_temp_prefix
+    ld de,ld_rev02_temp_name
+    ld bc,8
+    ldir
+    push de
+    pop ix
+    ld hl,(ld_rev02_pid)
+    xor a
+    ld (ld_rev02_dec_started),a
+    ld de,10000
+    call ld_rev02_dec_place
+    ld de,1000
+    call ld_rev02_dec_place
+    ld de,100
+    call ld_rev02_dec_place
+    ld de,10
+    call ld_rev02_dec_place
+    ld a,l
+    add a,'0'
+    ld (ix+0),a
+    inc ix
+    ld a,'.'
+    ld (ix+0),a
+    inc ix
+    ld a,(ld_rev02_try_n)
+    add a,'0'
+    ld (ix+0),a
+    inc ix
+    xor a
+    ld (ix+0),a
+    ret
+
+ld_rev02_dec_place:
+    ld c,0
+ld_rev02_dec_sub:
+    or a
+    sbc hl,de
+    jr c,ld_rev02_dec_done
+    inc c
+    jr ld_rev02_dec_sub
+ld_rev02_dec_done:
+    add hl,de
+    ld a,(ld_rev02_dec_started)
+    or c
+    ret z
+    ld a,1
+    ld (ld_rev02_dec_started),a
+    ld a,c
+    add a,'0'
+    ld (ix+0),a
+    inc ix
+    ret
+
+; Incremental CRC-16/CCITT-FALSE. Input state DE; buffer HL, length BC; state DE.
+ld_rev02_crc16_update:
+ld_rev02_crc_byte:
+    ld a,b
+    or c
+    ret z
+    ld a,(hl)
+    xor d
+    ld d,a
+    inc hl
+    push bc
+    ld b,8
+ld_rev02_crc_bit:
+    sla e
+    rl d
+    jr nc,ld_rev02_crc_no_poly
+    ld a,d
+    xor $10
+    ld d,a
+    ld a,e
+    xor $21
+    ld e,a
+ld_rev02_crc_no_poly:
+    djnz ld_rev02_crc_bit
+    pop bc
+    dec bc
+    jr ld_rev02_crc_byte
+
+ld_rev02_close_input:
+    ld a,(ld_rev02_input_handle)
+    cp HANDLE_FREE
+    ret z
+    ld l,a
+    ld h,0
+    ld a,SYS_CLOSE
+    call SYSCALL_GATEWAY
+    ret c
+    ld a,HANDLE_FREE
+    ld (ld_rev02_input_handle),a
+    ret
+
+ld_rev02_close_temp:
+    ld a,(ld_rev02_temp_handle)
+    cp HANDLE_FREE
+    ret z
+    ld l,a
+    ld h,0
+    ld a,SYS_CLOSE
+    call SYSCALL_GATEWAY
+    ret c
+    ld a,HANDLE_FREE
+    ld (ld_rev02_temp_handle),a
+    ret
+
+ld_rev02_remove_temp:
+    ld a,(ld_rev02_temp_created)
+    or a
+    ret z
+    xor a
+    ld (ld_rev02_temp_created),a
+    ld hl,ld_rev02_temp_name
+    ld a,SYS_REMOVE
+    call SYSCALL_GATEWAY
+    ret
+
+ld_rev02_cleanup_error:
+    ld (ld_rev02_errno),a
+    call ld_rev02_close_input
+    call ld_rev02_close_temp
+    call ld_rev02_remove_temp
+    ld a,(ld_rev02_errno)
+    jp ld_rev02_exit_errno
+ld_rev02_format_cleanup:
+    ld a,E_FORMAT
+    jp ld_rev02_cleanup_error
+ld_rev02_io_cleanup:
+    ld a,E_IO
+    jp ld_rev02_cleanup_error
+ld_rev02_format_created:
+    ld a,1
+    ld (ld_rev02_temp_created),a
+ld_rev02_format_exit:
+    ld a,E_FORMAT
+    jp ld_rev02_cleanup_error
+ld_rev02_format_ret:
+    ld a,E_FORMAT
+    scf
+    ret
+
+; HL points at one NUL-terminated argument. Return HL at next argument.
 ld_rev02_skip_arg:
     ld a,(hl)
     or a
@@ -2891,6 +3568,8 @@ ld_rev02_skip_done:
     inc hl
     or a
     ret
+
+; HL points at final argument. Verify non-empty and exact ARG1 end.
 ld_rev02_require_last:
     ld a,(hl)
     or a
@@ -2912,21 +3591,17 @@ ld_rev02_bad:
     ld a,E_INVAL
     scf
     ret
-ld_rev02_close:
-    ld a,(ld_rev02_input_handle)
-    cp HANDLE_FREE
-    ret z
-    ld l,a
-    ld h,0
-    ld a,SYS_CLOSE
-    call SYSCALL_GATEWAY
-    ld a,HANDLE_FREE
-    ld (ld_rev02_input_handle),a
-    ret
+
 ld_rev02_inval:
     ld a,E_INVAL
 ld_rev02_exit_errno:
     ld l,a
+    ld h,0
+    ld a,SYS_EXIT
+    call SYSCALL_GATEWAY
+    halt
+ld_rev02_success:
+    ld l,0
     ld h,0
     ld a,SYS_EXIT
     call SYSCALL_GATEWAY

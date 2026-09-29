@@ -54,11 +54,15 @@ def main():
         "REV02 cc generic CLI scaffold missing")
     req("EMIT_REV02_AS_PRODUCT_CLI" in ass and "Stage-E continuation: ordinary source reader/parser/OBJ1 transaction." in ass,
         "REV02 as generic CLI scaffold missing")
-    req("EMIT_REV02_LD_PRODUCT_CLI" in ld and "Stage-E continuation: ordinary OBJ1 reader/linker/MEX1 transaction." in ld,
-        "REV02 ld generic CLI scaffold missing")
+    req("EMIT_REV02_LD_PRODUCT_CLI" in ld and "Existing normal-output route remains fail-closed" in ld,
+        "REV02 ld normal-output Stage-E continuation missing")
     req("ld input.obj -o output -abs" in rev18,"REV18 fixed-image ld CLI authority missing")
-    req("cp 4" in ld and "ld_rev02_require_last" in ld,
-        "REV02 ld current normal-output argv shape changed; rerun Stage-C assumptions")
+    req("cp 4" in ld and "cp 5" in ld and "ld_rev02_require_last" in ld,
+        "REV02 ld argv shape changed; rerun Stage-C assumptions")
+    abs_ld_ready=all(x in ld for x in (
+        "ld_rev02_abs_start:", "ld b,OBJ_DAT", "ld_rev02_temp_prefix:   db '/tmp/.ld'",
+        "ld_rev02_validate_abs_header:", "ld_rev02_verify_loop:", "ld a,SYS_RENAME",
+        "LD_REV02_ABS_MAX        EQU 8192", "cp '/'"))
     product_builder=(root/"tools/p11-prerelease-rev02/product_tools.py").read_text()
     req("cc.m48o.tap" in product_builder and "as.m48o.tap" in product_builder and "ld.m48o.tap" in product_builder,
         "REV02 deterministic product-tool packaging closure missing")
@@ -145,10 +149,12 @@ def main():
       {"id":"C013","failure":"ordinary production libc48/runtime link closure is incomplete",
        "observed":"runtime_archive.asm contains historical minimal/step overlays but no one product archive materialization resolving the full frozen C48 API for ordinary ld",
        "planned_paths":["v1/src/libc48/runtime_archive.asm","tools/ld.asm","tools/p11-prerelease-rev02/product_tools.py"],"blocks":["all API-complete links"]},
-      {"id":"C014","failure":"ordinary /bin/ld fixed/absolute -abs route incomplete",
-       "observed":"REV18 Section 24 freezes `ld input.obj -o output -abs`, but EMIT_REV02_LD_PRODUCT_CLI currently accepts only the normal output argv shape and reaches E_NOTSUP before any generic fixed-image DAT transaction",
-       "planned_paths":["tools/ld.asm"],"blocks":["Stage-L shell-visible fixed/absolute native kernel rebuild"]}
     ]
+    if not abs_ld_ready:
+        gaps.append(
+          {"id":"C014","failure":"ordinary /bin/ld fixed/absolute -abs route incomplete",
+           "observed":"REV18 Section 24 freezes `ld input.obj -o output -abs`, but the current ordinary product path does not yet expose the complete generic validated DAT transaction",
+           "planned_paths":["tools/ld.asm"],"blocks":["Stage-L shell-visible fixed/absolute native kernel rebuild"]})
     for g in gaps: g["class_pending"]="Stage-D"
 
     report={
@@ -170,7 +176,7 @@ def main():
         "object_tape_spawn_gap_recorded":"PASS",
         "generic_cli_gaps_recorded":"PASS",
         "runtime_api_closure_gap_recorded":"PASS",
-        "fixed_ld_public_cli_product_gap_recorded":"PASS",
+        "fixed_ld_public_cli_product_gap_"+("resolved" if abs_ld_ready else "recorded"):"PASS",
         "no_p11pr_compiler_invoked":"PASS",
         "no_internal_cc_or_ld_invoked":"PASS",
         "ordinary_product_path_reproduced_as_unavailable":"PASS",
@@ -178,5 +184,5 @@ def main():
         "stage_c_requires_rerun_after_product_correction":"PASS"
       }}
     (out/"STAGE-C.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
-    print("REV02 STAGE C GAP INVENTORY PASS root_blockers=14 programs=30")
+    print(f"REV02 STAGE C GAP INVENTORY PASS root_blockers={len(gaps)} programs=30")
 if __name__=="__main__": main()
