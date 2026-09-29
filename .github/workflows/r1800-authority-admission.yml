@@ -48,7 +48,8 @@ jobs:
           python3 tools/check_media_retention.py
           python3 tools/check_phase11_evidence.py --require-active
       - name: Download exact qualification artifact
-        env: {GH_TOKEN: ${{ github.token }}}
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -100,7 +101,8 @@ jobs:
           test "$(git rev-parse HEAD^)" = "$SOURCE_COMMIT"
           git push origin HEAD:main
       - name: Dispatch R18 activation validation
-        env: {GH_TOKEN: ${{ github.token }}}
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           admitted="$(git rev-parse HEAD)"
           python3 - "$admitted" <<'PY'
