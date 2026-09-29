@@ -12,7 +12,7 @@
 
 # ZX-UX Phase-11 Expanded Pre-Release Runbook REV01
 
-**Status:** OPEN  
+**Status:** CLOSED  
 **Scope:** post-Phase-11, pre-Phase-12 pre-release strengthening only  
 **Hard stop:** DO NOT START PHASE 12
 
@@ -591,7 +591,7 @@ Do not use an X11/window screenshot as the canonical pixel source.
 
 Where the pinned SDK release provides a reference image path under
 `docs/images/examples/` or `docs/images/demos/`, retain the exact LFS pointer
-identity, resolve the actual PNG through the pinned GUI/evidence release package,
+identity, resolve the actual PNG through the materialized-LFS pinned main SDK release package,
 verify payload SHA-256/size against the pointer, and record a program-specific
 visual comparison. Pixel identity is required only when the same rendering/time
 contract makes it meaningful; otherwise compare explicit geometry/text/color/state
@@ -874,3 +874,38 @@ PASS count, multitasking PNG hash, and final validation anchors.
 Then stop.
 
 **DO NOT START P12.01.**
+
+
+## 22. Closure record
+
+**Closure state:** CLOSED. The Phase-11 expanded pre-release runbook is complete. Phase 12 remains unstarted and unauthorized by this closure.
+
+Durable anchors:
+
+- final tested pre-release source commit: `c4b5d684e5257380a2dc1670438389e89857ac63`;
+- expanded pre-release workflow: run `36574652759` (run #99), PASS;
+- tested-bundle workflow artifact: `11039441127`, upload digest `sha256:8707dcccd536a39c5d2f4f43ca1375b14909fdd31530cb0a6e75e067fad062f1`;
+- exact tested publication commit: `ca3bede90247bb19570e9c994775c3ca0a9434f8`;
+- exact tested publication tree: `6f3f7e3f310426e73cb54eeb6d86bf0b7664307f`;
+- post-publication exact-head validation: run `36580432826` (run #1078), PASS at `0827c04cb61ab1887879d8e82aa9c2ff24c45747`; that commit has tree `6f3f7e3f310426e73cb54eeb6d86bf0b7664307f`, byte-identical to the publication tree after removal of the one-shot validation trigger;
+- final qualification auto-dispatch: run `36580937247`, PASS, with qualification dispatch skipped because no due candidate exists;
+- `pre-release.json` SHA-256: `aef052ec53090d63343c52dd1fc070dba5b1c1d1f8ee901849c259b43cf84523`;
+- deterministic bundle digest: `2f4e5b52c7cba3e62a1f03017bc735f904c07c5fb4d7f3a8cad11e66a8b1d497`;
+- final Phase-11 pre-release TZX SHA-256: `fdb9dbf3ffb004163567ceda46831c4ee72ade7b1d308e22e45eeb4bd137a0ed`, size `11993`;
+- exact three-way 8192-byte host/TZX/native kernel SHA-256: `ae3c54f9cd50eade1e543d9ac3c6ff58c83d63d6951c707b192ef5f9e26d4806`;
+- genuine native kernel OBJ1 SHA-256: `3479e82ca544d177e67cf83b1a01fded5c150a49f552ba1ab7d841cb6d5f5bff`, size `8216`;
+- retained textual kernel source TAP SHA-256: `91caaadbde021d023da8527afe67146c8c9ebf62fa6f584fdc1123598c92325b`;
+- SDK pin: release/tag `1.0.2`, commit `b1621338565ac3bd9d4eff4ecb5a2a77aee2ab6a`, tree `ced96ea0a4b2f6cdd6080fc6f48e07738252af17`, release ZIP SHA-256 `8efd465928048b050c0cff9d93ddaf13127eabb12b837a33aa1c2c44e913a98a`, GUI/evidence ZIP SHA-256 `ed9e2b2643481c3a58e46fdc054c3524fb7fe300827cb3e2c2b4c2833dd5ef01`;
+- SDK source-tape manifest count: `57`; in-scope native lifecycle PASS count: `30/30`; retained SDK SCR count: `30`; retained SDK PNG count: `30`;
+- Hanoi + 8-Queens concurrent checkpoint: `1250` frames; multitasking PNG SHA-256 `a303cd9e04ffbe1f8f6b80795a11ba1ee93aa8c2c7fe78e6dd654d83eec9db5b`;
+- controlled negative gates: `18/18` PASS;
+- historical P11.39 SDK import unchanged: PASS;
+- exact-head P11.48 revalidation: PASS;
+- Phase-11 aggregate validation: PASS;
+- policy, license, media-retention, authority/evidence, deterministic-build, native-execution, real-time loader, and zero-Phase-12 gates: PASS;
+- final Stage M tree sanity: one official Phase-11 pre-release TZX; exactly `31` retained TAP files, all source-transfer/evidence sidecars; manifest file table exactly binds `273` non-manifest files; zero Phase-12 paths;
+- fixed `PHASE-11-COMPLETE`: `263a203da3d54a398e8ac011284ae4195b1279c0`.
+
+The Stage H reference-PNG wording was synchronized with Stage B during closure: docs reference PNG payloads resolve from the materialized-LFS pinned main SDK release package; the separately pinned GUI/evidence package remains separate provenance evidence.
+
+The expanded Phase-11 pre-release is complete. **Do not begin P12.01.**
