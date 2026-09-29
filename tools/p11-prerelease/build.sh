@@ -40,7 +40,7 @@ command -v pasmo > "$work/pasmo-path"
 (cd v1/src/kernel && "$GITHUB_WORKSPACE/tools/runtime/sjasmplus/bin/sjasmplus" --nologo --lst=../../build/kernel-prerelease.lst --sym=../../build/kernel-prerelease.sym kernel.asm)
 test "$(wc -c < v1/build/kernel.bin)" -eq 8192
 test "$(xxd -p -l 3 v1/build/kernel.bin)" != 000000
-"$py" -m py_compile v1/tools-host/release-tzx/{build,inspect_tzx,runtime_acceptance,kernel_native_projection,kernel_text_projection,native_rebuild_test}.py tools/p11-prerelease/{source_tap,native_text_assemble_test,native_kernel_tape_rebuild,sdk_source_tapes,sdk_source_tape_native_build,sdk_source_tape_native_visual_build,sdk_native_process_run,sdk_native_cc_preflight,sdk_native_ld_preflight,sdk_stage_bundle,sdk_native_visual_run,sdk_multitask_build,sdk_multitask_run}.py
+"$py" -m py_compile v1/tools-host/release-tzx/{build,inspect_tzx,runtime_acceptance,kernel_native_projection,kernel_text_projection,native_rebuild_test}.py tools/p11-prerelease/{source_tap,native_text_assemble_test,native_kernel_tape_rebuild,sdk_source_tapes,sdk_source_tape_native_build,sdk_source_tape_native_visual_build,sdk_native_process_run,sdk_native_cc_preflight,sdk_native_ld_preflight,sdk_stage_bundle,sdk_native_visual_run,sdk_multitask_build,sdk_multitask_run,negative_gates}.py
 pasmo="$(cat "$work/pasmo-path")"
 for d in a b; do
   "$py" v1/tools-host/release-tzx/build.py --kernel v1/build/kernel.bin \
@@ -267,3 +267,12 @@ cp "$work/sdk-native-multitask/hanoi.mex1" "$work/P11.pre-release/multitasking/"
 cp "$work/sdk-native-multitask/queens8.obj1" "$work/P11.pre-release/multitasking/"
 cp "$work/sdk-native-multitask/queens8.mex1" "$work/P11.pre-release/multitasking/"
 
+
+mkdir -p "$work/P11.pre-release/proof"
+"$py" tools/p11-prerelease/negative_gates.py \
+  --sdk-root "$work/sdk-reference-pre-release-1.0.2" \
+  --bundle "$work/P11.pre-release" \
+  --native-report "$work/sdk-native-source-tape-build.json" \
+  --process-report "$work/sdk-native-process-run.json" \
+  --projection-report "$work/projection.json" \
+  --output "$work/P11.pre-release/proof/negative-gates.json"

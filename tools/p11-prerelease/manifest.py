@@ -53,12 +53,30 @@ def emit():
     sdkrel=load(OUT/"sdk/SDK-RELEASE.json")
     visual=load(OUT/"sdk/proof/native-visual-run.json")
     multitask=load(OUT/"multitasking/hanoi-queens8.json")
+    native_matrix=load(OUT/"sdk/proof/native-build.json")
+    negatives=load(OUT/"proof/negative-gates.json")
     req(exact["status"]=="PASS" and exact["source_commit"]==git("rev-parse","HEAD"),"exact-head P11.48")
     req(activated["status"]=="PASS" and activated["pass_marker"]=="ZX-UX PHASE 11 CERTIFICATION PASS","phase11 aggregate")
     req(sdk["program_count"]==visual["program_count"]==30,"program count")
     req(all(v=="PASS" for v in runtime["assertions"].values()),"runtime acceptance")
     req(all(v=="PASS" for v in detect["assertions"].values()),"detect-loader acceptance")
     req(all(v=="PASS" for v in multitask["assertions"].values()),"multitask acceptance")
+    req(negatives.get("negative_count",0)>=18 and all(v=="PASS" for v in negatives["assertions"].values()),"controlled negatives")
+    native_by={(r["category"],r["program"]):r for r in native_matrix["programs"]}
+    visual_by={(r["category"],r["program"]):r for r in visual["programs"]}
+    programs=[]
+    for row in sdk["programs"]:
+        key=(row["category"],row["program"])
+        nr=native_by[key]; vr=visual_by[key]
+        scrp=OUT/"sdk/proof/visual"/row["category"]/(row["program"]+".scr")
+        pngp=OUT/"sdk/proof/visual"/row["category"]/(row["program"]+".png")
+        req(sha(scrp)==vr["scr_sha256"] and sha(pngp)==vr["png_sha256"],f"visual hash drift: {key}")
+        programs.append({**row,
+          "tape_load":nr["tape_load"],"native_cc":nr["native_cc"],"native_ld":nr["native_ld"],
+          "capture_frame":vr["capture_frame"],"capture_checkpoint":vr["capture_checkpoint"],
+          "scr_size":vr["scr_size"],"scr_sha256":vr["scr_sha256"],"png_sha256":vr["png_sha256"],
+          "visual_spawn":vr["spawn"],"visual_process_started":vr["process_started"],"visual_sys_exit_reached":vr["sys_exit_reached"]})
+    req(len(programs)==30,"merged program matrix")
     host=sha(OUT/"kernel/kernel-host.bin"); embedded=sha(OUT/"kernel/kernel-tzx-embedded.bin"); nk=sha(OUT/"kernel/kernel-native.bin")
     req(host==embedded==nk==native["native_kernel_sha256"],"kernel three-way identity")
     req((OUT/"kernel/kernel-native-source.tap").is_file(),"kernel source TAP")
@@ -96,9 +114,9 @@ Phase 12 is not started or implied by this pre-release bundle.
       "phase11":{"activated_aggregate_sha256":sha(ROOT/"v1/dist/certification/phase-11.json"),"activated_pass_marker":activated["pass_marker"],"p1148_result_sha256":sha(ROOT/"v1/dist/certification/P11.48.result.json"),"exact_head_revalidation_source_commit":exact["source_commit"],"exact_head_revalidation_status":exact["status"],"exact_head_revalidation_pass_marker":exact["pass_marker"]},
       "kernel_identity":{"size":8192,"host_built_sha256":host,"tzx_embedded_sha256":embedded,"native_rebuilt_sha256":nk,"native_obj1_sha256":sha(OUT/"kernel/kernel-native.obj1"),"text_source_sha256":sha(OUT/"kernel/kernel-native-source.asm"),"source_map_sha256":sha(OUT/"kernel/kernel-native-source-map.json"),"source_tap_sha256":sha(OUT/"kernel/kernel-native-source.tap")},
       "boot":{"distribution":"TZX-only","tzx_sha256":sha(OUT/"zx-ux-phase11-pre-release.tzx"),"tzx_size":(OUT/"zx-ux-phase11-pre-release.tzx").stat().st_size,"handoff":"0xE003","runtime_acceptance":runtime,"detect_loader_compatibility":detect},
-      "sdk":{"program_count":30,"programs":sdk["programs"],"native_visual_program_count":visual["program_count"],"source_tape_count":len(list((OUT/"sdk/tapes").rglob("*.src.tap"))),"scr_count":len(list((OUT/"sdk/proof/visual").rglob("*.scr"))),"png_count":len(list((OUT/"sdk/proof/visual").rglob("*.png")))},
+      "sdk":{"program_count":30,"programs":programs,"native_visual_program_count":visual["program_count"],"source_tape_count":len(list((OUT/"sdk/tapes").rglob("*.src.tap"))),"scr_count":len(list((OUT/"sdk/proof/visual").rglob("*.scr"))),"png_count":len(list((OUT/"sdk/proof/visual").rglob("*.png")))},
       "multitasking":{"checkpoint_frames":multitask["checkpoint_frames"],"hanoi_yields":multitask["hanoi_yields"],"queens8_yields":multitask["queens8_yields"],"scr_sha256":sha(OUT/"multitasking/hanoi-queens8-1250f.scr"),"png_sha256":sha(OUT/"multitasking/hanoi-queens8-1250f.png"),"assertions":multitask["assertions"]},
-      "tests":{"sdk_1_0_2_pin":"PASS","historical_p1139_unchanged":"PASS","all_30_native_lifecycles":"PASS","all_30_scr_png":"PASS","kernel_source_tap_native_rebuild":"PASS","kernel_three_way_8192_identity":"PASS","published_tzx_uses_native_kernel":"PASS","hanoi_queens_concurrent_1250f":"PASS","real_time_loader":"PASS","phase11_exact_head_p1148":"PASS","phase11_aggregate":"PASS","zero_phase12_state":"PASS"},
+      "tests":{"sdk_1_0_2_pin":"PASS","historical_p1139_unchanged":"PASS","all_30_native_lifecycles":"PASS","all_30_scr_png":"PASS","kernel_source_tap_native_rebuild":"PASS","kernel_three_way_8192_identity":"PASS","published_tzx_uses_native_kernel":"PASS","hanoi_queens_concurrent_1250f":"PASS","controlled_negative_gates":"PASS","real_time_loader":"PASS","phase11_exact_head_p1148":"PASS","phase11_aggregate":"PASS","zero_phase12_state":"PASS"},
       "files":rows,
       "bundle_digest_sha256":bundle_digest(rows)
     }
