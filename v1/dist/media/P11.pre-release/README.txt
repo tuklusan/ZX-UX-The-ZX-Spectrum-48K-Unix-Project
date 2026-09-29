@@ -1,13 +1,16 @@
-ZX-UX Phase-11 fast-loader pre-release
+ZX-UX Phase-11 expanded fast-loader pre-release
 
-Boot on a 48K Spectrum with: LOAD ""
+Boot the official pre-release image on a 48K Spectrum with: LOAD ""
 
-This is the REV17/REV08 TZX-only Phase-11 pre-release transport image.
-It embeds the exact current 8192-byte kernel at E000-FFFF and hands off at
-E003 using the reviewed fast loader. Phase-11 native compiler acceptance is
-re-run against this exact source head and hash-bound in pre-release.json.
+The official boot product is the single TZX file:
+  zx-ux-phase11-pre-release.tzx
 
-This pre-release intentionally does NOT append the final Phase-12 system/demo
-M48O stream. It is not the final integrated system tape and does not claim
-Phase-12 release acceptance. No Phase-12 source, workflow, evidence, media, or
-activation is created.
+The .tap files retained below kernel/ and sdk/tapes/ are source-transfer and
+proof sidecars only. They are not boot/release TAP products.
+
+This bundle retains the exact textual native kernel source and source TAP,
+genuine native OBJ1 and 8192-byte native kernel, all 30 SDK 1.0.2 canonical
+source tapes, native OBJ1/MEX1 outputs, deterministic SCR/PNG execution proofs,
+and the concurrent 1250-frame Hanoi + 8-Queens proof.
+
+Phase 12 is not started or implied by this pre-release bundle.

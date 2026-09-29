@@ -1,0 +1,748 @@
+{
+  "schema": 1,
+  "target": "USERHOME",
+  "tape_count": 57,
+  "tapes": [
+    {
+      "output": "usr/bin/apps/gp82.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/apps/appapi.h",
+          "name": "appapi.h"
+        },
+        {
+          "path": "usr/src/apps/gp82.c",
+          "name": "gp82.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/apps/sheet48.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/apps/appapi.h",
+          "name": "appapi.h"
+        },
+        {
+          "path": "usr/src/apps/sheet48.c",
+          "name": "sheet48.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/apps/wire3d.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/apps/appapi.h",
+          "name": "appapi.h"
+        },
+        {
+          "path": "usr/src/apps/wire3d.c",
+          "name": "wire3d.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/apps/write48.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/apps/appapi.h",
+          "name": "appapi.h"
+        },
+        {
+          "path": "usr/src/apps/write48.c",
+          "name": "write48.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/demos/city.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/demos/demoapi.h",
+          "name": "demoapi.h"
+        },
+        {
+          "path": "usr/src/demos/city.c",
+          "name": "city.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/demos/dizzy4k.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/demos/demoapi.h",
+          "name": "demoapi.h"
+        },
+        {
+          "path": "usr/src/demos/dizzy4k.c",
+          "name": "dizzy4k.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/demos/firework.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/demos/demoapi.h",
+          "name": "demoapi.h"
+        },
+        {
+          "path": "usr/src/demos/firework.c",
+          "name": "firework.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/demos/forest.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/demos/demoapi.h",
+          "name": "demoapi.h"
+        },
+        {
+          "path": "usr/src/demos/forest.c",
+          "name": "forest.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/demos/galaxy.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/demos/demoapi.h",
+          "name": "demoapi.h"
+        },
+        {
+          "path": "usr/src/demos/galaxy.c",
+          "name": "galaxy.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/demos/goblet.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/demos/demoapi.h",
+          "name": "demoapi.h"
+        },
+        {
+          "path": "usr/src/demos/goblet.c",
+          "name": "goblet.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/demos/julia.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/demos/demoapi.h",
+          "name": "demoapi.h"
+        },
+        {
+          "path": "usr/src/demos/julia.c",
+          "name": "julia.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/demos/kaleido.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/demos/demoapi.h",
+          "name": "demoapi.h"
+        },
+        {
+          "path": "usr/src/demos/kaleido.c",
+          "name": "kaleido.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/demos/mandel.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/demos/demoapi.h",
+          "name": "demoapi.h"
+        },
+        {
+          "path": "usr/src/demos/mandel.c",
+          "name": "mandel.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/demos/mobius.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/demos/demoapi.h",
+          "name": "demoapi.h"
+        },
+        {
+          "path": "usr/src/demos/mobius.c",
+          "name": "mobius.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/demos/moire.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/demos/demoapi.h",
+          "name": "demoapi.h"
+        },
+        {
+          "path": "usr/src/demos/moire.c",
+          "name": "moire.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/demos/morph3d.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/demos/demoapi.h",
+          "name": "demoapi.h"
+        },
+        {
+          "path": "usr/src/demos/morph3d.c",
+          "name": "morph3d.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/demos/ocean.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/demos/demoapi.h",
+          "name": "demoapi.h"
+        },
+        {
+          "path": "usr/src/demos/ocean.c",
+          "name": "ocean.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/demos/orrery.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/demos/demoapi.h",
+          "name": "demoapi.h"
+        },
+        {
+          "path": "usr/src/demos/orrery.c",
+          "name": "orrery.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/demos/plasma.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/demos/demoapi.h",
+          "name": "demoapi.h"
+        },
+        {
+          "path": "usr/src/demos/plasma.c",
+          "name": "plasma.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/demos/raymaze.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/demos/demoapi.h",
+          "name": "demoapi.h"
+        },
+        {
+          "path": "usr/src/demos/raymaze.c",
+          "name": "raymaze.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/demos/sprites.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/demos/demoapi.h",
+          "name": "demoapi.h"
+        },
+        {
+          "path": "usr/src/demos/sprites.c",
+          "name": "sprites.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/demos/terrain.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/demos/demoapi.h",
+          "name": "demoapi.h"
+        },
+        {
+          "path": "usr/src/demos/terrain.c",
+          "name": "terrain.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/demos/torus.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/demos/demoapi.h",
+          "name": "demoapi.h"
+        },
+        {
+          "path": "usr/src/demos/torus.c",
+          "name": "torus.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/demos/tunnel.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/demos/demoapi.h",
+          "name": "demoapi.h"
+        },
+        {
+          "path": "usr/src/demos/tunnel.c",
+          "name": "tunnel.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/demos/warp.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/demos/demoapi.h",
+          "name": "demoapi.h"
+        },
+        {
+          "path": "usr/src/demos/warp.c",
+          "name": "warp.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/demos/spriteanim.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/demos/demoapi.h",
+          "name": "demoapi.h"
+        },
+        {
+          "path": "usr/src/demos/spriteanim.c",
+          "name": "sprani.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/demos/hanoi.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/demos/recapi.h",
+          "name": "recapi.h"
+        },
+        {
+          "path": "usr/src/demos/hanoi.c",
+          "name": "hanoi.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/demos/queens8.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/demos/recapi.h",
+          "name": "recapi.h"
+        },
+        {
+          "path": "usr/src/demos/queens8.c",
+          "name": "queens8.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/examples/argv.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/examples/exapi.h",
+          "name": "exapi.h"
+        },
+        {
+          "path": "usr/src/examples/argv.c",
+          "name": "argv.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/examples/colors.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/examples/exapi.h",
+          "name": "exapi.h"
+        },
+        {
+          "path": "usr/src/examples/colors.c",
+          "name": "colors.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/examples/graphics.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/examples/exapi.h",
+          "name": "exapi.h"
+        },
+        {
+          "path": "usr/src/examples/graphics.c",
+          "name": "graphics.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/examples/hello.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/examples/exapi.h",
+          "name": "exapi.h"
+        },
+        {
+          "path": "usr/src/examples/hello.c",
+          "name": "hello.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/examples/maze.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/examples/exapi.h",
+          "name": "exapi.h"
+        },
+        {
+          "path": "usr/src/examples/maze.c",
+          "name": "maze.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/examples/udg.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/examples/exapi.h",
+          "name": "exapi.h"
+        },
+        {
+          "path": "usr/src/examples/udg.c",
+          "name": "udg.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/games/advent.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/games/gameapi.h",
+          "name": "gameapi.h"
+        },
+        {
+          "path": "usr/src/games/advent.c",
+          "name": "advent.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/games/arith.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/games/gameapi.h",
+          "name": "gameapi.h"
+        },
+        {
+          "path": "usr/src/games/arith.c",
+          "name": "arith.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/games/bgammon.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/games/gameapi.h",
+          "name": "gameapi.h"
+        },
+        {
+          "path": "usr/src/games/bgammon.c",
+          "name": "bgammon.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/games/chess.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/games/gameapi.h",
+          "name": "gameapi.h"
+        },
+        {
+          "path": "usr/src/games/chess.c",
+          "name": "chess.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/games/cribbage.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/games/gameapi.h",
+          "name": "gameapi.h"
+        },
+        {
+          "path": "usr/src/games/cribbage.c",
+          "name": "cribbage.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/games/fish.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/games/gameapi.h",
+          "name": "gameapi.h"
+        },
+        {
+          "path": "usr/src/games/fish.c",
+          "name": "fish.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/games/fortune.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/games/gameapi.h",
+          "name": "gameapi.h"
+        },
+        {
+          "path": "usr/src/games/fortune.c",
+          "name": "fortune.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/games/hangman.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/games/gameapi.h",
+          "name": "gameapi.h"
+        },
+        {
+          "path": "usr/src/games/hangman.c",
+          "name": "hangman.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/games/maze.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/games/gameapi.h",
+          "name": "gameapi.h"
+        },
+        {
+          "path": "usr/src/games/maze.c",
+          "name": "maze.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/games/quiz.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/games/gameapi.h",
+          "name": "gameapi.h"
+        },
+        {
+          "path": "usr/src/games/quiz.c",
+          "name": "quiz.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/games/rogue.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/games/gameapi.h",
+          "name": "gameapi.h"
+        },
+        {
+          "path": "usr/src/games/rogue.c",
+          "name": "rogue.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/games/snake.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/games/gameapi.h",
+          "name": "gameapi.h"
+        },
+        {
+          "path": "usr/src/games/snake.c",
+          "name": "snake.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/games/trek.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/games/gameapi.h",
+          "name": "gameapi.h"
+        },
+        {
+          "path": "usr/src/games/trek.c",
+          "name": "trek.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/games/wump.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/games/gameapi.h",
+          "name": "gameapi.h"
+        },
+        {
+          "path": "usr/src/games/wump.c",
+          "name": "wump.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/security/secdbl.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/security/secapi.h",
+          "name": "secapi.h"
+        },
+        {
+          "path": "usr/src/security/secdbl.c",
+          "name": "secdbl.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/security/secforge.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/security/secapi.h",
+          "name": "secapi.h"
+        },
+        {
+          "path": "usr/src/security/secforge.c",
+          "name": "secforge.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/security/secfree.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/security/secapi.h",
+          "name": "secapi.h"
+        },
+        {
+          "path": "usr/src/security/secfree.c",
+          "name": "secfree.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/security/secguard.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/security/secapi.h",
+          "name": "secapi.h"
+        },
+        {
+          "path": "usr/src/security/secguard.c",
+          "name": "secguard.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/security/secloop.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/security/secapi.h",
+          "name": "secapi.h"
+        },
+        {
+          "path": "usr/src/security/secloop.c",
+          "name": "secloop.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/security/secoob.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/security/secapi.h",
+          "name": "secapi.h"
+        },
+        {
+          "path": "usr/src/security/secoob.c",
+          "name": "secoob.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/security/secrecur.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/security/secapi.h",
+          "name": "secapi.h"
+        },
+        {
+          "path": "usr/src/security/secrecur.c",
+          "name": "secrecur.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/security/secuaf.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/security/secapi.h",
+          "name": "secapi.h"
+        },
+        {
+          "path": "usr/src/security/secuaf.c",
+          "name": "secuaf.c"
+        }
+      ]
+    },
+    {
+      "output": "usr/bin/sound/tune.src.tap",
+      "sources": [
+        {
+          "path": "usr/src/sound/sndapi.h",
+          "name": "sndapi.h"
+        },
+        {
+          "path": "usr/src/sound/tune.c",
+          "name": "tune.c"
+        }
+      ]
+    }
+  ]
+}

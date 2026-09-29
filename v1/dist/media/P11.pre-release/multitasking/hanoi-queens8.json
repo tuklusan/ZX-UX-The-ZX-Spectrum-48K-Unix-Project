@@ -1,0 +1,26 @@
+{
+  "assertions": {
+    "both_alive_at_common_checkpoint": "PASS",
+    "both_cooperatively_yielded_after_epoch": "PASS",
+    "both_native_mex1_loaded": "PASS",
+    "both_spawned_through_admitted_spawn_transaction": "PASS",
+    "combined_scr_png_retained": "PASS",
+    "exact_1250_frame_checkpoint": "PASS",
+    "hanoi_output_confined_to_left_half": "PASS",
+    "queens8_output_confined_to_right_half": "PASS"
+  },
+  "checkpoint_frames": 1250,
+  "hanoi_yields": 653,
+  "kind": "phase11-pre-release-hanoi-queens8-concurrent",
+  "launch_order": [
+    "hanoi",
+    "queens8"
+  ],
+  "left_lit_pixels": 144,
+  "observed_frame": 1250,
+  "png_sha256": "a303cd9e04ffbe1f8f6b80795a11ba1ee93aa8c2c7fe78e6dd654d83eec9db5b",
+  "queens8_yields": 653,
+  "right_lit_pixels": 252,
+  "schema": 1,
+  "scr_sha256": "92c930082d39976b5997013539112d18435304d5de7775724c6c423d86ef0b02"
+}

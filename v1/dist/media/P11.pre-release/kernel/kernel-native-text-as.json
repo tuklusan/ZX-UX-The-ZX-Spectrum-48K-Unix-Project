@@ -1,0 +1,20 @@
+{
+  "assertions": {
+    "controlled_source_mutation_changes_native_output": "PASS",
+    "documented_mnemonics_and_directives_only": "PASS",
+    "inplace_emission_never_overtook_unconsumed_source": "PASS",
+    "native_ld_consumed_textual_native_obj1": "PASS",
+    "native_ld_emitted_exact_8192_kernel": "PASS",
+    "native_obj1_text_equals_exact_8192_kernel": "PASS",
+    "native_semantic_encoder_emitted_obj1": "PASS",
+    "ordinary_lf_text_parsed_on_target": "PASS"
+  },
+  "fixture_size": 7122,
+  "kernel_sha256": "ae3c54f9cd50eade1e543d9ac3c6ff58c83d63d6951c707b192ef5f9e26d4806",
+  "kernel_size": 8192,
+  "kind": "REV17-native-textual-assembler-parser",
+  "obj1_size": 8216,
+  "schema": 1,
+  "source_sha256": "843d58c6c5c60b2946d52c60b67e505ed05e5973a10d86a8dbcca70673aaf224",
+  "source_size": 30554
+}

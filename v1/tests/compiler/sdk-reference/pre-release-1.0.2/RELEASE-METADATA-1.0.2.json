@@ -1,0 +1,23 @@
+{
+  "commit": "b1621338565ac3bd9d4eff4ecb5a2a77aee2ab6a",
+  "gui_evidence": {
+    "name": "c48-1.0.2-gui-evidence-b1621338565ac3bd9d4eff4ecb5a2a77aee2ab6a.zip",
+    "sha256": "ed9e2b2643481c3a58e46fdc054c3524fb7fe300827cb3e2c2b4c2833dd5ef01"
+  },
+  "schema": 1,
+  "source_package": {
+    "manifest_entries": 1454,
+    "name": "zx-ux-c48-sdk-1.0.2-b1621338565ac3bd9d4eff4ecb5a2a77aee2ab6a.zip",
+    "sha256": "8efd465928048b050c0cff9d93ddaf13127eabb12b837a33aa1c2c44e913a98a",
+    "source_tapes": 57
+  },
+  "version": "1.0.2",
+  "workflows": {
+    "beep_proof": 36358952624,
+    "desktop_acceptance": 36358952691,
+    "graphics": 36358952607,
+    "recursive_demos": 36358952849,
+    "release_candidate": 36358952676,
+    "sdk_verification": 36358952671
+  }
+}

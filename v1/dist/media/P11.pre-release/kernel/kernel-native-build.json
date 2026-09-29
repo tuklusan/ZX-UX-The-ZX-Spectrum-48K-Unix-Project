@@ -1,0 +1,32 @@
+{
+  "assertions": {
+    "controlled_source_mutation_rebuilds_and_identity_fails": "PASS",
+    "genuine_native_obj1_emitted_and_extracted": "PASS",
+    "host_tzx_native_three_way_byte_identity": "PASS",
+    "loaded_object_exact_type_asm_name_kernel_asm_userhome": "PASS",
+    "loaded_raw_payload_transport_crc_and_exact_source_identity": "PASS",
+    "native_ld_consumed_native_obj1": "PASS",
+    "native_ld_emitted_nonresident_8192_kernel": "PASS",
+    "ordinary_native_text_as_consumed_loaded_source": "PASS",
+    "resident_kernel_range_not_used_as_native_output": "PASS",
+    "retained_tap_loaded_by_real_rom_m48o_path": "PASS"
+  },
+  "controlled_mutation_source_sha256": "6b2b58652798b8ecdbee7bac2cb7b02504eac2e7e9af83daeab0587ab9d2c7a6",
+  "controlled_mutation_tap_sha256": "f1a3745f0fb9817daf9dcdf58250b85bd273393a4a48697d3d46b773bb3e32cd",
+  "fixture_size": 9961,
+  "host_kernel_sha256": "ae3c54f9cd50eade1e543d9ac3c6ff58c83d63d6951c707b192ef5f9e26d4806",
+  "kind": "phase11-pre-release-native-kernel-from-source-tap",
+  "native_kernel_address": 34840,
+  "native_kernel_sha256": "ae3c54f9cd50eade1e543d9ac3c6ff58c83d63d6951c707b192ef5f9e26d4806",
+  "native_kernel_size": 8192,
+  "native_obj1_sha256": "3479e82ca544d177e67cf83b1a01fded5c150a49f552ba1ab7d841cb6d5f5bff",
+  "native_obj1_size": 8216,
+  "resident_kernel_address": 57344,
+  "schema": 1,
+  "source_sha256": "843d58c6c5c60b2946d52c60b67e505ed05e5973a10d86a8dbcca70673aaf224",
+  "source_size": 30554,
+  "source_tap_sha256": "91caaadbde021d023da8527afe67146c8c9ebf62fa6f584fdc1123598c92325b",
+  "source_tap_size": 30830,
+  "source_target_address": 26624,
+  "tzx_embedded_kernel_sha256": "ae3c54f9cd50eade1e543d9ac3c6ff58c83d63d6951c707b192ef5f9e26d4806"
+}

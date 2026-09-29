@@ -1,0 +1,922 @@
+{
+  "assertions": {
+    "all_header_and_c_payloads_byte_identical": "PASS",
+    "all_objects_target_userhome": "PASS",
+    "all_tap_rom_m48o_checksums_and_crcs_verified": "PASS",
+    "all_types_exact_txt_or_c": "PASS",
+    "exact_release_tapes_retained": "PASS",
+    "pinned_c48srctap_regeneration_byte_identical": "PASS",
+    "target_names_collision_free_and_at_most_10_bytes": "PASS"
+  },
+  "in_scope_program_count": 30,
+  "kind": "phase11-pre-release-sdk-source-tape-corpus",
+  "programs": [
+    {
+      "category": "examples",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/examples/exapi.h",
+          "sha256": "eec708091fcc5cbfaea1fe3d8a991f95538bb14ba7169482a71e21f09e21f69f",
+          "size": 1986,
+          "target_name": "exapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/examples/argv.c",
+          "sha256": "3497970dfbeb168ad75996b64ec090e005ef4d283c1045fb13c4549d5c9eedf3",
+          "size": 3593,
+          "target_name": "argv.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "argv",
+      "sdk_source_path": "usr/src/examples/argv.c",
+      "source_sha256": "3497970dfbeb168ad75996b64ec090e005ef4d283c1045fb13c4549d5c9eedf3",
+      "source_tape_path": "usr/bin/examples/argv.src.tap",
+      "source_tape_sha256": "ba91ade25831700e1a2bbe7b9c995a250cca6f797deac6eadd49281ef3ea60de",
+      "source_tape_size": 5699,
+      "target_executable": "argv",
+      "target_object": "argv.obj",
+      "target_source": "argv.c"
+    },
+    {
+      "category": "examples",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/examples/exapi.h",
+          "sha256": "eec708091fcc5cbfaea1fe3d8a991f95538bb14ba7169482a71e21f09e21f69f",
+          "size": 1986,
+          "target_name": "exapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/examples/colors.c",
+          "sha256": "5aeef97855cebbe47efe9d3abd3ae6133e7bef9e6dfe495a496950faaced0f2f",
+          "size": 1442,
+          "target_name": "colors.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "colors",
+      "sdk_source_path": "usr/src/examples/colors.c",
+      "source_sha256": "5aeef97855cebbe47efe9d3abd3ae6133e7bef9e6dfe495a496950faaced0f2f",
+      "source_tape_path": "usr/bin/examples/colors.src.tap",
+      "source_tape_sha256": "912800d6aacaf6a40ae9d04061afe025733e26d5ed007ce227108b635e39f1a8",
+      "source_tape_size": 3528,
+      "target_executable": "colors",
+      "target_object": "colors.obj",
+      "target_source": "colors.c"
+    },
+    {
+      "category": "examples",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/examples/exapi.h",
+          "sha256": "eec708091fcc5cbfaea1fe3d8a991f95538bb14ba7169482a71e21f09e21f69f",
+          "size": 1986,
+          "target_name": "exapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/examples/graphics.c",
+          "sha256": "6fdf36f9967fb04bb85a5625df2b84fdf36c33001f33a3ba0faa1c4e8e12cb5b",
+          "size": 783,
+          "target_name": "graphics.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "graphics",
+      "sdk_source_path": "usr/src/examples/graphics.c",
+      "source_sha256": "6fdf36f9967fb04bb85a5625df2b84fdf36c33001f33a3ba0faa1c4e8e12cb5b",
+      "source_tape_path": "usr/bin/examples/graphics.src.tap",
+      "source_tape_sha256": "e87062b16f5a790bb41caf7915167f2c79c96e40d521473c6f0ab29c222fd358",
+      "source_tape_size": 2865,
+      "target_executable": "graphics",
+      "target_object": "graphi.obj",
+      "target_source": "graphics.c"
+    },
+    {
+      "category": "examples",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/examples/exapi.h",
+          "sha256": "eec708091fcc5cbfaea1fe3d8a991f95538bb14ba7169482a71e21f09e21f69f",
+          "size": 1986,
+          "target_name": "exapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/examples/hello.c",
+          "sha256": "9a6e11b28dc597b410aa0d414b2360e278482d44b400eff0f60adb5434d39249",
+          "size": 633,
+          "target_name": "hello.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "hello",
+      "sdk_source_path": "usr/src/examples/hello.c",
+      "source_sha256": "9a6e11b28dc597b410aa0d414b2360e278482d44b400eff0f60adb5434d39249",
+      "source_tape_path": "usr/bin/examples/hello.src.tap",
+      "source_tape_sha256": "8a2ba59318fde797f3313adb22a938563e8ab23848bfbdc000460d3522009cf1",
+      "source_tape_size": 2715,
+      "target_executable": "hello",
+      "target_object": "hello.obj",
+      "target_source": "hello.c"
+    },
+    {
+      "category": "examples",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/examples/exapi.h",
+          "sha256": "eec708091fcc5cbfaea1fe3d8a991f95538bb14ba7169482a71e21f09e21f69f",
+          "size": 1986,
+          "target_name": "exapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/examples/maze.c",
+          "sha256": "ce60c1eabd478fcf02b16e238e2c8fcf0f96322322ffffaddec35605e913e988",
+          "size": 919,
+          "target_name": "maze.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "maze",
+      "sdk_source_path": "usr/src/examples/maze.c",
+      "source_sha256": "ce60c1eabd478fcf02b16e238e2c8fcf0f96322322ffffaddec35605e913e988",
+      "source_tape_path": "usr/bin/examples/maze.src.tap",
+      "source_tape_sha256": "5b69df4a26f06d211d8cd9e9f008f6434e17dae75ba6d4ea30a10f6ce14936a6",
+      "source_tape_size": 3001,
+      "target_executable": "maze",
+      "target_object": "maze.obj",
+      "target_source": "maze.c"
+    },
+    {
+      "category": "examples",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/examples/exapi.h",
+          "sha256": "eec708091fcc5cbfaea1fe3d8a991f95538bb14ba7169482a71e21f09e21f69f",
+          "size": 1986,
+          "target_name": "exapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/examples/udg.c",
+          "sha256": "dd14231daa9b2357ff419d71c808d76c022b1e52d91353c3c7287975349260c9",
+          "size": 799,
+          "target_name": "udg.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "udg",
+      "sdk_source_path": "usr/src/examples/udg.c",
+      "source_sha256": "dd14231daa9b2357ff419d71c808d76c022b1e52d91353c3c7287975349260c9",
+      "source_tape_path": "usr/bin/examples/udg.src.tap",
+      "source_tape_sha256": "fbb2c7c972b773d10f5b2f503ce16eb5d57cee3bf0debf8994723fc462fe7658",
+      "source_tape_size": 2881,
+      "target_executable": "udg",
+      "target_object": "udg.obj",
+      "target_source": "udg.c"
+    },
+    {
+      "category": "demos",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/demos/demoapi.h",
+          "sha256": "285af5be8080be2fdbad9f053ce7f81586aa52a823fc451548b6b3e1886e7023",
+          "size": 5146,
+          "target_name": "demoapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/demos/city.c",
+          "sha256": "ee2c2d6b5795bc99c92f4fbd5f0d0340b44b55b1daa4e88013f12461ffc8d80c",
+          "size": 2356,
+          "target_name": "city.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "city",
+      "sdk_source_path": "usr/src/demos/city.c",
+      "source_sha256": "ee2c2d6b5795bc99c92f4fbd5f0d0340b44b55b1daa4e88013f12461ffc8d80c",
+      "source_tape_path": "usr/bin/demos/city.src.tap",
+      "source_tape_sha256": "30e45ceea4bf8db62ce8c72d0a59a6f79cf57270e27724db2c68c5c5b800d05d",
+      "source_tape_size": 7638,
+      "target_executable": "city",
+      "target_object": "city.obj",
+      "target_source": "city.c"
+    },
+    {
+      "category": "demos",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/demos/demoapi.h",
+          "sha256": "285af5be8080be2fdbad9f053ce7f81586aa52a823fc451548b6b3e1886e7023",
+          "size": 5146,
+          "target_name": "demoapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/demos/dizzy4k.c",
+          "sha256": "7e1e56147e80798c0c66dbd9e8f033d84a5d7d5551aa5d77477abcee12b0ed48",
+          "size": 5424,
+          "target_name": "dizzy4k.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "dizzy4k",
+      "sdk_source_path": "usr/src/demos/dizzy4k.c",
+      "source_sha256": "7e1e56147e80798c0c66dbd9e8f033d84a5d7d5551aa5d77477abcee12b0ed48",
+      "source_tape_path": "usr/bin/demos/dizzy4k.src.tap",
+      "source_tape_sha256": "0e514f93eec43a26789ae7c281babab5afa59429c3a7accef8bc8d4035e05e77",
+      "source_tape_size": 10730,
+      "target_executable": "dizzy4k",
+      "target_object": "dizzy4.obj",
+      "target_source": "dizzy4k.c"
+    },
+    {
+      "category": "demos",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/demos/demoapi.h",
+          "sha256": "285af5be8080be2fdbad9f053ce7f81586aa52a823fc451548b6b3e1886e7023",
+          "size": 5146,
+          "target_name": "demoapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/demos/firework.c",
+          "sha256": "457d106ce7974c3cab7b67f207a05df8f27d971e3774902be02c2eebc02526c0",
+          "size": 2347,
+          "target_name": "firework.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "firework",
+      "sdk_source_path": "usr/src/demos/firework.c",
+      "source_sha256": "457d106ce7974c3cab7b67f207a05df8f27d971e3774902be02c2eebc02526c0",
+      "source_tape_path": "usr/bin/demos/firework.src.tap",
+      "source_tape_sha256": "d958a7a6bf43e1d7444118b3f31e3f838d03c31946db53d272e009d00fc23fcc",
+      "source_tape_size": 7629,
+      "target_executable": "firework",
+      "target_object": "firewo.obj",
+      "target_source": "firework.c"
+    },
+    {
+      "category": "demos",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/demos/demoapi.h",
+          "sha256": "285af5be8080be2fdbad9f053ce7f81586aa52a823fc451548b6b3e1886e7023",
+          "size": 5146,
+          "target_name": "demoapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/demos/forest.c",
+          "sha256": "70a0646a22143a81d98a77c4757a9c55cfcbe5c0268570cd7a2eec318b6ec594",
+          "size": 2047,
+          "target_name": "forest.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "forest",
+      "sdk_source_path": "usr/src/demos/forest.c",
+      "source_sha256": "70a0646a22143a81d98a77c4757a9c55cfcbe5c0268570cd7a2eec318b6ec594",
+      "source_tape_path": "usr/bin/demos/forest.src.tap",
+      "source_tape_sha256": "d56aca7b41abbf957cbbd7c0e5f7e8a0b0e80723b6e0c25f36109d8aa5acccd1",
+      "source_tape_size": 7325,
+      "target_executable": "forest",
+      "target_object": "forest.obj",
+      "target_source": "forest.c"
+    },
+    {
+      "category": "demos",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/demos/demoapi.h",
+          "sha256": "285af5be8080be2fdbad9f053ce7f81586aa52a823fc451548b6b3e1886e7023",
+          "size": 5146,
+          "target_name": "demoapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/demos/galaxy.c",
+          "sha256": "3deb566204212867cf726d7476e37511eb0bf816755355577880d7f109c82987",
+          "size": 2114,
+          "target_name": "galaxy.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "galaxy",
+      "sdk_source_path": "usr/src/demos/galaxy.c",
+      "source_sha256": "3deb566204212867cf726d7476e37511eb0bf816755355577880d7f109c82987",
+      "source_tape_path": "usr/bin/demos/galaxy.src.tap",
+      "source_tape_sha256": "6a173d4cde84ff30cb386197a17010208c81b1a94d52683c57ca76347aeb442d",
+      "source_tape_size": 7396,
+      "target_executable": "galaxy",
+      "target_object": "galaxy.obj",
+      "target_source": "galaxy.c"
+    },
+    {
+      "category": "demos",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/demos/demoapi.h",
+          "sha256": "285af5be8080be2fdbad9f053ce7f81586aa52a823fc451548b6b3e1886e7023",
+          "size": 5146,
+          "target_name": "demoapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/demos/goblet.c",
+          "sha256": "3092eda0f3691d3af336f4a492408de6b0cb8baa9c644fb64ea978604a8be1e1",
+          "size": 2780,
+          "target_name": "goblet.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "goblet",
+      "sdk_source_path": "usr/src/demos/goblet.c",
+      "source_sha256": "3092eda0f3691d3af336f4a492408de6b0cb8baa9c644fb64ea978604a8be1e1",
+      "source_tape_path": "usr/bin/demos/goblet.src.tap",
+      "source_tape_sha256": "a91c23bab6985f7a0219a60b228fa2352ec3037893d40bc25a6ed8d6e837c240",
+      "source_tape_size": 8066,
+      "target_executable": "goblet",
+      "target_object": "goblet.obj",
+      "target_source": "goblet.c"
+    },
+    {
+      "category": "demos",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/demos/recapi.h",
+          "sha256": "d09b8c236ffaf39920df8228bc631d949ea8c074058fa79eae689d73a017b05b",
+          "size": 1765,
+          "target_name": "recapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/demos/hanoi.c",
+          "sha256": "38d1bfd55ffb4a7366044e9d06a92415454cac4f8621a03796a05c2c84742657",
+          "size": 12517,
+          "target_name": "hanoi.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "hanoi",
+      "sdk_source_path": "usr/src/demos/hanoi.c",
+      "source_sha256": "38d1bfd55ffb4a7366044e9d06a92415454cac4f8621a03796a05c2c84742657",
+      "source_tape_path": "usr/bin/demos/hanoi.src.tap",
+      "source_tape_sha256": "117772b1a0273cbdbe77e437ed50633c1d7268c6a52cc8900d18273d3226d2a1",
+      "source_tape_size": 14470,
+      "target_executable": "hanoi",
+      "target_object": "hanoi.obj",
+      "target_source": "hanoi.c"
+    },
+    {
+      "category": "demos",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/demos/demoapi.h",
+          "sha256": "285af5be8080be2fdbad9f053ce7f81586aa52a823fc451548b6b3e1886e7023",
+          "size": 5146,
+          "target_name": "demoapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/demos/julia.c",
+          "sha256": "69944e0351fb9e14a0a220dfe6449ee24273659e3450a9f3902e003ccc8d51cc",
+          "size": 2182,
+          "target_name": "julia.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "julia",
+      "sdk_source_path": "usr/src/demos/julia.c",
+      "source_sha256": "69944e0351fb9e14a0a220dfe6449ee24273659e3450a9f3902e003ccc8d51cc",
+      "source_tape_path": "usr/bin/demos/julia.src.tap",
+      "source_tape_sha256": "42e1e30365acf095710ab0d276945ff26cc2017ead09f5579cf167e3aef30b3c",
+      "source_tape_size": 7464,
+      "target_executable": "julia",
+      "target_object": "julia.obj",
+      "target_source": "julia.c"
+    },
+    {
+      "category": "demos",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/demos/demoapi.h",
+          "sha256": "285af5be8080be2fdbad9f053ce7f81586aa52a823fc451548b6b3e1886e7023",
+          "size": 5146,
+          "target_name": "demoapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/demos/kaleido.c",
+          "sha256": "5e63467442552c266ab8be8bf3245c4dab16bac8fab051055363a1b88edd92fc",
+          "size": 2301,
+          "target_name": "kaleido.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "kaleido",
+      "sdk_source_path": "usr/src/demos/kaleido.c",
+      "source_sha256": "5e63467442552c266ab8be8bf3245c4dab16bac8fab051055363a1b88edd92fc",
+      "source_tape_path": "usr/bin/demos/kaleido.src.tap",
+      "source_tape_sha256": "7b569ae6f0497145167f6867fbb4b603234250a3deadd8a574373274ceadc105",
+      "source_tape_size": 7583,
+      "target_executable": "kaleido",
+      "target_object": "kaleid.obj",
+      "target_source": "kaleido.c"
+    },
+    {
+      "category": "demos",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/demos/demoapi.h",
+          "sha256": "285af5be8080be2fdbad9f053ce7f81586aa52a823fc451548b6b3e1886e7023",
+          "size": 5146,
+          "target_name": "demoapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/demos/mandel.c",
+          "sha256": "7aaed292d90d24310d8216388ceac3a9db57ac98cb000a4a6a04d820bc263bd2",
+          "size": 2218,
+          "target_name": "mandel.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "mandel",
+      "sdk_source_path": "usr/src/demos/mandel.c",
+      "source_sha256": "7aaed292d90d24310d8216388ceac3a9db57ac98cb000a4a6a04d820bc263bd2",
+      "source_tape_path": "usr/bin/demos/mandel.src.tap",
+      "source_tape_sha256": "6eddbe652ae85c12275eb245751cb49966c22fd79d266fce27459bcac79c8078",
+      "source_tape_size": 7500,
+      "target_executable": "mandel",
+      "target_object": "mandel.obj",
+      "target_source": "mandel.c"
+    },
+    {
+      "category": "demos",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/demos/demoapi.h",
+          "sha256": "285af5be8080be2fdbad9f053ce7f81586aa52a823fc451548b6b3e1886e7023",
+          "size": 5146,
+          "target_name": "demoapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/demos/mobius.c",
+          "sha256": "f30d4c9ce536fb53fb2697effd758d84b83bf729a54659a6ff9377b98e8bf072",
+          "size": 2750,
+          "target_name": "mobius.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "mobius",
+      "sdk_source_path": "usr/src/demos/mobius.c",
+      "source_sha256": "f30d4c9ce536fb53fb2697effd758d84b83bf729a54659a6ff9377b98e8bf072",
+      "source_tape_path": "usr/bin/demos/mobius.src.tap",
+      "source_tape_sha256": "e0fcf4fda4b3fc245148f0a2f2d275cd245d211547c397285dedef5f0ffbdf65",
+      "source_tape_size": 8036,
+      "target_executable": "mobius",
+      "target_object": "mobius.obj",
+      "target_source": "mobius.c"
+    },
+    {
+      "category": "demos",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/demos/demoapi.h",
+          "sha256": "285af5be8080be2fdbad9f053ce7f81586aa52a823fc451548b6b3e1886e7023",
+          "size": 5146,
+          "target_name": "demoapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/demos/moire.c",
+          "sha256": "2076e551cde35b61b4a07b49f729a891fed098ed24175867c7a75a11d06e2b3f",
+          "size": 2461,
+          "target_name": "moire.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "moire",
+      "sdk_source_path": "usr/src/demos/moire.c",
+      "source_sha256": "2076e551cde35b61b4a07b49f729a891fed098ed24175867c7a75a11d06e2b3f",
+      "source_tape_path": "usr/bin/demos/moire.src.tap",
+      "source_tape_sha256": "7310d8a45e2dd34c42037f4353221ae50a1d389a4ed29fe8c43aae72de5eb3b0",
+      "source_tape_size": 7743,
+      "target_executable": "moire",
+      "target_object": "moire.obj",
+      "target_source": "moire.c"
+    },
+    {
+      "category": "demos",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/demos/demoapi.h",
+          "sha256": "285af5be8080be2fdbad9f053ce7f81586aa52a823fc451548b6b3e1886e7023",
+          "size": 5146,
+          "target_name": "demoapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/demos/morph3d.c",
+          "sha256": "b4c9107c3663801256cd308b32a83882ece50a69962fea0200cd7f35eb57383f",
+          "size": 3140,
+          "target_name": "morph3d.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "morph3d",
+      "sdk_source_path": "usr/src/demos/morph3d.c",
+      "source_sha256": "b4c9107c3663801256cd308b32a83882ece50a69962fea0200cd7f35eb57383f",
+      "source_tape_path": "usr/bin/demos/morph3d.src.tap",
+      "source_tape_sha256": "045e27854265f17793708e20fba401c2c5d2b4e47811ed1f398c72e2019ad6f7",
+      "source_tape_size": 8430,
+      "target_executable": "morph3d",
+      "target_object": "morph3.obj",
+      "target_source": "morph3d.c"
+    },
+    {
+      "category": "demos",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/demos/demoapi.h",
+          "sha256": "285af5be8080be2fdbad9f053ce7f81586aa52a823fc451548b6b3e1886e7023",
+          "size": 5146,
+          "target_name": "demoapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/demos/ocean.c",
+          "sha256": "c350766c2b683ac92603ca0281fc7bf30b755184a5b281565ab4c5a570e0deea",
+          "size": 2681,
+          "target_name": "ocean.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "ocean",
+      "sdk_source_path": "usr/src/demos/ocean.c",
+      "source_sha256": "c350766c2b683ac92603ca0281fc7bf30b755184a5b281565ab4c5a570e0deea",
+      "source_tape_path": "usr/bin/demos/ocean.src.tap",
+      "source_tape_sha256": "772e46aea6227a8ee551589d2158d370fc34f2d487dec96b10b96c735efe6065",
+      "source_tape_size": 7967,
+      "target_executable": "ocean",
+      "target_object": "ocean.obj",
+      "target_source": "ocean.c"
+    },
+    {
+      "category": "demos",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/demos/demoapi.h",
+          "sha256": "285af5be8080be2fdbad9f053ce7f81586aa52a823fc451548b6b3e1886e7023",
+          "size": 5146,
+          "target_name": "demoapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/demos/orrery.c",
+          "sha256": "14d1a245ca18b7e3664f30d3bb0c501710f7e3df24d2608ce2b9400568192c18",
+          "size": 2855,
+          "target_name": "orrery.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "orrery",
+      "sdk_source_path": "usr/src/demos/orrery.c",
+      "source_sha256": "14d1a245ca18b7e3664f30d3bb0c501710f7e3df24d2608ce2b9400568192c18",
+      "source_tape_path": "usr/bin/demos/orrery.src.tap",
+      "source_tape_sha256": "53e48548a68be8a378be8a4e267aa164840f346b9c4a8ffc15ab0820f3901735",
+      "source_tape_size": 8141,
+      "target_executable": "orrery",
+      "target_object": "orrery.obj",
+      "target_source": "orrery.c"
+    },
+    {
+      "category": "demos",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/demos/demoapi.h",
+          "sha256": "285af5be8080be2fdbad9f053ce7f81586aa52a823fc451548b6b3e1886e7023",
+          "size": 5146,
+          "target_name": "demoapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/demos/plasma.c",
+          "sha256": "351e0d39a9155552f7c40301db7203425dd74a7f2dce65c8a73a8192a00c303d",
+          "size": 2162,
+          "target_name": "plasma.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "plasma",
+      "sdk_source_path": "usr/src/demos/plasma.c",
+      "source_sha256": "351e0d39a9155552f7c40301db7203425dd74a7f2dce65c8a73a8192a00c303d",
+      "source_tape_path": "usr/bin/demos/plasma.src.tap",
+      "source_tape_sha256": "1c0604a67871da25e745e53990b6684e1322f2eb943461f8e8e52ed962c039e2",
+      "source_tape_size": 7444,
+      "target_executable": "plasma",
+      "target_object": "plasma.obj",
+      "target_source": "plasma.c"
+    },
+    {
+      "category": "demos",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/demos/recapi.h",
+          "sha256": "d09b8c236ffaf39920df8228bc631d949ea8c074058fa79eae689d73a017b05b",
+          "size": 1765,
+          "target_name": "recapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/demos/queens8.c",
+          "sha256": "9ea8e7c86b41dfdb931996af43de047a6d5a81becba9eda29038dc51c54dbf29",
+          "size": 11276,
+          "target_name": "queens8.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "queens8",
+      "sdk_source_path": "usr/src/demos/queens8.c",
+      "source_sha256": "9ea8e7c86b41dfdb931996af43de047a6d5a81becba9eda29038dc51c54dbf29",
+      "source_tape_path": "usr/bin/demos/queens8.src.tap",
+      "source_tape_sha256": "97fe5c15f3279291191b290b970f83deae3b45e57bf4b923084f1b8a944f65e1",
+      "source_tape_size": 13221,
+      "target_executable": "queens8",
+      "target_object": "queens.obj",
+      "target_source": "queens8.c"
+    },
+    {
+      "category": "demos",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/demos/demoapi.h",
+          "sha256": "285af5be8080be2fdbad9f053ce7f81586aa52a823fc451548b6b3e1886e7023",
+          "size": 5146,
+          "target_name": "demoapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/demos/raymaze.c",
+          "sha256": "e6ad2fa248afcb36beed4d691eba3f307e57cda74406579b9a19df85f983679c",
+          "size": 2721,
+          "target_name": "raymaze.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "raymaze",
+      "sdk_source_path": "usr/src/demos/raymaze.c",
+      "source_sha256": "e6ad2fa248afcb36beed4d691eba3f307e57cda74406579b9a19df85f983679c",
+      "source_tape_path": "usr/bin/demos/raymaze.src.tap",
+      "source_tape_sha256": "dc6453411b1d166e5aa0bfd505722de984dc49e0837a55ebdd873a768870a6e9",
+      "source_tape_size": 8007,
+      "target_executable": "raymaze",
+      "target_object": "raymaz.obj",
+      "target_source": "raymaze.c"
+    },
+    {
+      "category": "demos",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/demos/demoapi.h",
+          "sha256": "285af5be8080be2fdbad9f053ce7f81586aa52a823fc451548b6b3e1886e7023",
+          "size": 5146,
+          "target_name": "demoapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/demos/spriteanim.c",
+          "sha256": "1e574fa1e73be1168a6e597be0d45e75f158599620b5eddd160efe949fe1cb6c",
+          "size": 2626,
+          "target_name": "sprani.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "spriteanim",
+      "sdk_source_path": "usr/src/demos/spriteanim.c",
+      "source_sha256": "1e574fa1e73be1168a6e597be0d45e75f158599620b5eddd160efe949fe1cb6c",
+      "source_tape_path": "usr/bin/demos/spriteanim.src.tap",
+      "source_tape_sha256": "a98e2f4155c7583d9de608903ff4c3622d5dddde6b655ef848640ba3cfbb17fe",
+      "source_tape_size": 7912,
+      "target_executable": "sprani",
+      "target_object": "sprani.obj",
+      "target_source": "sprani.c"
+    },
+    {
+      "category": "demos",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/demos/demoapi.h",
+          "sha256": "285af5be8080be2fdbad9f053ce7f81586aa52a823fc451548b6b3e1886e7023",
+          "size": 5146,
+          "target_name": "demoapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/demos/sprites.c",
+          "sha256": "3a98c75141b399446f97388612fcf08eadacc16d2d1927158a345d7061463e71",
+          "size": 2642,
+          "target_name": "sprites.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "sprites",
+      "sdk_source_path": "usr/src/demos/sprites.c",
+      "source_sha256": "3a98c75141b399446f97388612fcf08eadacc16d2d1927158a345d7061463e71",
+      "source_tape_path": "usr/bin/demos/sprites.src.tap",
+      "source_tape_sha256": "f097fb09eb85824a257dfdf975d77314363453d318c87a1d1472df21a25588b6",
+      "source_tape_size": 7928,
+      "target_executable": "sprites",
+      "target_object": "sprite.obj",
+      "target_source": "sprites.c"
+    },
+    {
+      "category": "demos",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/demos/demoapi.h",
+          "sha256": "285af5be8080be2fdbad9f053ce7f81586aa52a823fc451548b6b3e1886e7023",
+          "size": 5146,
+          "target_name": "demoapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/demos/terrain.c",
+          "sha256": "d239ae26c0ae499489f17817e106d93a0ff749ca3032d982c09b34cee98b1431",
+          "size": 2825,
+          "target_name": "terrain.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "terrain",
+      "sdk_source_path": "usr/src/demos/terrain.c",
+      "source_sha256": "d239ae26c0ae499489f17817e106d93a0ff749ca3032d982c09b34cee98b1431",
+      "source_tape_path": "usr/bin/demos/terrain.src.tap",
+      "source_tape_sha256": "fabb84d5001baa007881421a50541549176add160aff67a8dd5136a617cc903f",
+      "source_tape_size": 8111,
+      "target_executable": "terrain",
+      "target_object": "terrai.obj",
+      "target_source": "terrain.c"
+    },
+    {
+      "category": "demos",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/demos/demoapi.h",
+          "sha256": "285af5be8080be2fdbad9f053ce7f81586aa52a823fc451548b6b3e1886e7023",
+          "size": 5146,
+          "target_name": "demoapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/demos/torus.c",
+          "sha256": "be1bed67f474f45a5fcae9375b50d435b927e1b19ea64d0516d8258afb70daed",
+          "size": 2772,
+          "target_name": "torus.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "torus",
+      "sdk_source_path": "usr/src/demos/torus.c",
+      "source_sha256": "be1bed67f474f45a5fcae9375b50d435b927e1b19ea64d0516d8258afb70daed",
+      "source_tape_path": "usr/bin/demos/torus.src.tap",
+      "source_tape_sha256": "bdf128599492cc7d3806f801bdde1925ed8f199cd9454a98ec1d4dc6f133ef38",
+      "source_tape_size": 8058,
+      "target_executable": "torus",
+      "target_object": "torus.obj",
+      "target_source": "torus.c"
+    },
+    {
+      "category": "demos",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/demos/demoapi.h",
+          "sha256": "285af5be8080be2fdbad9f053ce7f81586aa52a823fc451548b6b3e1886e7023",
+          "size": 5146,
+          "target_name": "demoapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/demos/tunnel.c",
+          "sha256": "ed6cef6fc155728cdd1c0d3348a245224f7f2de3b100615fd0b8ed625e4f6b0a",
+          "size": 2244,
+          "target_name": "tunnel.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "tunnel",
+      "sdk_source_path": "usr/src/demos/tunnel.c",
+      "source_sha256": "ed6cef6fc155728cdd1c0d3348a245224f7f2de3b100615fd0b8ed625e4f6b0a",
+      "source_tape_path": "usr/bin/demos/tunnel.src.tap",
+      "source_tape_sha256": "7e778775433355c9da053b945ecaa651dc6c20ab619962ec66175140fff8f7d2",
+      "source_tape_size": 7526,
+      "target_executable": "tunnel",
+      "target_object": "tunnel.obj",
+      "target_source": "tunnel.c"
+    },
+    {
+      "category": "demos",
+      "independent_decode": "PASS",
+      "objects": [
+        {
+          "sdk_path": "usr/src/demos/demoapi.h",
+          "sha256": "285af5be8080be2fdbad9f053ce7f81586aa52a823fc451548b6b3e1886e7023",
+          "size": 5146,
+          "target_name": "demoapi.h",
+          "type": 1
+        },
+        {
+          "sdk_path": "usr/src/demos/warp.c",
+          "sha256": "7eb0dc22d357bb748ca2269b295a1375a63e8e0b2c905d94eaf3e823183e83d4",
+          "size": 2222,
+          "target_name": "warp.c",
+          "type": 5
+        }
+      ],
+      "pinned_builder_regeneration": "PASS",
+      "program": "warp",
+      "sdk_source_path": "usr/src/demos/warp.c",
+      "source_sha256": "7eb0dc22d357bb748ca2269b295a1375a63e8e0b2c905d94eaf3e823183e83d4",
+      "source_tape_path": "usr/bin/demos/warp.src.tap",
+      "source_tape_sha256": "3ac6f3668f3559469411df9bedfaeed99fe32b8ee447f515da3a7b6f383e8c56",
+      "source_tape_size": 7504,
+      "target_executable": "warp",
+      "target_object": "warp.obj",
+      "target_source": "warp.c"
+    }
+  ],
+  "schema": 1,
+  "sdk": {
+    "commit": "b1621338565ac3bd9d4eff4ecb5a2a77aee2ab6a",
+    "tag": "1.0.2",
+    "tree": "ced96ea0a4b2f6cdd6080fc6f48e07738252af17"
+  },
+  "source_tape_manifest_count": 57
+}

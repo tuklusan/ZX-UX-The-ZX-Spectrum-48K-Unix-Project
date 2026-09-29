@@ -1,0 +1,18 @@
+{
+  "codec": 0,
+  "decoded_source_identity": "PASS",
+  "flags": 0,
+  "header_crc16": 49831,
+  "kind": "phase11-pre-release-native-kernel-source-tap",
+  "max_payload_chunk": 512,
+  "name": "kernel.asm",
+  "object_type": 4,
+  "payload_blocks": 60,
+  "payload_crc16": 58181,
+  "schema": 1,
+  "source_sha256": "843d58c6c5c60b2946d52c60b67e505ed05e5973a10d86a8dbcca70673aaf224",
+  "source_size": 30554,
+  "tap_sha256": "91caaadbde021d023da8527afe67146c8c9ebf62fa6f584fdc1123598c92325b",
+  "tap_size": 30830,
+  "target": 5
+}

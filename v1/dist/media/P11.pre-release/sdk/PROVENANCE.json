@@ -1,0 +1,1578 @@
+{
+  "assertions": {
+    "all_30_native_mex1_retained": "PASS",
+    "all_30_native_obj1_retained": "PASS",
+    "all_30_reference_lfs_pointers_retained": "PASS",
+    "all_30_reference_png_payloads_retained": "PASS",
+    "all_30_spawn_process_proofs_retained": "PASS",
+    "exact_30_release_source_tapes_retained": "PASS",
+    "exact_30_sources_retained": "PASS"
+  },
+  "files": [
+    {
+      "path": "SDK-RELEASE.json",
+      "sha256": "4a719a5dd66ad0c2794207f282b84bea217a2b01aac4cb1bbce648db3ec15dd2",
+      "size": 57647
+    },
+    {
+      "path": "SOURCE-TAPE-MANIFEST.json",
+      "sha256": "2c795bf090b1507ec91b144b5268b5106208ad6213ded6fef03eefac129e8175",
+      "size": 15909
+    },
+    {
+      "path": "TARGET-NAME-MAP.json",
+      "sha256": "f748bafa404d5093674af8eb5e424e52f99222459267d1964a16e419448c9380",
+      "size": 4915
+    },
+    {
+      "path": "native/demos/city",
+      "sha256": "02d7306d42c24b1291cb2494b6a5d1aa588358a85ad50f00d3a49df51eb6ebf3",
+      "size": 38
+    },
+    {
+      "path": "native/demos/city.obj",
+      "sha256": "c3f504ae0725fc37571aec477048bca505a4b6cb2dc0c6ff42427e9b2c3ed970",
+      "size": 58
+    },
+    {
+      "path": "native/demos/dizzy4.obj",
+      "sha256": "be393d0dac58a7c846f6df85f9e24cd03c72b58831b60a6123b44c0d4ed3de4c",
+      "size": 58
+    },
+    {
+      "path": "native/demos/dizzy4k",
+      "sha256": "4056d70d2f9f55784c45220186bd867d9b7d709d25ef972de529a27f75573e8b",
+      "size": 38
+    },
+    {
+      "path": "native/demos/firewo.obj",
+      "sha256": "8697a568a117a42ac31a58c9018dad0f2a1a322f77992efe66cfbd589904707d",
+      "size": 58
+    },
+    {
+      "path": "native/demos/firework",
+      "sha256": "146c750867eacc25c0be74a7d1ebda8fce905518e7e77bf8f3fc9aa6d973742c",
+      "size": 38
+    },
+    {
+      "path": "native/demos/forest",
+      "sha256": "244a2ec4d54881f00bec48c7228075b7cdbe866eefe13a6887b855d341585627",
+      "size": 38
+    },
+    {
+      "path": "native/demos/forest.obj",
+      "sha256": "8f6c873271f7b6189198c5d254758a98ee2c4074a35d6dca53274cb76360e542",
+      "size": 58
+    },
+    {
+      "path": "native/demos/galaxy",
+      "sha256": "f1a299433e870827988bee4701b2f72ec8457170ae6d289369d04e0227cd6894",
+      "size": 38
+    },
+    {
+      "path": "native/demos/galaxy.obj",
+      "sha256": "a7993bc6fc7c247e7c39e3d542d05fa20f4870f1488e8d3926e5fe1709fcd081",
+      "size": 58
+    },
+    {
+      "path": "native/demos/goblet",
+      "sha256": "2aa8c2e9deb099bda750c24faa249f7a70a139cf2d1eb4fb8ed131a3825d3767",
+      "size": 38
+    },
+    {
+      "path": "native/demos/goblet.obj",
+      "sha256": "989e6533bf7bc20dcae0f07ac29f7cb16eb70fbb8054f3a0ac779f503974a6e6",
+      "size": 58
+    },
+    {
+      "path": "native/demos/hanoi",
+      "sha256": "75b1b7cc467af765a21a33f5cc1cabfe806f2c9bb359bee9218c041e25209b6e",
+      "size": 38
+    },
+    {
+      "path": "native/demos/hanoi.obj",
+      "sha256": "dcfd4f56f1a90bdbcd4164bf7e94d822af0a344f6e4f3da4e6f86819908e9fbc",
+      "size": 58
+    },
+    {
+      "path": "native/demos/julia",
+      "sha256": "87a36294985dce93f5f20961e032dc3237ec2a3f1c14b5a3054dbdb31a4f73e2",
+      "size": 38
+    },
+    {
+      "path": "native/demos/julia.obj",
+      "sha256": "741fe1e6cda8ae19c28298186559f9f094db2c0d3d4be959bf443b3ec9410fd2",
+      "size": 58
+    },
+    {
+      "path": "native/demos/kaleid.obj",
+      "sha256": "f156a712067fe95aa33da3c922a6adcbf82168b6ad7de0d280537c8c3537bc95",
+      "size": 58
+    },
+    {
+      "path": "native/demos/kaleido",
+      "sha256": "739a933463e0d7a65a5b555396c2770908aca8ce1b42a6056bbcbe09c2026c42",
+      "size": 38
+    },
+    {
+      "path": "native/demos/mandel",
+      "sha256": "eebc4529de59f69e2822f76bba9a2df8010092d4de971ae55847bd7e07e55aea",
+      "size": 38
+    },
+    {
+      "path": "native/demos/mandel.obj",
+      "sha256": "d42bf5be875d01fd327e21dea561548597c165dab0025cabc624d260c90185f6",
+      "size": 58
+    },
+    {
+      "path": "native/demos/mobius",
+      "sha256": "93dbe7b9779231a232ea6f78fb00a414268d7c6ae731d194c82f2075c7ed725b",
+      "size": 38
+    },
+    {
+      "path": "native/demos/mobius.obj",
+      "sha256": "7cbeb055ac00eca8af2845a3e7b239354a2e9c883745ea584f0314ca98a3b59d",
+      "size": 58
+    },
+    {
+      "path": "native/demos/moire",
+      "sha256": "f1529869440a4111a8cadb349ed431436ed26d587c8e0547813182e81fec3d79",
+      "size": 38
+    },
+    {
+      "path": "native/demos/moire.obj",
+      "sha256": "eb27a83eac5ce0485ac24cab2a37bc5a8cdbae4a7d34700d616f5fce1c39e02b",
+      "size": 58
+    },
+    {
+      "path": "native/demos/morph3.obj",
+      "sha256": "8e526c8f2feb4b225ab07f915c21cd222fac3262fed2cbbbf3c63c9946910fde",
+      "size": 58
+    },
+    {
+      "path": "native/demos/morph3d",
+      "sha256": "4bca4c73be8f49d45236759fa2ac66e3b24a9a64873d3bce8298a3f5b2b65add",
+      "size": 38
+    },
+    {
+      "path": "native/demos/ocean",
+      "sha256": "0b89fa355ebcc858495063fe12048b86a5ea1c395ba82cbc03eead450df70469",
+      "size": 38
+    },
+    {
+      "path": "native/demos/ocean.obj",
+      "sha256": "0fdebf3ceb8aa43e530409d4dda19c889b434a998742b0ac4c8878d5b5994bc2",
+      "size": 58
+    },
+    {
+      "path": "native/demos/orrery",
+      "sha256": "74d96bdb72e893cbd412b44cad7ab17ca7346aa2e99ed28e94bc7fe6dc682e1e",
+      "size": 38
+    },
+    {
+      "path": "native/demos/orrery.obj",
+      "sha256": "d02846d7800720df271b9f57dbf84a61fb8e6e9f4d925c8a82dbdb74256273fd",
+      "size": 58
+    },
+    {
+      "path": "native/demos/plasma",
+      "sha256": "910374c9171dbb19946992b5acd363711a084e032a9a8f7e15d411c58405a855",
+      "size": 38
+    },
+    {
+      "path": "native/demos/plasma.obj",
+      "sha256": "cdee60cb571ee6bc3fefc3a3e728ae3ac5f9814ea907e8c47094dee106dcd3f0",
+      "size": 58
+    },
+    {
+      "path": "native/demos/queens.obj",
+      "sha256": "b2e75e085f71ed757c0ea65edc23deb329544896c94ffc14740b5d574bf875e1",
+      "size": 58
+    },
+    {
+      "path": "native/demos/queens8",
+      "sha256": "fcf2032afad739f6809235a314d4769c7a5a49b917c349618942387212b101e4",
+      "size": 38
+    },
+    {
+      "path": "native/demos/raymaz.obj",
+      "sha256": "6714c87cf0e5eac073e711ae8e86209ba9c56c200597d5b2ee982e70d67c06e2",
+      "size": 58
+    },
+    {
+      "path": "native/demos/raymaze",
+      "sha256": "57e4c17d650b5fe62a758f8b0cfd2f1ba703d1099bd157dbdb700055d08b8150",
+      "size": 38
+    },
+    {
+      "path": "native/demos/sprani",
+      "sha256": "9f2579c9aaa4caae731d4ccdb9d834603f239f2b3d98807b29a3292a0ba6f18d",
+      "size": 38
+    },
+    {
+      "path": "native/demos/sprani.obj",
+      "sha256": "357e7873e705d42a9151e750895d8b57f4e1e2e2c40120efdb5ccf0be139cd00",
+      "size": 58
+    },
+    {
+      "path": "native/demos/sprite.obj",
+      "sha256": "4647da234f1c6805c325985e7d0adb95ed62e9a9082ea4a25d2f2f28060c4f44",
+      "size": 58
+    },
+    {
+      "path": "native/demos/sprites",
+      "sha256": "a02ed334c3305d9d9a2148bd02364adff01540407f27b0a2eb5e9f2d85cf799d",
+      "size": 38
+    },
+    {
+      "path": "native/demos/terrai.obj",
+      "sha256": "70d14b22a009534685171933b82b93ddf972de6555b7826a80f7a90853b6eee2",
+      "size": 58
+    },
+    {
+      "path": "native/demos/terrain",
+      "sha256": "50d1623db4b76b13f9f088e87526656f562106f3ebbbf3ce9d98fa795336c85d",
+      "size": 38
+    },
+    {
+      "path": "native/demos/torus",
+      "sha256": "38c31592219a2f0736fe4466f64804c5e329881aca4144ecb59d5593f84dd12e",
+      "size": 38
+    },
+    {
+      "path": "native/demos/torus.obj",
+      "sha256": "a1b7d4f5c90cf652ee80ec0ed0cd4a7610ca9972e4641ac99870c85263dc2255",
+      "size": 58
+    },
+    {
+      "path": "native/demos/tunnel",
+      "sha256": "334638f931d2f3953ba31fc8f096b21fff45d52e999c60cb7e8aa16ca40588af",
+      "size": 38
+    },
+    {
+      "path": "native/demos/tunnel.obj",
+      "sha256": "7cf935675dacf2e008fe16dfd9b2d53ff061ce4a0dd7ec1fbaaabc79c9ca58cd",
+      "size": 58
+    },
+    {
+      "path": "native/demos/warp",
+      "sha256": "8d8a88bb194214df474d0e95cd098809e0ee4a24356001cce87308d1e556fc56",
+      "size": 38
+    },
+    {
+      "path": "native/demos/warp.obj",
+      "sha256": "c64ce72d91cf84f9f33f90000ef1be190e19cb5464ba5fef1964d250f9286665",
+      "size": 58
+    },
+    {
+      "path": "native/examples/argv",
+      "sha256": "c5926f6ec5b7a4777860be850f8bd0692f1b842cec1a7eead7b1b3d73df94432",
+      "size": 38
+    },
+    {
+      "path": "native/examples/argv.obj",
+      "sha256": "b692dbccc8cfc906f274fb4a13c5e086bddcd0679202a9d2dd2e7b3798db66eb",
+      "size": 58
+    },
+    {
+      "path": "native/examples/colors",
+      "sha256": "2cc1d145cb12f7d2f6b8776eed017118743bb7d66cd2124fcd02959790100ecc",
+      "size": 38
+    },
+    {
+      "path": "native/examples/colors.obj",
+      "sha256": "b35ab9722697a8aeae04705f926523c3bdbcc4c5422df4dcfae5f57cad9fd1d8",
+      "size": 58
+    },
+    {
+      "path": "native/examples/graphi.obj",
+      "sha256": "742176d646f2a9faf2ba574951b1d69aa5d7de887ee7a26df9874df936932688",
+      "size": 58
+    },
+    {
+      "path": "native/examples/graphics",
+      "sha256": "8c9cdf0686df163bab7e83bb22186c2b022263c21a9f19a10e62b641a9d07fd0",
+      "size": 38
+    },
+    {
+      "path": "native/examples/hello",
+      "sha256": "0d4d7b499655c46a177500bb510900fd6cf0fe6cb86b80f19bf3560f442fd1ae",
+      "size": 38
+    },
+    {
+      "path": "native/examples/hello.obj",
+      "sha256": "bb837eea005fdbe547b4c60604b6bf8fb7eb914379f3a60ca5eb88476fbf0c73",
+      "size": 58
+    },
+    {
+      "path": "native/examples/maze",
+      "sha256": "3f0786aab05ad79429fd67fd31f0f6c681a303d1a7599145c1f55db406861ab3",
+      "size": 38
+    },
+    {
+      "path": "native/examples/maze.obj",
+      "sha256": "45bc9c04e2ed0d1e0f65b0cdf8c166b6719042cbae390e564e60f8d6e249c2cb",
+      "size": 58
+    },
+    {
+      "path": "native/examples/udg",
+      "sha256": "a8b89e9b1b47ce6ac031fe75d0aa8681968bcea7369e26ff31629a0863f39f3e",
+      "size": 38
+    },
+    {
+      "path": "native/examples/udg.obj",
+      "sha256": "6e7490d2a53051b0330c7cedc60291cfe98c1e5aa8ceede0594ca7d3c437699d",
+      "size": 58
+    },
+    {
+      "path": "proof/native-build.json",
+      "sha256": "3b4c12cb0375d0cf82ba89c66faf5b8cab859124bfe7392ced530a2b9c37bd52",
+      "size": 29434
+    },
+    {
+      "path": "proof/native-cc-preflight.json",
+      "sha256": "1dcbe489034d97d4162f29a2365c13a0e44e4f1e9e2a1fd6c5e0239d0da5d121",
+      "size": 14800
+    },
+    {
+      "path": "proof/native-ld-preflight.json",
+      "sha256": "64d67ded69c993fa40634eae224077adfabb32b3d21f62a5bd2a5cfa613f2e74",
+      "size": 14988
+    },
+    {
+      "path": "proof/process-run.json",
+      "sha256": "cebb5824146cf3347436b813858b0ab53d99bd7d7ce109fa3558c658bd538c64",
+      "size": 11346
+    },
+    {
+      "path": "proof/source-tape-corpus.json",
+      "sha256": "e50d96f503f0413f32fdcce254ee6c65768d6338b4c41ee3659b0dd9774a8522",
+      "size": 33390
+    },
+    {
+      "path": "reference-lfs/demos/city.png",
+      "sha256": "790cb1d575c1f7b49aaa953b43c739c7cf95334d8fb72a03ab3de8d7f3e5ac23",
+      "size": 129
+    },
+    {
+      "path": "reference-lfs/demos/dizzy4k.png",
+      "sha256": "28708f95bc5d86c7279230d0c09c44dfeaee50071a56d96b41d5246ca1dea7f8",
+      "size": 129
+    },
+    {
+      "path": "reference-lfs/demos/firework.png",
+      "sha256": "3e7a4ab755df39cc6473e7b29dc08e4a84be16cb276f6e9f6fcd2be81f0bdb5d",
+      "size": 129
+    },
+    {
+      "path": "reference-lfs/demos/forest.png",
+      "sha256": "951aa9b5d4b36304b8b3f079b386b35f1bb75358b5ba321e491444d686205b21",
+      "size": 129
+    },
+    {
+      "path": "reference-lfs/demos/galaxy.png",
+      "sha256": "848e9d3b66f67a139b412b61db2350b3edee4edd0fa0e94c9bc73ecbf7b45a5e",
+      "size": 129
+    },
+    {
+      "path": "reference-lfs/demos/goblet.png",
+      "sha256": "7188907db32bcd699dea201141f04c859714a48032843caf4da232109d5fd1b1",
+      "size": 129
+    },
+    {
+      "path": "reference-lfs/demos/hanoi.png",
+      "sha256": "be9ebe76061e6e37b421d5120e6c39441cb54b08711feff596134fa41678d9f1",
+      "size": 129
+    },
+    {
+      "path": "reference-lfs/demos/julia.png",
+      "sha256": "40516d5f6163678e053f279ff85c6cebc8bd12f8d6bb9ce58c235bdccdc95470",
+      "size": 129
+    },
+    {
+      "path": "reference-lfs/demos/kaleido.png",
+      "sha256": "e2c37e9462745905dbc389af38646e45c3d4447f9fba8abe4e71d476175e1e24",
+      "size": 129
+    },
+    {
+      "path": "reference-lfs/demos/mandel.png",
+      "sha256": "54180dda0aa19611778bfabc3367db998e86d50e70fb44f7b97de7529921d019",
+      "size": 129
+    },
+    {
+      "path": "reference-lfs/demos/mobius.png",
+      "sha256": "21b0c582b95af717f27d50e1617058759b24f131ebddd66f6dc174cba3ebcfe7",
+      "size": 129
+    },
+    {
+      "path": "reference-lfs/demos/moire.png",
+      "sha256": "7fe8c47bcb7b877db66004045cf60a527fec3edcc7bc16df5365bd5f89c60b1d",
+      "size": 130
+    },
+    {
+      "path": "reference-lfs/demos/morph3d.png",
+      "sha256": "5d2fa243e200eedc8638535df15639ed3fa7e7a624c8be793059defba5acbdb0",
+      "size": 129
+    },
+    {
+      "path": "reference-lfs/demos/ocean.png",
+      "sha256": "a9691d53c5f766b007c09ad0a8dcddc23df8b3301c2dac701d88a7febfcd5554",
+      "size": 129
+    },
+    {
+      "path": "reference-lfs/demos/orrery.png",
+      "sha256": "99cadff42a6261ccd001c03f0a05c6f6aa8578f563f1c38970f1e89b5f3f4294",
+      "size": 129
+    },
+    {
+      "path": "reference-lfs/demos/plasma.png",
+      "sha256": "1c0e6958cd75089b0e601cc513c9d2fce15210cd60d1f45ad01e85b715183b59",
+      "size": 130
+    },
+    {
+      "path": "reference-lfs/demos/queens8.png",
+      "sha256": "1f835622e885497dfde5ca697fa16bc7e61e32a168c50eed4ff1df87f1eb1f44",
+      "size": 129
+    },
+    {
+      "path": "reference-lfs/demos/raymaze.png",
+      "sha256": "8eea26db68d455f9c6f13620fc0903d923671b2a52f3cd270d6e8c8f801a2051",
+      "size": 129
+    },
+    {
+      "path": "reference-lfs/demos/spriteanim.png",
+      "sha256": "132e2d7392b8ef37366428b106dff16cb5a14c3fe03916326b72cc60a5b33c73",
+      "size": 129
+    },
+    {
+      "path": "reference-lfs/demos/sprites.png",
+      "sha256": "d4ce93e01e11a3d4cceaa3a0a12f6b826b62e9f887bf317bb1a0ca4524f30e1b",
+      "size": 129
+    },
+    {
+      "path": "reference-lfs/demos/terrain.png",
+      "sha256": "6e5f023dcf52543a8c4da5cba519517b512142960ab4ab9a024fae88c2629cb1",
+      "size": 129
+    },
+    {
+      "path": "reference-lfs/demos/torus.png",
+      "sha256": "3ff76b67739716df98c3a07f188a9a4d24754b6b3acdbcfe88bf9c9ba28722fd",
+      "size": 129
+    },
+    {
+      "path": "reference-lfs/demos/tunnel.png",
+      "sha256": "ed89956ed10916a04ff0e54d8c506abbea02f7bd78f9b135a99c7086c3218b4c",
+      "size": 129
+    },
+    {
+      "path": "reference-lfs/demos/warp.png",
+      "sha256": "8918a10233da3756a1d91de262fe8d1e1646a52b88ea780ccdfcba4543e22bbe",
+      "size": 129
+    },
+    {
+      "path": "reference-lfs/examples/argv.png",
+      "sha256": "128e3dcc4367cf2c5959d8fdffe4003051537775f604153ac9c5721f519cb39a",
+      "size": 130
+    },
+    {
+      "path": "reference-lfs/examples/colors.png",
+      "sha256": "cd16cdf87ceaf4e1e75203d571a3a0291410ab879767d14728377239d742482b",
+      "size": 129
+    },
+    {
+      "path": "reference-lfs/examples/graphics.png",
+      "sha256": "14944308fba978e7bdde617025bc350ecbf5227b75f4ce8100367bc7cf724f99",
+      "size": 129
+    },
+    {
+      "path": "reference-lfs/examples/hello.png",
+      "sha256": "32950b17329896f044f0236a7ddc3d2d31024c1f92ea52f716b7296014fde200",
+      "size": 129
+    },
+    {
+      "path": "reference-lfs/examples/maze.png",
+      "sha256": "5f655a0a7fdc4c97c8aef03fe79995b1c613da1c7aa56f211a1c7259f26d31d8",
+      "size": 129
+    },
+    {
+      "path": "reference-lfs/examples/udg.png",
+      "sha256": "afdccc461aa17017ace7bde51109ce87c46b1a2e89811cebe6ea0f584e9c9211",
+      "size": 129
+    },
+    {
+      "path": "reference-png/demos/city.png",
+      "sha256": "1dd72e28770803c79e7695cd5e90b4feaea062b5fd4484a20e7d3ab83e5c1f3a",
+      "size": 4988
+    },
+    {
+      "path": "reference-png/demos/dizzy4k.png",
+      "sha256": "ec6d72648507bc756ca7beb4bdebe4223ddda6b6783e6e371f2c141c90ec37ff",
+      "size": 2658
+    },
+    {
+      "path": "reference-png/demos/firework.png",
+      "sha256": "fb56fffc11eac4f2e09982fecb3aed51f6b580800ac25f4702bdcc31dc3e4ba6",
+      "size": 3669
+    },
+    {
+      "path": "reference-png/demos/forest.png",
+      "sha256": "22c8217fd9d70f3299ff266cfb3d8241fd03c99e59abde543ab838f52297ad94",
+      "size": 7696
+    },
+    {
+      "path": "reference-png/demos/galaxy.png",
+      "sha256": "b93f1f64cecf1a0f015cf9127850d0c848aa19c3886c9d949a4b8c2ddae9e5ad",
+      "size": 2806
+    },
+    {
+      "path": "reference-png/demos/goblet.png",
+      "sha256": "89ffe9c89384b76cf1a7ceb9aa9903e945a52d578bf3853a8eaac4e0ca36dbde",
+      "size": 6614
+    },
+    {
+      "path": "reference-png/demos/hanoi.png",
+      "sha256": "2d0b27ee89980679cfb844f9119ee115c7d0a3fdbae9ad56b17bf894a6daba17",
+      "size": 3932
+    },
+    {
+      "path": "reference-png/demos/julia.png",
+      "sha256": "6dac6427e02c6f7e3d3a22839b7eefb7bf17301ffc3392e10297f0cc74168eb5",
+      "size": 4222
+    },
+    {
+      "path": "reference-png/demos/kaleido.png",
+      "sha256": "0873b05c322f231f343050fce1de092130fd2e4c36758de26828c5a6f19e5b1e",
+      "size": 8584
+    },
+    {
+      "path": "reference-png/demos/mandel.png",
+      "sha256": "5e90e8e4d6789395708faeafb90e97e673770bc16b415ff118ea01395149d79b",
+      "size": 4321
+    },
+    {
+      "path": "reference-png/demos/mobius.png",
+      "sha256": "50f2931d1b81f9e3f6f202a0e054a20ca6d42100bb4c50aa094d5cabc6801fef",
+      "size": 4538
+    },
+    {
+      "path": "reference-png/demos/moire.png",
+      "sha256": "58a420ff3404f15c418dd4b57386920cfa7e15bab0a2327655df1e4447f4b2e9",
+      "size": 12279
+    },
+    {
+      "path": "reference-png/demos/morph3d.png",
+      "sha256": "4c4a05244e5196848c5bdecef6c3047b9461a5e15bd0ff9efdfd021699a9f08b",
+      "size": 5690
+    },
+    {
+      "path": "reference-png/demos/ocean.png",
+      "sha256": "4faa49e25ab17c8a7dc3f8aff33e02f20a2675b6a5a424a5fdf52edd60920794",
+      "size": 4941
+    },
+    {
+      "path": "reference-png/demos/orrery.png",
+      "sha256": "537ea112328b218e0f22b3907ab002dfbfe2c39b64ce685457d9c19848e704ed",
+      "size": 3973
+    },
+    {
+      "path": "reference-png/demos/plasma.png",
+      "sha256": "bf05a61f378a70619674d6b6b5d745f164ee5aabfe19129a3a5fc88139a1d4cd",
+      "size": 13918
+    },
+    {
+      "path": "reference-png/demos/queens8.png",
+      "sha256": "d5b8a4f382aea9ff52c9d003b4d68194c1349f0e3aff6971ce665ec428ecd665",
+      "size": 5764
+    },
+    {
+      "path": "reference-png/demos/raymaze.png",
+      "sha256": "596e5f7e943633c688260f987ba1e02782d39100a41d21b3066e1b8d319b04d5",
+      "size": 3998
+    },
+    {
+      "path": "reference-png/demos/spriteanim.png",
+      "sha256": "13479b7fc104171ddbfdcd173bcb945426a971b2f922db9bcc8a13763738c91f",
+      "size": 2239
+    },
+    {
+      "path": "reference-png/demos/sprites.png",
+      "sha256": "640dff9de189e93f7a911da6f18d79b14dea6bfc41d0a8325371ddd19db3e3b0",
+      "size": 2490
+    },
+    {
+      "path": "reference-png/demos/terrain.png",
+      "sha256": "0acb90231ee1a6f14cf51e94019bc3f826e21f606a44b87bed81463ed443680e",
+      "size": 5535
+    },
+    {
+      "path": "reference-png/demos/torus.png",
+      "sha256": "c51e74f508577e9eac4298a7b279c92a376032da88ea6bf5f2303ebd04a14fb7",
+      "size": 9050
+    },
+    {
+      "path": "reference-png/demos/tunnel.png",
+      "sha256": "3df46e145658f3db6bf2ed73206309e1c316accbbb8dbdec230de133a4846691",
+      "size": 5651
+    },
+    {
+      "path": "reference-png/demos/warp.png",
+      "sha256": "dc5a36d3755cc85c3fc9aa38ff6b835e17ec6d249215e8777c18b18a1a63f46b",
+      "size": 1978
+    },
+    {
+      "path": "reference-png/examples/argv.png",
+      "sha256": "2f411b60ec27e855d6e713074c627ae10252bd23ea2d065aff5eec26a7692bf1",
+      "size": 13081
+    },
+    {
+      "path": "reference-png/examples/colors.png",
+      "sha256": "7260a095772f5896327f7230c8eb473d8a8dc5c625ff393d99edf441f9b018f1",
+      "size": 5090
+    },
+    {
+      "path": "reference-png/examples/graphics.png",
+      "sha256": "bc7b536c14db904705961a0920c3ef05cd153e94e78e65af0031c91b05659b7d",
+      "size": 5087
+    },
+    {
+      "path": "reference-png/examples/hello.png",
+      "sha256": "ed70f529f7dbf3f3ee4361eea49b5f8623d37e96281c4b667d07f83b6503a001",
+      "size": 1738
+    },
+    {
+      "path": "reference-png/examples/maze.png",
+      "sha256": "47212b3a0d54e1065dcdb9c1de81127728796252e4e67175add4482be94540a4",
+      "size": 8264
+    },
+    {
+      "path": "reference-png/examples/udg.png",
+      "sha256": "30d81d88be5564f384a560e5a0e0d91ad9628e640c0786d91d96d7fb0014379b",
+      "size": 1589
+    },
+    {
+      "path": "sources/demos/city.c",
+      "sha256": "ee2c2d6b5795bc99c92f4fbd5f0d0340b44b55b1daa4e88013f12461ffc8d80c",
+      "size": 2356
+    },
+    {
+      "path": "sources/demos/dizzy4k.c",
+      "sha256": "7e1e56147e80798c0c66dbd9e8f033d84a5d7d5551aa5d77477abcee12b0ed48",
+      "size": 5424
+    },
+    {
+      "path": "sources/demos/firework.c",
+      "sha256": "457d106ce7974c3cab7b67f207a05df8f27d971e3774902be02c2eebc02526c0",
+      "size": 2347
+    },
+    {
+      "path": "sources/demos/forest.c",
+      "sha256": "70a0646a22143a81d98a77c4757a9c55cfcbe5c0268570cd7a2eec318b6ec594",
+      "size": 2047
+    },
+    {
+      "path": "sources/demos/galaxy.c",
+      "sha256": "3deb566204212867cf726d7476e37511eb0bf816755355577880d7f109c82987",
+      "size": 2114
+    },
+    {
+      "path": "sources/demos/goblet.c",
+      "sha256": "3092eda0f3691d3af336f4a492408de6b0cb8baa9c644fb64ea978604a8be1e1",
+      "size": 2780
+    },
+    {
+      "path": "sources/demos/hanoi.c",
+      "sha256": "38d1bfd55ffb4a7366044e9d06a92415454cac4f8621a03796a05c2c84742657",
+      "size": 12517
+    },
+    {
+      "path": "sources/demos/julia.c",
+      "sha256": "69944e0351fb9e14a0a220dfe6449ee24273659e3450a9f3902e003ccc8d51cc",
+      "size": 2182
+    },
+    {
+      "path": "sources/demos/kaleido.c",
+      "sha256": "5e63467442552c266ab8be8bf3245c4dab16bac8fab051055363a1b88edd92fc",
+      "size": 2301
+    },
+    {
+      "path": "sources/demos/mandel.c",
+      "sha256": "7aaed292d90d24310d8216388ceac3a9db57ac98cb000a4a6a04d820bc263bd2",
+      "size": 2218
+    },
+    {
+      "path": "sources/demos/mobius.c",
+      "sha256": "f30d4c9ce536fb53fb2697effd758d84b83bf729a54659a6ff9377b98e8bf072",
+      "size": 2750
+    },
+    {
+      "path": "sources/demos/moire.c",
+      "sha256": "2076e551cde35b61b4a07b49f729a891fed098ed24175867c7a75a11d06e2b3f",
+      "size": 2461
+    },
+    {
+      "path": "sources/demos/morph3d.c",
+      "sha256": "b4c9107c3663801256cd308b32a83882ece50a69962fea0200cd7f35eb57383f",
+      "size": 3140
+    },
+    {
+      "path": "sources/demos/ocean.c",
+      "sha256": "c350766c2b683ac92603ca0281fc7bf30b755184a5b281565ab4c5a570e0deea",
+      "size": 2681
+    },
+    {
+      "path": "sources/demos/orrery.c",
+      "sha256": "14d1a245ca18b7e3664f30d3bb0c501710f7e3df24d2608ce2b9400568192c18",
+      "size": 2855
+    },
+    {
+      "path": "sources/demos/plasma.c",
+      "sha256": "351e0d39a9155552f7c40301db7203425dd74a7f2dce65c8a73a8192a00c303d",
+      "size": 2162
+    },
+    {
+      "path": "sources/demos/queens8.c",
+      "sha256": "9ea8e7c86b41dfdb931996af43de047a6d5a81becba9eda29038dc51c54dbf29",
+      "size": 11276
+    },
+    {
+      "path": "sources/demos/raymaze.c",
+      "sha256": "e6ad2fa248afcb36beed4d691eba3f307e57cda74406579b9a19df85f983679c",
+      "size": 2721
+    },
+    {
+      "path": "sources/demos/spriteanim.c",
+      "sha256": "1e574fa1e73be1168a6e597be0d45e75f158599620b5eddd160efe949fe1cb6c",
+      "size": 2626
+    },
+    {
+      "path": "sources/demos/sprites.c",
+      "sha256": "3a98c75141b399446f97388612fcf08eadacc16d2d1927158a345d7061463e71",
+      "size": 2642
+    },
+    {
+      "path": "sources/demos/terrain.c",
+      "sha256": "d239ae26c0ae499489f17817e106d93a0ff749ca3032d982c09b34cee98b1431",
+      "size": 2825
+    },
+    {
+      "path": "sources/demos/torus.c",
+      "sha256": "be1bed67f474f45a5fcae9375b50d435b927e1b19ea64d0516d8258afb70daed",
+      "size": 2772
+    },
+    {
+      "path": "sources/demos/tunnel.c",
+      "sha256": "ed6cef6fc155728cdd1c0d3348a245224f7f2de3b100615fd0b8ed625e4f6b0a",
+      "size": 2244
+    },
+    {
+      "path": "sources/demos/warp.c",
+      "sha256": "7eb0dc22d357bb748ca2269b295a1375a63e8e0b2c905d94eaf3e823183e83d4",
+      "size": 2222
+    },
+    {
+      "path": "sources/examples/argv.c",
+      "sha256": "3497970dfbeb168ad75996b64ec090e005ef4d283c1045fb13c4549d5c9eedf3",
+      "size": 3593
+    },
+    {
+      "path": "sources/examples/colors.c",
+      "sha256": "5aeef97855cebbe47efe9d3abd3ae6133e7bef9e6dfe495a496950faaced0f2f",
+      "size": 1442
+    },
+    {
+      "path": "sources/examples/graphics.c",
+      "sha256": "6fdf36f9967fb04bb85a5625df2b84fdf36c33001f33a3ba0faa1c4e8e12cb5b",
+      "size": 783
+    },
+    {
+      "path": "sources/examples/hello.c",
+      "sha256": "9a6e11b28dc597b410aa0d414b2360e278482d44b400eff0f60adb5434d39249",
+      "size": 633
+    },
+    {
+      "path": "sources/examples/maze.c",
+      "sha256": "ce60c1eabd478fcf02b16e238e2c8fcf0f96322322ffffaddec35605e913e988",
+      "size": 919
+    },
+    {
+      "path": "sources/examples/udg.c",
+      "sha256": "dd14231daa9b2357ff419d71c808d76c022b1e52d91353c3c7287975349260c9",
+      "size": 799
+    },
+    {
+      "path": "sources/headers/demoapi.h",
+      "sha256": "285af5be8080be2fdbad9f053ce7f81586aa52a823fc451548b6b3e1886e7023",
+      "size": 5146
+    },
+    {
+      "path": "sources/headers/exapi.h",
+      "sha256": "eec708091fcc5cbfaea1fe3d8a991f95538bb14ba7169482a71e21f09e21f69f",
+      "size": 1986
+    },
+    {
+      "path": "sources/headers/recapi.h",
+      "sha256": "d09b8c236ffaf39920df8228bc631d949ea8c074058fa79eae689d73a017b05b",
+      "size": 1765
+    },
+    {
+      "path": "tapes/demos/city.src.tap",
+      "sha256": "30e45ceea4bf8db62ce8c72d0a59a6f79cf57270e27724db2c68c5c5b800d05d",
+      "size": 7638
+    },
+    {
+      "path": "tapes/demos/dizzy4k.src.tap",
+      "sha256": "0e514f93eec43a26789ae7c281babab5afa59429c3a7accef8bc8d4035e05e77",
+      "size": 10730
+    },
+    {
+      "path": "tapes/demos/firework.src.tap",
+      "sha256": "d958a7a6bf43e1d7444118b3f31e3f838d03c31946db53d272e009d00fc23fcc",
+      "size": 7629
+    },
+    {
+      "path": "tapes/demos/forest.src.tap",
+      "sha256": "d56aca7b41abbf957cbbd7c0e5f7e8a0b0e80723b6e0c25f36109d8aa5acccd1",
+      "size": 7325
+    },
+    {
+      "path": "tapes/demos/galaxy.src.tap",
+      "sha256": "6a173d4cde84ff30cb386197a17010208c81b1a94d52683c57ca76347aeb442d",
+      "size": 7396
+    },
+    {
+      "path": "tapes/demos/goblet.src.tap",
+      "sha256": "a91c23bab6985f7a0219a60b228fa2352ec3037893d40bc25a6ed8d6e837c240",
+      "size": 8066
+    },
+    {
+      "path": "tapes/demos/hanoi.src.tap",
+      "sha256": "117772b1a0273cbdbe77e437ed50633c1d7268c6a52cc8900d18273d3226d2a1",
+      "size": 14470
+    },
+    {
+      "path": "tapes/demos/julia.src.tap",
+      "sha256": "42e1e30365acf095710ab0d276945ff26cc2017ead09f5579cf167e3aef30b3c",
+      "size": 7464
+    },
+    {
+      "path": "tapes/demos/kaleido.src.tap",
+      "sha256": "7b569ae6f0497145167f6867fbb4b603234250a3deadd8a574373274ceadc105",
+      "size": 7583
+    },
+    {
+      "path": "tapes/demos/mandel.src.tap",
+      "sha256": "6eddbe652ae85c12275eb245751cb49966c22fd79d266fce27459bcac79c8078",
+      "size": 7500
+    },
+    {
+      "path": "tapes/demos/mobius.src.tap",
+      "sha256": "e0fcf4fda4b3fc245148f0a2f2d275cd245d211547c397285dedef5f0ffbdf65",
+      "size": 8036
+    },
+    {
+      "path": "tapes/demos/moire.src.tap",
+      "sha256": "7310d8a45e2dd34c42037f4353221ae50a1d389a4ed29fe8c43aae72de5eb3b0",
+      "size": 7743
+    },
+    {
+      "path": "tapes/demos/morph3d.src.tap",
+      "sha256": "045e27854265f17793708e20fba401c2c5d2b4e47811ed1f398c72e2019ad6f7",
+      "size": 8430
+    },
+    {
+      "path": "tapes/demos/ocean.src.tap",
+      "sha256": "772e46aea6227a8ee551589d2158d370fc34f2d487dec96b10b96c735efe6065",
+      "size": 7967
+    },
+    {
+      "path": "tapes/demos/orrery.src.tap",
+      "sha256": "53e48548a68be8a378be8a4e267aa164840f346b9c4a8ffc15ab0820f3901735",
+      "size": 8141
+    },
+    {
+      "path": "tapes/demos/plasma.src.tap",
+      "sha256": "1c0604a67871da25e745e53990b6684e1322f2eb943461f8e8e52ed962c039e2",
+      "size": 7444
+    },
+    {
+      "path": "tapes/demos/queens8.src.tap",
+      "sha256": "97fe5c15f3279291191b290b970f83deae3b45e57bf4b923084f1b8a944f65e1",
+      "size": 13221
+    },
+    {
+      "path": "tapes/demos/raymaze.src.tap",
+      "sha256": "dc6453411b1d166e5aa0bfd505722de984dc49e0837a55ebdd873a768870a6e9",
+      "size": 8007
+    },
+    {
+      "path": "tapes/demos/spriteanim.src.tap",
+      "sha256": "a98e2f4155c7583d9de608903ff4c3622d5dddde6b655ef848640ba3cfbb17fe",
+      "size": 7912
+    },
+    {
+      "path": "tapes/demos/sprites.src.tap",
+      "sha256": "f097fb09eb85824a257dfdf975d77314363453d318c87a1d1472df21a25588b6",
+      "size": 7928
+    },
+    {
+      "path": "tapes/demos/terrain.src.tap",
+      "sha256": "fabb84d5001baa007881421a50541549176add160aff67a8dd5136a617cc903f",
+      "size": 8111
+    },
+    {
+      "path": "tapes/demos/torus.src.tap",
+      "sha256": "bdf128599492cc7d3806f801bdde1925ed8f199cd9454a98ec1d4dc6f133ef38",
+      "size": 8058
+    },
+    {
+      "path": "tapes/demos/tunnel.src.tap",
+      "sha256": "7e778775433355c9da053b945ecaa651dc6c20ab619962ec66175140fff8f7d2",
+      "size": 7526
+    },
+    {
+      "path": "tapes/demos/warp.src.tap",
+      "sha256": "3ac6f3668f3559469411df9bedfaeed99fe32b8ee447f515da3a7b6f383e8c56",
+      "size": 7504
+    },
+    {
+      "path": "tapes/examples/argv.src.tap",
+      "sha256": "ba91ade25831700e1a2bbe7b9c995a250cca6f797deac6eadd49281ef3ea60de",
+      "size": 5699
+    },
+    {
+      "path": "tapes/examples/colors.src.tap",
+      "sha256": "912800d6aacaf6a40ae9d04061afe025733e26d5ed007ce227108b635e39f1a8",
+      "size": 3528
+    },
+    {
+      "path": "tapes/examples/graphics.src.tap",
+      "sha256": "e87062b16f5a790bb41caf7915167f2c79c96e40d521473c6f0ab29c222fd358",
+      "size": 2865
+    },
+    {
+      "path": "tapes/examples/hello.src.tap",
+      "sha256": "8a2ba59318fde797f3313adb22a938563e8ab23848bfbdc000460d3522009cf1",
+      "size": 2715
+    },
+    {
+      "path": "tapes/examples/maze.src.tap",
+      "sha256": "5b69df4a26f06d211d8cd9e9f008f6434e17dae75ba6d4ea30a10f6ce14936a6",
+      "size": 3001
+    },
+    {
+      "path": "tapes/examples/udg.src.tap",
+      "sha256": "fbb2c7c972b773d10f5b2f503ce16eb5d57cee3bf0debf8994723fc462fe7658",
+      "size": 2881
+    }
+  ],
+  "kind": "phase11-pre-release-sdk-staged-bundle",
+  "program_count": 30,
+  "programs": [
+    {
+      "category": "examples",
+      "native_mex1_sha256": "c5926f6ec5b7a4777860be850f8bd0692f1b842cec1a7eead7b1b3d73df94432",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "b692dbccc8cfc906f274fb4a13c5e086bddcd0679202a9d2dd2e7b3798db66eb",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "argv",
+      "reference_lfs_oid_sha256": "2f411b60ec27e855d6e713074c627ae10252bd23ea2d065aff5eec26a7692bf1",
+      "reference_png_sha256": "2f411b60ec27e855d6e713074c627ae10252bd23ea2d065aff5eec26a7692bf1",
+      "sdk_source_path": "usr/src/examples/argv.c",
+      "source_sha256": "3497970dfbeb168ad75996b64ec090e005ef4d283c1045fb13c4549d5c9eedf3",
+      "source_tape_path": "usr/bin/examples/argv.src.tap",
+      "source_tape_sha256": "ba91ade25831700e1a2bbe7b9c995a250cca6f797deac6eadd49281ef3ea60de",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "argv",
+      "target_object": "argv.obj",
+      "target_source": "argv.c"
+    },
+    {
+      "category": "examples",
+      "native_mex1_sha256": "2cc1d145cb12f7d2f6b8776eed017118743bb7d66cd2124fcd02959790100ecc",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "b35ab9722697a8aeae04705f926523c3bdbcc4c5422df4dcfae5f57cad9fd1d8",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "colors",
+      "reference_lfs_oid_sha256": "7260a095772f5896327f7230c8eb473d8a8dc5c625ff393d99edf441f9b018f1",
+      "reference_png_sha256": "7260a095772f5896327f7230c8eb473d8a8dc5c625ff393d99edf441f9b018f1",
+      "sdk_source_path": "usr/src/examples/colors.c",
+      "source_sha256": "5aeef97855cebbe47efe9d3abd3ae6133e7bef9e6dfe495a496950faaced0f2f",
+      "source_tape_path": "usr/bin/examples/colors.src.tap",
+      "source_tape_sha256": "912800d6aacaf6a40ae9d04061afe025733e26d5ed007ce227108b635e39f1a8",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "colors",
+      "target_object": "colors.obj",
+      "target_source": "colors.c"
+    },
+    {
+      "category": "examples",
+      "native_mex1_sha256": "8c9cdf0686df163bab7e83bb22186c2b022263c21a9f19a10e62b641a9d07fd0",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "742176d646f2a9faf2ba574951b1d69aa5d7de887ee7a26df9874df936932688",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "graphics",
+      "reference_lfs_oid_sha256": "bc7b536c14db904705961a0920c3ef05cd153e94e78e65af0031c91b05659b7d",
+      "reference_png_sha256": "bc7b536c14db904705961a0920c3ef05cd153e94e78e65af0031c91b05659b7d",
+      "sdk_source_path": "usr/src/examples/graphics.c",
+      "source_sha256": "6fdf36f9967fb04bb85a5625df2b84fdf36c33001f33a3ba0faa1c4e8e12cb5b",
+      "source_tape_path": "usr/bin/examples/graphics.src.tap",
+      "source_tape_sha256": "e87062b16f5a790bb41caf7915167f2c79c96e40d521473c6f0ab29c222fd358",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "graphics",
+      "target_object": "graphi.obj",
+      "target_source": "graphics.c"
+    },
+    {
+      "category": "examples",
+      "native_mex1_sha256": "0d4d7b499655c46a177500bb510900fd6cf0fe6cb86b80f19bf3560f442fd1ae",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "bb837eea005fdbe547b4c60604b6bf8fb7eb914379f3a60ca5eb88476fbf0c73",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "hello",
+      "reference_lfs_oid_sha256": "ed70f529f7dbf3f3ee4361eea49b5f8623d37e96281c4b667d07f83b6503a001",
+      "reference_png_sha256": "ed70f529f7dbf3f3ee4361eea49b5f8623d37e96281c4b667d07f83b6503a001",
+      "sdk_source_path": "usr/src/examples/hello.c",
+      "source_sha256": "9a6e11b28dc597b410aa0d414b2360e278482d44b400eff0f60adb5434d39249",
+      "source_tape_path": "usr/bin/examples/hello.src.tap",
+      "source_tape_sha256": "8a2ba59318fde797f3313adb22a938563e8ab23848bfbdc000460d3522009cf1",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "hello",
+      "target_object": "hello.obj",
+      "target_source": "hello.c"
+    },
+    {
+      "category": "examples",
+      "native_mex1_sha256": "3f0786aab05ad79429fd67fd31f0f6c681a303d1a7599145c1f55db406861ab3",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "45bc9c04e2ed0d1e0f65b0cdf8c166b6719042cbae390e564e60f8d6e249c2cb",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "maze",
+      "reference_lfs_oid_sha256": "47212b3a0d54e1065dcdb9c1de81127728796252e4e67175add4482be94540a4",
+      "reference_png_sha256": "47212b3a0d54e1065dcdb9c1de81127728796252e4e67175add4482be94540a4",
+      "sdk_source_path": "usr/src/examples/maze.c",
+      "source_sha256": "ce60c1eabd478fcf02b16e238e2c8fcf0f96322322ffffaddec35605e913e988",
+      "source_tape_path": "usr/bin/examples/maze.src.tap",
+      "source_tape_sha256": "5b69df4a26f06d211d8cd9e9f008f6434e17dae75ba6d4ea30a10f6ce14936a6",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "maze",
+      "target_object": "maze.obj",
+      "target_source": "maze.c"
+    },
+    {
+      "category": "examples",
+      "native_mex1_sha256": "a8b89e9b1b47ce6ac031fe75d0aa8681968bcea7369e26ff31629a0863f39f3e",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "6e7490d2a53051b0330c7cedc60291cfe98c1e5aa8ceede0594ca7d3c437699d",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "udg",
+      "reference_lfs_oid_sha256": "30d81d88be5564f384a560e5a0e0d91ad9628e640c0786d91d96d7fb0014379b",
+      "reference_png_sha256": "30d81d88be5564f384a560e5a0e0d91ad9628e640c0786d91d96d7fb0014379b",
+      "sdk_source_path": "usr/src/examples/udg.c",
+      "source_sha256": "dd14231daa9b2357ff419d71c808d76c022b1e52d91353c3c7287975349260c9",
+      "source_tape_path": "usr/bin/examples/udg.src.tap",
+      "source_tape_sha256": "fbb2c7c972b773d10f5b2f503ce16eb5d57cee3bf0debf8994723fc462fe7658",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "udg",
+      "target_object": "udg.obj",
+      "target_source": "udg.c"
+    },
+    {
+      "category": "demos",
+      "native_mex1_sha256": "02d7306d42c24b1291cb2494b6a5d1aa588358a85ad50f00d3a49df51eb6ebf3",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "c3f504ae0725fc37571aec477048bca505a4b6cb2dc0c6ff42427e9b2c3ed970",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "city",
+      "reference_lfs_oid_sha256": "1dd72e28770803c79e7695cd5e90b4feaea062b5fd4484a20e7d3ab83e5c1f3a",
+      "reference_png_sha256": "1dd72e28770803c79e7695cd5e90b4feaea062b5fd4484a20e7d3ab83e5c1f3a",
+      "sdk_source_path": "usr/src/demos/city.c",
+      "source_sha256": "ee2c2d6b5795bc99c92f4fbd5f0d0340b44b55b1daa4e88013f12461ffc8d80c",
+      "source_tape_path": "usr/bin/demos/city.src.tap",
+      "source_tape_sha256": "30e45ceea4bf8db62ce8c72d0a59a6f79cf57270e27724db2c68c5c5b800d05d",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "city",
+      "target_object": "city.obj",
+      "target_source": "city.c"
+    },
+    {
+      "category": "demos",
+      "native_mex1_sha256": "4056d70d2f9f55784c45220186bd867d9b7d709d25ef972de529a27f75573e8b",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "be393d0dac58a7c846f6df85f9e24cd03c72b58831b60a6123b44c0d4ed3de4c",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "dizzy4k",
+      "reference_lfs_oid_sha256": "ec6d72648507bc756ca7beb4bdebe4223ddda6b6783e6e371f2c141c90ec37ff",
+      "reference_png_sha256": "ec6d72648507bc756ca7beb4bdebe4223ddda6b6783e6e371f2c141c90ec37ff",
+      "sdk_source_path": "usr/src/demos/dizzy4k.c",
+      "source_sha256": "7e1e56147e80798c0c66dbd9e8f033d84a5d7d5551aa5d77477abcee12b0ed48",
+      "source_tape_path": "usr/bin/demos/dizzy4k.src.tap",
+      "source_tape_sha256": "0e514f93eec43a26789ae7c281babab5afa59429c3a7accef8bc8d4035e05e77",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "dizzy4k",
+      "target_object": "dizzy4.obj",
+      "target_source": "dizzy4k.c"
+    },
+    {
+      "category": "demos",
+      "native_mex1_sha256": "146c750867eacc25c0be74a7d1ebda8fce905518e7e77bf8f3fc9aa6d973742c",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "8697a568a117a42ac31a58c9018dad0f2a1a322f77992efe66cfbd589904707d",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "firework",
+      "reference_lfs_oid_sha256": "fb56fffc11eac4f2e09982fecb3aed51f6b580800ac25f4702bdcc31dc3e4ba6",
+      "reference_png_sha256": "fb56fffc11eac4f2e09982fecb3aed51f6b580800ac25f4702bdcc31dc3e4ba6",
+      "sdk_source_path": "usr/src/demos/firework.c",
+      "source_sha256": "457d106ce7974c3cab7b67f207a05df8f27d971e3774902be02c2eebc02526c0",
+      "source_tape_path": "usr/bin/demos/firework.src.tap",
+      "source_tape_sha256": "d958a7a6bf43e1d7444118b3f31e3f838d03c31946db53d272e009d00fc23fcc",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "firework",
+      "target_object": "firewo.obj",
+      "target_source": "firework.c"
+    },
+    {
+      "category": "demos",
+      "native_mex1_sha256": "244a2ec4d54881f00bec48c7228075b7cdbe866eefe13a6887b855d341585627",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "8f6c873271f7b6189198c5d254758a98ee2c4074a35d6dca53274cb76360e542",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "forest",
+      "reference_lfs_oid_sha256": "22c8217fd9d70f3299ff266cfb3d8241fd03c99e59abde543ab838f52297ad94",
+      "reference_png_sha256": "22c8217fd9d70f3299ff266cfb3d8241fd03c99e59abde543ab838f52297ad94",
+      "sdk_source_path": "usr/src/demos/forest.c",
+      "source_sha256": "70a0646a22143a81d98a77c4757a9c55cfcbe5c0268570cd7a2eec318b6ec594",
+      "source_tape_path": "usr/bin/demos/forest.src.tap",
+      "source_tape_sha256": "d56aca7b41abbf957cbbd7c0e5f7e8a0b0e80723b6e0c25f36109d8aa5acccd1",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "forest",
+      "target_object": "forest.obj",
+      "target_source": "forest.c"
+    },
+    {
+      "category": "demos",
+      "native_mex1_sha256": "f1a299433e870827988bee4701b2f72ec8457170ae6d289369d04e0227cd6894",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "a7993bc6fc7c247e7c39e3d542d05fa20f4870f1488e8d3926e5fe1709fcd081",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "galaxy",
+      "reference_lfs_oid_sha256": "b93f1f64cecf1a0f015cf9127850d0c848aa19c3886c9d949a4b8c2ddae9e5ad",
+      "reference_png_sha256": "b93f1f64cecf1a0f015cf9127850d0c848aa19c3886c9d949a4b8c2ddae9e5ad",
+      "sdk_source_path": "usr/src/demos/galaxy.c",
+      "source_sha256": "3deb566204212867cf726d7476e37511eb0bf816755355577880d7f109c82987",
+      "source_tape_path": "usr/bin/demos/galaxy.src.tap",
+      "source_tape_sha256": "6a173d4cde84ff30cb386197a17010208c81b1a94d52683c57ca76347aeb442d",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "galaxy",
+      "target_object": "galaxy.obj",
+      "target_source": "galaxy.c"
+    },
+    {
+      "category": "demos",
+      "native_mex1_sha256": "2aa8c2e9deb099bda750c24faa249f7a70a139cf2d1eb4fb8ed131a3825d3767",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "989e6533bf7bc20dcae0f07ac29f7cb16eb70fbb8054f3a0ac779f503974a6e6",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "goblet",
+      "reference_lfs_oid_sha256": "89ffe9c89384b76cf1a7ceb9aa9903e945a52d578bf3853a8eaac4e0ca36dbde",
+      "reference_png_sha256": "89ffe9c89384b76cf1a7ceb9aa9903e945a52d578bf3853a8eaac4e0ca36dbde",
+      "sdk_source_path": "usr/src/demos/goblet.c",
+      "source_sha256": "3092eda0f3691d3af336f4a492408de6b0cb8baa9c644fb64ea978604a8be1e1",
+      "source_tape_path": "usr/bin/demos/goblet.src.tap",
+      "source_tape_sha256": "a91c23bab6985f7a0219a60b228fa2352ec3037893d40bc25a6ed8d6e837c240",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "goblet",
+      "target_object": "goblet.obj",
+      "target_source": "goblet.c"
+    },
+    {
+      "category": "demos",
+      "native_mex1_sha256": "75b1b7cc467af765a21a33f5cc1cabfe806f2c9bb359bee9218c041e25209b6e",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "dcfd4f56f1a90bdbcd4164bf7e94d822af0a344f6e4f3da4e6f86819908e9fbc",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "hanoi",
+      "reference_lfs_oid_sha256": "2d0b27ee89980679cfb844f9119ee115c7d0a3fdbae9ad56b17bf894a6daba17",
+      "reference_png_sha256": "2d0b27ee89980679cfb844f9119ee115c7d0a3fdbae9ad56b17bf894a6daba17",
+      "sdk_source_path": "usr/src/demos/hanoi.c",
+      "source_sha256": "38d1bfd55ffb4a7366044e9d06a92415454cac4f8621a03796a05c2c84742657",
+      "source_tape_path": "usr/bin/demos/hanoi.src.tap",
+      "source_tape_sha256": "117772b1a0273cbdbe77e437ed50633c1d7268c6a52cc8900d18273d3226d2a1",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "hanoi",
+      "target_object": "hanoi.obj",
+      "target_source": "hanoi.c"
+    },
+    {
+      "category": "demos",
+      "native_mex1_sha256": "87a36294985dce93f5f20961e032dc3237ec2a3f1c14b5a3054dbdb31a4f73e2",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "741fe1e6cda8ae19c28298186559f9f094db2c0d3d4be959bf443b3ec9410fd2",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "julia",
+      "reference_lfs_oid_sha256": "6dac6427e02c6f7e3d3a22839b7eefb7bf17301ffc3392e10297f0cc74168eb5",
+      "reference_png_sha256": "6dac6427e02c6f7e3d3a22839b7eefb7bf17301ffc3392e10297f0cc74168eb5",
+      "sdk_source_path": "usr/src/demos/julia.c",
+      "source_sha256": "69944e0351fb9e14a0a220dfe6449ee24273659e3450a9f3902e003ccc8d51cc",
+      "source_tape_path": "usr/bin/demos/julia.src.tap",
+      "source_tape_sha256": "42e1e30365acf095710ab0d276945ff26cc2017ead09f5579cf167e3aef30b3c",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "julia",
+      "target_object": "julia.obj",
+      "target_source": "julia.c"
+    },
+    {
+      "category": "demos",
+      "native_mex1_sha256": "739a933463e0d7a65a5b555396c2770908aca8ce1b42a6056bbcbe09c2026c42",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "f156a712067fe95aa33da3c922a6adcbf82168b6ad7de0d280537c8c3537bc95",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "kaleido",
+      "reference_lfs_oid_sha256": "0873b05c322f231f343050fce1de092130fd2e4c36758de26828c5a6f19e5b1e",
+      "reference_png_sha256": "0873b05c322f231f343050fce1de092130fd2e4c36758de26828c5a6f19e5b1e",
+      "sdk_source_path": "usr/src/demos/kaleido.c",
+      "source_sha256": "5e63467442552c266ab8be8bf3245c4dab16bac8fab051055363a1b88edd92fc",
+      "source_tape_path": "usr/bin/demos/kaleido.src.tap",
+      "source_tape_sha256": "7b569ae6f0497145167f6867fbb4b603234250a3deadd8a574373274ceadc105",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "kaleido",
+      "target_object": "kaleid.obj",
+      "target_source": "kaleido.c"
+    },
+    {
+      "category": "demos",
+      "native_mex1_sha256": "eebc4529de59f69e2822f76bba9a2df8010092d4de971ae55847bd7e07e55aea",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "d42bf5be875d01fd327e21dea561548597c165dab0025cabc624d260c90185f6",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "mandel",
+      "reference_lfs_oid_sha256": "5e90e8e4d6789395708faeafb90e97e673770bc16b415ff118ea01395149d79b",
+      "reference_png_sha256": "5e90e8e4d6789395708faeafb90e97e673770bc16b415ff118ea01395149d79b",
+      "sdk_source_path": "usr/src/demos/mandel.c",
+      "source_sha256": "7aaed292d90d24310d8216388ceac3a9db57ac98cb000a4a6a04d820bc263bd2",
+      "source_tape_path": "usr/bin/demos/mandel.src.tap",
+      "source_tape_sha256": "6eddbe652ae85c12275eb245751cb49966c22fd79d266fce27459bcac79c8078",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "mandel",
+      "target_object": "mandel.obj",
+      "target_source": "mandel.c"
+    },
+    {
+      "category": "demos",
+      "native_mex1_sha256": "93dbe7b9779231a232ea6f78fb00a414268d7c6ae731d194c82f2075c7ed725b",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "7cbeb055ac00eca8af2845a3e7b239354a2e9c883745ea584f0314ca98a3b59d",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "mobius",
+      "reference_lfs_oid_sha256": "50f2931d1b81f9e3f6f202a0e054a20ca6d42100bb4c50aa094d5cabc6801fef",
+      "reference_png_sha256": "50f2931d1b81f9e3f6f202a0e054a20ca6d42100bb4c50aa094d5cabc6801fef",
+      "sdk_source_path": "usr/src/demos/mobius.c",
+      "source_sha256": "f30d4c9ce536fb53fb2697effd758d84b83bf729a54659a6ff9377b98e8bf072",
+      "source_tape_path": "usr/bin/demos/mobius.src.tap",
+      "source_tape_sha256": "e0fcf4fda4b3fc245148f0a2f2d275cd245d211547c397285dedef5f0ffbdf65",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "mobius",
+      "target_object": "mobius.obj",
+      "target_source": "mobius.c"
+    },
+    {
+      "category": "demos",
+      "native_mex1_sha256": "f1529869440a4111a8cadb349ed431436ed26d587c8e0547813182e81fec3d79",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "eb27a83eac5ce0485ac24cab2a37bc5a8cdbae4a7d34700d616f5fce1c39e02b",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "moire",
+      "reference_lfs_oid_sha256": "58a420ff3404f15c418dd4b57386920cfa7e15bab0a2327655df1e4447f4b2e9",
+      "reference_png_sha256": "58a420ff3404f15c418dd4b57386920cfa7e15bab0a2327655df1e4447f4b2e9",
+      "sdk_source_path": "usr/src/demos/moire.c",
+      "source_sha256": "2076e551cde35b61b4a07b49f729a891fed098ed24175867c7a75a11d06e2b3f",
+      "source_tape_path": "usr/bin/demos/moire.src.tap",
+      "source_tape_sha256": "7310d8a45e2dd34c42037f4353221ae50a1d389a4ed29fe8c43aae72de5eb3b0",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "moire",
+      "target_object": "moire.obj",
+      "target_source": "moire.c"
+    },
+    {
+      "category": "demos",
+      "native_mex1_sha256": "4bca4c73be8f49d45236759fa2ac66e3b24a9a64873d3bce8298a3f5b2b65add",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "8e526c8f2feb4b225ab07f915c21cd222fac3262fed2cbbbf3c63c9946910fde",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "morph3d",
+      "reference_lfs_oid_sha256": "4c4a05244e5196848c5bdecef6c3047b9461a5e15bd0ff9efdfd021699a9f08b",
+      "reference_png_sha256": "4c4a05244e5196848c5bdecef6c3047b9461a5e15bd0ff9efdfd021699a9f08b",
+      "sdk_source_path": "usr/src/demos/morph3d.c",
+      "source_sha256": "b4c9107c3663801256cd308b32a83882ece50a69962fea0200cd7f35eb57383f",
+      "source_tape_path": "usr/bin/demos/morph3d.src.tap",
+      "source_tape_sha256": "045e27854265f17793708e20fba401c2c5d2b4e47811ed1f398c72e2019ad6f7",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "morph3d",
+      "target_object": "morph3.obj",
+      "target_source": "morph3d.c"
+    },
+    {
+      "category": "demos",
+      "native_mex1_sha256": "0b89fa355ebcc858495063fe12048b86a5ea1c395ba82cbc03eead450df70469",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "0fdebf3ceb8aa43e530409d4dda19c889b434a998742b0ac4c8878d5b5994bc2",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "ocean",
+      "reference_lfs_oid_sha256": "4faa49e25ab17c8a7dc3f8aff33e02f20a2675b6a5a424a5fdf52edd60920794",
+      "reference_png_sha256": "4faa49e25ab17c8a7dc3f8aff33e02f20a2675b6a5a424a5fdf52edd60920794",
+      "sdk_source_path": "usr/src/demos/ocean.c",
+      "source_sha256": "c350766c2b683ac92603ca0281fc7bf30b755184a5b281565ab4c5a570e0deea",
+      "source_tape_path": "usr/bin/demos/ocean.src.tap",
+      "source_tape_sha256": "772e46aea6227a8ee551589d2158d370fc34f2d487dec96b10b96c735efe6065",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "ocean",
+      "target_object": "ocean.obj",
+      "target_source": "ocean.c"
+    },
+    {
+      "category": "demos",
+      "native_mex1_sha256": "74d96bdb72e893cbd412b44cad7ab17ca7346aa2e99ed28e94bc7fe6dc682e1e",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "d02846d7800720df271b9f57dbf84a61fb8e6e9f4d925c8a82dbdb74256273fd",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "orrery",
+      "reference_lfs_oid_sha256": "537ea112328b218e0f22b3907ab002dfbfe2c39b64ce685457d9c19848e704ed",
+      "reference_png_sha256": "537ea112328b218e0f22b3907ab002dfbfe2c39b64ce685457d9c19848e704ed",
+      "sdk_source_path": "usr/src/demos/orrery.c",
+      "source_sha256": "14d1a245ca18b7e3664f30d3bb0c501710f7e3df24d2608ce2b9400568192c18",
+      "source_tape_path": "usr/bin/demos/orrery.src.tap",
+      "source_tape_sha256": "53e48548a68be8a378be8a4e267aa164840f346b9c4a8ffc15ab0820f3901735",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "orrery",
+      "target_object": "orrery.obj",
+      "target_source": "orrery.c"
+    },
+    {
+      "category": "demos",
+      "native_mex1_sha256": "910374c9171dbb19946992b5acd363711a084e032a9a8f7e15d411c58405a855",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "cdee60cb571ee6bc3fefc3a3e728ae3ac5f9814ea907e8c47094dee106dcd3f0",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "plasma",
+      "reference_lfs_oid_sha256": "bf05a61f378a70619674d6b6b5d745f164ee5aabfe19129a3a5fc88139a1d4cd",
+      "reference_png_sha256": "bf05a61f378a70619674d6b6b5d745f164ee5aabfe19129a3a5fc88139a1d4cd",
+      "sdk_source_path": "usr/src/demos/plasma.c",
+      "source_sha256": "351e0d39a9155552f7c40301db7203425dd74a7f2dce65c8a73a8192a00c303d",
+      "source_tape_path": "usr/bin/demos/plasma.src.tap",
+      "source_tape_sha256": "1c0604a67871da25e745e53990b6684e1322f2eb943461f8e8e52ed962c039e2",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "plasma",
+      "target_object": "plasma.obj",
+      "target_source": "plasma.c"
+    },
+    {
+      "category": "demos",
+      "native_mex1_sha256": "fcf2032afad739f6809235a314d4769c7a5a49b917c349618942387212b101e4",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "b2e75e085f71ed757c0ea65edc23deb329544896c94ffc14740b5d574bf875e1",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "queens8",
+      "reference_lfs_oid_sha256": "d5b8a4f382aea9ff52c9d003b4d68194c1349f0e3aff6971ce665ec428ecd665",
+      "reference_png_sha256": "d5b8a4f382aea9ff52c9d003b4d68194c1349f0e3aff6971ce665ec428ecd665",
+      "sdk_source_path": "usr/src/demos/queens8.c",
+      "source_sha256": "9ea8e7c86b41dfdb931996af43de047a6d5a81becba9eda29038dc51c54dbf29",
+      "source_tape_path": "usr/bin/demos/queens8.src.tap",
+      "source_tape_sha256": "97fe5c15f3279291191b290b970f83deae3b45e57bf4b923084f1b8a944f65e1",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "queens8",
+      "target_object": "queens.obj",
+      "target_source": "queens8.c"
+    },
+    {
+      "category": "demos",
+      "native_mex1_sha256": "57e4c17d650b5fe62a758f8b0cfd2f1ba703d1099bd157dbdb700055d08b8150",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "6714c87cf0e5eac073e711ae8e86209ba9c56c200597d5b2ee982e70d67c06e2",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "raymaze",
+      "reference_lfs_oid_sha256": "596e5f7e943633c688260f987ba1e02782d39100a41d21b3066e1b8d319b04d5",
+      "reference_png_sha256": "596e5f7e943633c688260f987ba1e02782d39100a41d21b3066e1b8d319b04d5",
+      "sdk_source_path": "usr/src/demos/raymaze.c",
+      "source_sha256": "e6ad2fa248afcb36beed4d691eba3f307e57cda74406579b9a19df85f983679c",
+      "source_tape_path": "usr/bin/demos/raymaze.src.tap",
+      "source_tape_sha256": "dc6453411b1d166e5aa0bfd505722de984dc49e0837a55ebdd873a768870a6e9",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "raymaze",
+      "target_object": "raymaz.obj",
+      "target_source": "raymaze.c"
+    },
+    {
+      "category": "demos",
+      "native_mex1_sha256": "9f2579c9aaa4caae731d4ccdb9d834603f239f2b3d98807b29a3292a0ba6f18d",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "357e7873e705d42a9151e750895d8b57f4e1e2e2c40120efdb5ccf0be139cd00",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "spriteanim",
+      "reference_lfs_oid_sha256": "13479b7fc104171ddbfdcd173bcb945426a971b2f922db9bcc8a13763738c91f",
+      "reference_png_sha256": "13479b7fc104171ddbfdcd173bcb945426a971b2f922db9bcc8a13763738c91f",
+      "sdk_source_path": "usr/src/demos/spriteanim.c",
+      "source_sha256": "1e574fa1e73be1168a6e597be0d45e75f158599620b5eddd160efe949fe1cb6c",
+      "source_tape_path": "usr/bin/demos/spriteanim.src.tap",
+      "source_tape_sha256": "a98e2f4155c7583d9de608903ff4c3622d5dddde6b655ef848640ba3cfbb17fe",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "sprani",
+      "target_object": "sprani.obj",
+      "target_source": "sprani.c"
+    },
+    {
+      "category": "demos",
+      "native_mex1_sha256": "a02ed334c3305d9d9a2148bd02364adff01540407f27b0a2eb5e9f2d85cf799d",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "4647da234f1c6805c325985e7d0adb95ed62e9a9082ea4a25d2f2f28060c4f44",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "sprites",
+      "reference_lfs_oid_sha256": "640dff9de189e93f7a911da6f18d79b14dea6bfc41d0a8325371ddd19db3e3b0",
+      "reference_png_sha256": "640dff9de189e93f7a911da6f18d79b14dea6bfc41d0a8325371ddd19db3e3b0",
+      "sdk_source_path": "usr/src/demos/sprites.c",
+      "source_sha256": "3a98c75141b399446f97388612fcf08eadacc16d2d1927158a345d7061463e71",
+      "source_tape_path": "usr/bin/demos/sprites.src.tap",
+      "source_tape_sha256": "f097fb09eb85824a257dfdf975d77314363453d318c87a1d1472df21a25588b6",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "sprites",
+      "target_object": "sprite.obj",
+      "target_source": "sprites.c"
+    },
+    {
+      "category": "demos",
+      "native_mex1_sha256": "50d1623db4b76b13f9f088e87526656f562106f3ebbbf3ce9d98fa795336c85d",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "70d14b22a009534685171933b82b93ddf972de6555b7826a80f7a90853b6eee2",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "terrain",
+      "reference_lfs_oid_sha256": "0acb90231ee1a6f14cf51e94019bc3f826e21f606a44b87bed81463ed443680e",
+      "reference_png_sha256": "0acb90231ee1a6f14cf51e94019bc3f826e21f606a44b87bed81463ed443680e",
+      "sdk_source_path": "usr/src/demos/terrain.c",
+      "source_sha256": "d239ae26c0ae499489f17817e106d93a0ff749ca3032d982c09b34cee98b1431",
+      "source_tape_path": "usr/bin/demos/terrain.src.tap",
+      "source_tape_sha256": "fabb84d5001baa007881421a50541549176add160aff67a8dd5136a617cc903f",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "terrain",
+      "target_object": "terrai.obj",
+      "target_source": "terrain.c"
+    },
+    {
+      "category": "demos",
+      "native_mex1_sha256": "38c31592219a2f0736fe4466f64804c5e329881aca4144ecb59d5593f84dd12e",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "a1b7d4f5c90cf652ee80ec0ed0cd4a7610ca9972e4641ac99870c85263dc2255",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "torus",
+      "reference_lfs_oid_sha256": "c51e74f508577e9eac4298a7b279c92a376032da88ea6bf5f2303ebd04a14fb7",
+      "reference_png_sha256": "c51e74f508577e9eac4298a7b279c92a376032da88ea6bf5f2303ebd04a14fb7",
+      "sdk_source_path": "usr/src/demos/torus.c",
+      "source_sha256": "be1bed67f474f45a5fcae9375b50d435b927e1b19ea64d0516d8258afb70daed",
+      "source_tape_path": "usr/bin/demos/torus.src.tap",
+      "source_tape_sha256": "bdf128599492cc7d3806f801bdde1925ed8f199cd9454a98ec1d4dc6f133ef38",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "torus",
+      "target_object": "torus.obj",
+      "target_source": "torus.c"
+    },
+    {
+      "category": "demos",
+      "native_mex1_sha256": "334638f931d2f3953ba31fc8f096b21fff45d52e999c60cb7e8aa16ca40588af",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "7cf935675dacf2e008fe16dfd9b2d53ff061ce4a0dd7ec1fbaaabc79c9ca58cd",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "tunnel",
+      "reference_lfs_oid_sha256": "3df46e145658f3db6bf2ed73206309e1c316accbbb8dbdec230de133a4846691",
+      "reference_png_sha256": "3df46e145658f3db6bf2ed73206309e1c316accbbb8dbdec230de133a4846691",
+      "sdk_source_path": "usr/src/demos/tunnel.c",
+      "source_sha256": "ed6cef6fc155728cdd1c0d3348a245224f7f2de3b100615fd0b8ed625e4f6b0a",
+      "source_tape_path": "usr/bin/demos/tunnel.src.tap",
+      "source_tape_sha256": "7e778775433355c9da053b945ecaa651dc6c20ab619962ec66175140fff8f7d2",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "tunnel",
+      "target_object": "tunnel.obj",
+      "target_source": "tunnel.c"
+    },
+    {
+      "category": "demos",
+      "native_mex1_sha256": "8d8a88bb194214df474d0e95cd098809e0ee4a24356001cce87308d1e556fc56",
+      "native_mex1_size": 38,
+      "native_obj1_sha256": "c64ce72d91cf84f9f33f90000ef1be190e19cb5464ba5fef1964d250f9286665",
+      "native_obj1_size": 58,
+      "process_started": "PASS",
+      "program": "warp",
+      "reference_lfs_oid_sha256": "dc5a36d3755cc85c3fc9aa38ff6b835e17ec6d249215e8777c18b18a1a63f46b",
+      "reference_png_sha256": "dc5a36d3755cc85c3fc9aa38ff6b835e17ec6d249215e8777c18b18a1a63f46b",
+      "sdk_source_path": "usr/src/demos/warp.c",
+      "source_sha256": "7eb0dc22d357bb748ca2269b295a1375a63e8e0b2c905d94eaf3e823183e83d4",
+      "source_tape_path": "usr/bin/demos/warp.src.tap",
+      "source_tape_sha256": "3ac6f3668f3559469411df9bedfaeed99fe32b8ee447f515da3a7b6f383e8c56",
+      "spawn": "PASS",
+      "sys_exit_reached": "PASS",
+      "target_executable": "warp",
+      "target_object": "warp.obj",
+      "target_source": "warp.c"
+    }
+  ],
+  "schema": 1,
+  "sdk": {
+    "commit": "b1621338565ac3bd9d4eff4ecb5a2a77aee2ab6a",
+    "tag": "1.0.2",
+    "tree": "ced96ea0a4b2f6cdd6080fc6f48e07738252af17"
+  }
+}

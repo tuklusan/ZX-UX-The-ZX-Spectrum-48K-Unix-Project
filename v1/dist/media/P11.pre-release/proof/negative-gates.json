@@ -1,0 +1,102 @@
+{
+  "assertions": {
+    "all_controlled_negatives_rejected_for_intended_reason": "PASS",
+    "positive_candidate_contract_validated": "PASS",
+    "zero_phase12_state": "PASS"
+  },
+  "kind": "phase11-pre-release-controlled-negative-gates",
+  "negative_count": 18,
+  "schema": 1,
+  "tests": [
+    {
+      "name": "wrong_sdk_package_hash",
+      "rejection": "SDK package hash/size mismatch: sdk",
+      "status": "PASS"
+    },
+    {
+      "name": "wrong_sdk_tag_commit_tree",
+      "rejection": "SDK tag/commit/tree mismatch",
+      "status": "PASS"
+    },
+    {
+      "name": "omitted_sdk_source",
+      "rejection": "omitted SDK source/program",
+      "status": "PASS"
+    },
+    {
+      "name": "changed_sdk_source_byte",
+      "rejection": "changed SDK source byte",
+      "status": "PASS"
+    },
+    {
+      "name": "mismatched_sdk_lfs_or_png",
+      "rejection": "SDK LFS/reference PNG mismatch: examples/argv",
+      "status": "PASS"
+    },
+    {
+      "name": "target_name_alias_collision",
+      "rejection": "target-name alias collision: duplicate",
+      "status": "PASS"
+    },
+    {
+      "name": "target_name_over_10_bytes",
+      "rejection": "target-name >10 bytes: elevenchars1",
+      "status": "PASS"
+    },
+    {
+      "name": "skipped_native_compile",
+      "rejection": "native compile skipped",
+      "status": "PASS"
+    },
+    {
+      "name": "host_only_execution",
+      "rejection": "host-only execution substituted",
+      "status": "PASS"
+    },
+    {
+      "name": "source_tap_crc_content_mismatch",
+      "rejection": "ERROR: TAP checksum mismatch",
+      "status": "PASS"
+    },
+    {
+      "name": "preassembled_kernel_projection",
+      "rejection": "kernel projection contains preassembled payload",
+      "status": "PASS"
+    },
+    {
+      "name": "native_kernel_overwrites_resident",
+      "rejection": "native kernel output overwrites resident kernel",
+      "status": "PASS"
+    },
+    {
+      "name": "kernel_controlled_mutation_breaks_identity",
+      "rejection": "kernel mutation breaks identity",
+      "status": "PASS"
+    },
+    {
+      "name": "screenshot_without_native_process",
+      "rejection": "screenshot without native process proof",
+      "status": "PASS"
+    },
+    {
+      "name": "missing_scr_or_png",
+      "rejection": "missing one of 30 SCR or PNG proofs",
+      "status": "PASS"
+    },
+    {
+      "name": "only_one_multitask_progresses",
+      "rejection": "only one Hanoi/Queens workload made progress",
+      "status": "PASS"
+    },
+    {
+      "name": "screen_half_violation",
+      "rejection": "screen-half violation",
+      "status": "PASS"
+    },
+    {
+      "name": "phase12_state",
+      "rejection": "Phase-12 state present",
+      "status": "PASS"
+    }
+  ]
+}

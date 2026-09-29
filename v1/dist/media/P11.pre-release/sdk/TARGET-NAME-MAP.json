@@ -1,0 +1,185 @@
+{
+  "programs": [
+    {
+      "source": "usr/src/examples/argv.c",
+      "target_executable": "argv",
+      "target_object": "argv.obj",
+      "target_source": "argv.c"
+    },
+    {
+      "source": "usr/src/examples/colors.c",
+      "target_executable": "colors",
+      "target_object": "colors.obj",
+      "target_source": "colors.c"
+    },
+    {
+      "source": "usr/src/examples/graphics.c",
+      "target_executable": "graphics",
+      "target_object": "graphi.obj",
+      "target_source": "graphics.c"
+    },
+    {
+      "source": "usr/src/examples/hello.c",
+      "target_executable": "hello",
+      "target_object": "hello.obj",
+      "target_source": "hello.c"
+    },
+    {
+      "source": "usr/src/examples/maze.c",
+      "target_executable": "maze",
+      "target_object": "maze.obj",
+      "target_source": "maze.c"
+    },
+    {
+      "source": "usr/src/examples/udg.c",
+      "target_executable": "udg",
+      "target_object": "udg.obj",
+      "target_source": "udg.c"
+    },
+    {
+      "source": "usr/src/demos/city.c",
+      "target_executable": "city",
+      "target_object": "city.obj",
+      "target_source": "city.c"
+    },
+    {
+      "source": "usr/src/demos/dizzy4k.c",
+      "target_executable": "dizzy4k",
+      "target_object": "dizzy4.obj",
+      "target_source": "dizzy4k.c"
+    },
+    {
+      "source": "usr/src/demos/firework.c",
+      "target_executable": "firework",
+      "target_object": "firewo.obj",
+      "target_source": "firework.c"
+    },
+    {
+      "source": "usr/src/demos/forest.c",
+      "target_executable": "forest",
+      "target_object": "forest.obj",
+      "target_source": "forest.c"
+    },
+    {
+      "source": "usr/src/demos/galaxy.c",
+      "target_executable": "galaxy",
+      "target_object": "galaxy.obj",
+      "target_source": "galaxy.c"
+    },
+    {
+      "source": "usr/src/demos/goblet.c",
+      "target_executable": "goblet",
+      "target_object": "goblet.obj",
+      "target_source": "goblet.c"
+    },
+    {
+      "source": "usr/src/demos/hanoi.c",
+      "target_executable": "hanoi",
+      "target_object": "hanoi.obj",
+      "target_source": "hanoi.c"
+    },
+    {
+      "source": "usr/src/demos/julia.c",
+      "target_executable": "julia",
+      "target_object": "julia.obj",
+      "target_source": "julia.c"
+    },
+    {
+      "source": "usr/src/demos/kaleido.c",
+      "target_executable": "kaleido",
+      "target_object": "kaleid.obj",
+      "target_source": "kaleido.c"
+    },
+    {
+      "source": "usr/src/demos/mandel.c",
+      "target_executable": "mandel",
+      "target_object": "mandel.obj",
+      "target_source": "mandel.c"
+    },
+    {
+      "source": "usr/src/demos/mobius.c",
+      "target_executable": "mobius",
+      "target_object": "mobius.obj",
+      "target_source": "mobius.c"
+    },
+    {
+      "source": "usr/src/demos/moire.c",
+      "target_executable": "moire",
+      "target_object": "moire.obj",
+      "target_source": "moire.c"
+    },
+    {
+      "source": "usr/src/demos/morph3d.c",
+      "target_executable": "morph3d",
+      "target_object": "morph3.obj",
+      "target_source": "morph3d.c"
+    },
+    {
+      "source": "usr/src/demos/ocean.c",
+      "target_executable": "ocean",
+      "target_object": "ocean.obj",
+      "target_source": "ocean.c"
+    },
+    {
+      "source": "usr/src/demos/orrery.c",
+      "target_executable": "orrery",
+      "target_object": "orrery.obj",
+      "target_source": "orrery.c"
+    },
+    {
+      "source": "usr/src/demos/plasma.c",
+      "target_executable": "plasma",
+      "target_object": "plasma.obj",
+      "target_source": "plasma.c"
+    },
+    {
+      "source": "usr/src/demos/queens8.c",
+      "target_executable": "queens8",
+      "target_object": "queens.obj",
+      "target_source": "queens8.c"
+    },
+    {
+      "source": "usr/src/demos/raymaze.c",
+      "target_executable": "raymaze",
+      "target_object": "raymaz.obj",
+      "target_source": "raymaze.c"
+    },
+    {
+      "source": "usr/src/demos/spriteanim.c",
+      "target_executable": "sprani",
+      "target_object": "sprani.obj",
+      "target_source": "sprani.c"
+    },
+    {
+      "source": "usr/src/demos/sprites.c",
+      "target_executable": "sprites",
+      "target_object": "sprite.obj",
+      "target_source": "sprites.c"
+    },
+    {
+      "source": "usr/src/demos/terrain.c",
+      "target_executable": "terrain",
+      "target_object": "terrai.obj",
+      "target_source": "terrain.c"
+    },
+    {
+      "source": "usr/src/demos/torus.c",
+      "target_executable": "torus",
+      "target_object": "torus.obj",
+      "target_source": "torus.c"
+    },
+    {
+      "source": "usr/src/demos/tunnel.c",
+      "target_executable": "tunnel",
+      "target_object": "tunnel.obj",
+      "target_source": "tunnel.c"
+    },
+    {
+      "source": "usr/src/demos/warp.c",
+      "target_executable": "warp",
+      "target_object": "warp.obj",
+      "target_source": "warp.c"
+    }
+  ],
+  "schema": 1
+}

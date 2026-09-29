@@ -1,0 +1,129 @@
+{
+  "version": "1.0.2",
+  "test_count": 371,
+  "font": {
+    "final_sha256": "dceb0a9c2cac3fa15e66759f55b12633d9338df0a7961e4372406e21da9c7942",
+    "tasword_sha256": "90f6818cf81cf3f13509cff32c091075691195d9638dbe801d12daceec1c9339",
+    "zxux_sha256": "90f6818cf81cf3f13509cff32c091075691195d9638dbe801d12daceec1c9339",
+    "raw_sha256": "0ccd55f30450231b4219f15c945af53a3eb418082a28b5062589723d8fa1834d"
+  },
+  "host_header_sha256": "e6f74fe9f30aaf2f29a5224dbe1119549d3cfce962a28f04ad50c6fb5dcc4451",
+  "example_header_sha256": "eec708091fcc5cbfaea1fe3d8a991f95538bb14ba7169482a71e21f09e21f69f",
+  "security_header_sha256": "0dc4ad47ed7f0509efc94dbcf5f241c1c21d760afbf892bb537847bf48e4c486",
+  "sound_header_sha256": "f39654a7f62aaea2cf7af97ae0db055c259d286e663d9134840ccd3587752ccb",
+  "game_header_sha256": "e556d6ff22e63e16a5cc5b4a190c8f3eb59e98ca3f9d723c9f101ac1f71fe1d9",
+  "demos": {
+    "hello": {
+      "args": [],
+      "source_sha256": "9a6e11b28dc597b410aa0d414b2360e278482d44b400eff0f60adb5434d39249",
+      "binary_sha256": "529d3d85c8558511057f92d07137db800fa69fb0b357434a83cd36b28637fabe",
+      "screen_sha256": "0c644d96b90e7acb68085086f1d218b59af489ba44ea0a1f458a3c43c209296a"
+    },
+    "colors": {
+      "args": [],
+      "source_sha256": "5aeef97855cebbe47efe9d3abd3ae6133e7bef9e6dfe495a496950faaced0f2f",
+      "binary_sha256": "41f2a7fea4fa81efa62c289ba7d4cf50a297a709af40859899a640406919d510",
+      "screen_sha256": "4c3a934139632833434ff30ded590543d488f8d72ede567cd387167d12890ccb"
+    },
+    "graphics": {
+      "args": [],
+      "source_sha256": "6fdf36f9967fb04bb85a5625df2b84fdf36c33001f33a3ba0faa1c4e8e12cb5b",
+      "binary_sha256": "f28447b9592a260ee06beb6b47ef823e527874ffcbae1521c6608f75ac312fde",
+      "screen_sha256": "b81ad40a477fd287d3861a0429779fd048665cf08783df0c3d3c5e4e836a3024"
+    },
+    "udg": {
+      "args": [],
+      "source_sha256": "dd14231daa9b2357ff419d71c808d76c022b1e52d91353c3c7287975349260c9",
+      "binary_sha256": "2fe398f3a58ea4ccfe43533beada9b925526901f43c7e706d8a2d0390836558f",
+      "screen_sha256": "f99a88f3b9ecc4f77a48b355067da24d616c9c14015d0dba976e8955e0d6a249"
+    },
+    "maze": {
+      "args": [],
+      "source_sha256": "ce60c1eabd478fcf02b16e238e2c8fcf0f96322322ffffaddec35605e913e988",
+      "binary_sha256": "21a8b006f0ce6a02fd1bbbef2b8a6499507af54188cccd9a5f3cc870da956a90",
+      "screen_sha256": "fd786d501cb1bdad63e3954b481fbadd30114d903401fd1c165f23e1f15b26c9"
+    },
+    "argv": {
+      "args": [
+        "alpha",
+        "beta",
+        "gamma"
+      ],
+      "source_sha256": "3497970dfbeb168ad75996b64ec090e005ef4d283c1045fb13c4549d5c9eedf3",
+      "binary_sha256": "db72ca813b90bde0f4446169c5be34ef5402d0094c5eb5c20708151e325fc004",
+      "screen_sha256": "481b163722b49aeeb9992386f12cc41f147f906d144f33c45ed08234add02ade"
+    }
+  },
+  "security_programs": {
+    "secguard": "d6f03422dc9051ff3b8303a3211b3997bfb3ef63bb24e468061f51fbff2af3ae",
+    "secoob": "1dcb4de8ea4c6421a2880df1677d46876ebf45808077a4c4fc2e465d1ddfa8c6",
+    "secuaf": "0920a9767130d4367fd0c973e686e15fb1a4a2a0dafa4cb3b92a2faf4019b9f5",
+    "secfree": "ebca254c7996b4cb101b4773d771b36df0409798a6275ae19ee6937ffac33a93",
+    "secdbl": "37b006603de8ee2d72ed1186f08d8991973cb047f86a3abe645bb1d25ebe25bd",
+    "secloop": "407ab56ecd3bb55b6421258ee2b6937ff3c17df4b7b3c0c8e06ea103676db1ed",
+    "secrecur": "fb2f1e310a002c030cc16f581f116646b193990d2505fa155f95a802402cc27e",
+    "secforge": "047d406771432b34adb30291a10b35a46c451ba9a741cddc20df4152809e24a0"
+  },
+  "games": {
+    "advent": {
+      "source_sha256": "1680321dac065d1224126e20cdf8cceb452356114a72005fd3c4d0ca6878c1d1",
+      "binary_sha256": "de333adad2bdf822d64c017501a75020aba501c2c0381f59ccc43ce67fcbe3ee"
+    },
+    "arith": {
+      "source_sha256": "b4f1a00cf8a7833ffc261186fbbc742401d43de9bffa6a6d2cd2fd14aa829435",
+      "binary_sha256": "7d995d33d7d3999e94235bbb69842bfefd771abd926a79c141a22c34b7018ce7"
+    },
+    "bgammon": {
+      "source_sha256": "7b33664fa68f8f1b6982e48b33a691d6a56e71420a2aaf0826058bf06c6e5545",
+      "binary_sha256": "18ca859d729aa7d5a8508f523031f30eaec3ff165a32f78804790d11a3a57944"
+    },
+    "chess": {
+      "source_sha256": "9fa9e3693f3f88eaacce2f598da1d8d6211d371a0222c33dca927229752953a3",
+      "binary_sha256": "8f5545b93bc4ad5499117bcd6a558484e8fc1ec9ba391e706000505f860d12af"
+    },
+    "cribbage": {
+      "source_sha256": "dfff4b8caf503cc398f9cfa89304998669b2e6282b2bde33128900e916533499",
+      "binary_sha256": "74f27a60058aef7a5a244bacf6b49021f39fce7bc754c9056087b7cd5ce42dd9"
+    },
+    "fish": {
+      "source_sha256": "c4f8d704cf17574a4e0b3f5e7072e583cf036a3780f4fa96cdc9023546610563",
+      "binary_sha256": "771003ab14b0a020d18cc261f1c9609bdfbb8442c5f0b54cf5131e653ffde21f"
+    },
+    "fortune": {
+      "source_sha256": "908ea9bf544a3c2474eebd9864cd52fbca3bf81aaecdee17d305e6850a68506c",
+      "binary_sha256": "90e9607cf41fa86a50a7d4b5699e78dab3c014070707158efaa338b551204dce"
+    },
+    "hangman": {
+      "source_sha256": "47a8bbc3357301d74b3599190c6b2fd805230a9afd621a2caff8bdeeb290fa0e",
+      "binary_sha256": "614d32c1a9ff4c615d5a8231db7f7cdcfb1e896375a3eced1ab43e80b9798f91"
+    },
+    "maze": {
+      "source_sha256": "1c8c97e89436c1f55cace34bd5853c8ed7ed02a3cba4a26855235ccc88fe83f5",
+      "binary_sha256": "c96c109386c1e7da01b6e9128fd1836fc6e99e01bb6abc89b23c9a1f34c42e6e"
+    },
+    "quiz": {
+      "source_sha256": "0370ad0fe99982700f98b7c190bcfa92dcf0958db2ab16d59aef92858484acb5",
+      "binary_sha256": "7af66b5a18958c1ce1d5492148ddc5f5f5df0d68598d2c1cde78e27abc175396"
+    },
+    "rogue": {
+      "source_sha256": "c49d8a59255d2644d890841d9db1848711e25eae8c3b743c002987b592004273",
+      "binary_sha256": "86bbe9edc1ff6f77ce7352f2164cc5ef44d34c62b26077fdc59f13c706d8a555"
+    },
+    "snake": {
+      "source_sha256": "d8e3e2d88d44ad40faa137ee5af28858aa718f58454983cce41840f1cb0b8333",
+      "binary_sha256": "00b6adabbb6b89c8ed493698f32db913bc2f8968b085d740e765e90465b37a1f"
+    },
+    "trek": {
+      "source_sha256": "fc0109da337a90c899fc7bbfda6464169d405bc5fb8c1d8d4d65d5c49f4cccff",
+      "binary_sha256": "83b30010e5283dda705b229d88e8ac591ead32502cd5ea432b207e6dc749b5a7"
+    },
+    "wump": {
+      "source_sha256": "d8fef7302635cf411bd643da2c96ef79c821fedcc823524844a333dcabd40568",
+      "binary_sha256": "0f0381c63b2a3199c2565f502198c05f06040309af269fd9620a92af96736892"
+    }
+  },
+  "sound": {
+    "tune_source_sha256": "41a50b5c1da85d3f664332ad5d07d7af6194be2cf5a0790d30fee7930eeac5e5",
+    "tune_binary_sha256": "bc3f178d1ae8210319b55b65ea47bb4007ed029cb3ebc544937a819d9736e333"
+  }
+}
