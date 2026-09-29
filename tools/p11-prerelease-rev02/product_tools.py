@@ -52,9 +52,9 @@ def main():
     # Product closure deliberately includes no historical P11PR compiler helper.
     req("EMIT_P11PR_CC_SDK_CORPUS_COMPILER" in ccsrc.read_text(),"historical fixture identity missing")
     asm=out/"sh-product-preflight.asm"
-    asm.write_text("""    DEVICE ZXSPECTRUM48
-    INCLUDE "v1/include/zx48ux.inc"
-    INCLUDE "v1/src/shell/sh.asm"
+    asm.write_text(f"""    DEVICE ZXSPECTRUM48
+    INCLUDE "{(root/'v1/include/zx48ux.inc').as_posix()}"
+    INCLUDE "{(root/'v1/src/shell/sh.asm').as_posix()}"
     ORG $0000
 sh_product_image:
     EMIT_P601_SH_IMAGE
