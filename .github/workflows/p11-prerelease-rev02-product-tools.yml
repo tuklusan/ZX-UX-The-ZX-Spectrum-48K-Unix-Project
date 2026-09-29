@@ -61,3 +61,17 @@ jobs:
           path: /tmp/rev02-product-tools/
           retention-days: 90
           if-no-files-found: error
+      - name: Upload REV02 source/runtime workspace
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: zxux-p11-prerelease-rev02-workspace-${{ github.sha }}
+          path: |
+            docs/
+            scratch/ZX-UX-PHASE-11-PRE-RELEASE-RUNBOOK-REV02.md
+            tools/
+            v1/include/
+            v1/src/
+            v1/tools-host/
+            .github/actions/setup-zxux-runtime/
+          retention-days: 7
+          if-no-files-found: error
