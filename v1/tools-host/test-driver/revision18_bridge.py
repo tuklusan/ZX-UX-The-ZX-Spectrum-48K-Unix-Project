@@ -44,7 +44,8 @@ def _historical(root:Path,sha256_file,run_command)->list[Any]:
         if not step_re.fullmatch(path.name): continue
         rec=_json(path); require(rec.get("architecture_sha256")==REV17,f"{path.name}: historical REV17 required"); require(rec.get("implementation_plan_sha256")==REV08,f"{path.name}: historical REV08 required")
     r,changed=_git(root,run_command,"diff","--name-only",PHASE11_TAG,"HEAD","--","v1/dist/certification","v1/dist/media"); commands.append(r)
-    bad=[p for p in changed.splitlines() if p and not p.startswith("v1/dist/media/P11.pre-release/")]; require(not bad,f"admitted P0-P11 evidence/media changed after PHASE-11-COMPLETE: {bad}"); return commands
+    r18_evidence={"v1/dist/certification/R18.00.build.json","v1/dist/certification/R18.00.test.json","v1/dist/certification/R18.00.result.json"}
+    bad=[p for p in changed.splitlines() if p and not p.startswith("v1/dist/media/P11.pre-release/") and p not in r18_evidence]; require(not bad,f"admitted P0-P11 evidence/media changed after PHASE-11-COMPLETE: {bad}"); return commands
 def _authority_contract(root:Path)->None:
     arch=(root/"docs/01-ZX-UX-ARCHITECTURE-REV18.md").read_text(encoding="utf-8"); plan=(root/"docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV09.md").read_text(encoding="utf-8"); exact="ld input.obj -o output -abs"; require(exact in arch and exact in plan,"exact fixed/absolute ld CLI contract missing")
     for f in ("generic development/linker mode","does not add `crt0`","BSS size is zero","relocation table is empty","DAT-typed RAM object","No kernel basename, source identity, object hash"): require(f in arch,f"REV18 fixed-link contract fragment missing: {f}")
