@@ -182,7 +182,7 @@ def main():
     tests.append(reject("only_one_multitask_progresses","only one Hanoi/Queens",lambda:validate_multitask(d)))
     d=copy.deepcopy(multitask); d["assertions"]["hanoi_output_confined_to_left_half"]="FAIL"
     tests.append(reject("screen_half_violation","screen-half violation",lambda:validate_multitask(d)))
-    tests.append(reject("phase12_state","Phase-12 state",lambda:validate_no_p12_paths(["v1/src/P12.01/forbidden.asm"])))
+    tests.append(reject("phase12_state","Phase-12 state",lambda:validate_no_p12(["v1/src/P12.01/forbidden.asm"])))
 
     req(len(tests)==18 and all(t["status"]=="PASS" for t in tests),"negative gate cardinality")
     report={"schema":1,"kind":"phase11-pre-release-controlled-negative-gates","negative_count":len(tests),"tests":tests,
