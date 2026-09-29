@@ -102,6 +102,47 @@ cc_product_end:
                                        if not line.lstrip().startswith("INCLUDE")),
             "source-bound compiler expanded in product wrapper: "+forbidden)
 
+
+    # Prospective ordinary /bin/as image: generic ARG1/source-open scaffold only.
+    as_asm=out/"as-product.asm"
+    as_asm.write_text(f"""    DEVICE ZXSPECTRUM48
+    INCLUDE "{(root/'v1/include/zx48ux.inc').as_posix()}"
+    INCLUDE "{(root/'tools/as.asm').as_posix()}"
+    ORG $0000
+as_product_image:
+    EMIT_REV02_AS_PRODUCT_CLI
+as_product_end:
+    SAVEBIN "as-product.bin",as_product_image,as_product_end-as_product_image
+""",encoding="utf-8",newline="\n")
+    run([sj,"--nologo",as_asm.name],out)
+    as_image=out/"as-product.bin"
+    req(as_image.is_file() and 64 <= as_image.stat().st_size <= 12288,"as product image size")
+    as_mex=mex1(as_image.read_bytes(),stack=512); (out/"as.mex1").write_bytes(as_mex)
+    run([sys.executable,inspect,out/"as.mex1","--base","0x6000"],root)
+    as_tap=mt.m48o_blocks(mt.M48OObject("as",mt.M48O_BIN,mt.DIR_BIN,as_mex))
+    (out/"as.m48o.tap").write_bytes(as_tap)
+    req(as_tap==mt.m48o_blocks(mt.M48OObject("as",mt.M48O_BIN,mt.DIR_BIN,as_mex)),"as M48O nondeterminism")
+
+    # Prospective ordinary /bin/ld image: generic ARG1/OBJ1-open scaffold only.
+    ld_asm=out/"ld-product.asm"
+    ld_asm.write_text(f"""    DEVICE ZXSPECTRUM48
+    INCLUDE "{(root/'v1/include/zx48ux.inc').as_posix()}"
+    INCLUDE "{(root/'tools/ld.asm').as_posix()}"
+    ORG $0000
+ld_product_image:
+    EMIT_REV02_LD_PRODUCT_CLI
+ld_product_end:
+    SAVEBIN "ld-product.bin",ld_product_image,ld_product_end-ld_product_image
+""",encoding="utf-8",newline="\n")
+    run([sj,"--nologo",ld_asm.name],out)
+    ld_image=out/"ld-product.bin"
+    req(ld_image.is_file() and 64 <= ld_image.stat().st_size <= 8192,"ld product image size")
+    ld_mex=mex1(ld_image.read_bytes(),stack=512); (out/"ld.mex1").write_bytes(ld_mex)
+    run([sys.executable,inspect,out/"ld.mex1","--base","0x6000"],root)
+    ld_tap=mt.m48o_blocks(mt.M48OObject("ld",mt.M48O_BIN,mt.DIR_BIN,ld_mex))
+    (out/"ld.m48o.tap").write_bytes(ld_tap)
+    req(ld_tap==mt.m48o_blocks(mt.M48OObject("ld",mt.M48O_BIN,mt.DIR_BIN,ld_mex)),"ld M48O nondeterminism")
+
     report={
       "schema":1,"kind":"rev02-product-tools-preflight","status":"PASS",
       "shell":{
@@ -114,12 +155,23 @@ cc_product_end:
         "mex1_sha256":sha(out/"cc.mex1"),"m48o_tap_sha256":sha(out/"cc.m48o.tap"),
         "entry":"EMIT_REV02_CC_PRODUCT_CLI",
         "semantic_status":"GENERIC-CLI-AND-SOURCE-OPEN-SCAFFOLD; CODEGEN-NOT-YET-ATTACHED"},
-      "pending_product_entries":{
-        "as":{"source":"tools/as.asm","source_sha256":sha(assrc)},
-        "ld":{"source":"tools/ld.asm","source_sha256":sha(ldsrc)}},
+      "as":{
+        "source":"tools/as.asm","source_sha256":sha(assrc),
+        "image_sha256":sha(as_image),"image_bytes":as_image.stat().st_size,
+        "mex1_sha256":sha(out/"as.mex1"),"m48o_tap_sha256":sha(out/"as.m48o.tap"),
+        "entry":"EMIT_REV02_AS_PRODUCT_CLI",
+        "semantic_status":"GENERIC-CLI-AND-SOURCE-OPEN-SCAFFOLD; ASSEMBLER-NOT-YET-ATTACHED"},
+      "ld":{
+        "source":"tools/ld.asm","source_sha256":sha(ldsrc),
+        "image_sha256":sha(ld_image),"image_bytes":ld_image.stat().st_size,
+        "mex1_sha256":sha(out/"ld.mex1"),"m48o_tap_sha256":sha(out/"ld.m48o.tap"),
+        "entry":"EMIT_REV02_LD_PRODUCT_CLI",
+        "semantic_status":"GENERIC-CLI-AND-OBJ1-OPEN-SCAFFOLD; LINKER-NOT-YET-ATTACHED"},
       "assertions":{
         "deterministic_shell_mex1":"PASS","deterministic_m48o":"PASS","mex1_inspection":"PASS",
         "deterministic_cc_mex1":"PASS","deterministic_cc_m48o":"PASS","cc_mex1_inspection":"PASS",
+        "deterministic_as_mex1":"PASS","deterministic_as_m48o":"PASS","as_mex1_inspection":"PASS",
+        "deterministic_ld_mex1":"PASS","deterministic_ld_m48o":"PASS","ld_mex1_inspection":"PASS",
         "normal_project_assembler_used":"PASS","p11pr_not_in_product_closure":"PASS",
         "not_claimed_as_real_shell_session":"PASS"}}
     (out/"PRODUCT-TOOLS-PREFLIGHT.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
