@@ -12,7 +12,7 @@
 
 # ZX-UX Phase-11 Expanded Pre-Release Recovery Runbook REV02
 
-**Status:** DRAFT — REVIEW REQUIRED — DO NOT EXECUTE  
+**Status:** OPEN  
 **Scope:** post-Phase-11, pre-Phase-12 recovery of the failed expanded pre-release, including only prospective product corrections strictly required by the already-frozen REV17/REV08 contracts and their subordinate frozen C48/ABI/object/tool documentation  
 **Hard stop:** DO NOT START PHASE 12
 
