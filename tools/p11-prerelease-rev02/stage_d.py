@@ -14,7 +14,7 @@ from __future__ import annotations
 import argparse, hashlib, json
 from pathlib import Path
 
-IDS=[f"C{i:03d}" for i in range(1,14)]
+IDS=[f"C{i:03d}" for i in range(1,15)]
 def req(v,m):
     if not v: raise SystemExit("ERROR: "+m)
 def sha(p): return hashlib.sha256(Path(p).read_bytes()).hexdigest()
@@ -59,6 +59,7 @@ def main():
       "C011":["REV17 machine-native linker","REV17 §41.9 runtime resolution by ld","REV17 R17 native ld fixed/absolute capability"],
       "C012":["REV17 §41.9 graphics/UDG/system-call compiler acceptance","REV17 shipped demo behavior"],
       "C013":["REV17 §41.9 standard runtime resolution by ld","REV17 frozen C48 public APIs","REV17 shipped demos native link requirement"],
+      "C014":["REV17 fixed/absolute linker capability","REV02 §8.5 explicit fixed/absolute shell-visible ld authority-gap rule","frozen public docs contain no mode-selection CLI syntax"],
     }
     changed={
       "C001":["v1/src/shell/sh.asm","tools/p11-prerelease-rev02/product_tools.py"],
@@ -74,13 +75,16 @@ def main():
       "C011":["tools/ld.asm","tools/p11-prerelease-rev02/product_tools.py"],
       "C012":["v1/src/kernel/kernel.asm"],
       "C013":["v1/src/libc48/runtime_archive.asm","tools/ld.asm","tools/p11-prerelease-rev02/product_tools.py"],
+      "C014":[],
     }
     rows=[]
     for g in gaps:
         gid=g["id"]
         req(g.get("planned_paths")==changed[gid],"Stage-C/Stage-D planned-path mismatch: "+gid)
+        authority_gap = gid == "C014"
         rows.append({
-          "gap_id":gid,"classification":"EXISTING-AUTHORITY-DEFECT",
+          "gap_id":gid,
+          "classification":"AUTHORITY-GAP" if authority_gap else "EXISTING-AUTHORITY-DEFECT",
           "failing_reproduction":{"stage_c_status":c["status"],"failure":g["failure"],"observed":g["observed"]},
           "authority":citations[gid],"planned_changed_paths":changed[gid],
           "regression_negative_set":[
@@ -88,20 +92,21 @@ def main():
             "historical immutable-scope check","ordinary shell PATH/process route",
             "product MEX1/OBJ1 validation","anti-source-specialization scan",
             "no P11PR helper in product closure","48K memory/resource gate"],
-          "authority_gap":False,"sdk_defect":False,"proof_harness_only":False,
+          "authority_gap":authority_gap,"sdk_defect":False,"proof_harness_only":False,
+          "lane_status":"BLOCKED-PENDING-EXPLICIT-AUTHORITY" if authority_gap else "AUTHORIZED-PROSPECTIVE-CORRECTION",
         })
     report={
-      "schema":2,"kind":"rev02-stage-d-authority-classification","status":"PASS",
+      "schema":2,"kind":"rev02-stage-d-authority-classification","status":"PASS-WITH-BLOCKED-AUTHORITY-GAP",
       "source_stage_c_sha256":sha(ns.stage_c),
       "authority":{"rev17_sha256":sha(archp),"rev08_sha256":sha(planp)},
       "classifications":rows,
       "assertions":{
         "all_stage_c_gaps_classified":"PASS",
-        "all_current_planned_fixes_existing_authority":"PASS",
-        "zero_authority_gap_in_current_root_blocker_lane":"PASS",
+        "authorized_planned_fixes_existing_authority":"PASS",
+        "fixed_absolute_ld_cli_lane_blocked_for_authority":"PASS",
         "zero_sdk_defect_in_current_root_blocker_lane":"PASS",
         "zero_desired_result_used_as_authority":"PASS",
         "product_edits_authorized_only_for_listed_paths":"PASS"}}
     (out/"STAGE-D.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
-    print("REV02 STAGE D PASS classifications=13 existing-authority-defect")
+    print("REV02 STAGE D PASS authorized=13 authority_gaps=1 blocked=C014")
 if __name__=="__main__": main()
