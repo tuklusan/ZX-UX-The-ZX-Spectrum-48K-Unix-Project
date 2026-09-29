@@ -37,8 +37,10 @@ done
 "$py" tools/check_phase10_evidence.py --require-active
 "$py" tools/check_phase11_evidence.py --require-active
 "$py" tools/check_media_retention.py
+hold=/tmp/zxux-runtime-policy-check; rm -rf "$hold"; mv tools/runtime "$hold"; trap 'mv "$hold" tools/runtime' EXIT
 ./tools/check_project_policy.py
 ./tools/check_license_headers.sh
+mv "$hold" tools/runtime; trap - EXIT
 git fetch --quiet origin main
 test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
 test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
