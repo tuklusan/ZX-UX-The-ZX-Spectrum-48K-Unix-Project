@@ -4287,3 +4287,163 @@ r17_as_measure_mode: db 0
 r17_as_guard_mode:   db 0
 r17_as_guard_limit:  dw 0
     ENDM
+
+
+; REV02 prospective ordinary /bin/as product command scaffold.
+; Generic ARG1/source-open path only. No kernel fingerprint or prebuilt payload.
+    MACRO EMIT_REV02_AS_PRODUCT_CLI
+AS_REV02_ARG1_MIN EQU 13
+as_rev02_arg1_ptr:      dw 0
+as_rev02_arg1_len:      dw 0
+as_rev02_source_ptr:    dw 0
+as_rev02_output_ptr:    dw 0
+as_rev02_source_handle: db HANDLE_FREE
+
+; MEX1 entry: HL=ARG1, BC=ARG1 length, DE=ENV1.
+as_rev02_product_entry:
+    ld (as_rev02_arg1_ptr),hl
+    ld (as_rev02_arg1_len),bc
+    ld a,b
+    or a
+    jr nz,as_rev02_size_ok
+    ld a,c
+    cp AS_REV02_ARG1_MIN
+    jp c,as_rev02_inval
+as_rev02_size_ok:
+    ld ix,(as_rev02_arg1_ptr)
+    ld a,(ix+0)
+    cp 'A'
+    jp nz,as_rev02_inval
+    ld a,(ix+1)
+    cp 'R'
+    jp nz,as_rev02_inval
+    ld a,(ix+2)
+    cp 'G'
+    jp nz,as_rev02_inval
+    ld a,(ix+3)
+    cp '1'
+    jp nz,as_rev02_inval
+    ld a,(ix+5)
+    or a
+    jp nz,as_rev02_inval
+    ld l,(ix+6)
+    ld h,(ix+7)
+    ld de,(as_rev02_arg1_len)
+    or a
+    sbc hl,de
+    jp nz,as_rev02_inval
+    ld a,(ix+4)
+    cp 2
+    jr z,as_rev02_two
+    cp 4
+    jp nz,as_rev02_inval
+    push ix
+    pop hl
+    ld de,8
+    add hl,de
+    call as_rev02_skip_arg
+    ret c
+    ld (as_rev02_source_ptr),hl
+    call as_rev02_skip_arg
+    ret c
+    ld a,(hl)
+    cp '-'
+    jp nz,as_rev02_inval
+    inc hl
+    ld a,(hl)
+    cp 'o'
+    jp nz,as_rev02_inval
+    inc hl
+    ld a,(hl)
+    or a
+    jp nz,as_rev02_inval
+    inc hl
+    ld (as_rev02_output_ptr),hl
+    call as_rev02_require_last
+    ret c
+    jr as_rev02_open
+as_rev02_two:
+    push ix
+    pop hl
+    ld de,8
+    add hl,de
+    call as_rev02_skip_arg
+    ret c
+    ld (as_rev02_source_ptr),hl
+    xor a
+    ld (as_rev02_output_ptr),a
+    ld (as_rev02_output_ptr+1),a
+    call as_rev02_require_last
+    ret c
+as_rev02_open:
+    ld hl,(as_rev02_source_ptr)
+    ld c,O_READ
+    ld b,0
+    ld a,SYS_OPEN
+    call SYSCALL_GATEWAY
+    jp c,as_rev02_exit_errno
+    ld a,l
+    ld (as_rev02_source_handle),a
+    ; Stage-E continuation: ordinary source reader/parser/OBJ1 transaction.
+    ld a,E_NOTSUP
+    push af
+    call as_rev02_close
+    pop af
+    jp as_rev02_exit_errno
+
+as_rev02_skip_arg:
+    ld a,(hl)
+    or a
+    jr z,as_rev02_bad
+    inc hl
+as_rev02_skip_loop:
+    ld a,(hl)
+    or a
+    jr z,as_rev02_skip_done
+    inc hl
+    jr as_rev02_skip_loop
+as_rev02_skip_done:
+    inc hl
+    or a
+    ret
+as_rev02_require_last:
+    ld a,(hl)
+    or a
+    jr z,as_rev02_bad
+as_rev02_last_loop:
+    ld a,(hl)
+    inc hl
+    or a
+    jr nz,as_rev02_last_loop
+    ld de,(as_rev02_arg1_ptr)
+    ld bc,(as_rev02_arg1_len)
+    ex de,hl
+    add hl,bc
+    ex de,hl
+    or a
+    sbc hl,de
+    ret z
+as_rev02_bad:
+    ld a,E_INVAL
+    scf
+    ret
+as_rev02_close:
+    ld a,(as_rev02_source_handle)
+    cp HANDLE_FREE
+    ret z
+    ld l,a
+    ld h,0
+    ld a,SYS_CLOSE
+    call SYSCALL_GATEWAY
+    ld a,HANDLE_FREE
+    ld (as_rev02_source_handle),a
+    ret
+as_rev02_inval:
+    ld a,E_INVAL
+as_rev02_exit_errno:
+    ld l,a
+    ld h,0
+    ld a,SYS_EXIT
+    call SYSCALL_GATEWAY
+    halt
+    ENDM
