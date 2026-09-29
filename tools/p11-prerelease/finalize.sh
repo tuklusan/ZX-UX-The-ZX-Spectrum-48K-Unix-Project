@@ -23,6 +23,9 @@ cp -a "$work/realtime" "$second/realtime"
 cp -a "$work/realtime-detect-loader" "$second/realtime-detect-loader"
 P11_WORK="$second" "$py" tools/p11-prerelease/manifest.py
 
+find "$work/sdk-reference-pre-release-1.0.2" "$second/sdk-reference-pre-release-1.0.2" -type d -name __pycache__ -prune -exec rm -rf {} +
+find "$work/sdk-reference-pre-release-1.0.2" "$second/sdk-reference-pre-release-1.0.2" -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete
+
 diff -qr "$work/P11.pre-release" "$second/P11.pre-release"
 diff -qr "$work/sdk-reference-pre-release-1.0.2" "$second/sdk-reference-pre-release-1.0.2"
 
