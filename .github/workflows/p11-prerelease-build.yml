@@ -9,55 +9,18 @@
 # Attribution is required: "Based on original work by Supratim Sanyal of
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
-name: Phase-11 expanded pre-release
+name: Phase-11 failed pre-release REV01 quarantine
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/p11-prerelease-build.yml'
-      - 'tools/p11-prerelease/**'
-      - 'v1/tools-host/release-tzx/**'
-      - 'tools/as.asm'
-      - 'tools/as_text.asm'
-      - 'tools/ld.asm'
-      - 'v1/src/tools/cc.asm'
-      - 'tools/check_media_retention.py'
-      - 'tools/check_license_headers.sh'
   workflow_dispatch: {}
 permissions:
-  contents: write
-concurrency:
-  group: zxux-p11-prerelease-build
-  cancel-in-progress: true
+  contents: read
 jobs:
-  build-test-publish:
+  quarantine:
     runs-on: ubuntu-24.04
-    timeout-minutes: 240
-    env:
-      DISPLAY: ":99"
-      ZXUX_SOURCE_EPOCH: current
-      ZXUX_EVIDENCE_DIR: /tmp/p11-prerelease/evidence
-      GITHUB_TOKEN: ${{ github.token }}
-      PYTHONDONTWRITEBYTECODE: "1"
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with: {fetch-depth: 0}
-      - name: Guard activated Phase 11 and zero Phase 12 state
-        run: bash tools/p11-prerelease/guard.sh
-      - uses: ./.github/actions/setup-zxux-runtime
-      - name: Exact-head compiler, loader, kernel, and native rebuild proof
-        run: bash tools/p11-prerelease/build.sh
-      - name: Real-time Fuse acceptance
-        run: bash tools/p11-prerelease/runtime.sh
-      - name: Deterministic complete-bundle validation
-        run: bash tools/p11-prerelease/finalize.sh
-      - name: Publish tested expanded pre-release and stop before Phase 12
-        run: bash tools/p11-prerelease/publish.sh
-      - name: Upload tested pre-release bundle
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: zxux-phase11-fast-loader-pre-release
-          path: /tmp/p11-prerelease/P11.pre-release/
-          retention-days: 30
-          if-no-files-found: error
+      - name: Confirm failed REV01 publisher is quarantined
+        run: |
+          echo "REV01 is FAILED-CLOSED."
+          echo "Automatic build/finalize/publish is disabled."
+          echo "REV02 is the only authorized Phase-11 pre-release recovery path."
