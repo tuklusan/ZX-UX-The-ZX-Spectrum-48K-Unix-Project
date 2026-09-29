@@ -1,0 +1,38 @@
+{
+  "license_header": [
+    "Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.",
+    "Proprietary rights reserved except as expressly licensed herein.",
+    "ZX-UX Sinclair ZX Spectrum Unix",
+    "This file is governed by the SANYALnet Labs Non-Commercial License in the root LICENSE file.",
+    "Non-Commercial use is permitted; Commercial Use and use for AI/ML model training are prohibited unless separately authorized.",
+    "Attribution is required: Based on original work by Supratim Sanyal of SANYALnet Labs.",
+    "See LICENSE for full terms, warranty disclaimer, termination, patent, trademark, and governing-law provisions."
+  ],
+  "schema": 1,
+  "kind": "rev02-stage-cd-checkpoint",
+  "status": "PASS",
+  "source_head": "87201cceb3eae6c8d6f825d315516af44ac22294",
+  "gate_c": "PASS",
+  "gate_d": "PASS",
+  "stage_c": {
+    "run_id": 36612309298,
+    "job_id": 109556535015,
+    "artifact_id": 11054085975,
+    "artifact_sha256": "2d5c8f1f8781a7a0fe182c5fd304f36699320394f1d72fa6ce0f98af8554fb73"
+  },
+  "stage_d": {
+    "run_id": 36612309358,
+    "job_id": 109556535551,
+    "artifact_id": 11053244827,
+    "artifact_sha256": "33019f1584b0bc7f5431670c6295db546a7a1eb1867e759c627a2474f225c207"
+  },
+  "exact_head_regression": "PASS",
+  "exact_head_regression_run_id": 36612309523,
+  "qualification_auto_dispatch": "PASS",
+  "qualification_run_id": 36612435337,
+  "root_gap_count": 13,
+  "classification": "EXISTING-AUTHORITY-DEFECT",
+  "authority_gap_count": 0,
+  "sdk_defect_count": 0,
+  "phase12_state": 0
+}
