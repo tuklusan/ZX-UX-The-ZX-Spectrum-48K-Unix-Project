@@ -56,8 +56,9 @@ def classify(path):
             q=re.fullmatch(r'"([^"/\\]+)"',rest); z=re.fullmatch(r"<([^>]+)>",rest)
             req(q or (z and z.group(1)=="c48.h"),"unsupported include")
             pp.append(["include",q.group(1) if q else "c48.h"])
-    definitions=sorted(set(re.findall(r"\b([A-Za-z_]\w*)\s*\([^;{}]*\)\s*\{",code))-CONTROL)
-    declarations=sorted(set(re.findall(r"\b([A-Za-z_]\w*)\s*\([^;{}]*\)\s*;",code))-CONTROL)
+    ftype=r"(?:(?:static|extern)\\s+)?(?:(?:unsigned)\\s+)?(?:void|char|short|int|float)\\s+\\**\\s*"
+    definitions=sorted(set(re.findall(r"(?m)^\\s*"+ftype+r"([A-Za-z_]\\w*)\\s*\\([^;\\n{}]*\\)\\s*\\{",code))-CONTROL)
+    declarations=sorted(set(re.findall(r"(?m)^\\s*"+ftype+r"([A-Za-z_]\\w*)\\s*\\([^;\\n{}]*\\)\\s*;",code))-CONTROL)
     calls=sorted(set(re.findall(r"\b([A-Za-z_]\w*)\s*\(",code))-CONTROL-{"sizeof"})
     keys={k:ids.count(k) for k in ("void","char","short","int","float","unsigned","static","extern","if","else","while","do","for","break","continue","return","sizeof") if ids.count(k)}
     ops=sorted(set(re.findall(r"\+\+|--|&&|\|\||==|!=|<=|>=|<<|>>|[+*/%&|^~!<>=-]",code)))
