@@ -27,9 +27,11 @@ ROOT_MARKER = b"ZX-UX project root"
 DEFAULT_TIMEOUT_SECONDS = 30.0
 TOOLCHAIN_LOCK = Path("tools/manifest/toolchain.lock.json")
 ARCHITECTURE = Path("docs/01-ZX-UX-ARCHITECTURE-REV17.md")
+REV18_ARCHITECTURE = Path("docs/01-ZX-UX-ARCHITECTURE-REV18.md")
 REV16_ARCHITECTURE = Path("docs/01-ZX-UX-ARCHITECTURE-REV16.md")
 HISTORICAL_ARCHITECTURE = Path("docs/01-ZX-UX-ARCHITECTURE-REV12.md")
 IMPLEMENTATION_PLAN = Path("docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV08.md")
+REV09_IMPLEMENTATION_PLAN = Path("docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV09.md")
 REV07_IMPLEMENTATION_PLAN = Path("docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV07.md")
 HISTORICAL_IMPLEMENTATION_PLAN = Path("docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV03.md")
 
@@ -158,6 +160,9 @@ def read_source_state(root: Path) -> SourceState:
     elif epoch == "current":
         architecture = ARCHITECTURE
         plan = IMPLEMENTATION_PLAN
+    elif epoch == "rev18":
+        architecture = REV18_ARCHITECTURE
+        plan = REV09_IMPLEMENTATION_PLAN
     else:
         raise DriverError(f"unknown ZXUX_SOURCE_EPOCH: {epoch}")
     return SourceState(
@@ -243,9 +248,9 @@ def write_evidence(
         "hashes": dict(sorted(hashes.items())),
         "assertions": assertions,
     }
-    if step in ("R16.00", "R17.00") or (step.startswith("P") and step.split(".", 1)[0][1:].isdigit() and int(step.split(".", 1)[0][1:]) >= 3):
+    if step in ("R16.00", "R17.00", "R18.00") or (step.startswith("P") and step.split(".", 1)[0][1:].isdigit() and int(step.split(".", 1)[0][1:]) >= 3):
         payload["implementation_plan_sha256"] = source_state.implementation_plan_sha256
-    if step in ("R16.00", "R17.00"):
+    if step in ("R16.00", "R17.00", "R18.00"):
         payload["bridge_source_commit"] = source_state.source_commit
     destination.write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n",

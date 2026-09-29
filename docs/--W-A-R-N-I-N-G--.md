@@ -85,10 +85,12 @@ The project has completed its authority transition:
 - REV13 / REV04, REV14 / REV05, and REV15 / REV06 are frozen, never-activated historical prospective revisions.
 - REV05 and REV06 remain frozen at their actual bytes despite their stale embedded authority defects; neither may be repaired in place.
 - REV16 / REV07 are immutable historical authorities for `R16.00` and admitted P3-P10 work.
-- REV17 / REV08 are the active authorities following the admitted and validated `R17.00` bridge.
-- REV17/REV08 revision-level transport-transition clauses govern the current/future TZX-only release path; inherited SCREEN$/TAP-era wording elsewhere inside those frozen files is superseded context and must not be "cleaned up" by editing the admitted authority bytes.
+- REV17 / REV08 are immutable historical authorities for `R17.00` and admitted P11 work through PHASE-11-COMPLETE.
+- REV18 / REV09 are the prospective post-P11/pre-P12 recovery authority pair until the explicit R18.00 bridge is admitted and validated; after that bridge they control only the authorized recovery lane while REV17/REV08 remain historical for P11.
+- R18.00 does not activate or authorize Phase 12. A later explicit project goal/authority process is required before P12.01.
+- REV17/REV18 revision-level transport-transition clauses govern their respective admitted/recovery epochs; inherited SCREEN$/TAP-era wording inside frozen files is superseded context and must not be "cleaned up" by editing admitted authority bytes.
 - Current implementation progress is determined from durable certification/admission records and the canonical implementation sequence, not from this guardrail document.
-- After check-in, **REV12, REV03, REV13, REV04, REV14, REV05, REV15, REV06, REV16, REV07, REV17, and REV08 must all remain byte-for-byte unchanged.**
+- After check-in, **REV12, REV03, REV13, REV04, REV14, REV05, REV15, REV06, REV16, REV07, REV17, REV08, REV18, and REV09 must all remain byte-for-byte unchanged.**
 
 Do not "synchronize" old revisions with new wording.
 

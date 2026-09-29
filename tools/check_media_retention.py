@@ -20,7 +20,9 @@ import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-PLAN = ROOT / "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV08.md"
+PLAN_REV08 = ROOT / "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV08.md"
+PLAN_REV09 = ROOT / "docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV09.md"
+PLAN = PLAN_REV09 if (ROOT / "v1/dist/certification/R18.00.result.json").is_file() else PLAN_REV08
 CERTIFICATION = ROOT / "v1/dist/certification"
 MEDIA = ROOT / "v1/dist/media"
 ALLOWED_SUFFIXES = frozenset({".sna", ".tap", ".tzx", ".scr", ".fmf", ".wav", ".flac", ".png"})
@@ -144,7 +146,7 @@ def main() -> int:
     try:
         requirements = plan_requirements()
         if not requirements:
-            raise MediaError("no P6-P12 emulator-artifact requirements parsed from active REV08 plan")
+            raise MediaError("no P6-P12 emulator-artifact requirements parsed from active authority plan")
 
         existing_steps: set[str] = set()
         if MEDIA.exists():
