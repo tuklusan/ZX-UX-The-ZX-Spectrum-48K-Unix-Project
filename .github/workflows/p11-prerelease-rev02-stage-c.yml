@@ -17,6 +17,7 @@ on:
     paths:
       - '.github/workflows/p11-prerelease-rev02-stage-c.yml'
       - 'tools/p11-prerelease-rev02/stage_c.py'
+      - 'docs/01-ZX-UX-ARCHITECTURE-REV18.md'
       - 'tools/p11-prerelease/sdk_acquire.py'
       - 'v1/src/kernel/kernel.asm'
       - 'v1/src/shell/sh.asm'

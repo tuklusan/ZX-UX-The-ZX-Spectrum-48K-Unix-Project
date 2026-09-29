@@ -21,6 +21,8 @@ on:
       - 'tools/p11-prerelease/sdk_acquire.py'
       - 'docs/01-ZX-UX-ARCHITECTURE-REV17.md'
       - 'docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV08.md'
+      - 'docs/01-ZX-UX-ARCHITECTURE-REV18.md'
+      - 'docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV09.md'
   workflow_dispatch: {}
 
 permissions:
