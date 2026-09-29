@@ -1,0 +1,25 @@
+{
+  "artifact_id": 11049651303,
+  "artifact_sha256": "70ece1372cb4c5d56817cfbdff0dc6e31a764da3009705b0ca0092384e16c921",
+  "contract_digest_sha256": "1297fe43b60a54d7a08fdcc7c73bd538adf0a2c3ba9e97d4792d08b9cc691279",
+  "exact_head_regression": "PASS",
+  "exact_head_regression_run_id": 36601283914,
+  "gate_b": "PASS",
+  "kind": "rev02-stage-b-checkpoint",
+  "phase12_state": 0,
+  "schema": 1,
+  "sdk_moving_main_observed": {
+    "commit": "013813d4cbeacfbec3ef1a3588eb8e61c21aa136",
+    "role": "informational-only",
+    "tree": "186d531758690c54a57e1c2c2ff0aa28484a1b59"
+  },
+  "sdk_release": {
+    "commit": "b1621338565ac3bd9d4eff4ecb5a2a77aee2ab6a",
+    "tag": "1.0.2",
+    "tree": "ced96ea0a4b2f6cdd6080fc6f48e07738252af17"
+  },
+  "source_head": "084df4a296c4c7e84c7d9b8843eba8e5ae1dcdea",
+  "status": "PASS",
+  "workflow_job_id": 109519022007,
+  "workflow_run_id": 36601283925
+}
