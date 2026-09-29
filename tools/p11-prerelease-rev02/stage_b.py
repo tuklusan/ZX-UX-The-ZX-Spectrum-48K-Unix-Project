@@ -89,7 +89,7 @@ def main():
         hp=HEADERS[name] if name in ("hanoi","queens8") else HEADERS[c]
         sc,hc=files[p["source_path"]],files[hp]
         source_funcs=set(sc["definitions"])
-        header_funcs=set(hc["declarations"])
+        header_funcs=set(hc["declarations"])|set(hc["definitions"])
         source_calls=set(sc["call_like"])-source_funcs
         req(not sorted(source_calls-header_funcs-C48_API),"unclassified call in "+c+"/"+name)
         api_usage=sorted(source_calls&C48_API)
