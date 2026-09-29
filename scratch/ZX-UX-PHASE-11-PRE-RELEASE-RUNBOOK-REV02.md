@@ -1306,14 +1306,13 @@ Then STOP.
 
 **DO NOT START P12.01.**
 
-## 30. Review gate for this draft
+## 30. Review and authority re-entry gate
 
-This REV02 file is intentionally DRAFT.
+REV02 was explicitly reviewed and approved, then changed from DRAFT to OPEN in the
+separate checkpoint required before Stage A. It remains OPEN throughout authorized
+execution and may change from OPEN to CLOSED only through Section 27.1.
 
-Do not execute Stage A or later and do not modify ZX-UX product source under this
-draft.
-
-Review must explicitly confirm at least:
+The review criteria remain:
 
 - the REV17/REV08 historical-P11 and REV18/REV09 recovery authority hierarchy and fail-closed authority-gap path;
 - quarantine of the failed write-capable REV01 publisher before product edits;
@@ -1329,10 +1328,12 @@ Review must explicitly confirm at least:
 - closure-byte re-scan after the final status/anchor edit;
 - the Phase-12 hard stop.
 
-This review itself is not complete until the exact final DRAFT bytes have received
-three successive complete manual first-byte-to-last-byte line-by-line scans with no
-new gap/defect and no byte change between scans. Any review edit resets that count
+Any later authority-gap detour resets the review state for the affected continuation.
+Before product work resumes, the exact revised OPEN bytes must receive three
+successive complete manual first-byte-to-last-byte line-by-line scans with no new
+gap/defect and no byte change between scans, plus the applicable policy, authority,
+historical-immutability and zero-Phase-12 gates. Any review edit resets that count
 to zero.
 
-After review, leave this file DRAFT for user review. Only a later explicit approval
-may change Status to OPEN in a separate admitted checkpoint before execution begins.
+The admitted R18.00 transition and Section 8.6 satisfy the authority-re-entry
+mechanism for C014 once these revised OPEN bytes pass that review.
