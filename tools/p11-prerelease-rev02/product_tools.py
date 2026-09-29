@@ -70,18 +70,56 @@ sh_product_end:
     tap=mt.m48o_blocks(mt.M48OObject("sh",mt.M48O_BIN,mt.DIR_BIN,mex))
     (out/"sh.m48o.tap").write_bytes(tap)
     req(tap==mt.m48o_blocks(mt.M48OObject("sh",mt.M48O_BIN,mt.DIR_BIN,mex)),"M48O nondeterminism")
+
+    # First prospective ordinary /bin/cc image.  It contains the generic
+    # ARG1/source-open/transaction scaffold only; historical source-bound
+    # P1144/P1145/P11PR compiler macros are deliberately not expanded.
+    cc_asm=out/"cc-product.asm"
+    cc_asm.write_text(f"""    DEVICE ZXSPECTRUM48
+    INCLUDE "{(root/'v1/include/zx48ux.inc').as_posix()}"
+    INCLUDE "{(root/'v1/src/tools/cc.asm').as_posix()}"
+    ORG $0000
+cc_product_image:
+    EMIT_P1128_CC_OBJ1_WRITER
+    EMIT_P1129_CC_TRANSACTION_ROUTINES
+    EMIT_REV02_CC_PRODUCT_CLI
+cc_product_end:
+    SAVEBIN "cc-product.bin",cc_product_image,cc_product_end-cc_product_image
+""",encoding="utf-8",newline="\n")
+    run([sj,"--nologo",cc_asm.name],out)
+    cc_image=out/"cc-product.bin"
+    req(cc_image.is_file() and 64 <= cc_image.stat().st_size <= 20480,"cc product image size")
+    cc_mex=mex1(cc_image.read_bytes(),stack=512); (out/"cc.mex1").write_bytes(cc_mex)
+    run([sys.executable,inspect,out/"cc.mex1","--base","0x6000"],root)
+    cc_tap=mt.m48o_blocks(mt.M48OObject("cc",mt.M48O_BIN,mt.DIR_BIN,cc_mex))
+    (out/"cc.m48o.tap").write_bytes(cc_tap)
+    req(cc_tap==mt.m48o_blocks(mt.M48OObject("cc",mt.M48O_BIN,mt.DIR_BIN,cc_mex)),"cc M48O nondeterminism")
+    cc_wrapper=cc_asm.read_text()
+    for forbidden in ("EMIT_P1144_CC_RECURSION_COMPILER","EMIT_P1145_CC_H06_COMPILER",
+                      "EMIT_P11PR_CC_SDK_CORPUS_COMPILER","EMIT_P11PR_CC_SDK_MULTITASK_COMPILER",
+                      "cc_p11pr_"):
+        req(forbidden not in "\n".join(line for line in cc_wrapper.splitlines()
+                                       if not line.lstrip().startswith("INCLUDE")),
+            "source-bound compiler expanded in product wrapper: "+forbidden)
+
     report={
       "schema":1,"kind":"rev02-product-tools-preflight","status":"PASS",
       "shell":{
         "source":"v1/src/shell/sh.asm","source_sha256":sha(shsrc),
         "image_sha256":sha(image),"mex1_sha256":sha(out/"sh.mex1"),"m48o_tap_sha256":sha(out/"sh.m48o.tap"),
         "entry":"EMIT_P601_SH_IMAGE","semantic_status":"PACKAGING-ONLY-IDLE-ENTRY-NOT-GATE-G-READY"},
+      "cc":{
+        "source":"v1/src/tools/cc.asm","source_sha256":sha(ccsrc),
+        "image_sha256":sha(cc_image),"image_bytes":cc_image.stat().st_size,
+        "mex1_sha256":sha(out/"cc.mex1"),"m48o_tap_sha256":sha(out/"cc.m48o.tap"),
+        "entry":"EMIT_REV02_CC_PRODUCT_CLI",
+        "semantic_status":"GENERIC-CLI-AND-SOURCE-OPEN-SCAFFOLD; CODEGEN-NOT-YET-ATTACHED"},
       "pending_product_entries":{
-        "cc":{"source":"v1/src/tools/cc.asm","source_sha256":sha(ccsrc)},
         "as":{"source":"tools/as.asm","source_sha256":sha(assrc)},
         "ld":{"source":"tools/ld.asm","source_sha256":sha(ldsrc)}},
       "assertions":{
         "deterministic_shell_mex1":"PASS","deterministic_m48o":"PASS","mex1_inspection":"PASS",
+        "deterministic_cc_mex1":"PASS","deterministic_cc_m48o":"PASS","cc_mex1_inspection":"PASS",
         "normal_project_assembler_used":"PASS","p11pr_not_in_product_closure":"PASS",
         "not_claimed_as_real_shell_session":"PASS"}}
     (out/"PRODUCT-TOOLS-PREFLIGHT.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
