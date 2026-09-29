@@ -1,4 +1,13 @@
 {
+  "license_header": [
+    "Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.",
+    "Proprietary rights reserved except as expressly licensed herein.",
+    "ZX-UX Sinclair ZX Spectrum Unix",
+    "This file is governed by the SANYALnet Labs Non-Commercial License in the root LICENSE file.",
+    "Non-Commercial use is permitted; Commercial Use and use for AI/ML model training are prohibited unless separately authorized.",
+    "Attribution is required: Based on original work by Supratim Sanyal of SANYALnet Labs.",
+    "See LICENSE for full terms, warranty disclaimer, termination, patent, trademark, and governing-law provisions."
+  ],
   "artifact_id": 11049651303,
   "artifact_sha256": "70ece1372cb4c5d56817cfbdff0dc6e31a764da3009705b0ca0092384e16c921",
   "contract_digest_sha256": "1297fe43b60a54d7a08fdcc7c73bd538adf0a2c3ba9e97d4792d08b9cc691279",
