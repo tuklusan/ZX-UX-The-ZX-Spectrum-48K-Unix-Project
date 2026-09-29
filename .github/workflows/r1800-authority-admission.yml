@@ -14,17 +14,27 @@ name: R18.00 authority admission
 on:
   workflow_dispatch:
     inputs:
-      run_id: {required: true, type: string}
-      source_commit: {required: true, type: string}
-permissions: {actions: write, contents: write}
+      run_id:
+        required: true
+        type: string
+      source_commit:
+        required: true
+        type: string
+permissions:
+  actions: write
+  contents: write
 jobs:
   admit:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-    env: {RUN_ID: ${{ inputs.run_id }}, SOURCE_COMMIT: ${{ inputs.source_commit }}}
+    env:
+      RUN_ID: ${{ inputs.run_id }}
+      SOURCE_COMMIT: ${{ inputs.source_commit }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with: {fetch-depth: 0, ref: ${{ inputs.source_commit }}}
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.source_commit }}
       - name: Guard exact qualified head
         run: |
           set -euo pipefail

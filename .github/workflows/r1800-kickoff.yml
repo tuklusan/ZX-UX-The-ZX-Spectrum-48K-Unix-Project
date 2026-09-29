@@ -1,0 +1,43 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+
+name: R18.00 qualification kickoff
+on:
+  workflow_run:
+    workflows: ["ZX-UX Exact-Head Regression"]
+    types: [completed]
+permissions:
+  actions: write
+  contents: read
+jobs:
+  dispatch:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - name: Dispatch exact R18 qualification candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          test "$CANDIDATE" = "$(git rev-parse HEAD)"
+          test "$CANDIDATE" = "$(git ls-remote origin refs/heads/main | awk '{print $1}')"
+          test ! -e v1/dist/certification/R18.00.result.json
+          test "$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV18.md | awk '{print $1}')" = b13c551f854cf3c01d951212916c6cf787f23617e3b8b74fc7c1867f76ba2156
+          test "$(sha256sum docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV09.md | awk '{print $1}')" = 9ff614ba04721961b3461d03638586260b91e9e82eac7687054ead1c9802869f
+          test "$(git rev-parse refs/tags/PHASE-11-COMPLETE)" = 263a203da3d54a398e8ac011284ae4195b1279c0
+          gh api --method POST "repos/$GITHUB_REPOSITORY/actions/workflows/r1800-qualification.yml/dispatches" -f ref=main

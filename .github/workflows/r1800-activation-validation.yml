@@ -14,16 +14,23 @@ name: R18.00 activation validation
 on:
   workflow_dispatch:
     inputs:
-      admitted_commit: {required: true, type: string}
-permissions: {contents: read}
+      admitted_commit:
+        required: true
+        type: string
+permissions:
+  contents: read
 jobs:
   validate:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
-    env: {ADMITTED_COMMIT: ${{ inputs.admitted_commit }}, ZXUX_SOURCE_EPOCH: rev18}
+    env:
+      ADMITTED_COMMIT: ${{ inputs.admitted_commit }}
+      ZXUX_SOURCE_EPOCH: rev18
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with: {fetch-depth: 0, ref: ${{ inputs.admitted_commit }}}
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.admitted_commit }}
       - name: Validate exact R18 activation state
         run: |
           set -euo pipefail

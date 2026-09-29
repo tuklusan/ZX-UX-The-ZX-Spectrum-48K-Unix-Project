@@ -12,22 +12,7 @@
 
 name: R18.00 authority qualification
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/r1800-activation-validation.yml'
-      - '.github/workflows/r1800-authority-admission.yml'
-      - '.github/workflows/r1800-qualification.yml'
-      - 'docs/--W-A-R-N-I-N-G--.md'
-      - 'docs/01-ZX-UX-ARCHITECTURE-REV18.md'
-      - 'docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV09.md'
-      - 'docs/03-ZX-UX-DEVELOPMENT-WORKFLOW.md'
-      - 'tools/check_media_retention.py'
-      - 'tools/scripts/verify-environment.py'
-      - 'v1/tools-host/test-driver/driver_core.py'
-      - 'v1/tools-host/test-driver/evidence.py'
-      - 'v1/tools-host/test-driver/revision18_bridge.py'
-      - 'v1/tools-host/test-driver/run.py'
+  workflow_dispatch:
 permissions:
   actions: write
   contents: read
@@ -53,6 +38,7 @@ jobs:
             .github/workflows/r1800-activation-validation.yml \
             .github/workflows/r1800-authority-admission.yml \
             .github/workflows/r1800-qualification.yml \
+            .github/workflows/r1800-kickoff.yml \
             docs/--W-A-R-N-I-N-G--.md \
             docs/01-ZX-UX-ARCHITECTURE-REV18.md \
             docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV09.md \
