@@ -59,7 +59,8 @@ def main():
             req(source[0]==source_name,f"{name} target source drift")
             fixture,sy=build_fixture(header[0],len(header[3]),source[0],len(source[3]))
             sna=td/f"{name}.sna"; sna.write_bytes(vb.make_sna(sy["p11h_positive"],fixture))
-            r=vb.run(fuse,sna,tape,sy); req(r.returncode==0,f"{name} native multitask build failed: {r.stdout!r} {r.stderr!r}")
+            r=vb.run(fuse,sna,tape,sy)
+            req(r.returncode==0,f"{name} native multitask build failed rc={r.returncode}: {r.stdout!r} {r.stderr!r}")
             vals=[int(v,16) for v in re.findall(r"0x([0-9a-f]+)",r.stdout,re.I)]
             req(vb.PASS_MARK in vals,f"{name} PASS marker absent")
             obj,text=vb.obj_bytes(vb.dump_after(vals,vb.OBJ_MARK))
