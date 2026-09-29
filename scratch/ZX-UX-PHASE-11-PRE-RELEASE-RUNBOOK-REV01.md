@@ -12,7 +12,7 @@
 
 # ZX-UX Phase-11 Expanded Pre-Release Runbook REV01
 
-**Status:** CLOSED  
+**Status:** FAILED-CLOSED  
 **Scope:** post-Phase-11, pre-Phase-12 pre-release strengthening only  
 **Hard stop:** DO NOT START PHASE 12
 
