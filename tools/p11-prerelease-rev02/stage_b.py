@@ -59,7 +59,11 @@ def classify(path):
     funcs=sorted(set(re.findall(r"\b([A-Za-z_]\w*)\s*\([^;{}]*\)\s*(?:;|\{)",code))-CONTROL)
     calls=sorted(set(re.findall(r"\b([A-Za-z_]\w*)\s*\(",code))-CONTROL-{"sizeof"})
     keys={k:ids.count(k) for k in ("void","char","short","int","float","unsigned","static","extern","if","else","while","do","for","break","continue","return","sizeof") if ids.count(k)}
-    return {"sha256":hashlib.sha256(raw).hexdigest(),"size":len(raw),"preprocessor":pp,"keywords":keys,"functions":funcs,"call_like":calls,"status":"PASS"}
+    ops={}
+    for op in ("++","--","<<",">>","&&","||","==","!=","<=",">=","+","-","*","/","%","&","|","^","~","!","<",">","="):
+        count=code.count(op)
+        if count: ops[op]=count
+    return {"sha256":hashlib.sha256(raw).hexdigest(),"size":len(raw),"preprocessor":pp,"keywords":keys,"operators":ops,"functions":funcs,"call_like":calls,"status":"PASS"}
 def digest(root):
     h=hashlib.sha256()
     for p in sorted(x for x in Path(root).rglob("*") if x.is_file() and x.name!="CONTRACT-DIGEST.sha256"):
@@ -82,21 +86,58 @@ def main():
     for p in rel["programs"]: files[p["source_path"]]=classify(root/p["source_path"])
     req(len(files)==33,"classification cardinality")
     for p in rel["programs"]:
-        c,name=p["category"],p["name"]; hp=HEADERS[name] if name in ("hanoi","queens8") else HEADERS[c]
-        sc,hc=files[p["source_path"]],files[hp]; local=set(sc["functions"])|set(hc["functions"]); calls=set(sc["call_like"])|set(hc["call_like"])
-        req(not sorted(calls-local-C48_API),"unclassified call in "+c+"/"+name)
+        c,name=p["category"],p["name"]
+        hp=HEADERS[name] if name in ("hanoi","queens8") else HEADERS[c]
+        sc,hc=files[p["source_path"]],files[hp]
+        source_funcs=set(sc["functions"])
+        header_funcs=set(hc["functions"])
+        source_calls=set(sc["call_like"])-source_funcs
+        req(not sorted(source_calls-header_funcs-C48_API),"unclassified call in "+c+"/"+name)
+        api_usage=sorted(source_calls&C48_API)
         if c=="examples":
-            o=release["demos"][name]; behavior={"mode":"termination","args":o["args"],"checkpoint":"process termination","screen_sha256":o["screen_sha256"]}
+            o=release["demos"][name]
+            behavior={"mode":"termination","args":o["args"],"capture_checkpoints":["process-termination"],"screen_sha256":o["screen_sha256"]}
         elif name in ("hanoi","queens8"):
-            inv=["moves=127","max_depth=7","left-half ownership"] if name=="hanoi" else ["tests=876","backtracks=105","max_depth=8","right-half ownership"]
-            behavior={"mode":"termination","args":[],"checkpoint":"proved recursive final state","screen_sha256":rec[name],"invariants":inv}
+            if name=="hanoi":
+                inv=["moves=127","max_depth=7","left-half-only writes","all 7 discs finish on pole C in descending size order","guard_fail=0","inv_fail=0"]
+                ownership="left-half"
+            else:
+                inv=["tests=876","backtracks=105","max_depth=8","right-half-only writes","solution columns=[0,4,7,5,2,6,1,3]","guard_fail=0","inv_fail=0"]
+                ownership="right-half"
+            behavior={
+                "mode":"recursive-standalone-and-concurrent",
+                "args":[],
+                "standalone":{"capture_checkpoints":["process-termination"],"screen_sha256":rec[name],"invariants":inv},
+                "concurrent":{"capture_frames":[250,625,1250],"required_progress":"source counters/board-or-disc state must change between checkpoints","screen_ownership":ownership,"invariants":inv},
+            }
         else:
-            o=graphics["demos"][name]; behavior={"mode":"frame-counted","args":[str(o["frames"])],"capture_frame":o["frames"],"first_screen_sha256":o["first_screen_sha256"],"screen_sha256":o["screen_sha256"],"lit_pixels":o["lit_pixels"],"attribute_values":o["attribute_values"]}
-        rows.append({"category":c,"program":name,"source_path":p["source_path"],"source_sha256":p["source_sha256"],"source_tape_path":p["tape_path"],"source_tape_sha256":p["tape_sha256"],"target_source":p["target_source"],"header_path":hp,"header_sha256":sha(root/hp),"api_usage":sorted((set(sc["call_like"])|set(hc["call_like"]))&C48_API),"reference":{"lfs_git_blob":p["reference_lfs_git_blob"],"lfs_oid_sha256":p["reference_lfs_oid_sha256"],"png_sha256":p["reference_png_sha256"],"comparison":"full-screen exact Spectrum state + exact reference PNG identity"},"behavior":behavior,"classification":"LEGAL-FROZEN-C48"})
+            o=graphics["demos"][name]
+            behavior={"mode":"frame-counted","args":[str(o["frames"])],"capture_frames":[1,o["frames"]],"first_screen_sha256":o["first_screen_sha256"],"screen_sha256":o["screen_sha256"],"lit_pixels":o["lit_pixels"],"attribute_values":o["attribute_values"]}
+        reference={
+            "lfs_git_blob":p["reference_lfs_git_blob"],
+            "lfs_oid_sha256":p["reference_lfs_oid_sha256"],
+            "png_sha256":p["reference_png_sha256"],
+            "comparison_mode":"pixel-exact",
+            "region":"full logical Spectrum display 256x192",
+            "metric":"RGBA pixel equality after lossless PNG decode; tolerance 0",
+            "target_input":"PNG rendered losslessly from retained 6912-byte target SCR",
+            "reference_input":"pinned materialized SDK reference PNG",
+        }
+        rows.append({
+            "category":c,"program":name,
+            "source_path":p["source_path"],"source_sha256":p["source_sha256"],
+            "source_tape_path":p["tape_path"],"source_tape_sha256":p["tape_sha256"],
+            "target_source":p["target_source"],
+            "header_path":hp,"header_sha256":sha(root/hp),
+            "api_usage":api_usage,
+            "header_api_declarations":sorted(header_funcs&C48_API),
+            "feature_usage":{"keywords":sc["keywords"],"operators":sc["operators"],"preprocessor":sc["preprocessor"]},
+            "reference":reference,"behavior":behavior,"classification":"LEGAL-FROZEN-C48",
+        })
     req(len(rows)==30,"matrix cardinality")
     cls={"schema":1,"kind":"rev02-c48-static-classification","sdk":{"tag":TAG,"commit":COMMIT,"tree":TREE},"classifier":"independent lexical/preprocessor; no product cc","file_count":33,"files":files,"assertions":{"30_sources":"PASS","3_headers":"PASS","no_unsupported_constructs":"PASS","call_surface_classified":"PASS","product_cc_independent":"PASS"}}
     mat={"schema":1,"kind":"rev02-acceptance-matrix","sdk":{"tag":TAG,"commit":COMMIT,"tree":TREE},"oracle_blobs":BLOBS,"program_count":30,"frozen_before_target_execution":True,"programs":rows}
-    st={"schema":1,"kind":"rev02-stage-b","status":"PASS","sdk":{"repository":REPO,"tag":TAG,"commit":COMMIT,"tree":TREE},"formal_release":{"release_verifier":rel["release_verifier"],"source_tape_count":57,"program_count":30,"assets":rel["assets"]},"moving_main":"informational-only; never execution input","assertions":{"latest_formal_release_1_0_2":"PASS","release_assets_provenance":"PASS","371_tests":"PASS","57_tapes":"PASS","30_programs":"PASS","3_headers":"PASS","tape_reconstruction":"PASS","reference_image_identity":"PASS","frozen_c48_legality":"PASS","contracts_predeclared":"PASS"}}
+    st={"schema":1,"kind":"rev02-stage-b","status":"PASS","sdk":{"repository":REPO,"tag":TAG,"commit":COMMIT,"tree":TREE},"formal_release":{"release_verifier":rel["release_verifier"],"source_tape_count":57,"program_count":30,"assets":rel["assets"]},"moving_main":"informational-only; never execution input","assertions":{"latest_formal_release_1_0_2":"PASS","release_assets_provenance":"PASS","371_tests":"PASS","57_tapes":"PASS","30_programs":"PASS","3_headers":"PASS","tape_reconstruction":"PASS","reference_image_identity":"PASS","frozen_c48_legality":"PASS","contracts_predeclared":"PASS","actual_api_usage_not_header_declarations":"PASS","recursive_concurrency_checkpoints_predeclared":"PASS","reference_comparison_metric_predeclared":"PASS"}}
     for fn,obj in (("C48-CLASSIFICATION.json",cls),("ACCEPTANCE-MATRIX.json",mat),("STAGE-B.json",st)): (out/fn).write_text(json.dumps(obj,indent=2,sort_keys=True)+"\n")
     (out/"ORACLE-release_expectations.json").write_bytes(rr); (out/"ORACLE-graphics_demo_expectations.json").write_bytes(gr); (out/"ORACLE-verify_recursive_demos.py").write_bytes(vr)
     d=digest(out); (out/"CONTRACT-DIGEST.sha256").write_text(d+"\n")
