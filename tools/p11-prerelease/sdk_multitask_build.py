@@ -33,6 +33,22 @@ def fixture_source(hn,hs,sn,ss):
     s=s.replace("p11h-sdk-native-visual-tape.bin","p11i-sdk-native-multitask-tape.bin")
     return s
 
+def run(fuse,sna,tape,sy):
+    fail_marker=0xD181DEAD
+    x=[f"breakpoint 0x{sy['p11h_pass']:04x}","commands 1",f"print 0x{vb.PASS_MARK:x}",
+       f"print 0x{vb.OBJ_MARK:x}"]
+    x += [f"print [0x{a:04x}]" for a in range(vb.OBJ_BASE,vb.OBJ_BASE+vb.CAP)]
+    x += [f"print 0x{vb.MEX_MARK:x}"]
+    x += [f"print [0x{a:04x}]" for a in range(vb.MEX_BASE,vb.MEX_BASE+vb.CAP)]
+    x += ["exit 0","end",f"breakpoint 0x{sy['p11h_fail']:04x}","commands 2",
+          f"print 0x{fail_marker:x}"]
+    x += [f"print [0x{a:04x}]" for a in range(vb.OBJ_BASE,vb.OBJ_BASE+32)]
+    x += [f"print [0x{a:04x}]" for a in range(vb.MEX_BASE,vb.MEX_BASE+32)]
+    x += ["exit 1","end","continue"]
+    return subprocess.run(["/usr/bin/env","SDL_VIDEODRIVER=dummy","SDL_AUDIODRIVER=dummy",str(fuse),
+      "--machine","48","--no-sound","--no-confirm-actions","--tape",str(tape),
+      "--debugger-command","\n".join(x),str(sna)],cwd=ROOT,text=True,capture_output=True,timeout=90)
+
 def build_fixture(hn,hs,sn,ss):
     b=ROOT/"v1/build"; b.mkdir(parents=True,exist_ok=True)
     p=b/"p11i-sdk-native-multitask-tape.asm"
@@ -59,7 +75,7 @@ def main():
             req(source[0]==source_name,f"{name} target source drift")
             fixture,sy=build_fixture(header[0],len(header[3]),source[0],len(source[3]))
             sna=td/f"{name}.sna"; sna.write_bytes(vb.make_sna(sy["p11h_positive"],fixture))
-            r=vb.run(fuse,sna,tape,sy)
+            r=run(fuse,sna,tape,sy)
             req(r.returncode==0,f"{name} native multitask build failed rc={r.returncode}: {r.stdout!r} {r.stderr!r}")
             vals=[int(v,16) for v in re.findall(r"0x([0-9a-f]+)",r.stdout,re.I)]
             req(vb.PASS_MARK in vals,f"{name} PASS marker absent")
