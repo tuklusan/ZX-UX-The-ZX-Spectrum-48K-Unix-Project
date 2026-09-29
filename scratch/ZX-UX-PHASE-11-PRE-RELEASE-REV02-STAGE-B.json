@@ -4,7 +4,7 @@
   "contract_digest_sha256": "1297fe43b60a54d7a08fdcc7c73bd538adf0a2c3ba9e97d4792d08b9cc691279",
   "exact_head_regression": "PASS",
   "exact_head_regression_run_id": 36601283914,
-  "gate_b": "PASS",
+  "gate_b": "RESET",
   "kind": "rev02-stage-b-checkpoint",
   "phase12_state": 0,
   "schema": 1,
@@ -19,7 +19,9 @@
     "tree": "ced96ea0a4b2f6cdd6080fc6f48e07738252af17"
   },
   "source_head": "084df4a296c4c7e84c7d9b8843eba8e5ae1dcdea",
-  "status": "PASS",
+  "status": "INVALIDATED",
   "workflow_job_id": 109519022007,
-  "workflow_run_id": 36601283925
+  "workflow_run_id": 36601283925,
+  "invalidation_reason": "Stage-B contract audit found API-usage inflation from header declarations and incomplete predeclared recursive/concurrency checkpoints; rerun required.",
+  "invalidated_source_head": "f65929606912fd0d08eae9242058cf5fb6831a1a"
 }
