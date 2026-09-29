@@ -1,0 +1,57 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+name: Phase-11 pre-release REV02 Stage B
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/p11-prerelease-rev02-stage-b.yml'
+      - 'tools/p11-prerelease-rev02/stage_b.py'
+      - 'tools/p11-prerelease/sdk_acquire.py'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zxux-p11-prerelease-rev02-stage-b
+  cancel-in-progress: false
+
+jobs:
+  stage-b:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: {fetch-depth: 0}
+      - name: Acquire exact SDK 1.0.2 release corpus
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 tools/p11-prerelease/sdk_acquire.py acquire --output /tmp/rev02-sdk-reference
+      - name: Freeze independent C48 classification and acceptance contracts
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 tools/p11-prerelease-rev02/stage_b.py \
+            --sdk-root /tmp/rev02-sdk-reference \
+            --output /tmp/rev02-stage-b
+      - name: Upload Stage-B contracts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: zxux-p11-prerelease-rev02-stage-b-${{ github.sha }}
+          path: /tmp/rev02-stage-b/
+          retention-days: 90
+          if-no-files-found: error
