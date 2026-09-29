@@ -105,7 +105,7 @@ cp "$work/native-tzx/zx-ux-phase11-pre-release.tzx" "$work/P11.pre-release/zx-ux
   --extract "$work/native-tzx-embedded.bin" > "$work/native-tzx-inspection.txt"
 cmp "$work/P11.pre-release/kernel/kernel-native.bin" "$work/native-tzx-embedded.bin"
 "$py" - <<'PY'
-import hashlib,json
+import hashlib,json,os
 from pathlib import Path
 w=Path(os.environ.get('P11_WORK','/tmp/p11-prerelease'))
 host=Path('v1/build/kernel.bin').read_bytes(); embedded=(w/'embedded-kernel.bin').read_bytes()
@@ -127,7 +127,7 @@ mkdir -p "$work/sdk-native-source-tape-build"
   --output "$work/sdk-native-source-tape-build" \
   --report "$work/sdk-native-source-tape-build.json"
 "$py" - <<'PY'
-import json
+import json, os
 from pathlib import Path
 w=Path(os.environ.get("P11_WORK","/tmp/p11-prerelease"))
 d=json.loads((w/"sdk-native-source-tape-build.json").read_text())
@@ -150,7 +150,7 @@ mkdir -p "$work/sdk-native-visual-build"
   --output "$work/sdk-native-visual-build" \
   --report "$work/sdk-native-visual-build.json"
 "$py" - <<'PY'
-import json
+import json, os
 from pathlib import Path
 w=Path(os.environ.get("P11_WORK","/tmp/p11-prerelease"))
 d=json.loads((w/"sdk-native-visual-build.json").read_text())
@@ -160,7 +160,7 @@ assert all(v=="PASS" for v in d["assertions"].values())
 assert len([p for p in (w/"sdk-native-visual-build").rglob("*") if p.is_file()])==60
 PY
 "$py" - <<'PY'
-import json
+import json, os
 from pathlib import Path
 w=Path(os.environ.get("P11_WORK","/tmp/p11-prerelease"))
 d=json.loads((w/"sdk-native-process-run.json").read_text())
@@ -175,7 +175,7 @@ mkdir -p "$work/sdk-native-cc-preflight"
   --output "$work/sdk-native-cc-preflight" \
   --report "$work/sdk-native-cc-preflight.json"
 "$py" - <<'PY'
-import json
+import json, os
 from pathlib import Path
 w=Path(os.environ.get("P11_WORK","/tmp/p11-prerelease"))
 d=json.loads((w/"sdk-native-cc-preflight.json").read_text())
@@ -191,7 +191,7 @@ mkdir -p "$work/sdk-native-ld-preflight"
   --output "$work/sdk-native-ld-preflight" \
   --report "$work/sdk-native-ld-preflight.json"
 "$py" - <<'PY'
-import json
+import json, os
 from pathlib import Path
 w=Path(os.environ.get("P11_WORK","/tmp/p11-prerelease"))
 d=json.loads((w/"sdk-native-ld-preflight.json").read_text())
@@ -211,7 +211,7 @@ PY
   --ld-preflight-report "$work/sdk-native-ld-preflight.json" \
   --output "$work/P11.pre-release"
 "$py" - <<'PY'
-import json
+import json, os
 from pathlib import Path
 w=Path(os.environ.get("P11_WORK","/tmp/p11-prerelease"))/"P11.pre-release/sdk"
 d=json.loads((w/"PROVENANCE.json").read_text())
@@ -230,7 +230,7 @@ PY
   --output "$work/P11.pre-release/sdk/proof/visual" \
   --report "$work/P11.pre-release/sdk/proof/native-visual-run.json"
 "$py" - <<'PY'
-import json
+import json, os
 from pathlib import Path
 p=Path(os.environ.get("P11_WORK","/tmp/p11-prerelease"))/"P11.pre-release/sdk/proof"
 d=json.loads((p/"native-visual-run.json").read_text())
@@ -252,7 +252,7 @@ mkdir -p "$work/P11.pre-release/multitasking"
   --output "$work/P11.pre-release/multitasking" \
   --report "$work/P11.pre-release/multitasking/hanoi-queens8.json"
 "$py" - <<'PY'
-import json
+import json, os
 from pathlib import Path
 p=Path(os.environ.get("P11_WORK","/tmp/p11-prerelease"))/"P11.pre-release/multitasking"
 d=json.loads((p/"hanoi-queens8.json").read_text())
