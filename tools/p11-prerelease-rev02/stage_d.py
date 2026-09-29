@@ -31,8 +31,14 @@ def main():
     gaps=c.get("gaps",[])
     req([g.get("id") for g in gaps]==IDS,"Stage-C root-gap set")
 
-    archp=root/"docs/01-ZX-UX-ARCHITECTURE-REV17.md"
-    planp=root/"docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV08.md"
+    archp=root/"docs/01-ZX-UX-ARCHITECTURE-REV18.md"
+    planp=root/"docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV09.md"
+    hist_archp=root/"docs/01-ZX-UX-ARCHITECTURE-REV17.md"
+    hist_planp=root/"docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV08.md"
+    req(sha(archp)=="b13c551f854cf3c01d951212916c6cf787f23617e3b8b74fc7c1867f76ba2156","REV18 identity")
+    req(sha(planp)=="9ff614ba04721961b3461d03638586260b91e9e82eac7687054ead1c9802869f","REV09 identity")
+    req(sha(hist_archp)=="d12baf0b47a7f8cd2dcd60b82f100ba19f9fddaabad43728a004a07214716bf8","historical REV17 identity")
+    req(sha(hist_planp)=="97461e9ed12253409b25e6a4a4063cf0ec556a7317f9e4a5938d77edb6a1a14c","historical REV08 identity")
     arch=archp.read_text(); plan=planp.read_text()
     for x in (
       "The kernel, shell, device services, editor, assembler, linker, compiler, and core utilities execute as Z80 machine code.",
@@ -46,20 +52,20 @@ def main():
         req(q in arch or q in plan,"authority fragment missing: "+q)
 
     citations={
-      "C001":["REV17 §2.2 machine-native implementation","REV17 §32 required /bin/sh"],
-      "C002":["REV17 §2.2 machine-native implementation","REV17 §32 required /bin/cc","REV17 §41.9 compiler"],
-      "C003":["REV17 §2.2 machine-native implementation","REV17 §32 required /bin/as","REV17 R17 native-as rebuild contract"],
-      "C004":["REV17 §2.2 machine-native implementation","REV17 §32 required /bin/ld","REV17 §41.9 standard runtime resolution"],
-      "C005":["REV17 §32 executable namespace","REV17 §42 edit/compile/link/run workflow","REV08 post-R17 native-tool path"],
-      "C006":["REV17 §1 interactive shell requirement","REV17 §32 /bin/sh","REV17 shell/login acceptance"],
-      "C007":["REV17 §2.6 cassette persistence","REV17 §§18/27/32 namespace/object/tape contracts","REV17 normal SYS_SPAWN execution"],
-      "C008":["REV17 §§31/33 shell parsing/PATH/external execution","REV17 §42 user workflow"],
-      "C009":["REV17 §41.9 complete C48 compiler surface","REV17 §42 source must compile natively","REV08 Phase-11 native compiler contract"],
-      "C010":["REV17 machine-native assembler","REV17 R17 genuine source -> native as -> OBJ1 contract"],
-      "C011":["REV17 machine-native linker","REV17 §41.9 runtime resolution by ld","REV17 R17 native ld fixed/absolute capability"],
-      "C012":["REV17 §41.9 graphics/UDG/system-call compiler acceptance","REV17 shipped demo behavior"],
-      "C013":["REV17 §41.9 standard runtime resolution by ld","REV17 frozen C48 public APIs","REV17 shipped demos native link requirement"],
-      "C014":["REV17 fixed/absolute linker capability","REV02 §8.5 explicit fixed/absolute shell-visible ld authority-gap rule","frozen public docs contain no mode-selection CLI syntax"],
+      "C001":["REV18 §2.2 machine-native implementation","REV18 §32 required /bin/sh"],
+      "C002":["REV18 §2.2 machine-native implementation","REV18 §32 required /bin/cc","REV18 §41.9 compiler"],
+      "C003":["REV18 §2.2 machine-native implementation","REV18 §32 required /bin/as","REV18 carried-forward R17 native-as rebuild contract"],
+      "C004":["REV18 §2.2 machine-native implementation","REV18 §32 required /bin/ld","REV18 §41.9 standard runtime resolution"],
+      "C005":["REV18 §32 executable namespace","REV18 §42 edit/compile/link/run workflow","REV09 carried-forward post-R17 native-tool path"],
+      "C006":["REV18 §1 interactive shell requirement","REV18 §32 /bin/sh","REV18 shell/login acceptance"],
+      "C007":["REV18 §2.6 cassette persistence","REV18 §§18/27/32 namespace/object/tape contracts","REV18 normal SYS_SPAWN execution"],
+      "C008":["REV18 §§31/33 shell parsing/PATH/external execution","REV18 §42 user workflow"],
+      "C009":["REV18 §41.9 complete C48 compiler surface","REV18 §42 source must compile natively","REV09 carried-forward Phase-11 native compiler contract"],
+      "C010":["REV18 machine-native assembler","REV18 carried-forward R17 genuine source -> native as -> OBJ1 contract"],
+      "C011":["REV18 machine-native linker","REV18 §41.9 runtime resolution by ld","REV18 carried-forward R17 native ld fixed/absolute capability"],
+      "C012":["REV18 §41.9 graphics/UDG/system-call compiler acceptance","REV18 shipped demo behavior"],
+      "C013":["REV18 §41.9 standard runtime resolution by ld","REV18 frozen C48 public APIs","REV18 shipped demos native link requirement"],
+      "C014":["REV18 §24 exact ld input.obj -o output -abs contract","REV09 R18.00 post-P11 recovery authority transition","REV18 §24 generic fixed-image DAT transaction and anti-specialization rules"],
     }
     changed={
       "C001":["v1/src/shell/sh.asm","tools/p11-prerelease-rev02/product_tools.py"],
@@ -75,16 +81,16 @@ def main():
       "C011":["tools/ld.asm","tools/p11-prerelease-rev02/product_tools.py"],
       "C012":["v1/src/kernel/kernel.asm"],
       "C013":["v1/src/libc48/runtime_archive.asm","tools/ld.asm","tools/p11-prerelease-rev02/product_tools.py"],
-      "C014":[],
+      "C014":["tools/ld.asm"],
     }
     rows=[]
     for g in gaps:
         gid=g["id"]
         req(g.get("planned_paths")==changed[gid],"Stage-C/Stage-D planned-path mismatch: "+gid)
-        authority_gap = gid == "C014"
+        authority_gap = False
         rows.append({
           "gap_id":gid,
-          "classification":"AUTHORITY-GAP" if authority_gap else "EXISTING-AUTHORITY-DEFECT",
+          "classification":"EXISTING-AUTHORITY-DEFECT",
           "failing_reproduction":{"stage_c_status":c["status"],"failure":g["failure"],"observed":g["observed"]},
           "authority":citations[gid],"planned_changed_paths":changed[gid],
           "regression_negative_set":[
@@ -93,20 +99,21 @@ def main():
             "product MEX1/OBJ1 validation","anti-source-specialization scan",
             "no P11PR helper in product closure","48K memory/resource gate"],
           "authority_gap":authority_gap,"sdk_defect":False,"proof_harness_only":False,
-          "lane_status":"BLOCKED-PENDING-EXPLICIT-AUTHORITY" if authority_gap else "AUTHORIZED-PROSPECTIVE-CORRECTION",
+          "lane_status":"AUTHORIZED-PROSPECTIVE-CORRECTION",
         })
     report={
-      "schema":2,"kind":"rev02-stage-d-authority-classification","status":"PASS-WITH-BLOCKED-AUTHORITY-GAP",
+      "schema":2,"kind":"rev02-stage-d-authority-classification","status":"PASS",
       "source_stage_c_sha256":sha(ns.stage_c),
-      "authority":{"rev17_sha256":sha(archp),"rev08_sha256":sha(planp)},
+      "authority":{"rev18_sha256":sha(archp),"rev09_sha256":sha(planp),
+                   "historical_rev17_sha256":sha(hist_archp),"historical_rev08_sha256":sha(hist_planp)},
       "classifications":rows,
       "assertions":{
         "all_stage_c_gaps_classified":"PASS",
         "authorized_planned_fixes_existing_authority":"PASS",
-        "fixed_absolute_ld_cli_lane_blocked_for_authority":"PASS",
+        "fixed_absolute_ld_cli_authority_resolved_and_product_fix_bounded":"PASS",
         "zero_sdk_defect_in_current_root_blocker_lane":"PASS",
         "zero_desired_result_used_as_authority":"PASS",
         "product_edits_authorized_only_for_listed_paths":"PASS"}}
     (out/"STAGE-D.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
-    print("REV02 STAGE D PASS authorized=13 authority_gaps=1 blocked=C014")
+    print("REV02 STAGE D PASS authorized=14 authority_gaps=0")
 if __name__=="__main__": main()
