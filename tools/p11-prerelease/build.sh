@@ -23,7 +23,7 @@ py=tools/runtime/python/bin/python
 "$py" - <<'PY'
 import json, os
 from pathlib import Path
-p=Path('/tmp/p11-prerelease/evidence')
+p=Path(os.environ.get('P11_WORK','/tmp/p11-prerelease'))/'evidence'
 for name in ('P11.48.build.json','P11.48.test.json','P11.48.result.json'):
     d=json.loads((p/name).read_text())
     assert d['status']=='PASS' and d['source_commit']==os.environ['GITHUB_SHA'], name
@@ -107,7 +107,7 @@ cmp "$work/P11.pre-release/kernel/kernel-native.bin" "$work/native-tzx-embedded.
 "$py" - <<'PY'
 import hashlib,json
 from pathlib import Path
-w=Path('/tmp/p11-prerelease')
+w=Path(os.environ.get('P11_WORK','/tmp/p11-prerelease'))
 host=Path('v1/build/kernel.bin').read_bytes(); embedded=(w/'embedded-kernel.bin').read_bytes()
 n=json.loads((w/'native-rebuild.json').read_text()); p=json.loads((w/'projection.json').read_text())
 h=hashlib.sha256(host).hexdigest()
@@ -129,7 +129,7 @@ mkdir -p "$work/sdk-native-source-tape-build"
 "$py" - <<'PY'
 import json
 from pathlib import Path
-w=Path("/tmp/p11-prerelease")
+w=Path(os.environ.get("P11_WORK","/tmp/p11-prerelease"))
 d=json.loads((w/"sdk-native-source-tape-build.json").read_text())
 assert d["program_count"]==30 and len(d["programs"])==30
 assert all(row["tape_load"]=="PASS" and row["native_cc"]=="PASS" and row["native_ld"]=="PASS" for row in d["programs"])
@@ -152,7 +152,7 @@ mkdir -p "$work/sdk-native-visual-build"
 "$py" - <<'PY'
 import json
 from pathlib import Path
-w=Path("/tmp/p11-prerelease")
+w=Path(os.environ.get("P11_WORK","/tmp/p11-prerelease"))
 d=json.loads((w/"sdk-native-visual-build.json").read_text())
 assert d["program_count"]==30 and len(d["programs"])==30
 assert all(row["tape_load"]=="PASS" and row["native_visual_cc"]=="PASS" and row["native_ld"]=="PASS" for row in d["programs"])
@@ -162,7 +162,7 @@ PY
 "$py" - <<'PY'
 import json
 from pathlib import Path
-w=Path("/tmp/p11-prerelease")
+w=Path(os.environ.get("P11_WORK","/tmp/p11-prerelease"))
 d=json.loads((w/"sdk-native-process-run.json").read_text())
 assert d["program_count"]==30 and len(d["programs"])==30
 assert all(row["spawn"]=="PASS" and row["spawned_context_restore"]=="PASS" and row["process_started"]=="PASS" and row["sys_exit_reached"]=="PASS" for row in d["programs"])
@@ -177,7 +177,7 @@ mkdir -p "$work/sdk-native-cc-preflight"
 "$py" - <<'PY'
 import json
 from pathlib import Path
-w=Path("/tmp/p11-prerelease")
+w=Path(os.environ.get("P11_WORK","/tmp/p11-prerelease"))
 d=json.loads((w/"sdk-native-cc-preflight.json").read_text())
 assert d["program_count"]==30 and len(d["programs"])==30
 assert all(row["compile"]=="PASS" and row["mutation_rejected"]=="PASS" for row in d["programs"])
@@ -193,7 +193,7 @@ mkdir -p "$work/sdk-native-ld-preflight"
 "$py" - <<'PY'
 import json
 from pathlib import Path
-w=Path("/tmp/p11-prerelease")
+w=Path(os.environ.get("P11_WORK","/tmp/p11-prerelease"))
 d=json.loads((w/"sdk-native-ld-preflight.json").read_text())
 assert d["program_count"]==30 and len(d["programs"])==30
 assert all(row["compile_obj1"]=="PASS" and row["native_mex1_writer"]=="PASS" for row in d["programs"])
@@ -213,7 +213,7 @@ PY
 "$py" - <<'PY'
 import json
 from pathlib import Path
-w=Path("/tmp/p11-prerelease/P11.pre-release/sdk")
+w=Path(os.environ.get("P11_WORK","/tmp/p11-prerelease"))/"P11.pre-release/sdk"
 d=json.loads((w/"PROVENANCE.json").read_text())
 assert d["program_count"]==30 and len(d["programs"])==30
 assert all(v=="PASS" for v in d["assertions"].values())
@@ -232,7 +232,7 @@ PY
 "$py" - <<'PY'
 import json
 from pathlib import Path
-p=Path("/tmp/p11-prerelease/P11.pre-release/sdk/proof")
+p=Path(os.environ.get("P11_WORK","/tmp/p11-prerelease"))/"P11.pre-release/sdk/proof"
 d=json.loads((p/"native-visual-run.json").read_text())
 assert d["program_count"]==30 and len(d["programs"])==30
 assert all(row["spawn"]=="PASS" and row["screen_ram_capture"]=="PASS" and row["deterministic_png_from_scr"]=="PASS" for row in d["programs"])
@@ -254,7 +254,7 @@ mkdir -p "$work/P11.pre-release/multitasking"
 "$py" - <<'PY'
 import json
 from pathlib import Path
-p=Path("/tmp/p11-prerelease/P11.pre-release/multitasking")
+p=Path(os.environ.get("P11_WORK","/tmp/p11-prerelease"))/"P11.pre-release/multitasking"
 d=json.loads((p/"hanoi-queens8.json").read_text())
 assert d["checkpoint_frames"]==1250
 assert d["hanoi_yields"]>0 and d["queens8_yields"]>0

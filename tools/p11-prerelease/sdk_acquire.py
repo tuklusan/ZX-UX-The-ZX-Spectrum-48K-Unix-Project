@@ -11,7 +11,7 @@
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
 from __future__ import annotations
-import argparse, base64, hashlib, json, os, shutil, struct, subprocess, sys, urllib.request, zipfile
+import argparse, base64, hashlib, json, os, shutil, struct, subprocess, sys, time, urllib.error, urllib.request, zipfile
 from pathlib import Path
 
 REPO="tuklusan/zx-ux-c48-sdk-sinclair-zx-spectrum-48k-unix-c-compiler-software-development-kit"
@@ -40,12 +40,28 @@ def sha(p):
   for b in iter(lambda:f.read(1<<20),b""): h.update(b)
  return h.hexdigest()
 def shab(b): return hashlib.sha256(b).hexdigest()
+def headers(json_api=False):
+ h={"User-Agent":"zxux-p11"}
+ if json_api:h["Accept"]="application/vnd.github+json"
+ token=os.environ.get("GITHUB_TOKEN","").strip()
+ if token:h["Authorization"]="Bearer "+token
+ return h
+def open_retry(url,timeout,json_api=False):
+ deadline=time.monotonic()+900
+ delay=5
+ while True:
+  try:
+   return urllib.request.urlopen(urllib.request.Request(url,headers=headers(json_api)),timeout=timeout)
+  except urllib.error.HTTPError as e:
+   if e.code not in (403,429) or time.monotonic()+delay>deadline:raise
+   time.sleep(delay);delay=min(delay*2,60)
+  except urllib.error.URLError:
+   if time.monotonic()+delay>deadline:raise
+   time.sleep(delay);delay=min(delay*2,60)
 def getj(url):
- r=urllib.request.Request(url,headers={"Accept":"application/vnd.github+json","User-Agent":"zxux-p11"})
- with urllib.request.urlopen(r,timeout=90) as x:return json.load(x)
+ with open_retry(url,90,True) as x:return json.load(x)
 def dl(url,p):
- r=urllib.request.Request(url,headers={"User-Agent":"zxux-p11"})
- with urllib.request.urlopen(r,timeout=300) as x,Path(p).open("wb") as f: shutil.copyfileobj(x,f,1<<20)
+ with open_retry(url,300,False) as x,Path(p).open("wb") as f: shutil.copyfileobj(x,f,1<<20)
 def extract_zip(src,dst):
  with zipfile.ZipFile(src) as z:
   z.extractall(dst)

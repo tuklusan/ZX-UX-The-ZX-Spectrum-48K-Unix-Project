@@ -37,6 +37,7 @@ jobs:
       DISPLAY: ":99"
       ZXUX_SOURCE_EPOCH: current
       ZXUX_EVIDENCE_DIR: /tmp/p11-prerelease/evidence
+      GITHUB_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with: {fetch-depth: 0}

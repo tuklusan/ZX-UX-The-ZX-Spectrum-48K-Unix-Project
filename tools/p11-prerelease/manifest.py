@@ -25,7 +25,7 @@ OLD_TZX_SHA="fdb9dbf3ffb004163567ceda46831c4ee72ade7b1d308e22e45eeb4bd137a0ed"
 def sha(p: Path)->str: return hashlib.sha256(p.read_bytes()).hexdigest()
 def git(*a:str)->str: return subprocess.check_output(["git",*a],text=True).strip()
 def load(p:Path): return json.loads(p.read_text(encoding="utf-8"))
-def req(v,msg): 
+def req(v,msg):
     if not v: raise RuntimeError(msg)
 
 def file_table():
