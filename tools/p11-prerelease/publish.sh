@@ -12,10 +12,11 @@
 # patent, trademark, and governing-law provisions.
 set -euo pipefail
 : "${GITHUB_SHA:?}"
+work="${P11_WORK:-/tmp/p11-prerelease}"
 
 # Intermediate strengthening checkpoints must never replace the durable bundle.
 # Gate L creates this marker only after the complete expanded candidate passes.
-if test ! -f /tmp/p11-prerelease/final-ready.json; then
+if test ! -f $work/final-ready.json; then
   echo "ZX-UX PHASE-11 EXPANDED PRE-RELEASE CANDIDATE ONLY; PUBLICATION DEFERRED"
   exit 0
 fi
@@ -30,11 +31,14 @@ test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
 test -z "$(git ls-files | grep -Ei '(^|/)(P12(\.|/)|p12[^/]*qualification|phase-?12[^/]*\.yml|phase12_step_)' || true)"
 test -z "$(git status --porcelain)"
 rm -rf v1/dist/media/P11.pre-release
-cp -a /tmp/p11-prerelease/P11.pre-release v1/dist/media/P11.pre-release
+cp -a $work/P11.pre-release v1/dist/media/P11.pre-release
 rm -rf v1/tests/compiler/sdk-reference/pre-release-1.0.2
-cp -a /tmp/p11-prerelease/sdk-reference-pre-release-1.0.2 v1/tests/compiler/sdk-reference/pre-release-1.0.2
+cp -a $work/sdk-reference-pre-release-1.0.2 v1/tests/compiler/sdk-reference/pre-release-1.0.2
 python3 tools/p11-prerelease/sdk_acquire.py verify --root v1/tests/compiler/sdk-reference/pre-release-1.0.2 >/dev/null
-test -z "$(find v1/dist/media/P11.pre-release -type f -iname '*.tap' -print -quit)"
+test ! -e v1/dist/media/P11.pre-release/zx-ux-phase11-pre-release.tap
+test "$(find v1/dist/media/P11.pre-release -type f -iname '*.tap' | wc -l)" -eq 31
+test "$(find v1/dist/media/P11.pre-release/sdk/tapes -type f -name '*.src.tap' | wc -l)" -eq 30
+test -f v1/dist/media/P11.pre-release/kernel/kernel-native-source.tap
 python3 tools/check_media_retention.py
 rm -rf v1/build
 hold=/tmp/zxux-runtime-policy-check; rm -rf "$hold"; mv tools/runtime "$hold"; trap 'mv "$hold" tools/runtime' EXIT

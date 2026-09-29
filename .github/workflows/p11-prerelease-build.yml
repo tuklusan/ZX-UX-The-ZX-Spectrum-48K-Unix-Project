@@ -47,7 +47,9 @@ jobs:
         run: bash tools/p11-prerelease/build.sh
       - name: Real-time Fuse acceptance
         run: bash tools/p11-prerelease/runtime.sh
-      - name: Publish tested compact pre-release and stop before Phase 12
+      - name: Deterministic complete-bundle validation
+        run: bash tools/p11-prerelease/finalize.sh
+      - name: Publish tested expanded pre-release and stop before Phase 12
         run: bash tools/p11-prerelease/publish.sh
       - name: Upload tested pre-release bundle
         if: always()

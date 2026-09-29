@@ -13,7 +13,7 @@
 set -euo pipefail
 
 export DISPLAY=:99
-work=/tmp/p11-prerelease
+work="${P11_WORK:-/tmp/p11-prerelease}"
 tape="$work/P11.pre-release/zx-ux-phase11-pre-release.tzx"
 py=tools/runtime/python/bin/python
 runtime_home="$work/runtime-home"

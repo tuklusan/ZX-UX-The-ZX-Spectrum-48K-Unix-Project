@@ -13,7 +13,7 @@
 set -euo pipefail
 
 : "${GITHUB_SHA:?}" "${GITHUB_WORKSPACE:?}"
-work=/tmp/p11-prerelease
+work="${P11_WORK:-/tmp/p11-prerelease}"
 rm -rf "$work"
 mkdir -p "$work"/{evidence,a,b,P11.pre-release} v1/build
 py=tools/runtime/python/bin/python
