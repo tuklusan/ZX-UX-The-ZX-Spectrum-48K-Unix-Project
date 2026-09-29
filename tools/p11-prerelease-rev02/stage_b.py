@@ -56,14 +56,12 @@ def classify(path):
             q=re.fullmatch(r'"([^"/\\]+)"',rest); z=re.fullmatch(r"<([^>]+)>",rest)
             req(q or (z and z.group(1)=="c48.h"),"unsupported include")
             pp.append(["include",q.group(1) if q else "c48.h"])
-    funcs=sorted(set(re.findall(r"\b([A-Za-z_]\w*)\s*\([^;{}]*\)\s*(?:;|\{)",code))-CONTROL)
+    definitions=sorted(set(re.findall(r"\b([A-Za-z_]\w*)\s*\([^;{}]*\)\s*\{",code))-CONTROL)
+    declarations=sorted(set(re.findall(r"\b([A-Za-z_]\w*)\s*\([^;{}]*\)\s*;",code))-CONTROL)
     calls=sorted(set(re.findall(r"\b([A-Za-z_]\w*)\s*\(",code))-CONTROL-{"sizeof"})
     keys={k:ids.count(k) for k in ("void","char","short","int","float","unsigned","static","extern","if","else","while","do","for","break","continue","return","sizeof") if ids.count(k)}
-    ops={}
-    for op in ("++","--","<<",">>","&&","||","==","!=","<=",">=","+","-","*","/","%","&","|","^","~","!","<",">","="):
-        count=code.count(op)
-        if count: ops[op]=count
-    return {"sha256":hashlib.sha256(raw).hexdigest(),"size":len(raw),"preprocessor":pp,"keywords":keys,"operators":ops,"functions":funcs,"call_like":calls,"status":"PASS"}
+    ops=sorted(set(re.findall(r"\+\+|--|&&|\|\||==|!=|<=|>=|<<|>>|[+*/%&|^~!<>=-]",code)))
+    return {"sha256":hashlib.sha256(raw).hexdigest(),"size":len(raw),"preprocessor":pp,"keywords":keys,"operators":ops,"definitions":definitions,"declarations":declarations,"call_like":calls,"status":"PASS"}
 def digest(root):
     h=hashlib.sha256()
     for p in sorted(x for x in Path(root).rglob("*") if x.is_file() and x.name!="CONTRACT-DIGEST.sha256"):
@@ -89,8 +87,8 @@ def main():
         c,name=p["category"],p["name"]
         hp=HEADERS[name] if name in ("hanoi","queens8") else HEADERS[c]
         sc,hc=files[p["source_path"]],files[hp]
-        source_funcs=set(sc["functions"])
-        header_funcs=set(hc["functions"])
+        source_funcs=set(sc["definitions"])
+        header_funcs=set(hc["declarations"])
         source_calls=set(sc["call_like"])-source_funcs
         req(not sorted(source_calls-header_funcs-C48_API),"unclassified call in "+c+"/"+name)
         api_usage=sorted(source_calls&C48_API)
