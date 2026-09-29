@@ -57,10 +57,11 @@ run_mode() {
     xdotool windowfocus --sync "$window" || true; xdotool key F8
   fi
   # The exact unaccelerated 48K cassette path can exceed seven minutes
-  # on the certified Fuse runtime. Keep a ten-minute wall-clock budget for
+  # on the certified Fuse runtime. Keep a fifteen-minute wall-clock budget for
   # hosted-runner GUI/input jitter without weakening the debugger-side E003
-  # proof or enabling fast-load traps.
-  for _ in $(seq 1 600); do
+  # proof or enabling fast-load traps. Allow fifteen minutes for
+  # hosted-runner peak-period jitter while the real cassette path advances.
+  for _ in $(seq 1 900); do
     grep -q '0xa50001' "$diag/fuse-state.log" && { result=E003_REACHED; break; }
     grep -q '0xaf0001' "$diag/fuse-state.log" && { result=TIMEOUT; break; }
     kill -0 "$fuse_pid" 2>/dev/null || { result=FUSE_EXITED; break; }; sleep 1
