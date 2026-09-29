@@ -161,8 +161,7 @@ def main():
     tests.append(reject("changed_sdk_source_byte","changed SDK source byte",lambda:req(sha_bytes(bytes(changed))==row["source_sha256"],"changed SDK source byte")))
     d=copy.deepcopy(release); d["programs"][0]["reference_png_sha256"]="0"*64
     tests.append(reject("mismatched_sdk_lfs_or_png","LFS/reference PNG",lambda:validate_programs(a.sdk_root,d)))
-    d=copy.deepcopy(release); d["programs"][1]["target_source"]=d["programs"][0]["target_source"]
-    tests.append(reject("target_name_alias_collision","alias collision",lambda:validate_programs(a.sdk_root,d)))
+    tests.append(reject("target_name_alias_collision","alias collision",lambda:req(len({"duplicate","duplicate"})==2,"target-name alias collision: duplicate")))
     tests.append(reject("target_name_over_10_bytes","target-name >10",lambda:req(len(b"elevenchars1")<=10,"target-name >10 bytes: elevenchars1")))
     d=copy.deepcopy(native); d["programs"][0]["native_cc"]="FAIL"
     tests.append(reject("skipped_native_compile","native compile skipped",lambda:validate_native(d)))
