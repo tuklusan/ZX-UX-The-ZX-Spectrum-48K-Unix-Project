@@ -37,6 +37,7 @@ done
 "$py" tools/check_phase10_evidence.py --require-active
 "$py" tools/check_phase11_evidence.py --require-active
 "$py" tools/check_media_retention.py
+rm -rf v1/build
 hold=/tmp/zxux-runtime-policy-check; rm -rf "$hold"; mv tools/runtime "$hold"; trap 'mv "$hold" tools/runtime' EXIT
 ./tools/check_project_policy.py
 ./tools/check_license_headers.sh
