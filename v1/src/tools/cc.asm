@@ -9863,7 +9863,7 @@ cc_p11pr_mt_symbols:
     dw 0
     db 1,1
     db "mtitle",0
-    defs 8,0
+    defs 9,0
     dw CC_P11PR_MT_TEMPLATE_SIZE
     db 1,0
 cc_p11pr_mt_relocs:
