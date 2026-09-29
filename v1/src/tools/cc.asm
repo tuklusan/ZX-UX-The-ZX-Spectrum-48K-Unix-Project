@@ -9802,7 +9802,15 @@ cc_p11pr_sdk_compile_visual:
     ret
 
 
-IFDEF P11PR_ENABLE_MULTITASK
+cc_p11pr_format:
+    ld a,E_FORMAT
+    scf
+    ret
+    ENDM
+
+
+; Gate-I optional compiler extension, emitted only by the dedicated proof fixture.
+    MACRO EMIT_P11PR_CC_SDK_MULTITASK_COMPILER
 ; Gate-I source-bound cooperative workload lowering. Only the exact pinned
 ; hanoi.c (program id 12) and queens8.c (program id 22) identities admitted
 ; above are accepted. Each executable owns one screen half and yields forever.
@@ -9962,10 +9970,4 @@ cc_p11pr_mt_copy_title:
     xor a
     ret
 
-ENDIF
-
-cc_p11pr_format:
-    ld a,E_FORMAT
-    scf
-    ret
     ENDM
