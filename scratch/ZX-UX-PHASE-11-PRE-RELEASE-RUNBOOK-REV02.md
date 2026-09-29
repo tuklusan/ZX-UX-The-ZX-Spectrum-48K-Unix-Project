@@ -25,7 +25,9 @@ program semantics.
 
 REV02 exists to recover the real goal:
 
-1. the SDK 1.0.2 example/demo files are ordinary legal C48 source files;
+1. independently prove whether every exact SDK 1.0.2 example/demo source/header
+   construct is legal under frozen C48; only a 30/30 legal result may enter the
+   product-correction/acceptance lane;
 2. unmodified canonical SDK source bytes must load into ordinary ZX-UX and compile
    with the ordinary product cc command;
 3. the resulting genuine OBJ1 must link with the ordinary product ld command;
@@ -69,6 +71,11 @@ execution appear successful.
 REV01 publication/media remain recoverable from Git history and may be retained as
 failed pre-release evidence while REV02 is in progress. REV02 replaces the current
 P11.pre-release bundle only after all REV02 gates pass.
+
+The admitted status-only FAILED-CLOSED change is commit
+`a20adeceade081f4dbe9c09a70b6528d17877205`; its parent closed-REV01 checkpoint is
+`f6fe98b122d6207c67c0e6cb156135cf0a8856eb`. Stage A must prove that exact
+transition changed only the requested REV01 status marker.
 
 REV02 must record, not erase, the exact reason REV01 failed.
 
@@ -262,7 +269,9 @@ Canonical release media still retain only the exact SDK source tapes. Mutated an
 held-out sources are ephemeral anti-specialization tests and are never substituted
 for the release inputs. The independent challenge generator may know the frozen
 language contract but must not call the product compiler or derive expected results
-from product outputs.
+from product outputs. If any challenged product-tool byte changes, discard the
+concrete held-out challenge set, re-freeze the new tool hashes, regenerate the
+challenge inputs from the recorded method/seed domain, and rerun the gate.
 
 ## 8. Authority bridge for prospective ZX-UX product correction
 
@@ -573,6 +582,13 @@ re-reviewed runbook revision are complete.
 
 **Gate D:** every planned correction has explicit frozen authority and bounded
 scope; zero desired-proof behavior is being promoted to authority by assertion.
+
+Any defect discovered in Stage E or later returns to the earliest stage whose
+assumption or product behavior it invalidates. A target/product fix requires a new
+or updated Stage-C reproduction and Stage-D classification, resets all downstream
+PASS states, discards any staged publication candidate, and reruns affected
+generality/lifecycle/behavior/kernel gates. No late-stage fix may be patched in and
+followed by resuming at the next letter.
 
 ## 15. Stage E — repair ordinary ZX-UX C48 generically
 
@@ -1032,8 +1048,10 @@ On one unchanged source/tool/workflow candidate head:
 14. PHASE-11-COMPLETE exact identity;
 15. zero Phase-12 state.
 
-Freeze the exact tested staged bundle and its recursive digest. Do not rebuild it
-for publication.
+Freeze the exact tested staged publication set and its recursive digests: both the
+complete `P11.pre-release` bundle and the separate
+`v1/tests/compiler/sdk-reference/pre-release-1.0.2` reference tree. Record the
+exact path set expected to change. Do not rebuild either tree for publication.
 
 ### 26.2 Exact publication commit
 
@@ -1046,8 +1064,8 @@ before the commit/push. It must never dispatch Phase 12.
 
 On the publication commit itself:
 
-1. prove every published byte equals the frozen staged byte/digest and no
-   unlisted file changed;
+1. prove every published byte in both frozen publication trees equals the staged
+   bytes/digests and no unlisted file changed;
 2. rerun license/project-policy/media/authority/historical-immutability gates;
 3. rerun P11.48 exact-head and Phase-11 aggregate regression;
 4. rerun H-L acceptance against the published inputs and require regenerated
@@ -1123,7 +1141,8 @@ For every implementation checkpoint after REV02 is explicitly approved/opened:
 
 ## 29. Definition of DONE
 
-REV02 is DONE only when all of the following are simultaneously true:
+REV02 reaches **operational completion** only when all of the following are
+simultaneously true:
 
 - REV01 remains FAILED-CLOSED and historically unchanged except that status marker;
 - SDK 1.0.2 exact pin/provenance PASS;
@@ -1168,20 +1187,23 @@ REV02 is DONE only when all of the following are simultaneously true:
 - all admitted P0-P11 evidence/media unchanged;
 - PHASE-11-COMPLETE unchanged;
 - post-publication exact-head Gate P PASS on the exact publication commit;
-- closure record prepared and three clean full-byte scans completed after its final
-  byte change;
-- clean current main;
+- clean publication head;
 - zero Phase-12 state.
 
-Only then change this runbook from OPEN to CLOSED and append final source commit,
-publication commit/tree, post-publication workflow run, bundle-manifest hash, TZX
-hash, SDK pin, kernel three-way hash, 30-program PASS count, compiler/as/ld
-anti-specialization result, worst-case 48K memory anchors, ordinary-tool session
-anchors, Hanoi/Queens executable hashes and 1250-frame PNG hash, real-time loader
-anchor, immutable-scope digest, and final validation anchors.
+After operational completion, perform Section 27.1 exactly: change this runbook
+from OPEN to CLOSED, append final source commit, publication commit/tree,
+post-publication workflow run, both frozen publication-tree digests,
+bundle-manifest hash, TZX hash, SDK pin, kernel three-way hash, 30-program PASS
+count, compiler/as/ld anti-specialization result, worst-case 48K memory anchors,
+ordinary-tool session anchors, Hanoi/Queens executable hashes and 1250-frame PNG
+hash, real-time loader anchor, immutable-scope digest, and final validation anchors.
 
-The closure commit must follow Section 27.1 and may change only this runbook after
-the tested publication state.
+REV02 is finally **DONE** only after those exact closure bytes receive three
+successive clean complete scans, the closure-only commit is pushed, the
+post-closure product/media tree is proven byte-identical to the publication PASS
+state, current main is clean, and zero Phase-12 state is re-proven.
+
+The closure commit may change only this runbook after the tested publication state.
 
 Then STOP.
 
