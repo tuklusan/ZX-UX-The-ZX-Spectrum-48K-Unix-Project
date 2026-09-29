@@ -17,6 +17,11 @@ on:
       admitted_commit:
         required: true
         type: string
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/r1800-activation-validation.yml'
+      - 'v1/tools-host/test-driver/revision18_bridge.py'
 permissions:
   contents: read
 jobs:
@@ -24,13 +29,13 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
-      ADMITTED_COMMIT: ${{ inputs.admitted_commit }}
+      ADMITTED_COMMIT: ${{ inputs.admitted_commit || github.sha }}
       ZXUX_SOURCE_EPOCH: rev18
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
-          ref: ${{ inputs.admitted_commit }}
+          ref: ${{ inputs.admitted_commit || github.sha }}
       - name: Validate exact R18 activation state
         run: |
           set -euo pipefail
