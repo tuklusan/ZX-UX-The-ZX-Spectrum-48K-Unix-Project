@@ -24,14 +24,74 @@ def crc16(data: bytes)->int:
         for _ in range(8):
             crc=((crc<<1)^0x1021)&0xffff if crc&0x8000 else (crc<<1)&0xffff
     return crc
-def mex1(image: bytes, stack=128)->bytes:
+def mex1(image: bytes, stack=128, bss=0, relocations=())->bytes:
     req(0 < len(image) <= 0x7fff,"image size")
+    req(0 <= bss <= 0x7fff and len(image)+bss <= 0x8000,"image+bss size")
+    relocs=tuple(int(x) for x in relocations)
+    prev=-2
+    for off in relocs:
+        req(0 <= off <= len(image)-2,"relocation range")
+        req(off >= prev+2,"relocation order/overlap")
+        word=struct.unpack_from("<H",image,off)[0]
+        req(word <= len(image)+bss,"relocation addend range")
+        prev=off
+    relblob=b"".join(struct.pack("<H",x) for x in relocs)
     h=bytearray(24); h[:4]=b"MEX1"; h[4]=1; h[5]=0
     h[6:8]=struct.pack("<H",24); h[8:10]=struct.pack("<H",len(image))
-    h[10:12]=b"\0\0"; h[12:14]=b"\0\0"; h[14:16]=struct.pack("<H",stack)
-    h[16:18]=b"\0\0"; h[18:20]=struct.pack("<H",24+len(image))
-    h[20:22]=struct.pack("<H",crc16(image)); h[22:24]=struct.pack("<H",crc16(bytes(h)))
-    return bytes(h)+image
+    h[10:12]=struct.pack("<H",bss); h[12:14]=b"\0\0"; h[14:16]=struct.pack("<H",stack)
+    h[16:18]=struct.pack("<H",len(relocs)); h[18:20]=struct.pack("<H",24+len(image))
+    body=image+relblob
+    h[20:22]=struct.pack("<H",crc16(body)); h[22:24]=struct.pack("<H",crc16(bytes(h)))
+    return bytes(h)+body
+
+def build_relocatable(sj: Path, out: Path, name: str, include_lines: str, emit_lines: str):
+    def source(origin: int, suffix: str, with_table: bool)->str:
+        table=(f"{name}_product_relocs:\n    RELOCATE_TABLE\n"
+               f"{name}_product_relocs_end:\n") if with_table else ""
+        reloc_save=(f'    SAVEBIN "{name}-product.reloc",{name}_product_relocs,'
+                    f'{name}_product_relocs_end-{name}_product_relocs\n') if with_table else ""
+        return f"""    DEVICE ZXSPECTRUM48
+{include_lines}    ORG ${origin:04X}
+    RELOCATE_START
+{name}_product_image:
+{emit_lines}{name}_product_end:
+    RELOCATE_END
+{table}    SAVEBIN "{name}-product{suffix}.bin",{name}_product_image,{name}_product_end-{name}_product_image
+{reloc_save}"""
+
+    asm=out/f"{name}-product.asm"
+    asm.write_text(source(0,"",True),encoding="utf-8",newline="\n")
+    run([sj,"--nologo",asm.name],out)
+    base_asm=out/f"{name}-product-base.asm"
+    base_asm.write_text(source(0x1000,"-base",False),encoding="utf-8",newline="\n")
+    run([sj,"--nologo",base_asm.name],out)
+
+    image=out/f"{name}-product.bin"
+    image_bytes=image.read_bytes()
+    base_bytes=(out/f"{name}-product-base.bin").read_bytes()
+    req(len(base_bytes)==len(image_bytes),f"{name} two-origin image size drift")
+    reloc_blob=(out/f"{name}-product.reloc").read_bytes()
+    req(len(reloc_blob)%2==0,f"{name} relocation table size")
+    raw_relocs=struct.unpack("<"+"H"*(len(reloc_blob)//2),reloc_blob) if reloc_blob else ()
+    # The bundled assembler can conservatively tag fixed EQU operands.  Prove
+    # each retained relocation by an independent second-origin assembly: a
+    # true image-base word changes by exactly +0x1000; fixed ROM/syscall and
+    # numeric constants remain byte-identical and are excluded.
+    relocs=[]
+    for off in raw_relocs:
+        req(0 <= off <= len(image_bytes)-2,f"{name} relocation candidate range")
+        w0=struct.unpack_from("<H",image_bytes,off)[0]
+        w1=struct.unpack_from("<H",base_bytes,off)[0]
+        if ((w1-w0)&0xFFFF)==0x1000:
+            relocs.append(off)
+    # Reconstructing the base image from the retained relocation set must be
+    # byte exact. This also catches missed or spurious candidate sites.
+    rebuilt=bytearray(image_bytes)
+    for off in relocs:
+        w=struct.unpack_from("<H",rebuilt,off)[0]
+        struct.pack_into("<H",rebuilt,off,(w+0x1000)&0xFFFF)
+    req(bytes(rebuilt)==base_bytes,f"{name} two-origin relocation closure")
+    return asm,image,tuple(relocs)
 def load_maketap(root: Path):
     path=root/"v1/tools-host/maketap/maketap.py"
     spec=importlib.util.spec_from_file_location("zxux_rev02_maketap",path)
@@ -51,19 +111,12 @@ def main():
     req("EMIT_P601_SH_IMAGE" in sh and "sh_idle:" in sh,"shell entry fixture changed")
     # Product closure deliberately includes no historical P11PR compiler helper.
     req("EMIT_P11PR_CC_SDK_CORPUS_COMPILER" in ccsrc.read_text(),"historical fixture identity missing")
-    asm=out/"sh-product-preflight.asm"
-    asm.write_text(f"""    DEVICE ZXSPECTRUM48
-    INCLUDE "{(root/'v1/include/zx48ux.inc').as_posix()}"
-    INCLUDE "{(root/'v1/src/shell/sh.asm').as_posix()}"
-    ORG $0000
-sh_product_image:
-    EMIT_P601_SH_IMAGE
-sh_product_end:
-    SAVEBIN "sh-product.bin",sh_product_image,sh_product_end-sh_product_image
-""",encoding="utf-8",newline="\n")
-    run([sj,"--nologo",asm.name],out)
-    image=out/"sh-product.bin"; req(image.is_file() and 4 <= image.stat().st_size <= 64,"shell preflight image")
-    mex=mex1(image.read_bytes()); (out/"sh.mex1").write_bytes(mex)
+    asm,image,sh_relocs=build_relocatable(
+        sj,out,"sh",
+        f'    INCLUDE "{(root/"v1/include/zx48ux.inc").as_posix()}"\n    INCLUDE "{(root/"v1/src/shell/sh.asm").as_posix()}"\n',
+        '    EMIT_P601_SH_IMAGE\n')
+    req(image.is_file() and 4 <= image.stat().st_size <= 64,"shell preflight image")
+    mex=mex1(image.read_bytes(),relocations=sh_relocs); (out/"sh.mex1").write_bytes(mex)
     inspect=root/"v1/tools-host/inspect-mex/inspect.py"
     run([sys.executable,inspect,out/"sh.mex1","--base","0x6000"],root)
     mt=load_maketap(root)
@@ -74,22 +127,12 @@ sh_product_end:
     # First prospective ordinary /bin/cc image.  It contains the generic
     # ARG1/source-open/transaction scaffold only; historical source-bound
     # P1144/P1145/P11PR compiler macros are deliberately not expanded.
-    cc_asm=out/"cc-product.asm"
-    cc_asm.write_text(f"""    DEVICE ZXSPECTRUM48
-    INCLUDE "{(root/'v1/include/zx48ux.inc').as_posix()}"
-    INCLUDE "{(root/'v1/src/tools/cc.asm').as_posix()}"
-    ORG $0000
-cc_product_image:
-    EMIT_P1128_CC_OBJ1_WRITER
-    EMIT_P1129_CC_TRANSACTION_ROUTINES
-    EMIT_REV02_CC_PRODUCT_CLI
-cc_product_end:
-    SAVEBIN "cc-product.bin",cc_product_image,cc_product_end-cc_product_image
-""",encoding="utf-8",newline="\n")
-    run([sj,"--nologo",cc_asm.name],out)
-    cc_image=out/"cc-product.bin"
+    cc_asm,cc_image,cc_relocs=build_relocatable(
+        sj,out,"cc",
+        f'    INCLUDE "{(root/"v1/include/zx48ux.inc").as_posix()}"\n    INCLUDE "{(root/"v1/src/tools/cc.asm").as_posix()}"\n',
+        '    EMIT_P1128_CC_OBJ1_WRITER\n    EMIT_P1129_CC_TRANSACTION_ROUTINES\n    EMIT_REV02_CC_PRODUCT_CLI\n')
     req(cc_image.is_file() and 64 <= cc_image.stat().st_size <= 20480,"cc product image size")
-    cc_mex=mex1(cc_image.read_bytes(),stack=512); (out/"cc.mex1").write_bytes(cc_mex)
+    cc_mex=mex1(cc_image.read_bytes(),stack=512,relocations=cc_relocs); (out/"cc.mex1").write_bytes(cc_mex)
     run([sys.executable,inspect,out/"cc.mex1","--base","0x6000"],root)
     cc_tap=mt.m48o_blocks(mt.M48OObject("cc",mt.M48O_BIN,mt.DIR_BIN,cc_mex))
     (out/"cc.m48o.tap").write_bytes(cc_tap)
@@ -104,40 +147,24 @@ cc_product_end:
 
 
     # Prospective ordinary /bin/as image: generic ARG1/source-open scaffold only.
-    as_asm=out/"as-product.asm"
-    as_asm.write_text(f"""    DEVICE ZXSPECTRUM48
-    INCLUDE "{(root/'v1/include/zx48ux.inc').as_posix()}"
-    INCLUDE "{(root/'tools/as.asm').as_posix()}"
-    ORG $0000
-as_product_image:
-    EMIT_REV02_AS_PRODUCT_CLI
-as_product_end:
-    SAVEBIN "as-product.bin",as_product_image,as_product_end-as_product_image
-""",encoding="utf-8",newline="\n")
-    run([sj,"--nologo",as_asm.name],out)
-    as_image=out/"as-product.bin"
+    as_asm,as_image,as_relocs=build_relocatable(
+        sj,out,"as",
+        f'    INCLUDE "{(root/"v1/include/zx48ux.inc").as_posix()}"\n    INCLUDE "{(root/"tools/as.asm").as_posix()}"\n',
+        '    EMIT_REV02_AS_PRODUCT_CLI\n')
     req(as_image.is_file() and 64 <= as_image.stat().st_size <= 12288,"as product image size")
-    as_mex=mex1(as_image.read_bytes(),stack=512); (out/"as.mex1").write_bytes(as_mex)
+    as_mex=mex1(as_image.read_bytes(),stack=512,relocations=as_relocs); (out/"as.mex1").write_bytes(as_mex)
     run([sys.executable,inspect,out/"as.mex1","--base","0x6000"],root)
     as_tap=mt.m48o_blocks(mt.M48OObject("as",mt.M48O_BIN,mt.DIR_BIN,as_mex))
     (out/"as.m48o.tap").write_bytes(as_tap)
     req(as_tap==mt.m48o_blocks(mt.M48OObject("as",mt.M48O_BIN,mt.DIR_BIN,as_mex)),"as M48O nondeterminism")
 
     # Prospective ordinary /bin/ld image: generic ARG1/OBJ1-open scaffold only.
-    ld_asm=out/"ld-product.asm"
-    ld_asm.write_text(f"""    DEVICE ZXSPECTRUM48
-    INCLUDE "{(root/'v1/include/zx48ux.inc').as_posix()}"
-    INCLUDE "{(root/'tools/ld.asm').as_posix()}"
-    ORG $0000
-ld_product_image:
-    EMIT_REV02_LD_PRODUCT_CLI
-ld_product_end:
-    SAVEBIN "ld-product.bin",ld_product_image,ld_product_end-ld_product_image
-""",encoding="utf-8",newline="\n")
-    run([sj,"--nologo",ld_asm.name],out)
-    ld_image=out/"ld-product.bin"
+    ld_asm,ld_image,ld_relocs=build_relocatable(
+        sj,out,"ld",
+        f'    INCLUDE "{(root/"v1/include/zx48ux.inc").as_posix()}"\n    INCLUDE "{(root/"tools/ld.asm").as_posix()}"\n',
+        '    EMIT_REV02_LD_PRODUCT_CLI\n')
     req(ld_image.is_file() and 64 <= ld_image.stat().st_size <= 8192,"ld product image size")
-    ld_mex=mex1(ld_image.read_bytes(),stack=512); (out/"ld.mex1").write_bytes(ld_mex)
+    ld_mex=mex1(ld_image.read_bytes(),stack=512,relocations=ld_relocs); (out/"ld.mex1").write_bytes(ld_mex)
     run([sys.executable,inspect,out/"ld.mex1","--base","0x6000"],root)
     ld_tap=mt.m48o_blocks(mt.M48OObject("ld",mt.M48O_BIN,mt.DIR_BIN,ld_mex))
     (out/"ld.m48o.tap").write_bytes(ld_tap)
@@ -147,23 +174,23 @@ ld_product_end:
       "schema":1,"kind":"rev02-product-tools-preflight","status":"PASS",
       "shell":{
         "source":"v1/src/shell/sh.asm","source_sha256":sha(shsrc),
-        "image_sha256":sha(image),"mex1_sha256":sha(out/"sh.mex1"),"m48o_tap_sha256":sha(out/"sh.m48o.tap"),
+        "image_sha256":sha(image),"relocation_count":len(sh_relocs),"mex1_sha256":sha(out/"sh.mex1"),"m48o_tap_sha256":sha(out/"sh.m48o.tap"),
         "entry":"EMIT_P601_SH_IMAGE","semantic_status":"PACKAGING-ONLY-IDLE-ENTRY-NOT-GATE-G-READY"},
       "cc":{
         "source":"v1/src/tools/cc.asm","source_sha256":sha(ccsrc),
-        "image_sha256":sha(cc_image),"image_bytes":cc_image.stat().st_size,
+        "image_sha256":sha(cc_image),"image_bytes":cc_image.stat().st_size,"relocation_count":len(cc_relocs),
         "mex1_sha256":sha(out/"cc.mex1"),"m48o_tap_sha256":sha(out/"cc.m48o.tap"),
         "entry":"EMIT_REV02_CC_PRODUCT_CLI",
         "semantic_status":"GENERIC-CLI-AND-SOURCE-OPEN-SCAFFOLD; CODEGEN-NOT-YET-ATTACHED"},
       "as":{
         "source":"tools/as.asm","source_sha256":sha(assrc),
-        "image_sha256":sha(as_image),"image_bytes":as_image.stat().st_size,
+        "image_sha256":sha(as_image),"image_bytes":as_image.stat().st_size,"relocation_count":len(as_relocs),
         "mex1_sha256":sha(out/"as.mex1"),"m48o_tap_sha256":sha(out/"as.m48o.tap"),
         "entry":"EMIT_REV02_AS_PRODUCT_CLI",
         "semantic_status":"GENERIC-CLI-AND-SOURCE-OPEN-SCAFFOLD; ASSEMBLER-NOT-YET-ATTACHED"},
       "ld":{
         "source":"tools/ld.asm","source_sha256":sha(ldsrc),
-        "image_sha256":sha(ld_image),"image_bytes":ld_image.stat().st_size,
+        "image_sha256":sha(ld_image),"image_bytes":ld_image.stat().st_size,"relocation_count":len(ld_relocs),
         "mex1_sha256":sha(out/"ld.mex1"),"m48o_tap_sha256":sha(out/"ld.m48o.tap"),
         "entry":"EMIT_REV02_LD_PRODUCT_CLI",
         "semantic_status":"GENERIC-CLI-AND-OBJ1-OPEN-SCAFFOLD; LINKER-NOT-YET-ATTACHED"},
@@ -172,7 +199,7 @@ ld_product_end:
         "deterministic_cc_mex1":"PASS","deterministic_cc_m48o":"PASS","cc_mex1_inspection":"PASS",
         "deterministic_as_mex1":"PASS","deterministic_as_m48o":"PASS","as_mex1_inspection":"PASS",
         "deterministic_ld_mex1":"PASS","deterministic_ld_m48o":"PASS","ld_mex1_inspection":"PASS",
-        "normal_project_assembler_used":"PASS","p11pr_not_in_product_closure":"PASS",
+        "normal_project_assembler_used":"PASS","relocatable_product_mex1":"PASS","p11pr_not_in_product_closure":"PASS",
         "not_claimed_as_real_shell_session":"PASS"}}
     (out/"PRODUCT-TOOLS-PREFLIGHT.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
     print("REV02 PRODUCT TOOLS PREFLIGHT PASS")
