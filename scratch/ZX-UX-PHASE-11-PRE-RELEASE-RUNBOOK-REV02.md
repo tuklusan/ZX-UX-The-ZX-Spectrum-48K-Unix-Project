@@ -13,7 +13,7 @@
 # ZX-UX Phase-11 Expanded Pre-Release Recovery Runbook REV02
 
 **Status:** OPEN  
-**Scope:** post-Phase-11, pre-Phase-12 recovery of the failed expanded pre-release, including only prospective product corrections strictly required by the already-frozen REV17/REV08 contracts and their subordinate frozen C48/ABI/object/tool documentation  
+**Scope:** post-Phase-11, pre-Phase-12 recovery of the failed expanded pre-release, including only prospective product corrections strictly required by the frozen authority governing each epoch: REV17/REV08 for admitted P11 history and admitted REV18/REV09 for the post-P11/pre-P12 recovery lane, with subordinate frozen C48/ABI/object/tool documentation  
 **Hard stop:** DO NOT START PHASE 12
 
 ## 1. Purpose
@@ -43,11 +43,16 @@ REV02 exists to recover the real goal:
    alternate compiler path may be required.
 
 The SDK corpus is acceptance material, not a whitelist and not an implementation
-specification. Canonical authority remains REV17 and REV08. The corrected C48
-language specification, `v1/docs/c48.md`, ABI/object/tool documentation, compiler
-manual, and SDK are mandatory reconciliation/reference inputs but may not widen or
-override REV17/REV08. Their exact review-time identities must be pinned before any
-product correction. If a subordinate document conflicts with REV17/REV08, or if the
+specification. REV17/REV08 remain the immutable authority for admitted P11 history.
+After admitted and activation-validated R18.00, REV18/REV09 are the canonical
+authority for this post-P11/pre-P12 recovery lane. Their frozen SHA-256 identities
+are REV18 `b13c551f854cf3c01d951212916c6cf787f23617e3b8b74fc7c1867f76ba2156`
+and REV09 `9ff614ba04721961b3461d03638586260b91e9e82eac7687054ead1c9802869f`.
+The corrected C48 language specification, `v1/docs/c48.md`, ABI/object/tool
+documentation, compiler manual, and SDK are mandatory reconciliation/reference
+inputs but may not widen or override the authority governing the current epoch.
+Their exact review-time identities must be pinned before any product correction.
+If a subordinate document conflicts with the governing frozen authority, or if the
 desired behavior needs a contract not fixed there, execution stops for an explicit
 authority revision rather than treating current documentation as a moving authority.
 
@@ -314,10 +319,12 @@ For each discovered failure of ordinary cc/as/ld/kernel/runtime behavior:
 
 ### 8.1 Existing-authority defect
 
-If REV17/REV08 already require the behavior, with subordinate C48/ABI/object/tool
-documents only clarifying that frozen requirement, the failure is a ZX-UX
-implementation defect. Each such classification must cite the exact controlling
-REV17/REV08 clause and the exact subordinate contract used to test it; the desired
+If the frozen authority governing the current epoch already requires the behavior,
+with subordinate C48/ABI/object/tool documents only clarifying that frozen
+requirement, the failure is a ZX-UX implementation defect. Admitted P11 history
+remains governed by REV17/REV08; prospective REV02 recovery corrections after
+R18.00 are governed by REV18/REV09. Each classification must cite the exact
+controlling clause and the exact subordinate contract used to test it; the desired
 REV02 proof result itself is not authority.
 
 Fix the current post-P11 main implementation through the normal workflow. Typical
@@ -344,13 +351,14 @@ Requirements:
 
 If an SDK program or a strengthened REV02 proof requires a language feature, ABI
 behavior, object rule, syscall, runtime contract, command-line option, or public
-tool behavior not already fixed by REV17/REV08, STOP the runbook before target
-code changes for that gap.
+tool behavior not already fixed by the frozen authority governing the current
+recovery epoch, STOP the runbook before target code changes for that gap.
 
 Do not implement it under a pre-release loophole and do not draft/activate the new
 contract as an automatic REV02 step. The authority transition must occur separately
 under explicit approval; REV02 must then be revised, re-reviewed, rescanned, and
-re-opened against the new authority before execution resumes.
+explicitly re-admitted for continuation against the new authority before execution
+resumes.
 
 ### 8.3 SDK defect
 
@@ -372,12 +380,38 @@ authority citation for an implementation defect; exact planned changed paths; an
 the regression/negative tests that will close it. Unclassified gaps, mixed classes,
 or a classification justified only by the SDK/reference picture fail closed.
 
-In particular, inability to reach the kernel fixed/absolute output mode through a
-shell-visible `ld` invocation must be classified here. REV17 requires the linker
-capability but does not authorize this runbook to invent unspecified public CLI
-syntax.
+The former C014 authority gap is now closed only by admitted R18.00. REV18 Section
+24 and REV09 R18.00 freeze the exact ordinary shell-visible form
+`ld input.obj -o output -abs` for the already-required generic fixed/absolute
+OBJ1 image capability. No other fixed-image CLI syntax may be invented. Stage C
+must re-reproduce the current product behavior against that exact command and
+Stage D must reclassify C014 under REV18/REV09 before any implementation change.
 
 No gate may blur these four classes.
+
+### 8.6 R18.00 authority re-entry checkpoint
+
+The C014 stop was resolved through a separate authority transition rather than by
+changing product code under REV02:
+
+- R18.00 qualified source candidate: `9759925f2b9d427e402131426b5fb2bf0118a8b1`;
+- R18.00 evidence-admission commit: `41f93e942297278d1a5010d0bd1fe90ccf0cb8ab`;
+- activation validation PASS: workflow run `36633777076`, validated at
+  `8fcc0ff5fa15c7e913cf186265f9b170903cad50`;
+- REV18 SHA-256:
+  `b13c551f854cf3c01d951212916c6cf787f23617e3b8b74fc7c1867f76ba2156`;
+- REV09 SHA-256:
+  `9ff614ba04721961b3461d03638586260b91e9e82eac7687054ead1c9802869f`;
+- REV17/REV08 remain immutable historical P11 authority;
+- PHASE-11-COMPLETE remains
+  `263a203da3d54a398e8ac011284ae4195b1279c0`;
+- Phase 12 remains forbidden.
+
+Before resuming product correction, these revised REV02 bytes require three
+successive unchanged complete SoP scans plus the applicable license, policy,
+authority, historical-immutability, exact-head and zero-Phase-12 gates. Stage C
+and Stage D records must then be regenerated so C014 is no longer carried as an
+authority gap.
 
 ## 9. Required separation of historical fixtures from production compiler
 
@@ -907,11 +941,12 @@ Required positive path:
    explicit-output form) through normal command/process handling;
 5. require genuine target-produced OBJ1 through the ordinary assembler
    parser/encoder/writer/transaction path;
-6. invoke a shell-visible ordinary product `ld` command that reaches REV17's
-   required fixed/absolute 8192-byte output capability;
-7. do not invent a new `ld` option in this runbook: Gate D must cite the active
-   authority for the exact invoked command behavior, or execution stops for an
-   authority revision;
+6. invoke the exact ordinary shell-visible fixed-image form authorized by REV18
+   Section 24, `ld kernel.obj -o kernel-native -abs`, through normal command/
+   process handling; the produced DAT object must contain exactly the OBJ1 TEXT;
+7. require Gate D to cite REV18 Section 24 and REV09 R18.00 for that exact command
+   behavior; no alternate fixed-image option or proof-only linker entry is
+   permitted;
 8. produce the nonresident 8192-byte kernel only through ordinary target allocation
    and prove the executing kernel was not overwritten;
 9. retain source, source map, source TAP, genuine OBJ1, native kernel, exact command
@@ -1280,7 +1315,7 @@ draft.
 
 Review must explicitly confirm at least:
 
-- the REV17/REV08 authority hierarchy and fail-closed authority-gap path;
+- the REV17/REV08 historical-P11 and REV18/REV09 recovery authority hierarchy and fail-closed authority-gap path;
 - quarantine of the failed write-capable REV01 publisher before product edits;
 - the ordinary-product cc/as/ld command and production-dependency rule;
 - compiler, assembler, and linker anti-specialization gates;
