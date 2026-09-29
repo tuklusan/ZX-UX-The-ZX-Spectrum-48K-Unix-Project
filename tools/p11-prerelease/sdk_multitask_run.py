@@ -24,6 +24,7 @@ import phase2_spawn_exit_leak as p222
 H_PROC=0xA000; Q_PROC=0xA020; H_PATH=0xA100; Q_PATH=0xA120
 H_ARG=0xA200; Q_ARG=0xA240; ENV=0xA300; H_MEX=0xB400; Q_MEX=0xB800
 H_REC=0xC000; Q_REC=0xC040; FONT=0xD000; MARK=0xD1810001
+PROC_PRIVATE_FLAGS=46; PROC_PRIVATE_STARTED=0x80
 
 def req(v,m):
     if not v: raise RuntimeError(m)
@@ -191,7 +192,7 @@ def execute(fixture,sy,h,q,font):
       "breakpoint time 0 if spectrum:frames > 0x4e1","commands 2",f"print 0x{MARK:x}",
       f"print [0x{sy['p11mt_hanoi_yields']:04x}]",f"print [0x{sy['p11mt_hanoi_yields']+1:04x}]",
       f"print [0x{sy['p11mt_queens_yields']:04x}]",f"print [0x{sy['p11mt_queens_yields']+1:04x}]",
-      f"print [0x{p2+2:04x}]",f"print [0x{p3+2:04x}]",f"print [0x{p2+35:04x}]",f"print [0x{p3+35:04x}]",
+      f"print [0x{p2+2:04x}]",f"print [0x{p3+2:04x}]",f"print [0x{p2+PROC_PRIVATE_FLAGS:04x}]",f"print [0x{p3+PROC_PRIVATE_FLAGS:04x}]",
       "print spectrum:frames","exit 0","end","continue"])
     with tempfile.TemporaryDirectory(prefix="zxux-p11i-") as td:
       td=Path(td); sp=td/"both.sna"; movie=td/"both.fmf"; sp.write_bytes(sna(sy["p11mt_start"],fixture,regs(sy,h,q,font)))
@@ -200,7 +201,7 @@ def execute(fixture,sy,h,q,font):
       vals=[int(x,16) for x in re.findall(r"0x([0-9a-f]+)",r.stdout,re.I)]; req(MARK in vals,"checkpoint missing")
       i=vals.index(MARK); m=vals[i+1:i+10]; req(len(m)==9,"checkpoint metadata")
       hy=m[0]|m[1]<<8; qy=m[2]|m[3]<<8; req(hy and qy,"both workloads must yield")
-      req(m[4] in (1,2) and m[5] in (1,2),"both states runnable"); req(m[6]&0x80 and m[7]&0x80,"both started")
+      req(m[4] in (1,2) and m[5] in (1,2),"both states runnable"); req(m[6]&PROC_PRIVATE_STARTED and m[7]&PROC_PRIVATE_STARTED,"both started")
       r=subprocess.run([str(conv),"-S","-y",str(movie),str(td/"frame.scr")],cwd=ROOT,text=True,capture_output=True,timeout=30)
       req(r.returncode==0,"SCR extraction"); fs=sorted(td.glob("frame-*.scr")); req(fs,"SCR missing")
       return fs[-1].read_bytes(),hy,qy,m[8]
