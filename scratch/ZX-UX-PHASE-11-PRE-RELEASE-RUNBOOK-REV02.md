@@ -138,12 +138,36 @@ explicitly revised before execution:
 - recapi.h blob:
   29e170e5c10aee80f09ed9eb7f273b8c9c9aedbc.
 
+The tag/commit/tree values above are immutable provenance for formal SDK release
+1.0.2. They are not a requirement that the SDK repository's moving `main`, current
+HEAD commit, or current repository tree remain equal to those historical release
+identifiers.
+
+REV02's execution pin is byte-oriented. It pins the exact in-scope C48 application
+source/header corpus and the exact release-provided source-transfer/reference bytes
+used by this runbook. In particular:
+
+- every in-scope SDK `.c` and directly required `.h` file is identified by exact
+  path plus cryptographic content hash in the retained acceptance manifest;
+- the corresponding canonical release source TAP bytes are independently hashed and
+  must reconstruct those exact source/header bytes;
+- unrelated SDK repository changes, including tools, Python programs, documentation,
+  tests, packaging logic, or other non-corpus files, may advance SDK `main` and
+  therefore change current Git commit/tree/HEAD identifiers without invalidating
+  REV02;
+- REV02 must never silently substitute bytes from moving SDK `main` merely because
+  its current Git identifiers are newer;
+- movement of SDK `main` by itself is neither a stop condition nor a reason to
+  re-pin this runbook.
+
 The release source-tape manifest declares 57 tapes. REV02 scope is exactly the
 same 30 example/demo programs: 6 examples and 24 demos. spriteanim.c keeps exact
 SDK source bytes/path and the release-declared target alias sprani.c.
 
 If a newer formal SDK release exists when REV02 is later opened for execution,
-STOP and explicitly re-pin/review this runbook. Never consume moving SDK main.
+STOP and explicitly re-pin/review this runbook as already required. Ordinary moving
+`main` commits that do not constitute a newer formal release do not trigger that
+stop. Never consume moving SDK `main` as an execution input.
 
 ## 5. Known REV01 defects that REV02 must prevent
 
@@ -502,7 +526,13 @@ Require:
 - exact source/header reconstruction from the tapes;
 - exact reference-image LFS pointer identities and materialized payload hashes;
 - separate GUI/evidence package provenance;
-- no use of moving SDK main;
+- no use of moving SDK main as an execution input;
+- record the observed SDK moving-main HEAD only as informational provenance, never
+  as an equality requirement or acceptance pin;
+- prove every pinned in-scope `.c`/`.h` content hash and canonical source-TAP
+  hash independently of the repository's current moving HEAD/tree;
+- unrelated SDK tool/Python/documentation/test changes and resulting Git-ID movement
+  are ignored by acceptance so long as the pinned corpus bytes remain exact;
 - independent static classification of every source/header construct against the
   frozen C48 contract, with zero unexplained/unsupported construct before any
   product defect classification. This classifier/oracle must be independent of the
@@ -1175,9 +1205,10 @@ REV02 reaches **operational completion** only when all of the following are
 simultaneously true:
 
 - REV01 remains FAILED-CLOSED and historically unchanged except that status marker;
-- SDK 1.0.2 exact pin/provenance PASS;
+- SDK 1.0.2 byte-level corpus pin/provenance PASS; moving SDK main/HEAD/tree may
+  differ and is informational only;
 - historical P11.39 SDK material unchanged;
-- no SDK source/header bytes changed, including verified target-loaded canonical
+- no pinned SDK source/header bytes changed, including verified target-loaded canonical
   source/header objects across each ordinary cc invocation;
 - the failed REV01 write-capable publisher is quarantined before recovery product
   edits and cannot republish failed acceptance on push;
