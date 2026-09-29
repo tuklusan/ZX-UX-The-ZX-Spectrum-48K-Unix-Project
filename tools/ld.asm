@@ -2789,3 +2789,146 @@ r17_ld_dest:        dw 0
 r17_ld_text:        dw 0
 r17_ld_header_copy: defs R17_LD_OBJ1_HEADER,0
     ENDM
+
+
+; REV02 prospective ordinary /bin/ld product command scaffold.
+; Generic ARG1/OBJ1-open path only. No object hash/name application dispatch.
+    MACRO EMIT_REV02_LD_PRODUCT_CLI
+LD_REV02_ARG1_MIN EQU 17
+ld_rev02_arg1_ptr:    dw 0
+ld_rev02_arg1_len:    dw 0
+ld_rev02_input_ptr:   dw 0
+ld_rev02_output_ptr:  dw 0
+ld_rev02_input_handle: db HANDLE_FREE
+
+; MEX1 entry: HL=ARG1, BC=ARG1 length, DE=ENV1.
+ld_rev02_product_entry:
+    ld (ld_rev02_arg1_ptr),hl
+    ld (ld_rev02_arg1_len),bc
+    ld a,b
+    or a
+    jr nz,ld_rev02_size_ok
+    ld a,c
+    cp LD_REV02_ARG1_MIN
+    jp c,ld_rev02_inval
+ld_rev02_size_ok:
+    ld ix,(ld_rev02_arg1_ptr)
+    ld a,(ix+0)
+    cp 'A'
+    jp nz,ld_rev02_inval
+    ld a,(ix+1)
+    cp 'R'
+    jp nz,ld_rev02_inval
+    ld a,(ix+2)
+    cp 'G'
+    jp nz,ld_rev02_inval
+    ld a,(ix+3)
+    cp '1'
+    jp nz,ld_rev02_inval
+    ld a,(ix+5)
+    or a
+    jp nz,ld_rev02_inval
+    ld l,(ix+6)
+    ld h,(ix+7)
+    ld de,(ld_rev02_arg1_len)
+    or a
+    sbc hl,de
+    jp nz,ld_rev02_inval
+    ld a,(ix+4)
+    cp 4
+    jp nz,ld_rev02_inval
+    push ix
+    pop hl
+    ld de,8
+    add hl,de
+    call ld_rev02_skip_arg
+    ret c
+    ld (ld_rev02_input_ptr),hl
+    call ld_rev02_skip_arg
+    ret c
+    ld a,(hl)
+    cp '-'
+    jp nz,ld_rev02_inval
+    inc hl
+    ld a,(hl)
+    cp 'o'
+    jp nz,ld_rev02_inval
+    inc hl
+    ld a,(hl)
+    or a
+    jp nz,ld_rev02_inval
+    inc hl
+    ld (ld_rev02_output_ptr),hl
+    call ld_rev02_require_last
+    ret c
+    ld hl,(ld_rev02_input_ptr)
+    ld c,O_READ
+    ld b,0
+    ld a,SYS_OPEN
+    call SYSCALL_GATEWAY
+    jp c,ld_rev02_exit_errno
+    ld a,l
+    ld (ld_rev02_input_handle),a
+    ; Stage-E continuation: ordinary OBJ1 reader/linker/MEX1 transaction.
+    ld a,E_NOTSUP
+    push af
+    call ld_rev02_close
+    pop af
+    jp ld_rev02_exit_errno
+
+ld_rev02_skip_arg:
+    ld a,(hl)
+    or a
+    jr z,ld_rev02_bad
+    inc hl
+ld_rev02_skip_loop:
+    ld a,(hl)
+    or a
+    jr z,ld_rev02_skip_done
+    inc hl
+    jr ld_rev02_skip_loop
+ld_rev02_skip_done:
+    inc hl
+    or a
+    ret
+ld_rev02_require_last:
+    ld a,(hl)
+    or a
+    jr z,ld_rev02_bad
+ld_rev02_last_loop:
+    ld a,(hl)
+    inc hl
+    or a
+    jr nz,ld_rev02_last_loop
+    ld de,(ld_rev02_arg1_ptr)
+    ld bc,(ld_rev02_arg1_len)
+    ex de,hl
+    add hl,bc
+    ex de,hl
+    or a
+    sbc hl,de
+    ret z
+ld_rev02_bad:
+    ld a,E_INVAL
+    scf
+    ret
+ld_rev02_close:
+    ld a,(ld_rev02_input_handle)
+    cp HANDLE_FREE
+    ret z
+    ld l,a
+    ld h,0
+    ld a,SYS_CLOSE
+    call SYSCALL_GATEWAY
+    ld a,HANDLE_FREE
+    ld (ld_rev02_input_handle),a
+    ret
+ld_rev02_inval:
+    ld a,E_INVAL
+ld_rev02_exit_errno:
+    ld l,a
+    ld h,0
+    ld a,SYS_EXIT
+    call SYSCALL_GATEWAY
+    halt
+    ENDM
