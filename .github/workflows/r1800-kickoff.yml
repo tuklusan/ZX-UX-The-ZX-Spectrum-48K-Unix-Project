@@ -36,7 +36,7 @@ jobs:
           set -euo pipefail
           test "$CANDIDATE" = "$(git rev-parse HEAD)"
           test "$CANDIDATE" = "$(git ls-remote origin refs/heads/main | awk '{print $1}')"
-          test ! -e v1/dist/certification/R18.00.result.json
+          if test -e v1/dist/certification/R18.00.result.json; then echo "R18.00 already admitted; qualification kickoff not required"; exit 0; fi
           test "$(sha256sum docs/01-ZX-UX-ARCHITECTURE-REV18.md | awk '{print $1}')" = b13c551f854cf3c01d951212916c6cf787f23617e3b8b74fc7c1867f76ba2156
           test "$(sha256sum docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV09.md | awk '{print $1}')" = 9ff614ba04721961b3461d03638586260b91e9e82eac7687054ead1c9802869f
           test "$(git rev-parse refs/tags/PHASE-11-COMPLETE)" = 263a203da3d54a398e8ac011284ae4195b1279c0
