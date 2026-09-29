@@ -35,8 +35,8 @@ def gh(path,blob):
     req(row.get("sha")==blob,"pinned SDK blob mismatch: "+path)
     return base64.b64decode(row["content"])
 def clean(s):
-    s=re.sub(r"/\*[\s\S]*?\*/"," ",s); s=re.sub(r"//[^\n]*"," ",s)
-    s=re.sub(r'"(?:\\.|[^"\\])*"','""',s); return re.sub(r"'(?:\\.|[^'\\])*'","''",s)
+    s=re.sub(r'"(?:\\.|[^"\\])*"','""',s); s=re.sub(r"'(?:\\.|[^'\\])*'","''",s)
+    s=re.sub(r"/\*[\s\S]*?\*/"," ",s); return re.sub(r"//[^\n]*"," ",s)
 def classify(path):
     raw=Path(path).read_bytes(); txt=raw.decode("ascii"); code=clean(txt)
     ids=re.findall(r"\b[A-Za-z_][A-Za-z0-9_]*\b",code)
