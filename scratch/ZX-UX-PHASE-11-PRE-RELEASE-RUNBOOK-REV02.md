@@ -13,7 +13,7 @@
 # ZX-UX Phase-11 Expanded Pre-Release Recovery Runbook REV02
 
 **Status:** DRAFT — REVIEW REQUIRED — DO NOT EXECUTE  
-**Scope:** post-Phase-11, pre-Phase-12 recovery of the failed expanded pre-release, including any product corrections strictly required to make ordinary ZX-UX C48 and native self-build behavior satisfy the already-frozen REV17/REV08/C48 contracts  
+**Scope:** post-Phase-11, pre-Phase-12 recovery of the failed expanded pre-release, including only prospective product corrections strictly required by the already-frozen REV17/REV08 contracts and their subordinate frozen C48/ABI/object/tool documentation  
 **Hard stop:** DO NOT START PHASE 12
 
 ## 1. Purpose
@@ -41,9 +41,18 @@ REV02 exists to recover the real goal:
    alternate compiler path may be required.
 
 The SDK corpus is acceptance material, not a whitelist and not an implementation
-specification. The C48 language/ABI authorities remain REV17, REV08, the corrected
-C48 language specification, and the existing ZX-UX C48 documentation. SDK 1.0.2 is
-a pinned reference/oracle and a large real-world legal-C48 workload.
+specification. Canonical authority remains REV17 and REV08. The corrected C48
+language specification, `v1/docs/c48.md`, ABI/object/tool documentation, compiler
+manual, and SDK are mandatory reconciliation/reference inputs but may not widen or
+override REV17/REV08. Their exact review-time identities must be pinned before any
+product correction. If a subordinate document conflicts with REV17/REV08, or if the
+desired behavior needs a contract not fixed there, execution stops for an explicit
+authority revision rather than treating current documentation as a moving authority.
+
+SDK 1.0.2 is a pinned reference/oracle and a large real-world candidate C48 workload.
+Stage B must independently prove that each exact source/header construct is legal
+under the frozen C48 contract before a compiler failure may be classified as a ZX-UX
+implementation defect.
 
 This runbook does not reopen P11.01-P11.48, move PHASE-11-COMPLETE, rewrite any
 admitted evidence, or authorize Phase 12.
@@ -103,6 +112,24 @@ explicitly revised before execution:
   8efd465928048b050c0cff9d93ddaf13127eabb12b837a33aa1c2c44e913a98a
 - GUI/reference-evidence ZIP SHA-256:
   ed9e2b2643481c3a58e46fdc054c3524fb7fe300827cb3e2c2b4c2833dd5ef01
+- release ZIP size: 15432637 bytes;
+- GUI/reference-evidence ZIP size: 3700008 bytes;
+- release metadata asset SHA-256:
+  668911b54f20625ea8a7efa5219261146e4ef5a76a2f055a7990f019d59f555d;
+- release SHA256SUMS asset SHA-256:
+  1981aa83cd1796894a380d2751cbc534483b244868d28c97f69c922f30672990;
+- source-tape manifest Git blob:
+  8275c5b4985abb74d66a8eb43428fda9d8884809;
+- examples tree:
+  042a1b302646957c223b955a9d967ca690a2b33f;
+- demos tree:
+  c8363270a6da92661f43650933d5b4848521f54d;
+- hanoi.c blob:
+  57e9419a56fca83656f574de6fa4d994b5eadae1;
+- queens8.c blob:
+  38cff8912e1bced21c01f3ee050063ce19afe35e;
+- recapi.h blob:
+  29e170e5c10aee80f09ed9eb7f273b8c9c9aedbc.
 
 The release source-tape manifest declares 57 tapes. REV02 scope is exactly the
 same 30 example/demo programs: 6 examples and 24 demos. spriteanim.c keeps exact
@@ -140,8 +167,13 @@ disallowed as acceptance substitutes:
    allocator rather than the strongest user-visible ordinary as/ld command path.
 9. REV01 closure predicates were therefore weaker than the prose requirements in
    Gates G/H/I.
+10. The current REV01 workflow is write-capable: changes to cc/as/ld or the
+    pre-release tools can trigger `.github/workflows/p11-prerelease-build.yml`,
+    whose publisher can commit replacement `P11.pre-release` media to `main`.
+    That publisher was certified by the failed REV01 gates and must not remain an
+    automatic publication path while REV02 product corrections are being made.
 
-REV02 must contain static and runtime gates that make all nine failure classes
+REV02 must contain static and runtime gates that make all ten failure classes
 impossible to pass.
 
 ## 6. Non-negotiable ordinary-product rule
@@ -167,14 +199,31 @@ The following are forbidden for satisfying any positive acceptance gate:
 - proof SNA injection of the C source, OBJ1, MEX1, application, kernel rebuild
   output, or result screen under test;
 - changing SDK C source/header bytes so they fit ZX-UX;
-- a cc48.asm or other parallel compiler fork created solely for this pre-release.
+- a cc48.asm or other parallel compiler fork created solely for this pre-release;
+- any other source fingerprint, prefix/suffix signature, token signature, AST
+  signature, basename/path class, hidden lookup table, or equivalent corpus
+  classifier used to select generated application semantics;
+- reuse of a pre-existing OBJ1/executable under the requested output name;
+- direct invocation of proof-only cc/as/ld internals in place of the shell-visible
+  product command;
+- a write-capable REV01 publisher remaining armed while recovery edits touch paths
+  that can trigger it.
 
 A proof harness may boot/orchestrate Fuse, type keys, attach tapes, inspect target
 RAM/registers, capture screen RAM, hash target-produced files, and enforce
-checkpoints. It may not perform the work being proved.
+checkpoints. It may not perform the work being proved and may not write target
+application state, screen RAM, compiler/linker outputs, scheduler state, or tool
+input buffers.
 
-Static provenance tables may contain SDK hashes and names. Executable compiler
-behavior may not.
+For an "ordinary command" proof, the shell must parse the recorded command line,
+resolve the normal product command from the normal command namespace/PATH, create
+the ordinary process/ARG1 state, and execute the same binary a user receives. Every
+proof records that binary's SHA-256 and source/build dependency closure. Calling a
+tool routine directly from a fixture is not command execution.
+
+Static provenance tables may contain SDK hashes and names. Executable compiler,
+assembler, linker, runtime, shell, and acceptance behavior may not use them to
+select program semantics.
 
 ## 7. Generality rule: prove a compiler, not a memorizer
 
@@ -195,11 +244,25 @@ cc is source-semantic and not source-identity driven:
 6. statically scan the active product compiler path for the canonical 30 source
    hashes, CRCs, exact lengths, program-index tables, or program-name dispatch;
 7. prove the compiler output is determined by parsed declarations/statements/
-   expressions and the frozen ABI, not by a known-corpus identity.
+   expressions and the frozen ABI, not by a known-corpus identity;
+8. prove quoted local headers are actually opened/read through the ordinary target
+   include path, rather than ignored or replaced by source-specific built-ins;
+9. run held-out legal C48 challenge programs whose concrete bytes are generated
+   only after the candidate product-tool hashes are frozen, using an independent
+   deterministic generator/oracle and a recorded seed;
+10. apply equivalent anti-specialization checks to `ld`: renamed/changed legal
+    OBJ1 modules and relocation/symbol mutations must be linked semantically, with
+    no OBJ hash/name/application table or prebuilt executable dispatch;
+11. apply equivalent anti-specialization checks to `as`: non-kernel legal source,
+    whitespace/comment variants, alternate basenames, and semantic mutations must
+    use the same parser/encoder/writer path, with no kernel fingerprint/payload
+    dispatch.
 
-Canonical release media still retain only the exact SDK source tapes. Mutated
-sources are ephemeral anti-specialization tests and are never substituted for the
-release inputs.
+Canonical release media still retain only the exact SDK source tapes. Mutated and
+held-out sources are ephemeral anti-specialization tests and are never substituted
+for the release inputs. The independent challenge generator may know the frozen
+language contract but must not call the product compiler or derive expected results
+from product outputs.
 
 ## 8. Authority bridge for prospective ZX-UX product correction
 
@@ -212,8 +275,11 @@ For each discovered failure of ordinary cc/as/ld/kernel/runtime behavior:
 
 ### 8.1 Existing-authority defect
 
-If REV17/REV08/the corrected C48 spec already require the behavior, the failure is
-a ZX-UX implementation defect.
+If REV17/REV08 already require the behavior, with subordinate C48/ABI/object/tool
+documents only clarifying that frozen requirement, the failure is a ZX-UX
+implementation defect. Each such classification must cite the exact controlling
+REV17/REV08 clause and the exact subordinate contract used to test it; the desired
+REV02 proof result itself is not authority.
 
 Fix the current post-P11 main implementation through the normal workflow. Typical
 eligible areas include:
@@ -237,11 +303,15 @@ Requirements:
 
 ### 8.2 Authority gap
 
-If an SDK program requires a language feature, ABI behavior, object rule, syscall,
-or runtime contract not already allowed by active authorities, STOP.
+If an SDK program or a strengthened REV02 proof requires a language feature, ABI
+behavior, object rule, syscall, runtime contract, command-line option, or public
+tool behavior not already fixed by REV17/REV08, STOP the runbook before target
+code changes for that gap.
 
-Do not implement it under a pre-release loophole. Prepare a new architecture/plan
-authority revision and obtain explicit approval before target code changes.
+Do not implement it under a pre-release loophole and do not draft/activate the new
+contract as an automatic REV02 step. The authority transition must occur separately
+under explicit approval; REV02 must then be revised, re-reviewed, rescanned, and
+re-opened against the new authority before execution resumes.
 
 ### 8.3 SDK defect
 
@@ -253,6 +323,20 @@ silently relax ZX-UX.
 
 If ZX-UX is correct and only the harness is wrong, fix only the harness and repeat
 the gate.
+
+### 8.5 Mandatory gap-classification record
+
+Before any product correction, retain a machine-readable classification record for
+every Stage-C gap containing: failing reproduction identity; exact input/tool
+hashes; observed result; expected result; one of the four classes above; exact
+authority citation for an implementation defect; exact planned changed paths; and
+the regression/negative tests that will close it. Unclassified gaps, mixed classes,
+or a classification justified only by the SDK/reference picture fail closed.
+
+In particular, inability to reach the kernel fixed/absolute output mode through a
+shell-visible `ld` invocation must be classified here. REV17 requires the linker
+capability but does not authorize this runbook to invent unspecified public CLI
+syntax.
 
 No gate may blur these four classes.
 
@@ -277,6 +361,15 @@ Add a static gate that traces the current cc command entry through preprocessing
 parsing, semantic handling, code generation, OBJ1 writing, and transactional
 publication. The gate must fail if a source-identity dispatch path can reach output
 publication.
+
+Also retain exact build/dependency closures for the product `cc`, `as`, and
+`ld` binaries. Historical macro definitions may remain in source only when they
+are unreachable from the production expansion/link closure. The product binary,
+map/symbol output, and transitive production dependency set must contain no
+P11PR source-bound helper or equivalent payload/fingerprint table. A target-native
+routine living only in a proof/fixture source path is not thereby the ordinary
+product command. If current source ownership or install/build routing disagrees
+with REV17/REV08, classify that discrepancy through Section 8 before changing it.
 
 ## 10. Required product C48 correction target
 
@@ -313,32 +406,79 @@ order, not program order:
 
 The exact 30 source names must not appear as implementation cases in this lane.
 
+### 10.1 48K feasibility and ordinary-allocation rule
+
+REV02 must prove the real workflow fits the original unexpanded 48K machine. No
+special proof allocator, hidden host backing store, injected workspace, or
+out-of-contract memory region may make a gate pass.
+
+Retain measured peak allocation/liveness maps for at least:
+
+- the largest source/header compile and the largest produced OBJ1;
+- the largest link, including built-in crt0/runtime/archive selection;
+- each hanoi/queens standalone run and their concurrent run;
+- the textual full-kernel assembly and fixed/absolute link.
+
+For each checkpoint bind every live target allocation, object payload, process
+image/BSS/stack, compiler/assembler/linker workspace, transaction object, and output
+buffer to the frozen memory map. Prove non-overlap with display/ROM workspace and
+the resident kernel, exact allocator class/range, and ordinary allocation APIs.
+The C48 compiler process-owned live-footprint target remains <=20 KiB as frozen in
+`v1/docs/c48.md`; total simultaneous target residency must also fit the real
+available arenas. If the exact largest canonical source cannot complete through the
+ordinary product path within the frozen resource contract, STOP and classify the
+gap under Section 8. Do not solve it by a pre-release allocator or host spill.
+
 ## 11. Stage A — establish recovery baseline
 
 Before REV02 execution:
 
-1. verify REV01 status is FAILED-CLOSED;
+1. verify REV01 status is FAILED-CLOSED and byte-identical to its failed-closure
+   anchor except for the already-admitted status-only change;
 2. verify PHASE-11-COMPLETE exact identity;
 3. verify P11.48 and Phase-11 aggregate historical records remain unchanged;
 4. verify fast-loader migration runbook remains CLOSED;
-5. capture current main/tree;
-6. inventory every current P11PR compiler/proof helper and every current
-   pre-release workflow script;
-7. hash the failed REV01 bundle and preserve its Git-history recovery anchor;
-8. prove zero Phase-12 state;
-9. verify historical P11.39 SDK material unchanged;
-10. confirm REV02 is the sole planned successor and no executor starts while this
+5. capture current main/tree and exact hashes of REV17, REV08, the corrected C48
+   specification, compiler manual, and current C48/ABI/assembler/OBJ1/MEX1/tape
+   documentation used for reconciliation;
+6. construct a recursive immutable-scope manifest from PHASE-11-COMPLETE covering
+   all admitted P0-P11 evidence/media and historical authorities, and require it
+   unchanged before and after every later publication gate;
+7. inventory every current P11PR compiler/proof helper and every current
+   pre-release workflow/script, including reachability from product tool builds;
+8. recursively hash the failed REV01 bundle and record its exact Git recovery
+   commit/tree rather than relying on current-path names;
+9. prove zero Phase-12 state;
+10. verify historical P11.39 SDK material unchanged;
+11. **before changing any path watched by the current REV01 publisher**, make the
+    first post-OPEN recovery checkpoint control-plane-only: quarantine/replace the
+    write-capable `.github/workflows/p11-prerelease-build.yml` so ordinary recovery
+    pushes cannot run REV01 build/finalize/publish logic or commit media to main;
+12. prove no active workflow with write permission can publish
+    `v1/dist/media/P11.pre-release/` from failed REV01 acceptance gates; later
+    publication must be an explicit REV02 Gate-P action against an exact head;
+13. confirm REV02 is the sole planned successor and no executor starts while this
     file is DRAFT.
 
-**Gate A:** immutable baseline and failure lineage PASS.
+The control-plane quarantine checkpoint may modify only the recovery workflow/
+guard needed to prevent false publication; it may not modify product code, SDK
+reference bytes, or current pre-release media. It receives the same three-scan and
+policy gates as any other checkpoint.
+
+**Gate A:** immutable baseline/failure lineage PASS and the legacy write-capable
+REV01 publisher is safely quarantined before product work.
 
 ## 12. Stage B — acquire SDK 1.0.2 and build the real acceptance specification
 
 Acquire and independently verify the exact pinned release inputs.
 
+Before acquisition, query the formal SDK releases/tags read-only. If a release newer
+than 1.0.2 exists, STOP and explicitly re-pin/re-review REV02 before using any SDK
+bytes. Moving SDK main is never an execution input.
+
 Require:
 
-- exact tag/commit/tree/package hashes;
+- exact tag/commit/tree/package sizes and hashes;
 - release verifier PASS;
 - exact 57 source tapes;
 - exact 30 in-scope programs;
@@ -347,7 +487,10 @@ Require:
 - exact source/header reconstruction from the tapes;
 - exact reference-image LFS pointer identities and materialized payload hashes;
 - separate GUI/evidence package provenance;
-- no use of moving SDK main.
+- no use of moving SDK main;
+- independent static classification of every source/header construct against the
+  frozen C48 contract, with zero unexplained/unsupported construct before any
+  product defect classification.
 
 Build a machine-readable 30-program matrix containing only facts/oracles:
 
@@ -359,20 +502,36 @@ Build a machine-readable 30-program matrix containing only facts/oracles:
 - reference image pointer/payload identity;
 - documented input/arguments;
 - expected termination or long-running behavior;
-- visual/algorithmic invariants derived from source and pinned SDK documentation.
+- visual/algorithmic invariants derived from source and pinned SDK documentation;
+- every deterministic input/argument and every capture/checkpoint frame;
+- for every available reference PNG, a predeclared comparison mode and exact
+  metric/region/invariant set; "not suitable" is not an unqualified escape.
+
+Freeze and hash these behavior/visual contracts before Stage C target execution and
+before product corrections. They may not be relaxed after observing ZX-UX output.
+Changing a contract is a candidate-byte change: reset the scan count, independently
+justify the oracle change, and rerun every affected proof from its beginning.
 
 Do not add target output code, canned screenshots, or compiler dispatch data to this
-matrix.
+matrix. Expected values must come from source, frozen target semantics, pinned SDK
+documentation/reference material, or an independent oracle, never from the product
+output being judged.
 
-**Gate B:** pinned acceptance corpus and oracle matrix PASS.
+**Gate B:** pinned acceptance corpus/oracle contracts PASS and all 30 exact
+source/header inputs are statically classified as legal frozen C48 before they can
+be used to justify a ZX-UX product fix.
 
 ## 13. Stage C — reproduce the ordinary-product failures before fixing them
 
 Using the current ordinary ZX-UX product compiler path, run a fail-closed diagnostic
 matrix against representative and then all 30 exact source tapes.
 
-The diagnostic must use the same cc entry that a user uses. Do not call any P11PR
-compiler macro.
+The diagnostic must start from a clean namespace with no target OBJ1/executable
+under the planned output names. It must enter through the normal shell command
+resolution/process path and record the exact `cc` and `ld` product binary hashes
+and dependency closures. Do not call any P11PR compiler macro or internal tool
+routine. The quarantined legacy publisher must remain unable to publish during this
+diagnostic work.
 
 For each program, record:
 
@@ -382,7 +541,11 @@ For each program, record:
 - whether OBJ1 was produced;
 - ld status if compilation succeeded;
 - process status if link succeeded;
-- screen/runtime observation if execution succeeded.
+- screen/runtime observation if execution succeeded;
+- namespace state before/after cc and ld, including transaction objects;
+- evidence that each quoted local header used by the source was opened/read through
+  the ordinary target path;
+- peak target-memory/allocation telemetry for representative and worst-case inputs.
 
 This stage exists to distinguish actual product gaps from proof-harness gaps.
 Failure is expected and is evidence, not a reason to introduce adapters.
@@ -398,13 +561,18 @@ Before editing target product source:
 - prove every planned fix is already required by active authority; or
 - STOP for an explicit authority revision.
 
-Record an exact planned changed-file set and regression set.
+Record the Section-8.5 machine-readable classification, exact planned changed-file
+set, and regression/negative set for every gap. No product file may be edited for
+a gap until that record cites the controlling frozen requirement.
 
-Because REV02 is currently DRAFT, execution must stop here until project
-instructions explicitly authorize prospective post-P11 product corrections under
-this runbook.
+When REV02 is DRAFT, Stage A itself is forbidden by Section 30; Stage D is not a
+special loophole that allows partial execution. Once REV02 is separately approved
+and OPEN, Stage D is the last gate before prospective product edits. Any authority
+gap stops the whole affected lane until the separate authority process and a
+re-reviewed runbook revision are complete.
 
-**Gate D:** correction authority is explicit and scope-bounded.
+**Gate D:** every planned correction has explicit frozen authority and bounded
+scope; zero desired-proof behavior is being promoted to authority by assertion.
 
 ## 15. Stage E — repair ordinary ZX-UX C48 generically
 
@@ -413,12 +581,14 @@ Implement only generic product corrections required by Gate D.
 For each correction checkpoint:
 
 1. three consecutive unchanged-byte SoP scans;
-2. product compiler unit/conformance tests;
-3. current exact-head static/runtime regression;
-4. Phase-11 aggregate regression;
-5. no historical evidence mutation;
-6. anti-source-specialization static scan;
-7. durable direct-main checkpoint only after PASS.
+2. product compiler/unit/tool conformance tests;
+3. exact-head P11.48 regression where the changed dependency is in scope;
+4. current exact-head static/runtime regression;
+5. Phase-11 aggregate regression;
+6. no historical evidence mutation;
+7. anti-source-specialization static/reachability scan for cc/as/ld as applicable;
+8. measured frozen memory/resource-budget checks for the changed path;
+9. durable direct-main checkpoint only after PASS.
 
 Use the frozen C48 language/API matrix to drive implementation. Do not code by
 walking the 30 program list and adding one special case per failure.
@@ -450,24 +620,35 @@ Mandatory negatives include:
 - output-space/allocation failures;
 - transactional rename/publication failures.
 
-Static negatives must fail if the active compiler contains or reaches:
+Static negatives must fail if the reachable production compiler contains or reaches:
 
 - a 30-program source identity table;
 - exact SDK source CRC/length dispatch;
-- SDK basename dispatch;
+- any other source/token/AST fingerprint or SDK basename/path dispatch;
 - program-title/output tables used for code generation;
 - a pre-release-only lowering function;
 - a canned lifecycle/visual/multitask application template selected by source
   identity.
 
-**Gate F:** source-semantic generic compiler PASS.
+Require equivalent production-reachability and mutation negatives for `as` and
+`ld`, including rejection of a kernel-source fingerprint emitter, OBJ1 hash/name
+to executable dispatch, and prebuilt application/kernel payload tables. Historical
+unexpanded fixture macros may exist only outside all production dependency closures.
+
+For selected header-dependent programs, mutate one ephemeral header token while
+keeping the C source unchanged and prove ordinary cc behavior/diagnostics changes as
+the frozen semantics require; restore exact canonical bytes before acceptance.
+
+**Gate F:** generic source-semantic cc plus generic as/ld production paths PASS.
 
 ## 17. Stage G — construct a real ZX-UX developer proof session
 
 REV02 must strengthen the proof session beyond REV01.
 
-The system under test must begin from the exact current Phase-11 pre-release boot
-TZX and enter the real ZX-UX kernel normally.
+The system under test must begin from a candidate boot TZX built from the exact
+current recovery source head, using the ordinary current release-TZX path, and enter
+the real ZX-UX kernel normally. It must not silently reuse the failed REV01 TZX if
+product/kernel bytes that affect boot have changed.
 
 Because Phase 12 final distribution assembly is forbidden, additional current
 development tools may arrive only as clearly classified proof/developer sidecar
@@ -483,12 +664,19 @@ The proof session must make the ordinary current product tools available:
 - ld;
 - required runtime/library support.
 
-Then user-visible operations must occur through normal ZX-UX command/process
-paths. A harness may type commands and inspect results; it may not call an internal
-compiler/linker routine as the acceptance substitute.
+Any developer sidecar carrying those tools must be built from the exact current
+product source through the normal project build, hash-bound to its source dependency
+closure, loaded as ordinary ZX-UX objects, and verified before execution. A
+fixture-only target binary is not a product sidecar.
 
-Retain a deterministic command/session transcript sufficient to reproduce every
-program lifecycle.
+Then user-visible operations must occur through normal ZX-UX command/process
+paths. The retained transcript must show login/session state, cassette/object load,
+the exact shell command text, command lookup, argv, exit/status, and output-object
+publication. A harness may type commands and inspect results; it may not call an
+internal compiler/linker routine as the acceptance substitute.
+
+Retain deterministic tool hashes, memory maps, and a command/session transcript
+sufficient for a human user to reproduce every lifecycle with the same media.
 
 **Gate G:** the environment is a real ZX-UX user/developer session, not an
 application-specific proof fixture.
@@ -497,18 +685,24 @@ application-specific proof fixture.
 
 For each exact canonical release source TAP, from a clean deterministic session:
 
-1. load the exact source/header objects through real cassette/M48O handling;
-2. verify namespace object type/name/hash;
-3. invoke ordinary cc on the C object;
-4. require genuine target-produced OBJ1;
-5. inspect OBJ1 format/symbol/relocation validity;
-6. invoke ordinary ld;
-7. require genuine target-produced executable;
-8. launch it through ordinary shell/SYS_SPAWN/SYS_EXEC behavior;
-9. prove start and correct exit or bounded live execution;
-10. retain exact target-produced OBJ1 and executable bytes;
-11. retain command/session/process evidence;
-12. repeat from clean state so no program consumes another program's build output.
+1. prove the planned OBJ/executable names are absent before loading/building;
+2. load the exact source/header objects through real cassette/M48O handling;
+3. verify namespace object type/name/hash and ordinary quoted-header resolution;
+4. invoke the shell-visible ordinary `cc source.c` (or already-frozen explicit
+   output form where required);
+5. require genuine target-produced OBJ1 committed through the ordinary transaction;
+6. inspect OBJ1 format/symbol/relocation validity and retain the exact bytes;
+7. invoke shell-visible ordinary `ld source.obj -o name`;
+8. require genuine target-produced executable committed through the ordinary
+   transaction and retain the exact bytes;
+9. launch it through ordinary shell/SYS_SPAWN/SYS_EXEC behavior;
+10. prove start and correct exit or bounded live execution;
+11. retain exact command/argv, tool hashes, namespace/transaction, process and
+    memory evidence;
+12. prove a selected legal semantic source mutation changes target-produced
+    object/executable/runtime behavior as the frozen oracle predicts;
+13. repeat the canonical build from clean state so no program consumes another
+    program's build output or a stale destination.
 
 The compiler and linker binaries must be identical across all 30 runs.
 
@@ -521,10 +715,11 @@ for a program is the executable used for its visual and concurrency proofs.
 
 A successful exit is not enough.
 
-For each program define a program-specific behavior contract from the exact source,
-the pinned SDK oracle, and the frozen ZX-UX API semantics.
+Use only the program-specific behavior contracts frozen and hash-bound in Stage B.
+Do not create, weaken, move, or reinterpret a checkpoint after seeing target output.
 
-Require observable behavior that could not be produced by a title-only stub.
+Require observable behavior that could not be produced by a title-only stub or by
+a source-specific canned renderer.
 
 Depending on program type, the contract must include appropriate checks such as:
 
@@ -539,14 +734,18 @@ Depending on program type, the contract must include appropriate checks such as:
 - multiple-frame change for animation;
 - stable final state for terminating/static programs.
 
-Where a pinned SDK reference image is suitable for the same deterministic
-checkpoint, require pixel identity. Where timing/rendering contracts differ,
-retain both images and enforce explicit source-derived visual/state invariants.
+For every pinned SDK reference image, execute the predeclared Stage-B comparison.
+Require pixel identity when the checkpoint/rendering contract says so; otherwise
+apply the predeclared regions/metrics/source-derived invariants and retain the
+comparison report. A later claim that a reference is "not suitable" is a contract
+change and cannot waive the gate.
 
 Merely recording reference_png_sha256 is never a visual comparison.
 
-For dynamic programs capture enough checkpoints to prove actual motion/progress,
-not just initial setup.
+For dynamic programs capture every predeclared checkpoint needed to prove actual
+motion/progress, not just initial setup. Every behavioral assertion must point to
+retained target state, process evidence, SCR bytes, or another independently
+captured target observation.
 
 **Gate I:** 30/30 executables demonstrate actual source-defined behavior.
 
@@ -564,9 +763,13 @@ For every program:
 - bind OBJ1 to exact loaded source/header hashes;
 - bind reference-image provenance and comparison result.
 
-For dynamic demos, retain additional SCR/PNG checkpoints when required by Stage I.
+Retain SCR+PNG for every visual checkpoint used by Stage I, not merely one
+representative image. Each SCR is exactly 6912 target display bytes.
 
 Host tooling may render PNG from SCR. It may not draw or alter target pixels.
+Debugger/watchpoint instrumentation used to prove writes or progress must be
+observation-only: it may not patch program code/data, intercept a syscall with
+different semantics, or write target state.
 
 **Gate J:** screen evidence is cryptographically and causally bound from source
 TAP through real native execution.
@@ -585,18 +788,27 @@ In one real ZX-UX session:
 
 1. start both ordinary native executables through the admitted process path;
 2. record launch order/PIDs;
-3. establish a common runnable epoch after both perform initial setup;
-4. run the cooperative scheduler for exactly 1250 PAL frames from that epoch;
-5. prove both processes execute/yield/progress after the epoch;
-6. retain full-screen SCR/PNG at 1250 frames;
-7. also retain earlier checkpoints sufficient to prove evolving algorithmic state;
-8. exclude title/header rows when judging meaningful workload output;
-9. require nontrivial algorithm-generated output in both screen halves;
-10. prove Hanoi output obeys its left-half geometry/state invariants;
-11. prove 8-Queens output obeys its right-half board/search invariants;
-12. prove both halves change consistently with continued computation;
-13. prove screen ownership bounds from target writes or equivalent deterministic
-    instrumentation, not only from the final screenshot.
+3. use the same argv/environment/runtime inputs as the standalone proofs unless
+   the pinned source contract explicitly requires otherwise;
+4. establish a common runnable epoch after both perform initial setup and record
+   both the emulator PAL-frame index and target tick/process state;
+5. run the cooperative scheduler for exactly 1250 PAL frames from that epoch,
+   measured by frame boundaries rather than host sleep, and independently
+   cross-check the target tick delta/state;
+6. prove both processes execute/yield and make source-derived algorithmic progress
+   after the epoch;
+7. retain full-screen SCR/PNG at 1250 frames;
+8. retain the predeclared early/mid checkpoints and algorithmic state evidence
+   sufficient to prove evolving computation;
+9. exclude title/header rows when judging meaningful workload output;
+10. require nontrivial algorithm-generated output in both screen halves;
+11. prove Hanoi output obeys its left-half geometry/state invariants;
+12. prove 8-Queens output obeys its right-half board/search invariants;
+13. prove both halves change consistently with continued computation;
+14. prove screen ownership bounds from observation-only target-write watchpoints or
+    equivalent deterministic instrumentation, not only from the final screenshot;
+15. prove no harness writes to either process state or screen during the measured
+    interval.
 
 A screen containing only "TOWERS OF HANOI" and "8 QUEENS - RECURSIVE SEARCH" plus
 one point per side must fail.
@@ -605,34 +817,52 @@ one point per side must fail.
 
 ## 22. Stage L — ordinary native full-kernel rebuild
 
-Retain the REV01 source-only textual kernel projection and source TAP requirements,
-but strengthen the acceptance path.
+Restate, rather than inherit by trust, the source-only kernel requirement. The
+retained textual projection must be deterministic plain LF assembler text derived
+from canonical kernel source/includes/definitions, with a line/source provenance
+map. Its generator may not read `kernel.bin`, a host listing's machine-code
+columns, preassembled opcode bytes, or any equivalent binary oracle. It may expand
+host-only include/macro conveniences only into genuine documented source semantics.
+The exact source TAP must independently reconstruct those text bytes.
 
 Required positive path:
 
-1. boot exact current pre-release TZX normally;
-2. enter the real ZX-UX developer proof session;
-3. load kernel-native-source.tap through ordinary cassette/M48O handling;
-4. verify exact kernel.asm object identity;
-5. invoke the ordinary product as command on the loaded text;
-6. require genuine target-produced kernel OBJ1;
-7. invoke the ordinary product ld command/path to produce the nonresident 8192-byte
-   kernel output;
-8. prove the resident executing kernel was not overwritten;
-9. retain source, source map, source TAP, OBJ1 and native kernel;
-10. compare all 8192 bytes among host-built, TZX-extracted and native-built kernel;
-11. require one common SHA-256;
-12. perform controlled source mutation and require identity failure;
-13. build the final pre-release TZX from the retained native kernel and
-    independently extract/compare it.
+1. boot the exact current candidate TZX normally and enter the real developer
+   session;
+2. load `kernel-native-source.tap` through ordinary cassette/M48O handling;
+3. verify exact `kernel.asm` object identity and prove no prior kernel OBJ/output
+   destination exists;
+4. invoke the shell-visible product `as kernel.asm` (or frozen documented
+   explicit-output form) through normal command/process handling;
+5. require genuine target-produced OBJ1 through the ordinary assembler
+   parser/encoder/writer/transaction path;
+6. invoke a shell-visible ordinary product `ld` command that reaches REV17's
+   required fixed/absolute 8192-byte output capability;
+7. do not invent a new `ld` option in this runbook: Gate D must cite the active
+   authority for the exact invoked command behavior, or execution stops for an
+   authority revision;
+8. produce the nonresident 8192-byte kernel only through ordinary target allocation
+   and prove the executing kernel was not overwritten;
+9. retain source, source map, source TAP, genuine OBJ1, native kernel, exact command
+   transcript, tool hashes and memory map;
+10. compare all 8192 bytes among independently host-built, finished-TZX-extracted
+    and native-built kernels and require one common SHA-256;
+11. prove assembler/linker generality with a non-kernel source, a
+    whitespace/comment-equivalent kernel projection, alternate valid basename, and
+    a controlled semantic source mutation; equivalent source preserves machine
+    result, semantic mutation changes it and breaks three-way equality;
+12. statically/reachably reject a kernel-source fingerprint, host-kernel payload,
+    proof-only fixed-image entry, or special allocator from the acceptance path;
+13. build the final pre-release TZX from the retained native kernel bytes and
+    independently extract/compare those exact bytes.
 
 A harness may provide deterministic observation and media control. It may not call
-a proof-only assembler/linker entry or provide a special allocator in place of the
-ordinary tool path.
+a proof-only assembler/linker entry, feed an OBJ1/kernel payload, or provide a
+special allocator in place of the ordinary tool path.
 
-If ordinary as/ld cannot complete this already-required REV17 operation because of
-a genuine product implementation defect, return through the Section-8 authority
-bridge and fix the ordinary tool. Do not weaken this gate with a proof allocator.
+If ordinary as/ld cannot complete the path, return through Section 8 and classify
+the exact reason. Do not presume every missing shell-visible mode is an
+existing-authority defect, and do not weaken this gate with a proof allocator.
 
 **Gate L:** a normal ZX-UX native toolchain self-rebuilds the kernel.
 
@@ -648,7 +878,8 @@ After all product fixes and before bundle construction, require:
 - kernel/process/object/tape regressions touched by corrections;
 - exact-head P11.48 regression;
 - Phase-11 aggregate regression;
-- memory/live-footprint constraints;
+- measured Section-10.1 48K peak-residency/live-footprint maps for worst-case
+  compile/link/kernel/concurrency paths;
 - documented-opcode scan;
 - transactional output negatives;
 - zero source-specific compiler-dispatch findings;
@@ -680,6 +911,10 @@ P11.pre-release/
     rev01-failure.json
     product-corrections.json
     anti-specialization.json
+    authority-classification.json
+    acceptance-contracts.json
+    toolchain-identity.json
+    memory-feasibility.json
   kernel/
     kernel-native-source.asm
     kernel-native-source-map.json
@@ -710,9 +945,14 @@ P11.pre-release/
     hanoi-queens8-1250f.scr
     hanoi-queens8-1250f.png
     hanoi-queens8.json
+  loader/
+    realtime-boot.json
 ~~~
 
-The exact layout may remove duplication but may not omit logical evidence.
+The exact layout may remove duplication but may not omit logical evidence. Every
+session/checkpoint file used to prove behavior must either be retained or be
+losslessly summarized by a retained hash-bound record that identifies the raw
+artifact.
 
 The final manifest must bind every retained file except itself by path, size and
 SHA-256 and separately record its own SHA-256 in closure.
@@ -720,11 +960,21 @@ SHA-256 and separately record its own SHA-256 in closure.
 ## 25. Stage O — deterministic rebuild and strong negatives
 
 Build the complete REV02 candidate twice from the same exact current source head
-and pinned inputs in clean workspaces.
+and pinned inputs in two independently initialized clean workspaces. They may share
+only separately hash-verified immutable downloads/toolchain inputs; neither build
+may consume the other's generated source projection, OBJ1, executable, SCR, PNG,
+session output, or staged bundle.
 
-Require deterministic identity for all deterministic files.
+The following are mandatory deterministic outputs, not optionally classifiable as
+"nondeterministic": TZX; kernel projection/map/TAP/OBJ1/native image; all 30
+canonical TAP copies; all 30 target-produced OBJ1/executables; all retained
+behavior/concurrency SCRs and deterministic PNGs; normalized command/process/
+scheduler/memory records; tool/provenance manifests; and every final bundle
+manifest/report. Any runtime timestamp/host path must be omitted or normalized.
+There must be zero unclassified bundle files.
 
-Mandatory negative gates include all REV01 negatives plus:
+Mandatory negative gates include independently re-specified applicable REV01
+negatives plus:
 
 - compiler source-identity table injected -> FAIL;
 - exact SDK CRC/length dispatch injected -> FAIL;
@@ -741,38 +991,79 @@ Mandatory negative gates include all REV01 negatives plus:
   -> FAIL;
 - legal non-SDK C48 canary rejected while equivalent SDK-specific case passes
   -> FAIL;
+- reachable source/token/AST fingerprint dispatch under another name -> FAIL;
+- linker OBJ hash/name/application dispatch or prebuilt executable -> FAIL;
+- assembler kernel fingerprint/prebuilt payload dispatch -> FAIL;
+- quoted local header ignored/replaced while canonical source still "passes" -> FAIL;
+- stale/pre-existing OBJ1 or executable accepted as new output -> FAIL;
+- behavior/visual contract changed after observing target output -> FAIL;
+- missing retained checkpoint used by a behavior assertion -> FAIL;
+- hidden/special allocator or host spill makes a 48K path fit -> FAIL;
+- legacy REV01 workflow/publisher can publish on a recovery product push -> FAIL;
+- final TZX boots only when emulator fastload/traps/loader shortcuts are enabled
+  -> FAIL;
 - any SDK source/header byte modified -> FAIL;
 - any Phase-12 state -> FAIL.
 
 **Gate O:** deterministic double build and every anti-cheat negative PASS.
 
-## 26. Stage P — exact-head publication
+## 26. Stage P — exact-head qualification, publication, and post-publication proof
 
-On one unchanged candidate head:
+Publication is two-phase so "exact head" cannot accidentally mean the source head
+before media was committed.
+
+### 26.1 Frozen source qualification head
+
+On one unchanged source/tool/workflow candidate head:
 
 1. three consecutive full SoP scans;
 2. license-header gate;
 3. project-policy gate;
 4. media-retention gate;
-5. authority/evidence gate;
-6. historical immutability gate;
-7. current compiler/tool regression Gate M;
-8. full 30-program ordinary lifecycle Gate H;
-9. 30-program behavior/visual Gates I/J;
-10. real Hanoi/Queens Gate K;
-11. ordinary kernel self-rebuild Gate L;
-12. deterministic Gate O;
-13. exact-head P11.48 regression;
-14. Phase-11 aggregate regression;
-15. PHASE-11-COMPLETE exact identity;
-16. zero Phase-12 state.
+5. authority/evidence and immutable-scope gates;
+6. current compiler/tool regression Gate M;
+7. full 30-program ordinary lifecycle Gate H;
+8. 30-program behavior/visual Gates I/J;
+9. real Hanoi/Queens Gate K;
+10. ordinary kernel self-rebuild Gate L;
+11. deterministic double-build/negative Gate O;
+12. exact-head P11.48 regression;
+13. Phase-11 aggregate regression;
+14. PHASE-11-COMPLETE exact identity;
+15. zero Phase-12 state.
 
-Publish only the exact tested staged bytes. Do not rebuild a second publication
-copy.
+Freeze the exact tested staged bundle and its recursive digest. Do not rebuild it
+for publication.
 
-The publisher must not dispatch Phase 12.
+### 26.2 Exact publication commit
 
-**Gate P:** exact published bytes equal exact tested bytes.
+From the still-exact qualified head, atomically copy only the frozen staged
+REV02 bundle/reference bytes into their final paths and commit them once. The
+publication action must check origin/main is still the qualified head immediately
+before the commit/push. It must never dispatch Phase 12.
+
+### 26.3 Post-publication exact-head validation
+
+On the publication commit itself:
+
+1. prove every published byte equals the frozen staged byte/digest and no
+   unlisted file changed;
+2. rerun license/project-policy/media/authority/historical-immutability gates;
+3. rerun P11.48 exact-head and Phase-11 aggregate regression;
+4. rerun H-L acceptance against the published inputs and require regenerated
+   deterministic outputs to equal the published retained outputs byte-for-byte;
+5. boot the final published TZX from reset with ordinary `LOAD ""` in real time,
+   with Fuse fastload/traps/loader shortcuts disabled; prove loader display,
+   exact 8192-byte transfer, permanent 0xE003 handoff, correct post-kernel tape
+   position/bootstrap loading, and normal shell session;
+6. run any still-required detect-loader compatibility mode from the CLOSED
+   fast-loader migration contract;
+7. independently extract the published TZX kernel and require identity with the
+   retained native kernel;
+8. re-prove PHASE-11-COMPLETE unchanged and zero Phase-12 state.
+
+**Gate P:** the exact publication commit, not merely its parent, PASSes and exact
+published bytes equal the exact qualified staged bytes.
 
 ## 27. Stage Q — final repository sanity
 
@@ -795,6 +1086,20 @@ After publication verify:
 
 **Gate Q:** repository tells one coherent, truthful pre-Phase-12 story.
 
+### 27.1 Closure checkpoint
+
+Only after Gates A-Q and post-publication Gate P pass may the runbook closure bytes
+be prepared. Change only this REV02 file from OPEN to CLOSED and append the required
+durable anchors. That byte change resets the SoP count: manually scan the complete
+final on-disk runbook from first byte to last byte three consecutive times with no
+change between scans, then run license/project-policy/authority/historical
+immutability/zero-Phase-12 checks and commit the closure file only.
+
+After the closure commit, prove the product/media tree and publication bundle are
+byte-identical to the post-publication PASS state, `main` is clean, and the only
+new delta is the reviewed closure record. Do not rebuild or republish anything and
+do not dispatch Phase 12.
+
 ## 28. Implementation discipline
 
 For every implementation checkpoint after REV02 is explicitly approved/opened:
@@ -804,8 +1109,10 @@ For every implementation checkpoint after REV02 is explicitly approved/opened:
 3. keep PHASE-11-COMPLETE immutable;
 4. do not amend admitted P11 evidence/media;
 5. use direct main commits unless workflow authority requires otherwise;
-6. three consecutive unchanged-byte SoP scans before check-in;
-7. any defect/change resets the scan count to zero;
+6. three consecutive complete manual SoP scans of the exact on-disk candidate
+   bytes, line-by-line from first byte to last byte, before check-in;
+7. record `SCAN-1: CLEAN`, `SCAN-2: CLEAN`, `SCAN-3: CLEAN` against the same
+   exact file/blob identity; any defect or byte change resets the count to zero;
 8. run applicable policy/license/media/evidence/static/runtime gates;
 9. use pinned project runtime and canonical drivers;
 10. retain required Spectrum-native proof artifacts;
@@ -822,38 +1129,59 @@ REV02 is DONE only when all of the following are simultaneously true:
 - SDK 1.0.2 exact pin/provenance PASS;
 - historical P11.39 SDK material unchanged;
 - no SDK source/header bytes changed;
-- ordinary current ZX-UX cc is generic and has no source-identity/corpus dispatch;
-- generality/metamorphic/anti-specialization gates PASS;
+- the failed REV01 write-capable publisher is quarantined before recovery product
+  edits and cannot republish failed acceptance on push;
+- ordinary current ZX-UX cc/as/ld production paths are generic, hash-bound to their
+  source dependencies, and have no reachable source/object/corpus fingerprint
+  dispatch;
+- generality/metamorphic/held-out anti-specialization gates PASS;
+- all exact SDK source/header constructs are proven legal frozen C48 before product
+  defects are inferred;
 - all 30 canonical SDK programs load through real tape/object handling;
 - all 30 compile through the same ordinary product cc;
 - all 30 emit genuine target-produced OBJ1;
 - all 30 link through the same ordinary product ld;
 - all 30 execute through normal ZX-UX process/shell behavior;
-- all 30 exhibit actual source-defined behavior;
-- all 30 retain real SCR/PNG evidence bound to exact native executables;
-- SDK reference PNGs are actually compared under explicit per-program contracts;
+- all 30 exhibit actual source-defined behavior under behavior/visual contracts
+  frozen before target execution/product correction;
+- all 30 retain every SCR/PNG checkpoint used by acceptance, bound to exact native
+  executables;
+- SDK reference PNGs are actually compared under explicit predeclared per-program
+  contracts;
 - hanoi.c and queens8.c use the exact same ordinary executables in standalone and
   concurrent proofs;
 - Hanoi/Queens both visibly compute at the required 1250-frame checkpoint and
   both independently demonstrate scheduler progress;
 - full kernel source TAP rebuild uses ordinary product as/ld commands;
 - host/TZX/native kernels are byte-identical for all 8192 bytes;
-- final TZX consumes the retained native kernel bytes;
-- complete bundle deterministic double-build PASS;
+- kernel projection provenance proves no host binary/listing-byte circularity and
+  ordinary as/ld anti-specialization PASS;
+- final TZX consumes the retained native kernel bytes and passes real-time
+  fastload/trap-disabled `LOAD ""` boot acceptance;
+- worst-case compile/link/kernel/concurrency memory maps prove real 48K feasibility
+  with ordinary allocation only;
+- complete bundle deterministic double-build PASS with zero unclassified files;
 - all strong negatives PASS;
 - exact-head P11.48 regression PASS;
 - Phase-11 aggregate regression PASS;
 - all policy/license/media/evidence gates PASS;
 - all admitted P0-P11 evidence/media unchanged;
 - PHASE-11-COMPLETE unchanged;
+- post-publication exact-head Gate P PASS on the exact publication commit;
+- closure record prepared and three clean full-byte scans completed after its final
+  byte change;
 - clean current main;
 - zero Phase-12 state.
 
 Only then change this runbook from OPEN to CLOSED and append final source commit,
-workflow run, bundle-manifest hash, TZX hash, SDK pin, kernel three-way hash,
-30-program PASS count, compiler anti-specialization result, ordinary-tool session
-anchors, Hanoi/Queens executable hashes and 1250-frame PNG hash, and final
-validation anchors.
+publication commit/tree, post-publication workflow run, bundle-manifest hash, TZX
+hash, SDK pin, kernel three-way hash, 30-program PASS count, compiler/as/ld
+anti-specialization result, worst-case 48K memory anchors, ordinary-tool session
+anchors, Hanoi/Queens executable hashes and 1250-frame PNG hash, real-time loader
+anchor, immutable-scope digest, and final validation anchors.
+
+The closure commit must follow Section 27.1 and may change only this runbook after
+the tested publication state.
 
 Then STOP.
 
@@ -868,14 +1196,24 @@ draft.
 
 Review must explicitly confirm at least:
 
-- the post-P11 product-correction authority bridge;
-- the ordinary-product cc/as/ld rule;
-- the anti-specialization gates;
-- the real-user developer proof session;
-- the 30-program behavior/visual contracts;
+- the REV17/REV08 authority hierarchy and fail-closed authority-gap path;
+- quarantine of the failed write-capable REV01 publisher before product edits;
+- the ordinary-product cc/as/ld command and production-dependency rule;
+- compiler, assembler, and linker anti-specialization gates;
+- the real-user developer proof session and stale-output exclusions;
+- pre-execution frozen 30-program behavior/visual contracts;
+- real 48K worst-case memory feasibility with no proof allocator/host spill;
 - the strengthened Hanoi/Queens proof;
-- the strengthened ordinary kernel self-rebuild;
+- the source-only/non-circular ordinary kernel self-rebuild;
+- deterministic zero-unclassified-file double build;
+- exact publication-commit and real-time final-TZX validation;
+- closure-byte re-scan after the final status/anchor edit;
 - the Phase-12 hard stop.
 
-After review, revise this file if needed and explicitly change Status to OPEN in a
-separate admitted checkpoint before execution begins.
+This review itself is not complete until the exact final DRAFT bytes have received
+three successive complete manual first-byte-to-last-byte line-by-line scans with no
+new gap/defect and no byte change between scans. Any review edit resets that count
+to zero.
+
+After review, leave this file DRAFT for user review. Only a later explicit approval
+may change Status to OPEN in a separate admitted checkpoint before execution begins.
