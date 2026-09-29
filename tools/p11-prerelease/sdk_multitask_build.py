@@ -25,6 +25,7 @@ def sha(b): return hashlib.sha256(b).hexdigest()
 
 def fixture_source(hn,hs,sn,ss):
     s=vb.fixture_source(hn,hs,sn,ss)
+    s=s.replace('    INCLUDE "../src/tools/cc.asm"\n','    DEFINE P11PR_ENABLE_MULTITASK\n    INCLUDE "../src/tools/cc.asm"\n',1)
     s=s.replace("cc_p11pr_sdk_compile_visual","cc_p11pr_sdk_compile_multitask")
     s=s.replace("CC_P11PR_VIS_TITLE_OPERAND","CC_P11PR_MT_TITLE_OPERAND")
     s=s.replace("CC_P11PR_VIS_TEMPLATE_SIZE","CC_P11PR_MT_TEMPLATE_SIZE")

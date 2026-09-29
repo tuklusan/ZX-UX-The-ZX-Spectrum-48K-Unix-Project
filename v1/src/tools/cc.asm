@@ -9802,6 +9802,7 @@ cc_p11pr_sdk_compile_visual:
     ret
 
 
+IFDEF P11PR_ENABLE_MULTITASK
 ; Gate-I source-bound cooperative workload lowering. Only the exact pinned
 ; hanoi.c (program id 12) and queens8.c (program id 22) identities admitted
 ; above are accepted. Each executable owns one screen half and yields forever.
@@ -9960,6 +9961,8 @@ cc_p11pr_mt_copy_title:
     ld hl,(cc_obj1_output_size)
     xor a
     ret
+
+ENDIF
 
 cc_p11pr_format:
     ld a,E_FORMAT
