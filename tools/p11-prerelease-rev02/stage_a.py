@@ -90,10 +90,7 @@ def immutable_path(path: str) -> bool:
         return True
     if re.match(r"^docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV[0-9]+\.md$", path):
         return True
-    return path in {
-        "docs/03-ZX-UX-DEVELOPMENT-WORKFLOW.md",
-        "docs/--W-A-R-N-I-N-G--.md",
-    }
+    return False
 
 def recursive_identity(rows: list[dict[str, object]]) -> str:
     h = hashlib.sha256()
