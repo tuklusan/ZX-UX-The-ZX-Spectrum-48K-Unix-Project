@@ -38,13 +38,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with: {fetch-depth: 0}
-      - name: Set up certified ZX-UX runtime
-        uses: ./.github/actions/setup-zxux-runtime
       - name: Policy and license gates
         run: |
           set -euo pipefail
           ./tools/check_project_policy.py
           ./tools/check_license_headers.sh
+      - name: Set up certified ZX-UX runtime
+        uses: ./.github/actions/setup-zxux-runtime
       - name: Build deterministic product-tool packaging preflight
         run: |
           set -euo pipefail
