@@ -8,12 +8,12 @@
     "Attribution is required: Based on original work by Supratim Sanyal of SANYALnet Labs.",
     "See LICENSE for full terms, warranty disclaimer, termination, patent, trademark, and governing-law provisions."
   ],
-  "artifact_id": 11049651303,
-  "artifact_sha256": "70ece1372cb4c5d56817cfbdff0dc6e31a764da3009705b0ca0092384e16c921",
-  "contract_digest_sha256": "1297fe43b60a54d7a08fdcc7c73bd538adf0a2c3ba9e97d4792d08b9cc691279",
+  "artifact_id": 11053285986,
+  "artifact_sha256": "74a0c91da194d2180c7a699ce734255279db611aa5ac2c34afec7fa5a46776ed",
+  "contract_digest_sha256": "944fcad8c9e3391a53f238a4341d97319c77394133b4d742620c715337271a83",
   "exact_head_regression": "PASS",
-  "exact_head_regression_run_id": 36601283914,
-  "gate_b": "RESET",
+  "exact_head_regression_run_id": 36609688279,
+  "gate_b": "PASS",
   "kind": "rev02-stage-b-checkpoint",
   "phase12_state": 0,
   "schema": 1,
@@ -27,10 +27,8 @@
     "tag": "1.0.2",
     "tree": "ced96ea0a4b2f6cdd6080fc6f48e07738252af17"
   },
-  "source_head": "084df4a296c4c7e84c7d9b8843eba8e5ae1dcdea",
-  "status": "INVALIDATED",
-  "workflow_job_id": 109519022007,
-  "workflow_run_id": 36601283925,
-  "invalidation_reason": "Stage-B contract audit found API-usage inflation from header declarations and incomplete predeclared recursive/concurrency checkpoints; rerun required.",
-  "invalidated_source_head": "f65929606912fd0d08eae9242058cf5fb6831a1a"
+  "source_head": "9ffd9eb29c54849e245cc80d66f3ced2525ec470",
+  "status": "PASS",
+  "workflow_job_id": 109547621052,
+  "workflow_run_id": 36609688189
 }
