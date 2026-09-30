@@ -403,7 +403,7 @@ gate_read:
 gate_read_root:
     ld a,(root_done)
     or a
-    jr nz,gate_read_eof
+    jp nz,gate_read_eof
     ld a,1
     ld (root_done),a
     ex de,hl
