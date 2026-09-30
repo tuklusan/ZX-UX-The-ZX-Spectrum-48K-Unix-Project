@@ -12014,8 +12014,10 @@ cc_rev02_finalize_sym_loop:
     ex de,hl
     ld a,(cc_rev02_temp_index)
     call cc_rev02_symbol_ptr_for_index
+    push bc
     ld bc,16
     add hl,bc
+    pop bc
     ld (hl),e
     inc hl
     ld (hl),d
@@ -12032,13 +12034,17 @@ cc_rev02_finalize_copy:
     or a
     sbc hl,de
     jp nc,cc_rev02_nospc
+    ld bc,(cc_rev02_literal_len)
+    ld a,b
+    or c
+    jr z,cc_rev02_finalize_copy_done
     ld hl,cc_rev02_text
     ld de,(cc_rev02_text_len)
     add hl,de
     ex de,hl
     ld hl,cc_rev02_literals
-    ld bc,(cc_rev02_literal_len)
     ldir
+cc_rev02_finalize_copy_done:
     ld hl,(cc_rev02_text_len)
     ld de,(cc_rev02_literal_len)
     add hl,de
