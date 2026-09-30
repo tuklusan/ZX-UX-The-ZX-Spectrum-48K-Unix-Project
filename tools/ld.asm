@@ -2806,9 +2806,10 @@ LD_REV02_OBJ1_HEADER    EQU 24
 LD_REV02_ABS_MAX        EQU 8192
 LD_REV02_IO_CHUNK       EQU 64
 ; Stage-E ordinary normal-link workspace is MEX1 BSS, not stored image bytes.
-LD_REV02_NORMAL_OBJ_CAP  EQU 4096
-LD_REV02_NORMAL_MEX_CAP  EQU 4096
-LD_REV02_NORMAL_BSS_BYTES EQU LD_REV02_NORMAL_OBJ_CAP+LD_REV02_NORMAL_MEX_CAP
+LD_REV02_NORMAL_OBJ_CAP    EQU 4096
+LD_REV02_NORMAL_IMAGE_CAP  EQU 4096
+LD_REV02_NORMAL_MEX_CAP    EQU 4096
+LD_REV02_NORMAL_BSS_BYTES  EQU LD_REV02_NORMAL_OBJ_CAP+LD_REV02_NORMAL_IMAGE_CAP+LD_REV02_NORMAL_MEX_CAP
 ld_rev02_arg1_ptr:      dw 0
 ld_rev02_arg1_len:      dw 0
 ld_rev02_input_ptr:     dw 0
@@ -2830,8 +2831,13 @@ ld_rev02_head_expected: dw 0
 ld_rev02_normal_obj_len: dw 0
 ld_rev02_normal_entry:   dw 0
 ld_rev02_normal_sym_ptr: dw 0
+ld_rev02_normal_sym_base: dw 0
 ld_rev02_normal_sym_left: dw 0
+ld_rev02_normal_sym_count: dw 0
 ld_rev02_normal_found_start: db 0
+ld_rev02_normal_image_size: dw 0
+ld_rev02_normal_reloc_ptr: dw 0
+ld_rev02_normal_reloc_left: dw 0
 ld_rev02_stat_req:      defs 4,0
 ld_rev02_stat_out:      defs 10,0
 ld_rev02_rename_req:    defs 4,0
@@ -2975,19 +2981,39 @@ ld_rev02_normal_open:
     ld (ld_rev02_normal_obj_len),hl
 
     ld ix,ld_product_bss
-    ld a,(ix+14)
-    or (ix+15)
-    jp nz,ld_rev02_notsup_exit
+    ; Copy TEXT to a private link image, then apply the frozen even padding.
+    ; OBJ1 symbol/relocation bytes therefore remain intact and source storage is
+    ; observationally immutable throughout the link.
+    ld c,(ix+8)
+    ld b,(ix+9)
+    push bc
+    ld hl,ld_product_bss+24
+    ld de,ld_product_bss+LD_REV02_NORMAL_OBJ_CAP
+    ldir
+    pop hl
+    bit 0,l
+    jr z,ld_rev02_normal_text_even
+    push hl
+    ld de,ld_product_bss+LD_REV02_NORMAL_OBJ_CAP
+    add hl,de
+    xor a
+    ld (hl),a
+    pop hl
+    inc hl
+ld_rev02_normal_text_even:
+    ld (ld_rev02_normal_image_size),hl
 
     ld l,(ix+12)
     ld h,(ix+13)
     ld (ld_rev02_normal_sym_left),hl
+    ld (ld_rev02_normal_sym_count),hl
     ld e,(ix+16)
     ld d,(ix+17)
     push ix
     pop hl
     add hl,de
     ld (ld_rev02_normal_sym_ptr),hl
+    ld (ld_rev02_normal_sym_base),hl
     xor a
     ld (ld_rev02_normal_found_start),a
 ld_rev02_normal_sym_loop:
@@ -3040,11 +3066,107 @@ ld_rev02_normal_symbols_done:
     or a
     jp z,ld_rev02_noent_exit
 
+    ; Apply every generic ABS16 relocation whose target is defined by this
+    ; module. Undefined symbols remain a clean E_NOENT until the built-in
+    ; runtime/archive fixed-point lane is attached.
+    call ld_p1026_reset
+    ld ix,ld_product_bss
+    ld l,(ix+14)
+    ld h,(ix+15)
+    ld (ld_rev02_normal_reloc_left),hl
+    ld e,(ix+18)
+    ld d,(ix+19)
+    push ix
+    pop hl
+    add hl,de
+    ld (ld_rev02_normal_reloc_ptr),hl
+ld_rev02_normal_reloc_loop:
+    ld hl,(ld_rev02_normal_reloc_left)
+    ld a,h
+    or l
+    jp z,ld_rev02_normal_reloc_done
+    ld ix,(ld_rev02_normal_reloc_ptr)
+    ld a,(ix+4)
+    cp 1
+    jp nz,ld_rev02_format_exit
+    ld a,(ix+5)
+    or a
+    jp nz,ld_rev02_format_exit
+
+    ; symbol index -> exact validated 20-byte symbol record.
+    ld e,(ix+2)
+    ld d,(ix+3)
+    ld hl,(ld_rev02_normal_sym_count)
+    or a
+    sbc hl,de
+    jp c,ld_rev02_format_exit
+    jp z,ld_rev02_format_exit
+    push de
+    pop hl
+    add hl,hl
+    add hl,hl
+    push hl
+    add hl,hl
+    add hl,hl
+    pop de
+    add hl,de                 ; index * 20
+    ld de,(ld_rev02_normal_sym_base)
+    add hl,de
+    push hl
+    pop iy
+    ld a,(iy+18)
+    or a
+    jp z,ld_rev02_noent_exit
+    cp 4
+    jp nc,ld_rev02_format_exit
+
+    ld l,(iy+16)
+    ld h,(iy+17)
+    ld a,(iy+18)
+    cp 2
+    jr nz,ld_rev02_normal_symbol_value_ready
+    ld de,(ld_rev02_normal_image_size)
+    add hl,de
+    jp c,ld_rev02_format_exit
+ld_rev02_normal_symbol_value_ready:
+    ld (ld_p1026_symbol_value),hl
+    ld a,(iy+18)
+    ld (ld_p1026_symbol_section),a
+    ld l,(ix+0)
+    ld h,(ix+1)
+    ld (ld_p1026_patch_loc),hl
+    push hl
+    ld de,ld_product_bss+LD_REV02_NORMAL_OBJ_CAP
+    add hl,de
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (ld_p1026_addend),de
+    pop hl
+    ld hl,ld_product_bss+LD_REV02_NORMAL_OBJ_CAP
+    ld (ld_p1026_image),hl
+    ld hl,(ld_rev02_normal_image_size)
+    ld (ld_p1026_image_size),hl
+    call ld_p1026_apply
+    jp c,ld_rev02_exit_errno
+
+    ld hl,(ld_rev02_normal_reloc_ptr)
+    ld de,6
+    add hl,de
+    ld (ld_rev02_normal_reloc_ptr),hl
+    ld hl,(ld_rev02_normal_reloc_left)
+    dec hl
+    ld (ld_rev02_normal_reloc_left),hl
+    jp ld_rev02_normal_reloc_loop
+ld_rev02_normal_reloc_done:
+    call ld_p1026_finalize
+    jp c,ld_rev02_exit_errno
+
     call ld_p1030_stack_default
     jp c,ld_rev02_exit_errno
-    ld hl,ld_product_bss+24
+    ld hl,ld_product_bss+LD_REV02_NORMAL_OBJ_CAP
     ld (ld_p1032_image),hl
-    ld hl,(ld_p1021_text)
+    ld hl,(ld_rev02_normal_image_size)
     ld (ld_p1032_image_size),hl
     ld hl,(ld_p1021_bss)
     ld (ld_p1032_bss_size),hl
@@ -3052,18 +3174,20 @@ ld_rev02_normal_symbols_done:
     ld (ld_p1032_entry),hl
     ld hl,(ld_p1030_min_fast_stack)
     ld (ld_p1032_stack),hl
-    ld hl,ld_rev02_empty_relocs
+    ld hl,ld_p1026_rel_locs
     ld (ld_p1032_relocs),hl
-    ld hl,0
+    ld a,(ld_p1026_rel_count)
+    ld l,a
+    ld h,0
     ld (ld_p1032_reloc_count),hl
-    ld hl,ld_product_bss+LD_REV02_NORMAL_OBJ_CAP
+    ld hl,ld_product_bss+LD_REV02_NORMAL_OBJ_CAP+LD_REV02_NORMAL_IMAGE_CAP
     ld (ld_p1032_output),hl
     ld hl,LD_REV02_NORMAL_MEX_CAP
     ld (ld_p1032_capacity),hl
     call ld_p1032_write
     jp c,ld_rev02_exit_errno
     ld hl,(ld_rev02_output_ptr)
-    ld de,ld_product_bss+LD_REV02_NORMAL_OBJ_CAP
+    ld de,ld_product_bss+LD_REV02_NORMAL_OBJ_CAP+LD_REV02_NORMAL_IMAGE_CAP
     ld bc,(ld_p1032_stored_length)
     call ld_p1033_publish
     jp c,ld_rev02_exit_errno

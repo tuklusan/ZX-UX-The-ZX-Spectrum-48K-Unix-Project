@@ -174,7 +174,7 @@ def main():
     ld_asm,ld_image,ld_relocs,ld_bss=build_relocatable(
         sj,out,"ld",
         f'    INCLUDE "{(root/"v1/include/zx48ux.inc").as_posix()}"\n    INCLUDE "{(root/"tools/ld.asm").as_posix()}"\n',
-        '    EMIT_P10_LD_INPUT_LOADER\n    EMIT_P10_LD_STACK_OPTION_ROUTINES\n    EMIT_P10_LD_MEX1_WRITER_ROUTINES\n    EMIT_P10_LD_TRANSACTION_ROUTINES\n    EMIT_REV02_LD_PRODUCT_CLI\n',
+        '    EMIT_P10_LD_INPUT_LOADER\n    EMIT_P10_LD_RELOCATION_ROUTINES\n    EMIT_P10_LD_STACK_OPTION_ROUTINES\n    EMIT_P10_LD_MEX1_WRITER_ROUTINES\n    EMIT_P10_LD_TRANSACTION_ROUTINES\n    EMIT_REV02_LD_PRODUCT_CLI\n',
         '    defs LD_REV02_NORMAL_BSS_BYTES,0\n')
     req(ld_image.is_file() and 64 <= ld_image.stat().st_size <= 8192,"ld product image size")
     ld_mex=mex1(ld_image.read_bytes(),stack=512,bss=ld_bss,relocations=ld_relocs); (out/"ld.mex1").write_bytes(ld_mex)
@@ -206,7 +206,7 @@ def main():
         "image_sha256":sha(ld_image),"image_bytes":ld_image.stat().st_size,"bss_bytes":ld_bss,"relocation_count":len(ld_relocs),
         "mex1_sha256":sha(out/"ld.mex1"),"m48o_tap_sha256":sha(out/"ld.m48o.tap"),
         "entry":"EMIT_REV02_LD_PRODUCT_CLI",
-        "semantic_status":"GENERIC-SELF-CONTAINED-OBJ1-NORMAL-LINK-AND-REV18-ABS; RUNTIME-ARCHIVE-RESOLUTION-NOT-YET-ATTACHED"},
+        "semantic_status":"GENERIC-DEFINED-SYMBOL-RELOCATION-NORMAL-LINK-AND-REV18-ABS; RUNTIME-ARCHIVE-RESOLUTION-NOT-YET-ATTACHED"},
       "assertions":{
         "deterministic_shell_mex1":"PASS","deterministic_m48o":"PASS","mex1_inspection":"PASS",
         "deterministic_cc_mex1":"PASS","deterministic_cc_m48o":"PASS","cc_mex1_inspection":"PASS",
