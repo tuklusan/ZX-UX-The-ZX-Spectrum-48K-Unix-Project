@@ -96,6 +96,14 @@ root_source:
     db '#include "h.h"',10
     db 'int main(void){{return ANSWER;}}',10
 root_source_end:
+define_single_source:
+    db '#define ANSWER 7',10
+    db 'int main(void){{return ANSWER;}}',10
+define_single_source_end:
+define_multi_source:
+    db '#define ANSWER 3 + 4',10
+    db 'int main(void){{return ANSWER;}}',10
+define_multi_source_end:
 recursive_source:
     db '#define SELF SELF',10
     db 'int main(void){{return SELF;}}',10
@@ -125,6 +133,62 @@ fixture_reset:
     ld (stat_count),a
     ld a,ROOT_HANDLE
     ld (cc_rev02_source_handle),a
+    ret
+
+test_define_single:
+    ld a,6
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ret c
+    ld a,(stat_count)
+    or a
+    jp nz,test_fail
+    ld a,(open_count)
+    or a
+    jp nz,test_fail
+    ld hl,(cc_rev02_text_len)
+    ld de,4
+    or a
+    sbc hl,de
+    jp nz,test_fail
+    ld hl,cc_rev02_text+1
+    ld a,(hl)
+    cp 7
+    jp nz,test_fail
+    inc hl
+    ld a,(hl)
+    or a
+    jp nz,test_fail
+    xor a
+    ret
+
+test_define_multi:
+    ld a,7
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ret c
+    ld a,(stat_count)
+    or a
+    jp nz,test_fail
+    ld a,(open_count)
+    or a
+    jp nz,test_fail
+    ld hl,(cc_rev02_text_len)
+    ld de,4
+    or a
+    sbc hl,de
+    jp nz,test_fail
+    ld hl,cc_rev02_text+1
+    ld a,(hl)
+    cp 7
+    jp nz,test_fail
+    inc hl
+    ld a,(hl)
+    or a
+    jp nz,test_fail
+    xor a
     ret
 
 test_include_ok:
@@ -350,6 +414,10 @@ gate_read_root:
     jr z,gate_read_recursive
     cp 5
     jr z,gate_read_function_macro
+    cp 6
+    jr z,gate_read_define_single
+    cp 7
+    jr z,gate_read_define_multi
     ld hl,root_source
     ld bc,root_source_end-root_source
     ldir
@@ -375,6 +443,20 @@ gate_read_function_macro:
     ld bc,function_macro_source_end-function_macro_source
     ldir
     ld hl,function_macro_source_end-function_macro_source
+    xor a
+    ret
+gate_read_define_single:
+    ld hl,define_single_source
+    ld bc,define_single_source_end-define_single_source
+    ldir
+    ld hl,define_single_source_end-define_single_source
+    xor a
+    ret
+gate_read_define_multi:
+    ld hl,define_multi_source
+    ld bc,define_multi_source_end-define_multi_source
+    ldir
+    ld hl,define_multi_source_end-define_multi_source
     xor a
     ret
 
@@ -421,7 +503,7 @@ gateway_end:
     run([sj, "--nologo", f"--sym={sym.as_posix()}", asm.as_posix()], out)
     req(main_bin.is_file() and gate_bin.is_file(), "fixture binaries missing")
     syms = symbols(sym)
-    names = ("test_include_ok", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
+    names = ("test_define_single", "test_define_multi", "test_include_ok", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
     for name in names:
         req(name in syms, "fixture symbol missing: " + name)
 
@@ -453,6 +535,7 @@ gateway_end:
         "checks": checks,
         "assertions": {
             "one_level_local_include": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "object_like_define_single_token": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "object_like_define_multitoken": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "recursive_macro_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "function_macro_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",
