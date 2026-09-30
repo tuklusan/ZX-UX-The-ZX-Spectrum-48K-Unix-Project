@@ -1951,8 +1951,9 @@ zx48_p509_scan:
 
 zx48_p509_match:
     ; Matching placement/type must be public mutable and exact.
+    ld a,(p509_header+M48O_HDR_TYPE)
+    ld b,a
     ld a,(p509_header+M48O_HDR_DIRECTORY)
-    ld b,(p509_header+M48O_HDR_TYPE)
     call zx48_object_public_type_allowed
     jp c,zx48_p509_locked_error
 
@@ -1967,6 +1968,8 @@ zx48_p509_match:
 zx48_p509_load_raw:
     ld hl,p509_header
     call zx48_p504_raw_load
+    ld d,b
+    ld e,c
 zx48_p509_loaded:
     jp c,zx48_p509_locked_error
     ld (p509_new_ptr),hl
@@ -2097,8 +2100,9 @@ zx48_p509_commit:
 zx48_p509_commit_new:
     cp E_NOENT
     jp nz,zx48_p509_commit_drop_new
+    ld a,(p509_header+M48O_HDR_TYPE)
+    ld b,a
     ld a,(p509_requested_dir)
-    ld b,(p509_header+M48O_HDR_TYPE)
     ld hl,p509_requested_name
     call zx48_object_create
     jp c,zx48_p509_commit_drop_new
@@ -3483,6 +3487,7 @@ zx48_p514_tape_physical_byte:
     jp c,zx48_p514_tape_fail
     ld hl,(p514_tape_scratch)
     ld (p514_tape_read_ptr),hl
+    ld de,(p514_tape_chunk_left)
     ld hl,(p514_tape_phys_remaining)
     or a
     sbc hl,de

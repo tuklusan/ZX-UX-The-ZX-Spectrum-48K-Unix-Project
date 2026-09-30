@@ -4949,9 +4949,11 @@ zx48_p514_image_loop:
     jr z,zx48_p514_zero_bss
     call zx48_p514_tape_stream_byte
     jp c,zx48_p514_rollback
+    push af
     ld de,(p514_body_crc)
     call zx48_p514_crc16_update
     ld (p514_body_crc),de
+    pop af
     ld hl,(p514_write_ptr)
     ld (hl),a
     inc hl
