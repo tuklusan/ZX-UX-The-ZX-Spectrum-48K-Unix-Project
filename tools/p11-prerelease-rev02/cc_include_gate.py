@@ -96,6 +96,15 @@ root_source:
     db '#include "h.h"',10
     db 'int main(void){{return ANSWER;}}',10
 root_source_end:
+include_plain_source:
+    db '#include "h.h"',10
+    db 'int main(void){{return 7;}}',10
+include_plain_source_end:
+define_include_unused_source:
+    db '#define ANSWER 3 + 4',10
+    db '#include "h.h"',10
+    db 'int main(void){{return 7;}}',10
+define_include_unused_source_end:
 define_single_source:
     db '#define ANSWER 7',10
     db 'int main(void){{return ANSWER;}}',10
@@ -174,6 +183,68 @@ test_define_multi:
     jp nz,test_fail
     ld a,(open_count)
     or a
+    jp nz,test_fail
+    ld hl,(cc_rev02_text_len)
+    ld de,4
+    or a
+    sbc hl,de
+    jp nz,test_fail
+    ld hl,cc_rev02_text+1
+    ld a,(hl)
+    cp 7
+    jp nz,test_fail
+    inc hl
+    ld a,(hl)
+    or a
+    jp nz,test_fail
+    xor a
+    ret
+
+test_include_plain:
+    ld a,8
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ret c
+    ld a,(open_count)
+    cp 1
+    jp nz,test_fail
+    ld a,(close_count)
+    cp 1
+    jp nz,test_fail
+    ld a,(stat_count)
+    cp 1
+    jp nz,test_fail
+    ld hl,(cc_rev02_text_len)
+    ld de,4
+    or a
+    sbc hl,de
+    jp nz,test_fail
+    ld hl,cc_rev02_text+1
+    ld a,(hl)
+    cp 7
+    jp nz,test_fail
+    inc hl
+    ld a,(hl)
+    or a
+    jp nz,test_fail
+    xor a
+    ret
+
+test_define_include_unused:
+    ld a,9
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ret c
+    ld a,(open_count)
+    cp 1
+    jp nz,test_fail
+    ld a,(close_count)
+    cp 1
+    jp nz,test_fail
+    ld a,(stat_count)
+    cp 1
     jp nz,test_fail
     ld hl,(cc_rev02_text_len)
     ld de,4
@@ -418,6 +489,10 @@ gate_read_root:
     jp z,gate_read_define_single
     cp 7
     jp z,gate_read_define_multi
+    cp 8
+    jp z,gate_read_include_plain
+    cp 9
+    jp z,gate_read_define_include_unused
     ld hl,root_source
     ld bc,root_source_end-root_source
     ldir
@@ -443,6 +518,20 @@ gate_read_function_macro:
     ld bc,function_macro_source_end-function_macro_source
     ldir
     ld hl,function_macro_source_end-function_macro_source
+    xor a
+    ret
+gate_read_include_plain:
+    ld hl,include_plain_source
+    ld bc,include_plain_source_end-include_plain_source
+    ldir
+    ld hl,include_plain_source_end-include_plain_source
+    xor a
+    ret
+gate_read_define_include_unused:
+    ld hl,define_include_unused_source
+    ld bc,define_include_unused_source_end-define_include_unused_source
+    ldir
+    ld hl,define_include_unused_source_end-define_include_unused_source
     xor a
     ret
 gate_read_define_single:
@@ -503,7 +592,7 @@ gateway_end:
     run([sj, "--nologo", f"--sym={sym.as_posix()}", asm.as_posix()], out)
     req(main_bin.is_file() and gate_bin.is_file(), "fixture binaries missing")
     syms = symbols(sym)
-    names = ("test_define_single", "test_define_multi", "test_include_ok", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
+    names = ("test_define_single", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_include_ok", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
     for name in names:
         req(name in syms, "fixture symbol missing: " + name)
 
@@ -535,6 +624,8 @@ gateway_end:
         "checks": checks,
         "assertions": {
             "one_level_local_include": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "include_without_define": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "define_survives_include_when_unused": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "object_like_define_single_token": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "object_like_define_multitoken": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "recursive_macro_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",
