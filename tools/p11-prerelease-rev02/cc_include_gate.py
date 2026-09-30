@@ -377,6 +377,7 @@ gateway_end:
             ram[start:start + len(gate_bytes)] = gate_bytes
 
         for name in names:
+            print("REV02 CC INCLUDE TEST " + name, flush=True)
             code = (b"\xF3" + phase1._ld_sp(0xBFC0) + phase1._call(syms[name])
                     + phase1._jp_c(FAIL_PC) + phase1._jp(PASS_PC))
             run_sna(root, code, patch=patch, timeout=20)
