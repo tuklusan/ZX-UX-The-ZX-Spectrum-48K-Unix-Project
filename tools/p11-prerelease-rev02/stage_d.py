@@ -14,7 +14,7 @@ from __future__ import annotations
 import argparse, hashlib, json
 from pathlib import Path
 
-IDS=[f"C{i:03d}" for i in range(1,15)]
+IDS=[f"C{i:03d}" for i in range(1,20)]
 def req(v,m):
     if not v: raise SystemExit("ERROR: "+m)
 def sha(p): return hashlib.sha256(Path(p).read_bytes()).hexdigest()
@@ -68,6 +68,11 @@ def main():
       "C012":["REV18 §41.9 graphics/UDG/system-call compiler acceptance","REV18 shipped demo behavior"],
       "C013":["REV18 §41.9 standard runtime resolution by ld","REV18 frozen C48 public APIs","REV18 shipped demos native link requirement"],
       "C014":["REV18 §24 exact ld input.obj -o output -abs contract","REV09 R18.00 post-P11 recovery authority transition","REV18 §24 generic fixed-image DAT transaction and anti-specialization rules"],
+      "C015":["REV18 §19.4A direct tape-backed MEX1 execution","REV09 P5.14 direct packed MEX1 tape execution"],
+      "C016":["REV18 §19.4A continuous direct tape-backed stream accounting","REV09 P5.14 direct packed MEX1 tape execution"],
+      "C017":["REV18 §19 public M48O placement/type rules","REV09 P5.09 exact path/type placement"],
+      "C018":["REV18 §19 atomic validated mutable-object commit","REV09 P5.09 create/replace only after complete validation"],
+      "C019":["REV18 §19 RAW physical/logical length identity","REV09 P5.04 RAW logical_length==storage_length","REV09 P5.09 complete logical-length validation before commit"],
     }
     changed={
       "C001":["v1/src/shell/sh.asm","tools/p11-prerelease-rev02/product_tools.py"],
@@ -84,6 +89,11 @@ def main():
       "C012":["v1/src/kernel/kernel.asm"],
       "C013":["v1/src/libc48/runtime_archive.asm","tools/ld.asm","tools/p11-prerelease-rev02/product_tools.py"],
       "C014":["tools/ld.asm"],
+      "C015":["v1/src/kernel/process.asm"],
+      "C016":["v1/src/kernel/tape.asm"],
+      "C017":["v1/src/kernel/tape.asm"],
+      "C018":["v1/src/kernel/tape.asm"],
+      "C019":["v1/src/kernel/tape.asm"],
     }
     rows=[]
     for g in gaps:
