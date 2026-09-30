@@ -52,8 +52,8 @@ def main():
         "historical H06 fixture unexpectedly absent")
     req("EMIT_REV02_CC_PRODUCT_CLI" in cc and "Stage-E continuation point" in cc,
         "REV02 cc generic CLI scaffold missing")
-    req("EMIT_REV02_AS_PRODUCT_CLI" in ass and "Stage-E continuation: ordinary source reader/parser/OBJ1 transaction." in ass,
-        "REV02 as generic CLI scaffold missing")
+    req("EMIT_REV02_AS_PRODUCT_CLI" in ass and "as_rev02_assemble_stream:" in ass and "AS_REV02_BSS_BYTES" in ass,
+        "REV02 as generic streaming product route missing")
     req("EMIT_REV02_LD_PRODUCT_CLI" in ld and "Stage-E ordinary normal-output checkpoint" in ld,
         "REV02 ld generic normal-link Stage-E checkpoint missing")
     req("ld input.obj -o output -abs" in rev18,"REV18 fixed-image ld CLI authority missing")
@@ -117,7 +117,7 @@ def main():
        "observed":"REV02 now packages a generic cc MEX1/M48O scaffold, but its ordinary source-open path still fails E_NOTSUP before generic parsing/codegen/OBJ1 publication",
        "planned_paths":["v1/src/tools/cc.asm","tools/p11-prerelease-rev02/product_tools.py"],"blocks":["cc","OBJ1"]},
       {"id":"C003","failure":"ordinary /bin/as semantic assembler route incomplete",
-       "observed":"REV02 now packages a generic as MEX1/M48O scaffold, but its ordinary source-open path still fails E_NOTSUP before generic parsing/OBJ1 publication",
+       "observed":"REV02 ordinary as now has a source-semantic streaming literal documented-Z80 path and transactional OBJ1 publication; full label/EQU/global/extern expression binding is not yet integrated into the product driver",
        "planned_paths":["tools/as.asm","tools/p11-prerelease-rev02/product_tools.py"],"blocks":["generic as","kernel rebuild"]},
       {"id":"C005","failure":"developer-sidecar build exists but real delivery/session closure is incomplete",
        "observed":"product_tools.py now hash-binds deterministic sh/cc/as/ld MEX1/M48O scaffolds to current sources; real ordinary cassette load/install/execute in a booted developer session is not yet reachable",
@@ -135,7 +135,7 @@ def main():
        "observed":"current cc source exposes phase-specific compile entry points; P1144/P1145 and P11PR paths are source-identity-bound, and no ordinary generic CLI entry owns the full frozen parser/codegen/OBJ1 transaction",
        "planned_paths":["v1/src/tools/cc.asm","tools/p11-prerelease-rev02/product_tools.py"],"blocks":["generic C48","anti-specialization","30 lifecycle"]},
       {"id":"C010","failure":"no production as CLI entry over generic assembler pipeline",
-       "observed":"tools/as.asm exposes assembler macros/fixture routines but no ordinary application entry parsing argv and publishing OBJ1",
+       "observed":"ordinary as parses argv and publishes semantic native-text OBJ1, but the complete P10 symbol/expression assembler core is resident without full source-driver integration",
        "planned_paths":["tools/as.asm","tools/p11-prerelease-rev02/product_tools.py"],"blocks":["generic as","native kernel rebuild"]},
       {"id":"C012","failure":"production kernel omits graphics/sound services required by frozen public API",
        "observed":"kernel.asm does not include graphics.asm or sound.asm although the exact SDK corpus uses frozen graphics/sound calls",

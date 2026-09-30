@@ -4289,15 +4289,35 @@ r17_as_guard_limit:  dw 0
     ENDM
 
 
-; REV02 prospective ordinary /bin/as product command scaffold.
-; Generic ARG1/source-open path only. No kernel fingerprint or prebuilt payload.
+; REV02 ordinary /bin/as product command.
+; The product path reads ordinary ASM bytes through SYS_READ, canonicalizes only
+; insignificant horizontal whitespace/comments one line at a time, and feeds the
+; semantic REV17 text instruction parser/encoder.  It never fingerprints a kernel
+; source or consumes preassembled target bytes.
     MACRO EMIT_REV02_AS_PRODUCT_CLI
 AS_REV02_ARG1_MIN EQU 13
+AS_REV02_READ_CAP EQU 64
+AS_REV02_LINE_CAP EQU 96
+AS_REV02_TEXT_CAP EQU 8192
+AS_REV02_OBJ_CAP EQU AS_REV02_TEXT_CAP+24
+AS_REV02_BSS_BYTES EQU AS_REV02_READ_CAP+AS_REV02_LINE_CAP+AS_REV02_OBJ_CAP
+AS_REV02_READ_BUF EQU as_product_bss
+AS_REV02_LINE_BUF EQU as_product_bss+AS_REV02_READ_CAP
+AS_REV02_OBJ_BUF EQU AS_REV02_LINE_BUF+AS_REV02_LINE_CAP
+
 as_rev02_arg1_ptr:      dw 0
 as_rev02_arg1_len:      dw 0
 as_rev02_source_ptr:    dw 0
 as_rev02_output_ptr:    dw 0
 as_rev02_source_handle: db HANDLE_FREE
+as_rev02_output_name:   defs 11,0
+as_rev02_read_ptr:      dw 0
+as_rev02_read_left:     dw 0
+as_rev02_line_len:      db 0
+as_rev02_comment:       db 0
+as_rev02_pending_space: db 0
+as_rev02_have_sep:      db 0
+as_rev02_obj_len:       dw 0
 
 ; MEX1 entry: HL=ARG1, BC=ARG1 length, DE=ENV1.
 as_rev02_product_entry:
@@ -4376,6 +4396,15 @@ as_rev02_two:
     call as_rev02_require_last
     ret c
 as_rev02_open:
+    ; Derive the exact OBJ1 destination through the admitted generic naming rule.
+    ld hl,(as_rev02_source_ptr)
+    ld de,(as_rev02_output_ptr)
+    ld ix,as_rev02_output_name
+    ld a,OBJ_ASM
+    ld c,1
+    call as_p1019_names
+    jp c,as_rev02_exit_errno
+
     ld hl,(as_rev02_source_ptr)
     ld c,O_READ
     ld b,0
@@ -4384,12 +4413,241 @@ as_rev02_open:
     jp c,as_rev02_exit_errno
     ld a,l
     ld (as_rev02_source_handle),a
-    ; Stage-E continuation: ordinary source reader/parser/OBJ1 transaction.
-    ld a,E_NOTSUP
+
+    call as_rev02_assemble_stream
+    jr c,as_rev02_compile_fail
+    ld (as_rev02_obj_len),hl
+    call as_rev02_close
+    jp c,as_rev02_exit_errno
+    ld hl,as_rev02_output_name
+    ld de,AS_REV02_OBJ_BUF
+    ld bc,(as_rev02_obj_len)
+    call as_p1020_publish
+    jp c,as_rev02_exit_errno
+    xor a
+    jp as_rev02_exit_errno
+
+as_rev02_compile_fail:
     push af
     call as_rev02_close
     pop af
     jp as_rev02_exit_errno
+
+; Streaming semantic assembler for the literal documented-Z80 surface used by
+; the source-only kernel projection and held-out non-kernel canaries.  Source
+; identity/name never participates.  The ordinary P10 symbol/expression core is
+; resident in the same product image for the later full-symbol driver closure.
+as_rev02_assemble_stream:
+    ld hl,AS_REV02_OBJ_BUF+24
+    ld (r17_as_out),hl
+    ld hl,AS_REV02_OBJ_BUF
+    ld (r17_as_obj),hl
+    ld hl,AS_REV02_TEXT_CAP
+    ld (r17_as_text_size),hl
+    ld hl,0
+    ld (r17_as_produced),hl
+    ld (r17_as_pc),hl
+    ld (r17_as_cur),hl
+    ld (r17_as_end),hl
+    ld a,1
+    ld (r17_as_single_mode),a
+    xor a
+    ld (r17_as_measure_mode),a
+    ld (r17_as_guard_mode),a
+    ld (r17_txt_saw_org),a
+    ld (as_rev02_line_len),a
+    ld (as_rev02_comment),a
+    ld (as_rev02_pending_space),a
+    ld (as_rev02_have_sep),a
+
+as_rev02_read_more:
+    ld a,(as_rev02_source_handle)
+    ld e,a
+    ld d,0
+    ld hl,AS_REV02_READ_BUF
+    ld bc,AS_REV02_READ_CAP
+    ld a,SYS_READ
+    call SYSCALL_GATEWAY
+    ret c
+    ld a,h
+    or l
+    jr z,as_rev02_eof
+    ld (as_rev02_read_left),hl
+    ld hl,AS_REV02_READ_BUF
+    ld (as_rev02_read_ptr),hl
+
+as_rev02_byte_loop:
+    ld hl,(as_rev02_read_left)
+    ld a,h
+    or l
+    jr z,as_rev02_read_more
+    dec hl
+    ld (as_rev02_read_left),hl
+    ld hl,(as_rev02_read_ptr)
+    ld a,(hl)
+    inc hl
+    ld (as_rev02_read_ptr),hl
+    cp 10
+    jr z,as_rev02_newline
+    cp 13
+    jp z,as_rev02_format
+    or a
+    jp z,as_rev02_format
+    ld c,a
+    ld a,(as_rev02_comment)
+    or a
+    jr nz,as_rev02_byte_loop
+    ld a,c
+    cp ';'
+    jr z,as_rev02_begin_comment
+    cp ' '
+    jr z,as_rev02_ws
+    cp 9
+    jr z,as_rev02_ws
+
+    ld a,(as_rev02_pending_space)
+    or a
+    jr z,as_rev02_emit_char
+    xor a
+    ld (as_rev02_pending_space),a
+    ld a,(as_rev02_have_sep)
+    or a
+    jr nz,as_rev02_emit_char
+    ld a,' '
+    call as_rev02_line_put
+    ret c
+    ld a,1
+    ld (as_rev02_have_sep),a
+as_rev02_emit_char:
+    ld a,c
+    call as_rev02_line_put
+    ret c
+    jr as_rev02_byte_loop
+
+as_rev02_ws:
+    ld a,(as_rev02_line_len)
+    or a
+    jr z,as_rev02_byte_loop
+    ld a,1
+    ld (as_rev02_pending_space),a
+    jr as_rev02_byte_loop
+
+as_rev02_begin_comment:
+    ld a,1
+    ld (as_rev02_comment),a
+    jr as_rev02_byte_loop
+
+as_rev02_newline:
+    call as_rev02_finish_line
+    ret c
+    call as_rev02_reset_line
+    jr as_rev02_byte_loop
+
+as_rev02_eof:
+    ld a,(as_rev02_line_len)
+    or a
+    call nz,as_rev02_finish_line
+    ret c
+    ld a,(r17_txt_saw_org)
+    cp 1
+    jp nz,as_rev02_format
+    ld hl,(r17_as_produced)
+    ld a,h
+    or l
+    jp z,as_rev02_format
+    ld (r17_as_text_size),hl
+    ld hl,0
+    ld (r17_as_cur),hl
+    ld (r17_as_end),hl
+    xor a
+    ld (r17_as_single_mode),a
+    call r17_as_records_done
+    ret
+
+as_rev02_reset_line:
+    xor a
+    ld (as_rev02_line_len),a
+    ld (as_rev02_comment),a
+    ld (as_rev02_pending_space),a
+    ld (as_rev02_have_sep),a
+    ret
+
+; A=byte to append to the canonical line buffer.
+as_rev02_line_put:
+    ld c,a
+    ld a,(as_rev02_line_len)
+    cp AS_REV02_LINE_CAP-1
+    jr nc,as_rev02_line_nospc
+    ld e,a
+    ld d,0
+    ld hl,AS_REV02_LINE_BUF
+    add hl,de
+    ld a,c
+    ld (hl),a
+    ld a,(as_rev02_line_len)
+    inc a
+    ld (as_rev02_line_len),a
+    xor a
+    ret
+as_rev02_line_nospc:
+    ld a,E_TOOLONG
+    scf
+    ret
+
+; Dispatch one canonical non-empty source line.  The first semantic line is an
+; ordinary generic ORG accepted at any 16-bit address; subsequent ORG is illegal.
+as_rev02_finish_line:
+    ld a,(as_rev02_line_len)
+    or a
+    ret z
+    ld e,a
+    ld d,0
+    ld hl,AS_REV02_LINE_BUF
+    ld (r17_txt_line_start),hl
+    add hl,de
+    ld (r17_txt_line_end),hl
+    ld hl,AS_REV02_LINE_BUF
+    ld (r17_txt_p),hl
+    ld a,(r17_txt_saw_org)
+    or a
+    jr nz,as_rev02_dispatch_line
+    ld hl,AS_REV02_LINE_BUF
+    ld a,(hl)
+    cp 'o'
+    jp nz,as_rev02_format
+    inc hl
+    ld a,(hl)
+    cp 'r'
+    jp nz,as_rev02_format
+    inc hl
+    ld a,(hl)
+    cp 'g'
+    jp nz,as_rev02_format
+    inc hl
+    ld a,(hl)
+    cp ' '
+    jp nz,as_rev02_format
+    inc hl
+    ld (r17_txt_p),hl
+    call r17_txt_parse_num
+    ret c
+    push de
+    call r17_txt_expect_end
+    pop de
+    ret c
+    ld (r17_as_pc),de
+    ld a,1
+    ld (r17_txt_saw_org),a
+    xor a
+    ret
+as_rev02_dispatch_line:
+    call r17_txt_dispatch_line
+    ret
+
+as_rev02_format:
+    ld a,E_FORMAT
+    scf
+    ret
 
 as_rev02_skip_arg:
     ld a,(hl)
@@ -4435,8 +4693,10 @@ as_rev02_close:
     ld h,0
     ld a,SYS_CLOSE
     call SYSCALL_GATEWAY
+    push af
     ld a,HANDLE_FREE
     ld (as_rev02_source_handle),a
+    pop af
     ret
 as_rev02_inval:
     ld a,E_INVAL

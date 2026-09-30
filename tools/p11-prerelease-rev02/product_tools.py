@@ -259,8 +259,11 @@ def main():
     as_asm,as_image,as_relocs,as_bss=build_relocatable(
         sj,out,"as",
         f'    INCLUDE "{(root/"v1/include/zx48ux.inc").as_posix()}"\n    INCLUDE "{(root/"tools/as.asm").as_posix()}"\n    INCLUDE "{(root/"tools/as_text.asm").as_posix()}"\n',
-        '    EMIT_P10_AS_OBJ1_SYMBOL_ROUTINES\n    EMIT_P10_AS_OBJ1_RELOC_ROUTINES\n    EMIT_P10_AS_LEXER_ROUTINES\n    EMIT_P10_AS_SYMBOL_ROUTINES\n    EMIT_P10_AS_DIRECTIVE_ROUTINES\n    EMIT_P10_AS_EXPR_ROUTINES\n    EMIT_P10_AS_BINDING_ROUTINES\n    EMIT_P10_AS_OPCODE_COVERAGE\n    EMIT_P10_AS_OBJ1_WRITER\n    EMIT_P10_AS_NAME_ROUTINES\n    EMIT_P10_AS_TRANSACTION_ROUTINES\n    EMIT_R17_AS_NSP1_OBJ1\n    EMIT_R17_AS_TEXT_OBJ1\n    EMIT_REV02_AS_PRODUCT_CLI\n')
+        '    EMIT_P10_AS_OBJ1_SYMBOL_ROUTINES\n    EMIT_P10_AS_OBJ1_RELOC_ROUTINES\n    EMIT_P10_AS_LEXER_ROUTINES\n    EMIT_P10_AS_SYMBOL_ROUTINES\n    EMIT_P10_AS_DIRECTIVE_ROUTINES\n    EMIT_P10_AS_EXPR_ROUTINES\n    EMIT_P10_AS_BINDING_ROUTINES\n    EMIT_P10_AS_OPCODE_COVERAGE\n    EMIT_P10_AS_OBJ1_WRITER\n    EMIT_P10_AS_NAME_ROUTINES\n    EMIT_P10_AS_TRANSACTION_ROUTINES\n    EMIT_R17_AS_NSP1_OBJ1\n    EMIT_R17_AS_TEXT_OBJ1\n    EMIT_REV02_AS_PRODUCT_CLI\n',
+        '    defs AS_REV02_BSS_BYTES,0\n')
     req(as_image.is_file() and 64 <= as_image.stat().st_size <= 12288,"as product image size")
+    as_resident=as_image.stat().st_size+as_bss+512
+    req(as_resident <= 32768,"as 48K process residency")
     as_mex=mex1(as_image.read_bytes(),stack=512,bss=as_bss,relocations=as_relocs); (out/"as.mex1").write_bytes(as_mex)
     run([sys.executable,inspect,out/"as.mex1","--base","0x6000"],root)
     as_tap=mt.m48o_blocks(mt.M48OObject("as",mt.M48O_BIN,mt.DIR_BIN,as_mex))
@@ -297,10 +300,10 @@ def main():
         "semantic_status":"GENERIC-CLI-AND-SOURCE-OPEN-SCAFFOLD; CODEGEN-NOT-YET-ATTACHED"},
       "as":{
         "source":"tools/as.asm","source_sha256":sha(assrc),
-        "image_sha256":sha(as_image),"image_bytes":as_image.stat().st_size,"relocation_count":len(as_relocs),
+        "image_sha256":sha(as_image),"image_bytes":as_image.stat().st_size,"bss_bytes":as_bss,"resident_bytes_including_stack":as_resident,"relocation_count":len(as_relocs),
         "mex1_sha256":sha(out/"as.mex1"),"m48o_tap_sha256":sha(out/"as.m48o.tap"),
         "entry":"EMIT_REV02_AS_PRODUCT_CLI",
-        "semantic_status":"GENERIC-P10-CORE-PLUS-R17-TEXT-PARSER-EMBEDDED; PRODUCT-DRIVER-NOT-YET-ATTACHED"},
+        "semantic_status":"GENERIC-STREAMING-NATIVE-TEXT-DRIVER-PLUS-P10-CORE; FULL-SYMBOL-DRIVER-PENDING"},
       "runtime_archive":{
         "source":"v1/src/libc48/*.asm","obj1_sha256":sha(runtime_obj),"obj1_bytes":runtime_obj.stat().st_size,
         "public_symbol_count":len(C48_RUNTIME_PUBLIC),"embedded_in_ld":ld_image.read_bytes().count(runtime_obj.read_bytes())==1,
