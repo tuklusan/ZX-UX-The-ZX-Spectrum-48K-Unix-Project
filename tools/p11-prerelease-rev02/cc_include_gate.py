@@ -511,7 +511,22 @@ gate_read:
 gate_read_root:
     ld a,(root_done)
     or a
+    jp z,gate_read_root_first
+    cp 1
     jp nz,gate_read_eof
+    ld a,(mode)
+    or a
+    jp nz,gate_read_eof
+    ld a,2
+    ld (root_done),a
+    ex de,hl
+    ld hl,root_source+CC_REV02_READ_CAP
+    ld bc,root_source_end-root_source-CC_REV02_READ_CAP
+    ldir
+    ld hl,root_source_end-root_source-CC_REV02_READ_CAP
+    xor a
+    ret
+gate_read_root_first:
     ld a,1
     ld (root_done),a
     ex de,hl
@@ -531,9 +546,9 @@ gate_read_root:
     cp 9
     jp z,gate_read_define_include_unused
     ld hl,root_source
-    ld bc,root_source_end-root_source
+    ld bc,CC_REV02_READ_CAP
     ldir
-    ld hl,root_source_end-root_source
+    ld hl,CC_REV02_READ_CAP
     xor a
     ret
 gate_read_bad_name:
@@ -633,6 +648,8 @@ gateway_end:
     for name in names:
         req(name in syms, "fixture symbol missing: " + name)
 
+    req(len(b"#define ANSWER 3 + 4\n#include \"h.h\"\nint main(void){return ANSWER;}\n") > 64,
+        "combined define/include fixture must cross the 64-byte root read boundary")
     checks = {"assemble": "PASS", "anti_specialization": "PASS"}
     if not ns.assemble_only:
         driver = root / "v1/tools-host/test-driver"
@@ -671,6 +688,7 @@ gateway_end:
             "function_macro_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "ordinary_stat_open_read_close": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "parent_unread_window_preserved": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "parent_refill_after_include": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "nested_include_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "portable_basename_enforced_before_lookup": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "wrong_object_type_rejected_before_open": "PASS" if not ns.assemble_only else "ASSEMBLED",
