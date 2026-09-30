@@ -37,7 +37,7 @@ def main():
     ld=(root/"tools/ld.asm").read_text()
     runtime=(root/"v1/src/libc48/runtime_archive.asm").read_text()
     process=(root/"v1/src/kernel/process.asm").read_text()
-    tape=(root/"v1/src/kernel/tape.asm").read_text()
+    tape_source=(root/"v1/src/kernel/tape.asm").read_text()
     rev18=(root/"docs/01-ZX-UX-ARCHITECTURE-REV18.md").read_text()
 
     req("p621_cc_path: db '/bin/cc',0" in shell,"shell /bin/cc path contract missing")
@@ -158,7 +158,7 @@ def main():
            "observed":"zx48_p514_image_loop receives the logical image byte in A, calls zx48_p514_crc16_update which clobbers A, then stores the clobbered A to the process image",
            "planned_paths":["v1/src/kernel/process.asm"],"blocks":["direct tape-backed MEX1 exact image bytes"]})
 
-    p514_phys_block=tape.split("zx48_p514_tape_physical_byte:",1)[1].split("zx48_p514_tape_have_chunk:",1)[0]
+    p514_phys_block=tape_source.split("zx48_p514_tape_physical_byte:",1)[1].split("zx48_p514_tape_have_chunk:",1)[0]
     if ("ld (p514_tape_chunk_left),de" in p514_phys_block and
         "call zx48_tape_load_block" in p514_phys_block and
         "sbc hl,de" in p514_phys_block and
@@ -168,21 +168,21 @@ def main():
            "observed":"the refill path records the chunk length, calls zx48_tape_load_block whose contract does not preserve DE, then subtracts that post-call DE from p514_tape_phys_remaining",
            "planned_paths":["v1/src/kernel/tape.asm"],"blocks":["direct tape-backed physical stream accounting"]})
 
-    p509_match_block=tape.split("zx48_p509_match:",1)[1].split("zx48_p509_load_raw:",1)[0]
+    p509_match_block=tape_source.split("zx48_p509_match:",1)[1].split("zx48_p509_load_raw:",1)[0]
     if "ld b,(p509_header+M48O_HDR_TYPE)" in p509_match_block:
         gaps.append(
           {"id":"C017","failure":"P5.09 public type validation uses an invalid direct B absolute-memory load form",
            "observed":"zx48_p509_match uses ld b,(p509_header+M48O_HDR_TYPE) instead of loading the header byte through A before public type validation",
            "planned_paths":["v1/src/kernel/tape.asm"],"blocks":["SYS_TAPE_LOAD valid BIN/public-type acceptance"]})
 
-    p509_commit_block=tape.split("zx48_p509_commit_new:",1)[1].split("zx48_p509_publish:",1)[0]
+    p509_commit_block=tape_source.split("zx48_p509_commit_new:",1)[1].split("zx48_p509_publish:",1)[0]
     if "ld b,(p509_header+M48O_HDR_TYPE)" in p509_commit_block:
         gaps.append(
           {"id":"C018","failure":"P5.09 new-object commit passes object_create an invalidly loaded type",
            "observed":"zx48_p509_commit_new repeats the invalid direct B absolute-memory load before zx48_object_create, so correcting only match validation would leave new-object creation wrong",
            "planned_paths":["v1/src/kernel/tape.asm"],"blocks":["SYS_TAPE_LOAD new-object atomic commit"]})
 
-    p509_raw_handoff=tape.split("zx48_p509_load_raw:",1)[1].split("zx48_p509_header_basic:",1)[0]
+    p509_raw_handoff=tape_source.split("zx48_p509_load_raw:",1)[1].split("zx48_p509_header_basic:",1)[0]
     if ("call zx48_p504_raw_load\nzx48_p509_loaded:" in p509_raw_handoff and
         "ld d,b\n    ld e,c" not in p509_raw_handoff):
         gaps.append(
