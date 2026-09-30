@@ -50,8 +50,8 @@ def main():
         "historical P11PR identity-bound fixture unexpectedly absent")
     req("EMIT_P1145_CC_H06_COMPILER" in cc and "CC_P1145_SOURCE_CRC" in cc,
         "historical H06 fixture unexpectedly absent")
-    req("EMIT_REV02_CC_PRODUCT_CLI" in cc and "Stage-E continuation point" in cc,
-        "REV02 cc generic CLI scaffold missing")
+    req("EMIT_REV02_CC_PRODUCT_CLI" in cc and "cc_rev02_compile_stream:" in cc and "CC_REV02_BSS_BYTES" in cc,
+        "REV02 cc generic streaming product route missing")
     req("EMIT_REV02_AS_PRODUCT_CLI" in ass and "as_rev02_assemble_stream:" in ass and "AS_REV02_BSS_BYTES" in ass,
         "REV02 as generic streaming product route missing")
     req("EMIT_REV02_LD_PRODUCT_CLI" in ld and "Stage-E ordinary normal-output checkpoint" in ld,
