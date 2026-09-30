@@ -266,3 +266,40 @@ ld_p1136_archive_bad:
     scf
     ret
     ENDM
+
+
+; REV02 post-Phase-11 recovery: one generic full-runtime archive member.
+; The exact OBJ1 bytes are generated from the canonical libc48 sources by the
+; product-tool builder before the linker image is assembled.  The archive is
+; source-semantic and independent of SDK/application identity.
+REV02_RUNTIME_MEMBER_COUNT EQU 1
+
+    MACRO EMIT_REV02_FULL_RUNTIME_ARCHIVE
+rev02_runtime_archive:
+    db 'L','A','R','1'
+    db REV02_RUNTIME_MEMBER_COUNT
+    db 0
+    dw rev02_runtime_archive_table_end-rev02_runtime_archive_table
+rev02_runtime_archive_table:
+    dw rev02_runtime_obj
+    dw rev02_runtime_obj_end-rev02_runtime_obj
+rev02_runtime_archive_table_end:
+rev02_runtime_obj:
+    INCBIN "libc48-runtime.obj1"
+rev02_runtime_obj_end:
+rev02_runtime_archive_end:
+    ENDM
+
+    MACRO EMIT_REV02_FULL_RUNTIME_ARCHIVE_ROUTINES
+ld_rev02_runtime_archive_get:
+    or a
+    jr nz,ld_rev02_runtime_archive_bad
+    ld hl,rev02_runtime_obj
+    ld bc,rev02_runtime_obj_end-rev02_runtime_obj
+    xor a
+    ret
+ld_rev02_runtime_archive_bad:
+    ld a,E_INVAL
+    scf
+    ret
+    ENDM
