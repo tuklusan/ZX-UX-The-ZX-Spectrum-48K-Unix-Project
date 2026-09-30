@@ -61,6 +61,8 @@ def main() -> None:
     for needle in (
         "cc_rev02_pp_directive:", "cc_rev02_pp_name:", "SYS_STAT", "SYS_OPEN", "SYS_READ", "SYS_CLOSE",
         "CC_REV02_INCLUDE_CAP   EQU 64", "cc_rev02_includebuf", "cc_rev02_parent_read_left",
+        "CC_REV02_MACRO_CAP     EQU 16", "CC_REV02_MACRO_REPL_CAP EQU 32",
+        "cc_rev02_pp_define_word_start:", "cc_rev02_macro_try:",
     ):
         req(needle in block, "quoted-include product closure missing: " + needle)
     for forbidden in ("cc_p11pr_", "CC_P11PR", "source_crc", "source_sum", "source_sha", "identity_table"):
@@ -90,9 +92,18 @@ stat_count: db 0
 mode: db 0
 
 root_source:
+    db '#define ANSWER 3 + 4',10
     db '#include "h.h"',10
-    db 'int main(void){{return 7;}}',10
+    db 'int main(void){{return ANSWER;}}',10
 root_source_end:
+recursive_source:
+    db '#define SELF SELF',10
+    db 'int main(void){{return SELF;}}',10
+recursive_source_end:
+function_macro_source:
+    db '#define F(x) x',10
+    db 'int main(void){{return 1;}}',10
+function_macro_source_end:
 header_source:
     db 'int helper(void);',10
 header_source_end:
@@ -156,6 +167,40 @@ test_include_ok:
     ld a,h
     or l
     jp z,test_fail
+    xor a
+    ret
+
+test_recursive_macro_reject:
+    ld a,4
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    jp nc,test_fail
+    cp E_NOTSUP
+    jp nz,test_fail
+    ld a,(stat_count)
+    or a
+    jp nz,test_fail
+    ld a,(open_count)
+    or a
+    jp nz,test_fail
+    xor a
+    ret
+
+test_function_macro_reject:
+    ld a,5
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    jp nc,test_fail
+    cp E_NOTSUP
+    jp nz,test_fail
+    ld a,(stat_count)
+    or a
+    jp nz,test_fail
+    ld a,(open_count)
+    or a
+    jp nz,test_fail
     xor a
     ret
 
@@ -301,6 +346,10 @@ gate_read_root:
     ld a,(mode)
     cp 2
     jr z,gate_read_bad_name
+    cp 4
+    jr z,gate_read_recursive
+    cp 5
+    jr z,gate_read_function_macro
     ld hl,root_source
     ld bc,root_source_end-root_source
     ldir
@@ -312,6 +361,20 @@ gate_read_bad_name:
     ld bc,wrong_name_source_end-wrong_name_source
     ldir
     ld hl,wrong_name_source_end-wrong_name_source
+    xor a
+    ret
+gate_read_recursive:
+    ld hl,recursive_source
+    ld bc,recursive_source_end-recursive_source
+    ldir
+    ld hl,recursive_source_end-recursive_source
+    xor a
+    ret
+gate_read_function_macro:
+    ld hl,function_macro_source
+    ld bc,function_macro_source_end-function_macro_source
+    ldir
+    ld hl,function_macro_source_end-function_macro_source
     xor a
     ret
 
@@ -358,7 +421,7 @@ gateway_end:
     run([sj, "--nologo", f"--sym={sym.as_posix()}", asm.as_posix()], out)
     req(main_bin.is_file() and gate_bin.is_file(), "fixture binaries missing")
     syms = symbols(sym)
-    names = ("test_include_ok", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
+    names = ("test_include_ok", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
     for name in names:
         req(name in syms, "fixture symbol missing: " + name)
 
@@ -390,6 +453,9 @@ gateway_end:
         "checks": checks,
         "assertions": {
             "one_level_local_include": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "object_like_define_multitoken": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "recursive_macro_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "function_macro_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "ordinary_stat_open_read_close": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "parent_unread_window_preserved": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "nested_include_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",

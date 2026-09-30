@@ -300,7 +300,7 @@ def main():
         "image_sha256":sha(cc_image),"image_bytes":cc_image.stat().st_size,"bss_bytes":cc_bss,"resident_bytes_including_stack":cc_resident,"relocation_count":len(cc_relocs),
         "mex1_sha256":sha(out/"cc.mex1"),"m48o_tap_sha256":sha(out/"cc.m48o.tap"),
         "entry":"EMIT_REV02_CC_PRODUCT_CLI",
-        "semantic_status":"GENERIC-STREAMING-NATIVE-C-CHECKPOINT; ONE-LEVEL-QUOTED-LOCAL-INCLUDE; INTEGER-CONSTANT-FUNCTIONS; FULL-C48-PENDING"},
+        "semantic_status":"GENERIC-STREAMING-NATIVE-C-CHECKPOINT; ONE-LEVEL-QUOTED-LOCAL-INCLUDE; FROZEN-BOUNDED-OBJECT-LIKE-DEFINES; INTEGER-CONSTANT-FUNCTIONS; FULL-C48-PENDING"},
       "as":{
         "source":"tools/as.asm","source_sha256":sha(assrc),
         "image_sha256":sha(as_image),"image_bytes":as_image.stat().st_size,"bss_bytes":as_bss,"resident_bytes_including_stack":as_resident,"relocation_count":len(as_relocs),
