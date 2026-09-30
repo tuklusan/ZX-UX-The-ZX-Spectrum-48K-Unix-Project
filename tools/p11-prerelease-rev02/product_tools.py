@@ -216,7 +216,18 @@ def main():
     sj=root/"tools/runtime/sjasmplus/bin/sjasmplus"; req(sj.is_file(),"project sjasmplus missing")
     shsrc=root/"v1/src/shell/sh.asm"; sh=shsrc.read_text()
     ccsrc=root/"v1/src/tools/cc.asm"; assrc=root/"tools/as.asm"; astextsrc=root/"tools/as_text.asm"; ldsrc=root/"tools/ld.asm"
+    as_source=assrc.read_text(); as_support=astextsrc.read_text()
     req("EMIT_P601_SH_IMAGE" in sh and "sh_idle:" in sh,"shell entry fixture changed")
+    req(all(marker in as_source for marker in (
+        "as_rev02_sym_define:","as_rev02_validate_symbols:","as_rev02_record_reloc:",
+        "as_rev02_kw_global:","as_rev02_kw_extern:","as_rev02_require_abs_expr:",
+        "as_rev02_reopen_source:","as_rev02_write_obj1:",
+        'canonicalizes to "label:ld a,1"')),
+        "ordinary as full symbol/relocation driver closure missing")
+    req(all(marker in as_support for marker in (
+        "R17_TXT_M_DS    EQU 20","r17_txt_ds:",'db 2,"ds",R17_TXT_M_DS',
+        "r17_txt_expr_hook:","r17_txt_reloc_hook:")),
+        "ordinary as public DS/expression hook closure missing")
     # Product closure deliberately includes no historical P11PR compiler helper.
     req("EMIT_P11PR_CC_SDK_CORPUS_COMPILER" in ccsrc.read_text(),"historical fixture identity missing")
     asm,image,sh_relocs,sh_bss=build_relocatable(
@@ -306,7 +317,7 @@ def main():
         "image_sha256":sha(as_image),"image_bytes":as_image.stat().st_size,"bss_bytes":as_bss,"resident_bytes_including_stack":as_resident,"relocation_count":len(as_relocs),
         "mex1_sha256":sha(out/"as.mex1"),"m48o_tap_sha256":sha(out/"as.m48o.tap"),
         "entry":"EMIT_REV02_AS_PRODUCT_CLI",
-        "semantic_status":"GENERIC-STREAMING-NATIVE-TEXT-DRIVER-PLUS-P10-CORE; FULL-SYMBOL-DRIVER-PENDING"},
+        "semantic_status":"GENERIC-NATIVE-AS-FULL-P10-SYNTAX-DRIVER; LABEL/EQU/DB/DW/DS/GLOBAL/EXTERN/EXPRESSIONS; DETERMINISTIC-OBJ1-ABS16-RELOC; TRANSACTIONAL-PUBLISH"},
       "runtime_archive":{
         "source":"v1/src/libc48/*.asm","obj1_sha256":sha(runtime_obj),"obj1_bytes":runtime_obj.stat().st_size,
         "public_symbol_count":len(C48_RUNTIME_PUBLIC),"embedded_in_ld":ld_image.read_bytes().count(runtime_obj.read_bytes())==1,
@@ -320,7 +331,7 @@ def main():
       "assertions":{
         "deterministic_shell_mex1":"PASS","deterministic_m48o":"PASS","mex1_inspection":"PASS",
         "deterministic_cc_mex1":"PASS","deterministic_cc_m48o":"PASS","cc_mex1_inspection":"PASS",
-        "deterministic_as_mex1":"PASS","deterministic_as_m48o":"PASS","as_mex1_inspection":"PASS",
+        "deterministic_as_mex1":"PASS","deterministic_as_m48o":"PASS","as_mex1_inspection":"PASS","generic_as_full_p10_source_driver":"PASS",
         "deterministic_ld_mex1":"PASS","deterministic_ld_m48o":"PASS","ld_mex1_inspection":"PASS",
         "normal_project_assembler_used":"PASS","relocatable_product_mex1":"PASS","full_runtime_archive_embedded_once":"PASS","p11pr_not_in_product_closure":"PASS",
         "not_claimed_as_real_shell_session":"PASS"}}

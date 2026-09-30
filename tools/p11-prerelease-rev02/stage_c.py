@@ -32,6 +32,8 @@ def main():
     product_report=json.loads(ns.product_tools_report.read_text())
     req(kernel_probe.get("kind")=="rev02-kernel-closure-probe" and kernel_probe.get("status")=="PASS","kernel closure probe identity")
     req(product_report.get("kind")=="rev02-product-tools-preflight" and product_report.get("status")=="PASS","product tools preflight identity")
+    as_semantic=product_report.get("as",{}).get("semantic_status","")
+    as_full=("GENERIC-NATIVE-AS-FULL-P10-SYNTAX-DRIVER" in as_semantic)
     rel=json.loads((sdk/"SDK-RELEASE.json").read_text())
     req(rel.get("program_count")==30 and len(rel.get("programs",[]))==30,"SDK program corpus")
 
@@ -135,9 +137,13 @@ def main():
       {"id":"C002","failure":"ordinary /bin/cc semantic compiler route incomplete",
        "observed":"REV02 ordinary cc now consumes arbitrary source through bounded SYS_READ, resolves one-level quoted local OBJ_C/OBJ_TXT includes through ordinary STAT/OPEN/READ/CLOSE with a distinct bounded include window, expands the frozen bounded source-generic object-like #define constant surface, parses a generic integer constant-function subset, emits real OBJ1, and transactionally publishes it; built-in <c48.h>, declarations/lvalues/calls/control flow/full frozen C48 remain incomplete",
        "planned_paths":["v1/src/tools/cc.asm","tools/p11-prerelease-rev02/product_tools.py"],"blocks":["cc","OBJ1"]},
-      {"id":"C003","failure":"ordinary /bin/as semantic assembler route incomplete",
-       "observed":"REV02 ordinary as now has a source-semantic streaming literal documented-Z80 path and transactional OBJ1 publication; full label/EQU/global/extern expression binding is not yet integrated into the product driver",
-       "planned_paths":["tools/as.asm","tools/as_text.asm","tools/p11-prerelease-rev02/product_tools.py"],"blocks":["generic as","kernel rebuild"]},
+    ]
+    if not as_full:
+        gaps.append(
+          {"id":"C003","failure":"ordinary /bin/as semantic assembler route incomplete",
+           "observed":"ordinary as has a generic source-semantic driver but the product preflight does not certify complete label/EQU/DB/DW/DS/global/extern/expression/ABS16-relocation closure",
+           "planned_paths":["tools/as.asm","tools/as_text.asm","tools/p11-prerelease-rev02/product_tools.py"],"blocks":["generic as","kernel rebuild"]})
+    gaps += [
       {"id":"C005","failure":"developer-sidecar build exists but real delivery/session closure is incomplete",
        "observed":"product_tools.py now hash-binds deterministic sh/cc/as/ld MEX1/M48O scaffolds to current sources; real ordinary cassette load/install/execute in a booted developer session is not yet reachable",
        "planned_paths":["tools/p11-prerelease-rev02/product_tools.py",".github/workflows/p11-prerelease-rev02-product-tools.yml"],"blocks":["normal command path"]},
@@ -153,13 +159,17 @@ def main():
       {"id":"C009","failure":"no generic production cc CLI/compiler route",
        "observed":"ordinary generic cc now owns a source-semantic streaming compile/OBJ1 transaction with one-level quoted local include streaming and the frozen 16-entry/32-byte object-like #define constant surface for an initial C48 subset without source identity dispatch; built-in <c48.h> and the full frozen C48 parser/code-generator are not yet integrated",
        "planned_paths":["v1/src/tools/cc.asm","tools/p11-prerelease-rev02/product_tools.py"],"blocks":["generic C48","anti-specialization","30 lifecycle"]},
-      {"id":"C010","failure":"no production as CLI entry over generic assembler pipeline",
-       "observed":"ordinary as parses argv and publishes semantic native-text OBJ1, but the complete P10 symbol/expression assembler core is resident without full source-driver integration",
-       "planned_paths":["tools/as.asm","tools/as_text.asm","tools/p11-prerelease-rev02/product_tools.py"],"blocks":["generic as","native kernel rebuild"]},
+    ]
+    if not as_full:
+        gaps.append(
+          {"id":"C010","failure":"no production as CLI entry over generic assembler pipeline",
+           "observed":"ordinary as product packaging exists but the preflight does not certify the complete source-driver integration",
+           "planned_paths":["tools/as.asm","tools/as_text.asm","tools/p11-prerelease-rev02/product_tools.py"],"blocks":["generic as","native kernel rebuild"]})
+    gaps.append(
       {"id":"C012","failure":"production kernel omits graphics/sound services required by frozen public API",
        "observed":"kernel.asm does not include graphics.asm or sound.asm although the exact SDK corpus uses frozen graphics/sound calls",
-       "planned_paths":["v1/src/kernel/kernel.asm"],"blocks":["source-defined program behavior"]},
-    ]
+       "planned_paths":["v1/src/kernel/kernel.asm"],"blocks":["source-defined program behavior"]})
+
     if not abs_ld_ready:
         gaps.append(
           {"id":"C014","failure":"ordinary /bin/ld fixed/absolute -abs route incomplete",
@@ -262,6 +272,7 @@ def main():
         "boot_to_real_shell_gap_recorded":"PASS",
         "object_tape_spawn_gap_recorded":"PASS",
         "generic_cli_gaps_recorded":"PASS",
+        "generic_as_full_p10_source_driver_"+("resolved" if as_full else "recorded"):"PASS",
         "generic_normal_ld_resolved":"PASS",
         "runtime_api_closure_resolved":"PASS",
         "fixed_ld_public_cli_product_gap_"+("resolved" if abs_ld_ready else "recorded"):"PASS",
