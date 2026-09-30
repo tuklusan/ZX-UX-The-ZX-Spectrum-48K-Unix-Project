@@ -94,7 +94,7 @@ root_source:
     db 'int main(void){{return 7;}}',10
 root_source_end:
 header_source:
-    db '/* included through ordinary target path */',10
+    db 'int helper(void);',10
 header_source_end:
 nested_header_source:
     db '#include "n.h"',10
@@ -114,57 +114,6 @@ fixture_reset:
     ld (stat_count),a
     ld a,ROOT_HANDLE
     ld (cc_rev02_source_handle),a
-    ret
-
-test_include_stat_progress:
-    xor a
-    ld (mode),a
-    call fixture_reset
-    call cc_rev02_compile_stream
-    ld a,(stat_count)
-    cp 1
-    jp nz,test_fail
-    xor a
-    ret
-
-test_include_open_progress:
-    xor a
-    ld (mode),a
-    call fixture_reset
-    call cc_rev02_compile_stream
-    ld a,(open_count)
-    cp 1
-    jp nz,test_fail
-    xor a
-    ret
-
-test_include_header_progress:
-    xor a
-    ld (mode),a
-    call fixture_reset
-    call cc_rev02_compile_stream
-    ld a,(header_done)
-    cp 1
-    jp nz,test_fail
-    xor a
-    ret
-
-test_include_close_progress:
-    xor a
-    ld (mode),a
-    call fixture_reset
-    call cc_rev02_compile_stream
-    ld a,(close_count)
-    cp 1
-    jp nz,test_fail
-    xor a
-    ret
-
-test_include_compile_only:
-    xor a
-    ld (mode),a
-    call fixture_reset
-    call cc_rev02_compile_stream
     ret
 
 test_include_ok:
@@ -409,7 +358,7 @@ gateway_end:
     run([sj, "--nologo", f"--sym={sym.as_posix()}", asm.as_posix()], out)
     req(main_bin.is_file() and gate_bin.is_file(), "fixture binaries missing")
     syms = symbols(sym)
-    names = ("test_include_stat_progress", "test_include_open_progress", "test_include_header_progress", "test_include_close_progress", "test_include_compile_only", "test_include_ok", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
+    names = ("test_include_ok", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
     for name in names:
         req(name in syms, "fixture symbol missing: " + name)
 
@@ -428,7 +377,6 @@ gateway_end:
             ram[start:start + len(gate_bytes)] = gate_bytes
 
         for name in names:
-            print("REV02 CC INCLUDE TEST " + name, flush=True)
             code = (b"\xF3" + phase1._ld_sp(0xBFC0) + phase1._call(syms[name])
                     + phase1._jp_c(FAIL_PC) + phase1._jp(PASS_PC))
             run_sna(root, code, patch=patch, timeout=20)

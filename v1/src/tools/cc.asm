@@ -10869,7 +10869,9 @@ cc_rev02_pp_word_loop:
     cp c
     jp nz,cc_rev02_notsup
     inc hl
+    push hl
     call cc_rev02_next_char
+    pop hl
     ret c
     jr cc_rev02_pp_word_loop
 cc_rev02_pp_word_done:
