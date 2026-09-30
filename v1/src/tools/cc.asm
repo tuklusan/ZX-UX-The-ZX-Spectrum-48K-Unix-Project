@@ -10900,7 +10900,7 @@ cc_rev02_pp_lead_space:
     cp 9
     jr z,cc_rev02_pp_lead_space
     cp 'd'
-    jr z,cc_rev02_pp_define_word_start
+    jp z,cc_rev02_pp_define_word_start
     ld hl,cc_rev02_pp_kw_include
 cc_rev02_pp_word_loop:
     ld c,(hl)
