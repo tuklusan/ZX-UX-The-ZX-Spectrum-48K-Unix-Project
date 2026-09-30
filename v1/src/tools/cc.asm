@@ -11086,10 +11086,13 @@ cc_rev02_tok_is_punct:
     jr nz,cc_rev02_tok_punct_no
     ld a,(cc_rev02_token)
     cp c
-    ret
+    jr z,cc_rev02_tok_punct_yes
 cc_rev02_tok_punct_no:
     ld a,1
     or a
+    ret
+cc_rev02_tok_punct_yes:
+    xor a
     ret
 cc_rev02_token_is_main:
     ld hl,cc_rev02_token
