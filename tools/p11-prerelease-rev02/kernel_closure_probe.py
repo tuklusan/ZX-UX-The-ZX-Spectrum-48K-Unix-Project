@@ -20,11 +20,17 @@ KERNEL_POOL_BYTES=0x1B00
 def req(v,m):
     if not v: raise SystemExit("ERROR: "+m)
 
-def parse_symbol(path:Path,name:str)->int:
-    pat=re.compile(r"^"+re.escape(name)+r": EQU 0x([0-9A-Fa-f]+)\s*$")
+def parse_symbols(path:Path)->dict[str,int]:
+    pat=re.compile(r"^([^:]+): EQU 0x([0-9A-Fa-f]+)\s*$")
+    symbols={}
     for line in path.read_text(encoding="utf-8",errors="replace").splitlines():
         m=pat.match(line.strip())
-        if m: return int(m.group(1),16)
+        if m: symbols[m.group(1)]=int(m.group(2),16)
+    return symbols
+
+def parse_symbol(path:Path,name:str)->int:
+    symbols=parse_symbols(path)
+    if name in symbols: return symbols[name]
     raise SystemExit("ERROR: missing probe symbol "+name)
 
 def source_prefix(text:str,output_name:str)->str:
@@ -60,8 +66,15 @@ def assemble(root:Path,name:str,text:str,start:int=KERNEL_START)->dict:
     used=end-start
     req(0 < used < 0x8000,"ordinary byte measurement")
     req(binary.is_file() and binary.stat().st_size==used,"probe binary size")
+    symbols=parse_symbols(sym)
+    markers=[(n,v) for n,v in symbols.items() if n.startswith("kernel_mod_")]
+    markers.append(("kernel_ordinary_used_end",end))
+    markers.sort(key=lambda item:(item[1],item[0]))
+    module_spans=[{"name":markers[i][0],"start":markers[i][1],"end":markers[i+1][1],"bytes":markers[i+1][1]-markers[i][1]}
+                  for i in range(len(markers)-1)]
     row.update({"status":"PASS","ordinary_bytes":used,"pool_bytes":KERNEL_POOL_BYTES,
-                "slack_bytes":KERNEL_POOL_BYTES-used,"overrun_bytes":max(0,used-KERNEL_POOL_BYTES)})
+                "slack_bytes":KERNEL_POOL_BYTES-used,"overrun_bytes":max(0,used-KERNEL_POOL_BYTES),
+                "module_spans":module_spans})
     return row
 
 def main():
