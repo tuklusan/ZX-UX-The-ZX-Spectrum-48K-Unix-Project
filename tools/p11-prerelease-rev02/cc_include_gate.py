@@ -186,6 +186,142 @@ generic_call_compile_once:
     call cc_rev02_compile_stream
     ret
 
+test_generic_call_error_ok:
+    call generic_call_compile_once
+    ret nc
+    cp E_OK
+    jp z,test_fail
+    xor a
+    ret
+
+test_generic_call_error_inval:
+    call generic_call_compile_once
+    ret nc
+    cp E_INVAL
+    jp z,test_fail
+    xor a
+    ret
+
+test_generic_call_error_noent:
+    call generic_call_compile_once
+    ret nc
+    cp E_NOENT
+    jp z,test_fail
+    xor a
+    ret
+
+test_generic_call_error_nomem:
+    call generic_call_compile_once
+    ret nc
+    cp E_NOMEM
+    jp z,test_fail
+    xor a
+    ret
+
+test_generic_call_error_busy:
+    call generic_call_compile_once
+    ret nc
+    cp E_BUSY
+    jp z,test_fail
+    xor a
+    ret
+
+test_generic_call_error_io:
+    call generic_call_compile_once
+    ret nc
+    cp E_IO
+    jp z,test_fail
+    xor a
+    ret
+
+test_generic_call_error_eof:
+    call generic_call_compile_once
+    ret nc
+    cp E_EOF
+    jp z,test_fail
+    xor a
+    ret
+
+test_generic_call_error_perm:
+    call generic_call_compile_once
+    ret nc
+    cp E_PERM
+    jp z,test_fail
+    xor a
+    ret
+
+test_generic_call_error_child:
+    call generic_call_compile_once
+    ret nc
+    cp E_CHILD
+    jp z,test_fail
+    xor a
+    ret
+
+test_generic_call_error_pipe:
+    call generic_call_compile_once
+    ret nc
+    cp E_PIPE
+    jp z,test_fail
+    xor a
+    ret
+
+test_generic_call_error_toolong:
+    call generic_call_compile_once
+    ret nc
+    cp E_TOOLONG
+    jp z,test_fail
+    xor a
+    ret
+
+test_generic_call_error_format:
+    call generic_call_compile_once
+    ret nc
+    cp E_FORMAT
+    jp z,test_fail
+    xor a
+    ret
+
+test_generic_call_error_nospc:
+    call generic_call_compile_once
+    ret nc
+    cp E_NOSPC
+    jp z,test_fail
+    xor a
+    ret
+
+test_generic_call_error_again:
+    call generic_call_compile_once
+    ret nc
+    cp E_AGAIN
+    jp z,test_fail
+    xor a
+    ret
+
+test_generic_call_error_notsup:
+    call generic_call_compile_once
+    ret nc
+    cp E_NOTSUP
+    jp z,test_fail
+    xor a
+    ret
+
+test_generic_call_error_intr:
+    call generic_call_compile_once
+    ret nc
+    cp E_INTR
+    jp z,test_fail
+    xor a
+    ret
+
+test_generic_call_error_exist:
+    call generic_call_compile_once
+    ret nc
+    cp E_EXIST
+    jp z,test_fail
+    xor a
+    ret
+
 test_generic_call_compile:
     call generic_call_compile_once
     ret
@@ -755,7 +891,7 @@ gateway_end:
     run([sj, "--nologo", f"--sym={sym.as_posix()}", asm.as_posix()], out)
     req(main_bin.is_file() and gate_bin.is_file(), "fixture binaries missing")
     syms = symbols(sym)
-    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
+    names = ("test_define_single", "test_generic_call_error_ok", "test_generic_call_error_inval", "test_generic_call_error_noent", "test_generic_call_error_nomem", "test_generic_call_error_busy", "test_generic_call_error_io", "test_generic_call_error_eof", "test_generic_call_error_perm", "test_generic_call_error_child", "test_generic_call_error_pipe", "test_generic_call_error_toolong", "test_generic_call_error_format", "test_generic_call_error_nospc", "test_generic_call_error_again", "test_generic_call_error_notsup", "test_generic_call_error_intr", "test_generic_call_error_exist", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
     for name in names:
         req(name in syms, "fixture symbol missing: " + name)
 
