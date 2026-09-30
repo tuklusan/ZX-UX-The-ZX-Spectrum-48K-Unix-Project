@@ -271,10 +271,12 @@ def main():
     ld_asm,ld_image,ld_relocs,ld_bss=build_relocatable(
         sj,out,"ld",
         f'    INCLUDE "{(root/"v1/include/zx48ux.inc").as_posix()}"\n    INCLUDE "{(root/"tools/ld.asm").as_posix()}"\n    INCLUDE "{(root/"v1/src/libc48/crt0.asm").as_posix()}"\n    INCLUDE "{(root/"v1/src/libc48/runtime_archive.asm").as_posix()}"\n',
-        '    EMIT_P10_LD_INPUT_LOADER\n    EMIT_P10_LD_ARCHIVE_SELECT_ROUTINES\n    EMIT_P10_LD_LAYOUT_ROUTINES\n    EMIT_P10_LD_SYMBOL_RESOLVE_ROUTINES\n    EMIT_P10_LD_RELOCATION_ROUTINES\n    EMIT_P10_LD_DEFAULT_ENTRY_ROUTINES\n    EMIT_P10_LD_STACK_OPTION_ROUTINES\n    EMIT_P10_LD_MEX1_WRITER_ROUTINES\n    EMIT_P10_LD_TRANSACTION_ROUTINES\n    EMIT_P10_CRT0_OBJ1\n    EMIT_P10_RUNTIME_ARCHIVE\n    EMIT_P1135_C48_RUNTIME_ARCHIVE\n    EMIT_REV02_FULL_RUNTIME_ARCHIVE\n    EMIT_REV02_FULL_RUNTIME_ARCHIVE_ROUTINES\n    EMIT_REV02_LD_PRODUCT_CLI\n',
+        '    EMIT_P10_LD_INPUT_LOADER\n    EMIT_P10_LD_ARCHIVE_SELECT_ROUTINES\n    EMIT_P10_LD_LAYOUT_ROUTINES\n    EMIT_P10_LD_SYMBOL_RESOLVE_ROUTINES\n    EMIT_REV02_LD_RELOCATION_ROUTINES\n    EMIT_P10_LD_DEFAULT_ENTRY_ROUTINES\n    EMIT_P10_LD_STACK_OPTION_ROUTINES\n    EMIT_P10_LD_MEX1_WRITER_ROUTINES\n    EMIT_P10_LD_TRANSACTION_ROUTINES\n    EMIT_P10_CRT0_OBJ1\n    EMIT_P10_RUNTIME_ARCHIVE\n    EMIT_P1135_C48_RUNTIME_ARCHIVE\n    EMIT_REV02_FULL_RUNTIME_ARCHIVE\n    EMIT_REV02_FULL_RUNTIME_ARCHIVE_ROUTINES\n    EMIT_REV02_LD_PRODUCT_CLI\n',
         '    defs LD_REV02_NORMAL_BSS_BYTES,0\n')
     req(ld_image.is_file() and 64 <= ld_image.stat().st_size <= 20480,"ld product image size")
     req(ld_image.read_bytes().count(runtime_obj.read_bytes())==1,"full runtime archive member embedding")
+    ld_resident=ld_image.stat().st_size+ld_bss+512
+    req(ld_resident <= 32768,"ld 48K process residency")
     ld_mex=mex1(ld_image.read_bytes(),stack=512,bss=ld_bss,relocations=ld_relocs); (out/"ld.mex1").write_bytes(ld_mex)
     run([sys.executable,inspect,out/"ld.mex1","--base","0x6000"],root)
     ld_tap=mt.m48o_blocks(mt.M48OObject("ld",mt.M48O_BIN,mt.DIR_BIN,ld_mex))
@@ -302,13 +304,13 @@ def main():
       "runtime_archive":{
         "source":"v1/src/libc48/*.asm","obj1_sha256":sha(runtime_obj),"obj1_bytes":runtime_obj.stat().st_size,
         "public_symbol_count":len(C48_RUNTIME_PUBLIC),"embedded_in_ld":ld_image.read_bytes().count(runtime_obj.read_bytes())==1,
-        "semantic_status":"FULL-FROZEN-C48-RUNTIME-OBJ1-EMBEDDED-AS-ONE-GENERIC-ARCHIVE-MEMBER; SELECTION-NOT-YET-ATTACHED"},
+        "semantic_status":"FULL-FROZEN-C48-RUNTIME-OBJ1-EMBEDDED-AS-ONE-GENERIC-ARCHIVE-MEMBER-AND-NORMAL-LINK-SELECTED"},
       "ld":{
         "source":"tools/ld.asm","source_sha256":sha(ldsrc),
-        "image_sha256":sha(ld_image),"image_bytes":ld_image.stat().st_size,"bss_bytes":ld_bss,"relocation_count":len(ld_relocs),
+        "image_sha256":sha(ld_image),"image_bytes":ld_image.stat().st_size,"bss_bytes":ld_bss,"resident_bytes":ld_resident,"relocation_count":len(ld_relocs),
         "mex1_sha256":sha(out/"ld.mex1"),"m48o_tap_sha256":sha(out/"ld.m48o.tap"),
         "entry":"EMIT_REV02_LD_PRODUCT_CLI",
-        "semantic_status":"GENERIC-CRT0-AND-MINIMAL-RUNTIME-NORMAL-LINK-PLUS-REV18-ABS; FULL-C48-RUNTIME-ARCHIVE-EMBEDDED-NOT-YET-SELECTED"},
+        "semantic_status":"GENERIC-CRT0-USER-FULL-C48-RUNTIME-NORMAL-LINK-WITH-1024-BYTE-HEAP-PLUS-REV18-ABS"},
       "assertions":{
         "deterministic_shell_mex1":"PASS","deterministic_m48o":"PASS","mex1_inspection":"PASS",
         "deterministic_cc_mex1":"PASS","deterministic_cc_m48o":"PASS","cc_mex1_inspection":"PASS",

@@ -1610,6 +1610,140 @@ ld_p1026_sec_i:          db 0
     ENDM
 
 
+
+; REV02 product-only relocation engine. Historical P10.26 remains byte-stable above.
+; The current ordinary linker can emit the hundreds of relocations present in
+; the frozen C48 runtime while retaining only the final MEX1 location words in
+; ordinary linker BSS. Module-order traversal plus validated OBJ1 relocation
+; ordering makes the emitted location stream monotonically sorted already.
+    MACRO EMIT_REV02_LD_RELOCATION_ROUTINES
+LD_REV02_RELOC_MAX EQU 640
+
+ld_p1026_reset:
+    ld hl,0
+    ld (ld_p1026_rel_count),hl
+    ld (ld_p1026_prev_loc),hl
+    xor a
+    ld (ld_p1026_have_prev),a
+    ret
+
+ld_p1026_apply:
+    call ld_p1026_validate_patch
+    ret c
+    ld hl,(ld_p1026_symbol_value)
+    ld de,(ld_p1026_addend)
+    bit 7,d
+    jr nz,ld_p1026_add_negative
+    add hl,de
+    jp c,ld_p1026_arith
+    jr ld_p1026_value_ready
+ld_p1026_add_negative:
+    ld a,e
+    cpl
+    ld e,a
+    ld a,d
+    cpl
+    ld d,a
+    inc de
+    or a
+    sbc hl,de
+    jp c,ld_p1026_arith
+ld_p1026_value_ready:
+    ld (ld_p1026_value),hl
+    ld de,(ld_p1026_patch_loc)
+    ld hl,(ld_p1026_image)
+    add hl,de
+    ld de,(ld_p1026_value)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+
+    ld a,(ld_p1026_symbol_section)
+    cp 3
+    jr z,ld_p1026_apply_ok
+    cp 1
+    jr z,ld_p1026_emit_runtime
+    cp 2
+    jr z,ld_p1026_emit_runtime
+    jp ld_p1026_format
+
+ld_p1026_emit_runtime:
+    ld hl,(ld_p1026_rel_count)
+    ld de,LD_REV02_RELOC_MAX
+    or a
+    sbc hl,de
+    jp nc,ld_p1026_nospc
+    ld a,(ld_p1026_have_prev)
+    or a
+    jr z,ld_p1026_store_runtime
+    ld hl,(ld_p1026_prev_loc)
+    inc hl
+    inc hl
+    ld de,(ld_p1026_patch_loc)
+    or a
+    sbc hl,de
+    jr c,ld_p1026_store_runtime
+    jr z,ld_p1026_store_runtime
+    jp ld_p1026_format
+ld_p1026_store_runtime:
+    ld hl,(ld_p1026_rel_count)
+    add hl,hl
+    ld de,ld_p1026_rel_locs
+    add hl,de
+    ld de,(ld_p1026_patch_loc)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    ld (ld_p1026_prev_loc),de
+    ld a,1
+    ld (ld_p1026_have_prev),a
+    ld hl,(ld_p1026_rel_count)
+    inc hl
+    ld (ld_p1026_rel_count),hl
+ld_p1026_apply_ok:
+    xor a
+    ret
+
+ld_p1026_validate_patch:
+    ld hl,(ld_p1026_patch_loc)
+    inc hl
+    ld a,h
+    or l
+    jr z,ld_p1026_format
+    ld de,(ld_p1026_image_size)
+    or a
+    sbc hl,de
+    jp nc,ld_p1026_format
+    xor a
+    ret
+
+ld_p1026_finalize:
+    xor a
+    ret
+
+ld_p1026_arith:
+ld_p1026_format:
+    ld a,E_FORMAT
+    scf
+    ret
+ld_p1026_nospc:
+    ld a,E_NOSPC
+    scf
+    ret
+
+ld_p1026_image:          dw 0
+ld_p1026_image_size:     dw 0
+ld_p1026_patch_loc:      dw 0
+ld_p1026_symbol_value:   dw 0
+ld_p1026_addend:         dw 0
+ld_p1026_symbol_section: db 0
+ld_p1026_value:          dw 0
+ld_p1026_rel_count:      dw 0
+ld_p1026_prev_loc:       dw 0
+ld_p1026_have_prev:      db 0
+ld_p1026_rel_locs EQU ld_product_bss+LD_REV02_NORMAL_WORK_CAP+LD_REV02_NORMAL_IMAGE_CAP
+    ENDM
+
 ; P10.27 normal-link default entry selection.
     MACRO EMIT_P10_LD_DEFAULT_ENTRY_ROUTINES
 ; DE=defined-global table, B=count. Uses the P10.25 resolver record format.
@@ -2807,12 +2941,15 @@ LD_REV02_ABS_MAX        EQU 8192
 LD_REV02_IO_CHUNK       EQU 64
 ; Stage-E ordinary normal-link workspace is MEX1 BSS, not stored image bytes.
 LD_REV02_NORMAL_OBJ_CAP    EQU 4096
-LD_REV02_NORMAL_IMAGE_CAP  EQU 4096
-LD_REV02_NORMAL_MEX_CAP    EQU 4096
-LD_REV02_NORMAL_SCRATCH     EQU 1024
-LD_REV02_NORMAL_BSS_BYTES  EQU LD_REV02_NORMAL_OBJ_CAP+LD_REV02_NORMAL_IMAGE_CAP+LD_REV02_NORMAL_MEX_CAP+LD_REV02_NORMAL_SCRATCH
-LD_REV02_DEF_CAP           EQU 16
+LD_REV02_NORMAL_WORK_CAP   EQU 7680
+LD_REV02_NORMAL_IMAGE_CAP  EQU 6144
+LD_REV02_NORMAL_MEX_CAP    EQU LD_REV02_NORMAL_WORK_CAP
+LD_REV02_NORMAL_SCRATCH    EQU 1280
+LD_REV02_NORMAL_BSS_BYTES  EQU LD_REV02_NORMAL_WORK_CAP+LD_REV02_NORMAL_IMAGE_CAP+LD_REV02_NORMAL_SCRATCH
+LD_REV02_DEF_CAP           EQU 150
 LD_REV02_DEF_SIZE          EQU 23
+    ASSERT LD_REV02_DEF_CAP*LD_REV02_DEF_SIZE <= LD_REV02_NORMAL_WORK_CAP-LD_REV02_NORMAL_OBJ_CAP
+    ASSERT LD_REV02_RELOC_MAX*2 <= LD_REV02_NORMAL_SCRATCH
 ld_rev02_arg1_ptr:      dw 0
 ld_rev02_arg1_len:      dw 0
 ld_rev02_input_ptr:     dw 0
@@ -2983,58 +3120,23 @@ ld_rev02_normal_open:
     jp c,ld_rev02_exit_errno
     ld (ld_rev02_normal_obj_len),hl
 
-    ; Determine the frozen minimal runtime closure from unresolved global names.
-    ; This is symbol-semantic archive selection, never source/object identity.
-    call ld_rev02_normal_need_mask
-    jp c,ld_rev02_exit_errno
-    or LD_P1023_NEED_EXIT
-    call ld_p1023_select
+    ; Normal crt0 imports exact global exit.  REV02's one-member full C48
+    ; archive is therefore selected by the ordinary unresolved-global rule on
+    ; every normal link.  Verify that the generic member really exports exit;
+    ; heap externs remain linker-reserved and are assigned after layout.
+    call ld_rev02_runtime_select
     jp c,ld_rev02_exit_errno
 
-    ; Build module pointer vector in exact normal-link order: crt0, user, then
-    ; fixed-point selected archive members.
+    ; Exact normal order: crt0, user OBJ1, selected full-runtime member.
     ld hl,p10_crt0_obj
     ld (ld_rev02_module_ptrs+0),hl
     ld hl,ld_product_bss
     ld (ld_rev02_module_ptrs+2),hl
-    ld a,(ld_p1023_selected_count)
-    add a,2
+    ld hl,rev02_runtime_obj
+    ld (ld_rev02_module_ptrs+4),hl
+    ld a,3
     ld (ld_rev02_module_count),a
-    ; Fill selected archive module pointers in the selector's frozen order.
-ld_rev02_normal_modules_ready:
-    xor a
-    ld (ld_rev02_archive_index),a
-ld_rev02_normal_module_fill:
-    ld a,(ld_rev02_archive_index)
-    ld c,a
-    ld a,(ld_p1023_selected_count)
-    cp c
-    jr z,ld_rev02_normal_sizes
-    ld hl,ld_p1023_selected_order
-    ld e,c
-    ld d,0
-    add hl,de
-    ld a,(hl)
-    call ld_rev02_archive_member_ptr
-    jp c,ld_rev02_exit_errno
-    push hl
-    ld a,(ld_rev02_archive_index)
-    add a,a
-    ld e,a
-    ld d,0
-    ld hl,ld_rev02_module_ptrs+4
-    add hl,de
-    ex de,hl
-    pop hl
-    ld a,l
-    ld (de),a
-    inc de
-    ld a,h
-    ld (de),a
-    ld a,(ld_rev02_archive_index)
-    inc a
-    ld (ld_rev02_archive_index),a
-    jr ld_rev02_normal_module_fill
+    jp ld_rev02_normal_sizes
 
 ld_rev02_normal_sizes:
     ; Build {text,bss} records and validate every embedded archive OBJ1.
@@ -3110,7 +3212,7 @@ ld_rev02_normal_layout:
     ld hl,ld_rev02_module_sizes
     ld a,(ld_rev02_module_count)
     ld b,a
-    ld de,0
+    ld de,1024
     call ld_p1024_layout
     jp c,ld_rev02_exit_errno
     ld hl,(ld_p1024_image_size)
@@ -3120,8 +3222,8 @@ ld_rev02_normal_layout:
     jp nc,ld_rev02_nospc_exit
 
     ; Zero final image and copy each module TEXT to its frozen even base.
-    ld hl,ld_product_bss+LD_REV02_NORMAL_OBJ_CAP
-    ld de,ld_product_bss+LD_REV02_NORMAL_OBJ_CAP+1
+    ld hl,ld_product_bss+LD_REV02_NORMAL_WORK_CAP
+    ld de,ld_product_bss+LD_REV02_NORMAL_WORK_CAP+1
     ld bc,LD_REV02_NORMAL_IMAGE_CAP-1
     xor a
     ld (hl),a
@@ -3156,7 +3258,7 @@ ld_rev02_normal_copy_modules:
     ld e,(hl)
     inc hl
     ld d,(hl)
-    ld hl,ld_product_bss+LD_REV02_NORMAL_OBJ_CAP
+    ld hl,ld_product_bss+LD_REV02_NORMAL_WORK_CAP
     add hl,de
     ex de,hl
     pop hl
@@ -3207,6 +3309,8 @@ ld_rev02_normal_defs_sym:
     ld a,(iy+18)
     or a
     jr z,ld_rev02_normal_defs_advance
+    call ld_rev02_reject_reserved_def
+    jp c,ld_rev02_exit_errno
     ld a,(iy+19)
     and 1
     jr z,ld_rev02_normal_defs_advance
@@ -3337,14 +3441,14 @@ ld_rev02_normal_reloc_one:
     add hl,de
     ld (ld_p1026_patch_loc),hl
     push hl
-    ld de,ld_product_bss+LD_REV02_NORMAL_OBJ_CAP
+    ld de,ld_product_bss+LD_REV02_NORMAL_WORK_CAP
     add hl,de
     ld e,(hl)
     inc hl
     ld d,(hl)
     ld (ld_p1026_addend),de
     pop hl
-    ld hl,ld_product_bss+LD_REV02_NORMAL_OBJ_CAP
+    ld hl,ld_product_bss+LD_REV02_NORMAL_WORK_CAP
     ld (ld_p1026_image),hl
     ld hl,(ld_p1024_image_size)
     ld (ld_p1026_image_size),hl
@@ -3376,7 +3480,7 @@ ld_rev02_normal_finish_relocs:
     jp c,ld_rev02_exit_errno
     call ld_p1030_stack_default
     jp c,ld_rev02_exit_errno
-    ld hl,ld_product_bss+LD_REV02_NORMAL_OBJ_CAP
+    ld hl,ld_product_bss+LD_REV02_NORMAL_WORK_CAP
     ld (ld_p1032_image),hl
     ld hl,(ld_p1024_image_size)
     ld (ld_p1032_image_size),hl
@@ -3388,18 +3492,16 @@ ld_rev02_normal_finish_relocs:
     ld (ld_p1032_stack),hl
     ld hl,ld_p1026_rel_locs
     ld (ld_p1032_relocs),hl
-    ld a,(ld_p1026_rel_count)
-    ld l,a
-    ld h,0
+    ld hl,(ld_p1026_rel_count)
     ld (ld_p1032_reloc_count),hl
-    ld hl,ld_product_bss+LD_REV02_NORMAL_OBJ_CAP+LD_REV02_NORMAL_IMAGE_CAP
+    ld hl,ld_product_bss
     ld (ld_p1032_output),hl
     ld hl,LD_REV02_NORMAL_MEX_CAP
     ld (ld_p1032_capacity),hl
     call ld_p1032_write
     jp c,ld_rev02_exit_errno
     ld hl,(ld_rev02_output_ptr)
-    ld de,ld_product_bss+LD_REV02_NORMAL_OBJ_CAP+LD_REV02_NORMAL_IMAGE_CAP
+    ld de,ld_product_bss
     ld bc,(ld_p1032_stored_length)
     call ld_p1033_publish
     jp c,ld_rev02_exit_errno
@@ -3646,6 +3748,16 @@ ld_rev02_resolve_local_bss:
 ld_rev02_resolve_external:
     push iy
     pop hl
+    ld de,ld_rev02_name_heap_start
+    call ld_rev02_name16_equal
+    jr z,ld_rev02_resolve_heap_start
+    push iy
+    pop hl
+    ld de,ld_rev02_name_heap_end
+    call ld_rev02_name16_equal
+    jr z,ld_rev02_resolve_heap_end
+    push iy
+    pop hl
     ld de,ld_rev02_defs
     ld a,(ld_rev02_def_count)
     ld b,a
@@ -3654,6 +3766,93 @@ ld_rev02_resolve_external:
     ld hl,(ld_p1025_resolved_value)
     ld a,(ld_p1025_resolved_section)
     or a
+    ret
+
+ld_rev02_resolve_heap_start:
+    ld hl,(ld_p1024_image_size)
+    ld de,(ld_p1024_heap_base)
+    add hl,de
+    jp c,ld_rev02_nospc_ret
+    ld a,2
+    or a
+    ret
+ld_rev02_resolve_heap_end:
+    ld hl,(ld_p1024_image_size)
+    ld de,(ld_p1024_heap_base)
+    add hl,de
+    jp c,ld_rev02_nospc_ret
+    ld de,1024
+    add hl,de
+    jp c,ld_rev02_nospc_ret
+    ld a,2
+    or a
+    ret
+
+; The only built-in archive member is selected because normal crt0 imports exit.
+; Validate that exact generic export in the member symbol table rather than
+; trusting an application or source identity.
+ld_rev02_runtime_select:
+    ld ix,rev02_runtime_obj
+    ld l,(ix+12)
+    ld h,(ix+13)
+    ld (ld_rev02_runtime_sym_left),hl
+    ld e,(ix+16)
+    ld d,(ix+17)
+    push ix
+    pop hl
+    add hl,de
+    ld (ld_rev02_runtime_sym_ptr),hl
+ld_rev02_runtime_select_loop:
+    ld hl,(ld_rev02_runtime_sym_left)
+    ld a,h
+    or l
+    jr z,ld_rev02_runtime_select_missing
+    ld iy,(ld_rev02_runtime_sym_ptr)
+    ld a,(iy+18)
+    or a
+    jr z,ld_rev02_runtime_select_next
+    ld a,(iy+19)
+    and 1
+    jr z,ld_rev02_runtime_select_next
+    push iy
+    pop hl
+    ld de,ld_rev02_name_exit
+    call ld_rev02_name16_equal
+    jr z,ld_rev02_runtime_select_ok
+ld_rev02_runtime_select_next:
+    ld hl,(ld_rev02_runtime_sym_ptr)
+    ld de,20
+    add hl,de
+    ld (ld_rev02_runtime_sym_ptr),hl
+    ld hl,(ld_rev02_runtime_sym_left)
+    dec hl
+    ld (ld_rev02_runtime_sym_left),hl
+    jr ld_rev02_runtime_select_loop
+ld_rev02_runtime_select_missing:
+    ld a,E_NOENT
+    scf
+    ret
+ld_rev02_runtime_select_ok:
+    xor a
+    ret
+
+; No OBJ1 module may define linker-reserved heap globals.
+ld_rev02_reject_reserved_def:
+    push iy
+    pop hl
+    ld de,ld_rev02_name_heap_start
+    call ld_rev02_name16_equal
+    jr z,ld_rev02_reserved_def_bad
+    push iy
+    pop hl
+    ld de,ld_rev02_name_heap_end
+    call ld_rev02_name16_equal
+    jr z,ld_rev02_reserved_def_bad
+    xor a
+    ret
+ld_rev02_reserved_def_bad:
+    ld a,E_FORMAT
+    scf
     ret
 
 ld_rev02_name16_equal:
@@ -3680,7 +3879,7 @@ ld_rev02_need_mask: db 0
 ld_rev02_def_count: db 0
 ld_rev02_module_ptrs: defs 10,0
 ld_rev02_module_sizes: defs 20,0
-ld_rev02_defs: defs LD_REV02_DEF_CAP*LD_REV02_DEF_SIZE,0
+ld_rev02_defs EQU ld_product_bss+LD_REV02_NORMAL_OBJ_CAP
 ld_rev02_sym_ptr: dw 0
 ld_rev02_sym_left: dw 0
 ld_rev02_cur_obj: dw 0
@@ -3691,6 +3890,10 @@ ld_rev02_reloc_left: dw 0
 ld_rev02_name_puts: db 'puts',0,0,0,0,0,0,0,0,0,0,0,0
 ld_rev02_name_write: db 'write',0,0,0,0,0,0,0,0,0,0,0
 ld_rev02_name_exit: db 'exit',0,0,0,0,0,0,0,0,0,0,0,0
+ld_rev02_name_heap_start: db '__heap_start',0,0,0,0
+ld_rev02_name_heap_end: db '__heap_end',0,0,0,0,0,0
+ld_rev02_runtime_sym_ptr: dw 0
+ld_rev02_runtime_sym_left: dw 0
 
 ; IX -> one validated OBJ1 symbol record. Z only for exact padded _start.
 ld_rev02_name_is_start:
