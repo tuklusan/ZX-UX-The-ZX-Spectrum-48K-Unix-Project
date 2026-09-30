@@ -9973,14 +9973,12 @@ cc_p11pr_mt_copy_title:
     ENDM
 
 
-; REV02 prospective ordinary /bin/cc product command scaffold.
+; REV02 ordinary /bin/cc product command.
 ; This path is deliberately generic and contains no SDK/source identity table.
 ; It validates ordinary ARG1, derives the ordinary OBJ1 output name through the
-; admitted P11.29 transaction naming rules, opens the named C object through
-; SYS_OPEN, and closes it normally.  The generic streaming parser/code-generator
-; is attached at the marked call site by the later Stage-E correction checkpoint;
-; until then the command fails E_NOTSUP rather than selecting any historical
-; phase/source-bound compiler helper.
+; admitted P11.29 transaction naming rules, consumes source through bounded
+; SYS_READ calls, emits semantic OBJ1, and publishes through the normal transaction.
+; Stage E extends this same generic driver monotonically to the full frozen C48.
     MACRO EMIT_REV02_CC_PRODUCT_CLI
 CC_REV02_ARG1_MIN         EQU 13
 CC_REV02_OUTPUT_NAME_CAP EQU 11
@@ -10091,13 +10089,862 @@ cc_rev02_names:
     ld a,l
     ld (cc_rev02_source_handle),a
 
-    ; Stage-E continuation point: attach the generic bounded streaming
-    ; preprocessor/parser/code-generator here.  Fail closed meanwhile.
-    ld a,E_NOTSUP
+    ; Generic Stage-E native compiler checkpoint.  The source is consumed only
+    ; through bounded SYS_READ windows; no source identity/fingerprint participates.
+    call cc_rev02_compile_stream
+    jr c,cc_rev02_compile_failed
+    push hl
+    call cc_rev02_close_source
+    pop bc
+    jp c,cc_rev02_exit_errno
+    ld hl,cc_rev02_output_name
+    ld de,cc_rev02_objbuf
+    call cc_p1129_publish
+    jp c,cc_rev02_exit_errno
+    xor a
+    jp cc_rev02_exit_errno
+cc_rev02_compile_failed:
     push af
     call cc_rev02_close_source
     pop af
     jp cc_rev02_exit_errno
+
+
+; REV02 compact generic native-C checkpoint.  This first attached semantic driver
+; accepts ordinary C48 translation units containing function prototypes plus one
+; or more int-returning zero-argument function definitions.  Statements are
+; compiled source-semantically; this checkpoint covers compound/return and an
+; initial integer constant-expression arithmetic/bitwise core. Later Stage-E checkpoints
+; extend the same parser to declarations, lvalues, calls, loops and full C48.
+CC_REV02_READ_CAP      EQU 64
+CC_REV02_TOKEN_CAP     EQU 32
+CC_REV02_TEXT_CAP      EQU 512
+CC_REV02_OBJ_CAP       EQU 1024
+CC_REV02_BSS_BYTES     EQU CC_REV02_READ_CAP+CC_REV02_TOKEN_CAP+CC_REV02_TEXT_CAP+CC_REV02_OBJ_CAP
+CC_REV02_T_EOF         EQU 0
+CC_REV02_T_ID          EQU 1
+CC_REV02_T_NUM         EQU 2
+CC_REV02_T_PUNCT       EQU 3
+
+; Large transient source/token/TEXT/OBJ1 work buffers live in process BSS so the
+; compiler image itself remains small.  They are ordinary process-owned RAM.
+cc_rev02_readbuf       EQU cc_product_bss
+cc_rev02_token         EQU cc_rev02_readbuf+CC_REV02_READ_CAP
+cc_rev02_text          EQU cc_rev02_token+CC_REV02_TOKEN_CAP
+cc_rev02_objbuf        EQU cc_rev02_text+CC_REV02_TEXT_CAP
+cc_rev02_read_ptr:     dw 0
+cc_rev02_read_left:    dw 0
+cc_rev02_have_push:    db 0
+cc_rev02_push_char:    db 0
+cc_rev02_tok_kind:     db 0
+cc_rev02_tok_len:      db 0
+cc_rev02_text_len:     dw 0
+cc_rev02_paren_depth:  db 0
+cc_rev02_saw_main:     db 0
+cc_rev02_value:        dw 0
+cc_rev02_dividend:     dw 0
+cc_rev02_quotient:     dw 0
+cc_rev02_remainder:    dw 0
+cc_rev02_div_count:    db 0
+cc_rev02_main_offset:  dw 0
+cc_rev02_op:           db 0
+
+cc_rev02_kw_int:       db 'int',0
+cc_rev02_kw_void:      db 'void',0
+cc_rev02_kw_return:    db 'return',0
+cc_rev02_kw_main:      db 'main',0
+
+; Returns HL=exact OBJ1 length.  Output lives in cc_rev02_objbuf and is then
+; published only through the admitted /tmp + rename transaction.
+cc_rev02_compile_stream:
+    xor a
+    ld (cc_rev02_read_left),a
+    ld (cc_rev02_read_left+1),a
+    ld (cc_rev02_have_push),a
+    ld (cc_rev02_text_len),a
+    ld (cc_rev02_text_len+1),a
+    ld (cc_rev02_saw_main),a
+    ld (cc_rev02_main_offset),a
+    ld (cc_rev02_main_offset+1),a
+    call cc_rev02_next_token
+    ret c
+cc_rev02_tu_loop:
+    ld a,(cc_rev02_tok_kind)
+    or a
+    jr z,cc_rev02_tu_done
+    call cc_rev02_parse_external
+    ret c
+    jr cc_rev02_tu_loop
+cc_rev02_tu_done:
+    ld a,(cc_rev02_saw_main)
+    or a
+    jp z,cc_rev02_format
+    ld hl,(cc_rev02_main_offset)
+    ld (cc_rev02_main_symbol+16),hl
+    ld hl,(cc_rev02_text_len)
+    ld (cc_obj1_text_size),hl
+    ld hl,cc_rev02_text
+    ld (cc_obj1_text_ptr),hl
+    ld hl,0
+    ld (cc_obj1_bss_size),hl
+    ld hl,cc_rev02_main_symbol
+    ld (cc_obj1_symbol_ptr),hl
+    ld hl,1
+    ld (cc_obj1_symbol_count),hl
+    ld hl,0
+    ld (cc_obj1_reloc_ptr),hl
+    ld (cc_obj1_reloc_count),hl
+    ld hl,cc_rev02_objbuf
+    ld (cc_obj1_output_ptr),hl
+    ld hl,CC_REV02_OBJ_CAP
+    ld (cc_obj1_output_capacity),hl
+    call cc_obj1_write
+    ret c
+    ld hl,(cc_obj1_output_size)
+    or a
+    ret
+
+cc_rev02_main_symbol:
+    db 'main',0
+    defs 11,0
+    dw 0
+    db 1,1
+
+cc_rev02_parse_external:
+    ld hl,cc_rev02_kw_int
+    call cc_rev02_expect_id
+    ret c
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_ID
+    jp nz,cc_rev02_format
+    call cc_rev02_token_is_main
+    ld (cc_rev02_op),a
+    call cc_rev02_next_token
+    ret c
+    ld a,'('
+    call cc_rev02_expect_punct
+    ret c
+    ld hl,cc_rev02_kw_void
+    call cc_rev02_expect_id
+    ret c
+    ld a,')'
+    call cc_rev02_expect_punct
+    ret c
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_PUNCT
+    jp nz,cc_rev02_format
+    ld a,(cc_rev02_token)
+    cp ';'
+    jr z,cc_rev02_proto
+    cp '{'
+    jp nz,cc_rev02_format
+    ld a,(cc_rev02_op)
+    or a
+    jr z,cc_rev02_nonmain_def
+    ld a,(cc_rev02_saw_main)
+    or a
+    jp nz,cc_rev02_format
+    ld a,1
+    ld (cc_rev02_saw_main),a
+    ld hl,(cc_rev02_text_len)
+    ld (cc_rev02_main_offset),hl
+cc_rev02_nonmain_def:
+    call cc_rev02_next_token
+    ret c
+    ld hl,cc_rev02_kw_return
+    call cc_rev02_expect_id
+    ret c
+    call cc_rev02_parse_const_expr
+    ret c
+    ld (cc_rev02_value),hl
+    ld a,';'
+    call cc_rev02_expect_punct
+    ret c
+    ld a,'}'
+    call cc_rev02_expect_punct
+    ret c
+    ld a,$21
+    call cc_rev02_emit8
+    ret c
+    ld hl,(cc_rev02_value)
+    call cc_rev02_emit16
+    ret c
+    ld a,$C9
+    call cc_rev02_emit8
+    ret c
+    xor a
+    ret
+cc_rev02_proto:
+    call cc_rev02_next_token
+    ret
+
+cc_rev02_parse_const_expr:
+    jp cc_rev02_parse_bor
+cc_rev02_parse_bor:
+    call cc_rev02_parse_bxor
+    ret c
+cc_rev02_bor_loop:
+    ld a,'|'
+    call cc_rev02_tok_is_punct
+    ret nz
+    push hl
+    call cc_rev02_next_token
+    jp c,cc_rev02_drop_hl_err
+    call cc_rev02_parse_bxor
+    jp c,cc_rev02_drop_hl_err
+    ex de,hl
+    pop hl
+    ld a,l
+    or e
+    ld l,a
+    ld a,h
+    or d
+    ld h,a
+    jr cc_rev02_bor_loop
+cc_rev02_parse_bxor:
+    call cc_rev02_parse_band
+    ret c
+cc_rev02_bxor_loop:
+    ld a,'^'
+    call cc_rev02_tok_is_punct
+    ret nz
+    push hl
+    call cc_rev02_next_token
+    jp c,cc_rev02_drop_hl_err
+    call cc_rev02_parse_band
+    jp c,cc_rev02_drop_hl_err
+    ex de,hl
+    pop hl
+    ld a,l
+    xor e
+    ld l,a
+    ld a,h
+    xor d
+    ld h,a
+    jr cc_rev02_bxor_loop
+cc_rev02_parse_band:
+    call cc_rev02_parse_add
+    ret c
+cc_rev02_band_loop:
+    ld a,'&'
+    call cc_rev02_tok_is_punct
+    ret nz
+    push hl
+    call cc_rev02_next_token
+    jp c,cc_rev02_drop_hl_err
+    call cc_rev02_parse_add
+    jp c,cc_rev02_drop_hl_err
+    ex de,hl
+    pop hl
+    ld a,l
+    and e
+    ld l,a
+    ld a,h
+    and d
+    ld h,a
+    jr cc_rev02_band_loop
+cc_rev02_parse_add:
+    call cc_rev02_parse_mul
+    ret c
+cc_rev02_add_loop:
+    ld a,'+'
+    call cc_rev02_tok_is_punct
+    jr z,cc_rev02_add_take
+    ld a,'-'
+    call cc_rev02_tok_is_punct
+    ret nz
+    ld a,1
+    jr cc_rev02_add_op
+cc_rev02_add_take:
+    xor a
+cc_rev02_add_op:
+    ld (cc_rev02_op),a
+    push hl
+    call cc_rev02_next_token
+    jp c,cc_rev02_drop_hl_err
+    call cc_rev02_parse_mul
+    jp c,cc_rev02_drop_hl_err
+    ex de,hl
+    pop hl
+    ld a,(cc_rev02_op)
+    or a
+    jr nz,cc_rev02_add_sub
+    add hl,de
+    jr cc_rev02_add_loop
+cc_rev02_add_sub:
+    or a
+    sbc hl,de
+    jr cc_rev02_add_loop
+cc_rev02_parse_mul:
+    call cc_rev02_parse_unary
+    ret c
+cc_rev02_mul_loop:
+    ld a,'*'
+    call cc_rev02_tok_is_punct
+    jr z,cc_rev02_mul_take
+    ld a,'/'
+    call cc_rev02_tok_is_punct
+    jr z,cc_rev02_div_take
+    ld a,'%'
+    call cc_rev02_tok_is_punct
+    ret nz
+    ld a,2
+    jr cc_rev02_mul_op
+cc_rev02_mul_take:
+    xor a
+    jr cc_rev02_mul_op
+cc_rev02_div_take:
+    ld a,1
+cc_rev02_mul_op:
+    ld (cc_rev02_op),a
+    push hl
+    call cc_rev02_next_token
+    jp c,cc_rev02_drop_hl_err
+    call cc_rev02_parse_unary
+    jp c,cc_rev02_drop_hl_err
+    ex de,hl
+    pop hl
+    ld a,(cc_rev02_op)
+    or a
+    jr z,cc_rev02_const_mul
+    ld a,d
+    or e
+    jp z,cc_rev02_format
+    ld a,(cc_rev02_op)
+    cp 1
+    jr z,cc_rev02_const_div
+    call cc_rev02_udivmod
+    ex de,hl
+    jr cc_rev02_mul_loop
+cc_rev02_const_div:
+    call cc_rev02_udivmod
+    jr cc_rev02_mul_loop
+cc_rev02_const_mul:
+    call cc_rev02_umul16
+    jr cc_rev02_mul_loop
+cc_rev02_parse_unary:
+    ld a,'+'
+    call cc_rev02_tok_is_punct
+    jr z,cc_rev02_unary_plus
+    ld a,'-'
+    call cc_rev02_tok_is_punct
+    jr z,cc_rev02_unary_minus
+    ld a,'~'
+    call cc_rev02_tok_is_punct
+    jr z,cc_rev02_unary_not
+    ld a,'('
+    call cc_rev02_tok_is_punct
+    jr z,cc_rev02_unary_group
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_NUM
+    jp nz,cc_rev02_format
+    call cc_rev02_number_value
+    ret c
+    push hl
+    call cc_rev02_next_token
+    pop hl
+    ret
+cc_rev02_unary_plus:
+    call cc_rev02_next_token
+    jp cc_rev02_parse_unary
+cc_rev02_unary_minus:
+    call cc_rev02_next_token
+    call cc_rev02_parse_unary
+    ret c
+    xor a
+    sub l
+    ld l,a
+    sbc a,a
+    sub h
+    ld h,a
+    ret
+cc_rev02_unary_not:
+    call cc_rev02_next_token
+    call cc_rev02_parse_unary
+    ret c
+    ld a,l
+    cpl
+    ld l,a
+    ld a,h
+    cpl
+    ld h,a
+    ret
+cc_rev02_unary_group:
+    call cc_rev02_next_token
+    call cc_rev02_parse_const_expr
+    ret c
+    push hl
+    ld a,')'
+    call cc_rev02_expect_punct
+    pop hl
+    ret
+cc_rev02_drop_hl_err:
+    pop hl
+    ret
+
+cc_rev02_umul16:
+    ld bc,0
+    ld a,16
+cc_rev02_umul_loop:
+    bit 0,e
+    jr z,cc_rev02_umul_skip
+    push hl
+    add hl,bc
+    ld b,h
+    ld c,l
+    pop hl
+cc_rev02_umul_skip:
+    add hl,hl
+    srl d
+    rr e
+    dec a
+    jr nz,cc_rev02_umul_loop
+    ld h,b
+    ld l,c
+    ret
+
+cc_rev02_udivmod:
+    ld (cc_rev02_dividend),hl
+    ld (cc_rev02_value),de
+    ld hl,0
+    ld (cc_rev02_quotient),hl
+    ld (cc_rev02_remainder),hl
+    ld a,16
+    ld (cc_rev02_div_count),a
+cc_rev02_udiv_loop:
+    ld hl,(cc_rev02_dividend)
+    add hl,hl
+    ld (cc_rev02_dividend),hl
+    ld hl,(cc_rev02_remainder)
+    adc hl,hl
+    ld (cc_rev02_remainder),hl
+    ld hl,(cc_rev02_quotient)
+    add hl,hl
+    ld (cc_rev02_quotient),hl
+    ld hl,(cc_rev02_remainder)
+    ld de,(cc_rev02_value)
+    or a
+    sbc hl,de
+    jr c,cc_rev02_udiv_no_sub
+    ld (cc_rev02_remainder),hl
+    ld hl,(cc_rev02_quotient)
+    inc hl
+    ld (cc_rev02_quotient),hl
+cc_rev02_udiv_no_sub:
+    ld a,(cc_rev02_div_count)
+    dec a
+    ld (cc_rev02_div_count),a
+    jr nz,cc_rev02_udiv_loop
+    ld hl,(cc_rev02_quotient)
+    ld de,(cc_rev02_remainder)
+    ret
+
+cc_rev02_emit8:
+    ld c,a
+    ld hl,(cc_rev02_text_len)
+    ld de,CC_REV02_TEXT_CAP
+    or a
+    sbc hl,de
+    jp nc,cc_rev02_nospc
+    ld hl,cc_rev02_text
+    ld de,(cc_rev02_text_len)
+    add hl,de
+    ld a,c
+    ld (hl),a
+    ld hl,(cc_rev02_text_len)
+    inc hl
+    ld (cc_rev02_text_len),hl
+    xor a
+    ret
+cc_rev02_emit16:
+    ld a,l
+    call cc_rev02_emit8
+    ret c
+    ld a,h
+    jp cc_rev02_emit8
+
+cc_rev02_next_char:
+    ld a,(cc_rev02_have_push)
+    or a
+    jr z,cc_rev02_next_char_buffer
+    xor a
+    ld (cc_rev02_have_push),a
+    ld a,(cc_rev02_push_char)
+    or a
+    ret
+cc_rev02_next_char_buffer:
+    ld hl,(cc_rev02_read_left)
+    ld a,h
+    or l
+    jr nz,cc_rev02_next_char_have
+    ld a,(cc_rev02_source_handle)
+    ld e,a
+    ld d,0
+    ld hl,cc_rev02_readbuf
+    ld bc,CC_REV02_READ_CAP
+    ld a,SYS_READ
+    call SYSCALL_GATEWAY
+    ret c
+    ld a,h
+    or l
+    jr z,cc_rev02_next_char_eof
+    ld (cc_rev02_read_left),hl
+    ld hl,cc_rev02_readbuf
+    ld (cc_rev02_read_ptr),hl
+cc_rev02_next_char_have:
+    ld hl,(cc_rev02_read_ptr)
+    ld a,(hl)
+    inc hl
+    ld (cc_rev02_read_ptr),hl
+    ld hl,(cc_rev02_read_left)
+    dec hl
+    ld (cc_rev02_read_left),hl
+    or a
+    ret
+cc_rev02_next_char_eof:
+    xor a
+    ret
+cc_rev02_unget_char:
+    ld (cc_rev02_push_char),a
+    ld a,1
+    ld (cc_rev02_have_push),a
+    ret
+
+cc_rev02_next_token:
+    xor a
+    ld (cc_rev02_tok_len),a
+cc_rev02_lex_skip:
+    call cc_rev02_next_char
+    ret c
+    or a
+    jp z,cc_rev02_lex_eof
+    cp ' '
+    jr z,cc_rev02_lex_skip
+    cp 9
+    jr z,cc_rev02_lex_skip
+    cp 10
+    jr z,cc_rev02_lex_skip
+    cp 13
+    jr z,cc_rev02_lex_skip
+    cp '/'
+    jr z,cc_rev02_lex_slash
+    call cc_rev02_is_alpha_us
+    jr nc,cc_rev02_lex_ident_start
+    call cc_rev02_is_digit
+    jp nc,cc_rev02_lex_num_start
+    ld (cc_rev02_token),a
+    ld a,1
+    ld (cc_rev02_tok_len),a
+    ld a,CC_REV02_T_PUNCT
+    ld (cc_rev02_tok_kind),a
+    xor a
+    ret
+cc_rev02_lex_slash:
+    call cc_rev02_next_char
+    ret c
+    cp '/'
+    jr z,cc_rev02_line_comment
+    cp '*'
+    jr z,cc_rev02_block_comment
+    call cc_rev02_unget_char
+    ld a,'/'
+    ld (cc_rev02_token),a
+    ld a,1
+    ld (cc_rev02_tok_len),a
+    ld a,CC_REV02_T_PUNCT
+    ld (cc_rev02_tok_kind),a
+    xor a
+    ret
+cc_rev02_line_comment:
+    call cc_rev02_next_char
+    ret c
+    or a
+    jp z,cc_rev02_lex_eof
+    cp 10
+    jr nz,cc_rev02_line_comment
+    jr cc_rev02_lex_skip
+cc_rev02_block_comment:
+    call cc_rev02_next_char
+    ret c
+    or a
+    jp z,cc_rev02_format
+    cp '*'
+    jr nz,cc_rev02_block_comment
+    call cc_rev02_next_char
+    ret c
+    or a
+    jp z,cc_rev02_format
+    cp '/'
+    jr z,cc_rev02_lex_skip
+    cp '*'
+    jr z,cc_rev02_block_comment
+    jr cc_rev02_block_comment
+cc_rev02_lex_ident_start:
+    call cc_rev02_token_put
+    ret c
+cc_rev02_lex_ident_loop:
+    call cc_rev02_next_char
+    ret c
+    or a
+    jr z,cc_rev02_lex_ident_done
+    push af
+    call cc_rev02_is_alnum_us
+    jr c,cc_rev02_lex_ident_stop
+    pop af
+    call cc_rev02_token_put
+    ret c
+    jr cc_rev02_lex_ident_loop
+cc_rev02_lex_ident_stop:
+    pop af
+    call cc_rev02_unget_char
+cc_rev02_lex_ident_done:
+    call cc_rev02_token_zero
+    ld a,CC_REV02_T_ID
+    ld (cc_rev02_tok_kind),a
+    xor a
+    ret
+cc_rev02_lex_num_start:
+    call cc_rev02_token_put
+    ret c
+cc_rev02_lex_num_loop:
+    call cc_rev02_next_char
+    ret c
+    or a
+    jr z,cc_rev02_lex_num_done
+    push af
+    call cc_rev02_is_alnum_us
+    jr nc,cc_rev02_lex_num_take
+    pop af
+    call cc_rev02_unget_char
+    jr cc_rev02_lex_num_done
+cc_rev02_lex_num_take:
+    pop af
+    call cc_rev02_token_put
+    ret c
+    jr cc_rev02_lex_num_loop
+cc_rev02_lex_num_done:
+    call cc_rev02_token_zero
+    ld a,CC_REV02_T_NUM
+    ld (cc_rev02_tok_kind),a
+    xor a
+    ret
+cc_rev02_lex_eof:
+    xor a
+    ld (cc_rev02_tok_kind),a
+    ret
+
+cc_rev02_token_put:
+    ld c,a
+    ld a,(cc_rev02_tok_len)
+    cp CC_REV02_TOKEN_CAP-1
+    jp nc,cc_rev02_toolong
+    ld e,a
+    ld d,0
+    ld hl,cc_rev02_token
+    add hl,de
+    ld a,c
+    ld (hl),a
+    ld a,(cc_rev02_tok_len)
+    inc a
+    ld (cc_rev02_tok_len),a
+    xor a
+    ret
+cc_rev02_token_zero:
+    ld a,(cc_rev02_tok_len)
+    ld e,a
+    ld d,0
+    ld hl,cc_rev02_token
+    add hl,de
+    xor a
+    ld (hl),a
+    ret
+
+cc_rev02_expect_id:
+    push hl
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_ID
+    jp nz,cc_rev02_expect_id_bad
+    pop de
+    ld hl,cc_rev02_token
+    call cc_rev02_streq
+    jp nz,cc_rev02_format
+    jp cc_rev02_next_token
+cc_rev02_expect_id_bad:
+    pop hl
+    jp cc_rev02_format
+cc_rev02_expect_punct:
+    ld c,a
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_PUNCT
+    jp nz,cc_rev02_format
+    ld a,(cc_rev02_token)
+    cp c
+    jp nz,cc_rev02_format
+    jp cc_rev02_next_token
+cc_rev02_tok_is_punct:
+    ld c,a
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_PUNCT
+    jr nz,cc_rev02_tok_punct_no
+    ld a,(cc_rev02_token)
+    cp c
+    ret
+cc_rev02_tok_punct_no:
+    ld a,1
+    or a
+    ret
+cc_rev02_token_is_main:
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_main
+    call cc_rev02_streq
+    ld a,0
+    ret nz
+    inc a
+    ret
+cc_rev02_streq:
+    ld a,(de)
+    cp (hl)
+    ret nz
+    or a
+    ret z
+    inc de
+    inc hl
+    jr cc_rev02_streq
+
+cc_rev02_number_value:
+    ld ix,cc_rev02_token
+    ld hl,0
+    ld a,(ix+0)
+    cp '0'
+    jr nz,cc_rev02_num_dec
+    ld a,(ix+1)
+    cp 'x'
+    jr z,cc_rev02_num_hex_start
+    cp 'X'
+    jr z,cc_rev02_num_hex_start
+cc_rev02_num_dec:
+    ld a,(ix+0)
+    or a
+    jr z,cc_rev02_num_done
+    cp 'u'
+    jr z,cc_rev02_num_suffix
+    cp 'U'
+    jr z,cc_rev02_num_suffix
+    cp '0'
+    jp c,cc_rev02_format
+    cp '9'+1
+    jp nc,cc_rev02_format
+    sub '0'
+    ld c,a
+    add hl,hl
+    push hl
+    add hl,hl
+    add hl,hl
+    pop de
+    add hl,de
+    ld e,c
+    ld d,0
+    add hl,de
+    inc ix
+    jr cc_rev02_num_dec
+cc_rev02_num_hex_start:
+    inc ix
+    inc ix
+cc_rev02_num_hex:
+    ld a,(ix+0)
+    or a
+    jr z,cc_rev02_num_done
+    cp 'u'
+    jr z,cc_rev02_num_suffix
+    cp 'U'
+    jr z,cc_rev02_num_suffix
+    call cc_rev02_hex_digit
+    jp c,cc_rev02_format
+    ld c,a
+    add hl,hl
+    add hl,hl
+    add hl,hl
+    add hl,hl
+    ld e,c
+    ld d,0
+    add hl,de
+    inc ix
+    jr cc_rev02_num_hex
+cc_rev02_num_suffix:
+    inc ix
+    ld a,(ix+0)
+    or a
+    jp nz,cc_rev02_format
+cc_rev02_num_done:
+    xor a
+    ret
+cc_rev02_hex_digit:
+    cp '0'
+    jr c,cc_rev02_hex_bad
+    cp '9'+1
+    jr c,cc_rev02_hex_dec
+    cp 'A'
+    jr c,cc_rev02_hex_lower
+    cp 'F'+1
+    jr c,cc_rev02_hex_upper
+cc_rev02_hex_lower:
+    cp 'a'
+    jr c,cc_rev02_hex_bad
+    cp 'f'+1
+    jr nc,cc_rev02_hex_bad
+    sub 'a'-10
+    or a
+    ret
+cc_rev02_hex_upper:
+    sub 'A'-10
+    or a
+    ret
+cc_rev02_hex_dec:
+    sub '0'
+    or a
+    ret
+cc_rev02_hex_bad:
+    scf
+    ret
+
+cc_rev02_is_alpha_us:
+    cp '_'
+    jr z,cc_rev02_class_yes
+    cp 'A'
+    jr c,cc_rev02_class_no
+    cp 'Z'+1
+    jr c,cc_rev02_class_yes
+    cp 'a'
+    jr c,cc_rev02_class_no
+    cp 'z'+1
+    jr c,cc_rev02_class_yes
+cc_rev02_class_no:
+    scf
+    ret
+cc_rev02_is_alnum_us:
+    call cc_rev02_is_alpha_us
+    ret nc
+cc_rev02_is_digit:
+    cp '0'
+    jr c,cc_rev02_class_no
+    cp '9'+1
+    jr c,cc_rev02_class_yes
+    jr cc_rev02_class_no
+cc_rev02_class_yes:
+    or a
+    ret
+cc_rev02_toolong:
+    ld a,E_TOOLONG
+    scf
+    ret
+cc_rev02_nospc:
+    ld a,E_NOSPC
+    scf
+    ret
+cc_rev02_format:
+    ld a,E_FORMAT
+    scf
+    ret
 
 ; HL points at one NUL-terminated argument. Return HL at next argument.
 cc_rev02_skip_arg:
