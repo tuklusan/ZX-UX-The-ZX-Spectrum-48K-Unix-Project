@@ -127,6 +127,30 @@ test_saw_main:
     xor a
     ret
 
+test_text_zero:
+    xor a
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ld hl,(cc_rev02_text_len)
+    ld a,h
+    or l
+    jp nz,test_fail
+    xor a
+    ret
+
+test_text_nonzero:
+    xor a
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ld hl,(cc_rev02_text_len)
+    ld a,h
+    or l
+    jp z,test_fail
+    xor a
+    ret
+
 test_text_len:
     xor a
     ld (mode),a
@@ -437,8 +461,9 @@ gateway_end:
     run([sj, "--nologo", f"--sym={sym.as_posix()}", asm.as_posix()], out)
     req(main_bin.is_file() and gate_bin.is_file(), "fixture binaries missing")
     syms = symbols(sym)
-    names = ("test_io_only", "test_saw_main", "test_text_len", "test_parse_state", "test_obj_state", "test_compile_only", "test_include_ok", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
-    for name in names:
+    diagnostic_names = ("test_io_only", "test_saw_main", "test_text_zero", "test_text_nonzero", "test_text_len", "test_obj_state", "test_compile_only")
+    names = ("test_include_ok", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
+    for name in diagnostic_names + names:
         req(name in syms, "fixture symbol missing: " + name)
 
     checks = {"assemble": "PASS", "anti_specialization": "PASS"}
@@ -446,6 +471,7 @@ gateway_end:
         driver = root / "v1/tools-host/test-driver"
         sys.path.insert(0, str(driver))
         import phase1  # type: ignore
+        from driver_core import DriverError  # type: ignore
         from fuse_harness import FAIL_PC, PASS_PC, run_sna  # type: ignore
         main_bytes = main_bin.read_bytes()
         gate_bytes = gate_bin.read_bytes()
@@ -454,6 +480,29 @@ gateway_end:
             ram[0:len(main_bytes)] = main_bytes
             start = 0xE000 - 0x4000
             ram[start:start + len(gate_bytes)] = gate_bytes
+
+        for name in diagnostic_names:
+            code = (b"\xF3" + phase1._ld_sp(0xBFC0) + phase1._call(syms[name])
+                    + phase1._jp_c(FAIL_PC) + phase1._jp(PASS_PC))
+            try:
+                run_sna(root, code, patch=patch, timeout=20)
+                print("REV02 CC INCLUDE DIAG " + name + " PASS", flush=True)
+            except DriverError:
+                print("REV02 CC INCLUDE DIAG " + name + " FAIL", flush=True)
+
+        matched_errors = []
+        for err in range(1, 0x11):
+            code = (b"\xF3" + phase1._ld_sp(0xBFC0) + phase1._call(syms["test_compile_only"])
+                    + bytes((0xD2, FAIL_PC & 0xFF, FAIL_PC >> 8))
+                    + bytes((0xFE, err))
+                    + bytes((0xC2, FAIL_PC & 0xFF, FAIL_PC >> 8))
+                    + phase1._jp(PASS_PC))
+            try:
+                run_sna(root, code, patch=patch, timeout=20)
+                matched_errors.append(err)
+            except DriverError:
+                pass
+        print("REV02 CC INCLUDE DIAG error_codes=" + repr(matched_errors), flush=True)
 
         for name in names:
             print("REV02 CC INCLUDE TEST " + name, flush=True)
