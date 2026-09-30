@@ -14,7 +14,7 @@ from __future__ import annotations
 import argparse, hashlib, json
 from pathlib import Path
 
-IDS=[f"C{i:03d}" for i in range(1,20)]
+IDS=[f"C{i:03d}" for i in range(1,21)]
 def req(v,m):
     if not v: raise SystemExit("ERROR: "+m)
 def sha(p): return hashlib.sha256(Path(p).read_bytes()).hexdigest()
@@ -73,6 +73,7 @@ def main():
       "C017":["REV18 §19 public M48O placement/type rules","REV09 P5.09 exact path/type placement"],
       "C018":["REV18 §19 atomic validated mutable-object commit","REV09 P5.09 create/replace only after complete validation"],
       "C019":["REV18 §19 RAW physical/logical length identity","REV09 P5.04 RAW logical_length==storage_length","REV09 P5.09 complete logical-length validation before commit"],
+      "C020":["REV18 §19.4A forward sequential direct tape-backed MEX1 search","REV09 P5.14 direct packed MEX1 tape execution","REV18 §2.6 cassette sequential object storage"],
     }
     changed={
       "C001":["v1/src/shell/sh.asm","tools/p11-prerelease-rev02/product_tools.py"],
@@ -94,6 +95,7 @@ def main():
       "C017":["v1/src/kernel/tape.asm"],
       "C018":["v1/src/kernel/tape.asm"],
       "C019":["v1/src/kernel/tape.asm"],
+      "C020":["v1/src/kernel/tape.asm"],
     }
     rows=[]
     for g in gaps:

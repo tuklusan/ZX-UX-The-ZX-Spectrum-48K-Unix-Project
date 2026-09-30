@@ -189,6 +189,14 @@ def main():
           {"id":"C019","failure":"P5.04 RAW success length is not handed off correctly to P5.09",
            "observed":"P5.04 returns HL=allocation and BC=validated RAW length while DE still carries CRC state; P5.09 stores DE as p509_new_logical, publishing CRC as logical length",
            "planned_paths":["v1/src/kernel/tape.asm"],"blocks":["SYS_TAPE_LOAD RAW logical length metadata"]})
+    p514_skip_block=tape_source.split("zx48_p514_tape_skip:",1)[1].split("zx48_p514_tape_match:",1)[0]
+    if ("call zx48_p509_skip_payload" in p514_skip_block and
+        "p514_tape_header+M48O_HDR_STORAGE_LEN" not in p514_skip_block):
+        gaps.append(
+          {"id":"C020","failure":"P5.14 direct-tape forward search skips a nonmatching payload using P5.09 header state",
+           "observed":"zx48_p514_tape_skip calls zx48_p509_skip_payload after loading p514_tape_header, but that helper reads storage length from p509_header; a nonmatching object can therefore leave the tape positioned inside its payload instead of at the next M48O header",
+           "planned_paths":["v1/src/kernel/tape.asm"],"blocks":["direct tape-backed forward search past nonmatching objects"]})
+
     for g in gaps: g["class_pending"]="Stage-D"
 
     report={
