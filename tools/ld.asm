@@ -2805,6 +2805,10 @@ LD_REV02_ARG1_MIN       EQU 17
 LD_REV02_OBJ1_HEADER    EQU 24
 LD_REV02_ABS_MAX        EQU 8192
 LD_REV02_IO_CHUNK       EQU 64
+; Stage-E ordinary normal-link workspace is MEX1 BSS, not stored image bytes.
+LD_REV02_NORMAL_OBJ_CAP  EQU 4096
+LD_REV02_NORMAL_MEX_CAP  EQU 4096
+LD_REV02_NORMAL_BSS_BYTES EQU LD_REV02_NORMAL_OBJ_CAP+LD_REV02_NORMAL_MEX_CAP
 ld_rev02_arg1_ptr:      dw 0
 ld_rev02_arg1_len:      dw 0
 ld_rev02_input_ptr:     dw 0
@@ -2823,6 +2827,11 @@ ld_rev02_pid:           dw 0
 ld_rev02_body_crc:      dw 0
 ld_rev02_body_expected: dw 0
 ld_rev02_head_expected: dw 0
+ld_rev02_normal_obj_len: dw 0
+ld_rev02_normal_entry:   dw 0
+ld_rev02_normal_sym_ptr: dw 0
+ld_rev02_normal_sym_left: dw 0
+ld_rev02_normal_found_start: db 0
 ld_rev02_stat_req:      defs 4,0
 ld_rev02_stat_out:      defs 10,0
 ld_rev02_rename_req:    defs 4,0
@@ -2950,22 +2959,151 @@ ld_rev02_parse_abs_tail:
     jp c,ld_rev02_exit_errno
     jp ld_rev02_abs_start
 
-; Existing normal-output route remains fail-closed until the ordinary generic
-; linker pipeline is connected by its own authorized Stage-E correction.
+; Stage-E ordinary normal-output checkpoint. This is a generic semantic route
+; for one self-contained OBJ1: ordinary namespace load/validation, exact global
+; TEXT _start selection, MEX1 serialization, and transactional publication.
+; Undefined symbols or relocations remain fail-closed until the separately
+; authorized runtime/archive resolution correction is attached to this same path.
 ld_rev02_normal_open:
-    ld hl,(ld_rev02_input_ptr)
-    ld c,O_READ
-    ld b,0
-    ld a,SYS_OPEN
-    call SYSCALL_GATEWAY
+    call ld_rev02_validate_output_name
     jp c,ld_rev02_exit_errno
-    ld a,l
-    ld (ld_rev02_input_handle),a
-    ld a,E_NOTSUP
-    ld (ld_rev02_errno),a
-    call ld_rev02_close_input
-    ld a,(ld_rev02_errno)
-    jp ld_rev02_exit_errno
+    ld hl,(ld_rev02_input_ptr)
+    ld de,ld_product_bss
+    ld bc,LD_REV02_NORMAL_OBJ_CAP
+    call ld_p1021_load_file
+    jp c,ld_rev02_exit_errno
+    ld (ld_rev02_normal_obj_len),hl
+
+    ld ix,ld_product_bss
+    ld a,(ix+14)
+    or (ix+15)
+    jp nz,ld_rev02_notsup_exit
+
+    ld l,(ix+12)
+    ld h,(ix+13)
+    ld (ld_rev02_normal_sym_left),hl
+    ld e,(ix+16)
+    ld d,(ix+17)
+    push ix
+    pop hl
+    add hl,de
+    ld (ld_rev02_normal_sym_ptr),hl
+    xor a
+    ld (ld_rev02_normal_found_start),a
+ld_rev02_normal_sym_loop:
+    ld hl,(ld_rev02_normal_sym_left)
+    ld a,h
+    or l
+    jr z,ld_rev02_normal_symbols_done
+    ld ix,(ld_rev02_normal_sym_ptr)
+    ld a,(ix+18)
+    or a
+    jp z,ld_rev02_noent_exit
+    cp 4
+    jp nc,ld_rev02_format_exit
+    ld a,(ix+19)
+    and ~1
+    jp nz,ld_rev02_format_exit
+    ld a,(ix+19)
+    and 1
+    jr z,ld_rev02_normal_sym_next
+    call ld_rev02_name_is_start
+    jr nz,ld_rev02_normal_sym_next
+    ld a,(ix+18)
+    cp 1
+    jp nz,ld_rev02_format_exit
+    ld a,(ld_rev02_normal_found_start)
+    or a
+    jp nz,ld_rev02_format_exit
+    ld l,(ix+16)
+    ld h,(ix+17)
+    ld de,(ld_p1021_text)
+    push hl
+    or a
+    sbc hl,de
+    pop hl
+    jp nc,ld_rev02_format_exit
+    ld (ld_rev02_normal_entry),hl
+    ld a,1
+    ld (ld_rev02_normal_found_start),a
+ld_rev02_normal_sym_next:
+    ld hl,(ld_rev02_normal_sym_ptr)
+    ld de,20
+    add hl,de
+    ld (ld_rev02_normal_sym_ptr),hl
+    ld hl,(ld_rev02_normal_sym_left)
+    dec hl
+    ld (ld_rev02_normal_sym_left),hl
+    jr ld_rev02_normal_sym_loop
+ld_rev02_normal_symbols_done:
+    ld a,(ld_rev02_normal_found_start)
+    or a
+    jp z,ld_rev02_noent_exit
+
+    call ld_p1030_stack_default
+    jp c,ld_rev02_exit_errno
+    ld hl,ld_product_bss+24
+    ld (ld_p1032_image),hl
+    ld hl,(ld_p1021_text)
+    ld (ld_p1032_image_size),hl
+    ld hl,(ld_p1021_bss)
+    ld (ld_p1032_bss_size),hl
+    ld hl,(ld_rev02_normal_entry)
+    ld (ld_p1032_entry),hl
+    ld hl,(ld_p1030_min_fast_stack)
+    ld (ld_p1032_stack),hl
+    ld hl,ld_rev02_empty_relocs
+    ld (ld_p1032_relocs),hl
+    ld hl,0
+    ld (ld_p1032_reloc_count),hl
+    ld hl,ld_product_bss+LD_REV02_NORMAL_OBJ_CAP
+    ld (ld_p1032_output),hl
+    ld hl,LD_REV02_NORMAL_MEX_CAP
+    ld (ld_p1032_capacity),hl
+    call ld_p1032_write
+    jp c,ld_rev02_exit_errno
+    ld hl,(ld_rev02_output_ptr)
+    ld de,ld_product_bss+LD_REV02_NORMAL_OBJ_CAP
+    ld bc,(ld_p1032_stored_length)
+    call ld_p1033_publish
+    jp c,ld_rev02_exit_errno
+    jp ld_rev02_success
+
+; IX -> one validated OBJ1 symbol record. Z only for exact padded _start.
+ld_rev02_name_is_start:
+    ld a,(ix+0)
+    cp '_'
+    ret nz
+    ld a,(ix+1)
+    cp 's'
+    ret nz
+    ld a,(ix+2)
+    cp 't'
+    ret nz
+    ld a,(ix+3)
+    cp 'a'
+    ret nz
+    ld a,(ix+4)
+    cp 'r'
+    ret nz
+    ld a,(ix+5)
+    cp 't'
+    ret nz
+    ld b,10
+    push ix
+    pop hl
+    ld de,6
+    add hl,de
+ld_rev02_name_start_pad:
+    ld a,(hl)
+    or a
+    ret nz
+    inc hl
+    djnz ld_rev02_name_start_pad
+    xor a
+    ret
+
+ld_rev02_empty_relocs: db 0
 
 ; Generic REV18 fixed-image linker path.  It does not inspect input/output names,
 ; source identity, SDK identity, object hashes, or proof-session state.
@@ -3544,6 +3682,12 @@ ld_rev02_io_cleanup:
 ld_rev02_format_created:
     ld a,1
     ld (ld_rev02_temp_created),a
+ld_rev02_notsup_exit:
+    ld a,E_NOTSUP
+    jp ld_rev02_cleanup_error
+ld_rev02_noent_exit:
+    ld a,E_NOENT
+    jp ld_rev02_cleanup_error
 ld_rev02_format_exit:
     ld a,E_FORMAT
     jp ld_rev02_cleanup_error

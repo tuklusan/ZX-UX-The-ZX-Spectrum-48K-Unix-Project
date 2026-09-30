@@ -54,8 +54,8 @@ def main():
         "REV02 cc generic CLI scaffold missing")
     req("EMIT_REV02_AS_PRODUCT_CLI" in ass and "Stage-E continuation: ordinary source reader/parser/OBJ1 transaction." in ass,
         "REV02 as generic CLI scaffold missing")
-    req("EMIT_REV02_LD_PRODUCT_CLI" in ld and "Existing normal-output route remains fail-closed" in ld,
-        "REV02 ld normal-output Stage-E continuation missing")
+    req("EMIT_REV02_LD_PRODUCT_CLI" in ld and "Stage-E ordinary normal-output checkpoint" in ld,
+        "REV02 ld generic normal-link Stage-E checkpoint missing")
     req("ld input.obj -o output -abs" in rev18,"REV18 fixed-image ld CLI authority missing")
     req("cp 4" in ld and "cp 5" in ld and "ld_rev02_require_last" in ld,
         "REV02 ld argv shape changed; rerun Stage-C assumptions")
@@ -120,7 +120,7 @@ def main():
        "observed":"REV02 now packages a generic as MEX1/M48O scaffold, but its ordinary source-open path still fails E_NOTSUP before generic parsing/OBJ1 publication",
        "planned_paths":["tools/as.asm","tools/p11-prerelease-rev02/product_tools.py"],"blocks":["generic as","kernel rebuild"]},
       {"id":"C004","failure":"ordinary /bin/ld semantic linker route incomplete",
-       "observed":"REV02 now packages a generic ld MEX1/M48O scaffold, but its ordinary OBJ1-open path still fails E_NOTSUP before generic linking/MEX1 publication",
+       "observed":"REV02 now generically links and transactionally publishes one validated self-contained OBJ1 and implements -abs, but relocation plus runtime/archive symbol resolution remains fail-closed",
        "planned_paths":["tools/ld.asm","tools/p11-prerelease-rev02/product_tools.py"],"blocks":["ld","MEX1","kernel rebuild"]},
       {"id":"C005","failure":"developer-sidecar build exists but real delivery/session closure is incomplete",
        "observed":"product_tools.py now hash-binds deterministic sh/cc/as/ld MEX1/M48O scaffolds to current sources; real ordinary cassette load/install/execute in a booted developer session is not yet reachable",
@@ -140,8 +140,8 @@ def main():
       {"id":"C010","failure":"no production as CLI entry over generic assembler pipeline",
        "observed":"tools/as.asm exposes assembler macros/fixture routines but no ordinary application entry parsing argv and publishing OBJ1",
        "planned_paths":["tools/as.asm","tools/p11-prerelease-rev02/product_tools.py"],"blocks":["generic as","native kernel rebuild"]},
-      {"id":"C011","failure":"no production ld CLI entry over generic linker pipeline",
-       "observed":"tools/ld.asm exposes linker macros/fixture routines but no ordinary application entry parsing argv and transactionally publishing MEX1/fixed output",
+      {"id":"C011","failure":"production ld CLI generic linker pipeline remains incomplete",
+       "observed":"ordinary ld now parses argv, validates OBJ1, supports self-contained no-relocation MEX1 publication and generic -abs; generic relocation/archive completion is still required",
        "planned_paths":["tools/ld.asm","tools/p11-prerelease-rev02/product_tools.py"],"blocks":["generic ld","native kernel rebuild"]},
       {"id":"C012","failure":"production kernel omits graphics/sound services required by frozen public API",
        "observed":"kernel.asm does not include graphics.asm or sound.asm although the exact SDK corpus uses frozen graphics/sound calls",
