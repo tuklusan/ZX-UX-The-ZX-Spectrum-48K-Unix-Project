@@ -806,9 +806,1456 @@ r17_txt_jr_cond_ok:
     jp r17_txt_rec_emit
 
 r17_txt_control_target_or_cond:
+    ; The literal REV17 path retains its original numeric/condition split.
+    ; In the ordinary symbol driver an arbitrary identifier is a control target
+    ; unless the complete leading token is one of the documented conditions and
+    ; is immediately followed by a comma.
+    ld hl,(r17_txt_expr_hook)
+    ld a,h
+    or l
+    jr z,r17_txt_control_literal_split
+    call r17_txt_is_control_condition
+    jr nc,r17_txt_control_cond
+    jr r17_txt_control_target
+r17_txt_control_literal_split:
+    call r17_txt_peek
+    ret c
+    cp '    jr z,r17_txt_control_target
+    cp '0'
+    jr c,r17_txt_control_cond
+    cp '9'+1
+    jr c,r17_txt_control_target
+r17_txt_control_cond:
+    call r17_txt_parse_cond
+    ret c
+    ld (r17_txt_tmp1),a
+    ld a,','
+    call r17_txt_consume
+    ret c
+r17_txt_control_target:
+    call r17_txt_parse_num
+    ret c
+    ld (r17_txt_num),de
+    jp r17_txt_expect_end
+
+r17_txt_djnz:
+    call r17_txt_parse_num
+    ret c
+    ld (r17_txt_num),de
+    call r17_txt_expect_end
+    ret c
+    ld a,31
+    call r17_txt_rec_start
+    ld de,(r17_txt_num)
+    call r17_txt_rec16
+    jp r17_txt_rec_emit
+
+r17_txt_ret:
+    ld a,$ff
+    ld (r17_txt_tmp0),a
+    call r17_txt_is_end
+    jr z,r17_txt_ret_emit
+    call r17_txt_parse_cond
+    ret c
+    ld (r17_txt_tmp0),a
+    call r17_txt_expect_end
+    ret c
+r17_txt_ret_emit:
+    ld a,32
+    call r17_txt_rec_start
+    ld a,(r17_txt_tmp0)
+    call r17_txt_rec8
+    jp r17_txt_rec_emit
+
+r17_txt_inc:
+    xor a
+    ld (r17_txt_tmp0),a
+    jr r17_txt_incdec
+r17_txt_dec:
+    ld a,1
+    ld (r17_txt_tmp0),a
+r17_txt_incdec:
+    call r17_txt_parse_operand
+    ret c
+    call r17_txt_expect_end
+    ret c
+    ld a,(r17_txt_op_type)
+    cp R17_TXT_OP_REG8
+    jr z,r17_txt_incdec_reg
+    cp R17_TXT_OP_RR
+    jp nz,r17_as_error
+    ld a,25
+    call r17_txt_rec_start
+    ld a,(r17_txt_op_v0)
+    call r17_txt_rec8
+    ld a,(r17_txt_tmp0)
+    call r17_txt_rec8
+    jp r17_txt_rec_emit
+r17_txt_incdec_reg:
+    ld a,24
+    call r17_txt_rec_start
+    ld a,(r17_txt_op_v0)
+    call r17_txt_rec8
+    ld a,(r17_txt_tmp0)
+    call r17_txt_rec8
+    jp r17_txt_rec_emit
+
+r17_txt_push:
+    xor a
+    ld (r17_txt_tmp0),a
+    jr r17_txt_pushpop
+r17_txt_pop:
+    ld a,1
+    ld (r17_txt_tmp0),a
+r17_txt_pushpop:
+    call r17_txt_parse_push_pair
+    ret c
+    ld (r17_txt_tmp1),a
+    call r17_txt_expect_end
+    ret c
+    ld a,36
+    call r17_txt_rec_start
+    ld a,(r17_txt_tmp0)
+    call r17_txt_rec8
+    ld a,(r17_txt_tmp1)
+    call r17_txt_rec8
+    jp r17_txt_rec_emit
+
+r17_txt_ex:
+    call r17_txt_match_ex_form
+    ret c
+    ld (r17_txt_tmp0),a
+    call r17_txt_expect_end
+    ret c
+    ld a,37
+    call r17_txt_rec_start
+    ld a,(r17_txt_tmp0)
+    call r17_txt_rec8
+    jp r17_txt_rec_emit
+
+r17_txt_im:
+    call r17_txt_parse_num
+    ret c
+    ld a,d
+    or a
+    jp nz,r17_as_error
+    ld a,e
+    cp 3
+    jp nc,r17_as_error
+    ld (r17_txt_tmp0),a
+    call r17_txt_expect_end
+    ret c
+    ld a,38
+    call r17_txt_rec_start
+    ld a,(r17_txt_tmp0)
+    call r17_txt_rec8
+    jp r17_txt_rec_emit
+
+r17_txt_in:
+    ld hl,r17_txt_s_a_c
+    call r17_txt_match_tail
+    ret c
+    call r17_txt_expect_end
+    ret c
+    ld a,39
+    call r17_txt_rec_start
+    xor a
+    call r17_txt_rec8
+    jp r17_txt_rec_emit
+
+r17_txt_out:
+    ld hl,r17_txt_s_c_a
+    call r17_txt_match_tail_soft
+    jr c,r17_txt_out_imm
+    call r17_txt_expect_end
+    ret c
+    ld a,39
+    call r17_txt_rec_start
+    ld a,1
+    call r17_txt_rec8
+    jp r17_txt_rec_emit
+r17_txt_out_imm:
+    ld a,'('
+    call r17_txt_consume
+    ret c
+    call r17_txt_parse_num
+    ret c
+    ld a,d
+    or a
+    jp nz,r17_as_error
+    ld a,e
+    ld (r17_txt_tmp0),a
+    ld a,')'
+    call r17_txt_consume
+    ret c
+    ld a,','
+    call r17_txt_consume
+    ret c
+    ld a,'a'
+    call r17_txt_consume
+    ret c
+    call r17_txt_expect_end
+    ret c
+    ld a,44
+    call r17_txt_rec_start
+    ld a,(r17_txt_tmp0)
+    call r17_txt_rec8
+    jp r17_txt_rec_emit
+
+r17_txt_db:
+r17_txt_db_loop:
+    call r17_txt_parse_num
+    ret c
+    ld a,d
+    or a
+    jp nz,r17_as_error
+    ld a,e
+    ld (r17_txt_tmp0),a
+    ld a,40
+    call r17_txt_rec_start
+    ld a,(r17_txt_tmp0)
+    ld e,a
+    ld d,0
+    call r17_txt_rec16
+    call r17_txt_rec_emit
+    ret c
+    call r17_txt_peek_comma_or_end
+    ret c
+    ret z
+    ld a,','
+    call r17_txt_consume
+    ret c
+    jr r17_txt_db_loop
+
+r17_txt_dw:
+r17_txt_dw_loop:
+    call r17_txt_parse_num
+    ret c
+    ld (r17_txt_num),de
+    ld a,41
+    call r17_txt_rec_start
+    ld de,(r17_txt_num)
+    call r17_txt_rec16
+    call r17_txt_rec_emit
+    ret c
+    call r17_txt_peek_comma_or_end
+    ret c
+    ret z
+    ld a,','
+    call r17_txt_consume
+    ret c
+    jr r17_txt_dw_loop
+
+r17_txt_defs:
+    call r17_txt_parse_num
+    ret c
+    ld (r17_txt_num),de
+    ld a,','
+    call r17_txt_consume
+    ret c
+    call r17_txt_parse_num
+    ret c
+    ld (r17_txt_num2),de
+    call r17_txt_expect_end
+    ret c
+    ld a,42
+    call r17_txt_rec_start
+    ld de,(r17_txt_num)
+    call r17_txt_rec16
+    ld de,(r17_txt_num2)
+    call r17_txt_rec16
+    jp r17_txt_rec_emit
+
+r17_txt_org:
+    ld a,(r17_txt_saw_org)
+    or a
+    jp nz,r17_as_error
+    ld hl,(r17_as_produced)
+    ld a,h
+    or l
+    jp nz,r17_as_error
+    call r17_txt_parse_num
+    ret c
+    ld hl,R17_KERNEL_BASE
+    or a
+    sbc hl,de
+    jp nz,r17_as_error
+    call r17_txt_expect_end
+    ret c
+    ld a,1
+    ld (r17_txt_saw_org),a
+    xor a
+    ret
+
+r17_txt_rst:
+    call r17_txt_parse_num
+    ret c
+    ld (r17_txt_num),de
+    call r17_txt_expect_end
+    ret c
+    ld a,43
+    call r17_txt_rec_start
+    ld de,(r17_txt_num)
+    call r17_txt_rec16
+    jp r17_txt_rec_emit
+
+r17_txt_parse_operand:
+    call r17_txt_peek
+    ret c
+    cp '('
+    jp z,r17_txt_parse_paren
+    cp '$'
+    jp z,r17_txt_operand_imm
+    cp '0'
+    jp c,r17_txt_operand_word
+    cp '9'+1
+    jp c,r17_txt_operand_imm
+r17_txt_operand_word:
+    ; With the ordinary product expression hook installed, an identifier is an
+    ; immediate expression unless its complete token is exactly one of the
+    ; documented register/pair spellings.  This keeps symbols such as "alpha",
+    ; "loop" and "data" case-sensitive instead of misclassifying their first
+    ; letter as A/L/D register syntax.
+    ld hl,(r17_txt_expr_hook)
+    ld a,h
+    or l
+    jr z,r17_txt_operand_register
+    call r17_txt_is_register_token
+    jr c,r17_txt_operand_imm
+r17_txt_operand_register:
+    call r17_txt_peek
+    ret c
+    cp 'a'
+    jp z,r17_txt_operand_a
+    cp 'b'
+    jp z,r17_txt_operand_b
+    cp 'c'
+    jp z,r17_txt_operand_c
+    cp 'd'
+    jp z,r17_txt_operand_d
+    cp 'e'
+    jp z,r17_txt_operand_e
+    cp 'h'
+    jp z,r17_txt_operand_h
+    cp 'l'
+    jp z,r17_txt_operand_l
+    cp 's'
+    jp z,r17_txt_operand_sp
+    cp 'i'
+    jp z,r17_txt_operand_i
+    cp 'r'
+    jp z,r17_txt_operand_r
+    jp r17_as_error
+
+; Carry clear iff the complete current operand token is exactly a documented
+; register/pair spelling.  The cursor is never advanced.
+r17_txt_is_register_token:
+    ld hl,(r17_txt_p)
+    ld a,(hl)
+    cp 'a'
+    jr z,r17_txt_reg_one
+    cp 'c'
+    jr z,r17_txt_reg_one
+    cp 'e'
+    jr z,r17_txt_reg_one
+    cp 'l'
+    jr z,r17_txt_reg_one
+    cp 'r'
+    jr z,r17_txt_reg_one
+    cp 'b'
+    jr z,r17_txt_reg_b
+    cp 'd'
+    jr z,r17_txt_reg_d
+    cp 'h'
+    jr z,r17_txt_reg_h
+    cp 'i'
+    jr z,r17_txt_reg_i
+    cp 's'
+    jr z,r17_txt_reg_s
+    scf
+    ret
+r17_txt_reg_one:
+    inc hl
+    jp r17_txt_register_end
+r17_txt_reg_b:
+    inc hl
+    ld a,(hl)
+    cp 'c'
+    jr nz,r17_txt_register_end
+    inc hl
+    jp r17_txt_register_end
+r17_txt_reg_d:
+    inc hl
+    ld a,(hl)
+    cp 'e'
+    jr nz,r17_txt_register_end
+    inc hl
+    jp r17_txt_register_end
+r17_txt_reg_h:
+    inc hl
+    ld a,(hl)
+    cp 'l'
+    jr nz,r17_txt_register_end
+    inc hl
+    jp r17_txt_register_end
+r17_txt_reg_i:
+    inc hl
+    ld a,(hl)
+    cp 'x'
+    jr z,r17_txt_reg_two
+    cp 'y'
+    jr z,r17_txt_reg_two
+    jp r17_txt_register_end
+r17_txt_reg_s:
+    inc hl
+    ld a,(hl)
+    cp 'p'
+    jr nz,r17_txt_register_no
+r17_txt_reg_two:
+    inc hl
+r17_txt_register_end:
+    push hl
+    ld de,(r17_txt_line_end)
+    or a
+    sbc hl,de
+    pop hl
+    jr z,r17_txt_register_yes
+    jr nc,r17_txt_register_no
+    ld a,(hl)
+    cp ','
+    jr z,r17_txt_register_yes
+    cp ')'
+    jr z,r17_txt_register_yes
+r17_txt_register_no:
+    scf
+    ret
+r17_txt_register_yes:
+    or a
+    ret
+
+; Product-only disambiguation after an opening parenthesis.  Carry clear means
+; the operand begins an exact register-addressing form handled by the classic
+; parser: (hl), (bc), (de), or (ix/iy+/-disp).  Everything else is a parenthesized
+; absolute expression and is delegated to the installed expression hook.
+r17_txt_is_paren_register:
+    ld hl,(r17_txt_p)
+    ld a,(hl)
+    cp 'h'
+    jr z,r17_txt_paren_reg_h
+    cp 'b'
+    jr z,r17_txt_paren_reg_b
+    cp 'd'
+    jr z,r17_txt_paren_reg_d
+    cp 'i'
+    jr z,r17_txt_paren_reg_i
+    scf
+    ret
+r17_txt_paren_reg_h:
+    inc hl
+    ld a,(hl)
+    cp 'l'
+    jr nz,r17_txt_paren_reg_no
+    inc hl
+    ld a,(hl)
+    cp ')'
+    jr z,r17_txt_paren_reg_yes
+    jr r17_txt_paren_reg_no
+r17_txt_paren_reg_b:
+    inc hl
+    ld a,(hl)
+    cp 'c'
+    jr nz,r17_txt_paren_reg_no
+    inc hl
+    ld a,(hl)
+    cp ')'
+    jr z,r17_txt_paren_reg_yes
+    jr r17_txt_paren_reg_no
+r17_txt_paren_reg_d:
+    inc hl
+    ld a,(hl)
+    cp 'e'
+    jr nz,r17_txt_paren_reg_no
+    inc hl
+    ld a,(hl)
+    cp ')'
+    jr z,r17_txt_paren_reg_yes
+    jr r17_txt_paren_reg_no
+r17_txt_paren_reg_i:
+    inc hl
+    ld a,(hl)
+    cp 'x'
+    jr z,r17_txt_paren_reg_index
+    cp 'y'
+    jr nz,r17_txt_paren_reg_no
+r17_txt_paren_reg_index:
+    inc hl
+    ld a,(hl)
+    cp '+'
+    jr z,r17_txt_paren_reg_yes
+    cp '-'
+    jr z,r17_txt_paren_reg_yes
+r17_txt_paren_reg_no:
+    scf
+    ret
+r17_txt_paren_reg_yes:
+    or a
+    ret
+
+; Product-only control-condition recognizer.  It does not consume input.
+; Carry clear only for nz,z,nc,c,po,pe,p,m immediately followed by comma.
+r17_txt_is_control_condition:
+    ld hl,(r17_txt_p)
+    ld a,(hl)
+    cp 'n'
+    jr z,r17_txt_ctl_n
+    cp 'z'
+    jr z,r17_txt_ctl_one
+    cp 'c'
+    jr z,r17_txt_ctl_one
+    cp 'p'
+    jr z,r17_txt_ctl_p
+    cp 'm'
+    jr z,r17_txt_ctl_one
+    scf
+    ret
+r17_txt_ctl_n:
+    inc hl
+    ld a,(hl)
+    cp 'z'
+    jr z,r17_txt_ctl_two
+    cp 'c'
+    jr z,r17_txt_ctl_two
+    scf
+    ret
+r17_txt_ctl_p:
+    inc hl
+    ld a,(hl)
+    cp 'o'
+    jr z,r17_txt_ctl_two
+    cp 'e'
+    jr z,r17_txt_ctl_two
+    cp ','
+    jr z,r17_txt_ctl_yes
+    scf
+    ret
+r17_txt_ctl_one:
+    inc hl
+    ld a,(hl)
+    cp ','
+    jr z,r17_txt_ctl_yes
+    scf
+    ret
+r17_txt_ctl_two:
+    inc hl
+    ld a,(hl)
+    cp ','
+    jr z,r17_txt_ctl_yes
+    scf
+    ret
+r17_txt_ctl_yes:
+    or a
+    ret
+
+r17_txt_operand_a:
+    ld a,'a'
+    call r17_txt_consume
+    ret c
+    ld a,R17_TXT_OP_REG8
+    ld (r17_txt_op_type),a
+    ld a,7
+    ld (r17_txt_op_v0),a
+    xor a
+    ret
+r17_txt_operand_b:
+    ld a,'b'
+    call r17_txt_consume
+    ret c
+    call r17_txt_peek_soft
+    cp 'c'
+    jr z,r17_txt_operand_bc
+    ld a,R17_TXT_OP_REG8
+    ld (r17_txt_op_type),a
+    xor a
+    ld (r17_txt_op_v0),a
+    ret
+r17_txt_operand_bc:
+    ld a,'c'
+    call r17_txt_consume
+    ret c
+    ld a,R17_TXT_OP_RR
+    ld (r17_txt_op_type),a
+    xor a
+    ld (r17_txt_op_v0),a
+    ret
+r17_txt_operand_c:
+    ld a,'c'
+    call r17_txt_consume
+    ret c
+    ld a,R17_TXT_OP_REG8
+    ld (r17_txt_op_type),a
+    ld a,1
+    ld (r17_txt_op_v0),a
+    xor a
+    ret
+r17_txt_operand_d:
+    ld a,'d'
+    call r17_txt_consume
+    ret c
+    call r17_txt_peek_soft
+    cp 'e'
+    jr z,r17_txt_operand_de
+    ld a,R17_TXT_OP_REG8
+    ld (r17_txt_op_type),a
+    ld a,2
+    ld (r17_txt_op_v0),a
+    xor a
+    ret
+r17_txt_operand_de:
+    ld a,'e'
+    call r17_txt_consume
+    ret c
+    ld a,R17_TXT_OP_RR
+    ld (r17_txt_op_type),a
+    ld a,1
+    ld (r17_txt_op_v0),a
+    xor a
+    ret
+r17_txt_operand_e:
+    ld a,'e'
+    call r17_txt_consume
+    ret c
+    ld a,R17_TXT_OP_REG8
+    ld (r17_txt_op_type),a
+    ld a,3
+    ld (r17_txt_op_v0),a
+    xor a
+    ret
+r17_txt_operand_h:
+    ld a,'h'
+    call r17_txt_consume
+    ret c
+    call r17_txt_peek_soft
+    cp 'l'
+    jr z,r17_txt_operand_hl
+    ld a,R17_TXT_OP_REG8
+    ld (r17_txt_op_type),a
+    ld a,4
+    ld (r17_txt_op_v0),a
+    xor a
+    ret
+r17_txt_operand_hl:
+    ld a,'l'
+    call r17_txt_consume
+    ret c
+    ld a,R17_TXT_OP_RR
+    ld (r17_txt_op_type),a
+    ld a,2
+    ld (r17_txt_op_v0),a
+    xor a
+    ret
+r17_txt_operand_l:
+    ld a,'l'
+    call r17_txt_consume
+    ret c
+    ld a,R17_TXT_OP_REG8
+    ld (r17_txt_op_type),a
+    ld a,5
+    ld (r17_txt_op_v0),a
+    xor a
+    ret
+r17_txt_operand_sp:
+    ld hl,r17_txt_s_sp
+    call r17_txt_match_tail
+    ret c
+    ld a,R17_TXT_OP_RR
+    ld (r17_txt_op_type),a
+    ld a,3
+    ld (r17_txt_op_v0),a
+    xor a
+    ret
+r17_txt_operand_i:
+    ld a,'i'
+    call r17_txt_consume
+    ret c
+    call r17_txt_peek_soft
+    cp 'x'
+    jr z,r17_txt_operand_ix
+    cp 'y'
+    jr z,r17_txt_operand_iy
+    ld a,R17_TXT_OP_SPECIAL
+    ld (r17_txt_op_type),a
+    xor a
+    ld (r17_txt_op_v0),a
+    ret
+r17_txt_operand_ix:
+    ld a,'x'
+    call r17_txt_consume
+    ret c
+    ld a,R17_TXT_OP_INDEX
+    ld (r17_txt_op_type),a
+    xor a
+    ld (r17_txt_op_v0),a
+    ret
+r17_txt_operand_iy:
+    ld a,'y'
+    call r17_txt_consume
+    ret c
+    ld a,R17_TXT_OP_INDEX
+    ld (r17_txt_op_type),a
+    ld a,1
+    ld (r17_txt_op_v0),a
+    xor a
+    ret
+r17_txt_operand_r:
+    ld a,'r'
+    call r17_txt_consume
+    ret c
+    ld a,R17_TXT_OP_SPECIAL
+    ld (r17_txt_op_type),a
+    ld a,1
+    ld (r17_txt_op_v0),a
+    xor a
+    ret
+r17_txt_operand_imm:
+    call r17_txt_parse_num
+    ret c
+    ld (r17_txt_op_w),de
+    ld a,R17_TXT_OP_IMM
+    ld (r17_txt_op_type),a
+    xor a
+    ret
+
+r17_txt_parse_paren:
+    ld a,'('
+    call r17_txt_consume
+    ret c
+    call r17_txt_peek
+    ret c
+    ld hl,(r17_txt_expr_hook)
+    ld a,h
+    or l
+    jr z,r17_txt_paren_classic
+    call r17_txt_is_paren_register
+    jr c,r17_txt_paren_absolute
+r17_txt_paren_classic:
+    call r17_txt_peek
+    ret c
+    cp 'h'
+    jr z,r17_txt_paren_hl
+    cp 'b'
+    jr z,r17_txt_paren_bc
+    cp 'd'
+    jr z,r17_txt_paren_de
+    cp 'i'
+    jr z,r17_txt_paren_index
+r17_txt_paren_absolute:
+    call r17_txt_parse_num
+    ret c
+    ld (r17_txt_op_w),de
+    ld a,')'
+    call r17_txt_consume
+    ret c
+    ld a,R17_TXT_OP_MEMABS
+    ld (r17_txt_op_type),a
+    xor a
+    ret
+r17_txt_paren_hl:
+    ld hl,r17_txt_s_hl_close
+    call r17_txt_match_tail
+    ret c
+    ld a,R17_TXT_OP_REG8
+    ld (r17_txt_op_type),a
+    ld a,6
+    ld (r17_txt_op_v0),a
+    xor a
+    ret
+r17_txt_paren_bc:
+    ld hl,r17_txt_s_bc_close
+    call r17_txt_match_tail
+    ret c
+    ld a,R17_TXT_OP_MEMPAIR
+    ld (r17_txt_op_type),a
+    xor a
+    ld (r17_txt_op_v0),a
+    ret
+r17_txt_paren_de:
+    ld hl,r17_txt_s_de_close
+    call r17_txt_match_tail
+    ret c
+    ld a,R17_TXT_OP_MEMPAIR
+    ld (r17_txt_op_type),a
+    ld a,1
+    ld (r17_txt_op_v0),a
+    xor a
+    ret
+r17_txt_paren_index:
+    ld a,'i'
+    call r17_txt_consume
+    ret c
+    call r17_txt_get
+    ret c
+    cp 'x'
+    jr z,r17_txt_paren_ix
+    cp 'y'
+    jp nz,r17_as_error
+    ld a,1
+    jr r17_txt_paren_index_selected
+r17_txt_paren_ix:
+    xor a
+r17_txt_paren_index_selected:
+    ld (r17_txt_op_v0),a
+    call r17_txt_get
+    ret c
+    cp '+'
+    jr z,r17_txt_paren_disp_plus
+    cp '-'
+    jp nz,r17_as_error
+    ld a,1
+    ld (r17_txt_disp_negative),a
+    jr r17_txt_paren_disp_num
+r17_txt_paren_disp_plus:
+    xor a
+    ld (r17_txt_disp_negative),a
+r17_txt_paren_disp_num:
+    call r17_txt_parse_num
+    ret c
+    ld a,d
+    or a
+    jp nz,r17_as_error
+    ld a,(r17_txt_disp_negative)
+    or a
+    jr z,r17_txt_paren_disp_positive
+    ld a,e
+    cp $81
+    jp nc,r17_as_error
+    xor a
+    sub e
+    ld e,a
+    jr r17_txt_paren_disp_store
+r17_txt_paren_disp_positive:
+    ld a,e
+    cp $80
+    jp nc,r17_as_error
+r17_txt_paren_disp_store:
+    ld a,e
+    ld (r17_txt_op_v1),a
+    ld a,')'
+    call r17_txt_consume
+    ret c
+    ld a,R17_TXT_OP_INDEXED
+    ld (r17_txt_op_type),a
+    xor a
+    ret
+
+r17_txt_save_first:
+    ld a,(r17_txt_op_type)
+    ld (r17_txt_f_type),a
+    ld a,(r17_txt_op_v0)
+    ld (r17_txt_f_v0),a
+    ld a,(r17_txt_op_v1)
+    ld (r17_txt_f_v1),a
+    ld hl,(r17_txt_op_w)
+    ld (r17_txt_f_w),hl
+    ret
+r17_txt_restore_first_as_op:
+    ld a,(r17_txt_f_type)
+    ld (r17_txt_op_type),a
+    ld a,(r17_txt_f_v0)
+    ld (r17_txt_op_v0),a
+    ld a,(r17_txt_f_v1)
+    ld (r17_txt_op_v1),a
+    ld hl,(r17_txt_f_w)
+    ld (r17_txt_op_w),hl
+    ret
+
+r17_txt_parse_cond:
+    call r17_txt_peek
+    ret c
+    cp 'n'
+    jr z,r17_txt_cond_n
+    cp 'z'
+    jr z,r17_txt_cond_z
+    cp 'c'
+    jr z,r17_txt_cond_c
+    cp 'p'
+    jr z,r17_txt_cond_p
+    cp 'm'
+    jr z,r17_txt_cond_m
+    jp r17_as_error
+r17_txt_cond_n:
+    ld a,'n'
+    call r17_txt_consume
+    ret c
+    call r17_txt_get
+    ret c
+    cp 'z'
+    jr z,r17_txt_cond_nz
+    cp 'c'
+    jp nz,r17_as_error
+    ld a,2
+    ret
+r17_txt_cond_nz:
+    xor a
+    ret
+r17_txt_cond_z:
+    ld a,'z'
+    call r17_txt_consume
+    ret c
+    ld a,1
+    ret
+r17_txt_cond_c:
+    ld a,'c'
+    call r17_txt_consume
+    ret c
+    ld a,3
+    ret
+r17_txt_cond_p:
+    ld a,'p'
+    call r17_txt_consume
+    ret c
+    call r17_txt_peek_soft
+    cp 'o'
+    jr z,r17_txt_cond_po
+    cp 'e'
+    jr z,r17_txt_cond_pe
+    ld a,6
+    ret
+r17_txt_cond_po:
+    ld a,'o'
+    call r17_txt_consume
+    ret c
+    ld a,4
+    ret
+r17_txt_cond_pe:
+    ld a,'e'
+    call r17_txt_consume
+    ret c
+    ld a,5
+    ret
+r17_txt_cond_m:
+    ld a,'m'
+    call r17_txt_consume
+    ret c
+    ld a,7
+    ret
+
+r17_txt_parse_push_pair:
+    call r17_txt_peek
+    ret c
+    cp 'b'
+    jr z,r17_txt_push_bc
+    cp 'd'
+    jr z,r17_txt_push_de
+    cp 'h'
+    jr z,r17_txt_push_hl
+    cp 'a'
+    jr z,r17_txt_push_af
+    cp 'i'
+    jr z,r17_txt_push_index
+    jp r17_as_error
+r17_txt_push_bc:
+    ld hl,r17_txt_s_bc
+    call r17_txt_match_tail
+    ret c
+    xor a
+    ret
+r17_txt_push_de:
+    ld hl,r17_txt_s_de
+    call r17_txt_match_tail
+    ret c
+    ld a,1
+    ret
+r17_txt_push_hl:
+    ld hl,r17_txt_s_hl
+    call r17_txt_match_tail
+    ret c
+    ld a,2
+    ret
+r17_txt_push_af:
+    ld hl,r17_txt_s_af
+    call r17_txt_match_tail
+    ret c
+    ld a,3
+    ret
+r17_txt_push_index:
+    ld a,'i'
+    call r17_txt_consume
+    ret c
+    call r17_txt_get
+    ret c
+    cp 'x'
+    jr z,r17_txt_push_ix
+    cp 'y'
+    jp nz,r17_as_error
+    ld a,5
+    ret
+r17_txt_push_ix:
+    ld a,4
+    ret
+
+r17_txt_match_ex_form:
+    ld hl,r17_txt_s_ex_dehl
+    call r17_txt_match_tail_soft
+    jr nc,r17_txt_ex0
+    ld hl,r17_txt_s_ex_sphl
+    call r17_txt_match_tail_soft
+    jr nc,r17_txt_ex1
+    ld hl,r17_txt_s_ex_af
+    call r17_txt_match_tail
+    ret c
+    ld a,2
+    ret
+r17_txt_ex0:
+    xor a
+    ret
+r17_txt_ex1:
+    ld a,1
+    ret
+
+r17_txt_try_exact_hl_indirect:
+    ld hl,r17_txt_s_hl_ind
+    call r17_txt_match_tail_soft
+    ret
+
+; Numeric-expression hook used only by the ordinary REV02 product driver.
+; A zero hook preserves the exact REV17 literal grammar and all historical
+; projection behavior.  A nonzero hook is a normal near function address that
+; returns DE=value and carry/errno exactly like the literal parser.
+r17_txt_parse_num:
+    ld hl,(r17_txt_expr_hook)
+    ld a,h
+    or l
+    jr z,r17_txt_parse_literal
+    jp (hl)
+
+r17_txt_parse_literal:
     call r17_txt_peek
     ret c
     cp '$'
+    jr z,r17_txt_parse_hex
+    cp '0'
+    jp c,r17_as_error
+    cp '9'+1
+    jp nc,r17_as_error
+    call r17_txt_get
+    sub '0'
+    ld (r17_txt_decimal_value),a
+    call r17_txt_peek_soft
+    cp '0'
+    jr c,r17_txt_num_decimal_done
+    cp '9'+1
+    jp c,r17_as_error
+r17_txt_num_decimal_done:
+    ld a,(r17_txt_decimal_value)
+    ld e,a
+    ld d,0
+    xor a
+    ret
+
+r17_txt_parse_hex:
+    ld a,'$'
+    call r17_txt_consume
+    ret c
+    ld hl,0
+    ld (r17_txt_hex_accum),hl
+    xor a
+    ld (r17_txt_hex_count),a
+r17_txt_hex_loop:
+    call r17_txt_peek_soft
+    call r17_txt_hex_nibble
+    jr c,r17_txt_hex_done
+    ld (r17_txt_hex_value),a
+    ld a,(r17_txt_hex_count)
+    cp 4
+    jp nc,r17_as_error
+    inc a
+    ld (r17_txt_hex_count),a
+    call r17_txt_get
+    ld de,(r17_txt_hex_accum)
+    sla e
+    rl d
+    sla e
+    rl d
+    sla e
+    rl d
+    sla e
+    rl d
+    ld a,(r17_txt_hex_value)
+    add a,e
+    ld e,a
+    jr nc,r17_txt_hex_store
+    inc d
+r17_txt_hex_store:
+    ld (r17_txt_hex_accum),de
+    jr r17_txt_hex_loop
+r17_txt_hex_done:
+    ld a,(r17_txt_hex_count)
+    or a
+    jp z,r17_as_error
+    ld de,(r17_txt_hex_accum)
+    xor a
+    ret
+
+r17_txt_hex_nibble:
+    cp '0'
+    jr c,r17_txt_hex_no
+    cp '9'+1
+    jr c,r17_txt_hex_digit
+    cp 'a'
+    jr c,r17_txt_hex_no
+    cp 'f'+1
+    jr nc,r17_txt_hex_no
+    sub 'a'-10
+    or a
+    ret
+r17_txt_hex_digit:
+    sub '0'
+    or a
+    ret
+r17_txt_hex_no:
+    scf
+    ret
+
+r17_txt_get:
+    ld hl,(r17_txt_p)
+    ld de,(r17_txt_line_end)
+    or a
+    sbc hl,de
+    jp nc,r17_as_error
+    ld hl,(r17_txt_p)
+    ld a,(hl)
+    inc hl
+    ld (r17_txt_p),hl
+    or a
+    ret
+
+r17_txt_peek:
+    ld hl,(r17_txt_p)
+    ld de,(r17_txt_line_end)
+    or a
+    sbc hl,de
+    jp nc,r17_as_error
+    ld hl,(r17_txt_p)
+    ld a,(hl)
+    or a
+    ret
+
+r17_txt_peek_soft:
+    ld hl,(r17_txt_p)
+    ld de,(r17_txt_line_end)
+    or a
+    sbc hl,de
+    jr z,r17_txt_peek_soft_end
+    jp nc,r17_as_error
+    ld hl,(r17_txt_p)
+    ld a,(hl)
+    or a
+    ret
+r17_txt_peek_soft_end:
+    xor a
+    ret
+
+r17_txt_is_end:
+    ld hl,(r17_txt_p)
+    ld de,(r17_txt_line_end)
+    or a
+    sbc hl,de
+    ret z
+    jp c,r17_txt_not_end
+    jp r17_as_error
+r17_txt_not_end:
+    ld a,1
+    or a
+    ret
+
+r17_txt_expect_end:
+    call r17_txt_is_end
+    ret z
+    jp r17_as_error
+
+r17_txt_consume:
+    ld (r17_txt_char),a
+    call r17_txt_get
+    ret c
+    ld b,a
+    ld a,(r17_txt_char)
+    cp b
+    ret z
+    jp r17_as_error
+
+r17_txt_peek_comma_or_end:
+    call r17_txt_is_end
+    jr nz,r17_txt_peek_comma
+    xor a
+    ret
+r17_txt_peek_comma:
+    call r17_txt_peek
+    ret c
+    cp ','
+    jp nz,r17_as_error
+    ld a,1
+    or a
+    ret
+
+r17_txt_match_tail:
+    push hl
+    ld de,(r17_txt_p)
+r17_txt_match_tail_loop:
+    ld a,(hl)
+    or a
+    jr z,r17_txt_match_tail_ok
+    push hl
+    ld hl,(r17_txt_line_end)
+    or a
+    sbc hl,de
+    pop hl
+    jr z,r17_txt_match_tail_fail
+    jr c,r17_txt_match_tail_fail
+    ld a,(de)
+    cp (hl)
+    jr nz,r17_txt_match_tail_fail
+    inc de
+    inc hl
+    jr r17_txt_match_tail_loop
+r17_txt_match_tail_ok:
+    pop hl
+    ld (r17_txt_p),de
+    xor a
+    ret
+r17_txt_match_tail_fail:
+    pop hl
+    jp r17_as_error
+
+r17_txt_match_tail_soft:
+    ld de,(r17_txt_p)
+    ld (r17_txt_saved_p),de
+    push hl
+r17_txt_soft_loop:
+    ld a,(hl)
+    or a
+    jr z,r17_txt_soft_ok
+    push hl
+    ld hl,(r17_txt_line_end)
+    or a
+    sbc hl,de
+    pop hl
+    jr z,r17_txt_soft_fail
+    jr c,r17_txt_soft_fail
+    ld a,(de)
+    cp (hl)
+    jr nz,r17_txt_soft_fail
+    inc de
+    inc hl
+    jr r17_txt_soft_loop
+r17_txt_soft_ok:
+    pop hl
+    ld (r17_txt_p),de
+    xor a
+    ret
+r17_txt_soft_fail:
+    pop hl
+    ld hl,(r17_txt_saved_p)
+    ld (r17_txt_p),hl
+    scf
+    ret
+
+r17_txt_rec_start:
+    ld (r17_txt_rec),a
+    ld a,1
+    ld (r17_txt_rec_len),a
+    ret
+
+r17_txt_rec8:
+    ld (r17_txt_rec_value),a
+    ld a,(r17_txt_rec_len)
+    cp 5
+    jp nc,r17_as_error
+    ld e,a
+    ld d,0
+    ld hl,r17_txt_rec
+    add hl,de
+    ld a,(r17_txt_rec_value)
+    ld (hl),a
+    ld a,(r17_txt_rec_len)
+    inc a
+    ld (r17_txt_rec_len),a
+    ret
+
+r17_txt_rec16:
+    push de
+    ld a,e
+    call r17_txt_rec8
+    pop de
+    ld a,d
+    jp r17_txt_rec8
+
+r17_txt_rec_emit:
+    ; Preserve the TEXT offset at which this semantic record begins.  The
+    ; optional ordinary-product hook uses it only after the qualified encoder
+    ; has emitted the record, so opcode semantics remain owned by the REV17
+    ; encoder rather than by the symbol driver.
+    ld hl,(r17_as_produced)
+    ld (r17_txt_rec_start_off),hl
+    ld a,(r17_as_guard_mode)
+    or a
+    jr z,r17_txt_rec_guard_done
+    ld hl,(r17_txt_p)
+    ld (r17_as_guard_limit),hl
+r17_txt_rec_guard_done:
+    ld hl,r17_txt_rec
+    ld (r17_as_cur),hl
+    ld a,(r17_txt_rec_len)
+    ld e,a
+    ld d,0
+    add hl,de
+    ld (r17_as_end),hl
+    ld hl,1
+    ld (r17_as_records_left),hl
+    call r17_as_record_loop
+    ret c
+    ld hl,(r17_txt_reloc_hook)
+    ld a,h
+    or l
+    jr z,r17_txt_rec_emit_no_hook
+    ; Callback ABI: A=semantic record kind, BC=TEXT start offset.  The callback
+    ; may append OBJ1 relocation metadata or reject an illegal relocatable
+    ; expression; it never emits opcode bytes.
+    push hl
+    ld a,(r17_txt_rec)
+    ld bc,(r17_txt_rec_start_off)
+    pop hl
+    ld de,r17_txt_rec_emit_hook_return
+    push de
+    jp (hl)
+r17_txt_rec_emit_hook_return:
+    ret c
+r17_txt_rec_emit_no_hook:
+    ld hl,(r17_as_cur)
+    ld de,(r17_as_end)
+    or a
+    sbc hl,de
+    ret z
+    jp r17_as_error
+
+r17_txt_s_sp:       db "sp",0
+r17_txt_s_bc:       db "bc",0
+r17_txt_s_de:       db "de",0
+r17_txt_s_hl:       db "hl",0
+r17_txt_s_af:       db "af",0
+r17_txt_s_hl_close: db "hl)",0
+r17_txt_s_bc_close: db "bc)",0
+r17_txt_s_de_close: db "de)",0
+r17_txt_s_hl_ind:   db "(hl)",0
+r17_txt_s_a_c:      db "a,(c)",0
+r17_txt_s_c_a:      db "(c),a",0
+r17_txt_s_ex_dehl:  db "de,hl",0
+r17_txt_s_ex_sphl:  db "(sp),hl",0
+r17_txt_s_ex_af:    db "af,af'",0
+
+r17_txt_mnemonics:
+    db 2,"ld",R17_TXT_M_LD
+    db 2,"jp",R17_TXT_M_JP
+    db 4,"call",R17_TXT_M_CALL
+    db 2,"jr",R17_TXT_M_JR
+    db 4,"djnz",R17_TXT_M_DJNZ
+    db 3,"ret",R17_TXT_M_RET
+    db 3,"inc",R17_TXT_M_INC
+    db 3,"dec",R17_TXT_M_DEC
+    db 4,"push",R17_TXT_M_PUSH
+    db 3,"pop",R17_TXT_M_POP
+    db 2,"ex",R17_TXT_M_EX
+    db 2,"im",R17_TXT_M_IM
+    db 2,"in",R17_TXT_M_IN
+    db 3,"out",R17_TXT_M_OUT
+    db 2,"db",R17_TXT_M_DB
+    db 2,"dw",R17_TXT_M_DW
+    db 4,"defs",R17_TXT_M_DEFS
+    db 3,"org",R17_TXT_M_ORG
+    db 3,"rst",R17_TXT_M_RST
+    db 3,"add",$40
+    db 3,"adc",$41
+    db 3,"sub",$42
+    db 3,"sbc",$43
+    db 3,"and",$44
+    db 3,"xor",$45
+    db 2,"or",$46
+    db 2,"cp",$47
+    db 3,"rlc",$50
+    db 3,"rrc",$51
+    db 2,"rl",$52
+    db 2,"rr",$53
+    db 3,"sla",$54
+    db 3,"sra",$55
+    db 3,"srl",$56
+    db 3,"bit",$60
+    db 3,"res",$61
+    db 3,"set",$62
+    db 3,"nop",$80+0
+    db 4,"rlca",$80+1
+    db 4,"rrca",$80+2
+    db 3,"rla",$80+3
+    db 3,"rra",$80+4
+    db 3,"daa",$80+5
+    db 3,"cpl",$80+6
+    db 3,"scf",$80+7
+    db 3,"ccf",$80+8
+    db 4,"halt",$80+9
+    db 2,"di",$80+10
+    db 2,"ei",$80+11
+    db 3,"exx",$80+12
+    db 4,"reti",$80+13
+    db 3,"neg",$80+14
+    db 3,"ldi",$80+15
+    db 4,"ldir",$80+16
+    db 3,"ldd",$80+17
+    db 4,"lddr",$80+18
+    db 3,"cpi",$80+19
+    db 4,"cpir",$80+20
+    db 3,"cpd",$80+21
+    db 4,"cpdr",$80+22
+    db 0
+
+r17_txt_source:      dw 0
+r17_txt_source_len:  dw 0
+r17_txt_cur:         dw 0
+r17_txt_end:         dw 0
+r17_txt_line_start:  dw 0
+r17_txt_line_end:    dw 0
+r17_txt_p:           dw 0
+r17_txt_saved_p:     dw 0
+; Optional ordinary-product hooks.  They are zero in every historical REV17
+; fixture and explicitly cleared by r17_as_text_obj1_inplace.
+r17_txt_expr_hook:   dw 0
+r17_txt_reloc_hook:  dw 0
+r17_txt_rec_start_off: dw 0
+r17_txt_table_name:  dw 0
+r17_txt_table_next:  dw 0
+r17_txt_id:          db 0
+r17_txt_saw_org:     db 0
+r17_txt_char:        db 0
+r17_txt_hex_count:   db 0
+r17_txt_hex_value:   db 0
+r17_txt_decimal_value: db 0
+r17_txt_hex_accum:   dw 0
+r17_txt_disp_negative: db 0
+r17_txt_family:      db 0
+r17_txt_tmp0:        db 0
+r17_txt_tmp1:        db 0
+r17_txt_num:         dw 0
+r17_txt_num2:        dw 0
+r17_txt_op_type:     db 0
+r17_txt_op_v0:       db 0
+r17_txt_op_v1:       db 0
+r17_txt_op_w:        dw 0
+r17_txt_f_type:      db 0
+r17_txt_f_v0:        db 0
+r17_txt_f_v1:        db 0
+r17_txt_f_w:         dw 0
+r17_txt_rec_len:     db 0
+r17_txt_rec_value:   db 0
+r17_txt_rec:         defs 5,0
+    ENDM
+
     jr z,r17_txt_control_target
     cp '0'
     jr c,r17_txt_control_cond
@@ -1100,6 +2547,20 @@ r17_txt_parse_operand:
     cp '9'+1
     jp c,r17_txt_operand_imm
 r17_txt_operand_word:
+    ; With the ordinary product expression hook installed, an identifier is an
+    ; immediate expression unless its complete token is exactly one of the
+    ; documented register/pair spellings.  This keeps symbols such as "alpha",
+    ; "loop" and "data" case-sensitive instead of misclassifying their first
+    ; letter as A/L/D register syntax.
+    ld hl,(r17_txt_expr_hook)
+    ld a,h
+    or l
+    jr z,r17_txt_operand_register
+    call r17_txt_is_register_token
+    jr c,r17_txt_operand_imm
+r17_txt_operand_register:
+    call r17_txt_peek
+    ret c
     cp 'a'
     jp z,r17_txt_operand_a
     cp 'b'
@@ -1297,6 +2758,15 @@ r17_txt_parse_paren:
     ret c
     call r17_txt_peek
     ret c
+    ld hl,(r17_txt_expr_hook)
+    ld a,h
+    or l
+    jr z,r17_txt_paren_classic
+    call r17_txt_is_paren_register
+    jr c,r17_txt_paren_absolute
+r17_txt_paren_classic:
+    call r17_txt_peek
+    ret c
     cp 'h'
     jr z,r17_txt_paren_hl
     cp 'b'
@@ -1305,6 +2775,7 @@ r17_txt_parse_paren:
     jr z,r17_txt_paren_de
     cp 'i'
     jr z,r17_txt_paren_index
+r17_txt_paren_absolute:
     call r17_txt_parse_num
     ret c
     ld (r17_txt_op_w),de
