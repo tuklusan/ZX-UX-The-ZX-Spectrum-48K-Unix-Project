@@ -86,6 +86,9 @@ def main():
     for name,spec in product_specs.items():
         row=product_report.get(report_names[name],{})
         req(row.get("source_sha256")==sha(root/spec["source"]),"product tools source binding: "+name)
+        if name=="as":
+            req(row.get("support_source")=="tools/as_text.asm","assembler support-source identity")
+            req(row.get("support_source_sha256")==sha(root/"tools/as_text.asm"),"assembler support-source binding")
         req(isinstance(row.get("mex1_sha256"),str) and len(row["mex1_sha256"])==64,"product MEX1 hash: "+name)
         req(isinstance(row.get("m48o_tap_sha256"),str) and len(row["m48o_tap_sha256"])==64,"product M48O hash: "+name)
     closures={}
@@ -99,6 +102,8 @@ def main():
           "installable_product_image_in_source":has_product_image,
           "deterministic_installable_product_available":True,
         }
+        if name=="as":
+            closures[name]["support_source_sha256"]=product_report[report_names[name]]["support_source_sha256"]
         req(not has_product_image,f"{name}: source unexpectedly has direct product image; Stage-C assumptions changed")
 
     candidate_patterns=("cc.mex1","as.mex1","ld.mex1","sh.mex1","cc.m48o","as.m48o","ld.m48o","sh.m48o")

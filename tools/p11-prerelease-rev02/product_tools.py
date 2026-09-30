@@ -215,7 +215,7 @@ def main():
     root=ns.root.resolve(); out=ns.output.resolve(); out.mkdir(parents=True,exist_ok=True)
     sj=root/"tools/runtime/sjasmplus/bin/sjasmplus"; req(sj.is_file(),"project sjasmplus missing")
     shsrc=root/"v1/src/shell/sh.asm"; sh=shsrc.read_text()
-    ccsrc=root/"v1/src/tools/cc.asm"; assrc=root/"tools/as.asm"; ldsrc=root/"tools/ld.asm"
+    ccsrc=root/"v1/src/tools/cc.asm"; assrc=root/"tools/as.asm"; astextsrc=root/"tools/as_text.asm"; ldsrc=root/"tools/ld.asm"
     req("EMIT_P601_SH_IMAGE" in sh and "sh_idle:" in sh,"shell entry fixture changed")
     # Product closure deliberately includes no historical P11PR compiler helper.
     req("EMIT_P11PR_CC_SDK_CORPUS_COMPILER" in ccsrc.read_text(),"historical fixture identity missing")
@@ -302,7 +302,7 @@ def main():
         "entry":"EMIT_REV02_CC_PRODUCT_CLI",
         "semantic_status":"GENERIC-STREAMING-NATIVE-C-CHECKPOINT; ONE-LEVEL-QUOTED-LOCAL-INCLUDE; FROZEN-BOUNDED-OBJECT-LIKE-DEFINES; INTEGER-CONSTANT-FUNCTIONS; FULL-C48-PENDING"},
       "as":{
-        "source":"tools/as.asm","source_sha256":sha(assrc),
+        "source":"tools/as.asm","source_sha256":sha(assrc),"support_source":"tools/as_text.asm","support_source_sha256":sha(astextsrc),
         "image_sha256":sha(as_image),"image_bytes":as_image.stat().st_size,"bss_bytes":as_bss,"resident_bytes_including_stack":as_resident,"relocation_count":len(as_relocs),
         "mex1_sha256":sha(out/"as.mex1"),"m48o_tap_sha256":sha(out/"as.m48o.tap"),
         "entry":"EMIT_REV02_AS_PRODUCT_CLI",
