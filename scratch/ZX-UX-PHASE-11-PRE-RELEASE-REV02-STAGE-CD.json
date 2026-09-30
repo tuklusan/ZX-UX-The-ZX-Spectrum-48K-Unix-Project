@@ -11,28 +11,69 @@
   "schema": 1,
   "kind": "rev02-stage-cd-checkpoint",
   "status": "PASS",
-  "source_head": "87201cceb3eae6c8d6f825d315516af44ac22294",
+  "source_head": "81d94e135fd817036fcd9721e4327d89f4541aaa",
   "gate_c": "PASS",
   "gate_d": "PASS",
   "stage_c": {
-    "run_id": 36612309298,
-    "job_id": 109556535015,
-    "artifact_id": 11054085975,
-    "artifact_sha256": "2d5c8f1f8781a7a0fe182c5fd304f36699320394f1d72fa6ce0f98af8554fb73"
+    "run_id": 36731336540,
+    "artifact_id": 11104683427,
+    "artifact_sha256": "1b43d28397ad484ee0179b87dc738d0611594284e58d75411957757376ce1b57"
   },
   "stage_d": {
-    "run_id": 36612309358,
-    "job_id": 109556535551,
-    "artifact_id": 11053244827,
-    "artifact_sha256": "33019f1584b0bc7f5431670c6295db546a7a1eb1867e759c627a2474f225c207"
+    "run_id": 36731336407,
+    "artifact_id": 11104778177,
+    "artifact_sha256": "fc4fb62fe79f80f7b2292806b94e940ce602b4217d4af1f20cdfe4f1cfd165fb"
   },
   "exact_head_regression": "PASS",
-  "exact_head_regression_run_id": 36612309523,
-  "qualification_auto_dispatch": "PASS",
-  "qualification_run_id": 36612435337,
-  "root_gap_count": 13,
+  "exact_head_regression_run_id": 36731336395,
+  "qualification_auto_dispatch": "SKIPPED-NO-DUE-QUALIFICATION",
+  "qualification_run_id": null,
+  "root_gap_count": 15,
   "classification": "EXISTING-AUTHORITY-DEFECT",
   "authority_gap_count": 0,
   "sdk_defect_count": 0,
-  "phase12_state": 0
+  "phase12_state": 0,
+  "native_product_reference": "69348ee366c48b436aa0d07237ae2e7473e55327",
+  "open_native_product_defects": [
+    {
+      "id": "C015",
+      "origin": "P5.14",
+      "summary": "direct-tape image byte not preserved across MEX1 body CRC update before final image write",
+      "owner": "ZX-UX",
+      "sdk_or_c48b2tap_defect": false,
+      "status": "OPEN"
+    },
+    {
+      "id": "C016",
+      "origin": "P5.14",
+      "summary": "direct-tape refill subtracts post-tape-load DE instead of preserved physical chunk length",
+      "owner": "ZX-UX",
+      "sdk_or_c48b2tap_defect": false,
+      "status": "OPEN"
+    },
+    {
+      "id": "C017",
+      "origin": "P5.09",
+      "summary": "namespace public-type check loads M48O type with invalid direct B absolute-memory form",
+      "owner": "ZX-UX",
+      "sdk_or_c48b2tap_defect": false,
+      "status": "OPEN"
+    },
+    {
+      "id": "C018",
+      "origin": "P5.09",
+      "summary": "new-object commit repeats invalid direct B absolute-memory type load before object_create",
+      "owner": "ZX-UX",
+      "sdk_or_c48b2tap_defect": false,
+      "status": "OPEN"
+    },
+    {
+      "id": "C019",
+      "origin": "P5.04/P5.09",
+      "summary": "RAW validated length returns in BC but P5.09 stores DE CRC state as logical length",
+      "owner": "ZX-UX",
+      "sdk_or_c48b2tap_defect": false,
+      "status": "OPEN"
+    }
+  ]
 }
