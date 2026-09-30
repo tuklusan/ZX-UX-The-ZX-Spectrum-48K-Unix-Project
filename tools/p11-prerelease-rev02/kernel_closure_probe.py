@@ -85,6 +85,14 @@ kernel_mod_rev02_rom_info_syscall:
 kernel_mod_rev02_udg_syscalls:
     EMIT_P714_UDG_SYSCALL_ROUTINES
     EMIT_P715_UDG_DRAW_SYSCALL_ROUTINES
+kernel_mod_rev02_public_rom_services:
+    EMIT_P709_ROM_BEEP_ROUTINES
+    EMIT_P711_ROM_INFO_ROUTINES
+    EMIT_P1117_ROM_FP_EXEC_ROUTINES
+    EMIT_P1118_ROM_FP_CAST_ROUTINES
+    EMIT_P1119_ROM_FP_CMP_ROUTINES
+    EMIT_P1146_ROM_FP_TO_TEXT_ROUTINES
+    EMIT_P1147_ROM_FP_FROM_TEXT_ROUTINES
 kernel_mod_rev02_fp_syscalls:
     EMIT_P1117_FP_EXEC_SYSCALL_ROUTINES
     EMIT_P1118_FP_CAST_SYSCALL_ROUTINES
@@ -100,6 +108,7 @@ kernel_mod_rev02_fp_syscalls:
             "baseline":baseline,"public_api_lower_bound":public_api,
             "scope":"lower-bound only: graphics/sound/UDG/ROM/FP handlers; excludes object/tape/zxpack/spawn closure and final selector routing"}
     req(baseline["status"]=="PASS","baseline kernel probe must assemble")
+    req(public_api["status"]=="PASS","public API lower-bound probe must assemble")
     (out/"KERNEL-CLOSURE-PROBE.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n",encoding="utf-8")
     print("REV02 KERNEL CLOSURE PROBE PASS",json.dumps({"baseline":baseline.get("ordinary_bytes"),"public_api":public_api.get("ordinary_bytes"),"pool":KERNEL_POOL_BYTES}))
 if __name__=="__main__": main()
