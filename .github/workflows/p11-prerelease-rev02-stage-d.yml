@@ -17,6 +17,7 @@ on:
     paths:
       - '.github/workflows/p11-prerelease-rev02-stage-d.yml'
       - 'tools/p11-prerelease-rev02/stage_c.py'
+      - 'tools/p11-prerelease-rev02/kernel_closure_probe.py'
       - 'tools/p11-prerelease-rev02/stage_d.py'
       - 'tools/p11-prerelease/sdk_acquire.py'
       - 'docs/01-ZX-UX-ARCHITECTURE-REV17.md'
@@ -42,17 +43,25 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with: {fetch-depth: 0}
+      - name: Set up certified ZX-UX runtime
+        uses: ./.github/actions/setup-zxux-runtime
       - name: Acquire exact SDK 1.0.2 release corpus
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           python3 tools/p11-prerelease/sdk_acquire.py acquire --output /tmp/rev02-sdk-reference
+      - name: Measure current resident-kernel closure lower bound
+        run: |
+          set -euo pipefail
+          tools/runtime/python/bin/python tools/p11-prerelease-rev02/kernel_closure_probe.py \
+            --root . --output /tmp/rev02-kernel-probe
       - name: Reproduce Stage-C root blockers
         run: |
           set -euo pipefail
           python3 tools/p11-prerelease-rev02/stage_c.py \
-            --root . --sdk-root /tmp/rev02-sdk-reference --output /tmp/rev02-stage-c
+            --root . --sdk-root /tmp/rev02-sdk-reference --output /tmp/rev02-stage-c \
+            --kernel-probe /tmp/rev02-kernel-probe/KERNEL-CLOSURE-PROBE.json
       - name: Classify every current root blocker under frozen authority
         run: |
           set -euo pipefail

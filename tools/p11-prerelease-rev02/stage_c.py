@@ -23,9 +23,12 @@ def main():
     ap.add_argument("--root",type=Path,required=True)
     ap.add_argument("--sdk-root",type=Path,required=True)
     ap.add_argument("--output",type=Path,required=True)
+    ap.add_argument("--kernel-probe",type=Path,required=True)
     ns=ap.parse_args()
     root=ns.root.resolve(); sdk=ns.sdk_root.resolve(); out=ns.output
     out.mkdir(parents=True,exist_ok=True)
+    kernel_probe=json.loads(ns.kernel_probe.read_text())
+    req(kernel_probe.get("kind")=="rev02-kernel-closure-probe" and kernel_probe.get("status")=="PASS","kernel closure probe identity")
     rel=json.loads((sdk/"SDK-RELEASE.json").read_text())
     req(rel.get("program_count")==30 and len(rel.get("programs",[]))==30,"SDK program corpus")
 
@@ -215,6 +218,7 @@ def main():
 
     report={
       "schema":2,"kind":"rev02-stage-c-product-gap-inventory","status":"PASS-INVENTORY-ROOT-BLOCKER",
+      "kernel_closure_probe":kernel_probe,
       "program_count":30,"programs":rows,"product_dependency_closures":closures,"gaps":gaps,
       "production_snapshot":{
         "kernel_sha256":sha(root/"v1/src/kernel/kernel.asm"),
