@@ -135,6 +135,9 @@ wrong_name_source:
     db '#include "../bad.h"',10
     db 'int main(void){{return 9;}}',10
 wrong_name_source_end:
+helper_source:
+    db 'int helper(void){{return 9;}} int main(void){{helper();return 0;}}',10
+helper_source_end:
 
 fixture_reset:
     xor a
@@ -528,6 +531,29 @@ gate_close:
     xor a
     ret
 
+test_generic_helper_definition:
+    ld a,11
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ret c
+    ld a,(cc_rev02_symbol_count)
+    cp 2
+    jp nz,test_fail
+    ld a,(cc_rev02_reloc_count)
+    cp 1
+    jp nz,test_fail
+    ld hl,cc_rev02_symbols
+    ld a,(hl)
+    cp 'h'
+    jp nz,test_fail
+    ld hl,cc_rev02_symbols+CC_OBJ1_SYMBOL_SIZE
+    ld a,(hl)
+    cp 'm'
+    jp nz,test_fail
+    xor a
+    ret
+
 gate_read:
     ld a,e
     cp ROOT_HANDLE
@@ -575,12 +601,22 @@ gate_read_root_first:
     jp z,gate_read_define_include_unused
     cp 10
     jp z,gate_read_generic_call_string
+    cp 11
+    jp z,gate_read_helper
     ld hl,root_source
     ld bc,CC_REV02_READ_CAP
     ldir
     ld hl,CC_REV02_READ_CAP
     xor a
     ret
+gate_read_helper:
+    ld hl,helper_source
+    ld bc,helper_source_end-helper_source
+    ldir
+    ld hl,helper_source_end-helper_source
+    xor a
+    ret
+
 gate_read_bad_name:
     ld hl,wrong_name_source
     ld bc,wrong_name_source_end-wrong_name_source
@@ -681,7 +717,7 @@ gateway_end:
     run([sj, "--nologo", f"--sym={sym.as_posix()}", asm.as_posix()], out)
     req(main_bin.is_file() and gate_bin.is_file(), "fixture binaries missing")
     syms = symbols(sym)
-    names = ("test_define_single", "test_generic_call_string", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
+    names = ("test_define_single", "test_generic_call_string", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
     for name in names:
         req(name in syms, "fixture symbol missing: " + name)
 
@@ -722,6 +758,7 @@ gateway_end:
             "object_like_define_single_token": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "object_like_define_multitoken": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_call_string_relocations": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "generic_helper_definition_and_call": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "recursive_macro_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "function_macro_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "ordinary_stat_open_read_close": "PASS" if not ns.assemble_only else "ASSEMBLED",

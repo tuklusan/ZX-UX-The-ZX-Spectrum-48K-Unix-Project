@@ -10345,22 +10345,28 @@ cc_rev02_external_param_close:
     jr z,cc_rev02_external_decl_done
     cp '{'
     jp nz,cc_rev02_notsup
+    ; Every source-defined function is compiled through the same generic path.
+    ; main() remains the required entry symbol, but helper names are ordinary
+    ; TEXT definitions and may be called through normal ABS16 relocations.
+    ld hl,(cc_rev02_text_len)
+    ld (cc_rev02_value),hl
+    ld hl,cc_rev02_function_name
+    ld de,(cc_rev02_value)
+    ld a,1
+    call cc_rev02_symbol_define
+    ret c
     ld hl,cc_rev02_function_name
     ld de,cc_rev02_kw_main
     call cc_rev02_streq
-    jp nz,cc_rev02_notsup
+    jr nz,cc_rev02_external_nonmain
     ld a,(cc_rev02_saw_main)
     or a
     jp nz,cc_rev02_format
     ld a,1
     ld (cc_rev02_saw_main),a
-    ld hl,(cc_rev02_text_len)
+    ld hl,(cc_rev02_value)
     ld (cc_rev02_main_offset),hl
-    ld hl,cc_rev02_function_name
-    ld de,(cc_rev02_main_offset)
-    ld a,1
-    call cc_rev02_symbol_define
-    ret c
+cc_rev02_external_nonmain:
     xor a
     ld (cc_rev02_return_seen),a
     call cc_rev02_next_token
@@ -10370,6 +10376,9 @@ cc_rev02_external_param_close:
     ld a,(cc_rev02_return_seen)
     or a
     ret nz
+    ; Falling off a source-defined function returns zero deterministically.
+    ; This matches the existing main checkpoint and keeps helper definitions
+    ; executable without a source-name-specific path.
     ld hl,0
     jp cc_rev02_emit_return_hl
 cc_rev02_external_decl_done:
@@ -11670,10 +11679,7 @@ cc_rev02_emit_call_opcode:
     ret c
     ld a,(cc_rev02_call_arg_count)
     cp 4
-    jr nc,cc_rev02_emit_call_cleanup_start
-    xor a
-    ret
-cc_rev02_emit_call_cleanup_start:
+    ret c
     sub 3
     ld b,a
 cc_rev02_emit_call_cleanup:
@@ -11700,18 +11706,11 @@ cc_rev02_emit_arg_reg:
     pop hl
     ret c
     ld a,(cc_rev02_temp_index)
-    push hl
     call cc_rev02_load_arg_symbol
     or a
-    jr z,cc_rev02_emit_arg_reg_no_reloc
-    ld c,a
-    pop hl
-    ld a,c
+    ret z
     dec a
     jp cc_rev02_add_reloc
-cc_rev02_emit_arg_reg_no_reloc:
-    pop hl
-    ret
 
 ; A=index; emits LD HL,nn for stack argument and relocates when needed.
 cc_rev02_emit_arg_hl:
@@ -11727,18 +11726,11 @@ cc_rev02_emit_arg_hl:
     pop hl
     ret c
     ld a,(cc_rev02_temp_index)
-    push hl
     call cc_rev02_load_arg_symbol
     or a
-    jr z,cc_rev02_emit_arg_hl_no_reloc
-    ld c,a
-    pop hl
-    ld a,c
+    ret z
     dec a
     jp cc_rev02_add_reloc
-cc_rev02_emit_arg_hl_no_reloc:
-    pop hl
-    ret
 
 cc_rev02_load_arg_value:
     ld e,a
@@ -12030,9 +12022,7 @@ cc_rev02_finalize_sym_loop:
     add hl,de
     ex de,hl
     ld a,(cc_rev02_temp_index)
-    push de
     call cc_rev02_symbol_ptr_for_index
-    pop de
     push bc
     ld bc,16
     add hl,bc
