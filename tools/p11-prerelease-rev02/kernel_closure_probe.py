@@ -11,7 +11,7 @@
 # SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
 # patent, trademark, and governing-law provisions.
 from __future__ import annotations
-import argparse, json, re, subprocess
+import argparse, json, re, subprocess, sys
 from pathlib import Path
 
 KERNEL_START=0xE000
@@ -103,12 +103,15 @@ kernel_mod_rev02_fp_syscalls:
     candidate=candidate.replace(emit_anchor,emit_anchor+extra)
     public_api=assemble(root,"kernel-public-api-lower-bound",candidate)
 
-    report={"schema":1,"kind":"rev02-kernel-closure-probe","status":"PASS",
+    report={"schema":1,"kind":"rev02-kernel-closure-probe","status":"PASS" if baseline["status"]=="PASS" and public_api["status"]=="PASS" else "FAIL",
             "kernel_pool_bytes":KERNEL_POOL_BYTES,
             "baseline":baseline,"public_api_lower_bound":public_api,
             "scope":"lower-bound only: graphics/sound/UDG/ROM/FP handlers; excludes object/tape/zxpack/spawn closure and final selector routing"}
-    req(baseline["status"]=="PASS","baseline kernel probe must assemble")
-    req(public_api["status"]=="PASS","public API lower-bound probe must assemble")
     (out/"KERNEL-CLOSURE-PROBE.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+    req(baseline["status"]=="PASS","baseline kernel probe must assemble")
+    if public_api["status"]!="PASS":
+        print(public_api.get("stderr",""),file=sys.stderr)
+        print(public_api.get("stdout",""),file=sys.stderr)
+        raise SystemExit("ERROR: public API lower-bound probe must assemble")
     print("REV02 KERNEL CLOSURE PROBE PASS",json.dumps({"baseline":baseline.get("ordinary_bytes"),"public_api":public_api.get("ordinary_bytes"),"pool":KERNEL_POOL_BYTES}))
 if __name__=="__main__": main()

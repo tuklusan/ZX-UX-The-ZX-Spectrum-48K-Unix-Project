@@ -46,17 +46,17 @@ jobs:
         with: {fetch-depth: 0}
       - name: Set up certified ZX-UX runtime
         uses: ./.github/actions/setup-zxux-runtime
+      - name: Measure current resident-kernel closure lower bound
+        run: |
+          set -euo pipefail
+          tools/runtime/python/bin/python tools/p11-prerelease-rev02/kernel_closure_probe.py \
+            --root . --output /tmp/rev02-kernel-probe
       - name: Acquire exact SDK 1.0.2 release corpus
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           python3 tools/p11-prerelease/sdk_acquire.py acquire --output /tmp/rev02-sdk-reference
-      - name: Measure current resident-kernel closure lower bound
-        run: |
-          set -euo pipefail
-          tools/runtime/python/bin/python tools/p11-prerelease-rev02/kernel_closure_probe.py \
-            --root . --output /tmp/rev02-kernel-probe
       - name: Reproduce current ordinary-product root blockers
         run: |
           set -euo pipefail
