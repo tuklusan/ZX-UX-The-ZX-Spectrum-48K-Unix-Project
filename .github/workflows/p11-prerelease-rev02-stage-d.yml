@@ -23,6 +23,8 @@ on:
       - 'docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV08.md'
       - 'docs/01-ZX-UX-ARCHITECTURE-REV18.md'
       - 'docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV09.md'
+      - 'v1/src/kernel/process.asm'
+      - 'v1/src/kernel/tape.asm'
   workflow_dispatch: {}
 
 permissions:
