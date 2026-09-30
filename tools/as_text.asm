@@ -59,6 +59,7 @@ R17_TXT_M_DW    EQU 16
 R17_TXT_M_DEFS  EQU 17
 R17_TXT_M_ORG   EQU 18
 R17_TXT_M_RST   EQU 19
+R17_TXT_M_DS    EQU 20
 
 r17_as_text_obj1_inplace:
     ld (r17_txt_source),hl
@@ -288,7 +289,7 @@ r17_txt_mn_miss:
 
 r17_txt_structured:
     dec a
-    cp R17_TXT_M_RST
+    cp R17_TXT_M_DS
     jp nc,r17_as_error
     add a,a
     ld e,a
@@ -305,7 +306,7 @@ r17_txt_struct_handlers:
     dw r17_txt_ld,r17_txt_jp,r17_txt_call,r17_txt_jr,r17_txt_djnz
     dw r17_txt_ret,r17_txt_inc,r17_txt_dec,r17_txt_push,r17_txt_pop
     dw r17_txt_ex,r17_txt_im,r17_txt_in,r17_txt_out,r17_txt_db
-    dw r17_txt_dw,r17_txt_defs,r17_txt_org,r17_txt_rst
+    dw r17_txt_dw,r17_txt_defs,r17_txt_org,r17_txt_rst,r17_txt_ds
 
 r17_txt_fixed:
     call r17_txt_expect_end
@@ -1070,6 +1071,22 @@ r17_txt_defs:
     ld de,(r17_txt_num)
     call r17_txt_rec16
     ld de,(r17_txt_num2)
+    call r17_txt_rec16
+    jp r17_txt_rec_emit
+
+; Public P10 DS count form reserves deterministic zero-filled bytes.  DEFS
+; remains the REV17 projection extension that accepts an explicit fill byte.
+r17_txt_ds:
+    call r17_txt_parse_num
+    ret c
+    ld (r17_txt_num),de
+    call r17_txt_expect_end
+    ret c
+    ld a,42
+    call r17_txt_rec_start
+    ld de,(r17_txt_num)
+    call r17_txt_rec16
+    ld de,0
     call r17_txt_rec16
     jp r17_txt_rec_emit
 
@@ -2176,7 +2193,7 @@ r17_txt_mnemonics:
     db 3,"out",R17_TXT_M_OUT
     db 2,"db",R17_TXT_M_DB
     db 2,"dw",R17_TXT_M_DW
-    db 2,"ds",R17_TXT_M_DEFS
+    db 2,"ds",R17_TXT_M_DS
     db 4,"defs",R17_TXT_M_DEFS
     db 3,"org",R17_TXT_M_ORG
     db 3,"rst",R17_TXT_M_RST

@@ -4596,6 +4596,18 @@ as_rev02_ws:
     ld a,(as_rev02_line_len)
     or a
     jr z,as_rev02_byte_loop
+    ; Whitespace immediately after a label colon is syntactic only.  Dropping
+    ; it leaves the one retained line separator available for the mnemonic /
+    ; operand boundary, so "label: ld a,1" canonicalizes to "label:ld a,1"
+    ; rather than the invalid "label:lda,1".
+    dec a
+    ld e,a
+    ld d,0
+    ld hl,AS_REV02_LINE_BUF
+    add hl,de
+    ld a,(hl)
+    cp ':'
+    jr z,as_rev02_byte_loop
     ld a,1
     ld (as_rev02_pending_space),a
     jr as_rev02_byte_loop
