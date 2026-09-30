@@ -11670,7 +11670,10 @@ cc_rev02_emit_call_opcode:
     ret c
     ld a,(cc_rev02_call_arg_count)
     cp 4
-    ret c
+    jr nc,cc_rev02_emit_call_cleanup_start
+    xor a
+    ret
+cc_rev02_emit_call_cleanup_start:
     sub 3
     ld b,a
 cc_rev02_emit_call_cleanup:
@@ -11697,11 +11700,18 @@ cc_rev02_emit_arg_reg:
     pop hl
     ret c
     ld a,(cc_rev02_temp_index)
+    push hl
     call cc_rev02_load_arg_symbol
     or a
-    ret z
+    jr z,cc_rev02_emit_arg_reg_no_reloc
+    ld c,a
+    pop hl
+    ld a,c
     dec a
     jp cc_rev02_add_reloc
+cc_rev02_emit_arg_reg_no_reloc:
+    pop hl
+    ret
 
 ; A=index; emits LD HL,nn for stack argument and relocates when needed.
 cc_rev02_emit_arg_hl:
@@ -11717,11 +11727,18 @@ cc_rev02_emit_arg_hl:
     pop hl
     ret c
     ld a,(cc_rev02_temp_index)
+    push hl
     call cc_rev02_load_arg_symbol
     or a
-    ret z
+    jr z,cc_rev02_emit_arg_hl_no_reloc
+    ld c,a
+    pop hl
+    ld a,c
     dec a
     jp cc_rev02_add_reloc
+cc_rev02_emit_arg_hl_no_reloc:
+    pop hl
+    ret
 
 cc_rev02_load_arg_value:
     ld e,a
@@ -12013,7 +12030,9 @@ cc_rev02_finalize_sym_loop:
     add hl,de
     ex de,hl
     ld a,(cc_rev02_temp_index)
+    push de
     call cc_rev02_symbol_ptr_for_index
+    pop de
     push bc
     ld bc,16
     add hl,bc
