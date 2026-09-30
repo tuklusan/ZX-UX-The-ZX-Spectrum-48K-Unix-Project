@@ -214,6 +214,16 @@ def main():
            "observed":"EMIT_SYSCALL_IMPL still routes SYS_SPAWN/SYS_EXEC and object syscalls through resident stubs, rejects the graphics/sound/UDG/tape range before SYS_MEM_INFO, and rejects ZXPACK/FP/ROM services after SYS_TIME_SET even though staged handlers and product modules exist",
            "planned_paths":["v1/src/kernel/syscall.asm","v1/src/kernel/kernel.asm"],"blocks":["ordinary SYS_SPAWN","object/tape I/O","graphics/sound/UDG","zxpack/FP/ROM public APIs","real developer session"]})
 
+    probe_baseline=kernel_probe["baseline"]
+    probe_public=kernel_probe["public_api_lower_bound"]
+    if (probe_baseline.get("status")=="PASS" and probe_public.get("status")=="PASS" and
+        probe_public.get("ordinary_bytes",0) > kernel_probe.get("kernel_pool_bytes",0)):
+        gaps.append(
+          {"id":"C022","failure":"required resident public-service lower bound exceeds frozen 6912-byte kernel code/data pool",
+           "observed":f"current production kernel uses {probe_baseline['ordinary_bytes']} of {kernel_probe['kernel_pool_bytes']} bytes; adding only staged graphics/sound/UDG/ROM/FP service closure measures {probe_public['ordinary_bytes']} bytes, overrunning the pool by {probe_public['ordinary_bytes']-kernel_probe['kernel_pool_bytes']} bytes before object/tape/zxpack/spawn integration",
+           "planned_paths":["v1/src/kernel/kernel.asm","v1/src/kernel/syscall.asm","v1/src/kernel/rom_services.asm","v1/src/kernel/graphics.asm","v1/src/kernel/sound.asm"],
+           "blocks":["resident frozen public API closure","graphics/sound/UDG/ROM/FP integration","later object/tape/spawn closure"]})
+
     for g in gaps: g["class_pending"]="Stage-D"
 
     report={

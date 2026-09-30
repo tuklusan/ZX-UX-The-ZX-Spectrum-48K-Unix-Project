@@ -33,7 +33,7 @@ def source_prefix(text:str,output_name:str)->str:
     prefix=text.split(marker,1)[0]
     return prefix+marker+"\n"+f'    SAVEBIN "../../build/{output_name}",kernel_image_start,kernel_ordinary_used_end-kernel_image_start\n'
 
-def assemble(root:Path,name:str,text:str)->dict:
+def assemble(root:Path,name:str,text:str,start:int=KERNEL_START)->dict:
     srcdir=root/"v1/src/kernel"
     build=root/"v1/build"; build.mkdir(parents=True,exist_ok=True)
     sj=root/"tools/runtime/sjasmplus/bin/sjasmplus"
@@ -51,7 +51,7 @@ def assemble(root:Path,name:str,text:str)->dict:
         row.update({"status":"ASSEMBLY-FAIL","ordinary_bytes":None,"pool_bytes":KERNEL_POOL_BYTES,"slack_bytes":None})
         return row
     end=parse_symbol(sym,"kernel_ordinary_used_end")
-    used=end-KERNEL_START
+    used=end-start
     req(0 < used < 0x8000,"ordinary byte measurement")
     req(binary.is_file() and binary.stat().st_size==used,"probe binary size")
     row.update({"status":"PASS","ordinary_bytes":used,"pool_bytes":KERNEL_POOL_BYTES,
@@ -70,6 +70,10 @@ def main():
     include_anchor='    INCLUDE "udg.asm"\n'
     req(kernel.count(include_anchor)==1,"UDG include anchor")
     candidate=kernel.replace(include_anchor,include_anchor+'    INCLUDE "graphics.asm"\n    INCLUDE "sound.asm"\n')
+    measure_origin=0x8000
+    origin_anchor="    ORG KERNEL_START\n    ASSERT $ = KERNEL_START\n"
+    req(candidate.count(origin_anchor)==1,"kernel origin anchor")
+    candidate=candidate.replace(origin_anchor,"    ORG $8000\n    ASSERT $ = $8000\n",1)
     emit_anchor="kernel_mod_udg:\n    EMIT_UDG_ROUTINES\n"
     req(candidate.count(emit_anchor)==1,"UDG emit anchor")
     extra="""kernel_mod_rev02_graphics:
@@ -101,12 +105,13 @@ kernel_mod_rev02_fp_syscalls:
     EMIT_P1147_FP_FROM_TEXT_SYSCALL_ROUTINES
 """
     candidate=candidate.replace(emit_anchor,emit_anchor+extra)
-    public_api=assemble(root,"kernel-public-api-lower-bound",candidate)
+    public_api=assemble(root,"kernel-public-api-lower-bound",candidate,start=measure_origin)
 
     report={"schema":1,"kind":"rev02-kernel-closure-probe","status":"PASS" if baseline["status"]=="PASS" and public_api["status"]=="PASS" else "FAIL",
             "kernel_pool_bytes":KERNEL_POOL_BYTES,
             "baseline":baseline,"public_api_lower_bound":public_api,
-            "scope":"lower-bound only: graphics/sound/UDG/ROM/FP handlers; excludes object/tape/zxpack/spawn closure and final selector routing"}
+            "measurement_origin":measure_origin,
+            "scope":"size-only relocated lower-bound: graphics/sound/UDG/ROM/FP handlers; excludes object/tape/zxpack/spawn closure and final selector routing"}
     (out/"KERNEL-CLOSURE-PROBE.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n",encoding="utf-8")
     req(baseline["status"]=="PASS","baseline kernel probe must assemble")
     if public_api["status"]!="PASS":
