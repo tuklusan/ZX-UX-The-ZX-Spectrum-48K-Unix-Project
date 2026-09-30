@@ -38,6 +38,7 @@ def main():
     runtime=(root/"v1/src/libc48/runtime_archive.asm").read_text()
     process=(root/"v1/src/kernel/process.asm").read_text()
     tape_source=(root/"v1/src/kernel/tape.asm").read_text()
+    syscall_source=(root/"v1/src/kernel/syscall.asm").read_text()
     rev18=(root/"docs/01-ZX-UX-ARCHITECTURE-REV18.md").read_text()
 
     req("p621_cc_path: db '/bin/cc',0" in shell,"shell /bin/cc path contract missing")
@@ -197,6 +198,19 @@ def main():
            "observed":"zx48_p514_tape_skip calls zx48_p509_skip_payload after loading p514_tape_header, but that helper reads storage length from p509_header; a nonmatching object can therefore leave the tape positioned inside its payload instead of at the next M48O header",
            "planned_paths":["v1/src/kernel/tape.asm"],"blocks":["direct tape-backed forward search past nonmatching objects"]})
 
+    resident_syscall_gap=(
+        "zx48_sys_spawn_stub" in syscall_source and
+        "zx48_sys_open_stub" in syscall_source and
+        "jp c,zx48_sys_notsup" in syscall_source and
+        "cp SYS_MEM_INFO" in syscall_source and
+        "cp SYS_TIME_SET+1" in syscall_source and
+        "jp nc,zx48_sys_notsup" in syscall_source)
+    if resident_syscall_gap:
+        gaps.append(
+          {"id":"C021","failure":"resident syscall router masks frozen public APIs behind E_NOTSUP",
+           "observed":"EMIT_SYSCALL_IMPL still routes SYS_SPAWN/SYS_EXEC and object syscalls through resident stubs, rejects the graphics/sound/UDG/tape range before SYS_MEM_INFO, and rejects ZXPACK/FP/ROM services after SYS_TIME_SET even though staged handlers and product modules exist",
+           "planned_paths":["v1/src/kernel/syscall.asm","v1/src/kernel/kernel.asm"],"blocks":["ordinary SYS_SPAWN","object/tape I/O","graphics/sound/UDG","zxpack/FP/ROM public APIs","real developer session"]})
+
     for g in gaps: g["class_pending"]="Stage-D"
 
     report={
@@ -212,6 +226,7 @@ def main():
         "runtime_archive_sha256":sha(root/"v1/src/libc48/runtime_archive.asm"),
         "process_sha256":sha(root/"v1/src/kernel/process.asm"),
         "tape_sha256":sha(root/"v1/src/kernel/tape.asm"),
+        "syscall_sha256":sha(root/"v1/src/kernel/syscall.asm"),
       },
       "assertions":{
         "all_30_exact_tapes_accounted":"PASS",

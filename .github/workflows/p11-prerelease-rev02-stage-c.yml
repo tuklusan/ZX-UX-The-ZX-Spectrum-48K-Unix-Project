@@ -21,6 +21,7 @@ on:
       - 'tools/p11-prerelease/sdk_acquire.py'
       - 'v1/src/kernel/kernel.asm'
       - 'v1/src/kernel/process.asm'
+      - 'v1/src/kernel/syscall.asm'
       - 'v1/src/kernel/tape.asm'
       - 'v1/src/shell/sh.asm'
       - 'v1/src/tools/cc.asm'
