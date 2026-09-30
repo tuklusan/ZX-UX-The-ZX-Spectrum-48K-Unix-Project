@@ -1122,7 +1122,7 @@ r17_txt_operand_word:
     or l
     jr z,r17_txt_operand_register
     call r17_txt_is_register_token
-    jr c,r17_txt_operand_imm
+    jp c,r17_txt_operand_imm
 r17_txt_operand_register:
     call r17_txt_peek
     ret c

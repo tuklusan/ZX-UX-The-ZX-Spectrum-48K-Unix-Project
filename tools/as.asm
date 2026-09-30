@@ -4677,7 +4677,7 @@ as_rev02_expr_or_loop:
     call as_rev02_expr_advance
     push hl
     call as_rev02_expr_xor
-    jr c,as_rev02_expr_pop_error
+    jp c,as_rev02_expr_pop_error
     ex de,hl
     pop hl
     ld a,AS_P1008_OP_OR
@@ -4695,7 +4695,7 @@ as_rev02_expr_xor_loop:
     call as_rev02_expr_advance
     push hl
     call as_rev02_expr_and
-    jr c,as_rev02_expr_pop_error
+    jp c,as_rev02_expr_pop_error
     ex de,hl
     pop hl
     ld a,AS_P1008_OP_XOR
@@ -4713,7 +4713,7 @@ as_rev02_expr_and_loop:
     call as_rev02_expr_advance
     push hl
     call as_rev02_expr_shift
-    jr c,as_rev02_expr_pop_error
+    jp c,as_rev02_expr_pop_error
     ex de,hl
     pop hl
     ld a,AS_P1008_OP_AND
@@ -4737,7 +4737,7 @@ as_rev02_expr_shift_loop:
     call as_rev02_expr_advance
     push hl
     call as_rev02_expr_add
-    jr c,as_rev02_expr_pop_error
+    jp c,as_rev02_expr_pop_error
     ex de,hl
     pop hl
     ld a,AS_P1008_OP_SHR
@@ -4752,7 +4752,7 @@ as_rev02_expr_shl:
     call as_rev02_expr_advance
     push hl
     call as_rev02_expr_add
-    jr c,as_rev02_expr_pop_error
+    jp c,as_rev02_expr_pop_error
     ex de,hl
     pop hl
     ld a,AS_P1008_OP_SHL
@@ -4772,7 +4772,7 @@ as_rev02_expr_add_loop:
     call as_rev02_expr_advance
     push hl
     call as_rev02_expr_mul
-    jr c,as_rev02_expr_pop_error
+    jp c,as_rev02_expr_pop_error
     ex de,hl
     pop hl
     ld a,AS_P1008_OP_SUB
@@ -4783,7 +4783,7 @@ as_rev02_expr_plus:
     call as_rev02_expr_advance
     push hl
     call as_rev02_expr_mul
-    jr c,as_rev02_expr_pop_error
+    jp c,as_rev02_expr_pop_error
     ex de,hl
     pop hl
     ld a,AS_P1008_OP_ADD
@@ -4805,7 +4805,7 @@ as_rev02_expr_mul_loop:
     call as_rev02_expr_advance
     push hl
     call as_rev02_expr_unary
-    jr c,as_rev02_expr_pop_error
+    jp c,as_rev02_expr_pop_error
     ex de,hl
     pop hl
     ld a,AS_P1008_OP_MOD
@@ -4816,7 +4816,7 @@ as_rev02_expr_times:
     call as_rev02_expr_advance
     push hl
     call as_rev02_expr_unary
-    jr c,as_rev02_expr_pop_error
+    jp c,as_rev02_expr_pop_error
     ex de,hl
     pop hl
     ld a,AS_P1008_OP_MUL
@@ -4827,7 +4827,7 @@ as_rev02_expr_div:
     call as_rev02_expr_advance
     push hl
     call as_rev02_expr_unary
-    jr c,as_rev02_expr_pop_error
+    jp c,as_rev02_expr_pop_error
     ex de,hl
     pop hl
     ld a,AS_P1008_OP_DIV
@@ -4864,69 +4864,7 @@ as_rev02_expr_primary:
     ret c
     cp '('
     jr z,as_rev02_expr_group
-    cp '    ld a,E_FORMAT
-    scf
-    ret
-
-as_rev02_skip_arg:
-    ld a,(hl)
-    or a
-    jr z,as_rev02_bad
-    inc hl
-as_rev02_skip_loop:
-    ld a,(hl)
-    or a
-    jr z,as_rev02_skip_done
-    inc hl
-    jr as_rev02_skip_loop
-as_rev02_skip_done:
-    inc hl
-    or a
-    ret
-as_rev02_require_last:
-    ld a,(hl)
-    or a
-    jr z,as_rev02_bad
-as_rev02_last_loop:
-    ld a,(hl)
-    inc hl
-    or a
-    jr nz,as_rev02_last_loop
-    ld de,(as_rev02_arg1_ptr)
-    ld bc,(as_rev02_arg1_len)
-    ex de,hl
-    add hl,bc
-    ex de,hl
-    or a
-    sbc hl,de
-    ret z
-as_rev02_bad:
-    ld a,E_INVAL
-    scf
-    ret
-as_rev02_close:
-    ld a,(as_rev02_source_handle)
-    cp HANDLE_FREE
-    ret z
-    ld l,a
-    ld h,0
-    ld a,SYS_CLOSE
-    call SYSCALL_GATEWAY
-    push af
-    ld a,HANDLE_FREE
-    ld (as_rev02_source_handle),a
-    pop af
-    ret
-as_rev02_inval:
-    ld a,E_INVAL
-as_rev02_exit_errno:
-    ld l,a
-    ld h,0
-    ld a,SYS_EXIT
-    call SYSCALL_GATEWAY
-    halt
-    ENDM
-
+    cp '$'
     jr z,as_rev02_expr_hex
     cp '0'
     jp c,as_rev02_format
