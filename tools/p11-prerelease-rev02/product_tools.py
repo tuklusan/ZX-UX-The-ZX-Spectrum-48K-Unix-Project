@@ -168,7 +168,7 @@ def build_runtime_obj1(root: Path, sj: Path, out: Path)->Path:
            "EMIT_P1126_C48_SOUND_RUNTIME","EMIT_P1125_C48_UDG_RUNTIME","EMIT_P1127_C48_TAPE_RUNTIME")
     inc=''.join(f'    INCLUDE "{(root/"v1/src/libc48"/x).as_posix()}"\n' for x in sources)
     def asm_text(origin:int,suffix:str,with_relocs:bool):
-        table='runtime_relocs:\nruntime_relocs:\n' if False else 'runtime_relocs:\n    RELOCATE_TABLE\nruntime_relocs_end:\n' if with_relocs else ''
+        table='runtime_relocs:\n    RELOCATE_TABLE\nruntime_relocs_end:\n' if with_relocs else ''
         save_rel='    SAVEBIN "runtime.reloc",runtime_relocs,runtime_relocs_end-runtime_relocs\n' if with_relocs else ''
         return (f'    DEVICE ZXSPECTRUM48\n    INCLUDE "{(root/"v1/include/zx48ux.inc").as_posix()}"\n'+inc+
                 '__heap_start EQU 0\n__heap_end EQU 0\n'+f'    ORG ${origin:04X}\n    RELOCATE_START\nruntime_image:\n'+
