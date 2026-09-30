@@ -218,6 +218,15 @@ def main():
     ccsrc=root/"v1/src/tools/cc.asm"; assrc=root/"tools/as.asm"; astextsrc=root/"tools/as_text.asm"; ldsrc=root/"tools/ld.asm"
     as_source=assrc.read_text(); as_support=astextsrc.read_text()
     req("EMIT_P601_SH_IMAGE" in sh and "sh_idle:" in sh,"shell entry fixture changed")
+    cc_source=ccsrc.read_text()
+    req(all(marker in cc_source for marker in (
+        "cc_rev02_parse_simple_body:","cc_rev02_parse_call_args:",
+        "cc_rev02_symbol_get_undef:","cc_rev02_add_reloc:",
+        "cc_rev02_lex_string:","CC_REV02_SYMBOL_CAP     EQU 32")),
+        "ordinary cc generic prototype/call/string OBJ1 closure missing")
+    req(all(marker not in cc_source.split("MACRO EMIT_REV02_CC_PRODUCT_CLI",1)[1].split("ENDM",1)[0]
+            for marker in ("cc_p11pr_","CC_P11PR","source_crc","source_sha","identity_table")),
+        "ordinary cc product closure contains source-specialized marker")
     req(all(marker in as_source for marker in (
         "as_rev02_sym_define:","as_rev02_validate_symbols:","as_rev02_record_reloc:",
         "as_rev02_kw_global:","as_rev02_kw_extern:","as_rev02_require_abs_expr:",
@@ -311,7 +320,7 @@ def main():
         "image_sha256":sha(cc_image),"image_bytes":cc_image.stat().st_size,"bss_bytes":cc_bss,"resident_bytes_including_stack":cc_resident,"relocation_count":len(cc_relocs),
         "mex1_sha256":sha(out/"cc.mex1"),"m48o_tap_sha256":sha(out/"cc.m48o.tap"),
         "entry":"EMIT_REV02_CC_PRODUCT_CLI",
-        "semantic_status":"GENERIC-STREAMING-NATIVE-C-CHECKPOINT; ONE-LEVEL-QUOTED-LOCAL-INCLUDE; FROZEN-BOUNDED-OBJECT-LIKE-DEFINES; INTEGER-CONSTANT-FUNCTIONS; FULL-C48-PENDING"},
+        "semantic_status":"GENERIC-STREAMING-NATIVE-C-CHECKPOINT; ONE-LEVEL-QUOTED-LOCAL-INCLUDE; FROZEN-BOUNDED-OBJECT-LIKE-DEFINES; GENERIC-PROTOTYPES/CALLS/STRINGS/ABS16-RELOCS; INTEGER-CONSTANT-EXPRESSIONS; FULL-C48-PENDING"},
       "as":{
         "source":"tools/as.asm","source_sha256":sha(assrc),"support_source":"tools/as_text.asm","support_source_sha256":sha(astextsrc),
         "image_sha256":sha(as_image),"image_bytes":as_image.stat().st_size,"bss_bytes":as_bss,"resident_bytes_including_stack":as_resident,"relocation_count":len(as_relocs),
@@ -330,7 +339,7 @@ def main():
         "semantic_status":"GENERIC-CRT0-USER-FULL-C48-RUNTIME-NORMAL-LINK-WITH-1024-BYTE-HEAP-PLUS-REV18-ABS"},
       "assertions":{
         "deterministic_shell_mex1":"PASS","deterministic_m48o":"PASS","mex1_inspection":"PASS",
-        "deterministic_cc_mex1":"PASS","deterministic_cc_m48o":"PASS","cc_mex1_inspection":"PASS",
+        "deterministic_cc_mex1":"PASS","deterministic_cc_m48o":"PASS","cc_mex1_inspection":"PASS","generic_cc_prototype_call_string_checkpoint":"PASS",
         "deterministic_as_mex1":"PASS","deterministic_as_m48o":"PASS","as_mex1_inspection":"PASS","generic_as_full_p10_source_driver":"PASS",
         "deterministic_ld_mex1":"PASS","deterministic_ld_m48o":"PASS","ld_mex1_inspection":"PASS",
         "normal_project_assembler_used":"PASS","relocatable_product_mex1":"PASS","full_runtime_archive_embedded_once":"PASS","p11pr_not_in_product_closure":"PASS",

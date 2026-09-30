@@ -10110,26 +10110,33 @@ cc_rev02_compile_failed:
     jp cc_rev02_exit_errno
 
 
-; REV02 compact generic native-C checkpoint.  This first attached semantic driver
-; accepts ordinary C48 translation units containing function prototypes plus one
-; or more int-returning zero-argument function definitions.  Statements are
-; compiled source-semantically; this checkpoint covers compound/return and an
-; initial integer constant-expression arithmetic/bitwise core. Later Stage-E checkpoints
-; extend the same parser to declarations, lvalues, calls, loops and full C48.
-CC_REV02_READ_CAP      EQU 64
-CC_REV02_TOKEN_CAP     EQU 32
-CC_REV02_TEXT_CAP      EQU 512
-CC_REV02_OBJ_CAP       EQU 1024
+; REV02 compact generic native-C checkpoint.  The source-generic driver accepts
+; ordinary prototypes across the frozen scalar/pointer spelling surface and compiles
+; main() through ordinary call statements with up to six constant/string arguments,
+; deterministic ABS16 symbol relocations, and integer constant-expression returns.
+; Later Stage-E checkpoints extend the same parser to declarations, lvalues,
+; non-main definitions, control flow and the remaining frozen C48 surface.
+CC_REV02_READ_CAP       EQU 64
+CC_REV02_TOKEN_CAP      EQU 64
+CC_REV02_TEXT_CAP       EQU 512
+CC_REV02_OBJ_CAP        EQU 1024
 CC_REV02_INCLUDE_CAP   EQU 64
 CC_REV02_MACRO_CAP     EQU 16
 CC_REV02_MACRO_REPL_CAP EQU 32
-CC_REV02_MACRO_ENTRY   EQU 49
-CC_REV02_PP_REPL_CAP   EQU 33
-CC_REV02_BSS_BYTES     EQU CC_REV02_READ_CAP+CC_REV02_TOKEN_CAP+CC_REV02_TEXT_CAP+CC_REV02_OBJ_CAP+CC_REV02_INCLUDE_CAP+CC_REV02_MACRO_CAP*CC_REV02_MACRO_ENTRY+CC_REV02_PP_REPL_CAP
-CC_REV02_T_EOF         EQU 0
-CC_REV02_T_ID          EQU 1
-CC_REV02_T_NUM         EQU 2
-CC_REV02_T_PUNCT       EQU 3
+CC_REV02_MACRO_ENTRY    EQU 49
+CC_REV02_PP_REPL_CAP    EQU 33
+CC_REV02_SYMBOL_CAP     EQU 32
+CC_REV02_RELOC_CAP      EQU 64
+CC_REV02_LITERAL_CAP    EQU 256
+CC_REV02_ARG_CAP        EQU 6
+CC_REV02_SYMBOL_BYTES   EQU CC_REV02_SYMBOL_CAP*CC_OBJ1_SYMBOL_SIZE
+CC_REV02_RELOC_BYTES    EQU CC_REV02_RELOC_CAP*CC_OBJ1_RELOC_SIZE
+CC_REV02_BSS_BYTES      EQU CC_REV02_READ_CAP+CC_REV02_TOKEN_CAP+CC_REV02_TEXT_CAP+CC_REV02_OBJ_CAP+CC_REV02_INCLUDE_CAP+CC_REV02_MACRO_CAP*CC_REV02_MACRO_ENTRY+CC_REV02_PP_REPL_CAP+CC_REV02_SYMBOL_BYTES+CC_REV02_RELOC_BYTES+CC_REV02_LITERAL_CAP
+CC_REV02_T_EOF          EQU 0
+CC_REV02_T_ID           EQU 1
+CC_REV02_T_NUM          EQU 2
+CC_REV02_T_PUNCT        EQU 3
+CC_REV02_T_STRING       EQU 4
 
 ; Large transient source/token/TEXT/OBJ1 work buffers live in process BSS so the
 ; compiler image itself remains small.  They are ordinary process-owned RAM.
@@ -10140,6 +10147,9 @@ cc_rev02_objbuf        EQU cc_rev02_text+CC_REV02_TEXT_CAP
 cc_rev02_includebuf    EQU cc_rev02_objbuf+CC_REV02_OBJ_CAP
 cc_rev02_macro_table   EQU cc_rev02_includebuf+CC_REV02_INCLUDE_CAP
 cc_rev02_pp_repl       EQU cc_rev02_macro_table+CC_REV02_MACRO_CAP*CC_REV02_MACRO_ENTRY
+cc_rev02_symbols       EQU cc_rev02_pp_repl+CC_REV02_PP_REPL_CAP
+cc_rev02_relocs        EQU cc_rev02_symbols+CC_REV02_SYMBOL_BYTES
+cc_rev02_literals      EQU cc_rev02_relocs+CC_REV02_RELOC_BYTES
 cc_rev02_read_ptr:     dw 0
 cc_rev02_read_left:    dw 0
 cc_rev02_have_push:    db 0
@@ -10175,6 +10185,21 @@ cc_rev02_macro_left:   db 0
 cc_rev02_macro_depth:  db 0
 cc_rev02_pp_stat_req:  defs 4,0
 cc_rev02_pp_stat_out:  defs 10,0
+cc_rev02_symbol_count: db 0
+cc_rev02_reloc_count:  db 0
+cc_rev02_literal_len:  dw 0
+cc_rev02_string_count: db 0
+cc_rev02_function_name: defs 16,0
+cc_rev02_call_name:    defs 16,0
+cc_rev02_call_arg_count: db 0
+cc_rev02_arg_values:   defs CC_REV02_ARG_CAP*2,0
+cc_rev02_arg_symbols:  defs CC_REV02_ARG_CAP,255
+cc_rev02_call_symbol:  db 0
+cc_rev02_return_seen:  db 0
+cc_rev02_temp_symbol:  db 0
+cc_rev02_temp_index:   db 0
+cc_rev02_name_ptr:     dw 0
+cc_rev02_escape_char:  db 0
 
 cc_rev02_kw_int:       db 'int',0
 cc_rev02_kw_void:      db 'void',0
@@ -10208,6 +10233,11 @@ cc_rev02_compile_stream:
     ld (cc_rev02_saw_main),a
     ld (cc_rev02_main_offset),a
     ld (cc_rev02_main_offset+1),a
+    ld (cc_rev02_symbol_count),a
+    ld (cc_rev02_reloc_count),a
+    ld (cc_rev02_literal_len),a
+    ld (cc_rev02_literal_len+1),a
+    ld (cc_rev02_string_count),a
     ld a,HANDLE_FREE
     ld (cc_rev02_parent_handle),a
     call cc_rev02_next_token
@@ -10223,20 +10253,25 @@ cc_rev02_tu_done:
     ld a,(cc_rev02_saw_main)
     or a
     jp z,cc_rev02_format
-    ld hl,(cc_rev02_main_offset)
-    ld (cc_rev02_main_symbol+16),hl
+    call cc_rev02_finalize_literals
+    ret c
     ld hl,(cc_rev02_text_len)
     ld (cc_obj1_text_size),hl
     ld hl,cc_rev02_text
     ld (cc_obj1_text_ptr),hl
     ld hl,0
     ld (cc_obj1_bss_size),hl
-    ld hl,cc_rev02_main_symbol
+    ld hl,cc_rev02_symbols
     ld (cc_obj1_symbol_ptr),hl
-    ld hl,1
+    ld a,(cc_rev02_symbol_count)
+    ld l,a
+    ld h,0
     ld (cc_obj1_symbol_count),hl
-    ld hl,0
+    ld hl,cc_rev02_relocs
     ld (cc_obj1_reloc_ptr),hl
+    ld a,(cc_rev02_reloc_count)
+    ld l,a
+    ld h,0
     ld (cc_obj1_reloc_count),hl
     ld hl,cc_rev02_objbuf
     ld (cc_obj1_output_ptr),hl
@@ -10248,43 +10283,72 @@ cc_rev02_tu_done:
     or a
     ret
 
-cc_rev02_main_symbol:
-    db 'main',0
-    defs 11,0
-    dw 0
-    db 1,1
-
+; Scan one external declaration source-semantically. Prototype declarations are
+; accepted independent of return/parameter type spelling. The same generic path
+; recognizes a function definition by its name immediately before the outer '('.
 cc_rev02_parse_external:
-    ld hl,cc_rev02_kw_int
-    call cc_rev02_expect_id
-    ret c
+    xor a
+    ld (cc_rev02_function_name),a
+cc_rev02_external_scan:
     ld a,(cc_rev02_tok_kind)
+    or a
+    jp z,cc_rev02_format
     cp CC_REV02_T_ID
-    jp nz,cc_rev02_format
-    call cc_rev02_token_is_main
-    ld (cc_rev02_op),a
+    jr nz,cc_rev02_external_punct
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_function_name
+    call cc_rev02_copy_name16
     call cc_rev02_next_token
     ret c
-    ld a,'('
-    call cc_rev02_expect_punct
+    jr cc_rev02_external_scan
+cc_rev02_external_punct:
+    cp CC_REV02_T_PUNCT
+    jp nz,cc_rev02_format
+    ld a,(cc_rev02_token)
+    cp ';'
+    jp z,cc_rev02_external_decl_done
+    cp '('
+    jr z,cc_rev02_external_params
+    call cc_rev02_next_token
     ret c
-    ld hl,cc_rev02_kw_void
-    call cc_rev02_expect_id
+    jr cc_rev02_external_scan
+cc_rev02_external_params:
+    ld a,1
+    ld (cc_rev02_paren_depth),a
+cc_rev02_external_param_loop:
+    call cc_rev02_next_token
     ret c
-    ld a,')'
-    call cc_rev02_expect_punct
+    ld a,(cc_rev02_tok_kind)
+    or a
+    jp z,cc_rev02_format
+    cp CC_REV02_T_PUNCT
+    jr nz,cc_rev02_external_param_loop
+    ld a,(cc_rev02_token)
+    cp '('
+    jr nz,cc_rev02_external_param_close
+    ld hl,cc_rev02_paren_depth
+    inc (hl)
+    jr cc_rev02_external_param_loop
+cc_rev02_external_param_close:
+    cp ')'
+    jr nz,cc_rev02_external_param_loop
+    ld hl,cc_rev02_paren_depth
+    dec (hl)
+    jr nz,cc_rev02_external_param_loop
+    call cc_rev02_next_token
     ret c
     ld a,(cc_rev02_tok_kind)
     cp CC_REV02_T_PUNCT
     jp nz,cc_rev02_format
     ld a,(cc_rev02_token)
     cp ';'
-    jr z,cc_rev02_proto
+    jr z,cc_rev02_external_decl_done
     cp '{'
-    jp nz,cc_rev02_format
-    ld a,(cc_rev02_op)
-    or a
-    jr z,cc_rev02_nonmain_def
+    jp nz,cc_rev02_notsup
+    ld hl,cc_rev02_function_name
+    ld de,cc_rev02_kw_main
+    call cc_rev02_streq
+    jp nz,cc_rev02_notsup
     ld a,(cc_rev02_saw_main)
     or a
     jp nz,cc_rev02_format
@@ -10292,33 +10356,81 @@ cc_rev02_parse_external:
     ld (cc_rev02_saw_main),a
     ld hl,(cc_rev02_text_len)
     ld (cc_rev02_main_offset),hl
-cc_rev02_nonmain_def:
+    ld hl,cc_rev02_function_name
+    ld de,(cc_rev02_main_offset)
+    ld a,1
+    call cc_rev02_symbol_define
+    ret c
+    xor a
+    ld (cc_rev02_return_seen),a
     call cc_rev02_next_token
     ret c
-    ld hl,cc_rev02_kw_return
-    call cc_rev02_expect_id
+    call cc_rev02_parse_simple_body
     ret c
-    call cc_rev02_parse_const_expr
+    ld a,(cc_rev02_return_seen)
+    or a
+    ret nz
+    ld hl,0
+    jp cc_rev02_emit_return_hl
+cc_rev02_external_decl_done:
+    call cc_rev02_next_token
+    ret
+
+; Initial generic executable-body closure: ordinary call statements with up to
+; six constant/string arguments plus integer constant-expression returns.
+cc_rev02_parse_simple_body:
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_PUNCT
+    jr nz,cc_rev02_body_not_end
+    ld a,(cc_rev02_token)
+    cp '}'
+    jr z,cc_rev02_body_done
+    cp ';'
+    jr z,cc_rev02_body_empty
+cc_rev02_body_not_end:
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_ID
+    jp nz,cc_rev02_notsup
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_return
+    call cc_rev02_streq
+    jr z,cc_rev02_body_return
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_call_name
+    call cc_rev02_copy_name16
+    call cc_rev02_next_token
     ret c
-    ld (cc_rev02_value),hl
+    ld a,'('
+    call cc_rev02_expect_punct
+    ret c
+    call cc_rev02_parse_call_args
+    ret c
+    call cc_rev02_emit_call
+    ret c
     ld a,';'
     call cc_rev02_expect_punct
     ret c
-    ld a,'}'
+    jr cc_rev02_parse_simple_body
+cc_rev02_body_return:
+    call cc_rev02_next_token
+    ret c
+    call cc_rev02_parse_const_expr
+    ret c
+    push hl
+    ld a,';'
     call cc_rev02_expect_punct
+    pop hl
     ret c
-    ld a,$21
-    call cc_rev02_emit8
+    call cc_rev02_emit_return_hl
     ret c
-    ld hl,(cc_rev02_value)
-    call cc_rev02_emit16
+    ld a,1
+    ld (cc_rev02_return_seen),a
+    jr cc_rev02_parse_simple_body
+cc_rev02_body_empty:
+    call cc_rev02_next_token
     ret c
-    ld a,$C9
-    call cc_rev02_emit8
-    ret c
-    xor a
-    ret
-cc_rev02_proto:
+    jr cc_rev02_parse_simple_body
+cc_rev02_body_done:
     call cc_rev02_next_token
     ret
 
@@ -10770,6 +10882,8 @@ cc_rev02_lex_skip:
     jr z,cc_rev02_lex_hash
     cp '/'
     jr z,cc_rev02_lex_slash
+    cp '"'
+    jp z,cc_rev02_lex_string
     push af
     xor a
     ld (cc_rev02_line_start),a
@@ -10866,6 +10980,62 @@ cc_rev02_block_end_check:
     cp '*'
     jr z,cc_rev02_block_after_star
     jr cc_rev02_block_comment
+
+cc_rev02_lex_string:
+    xor a
+    ld (cc_rev02_line_start),a
+    ld (cc_rev02_tok_len),a
+cc_rev02_lex_string_loop:
+    call cc_rev02_next_char
+    ret c
+    or a
+    jp z,cc_rev02_format
+    cp '"'
+    jr z,cc_rev02_lex_string_done
+    cp 10
+    jp z,cc_rev02_format
+    cp 13
+    jp z,cc_rev02_format
+    cp 92
+    jr nz,cc_rev02_lex_string_put
+    call cc_rev02_next_char
+    ret c
+    or a
+    jp z,cc_rev02_format
+    ld (cc_rev02_escape_char),a
+    cp 'n'
+    jr nz,cc_rev02_lex_string_escape_r
+    ld a,10
+    jr cc_rev02_lex_string_put
+cc_rev02_lex_string_escape_r:
+    ld a,(cc_rev02_escape_char)
+    cp 'r'
+    jr nz,cc_rev02_lex_string_escape_t
+    ld a,13
+    jr cc_rev02_lex_string_put
+cc_rev02_lex_string_escape_t:
+    cp 't'
+    jr nz,cc_rev02_lex_string_escape_zero
+    ld a,9
+    jr cc_rev02_lex_string_put
+cc_rev02_lex_string_escape_zero:
+    cp '0'
+    jr nz,cc_rev02_lex_string_escape_raw
+    xor a
+    jr cc_rev02_lex_string_put
+cc_rev02_lex_string_escape_raw:
+    ld a,(cc_rev02_escape_char)
+cc_rev02_lex_string_put:
+    call cc_rev02_token_put
+    ret c
+    jr cc_rev02_lex_string_loop
+cc_rev02_lex_string_done:
+    call cc_rev02_token_zero
+    ld a,CC_REV02_T_STRING
+    ld (cc_rev02_tok_kind),a
+    xor a
+    ret
+
 cc_rev02_lex_ident_start:
     call cc_rev02_token_put
     ret c
@@ -11331,6 +11501,571 @@ cc_rev02_pp_char_ok:
 
 cc_rev02_pp_kw_include: db 'include',0
 cc_rev02_pp_char: db 0
+
+cc_rev02_emit_return_hl:
+    push hl
+    ld a,$21
+    call cc_rev02_emit8
+    pop hl
+    ret c
+    call cc_rev02_emit16
+    ret c
+    ld a,$C9
+    jp cc_rev02_emit8
+
+; Parse arguments after the opening parenthesis has already been consumed.
+cc_rev02_parse_call_args:
+    xor a
+    ld (cc_rev02_call_arg_count),a
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_PUNCT
+    jr nz,cc_rev02_call_arg_loop
+    ld a,(cc_rev02_token)
+    cp ')'
+    jr z,cc_rev02_call_args_done
+cc_rev02_call_arg_loop:
+    ld a,(cc_rev02_call_arg_count)
+    cp CC_REV02_ARG_CAP
+    jp nc,cc_rev02_notsup
+    ld (cc_rev02_temp_index),a
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_STRING
+    jr z,cc_rev02_call_arg_string
+    call cc_rev02_parse_const_expr
+    ret c
+    push hl
+    ld a,(cc_rev02_temp_index)
+    call cc_rev02_store_arg_value
+    pop hl
+    xor a
+    call cc_rev02_store_arg_symbol
+    jr cc_rev02_call_arg_after
+cc_rev02_call_arg_string:
+    call cc_rev02_add_string_literal
+    ret c
+    ld (cc_rev02_temp_symbol),a
+    ld a,(cc_rev02_call_arg_count)
+    ld (cc_rev02_temp_index),a
+    ld hl,0
+    call cc_rev02_store_arg_value
+    ld a,(cc_rev02_temp_symbol)
+    inc a
+    ld b,a
+    ld a,(cc_rev02_call_arg_count)
+    ld (cc_rev02_temp_index),a
+    ld a,b
+    call cc_rev02_store_arg_symbol
+    call cc_rev02_next_token
+    ret c
+cc_rev02_call_arg_after:
+    ld hl,cc_rev02_call_arg_count
+    inc (hl)
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_PUNCT
+    jp nz,cc_rev02_format
+    ld a,(cc_rev02_token)
+    cp ')'
+    jr z,cc_rev02_call_args_done
+    cp ','
+    jp nz,cc_rev02_format
+    call cc_rev02_next_token
+    ret c
+    jr cc_rev02_call_arg_loop
+cc_rev02_call_args_done:
+    jp cc_rev02_next_token
+
+; A=argument index, HL=value.
+cc_rev02_store_arg_value:
+    ld e,a
+    ld d,0
+    sla e
+    rl d
+    push hl
+    ld hl,cc_rev02_arg_values
+    add hl,de
+    ex de,hl
+    pop hl
+    ld a,l
+    ld (de),a
+    inc de
+    ld a,h
+    ld (de),a
+    ret
+
+; A=symbol marker: 0 immediate, otherwise symbol-index+1. C/index retained for
+; string callers; immediate callers use cc_rev02_temp_index.
+cc_rev02_store_arg_symbol:
+    ld b,a
+    ld a,(cc_rev02_temp_index)
+    ld e,a
+    ld d,0
+    ld hl,cc_rev02_arg_symbols
+    add hl,de
+    ld a,b
+    ld (hl),a
+    ret
+
+; Emit one ordinary C48 register/stack call and attach generic ABS16 relocations.
+cc_rev02_emit_call:
+    ld hl,cc_rev02_call_name
+    call cc_rev02_symbol_get_undef
+    ret c
+    ld (cc_rev02_call_symbol),a
+    ld a,(cc_rev02_call_arg_count)
+    cp 4
+    jr c,cc_rev02_emit_call_regs
+    dec a
+    ld (cc_rev02_temp_index),a
+cc_rev02_emit_call_stack_loop:
+    ld a,(cc_rev02_temp_index)
+    call cc_rev02_emit_arg_hl
+    ret c
+    ld a,$E5
+    call cc_rev02_emit8
+    ret c
+    ld a,(cc_rev02_temp_index)
+    cp 3
+    jr z,cc_rev02_emit_call_regs
+    dec a
+    ld (cc_rev02_temp_index),a
+    jr cc_rev02_emit_call_stack_loop
+cc_rev02_emit_call_regs:
+    ld a,(cc_rev02_call_arg_count)
+    cp 3
+    jr c,cc_rev02_emit_call_de
+    ld a,2
+    ld b,$01
+    call cc_rev02_emit_arg_reg
+    ret c
+cc_rev02_emit_call_de:
+    ld a,(cc_rev02_call_arg_count)
+    cp 2
+    jr c,cc_rev02_emit_call_hl
+    ld a,1
+    ld b,$11
+    call cc_rev02_emit_arg_reg
+    ret c
+cc_rev02_emit_call_hl:
+    ld a,(cc_rev02_call_arg_count)
+    or a
+    jr z,cc_rev02_emit_call_opcode
+    xor a
+    ld b,$21
+    call cc_rev02_emit_arg_reg
+    ret c
+cc_rev02_emit_call_opcode:
+    ld a,$CD
+    call cc_rev02_emit8
+    ret c
+    ld hl,(cc_rev02_text_len)
+    push hl
+    xor a
+    ld l,a
+    ld h,a
+    call cc_rev02_emit16
+    pop hl
+    ret c
+    ld a,(cc_rev02_call_symbol)
+    call cc_rev02_add_reloc
+    ret c
+    ld a,(cc_rev02_call_arg_count)
+    cp 4
+    ret c
+    sub 3
+    ld b,a
+cc_rev02_emit_call_cleanup:
+    ld a,b
+    or a
+    ret z
+    ld a,$F1
+    call cc_rev02_emit8
+    ret c
+    djnz cc_rev02_emit_call_cleanup
+    ret
+
+; A=index, B=LD rr,nn opcode.
+cc_rev02_emit_arg_reg:
+    ld (cc_rev02_temp_index),a
+    ld a,b
+    call cc_rev02_emit8
+    ret c
+    ld hl,(cc_rev02_text_len)
+    push hl
+    ld a,(cc_rev02_temp_index)
+    call cc_rev02_load_arg_value
+    call cc_rev02_emit16
+    pop hl
+    ret c
+    ld a,(cc_rev02_temp_index)
+    call cc_rev02_load_arg_symbol
+    or a
+    ret z
+    dec a
+    jp cc_rev02_add_reloc
+
+; A=index; emits LD HL,nn for stack argument and relocates when needed.
+cc_rev02_emit_arg_hl:
+    ld (cc_rev02_temp_index),a
+    ld a,$21
+    call cc_rev02_emit8
+    ret c
+    ld hl,(cc_rev02_text_len)
+    push hl
+    ld a,(cc_rev02_temp_index)
+    call cc_rev02_load_arg_value
+    call cc_rev02_emit16
+    pop hl
+    ret c
+    ld a,(cc_rev02_temp_index)
+    call cc_rev02_load_arg_symbol
+    or a
+    ret z
+    dec a
+    jp cc_rev02_add_reloc
+
+cc_rev02_load_arg_value:
+    ld e,a
+    ld d,0
+    sla e
+    rl d
+    ld hl,cc_rev02_arg_values
+    add hl,de
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ex de,hl
+    ret
+cc_rev02_load_arg_symbol:
+    ld e,a
+    ld d,0
+    ld hl,cc_rev02_arg_symbols
+    add hl,de
+    ld a,(hl)
+    ret
+
+; HL=relocation TEXT offset, A=symbol index.
+cc_rev02_add_reloc:
+    ld (cc_rev02_temp_symbol),a
+    ld a,(cc_rev02_reloc_count)
+    cp CC_REV02_RELOC_CAP
+    jp nc,cc_rev02_nospc
+    ld e,a
+    ld d,0
+    push hl
+    ld hl,cc_rev02_relocs
+    ld bc,CC_OBJ1_RELOC_SIZE
+cc_rev02_reloc_seek:
+    ld a,e
+    or d
+    jr z,cc_rev02_reloc_ready
+    add hl,bc
+    dec de
+    jr cc_rev02_reloc_seek
+cc_rev02_reloc_ready:
+    ex de,hl
+    pop hl
+    ld a,l
+    ld (de),a
+    inc de
+    ld a,h
+    ld (de),a
+    inc de
+    ld a,(cc_rev02_temp_symbol)
+    ld (de),a
+    inc de
+    xor a
+    ld (de),a
+    inc de
+    ld a,CC_OBJ1_RELOC_ABS16
+    ld (de),a
+    inc de
+    xor a
+    ld (de),a
+    ld hl,cc_rev02_reloc_count
+    inc (hl)
+    xor a
+    ret
+
+; Add an undefined global symbol or reuse an existing symbol. HL=NUL name.
+; Returns A=zero-based symbol index.
+cc_rev02_symbol_get_undef:
+    push hl
+    call cc_rev02_symbol_find
+    pop hl
+    ret nc
+    ld de,0
+    xor a
+    jp cc_rev02_symbol_add
+
+; Define a TEXT symbol. HL=name, DE=value, A=section (normally 1).
+cc_rev02_symbol_define:
+    ld (cc_rev02_temp_symbol),a
+    push de
+    push hl
+    call cc_rev02_symbol_find
+    pop hl
+    jr c,cc_rev02_symbol_define_new
+    ld (cc_rev02_temp_index),a
+    call cc_rev02_symbol_ptr_for_index
+    pop de
+    ld bc,16
+    add hl,bc
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    inc hl
+    ld a,(cc_rev02_temp_symbol)
+    ld (hl),a
+    inc hl
+    ld (hl),1
+    ld a,(cc_rev02_temp_index)
+    or a
+    ret
+cc_rev02_symbol_define_new:
+    pop de
+    ld a,(cc_rev02_temp_symbol)
+    jp cc_rev02_symbol_add
+
+; HL=name, DE=value, A=section (0 undefined,1 text). Returns A=index.
+cc_rev02_symbol_add:
+    ld (cc_rev02_temp_symbol),a
+    push de
+    push hl
+    ld a,(cc_rev02_symbol_count)
+    cp CC_REV02_SYMBOL_CAP
+    jp nc,cc_rev02_symbol_add_full
+    ld (cc_rev02_temp_index),a
+    call cc_rev02_symbol_ptr_for_index
+    ex de,hl
+    pop hl
+    call cc_rev02_copy_name16
+    pop hl
+    ex de,hl
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    inc hl
+    ld a,(cc_rev02_temp_symbol)
+    ld (hl),a
+    inc hl
+    ld (hl),1
+    ld hl,cc_rev02_symbol_count
+    inc (hl)
+    ld a,(cc_rev02_temp_index)
+    or a
+    ret
+cc_rev02_symbol_add_full:
+    pop hl
+    pop de
+    jp cc_rev02_nospc
+
+; HL=name. Carry clear/A=index when found, carry set when absent.
+cc_rev02_symbol_find:
+    ld (cc_rev02_name_ptr),hl
+    ld a,(cc_rev02_symbol_count)
+    ld b,a
+    xor a
+    ld (cc_rev02_temp_index),a
+cc_rev02_symbol_find_loop:
+    ld a,b
+    or a
+    jr z,cc_rev02_symbol_find_none
+    ld a,(cc_rev02_temp_index)
+    call cc_rev02_symbol_ptr_for_index
+    ex de,hl
+    ld hl,(cc_rev02_name_ptr)
+    call cc_rev02_streq
+    jr z,cc_rev02_symbol_find_yes
+    ld a,(cc_rev02_temp_index)
+    inc a
+    ld (cc_rev02_temp_index),a
+    djnz cc_rev02_symbol_find_loop
+cc_rev02_symbol_find_none:
+    scf
+    ret
+cc_rev02_symbol_find_yes:
+    ld a,(cc_rev02_temp_index)
+    or a
+    ret
+
+; A=index -> HL=symbol record.
+cc_rev02_symbol_ptr_for_index:
+    push bc
+    ld e,a
+    ld d,0
+    ld hl,cc_rev02_symbols
+    ld bc,CC_OBJ1_SYMBOL_SIZE
+cc_rev02_symbol_ptr_seek:
+    ld a,e
+    or d
+    jr z,cc_rev02_symbol_ptr_done
+    add hl,bc
+    dec de
+    jr cc_rev02_symbol_ptr_seek
+cc_rev02_symbol_ptr_done:
+    pop bc
+    ret
+
+; Add one NUL-terminated string token to the literal pool and return A=symbol.
+cc_rev02_add_string_literal:
+    ld a,(cc_rev02_string_count)
+    cp 16
+    jp nc,cc_rev02_nospc
+    ld (cc_rev02_temp_index),a
+    ld hl,(cc_rev02_literal_len)
+    ld a,(cc_rev02_tok_len)
+    ld e,a
+    ld d,0
+    inc de
+    add hl,de
+    ld de,CC_REV02_LITERAL_CAP+1
+    or a
+    sbc hl,de
+    jp nc,cc_rev02_nospc
+    ld hl,(cc_rev02_literal_len)
+    push hl
+    ld de,cc_rev02_literals
+    add hl,de
+    ex de,hl
+    ld hl,cc_rev02_token
+    ld a,(cc_rev02_tok_len)
+    ld c,a
+    ld b,0
+    push bc
+    ldir
+    xor a
+    ld (de),a
+    pop bc
+    inc bc
+    ld hl,(cc_rev02_literal_len)
+    add hl,bc
+    ld (cc_rev02_literal_len),hl
+    pop de
+    call cc_rev02_make_string_name
+    ld hl,cc_rev02_function_name
+    ld a,1
+    call cc_rev02_symbol_add
+    ret c
+    ld hl,cc_rev02_string_count
+    inc (hl)
+    ret
+
+; Build compiler-internal _sX name in cc_rev02_function_name.
+cc_rev02_make_string_name:
+    ld hl,cc_rev02_function_name
+    ld (hl),'_'
+    inc hl
+    ld (hl),'_'
+    inc hl
+    ld (hl),'s'
+    inc hl
+    ld a,(cc_rev02_temp_index)
+    cp 10
+    jr c,cc_rev02_string_digit
+    add a,'a'-10
+    jr cc_rev02_string_name_char
+cc_rev02_string_digit:
+    add a,'0'
+cc_rev02_string_name_char:
+    ld (hl),a
+    inc hl
+    xor a
+    ld (hl),a
+    inc hl
+    ld b,11
+cc_rev02_string_name_zero:
+    ld (hl),a
+    inc hl
+    djnz cc_rev02_string_name_zero
+    ret
+
+; At TU end append pooled literals after code and retarget internal _sX symbols.
+cc_rev02_finalize_literals:
+    ld hl,(cc_rev02_text_len)
+    ld (cc_rev02_main_offset),hl
+    ld a,(cc_rev02_symbol_count)
+    ld b,a
+    xor a
+    ld (cc_rev02_temp_index),a
+cc_rev02_finalize_sym_loop:
+    ld a,b
+    or a
+    jr z,cc_rev02_finalize_copy
+    ld a,(cc_rev02_temp_index)
+    call cc_rev02_symbol_ptr_for_index
+    ld a,(hl)
+    cp '_'
+    jr nz,cc_rev02_finalize_sym_next
+    inc hl
+    ld a,(hl)
+    cp '_'
+    jr nz,cc_rev02_finalize_sym_next
+    inc hl
+    ld a,(hl)
+    cp 's'
+    jr nz,cc_rev02_finalize_sym_next
+    ld de,14
+    add hl,de
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld hl,(cc_rev02_main_offset)
+    add hl,de
+    ex de,hl
+    ld a,(cc_rev02_temp_index)
+    call cc_rev02_symbol_ptr_for_index
+    ld bc,16
+    add hl,bc
+    ld (hl),e
+    inc hl
+    ld (hl),d
+cc_rev02_finalize_sym_next:
+    ld a,(cc_rev02_temp_index)
+    inc a
+    ld (cc_rev02_temp_index),a
+    djnz cc_rev02_finalize_sym_loop
+cc_rev02_finalize_copy:
+    ld hl,(cc_rev02_text_len)
+    ld de,(cc_rev02_literal_len)
+    add hl,de
+    ld de,CC_REV02_TEXT_CAP+1
+    or a
+    sbc hl,de
+    jp nc,cc_rev02_nospc
+    ld hl,cc_rev02_text
+    ld de,(cc_rev02_text_len)
+    add hl,de
+    ex de,hl
+    ld hl,cc_rev02_literals
+    ld bc,(cc_rev02_literal_len)
+    ldir
+    ld hl,(cc_rev02_text_len)
+    ld de,(cc_rev02_literal_len)
+    add hl,de
+    ld (cc_rev02_text_len),hl
+    xor a
+    ret
+
+cc_rev02_copy_name16:
+    ld b,16
+cc_rev02_copy_name16_loop:
+    ld a,(hl)
+    ld (de),a
+    inc hl
+    inc de
+    or a
+    jr z,cc_rev02_copy_name16_zero
+    djnz cc_rev02_copy_name16_loop
+    jp cc_rev02_toolong
+cc_rev02_copy_name16_zero:
+    xor a
+cc_rev02_copy_name16_zero_loop:
+    djnz cc_rev02_copy_name16_fill
+    ret
+cc_rev02_copy_name16_fill:
+    ld (de),a
+    inc de
+    jr cc_rev02_copy_name16_zero_loop
 
 cc_rev02_token_put:
     ld c,a
