@@ -10722,8 +10722,10 @@ cc_rev02_emit8:
     xor a
     ret
 cc_rev02_emit16:
+    push hl
     ld a,l
     call cc_rev02_emit8
+    pop hl
     ret c
     ld a,h
     jp cc_rev02_emit8
@@ -11708,8 +11710,10 @@ cc_rev02_emit_arg_reg:
     call cc_rev02_emit16
     pop hl
     ret c
+    push hl
     ld a,(cc_rev02_temp_index)
     call cc_rev02_load_arg_symbol
+    pop hl
     or a
     ret z
     dec a
@@ -11728,8 +11732,10 @@ cc_rev02_emit_arg_hl:
     call cc_rev02_emit16
     pop hl
     ret c
+    push hl
     ld a,(cc_rev02_temp_index)
     call cc_rev02_load_arg_symbol
+    pop hl
     or a
     ret z
     dec a
