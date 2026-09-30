@@ -116,6 +116,13 @@ fixture_reset:
     ld (cc_rev02_source_handle),a
     ret
 
+test_compile_only:
+    xor a
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ret
+
 test_include_ok:
     xor a
     ld (mode),a
@@ -359,7 +366,7 @@ gateway_end:
     req(main_bin.is_file() and gate_bin.is_file(), "fixture binaries missing")
     syms = symbols(sym)
     names = ("test_include_ok", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
-    for name in names:
+    for name in ("test_compile_only", "cc_obj1_write") + names:
         req(name in syms, "fixture symbol missing: " + name)
 
     checks = {"assemble": "PASS", "anti_specialization": "PASS"}
@@ -376,7 +383,17 @@ gateway_end:
             start = 0xE000 - 0x4000
             ram[start:start + len(gate_bytes)] = gate_bytes
 
+        def patch_no_writer(ram: bytearray) -> None:
+            patch(ram)
+            ram[syms["cc_obj1_write"] - 0x4000] = 0xC9
+
+        code = (b"\xF3" + phase1._ld_sp(0xBFC0) + phase1._call(syms["test_compile_only"])
+                + phase1._jp_c(FAIL_PC) + phase1._jp(PASS_PC))
+        run_sna(root, code, patch=patch_no_writer, timeout=20)
+        print("REV02 CC INCLUDE DIAG parser_before_writer PASS", flush=True)
+
         for name in names:
+            print("REV02 CC INCLUDE TEST " + name, flush=True)
             code = (b"\xF3" + phase1._ld_sp(0xBFC0) + phase1._call(syms[name])
                     + phase1._jp_c(FAIL_PC) + phase1._jp(PASS_PC))
             run_sna(root, code, patch=patch, timeout=20)
