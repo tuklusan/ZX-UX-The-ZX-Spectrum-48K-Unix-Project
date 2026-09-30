@@ -10144,6 +10144,8 @@ cc_rev02_read_ptr:     dw 0
 cc_rev02_read_left:    dw 0
 cc_rev02_have_push:    db 0
 cc_rev02_push_char:    db 0
+cc_rev02_push_macro:   db 0
+cc_rev02_last_macro:   db 0
 cc_rev02_tok_kind:     db 0
 cc_rev02_tok_len:      db 0
 cc_rev02_text_len:     dw 0
@@ -10186,6 +10188,8 @@ cc_rev02_compile_stream:
     ld (cc_rev02_read_left),a
     ld (cc_rev02_read_left+1),a
     ld (cc_rev02_have_push),a
+    ld (cc_rev02_push_macro),a
+    ld (cc_rev02_last_macro),a
     ld (cc_rev02_include_depth),a
     ld (cc_rev02_macro_count),a
     ld (cc_rev02_macro_left),a
@@ -10602,27 +10606,43 @@ cc_rev02_emit16:
     jp cc_rev02_emit8
 
 cc_rev02_next_char:
+    ld a,(cc_rev02_have_push)
+    or a
+    jr z,cc_rev02_next_char_no_push
+    ld a,(cc_rev02_push_macro)
+    or a
+    jr nz,cc_rev02_next_char_take_push
     ld a,(cc_rev02_macro_left)
     or a
-    jr z,cc_rev02_next_char_no_macro
+    jr nz,cc_rev02_next_char_macro
+cc_rev02_next_char_take_push:
+    xor a
+    ld (cc_rev02_have_push),a
+    ld a,(cc_rev02_push_macro)
+    ld (cc_rev02_last_macro),a
+    ld a,(cc_rev02_push_char)
+    or a
+    ret
+cc_rev02_next_char_no_push:
+    ld a,(cc_rev02_macro_left)
+    or a
+    jr z,cc_rev02_next_char_buffer
+cc_rev02_next_char_macro:
     ld hl,(cc_rev02_macro_ptr)
     ld a,(hl)
     inc hl
     ld (cc_rev02_macro_ptr),hl
     ld hl,cc_rev02_macro_left
     dec (hl)
-    or a
-    ret
-cc_rev02_next_char_no_macro:
-    ld a,(cc_rev02_have_push)
-    or a
-    jr z,cc_rev02_next_char_buffer
-    xor a
-    ld (cc_rev02_have_push),a
-    ld a,(cc_rev02_push_char)
+    push af
+    ld a,1
+    ld (cc_rev02_last_macro),a
+    pop af
     or a
     ret
 cc_rev02_next_char_buffer:
+    xor a
+    ld (cc_rev02_last_macro),a
     ld hl,(cc_rev02_read_left)
     ld a,h
     or l
@@ -10691,6 +10711,8 @@ cc_rev02_next_char_root_eof:
     ret
 cc_rev02_unget_char:
     ld (cc_rev02_push_char),a
+    ld a,(cc_rev02_last_macro)
+    ld (cc_rev02_push_macro),a
     ld a,1
     ld (cc_rev02_have_push),a
     ret
