@@ -2031,7 +2031,10 @@ zx48_p509_name_loop:
 ; Consume a nonmatching object's exact physical block count through one private
 ; <=512-byte COLD scratch allocation; namespace remains untouched.
 zx48_p509_skip_payload:
-    ld hl,(p509_header+M48O_HDR_STORAGE_LEN)
+    ld bc,(p509_header+M48O_HDR_STORAGE_LEN)
+zx48_tape_skip_payload_bc:
+    ld h,b
+    ld l,c
     ld (p509_skip_remaining),hl
     ld a,h
     or l
@@ -3280,7 +3283,8 @@ zx48_p514_tape_name_loop:
     jr zx48_p514_tape_match
 
 zx48_p514_tape_skip:
-    call zx48_p509_skip_payload
+    ld bc,(p514_tape_header+M48O_HDR_STORAGE_LEN)
+    call zx48_tape_skip_payload_bc
     jp c,zx48_p514_tape_fail
     jr zx48_p514_tape_find
 
