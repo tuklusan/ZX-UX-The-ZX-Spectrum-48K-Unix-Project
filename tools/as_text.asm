@@ -63,6 +63,14 @@ R17_TXT_M_RST   EQU 19
 r17_as_text_obj1_inplace:
     ld (r17_txt_source),hl
     ld (r17_txt_source_len),de
+    ; Standalone REV17 projection assembly owns literal-only semantics.  REV02
+    ; ordinary /bin/as may install product expression/relocation hooks, but
+    ; those hooks must never leak into this fixed proof entry.
+    xor a
+    ld (r17_txt_expr_hook),a
+    ld (r17_txt_expr_hook+1),a
+    ld (r17_txt_reloc_hook),a
+    ld (r17_txt_reloc_hook+1),a
     ld a,d
     or e
     jp z,r17_as_error
@@ -1565,7 +1573,18 @@ r17_txt_try_exact_hl_indirect:
     call r17_txt_match_tail_soft
     ret
 
+; Numeric-expression hook used only by the ordinary REV02 product driver.
+; A zero hook preserves the exact REV17 literal grammar and all historical
+; projection behavior.  A nonzero hook is a normal near function address that
+; returns DE=value and carry/errno exactly like the literal parser.
 r17_txt_parse_num:
+    ld hl,(r17_txt_expr_hook)
+    ld a,h
+    or l
+    jr z,r17_txt_parse_literal
+    jp (hl)
+
+r17_txt_parse_literal:
     call r17_txt_peek
     ret c
     cp '$'
@@ -1827,6 +1846,12 @@ r17_txt_rec16:
     jp r17_txt_rec8
 
 r17_txt_rec_emit:
+    ; Preserve the TEXT offset at which this semantic record begins.  The
+    ; optional ordinary-product hook uses it only after the qualified encoder
+    ; has emitted the record, so opcode semantics remain owned by the REV17
+    ; encoder rather than by the symbol driver.
+    ld hl,(r17_as_produced)
+    ld (r17_txt_rec_start_off),hl
     ld a,(r17_as_guard_mode)
     or a
     jr z,r17_txt_rec_guard_done
@@ -1844,6 +1869,23 @@ r17_txt_rec_guard_done:
     ld (r17_as_records_left),hl
     call r17_as_record_loop
     ret c
+    ld hl,(r17_txt_reloc_hook)
+    ld a,h
+    or l
+    jr z,r17_txt_rec_emit_no_hook
+    ; Callback ABI: A=semantic record kind, BC=TEXT start offset.  The callback
+    ; may append OBJ1 relocation metadata or reject an illegal relocatable
+    ; expression; it never emits opcode bytes.
+    push hl
+    ld a,(r17_txt_rec)
+    ld bc,(r17_txt_rec_start_off)
+    pop hl
+    ld de,r17_txt_rec_emit_hook_return
+    push de
+    jp (hl)
+r17_txt_rec_emit_hook_return:
+    ret c
+r17_txt_rec_emit_no_hook:
     ld hl,(r17_as_cur)
     ld de,(r17_as_end)
     or a
@@ -1937,6 +1979,11 @@ r17_txt_line_start:  dw 0
 r17_txt_line_end:    dw 0
 r17_txt_p:           dw 0
 r17_txt_saved_p:     dw 0
+; Optional ordinary-product hooks.  They are zero in every historical REV17
+; fixture and explicitly cleared by r17_as_text_obj1_inplace.
+r17_txt_expr_hook:   dw 0
+r17_txt_reloc_hook:  dw 0
+r17_txt_rec_start_off: dw 0
 r17_txt_table_name:  dw 0
 r17_txt_table_next:  dw 0
 r17_txt_id:          db 0
