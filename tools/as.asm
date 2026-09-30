@@ -4556,7 +4556,7 @@ as_rev02_byte_loop:
     inc hl
     ld (as_rev02_read_ptr),hl
     cp 10
-    jr z,as_rev02_newline
+    jp z,as_rev02_newline
     cp 13
     jp z,as_rev02_format
     or a
@@ -4567,7 +4567,7 @@ as_rev02_byte_loop:
     jr nz,as_rev02_byte_loop
     ld a,c
     cp ';'
-    jr z,as_rev02_begin_comment
+    jp z,as_rev02_begin_comment
     cp ' '
     jr z,as_rev02_ws
     cp 9
@@ -4590,12 +4590,12 @@ as_rev02_emit_char:
     ld a,c
     call as_rev02_line_put
     ret c
-    jr as_rev02_byte_loop
+    jp as_rev02_byte_loop
 
 as_rev02_ws:
     ld a,(as_rev02_line_len)
     or a
-    jr z,as_rev02_byte_loop
+    jp z,as_rev02_byte_loop
     ; Whitespace immediately after a label colon is syntactic only.  Dropping
     ; it leaves the one retained line separator available for the mnemonic /
     ; operand boundary, so "label: ld a,1" canonicalizes to "label:ld a,1"
@@ -4607,21 +4607,21 @@ as_rev02_ws:
     add hl,de
     ld a,(hl)
     cp ':'
-    jr z,as_rev02_byte_loop
+    jp z,as_rev02_byte_loop
     ld a,1
     ld (as_rev02_pending_space),a
-    jr as_rev02_byte_loop
+    jp as_rev02_byte_loop
 
 as_rev02_begin_comment:
     ld a,1
     ld (as_rev02_comment),a
-    jr as_rev02_byte_loop
+    jp as_rev02_byte_loop
 
 as_rev02_newline:
     call as_rev02_finish_line
     ret c
     call as_rev02_reset_line
-    jr as_rev02_byte_loop
+    jp as_rev02_byte_loop
 
 as_rev02_eof:
     ld a,(as_rev02_line_len)
@@ -4716,10 +4716,10 @@ as_rev02_drive_line:
     ; First-token directives.
     ld hl,as_rev02_kw_global
     call as_rev02_name_eq
-    jr z,as_rev02_global
+    jp z,as_rev02_global
     ld hl,as_rev02_kw_extern
     call as_rev02_name_eq
-    jr z,as_rev02_extern
+    jp z,as_rev02_extern
     call as_rev02_name_is_org
     jp z,as_rev02_org
 
@@ -5230,7 +5230,7 @@ as_rev02_expr_symbol:
     jr z,as_rev02_expr_symbol_plus
     cp '-'
     jr z,as_rev02_expr_symbol_minus
-    jr as_rev02_expr_symbol_done
+    jp as_rev02_expr_symbol_done
 as_rev02_expr_symbol_plus:
     call as_rev02_expr_advance
     push hl
@@ -5449,7 +5449,7 @@ as_rev02_expr_div:
     ld a,AS_P1008_OP_DIV
     call as_p1008_apply
     ret c
-    jr as_rev02_expr_mul_loop
+    jp as_rev02_expr_mul_loop
 
 as_rev02_expr_done:
     or a
@@ -5485,7 +5485,7 @@ as_rev02_expr_primary:
     cp '('
     jr z,as_rev02_expr_group
     cp '$'
-    jr z,as_rev02_expr_hex
+    jp z,as_rev02_expr_hex
     cp '0'
     jp c,as_rev02_format
     cp '9'+1
@@ -5638,16 +5638,16 @@ as_rev02_record_reloc:
     push af
     ld a,(as_rev02_pass)
     cp 2
-    jr nz,as_rev02_reloc_clear_ok
+    jp nz,as_rev02_reloc_clear_ok
     ld a,(as_rev02_pending_sym)
     or a
-    jr z,as_rev02_reloc_clear_ok
+    jp z,as_rev02_reloc_clear_ok
     dec a
     ld (as_rev02_sym_index),a
     call as_rev02_sym_ptr
     ld a,(ix+18)
     cp 3
-    jr z,as_rev02_reloc_clear_ok
+    jp z,as_rev02_reloc_clear_ok
     pop af
     cp 30
     jr z,as_rev02_reloc_relative
