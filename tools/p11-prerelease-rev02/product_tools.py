@@ -114,6 +114,102 @@ def run(argv,cwd):
     p=subprocess.run([str(x) for x in argv],cwd=cwd,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
     req(p.returncode==0,"command failed: "+" ".join(map(str,argv))+"\n"+p.stdout+"\n"+p.stderr)
     return p
+
+C48_RUNTIME_PUBLIC = (
+    "exit","yield","sleep","spawn","wait","kill","chdir","getcwd","getenv","getpid",
+    "open","open_typed","close","read","write","seek","stat","remove","rename","list",
+    "pipe","dup","ioctl","read_full","write_full","getchar","putchar","puts","strlen","strcmp",
+    "strcpy","strncpy","memcpy","memmove","memchr","memset","malloc","free","cls","print_at",
+    "plot","point","draw","circle","ink","paper","bright","flash","inverse","over","border","beep",
+    "udg_define","udg_get","udg_draw","udg_clear","udg_draw_2x2","tape_save","tape_load","ticks",
+    "time_get","time_set","sin","cos","tan","asin","acos","atan","sqrt","exp","log","pow","fabs",
+)
+C48_RUNTIME_INTERNAL = (
+    "__fadd","__fsub","__fmul","__fdiv","__fpow","__fabs","__fsgn","__fint","__fexp","__fln",
+    "__fsin","__fcos","__ftan","__fasin","__facos","__fatan","__fsqrt","__itof","__ftoi","__fcmp","__ftruth",
+)
+
+def obj1_symbol(name: str, value: int, section: int, flags: int)->bytes:
+    raw=name.encode("ascii")
+    req(1 <= len(raw) <= 15 and raw.decode("ascii")==name,"OBJ1 symbol name")
+    req(0 <= value <= 0xffff and section in (0,1,2,3) and flags in (0,1),"OBJ1 symbol fields")
+    return raw+b"\0"*(16-len(raw))+struct.pack("<HBB",value,section,flags)
+
+def obj1_image(text: bytes, symbols, relocs)->bytes:
+    req(0 < len(text) <= 0x7fff,"runtime OBJ1 text size")
+    symblob=b"".join(obj1_symbol(*row) for row in symbols)
+    relblob=b"".join(struct.pack("<HHBB",off,idx,1,0) for off,idx in relocs)
+    so=24+len(text); ro=so+len(symblob)
+    req(ro+len(relblob) <= 0x8000,"runtime OBJ1 stored size")
+    h=bytearray(24); h[:4]=b"OBJ1"; h[4]=1; h[5]=0; h[6:8]=struct.pack("<H",24)
+    h[8:10]=struct.pack("<H",len(text)); h[10:12]=b"\0\0"
+    h[12:14]=struct.pack("<H",len(symbols)); h[14:16]=struct.pack("<H",len(relocs))
+    h[16:18]=struct.pack("<H",so); h[18:20]=struct.pack("<H",ro)
+    body=text+symblob+relblob
+    h[20:22]=struct.pack("<H",crc16(body)); h[22:24]=b"\0\0"; h[22:24]=struct.pack("<H",crc16(bytes(h)))
+    return bytes(h)+body
+
+def parse_sym(path: Path):
+    out={}
+    for line in path.read_text().splitlines():
+        if ": EQU 0x" not in line: continue
+        name,raw=line.split(": EQU 0x",1)
+        try: out[name.strip()]=int(raw.strip(),16)
+        except ValueError: pass
+    return out
+
+def build_runtime_obj1(root: Path, sj: Path, out: Path)->Path:
+    sources=("int_runtime.asm","float_bridge.asm","float_runtime.asm","math_runtime.asm","memory.asm",
+             "string.asm","syscall.asm","io.asm","graphics.asm","sound.asm","udg.asm","tape.asm")
+    emits=("EMIT_C48_INT_RUNTIME","EMIT_P11_C48_FLOAT5_BRIDGE","EMIT_P1117_C48_FLOAT_RUNTIME",
+           "EMIT_P1118_C48_CAST_RUNTIME","EMIT_P1119_C48_FCMP_RUNTIME","EMIT_P1120_C48_MATH_RUNTIME",
+           "EMIT_P1121_C48_MEMORY","EMIT_P1124_C48_MEMORY_RUNTIME","EMIT_P1124_C48_STRING_RUNTIME",
+           "EMIT_P1122_C48_SYSCALL_RUNTIME","EMIT_P1123_C48_IO_RUNTIME","EMIT_P1125_C48_GRAPHICS_RUNTIME",
+           "EMIT_P1126_C48_SOUND_RUNTIME","EMIT_P1125_C48_UDG_RUNTIME","EMIT_P1127_C48_TAPE_RUNTIME")
+    inc=''.join(f'    INCLUDE "{(root/"v1/src/libc48"/x).as_posix()}"\n' for x in sources)
+    def asm_text(origin:int,suffix:str,with_relocs:bool):
+        table='runtime_relocs:\nruntime_relocs:\n' if False else 'runtime_relocs:\n    RELOCATE_TABLE\nruntime_relocs_end:\n' if with_relocs else ''
+        save_rel='    SAVEBIN "runtime.reloc",runtime_relocs,runtime_relocs_end-runtime_relocs\n' if with_relocs else ''
+        return (f'    DEVICE ZXSPECTRUM48\n    INCLUDE "{(root/"v1/include/zx48ux.inc").as_posix()}"\n'+inc+
+                '__heap_start EQU 0\n__heap_end EQU 0\n'+f'    ORG ${origin:04X}\n    RELOCATE_START\nruntime_image:\n'+
+                ''.join('    '+x+'\n' for x in emits)+'runtime_end:\n    RELOCATE_END\n'+table+
+                f'    SAVEBIN "runtime{suffix}.bin",runtime_image,runtime_end-runtime_image\n'+save_rel)
+    a0=out/'runtime-product.asm'; a0.write_text(asm_text(0,'',True),encoding='utf-8',newline='\n')
+    run([sj,'--nologo','--sym=runtime-product.sym',a0.name],out)
+    a1=out/'runtime-product-base.asm'; a1.write_text(asm_text(0x1000,'-base',False),encoding='utf-8',newline='\n')
+    run([sj,'--nologo',a1.name],out)
+    text=(out/'runtime.bin').read_bytes(); base=(out/'runtime-base.bin').read_bytes()
+    req(len(text)==len(base),"runtime two-origin size drift")
+    raw=(out/'runtime.reloc').read_bytes(); req(len(raw)%2==0,"runtime relocation table size")
+    candidates=struct.unpack('<'+'H'*(len(raw)//2),raw) if raw else ()
+    local=[]
+    for off in candidates:
+        req(0 <= off <= len(text)-2,"runtime relocation range")
+        w0=struct.unpack_from('<H',text,off)[0]; w1=struct.unpack_from('<H',base,off)[0]
+        if ((w1-w0)&0xffff)==0x1000: local.append(off)
+    rebuilt=bytearray(text)
+    for off in local:
+        w=struct.unpack_from('<H',rebuilt,off)[0]; struct.pack_into('<H',rebuilt,off,(w+0x1000)&0xffff)
+    req(bytes(rebuilt)==base,"runtime two-origin relocation closure")
+    syms=parse_sym(out/'runtime-product.sym')
+    exports=C48_RUNTIME_PUBLIC+C48_RUNTIME_INTERNAL
+    req(len(C48_RUNTIME_PUBLIC)==73,"runtime public declaration count")
+    req(len(exports)==len(set(exports)),"runtime export duplicate")
+    for name in exports: req(name in syms and 0 <= syms[name] < len(text),"runtime export missing: "+name)
+    req('c48_heap_init_linker' in syms,"runtime heap init symbol")
+    ho=syms['c48_heap_init_linker']; req(text[ho:ho+6]==b'\x11\0\0\x01\0\0',"runtime heap relocation shape")
+    symbols=[('__rtbase',0,1,0)] + [(name,syms[name],1,1) for name in exports] + [('__heap_start',0,0,1),('__heap_end',0,0,1)]
+    heap_start_idx=len(symbols)-2; heap_end_idx=len(symbols)-1
+    relocs=[(off,0) for off in local] + [(ho+1,heap_start_idx),(ho+4,heap_end_idx)]
+    relocs.sort()
+    prev=-2
+    for off,idx in relocs:
+        req(off >= prev+2,"runtime relocation overlap/order"); prev=off
+        req(0 <= idx < len(symbols),"runtime relocation symbol")
+    obj=obj1_image(text,symbols,relocs); path=out/'libc48-runtime.obj1'; path.write_bytes(obj)
+    inspect=root/'v1/tools-host/inspect-obj/inspect.py'; run([sys.executable,inspect,path],root)
+    return path
+
 def main():
     ap=argparse.ArgumentParser(); ap.add_argument("--root",type=Path,required=True); ap.add_argument("--output",type=Path,required=True); ns=ap.parse_args()
     root=ns.root.resolve(); out=ns.output.resolve(); out.mkdir(parents=True,exist_ok=True)
@@ -132,6 +228,7 @@ def main():
     inspect=root/"v1/tools-host/inspect-mex/inspect.py"
     run([sys.executable,inspect,out/"sh.mex1","--base","0x6000"],root)
     mt=load_maketap(root)
+    runtime_obj=build_runtime_obj1(root,sj,out)
     tap=mt.m48o_blocks(mt.M48OObject("sh",mt.M48O_BIN,mt.DIR_BIN,mex))
     (out/"sh.m48o.tap").write_bytes(tap)
     req(tap==mt.m48o_blocks(mt.M48OObject("sh",mt.M48O_BIN,mt.DIR_BIN,mex)),"M48O nondeterminism")
@@ -201,6 +298,9 @@ def main():
         "mex1_sha256":sha(out/"as.mex1"),"m48o_tap_sha256":sha(out/"as.m48o.tap"),
         "entry":"EMIT_REV02_AS_PRODUCT_CLI",
         "semantic_status":"GENERIC-CLI-AND-SOURCE-OPEN-SCAFFOLD; ASSEMBLER-NOT-YET-ATTACHED"},
+      "runtime_archive":{
+        "source":"v1/src/libc48/*.asm","obj1_sha256":sha(runtime_obj),"obj1_bytes":runtime_obj.stat().st_size,
+        "public_symbol_count":len(C48_RUNTIME_PUBLIC),"semantic_status":"FULL-FROZEN-C48-RUNTIME-OBJ1-BUILT-NOT-YET-ATTACHED-TO-LD"},
       "ld":{
         "source":"tools/ld.asm","source_sha256":sha(ldsrc),
         "image_sha256":sha(ld_image),"image_bytes":ld_image.stat().st_size,"bss_bytes":ld_bss,"relocation_count":len(ld_relocs),
