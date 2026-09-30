@@ -10901,7 +10901,7 @@ cc_rev02_pp_quote_loop:
     jr z,cc_rev02_pp_quote_done
     ld (cc_rev02_pp_char),a
     call cc_rev02_pp_portable_char
-    jp c,cc_rev02_inval
+    jp c,cc_rev02_invalid
     ld a,(cc_rev02_pp_len)
     cp 10
     jp nc,cc_rev02_toolong
@@ -10918,7 +10918,7 @@ cc_rev02_pp_quote_loop:
 cc_rev02_pp_quote_done:
     ld a,(cc_rev02_pp_len)
     or a
-    jp z,cc_rev02_inval
+    jp z,cc_rev02_invalid
     ld e,a
     ld d,0
     ld hl,cc_rev02_pp_name
@@ -10930,7 +10930,7 @@ cc_rev02_pp_quote_done:
     jr nz,cc_rev02_pp_check_dotdot
     ld a,(cc_rev02_pp_name)
     cp '.'
-    jp z,cc_rev02_inval
+    jp z,cc_rev02_invalid
     jr cc_rev02_pp_trailer
 cc_rev02_pp_check_dotdot:
     cp 2
@@ -10940,7 +10940,7 @@ cc_rev02_pp_check_dotdot:
     jr nz,cc_rev02_pp_trailer
     ld a,(cc_rev02_pp_name+1)
     cp '.'
-    jp z,cc_rev02_inval
+    jp z,cc_rev02_invalid
 
 cc_rev02_pp_trailer:
     ; Only horizontal whitespace may follow the closing quote on its line.
@@ -11233,6 +11233,10 @@ cc_rev02_is_digit:
     jr cc_rev02_class_no
 cc_rev02_class_yes:
     or a
+    ret
+cc_rev02_invalid:
+    ld a,E_INVAL
+    scf
     ret
 cc_rev02_toolong:
     ld a,E_TOOLONG
