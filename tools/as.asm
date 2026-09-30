@@ -4438,6 +4438,13 @@ as_rev02_compile_fail:
 ; identity/name never participates.  The ordinary P10 symbol/expression core is
 ; resident in the same product image for the later full-symbol driver closure.
 as_rev02_assemble_stream:
+    ; The ordinary product installs a source-generic constant-expression hook.
+    ; REV17 fixed/projection entries explicitly clear this hook, so the frozen
+    ; self-rebuild parser remains byte-for-byte literal in semantics.
+    ld hl,as_rev02_parse_expr
+    ld (r17_txt_expr_hook),hl
+    ld hl,0
+    ld (r17_txt_reloc_hook),hl
     ld hl,AS_REV02_OBJ_BUF+24
     ld (r17_as_out),hl
     ld hl,AS_REV02_OBJ_BUF
@@ -4643,6 +4650,420 @@ as_rev02_finish_line:
 as_rev02_dispatch_line:
     call r17_txt_dispatch_line
     ret
+
+; Frozen P10.08 expression grammar wired into the ordinary source driver.
+; This first product integration owns complete 16-bit constant expressions.
+; Symbol-bearing terms are added by the following symbol/binding checkpoint;
+; an identifier here therefore fails closed rather than being guessed.
+;
+; Entry/exit contract is the same as r17_txt_parse_literal:
+;   input  r17_txt_p -> first expression byte
+;   output DE = exact 16-bit value, r17_txt_p -> first delimiter
+;   error  carry set, A=E_FORMAT
+as_rev02_parse_expr:
+    call as_rev02_expr_or
+    ret c
+    ex de,hl
+    xor a
+    ret
+
+as_rev02_expr_or:
+    call as_rev02_expr_xor
+    ret c
+as_rev02_expr_or_loop:
+    call r17_txt_peek_soft
+    cp '|'
+    ret nz
+    call as_rev02_expr_advance
+    push hl
+    call as_rev02_expr_xor
+    jr c,as_rev02_expr_pop_error
+    ex de,hl
+    pop hl
+    ld a,AS_P1008_OP_OR
+    call as_p1008_apply
+    ret c
+    jr as_rev02_expr_or_loop
+
+as_rev02_expr_xor:
+    call as_rev02_expr_and
+    ret c
+as_rev02_expr_xor_loop:
+    call r17_txt_peek_soft
+    cp '^'
+    ret nz
+    call as_rev02_expr_advance
+    push hl
+    call as_rev02_expr_and
+    jr c,as_rev02_expr_pop_error
+    ex de,hl
+    pop hl
+    ld a,AS_P1008_OP_XOR
+    call as_p1008_apply
+    ret c
+    jr as_rev02_expr_xor_loop
+
+as_rev02_expr_and:
+    call as_rev02_expr_shift
+    ret c
+as_rev02_expr_and_loop:
+    call r17_txt_peek_soft
+    cp '&'
+    ret nz
+    call as_rev02_expr_advance
+    push hl
+    call as_rev02_expr_shift
+    jr c,as_rev02_expr_pop_error
+    ex de,hl
+    pop hl
+    ld a,AS_P1008_OP_AND
+    call as_p1008_apply
+    ret c
+    jr as_rev02_expr_and_loop
+
+as_rev02_expr_shift:
+    call as_rev02_expr_add
+    ret c
+as_rev02_expr_shift_loop:
+    call r17_txt_peek_soft
+    cp '<'
+    jr z,as_rev02_expr_shl
+    cp '>'
+    ret nz
+    call as_rev02_expr_advance
+    call r17_txt_peek_soft
+    cp '>'
+    jp nz,as_rev02_format
+    call as_rev02_expr_advance
+    push hl
+    call as_rev02_expr_add
+    jr c,as_rev02_expr_pop_error
+    ex de,hl
+    pop hl
+    ld a,AS_P1008_OP_SHR
+    call as_p1008_apply
+    ret c
+    jr as_rev02_expr_shift_loop
+as_rev02_expr_shl:
+    call as_rev02_expr_advance
+    call r17_txt_peek_soft
+    cp '<'
+    jp nz,as_rev02_format
+    call as_rev02_expr_advance
+    push hl
+    call as_rev02_expr_add
+    jr c,as_rev02_expr_pop_error
+    ex de,hl
+    pop hl
+    ld a,AS_P1008_OP_SHL
+    call as_p1008_apply
+    ret c
+    jr as_rev02_expr_shift_loop
+
+as_rev02_expr_add:
+    call as_rev02_expr_mul
+    ret c
+as_rev02_expr_add_loop:
+    call r17_txt_peek_soft
+    cp '+'
+    jr z,as_rev02_expr_plus
+    cp '-'
+    ret nz
+    call as_rev02_expr_advance
+    push hl
+    call as_rev02_expr_mul
+    jr c,as_rev02_expr_pop_error
+    ex de,hl
+    pop hl
+    ld a,AS_P1008_OP_SUB
+    call as_p1008_apply
+    ret c
+    jr as_rev02_expr_add_loop
+as_rev02_expr_plus:
+    call as_rev02_expr_advance
+    push hl
+    call as_rev02_expr_mul
+    jr c,as_rev02_expr_pop_error
+    ex de,hl
+    pop hl
+    ld a,AS_P1008_OP_ADD
+    call as_p1008_apply
+    ret c
+    jr as_rev02_expr_add_loop
+
+as_rev02_expr_mul:
+    call as_rev02_expr_unary
+    ret c
+as_rev02_expr_mul_loop:
+    call r17_txt_peek_soft
+    cp '*'
+    jr z,as_rev02_expr_times
+    cp '/'
+    jr z,as_rev02_expr_div
+    cp '%'
+    ret nz
+    call as_rev02_expr_advance
+    push hl
+    call as_rev02_expr_unary
+    jr c,as_rev02_expr_pop_error
+    ex de,hl
+    pop hl
+    ld a,AS_P1008_OP_MOD
+    call as_p1008_apply
+    ret c
+    jr as_rev02_expr_mul_loop
+as_rev02_expr_times:
+    call as_rev02_expr_advance
+    push hl
+    call as_rev02_expr_unary
+    jr c,as_rev02_expr_pop_error
+    ex de,hl
+    pop hl
+    ld a,AS_P1008_OP_MUL
+    call as_p1008_apply
+    ret c
+    jr as_rev02_expr_mul_loop
+as_rev02_expr_div:
+    call as_rev02_expr_advance
+    push hl
+    call as_rev02_expr_unary
+    jr c,as_rev02_expr_pop_error
+    ex de,hl
+    pop hl
+    ld a,AS_P1008_OP_DIV
+    call as_p1008_apply
+    ret c
+    jr as_rev02_expr_mul_loop
+
+as_rev02_expr_unary:
+    call r17_txt_peek
+    ret c
+    cp '+'
+    jr z,as_rev02_expr_uplus
+    cp '-'
+    jr z,as_rev02_expr_uminus
+    cp '~'
+    jr z,as_rev02_expr_unot
+    jp as_rev02_expr_primary
+as_rev02_expr_uplus:
+    call as_rev02_expr_advance
+    jp as_rev02_expr_unary
+as_rev02_expr_uminus:
+    call as_rev02_expr_advance
+    call as_rev02_expr_unary
+    ret c
+    jp as_p1008_neg
+as_rev02_expr_unot:
+    call as_rev02_expr_advance
+    call as_rev02_expr_unary
+    ret c
+    jp as_p1008_not
+
+as_rev02_expr_primary:
+    call r17_txt_peek
+    ret c
+    cp '('
+    jr z,as_rev02_expr_group
+    cp '    ld a,E_FORMAT
+    scf
+    ret
+
+as_rev02_skip_arg:
+    ld a,(hl)
+    or a
+    jr z,as_rev02_bad
+    inc hl
+as_rev02_skip_loop:
+    ld a,(hl)
+    or a
+    jr z,as_rev02_skip_done
+    inc hl
+    jr as_rev02_skip_loop
+as_rev02_skip_done:
+    inc hl
+    or a
+    ret
+as_rev02_require_last:
+    ld a,(hl)
+    or a
+    jr z,as_rev02_bad
+as_rev02_last_loop:
+    ld a,(hl)
+    inc hl
+    or a
+    jr nz,as_rev02_last_loop
+    ld de,(as_rev02_arg1_ptr)
+    ld bc,(as_rev02_arg1_len)
+    ex de,hl
+    add hl,bc
+    ex de,hl
+    or a
+    sbc hl,de
+    ret z
+as_rev02_bad:
+    ld a,E_INVAL
+    scf
+    ret
+as_rev02_close:
+    ld a,(as_rev02_source_handle)
+    cp HANDLE_FREE
+    ret z
+    ld l,a
+    ld h,0
+    ld a,SYS_CLOSE
+    call SYSCALL_GATEWAY
+    push af
+    ld a,HANDLE_FREE
+    ld (as_rev02_source_handle),a
+    pop af
+    ret
+as_rev02_inval:
+    ld a,E_INVAL
+as_rev02_exit_errno:
+    ld l,a
+    ld h,0
+    ld a,SYS_EXIT
+    call SYSCALL_GATEWAY
+    halt
+    ENDM
+
+    jr z,as_rev02_expr_hex
+    cp '0'
+    jp c,as_rev02_format
+    cp '9'+1
+    jp nc,as_rev02_format
+    jp as_rev02_expr_decimal
+
+as_rev02_expr_group:
+    call as_rev02_expr_advance
+    call as_rev02_expr_or
+    ret c
+    push hl
+    call r17_txt_peek
+    jr c,as_rev02_expr_group_bad
+    cp ')'
+    jr nz,as_rev02_expr_group_bad
+    call as_rev02_expr_advance
+    pop hl
+    xor a
+    ret
+as_rev02_expr_group_bad:
+    pop hl
+    jp as_rev02_format
+
+as_rev02_expr_decimal:
+    ld hl,0
+    xor a
+    ld (as_rev02_expr_digits),a
+as_rev02_expr_decimal_loop:
+    call r17_txt_peek_soft
+    cp '0'
+    jr c,as_rev02_expr_decimal_done
+    cp '9'+1
+    jr nc,as_rev02_expr_decimal_done
+    sub '0'
+    ld (as_rev02_expr_digit),a
+    call as_rev02_expr_advance
+    ld de,10
+    push hl
+    pop bc
+    add hl,hl
+    jp c,as_rev02_format
+    add hl,hl
+    jp c,as_rev02_format
+    add hl,bc
+    jp c,as_rev02_format
+    add hl,hl
+    jp c,as_rev02_format
+    ld a,(as_rev02_expr_digit)
+    ld e,a
+    ld d,0
+    add hl,de
+    jp c,as_rev02_format
+    ld a,(as_rev02_expr_digits)
+    inc a
+    ld (as_rev02_expr_digits),a
+    jr as_rev02_expr_decimal_loop
+as_rev02_expr_decimal_done:
+    ld a,(as_rev02_expr_digits)
+    or a
+    jp z,as_rev02_format
+    xor a
+    ret
+
+as_rev02_expr_hex:
+    call as_rev02_expr_advance
+    ld hl,0
+    xor a
+    ld (as_rev02_expr_digits),a
+as_rev02_expr_hex_loop:
+    call r17_txt_peek_soft
+    call as_rev02_expr_hex_nibble
+    jr c,as_rev02_expr_hex_done
+    ld (as_rev02_expr_digit),a
+    ld a,(as_rev02_expr_digits)
+    cp 4
+    jp nc,as_rev02_format
+    inc a
+    ld (as_rev02_expr_digits),a
+    call as_rev02_expr_advance
+    add hl,hl
+    add hl,hl
+    add hl,hl
+    add hl,hl
+    ld a,(as_rev02_expr_digit)
+    ld e,a
+    ld d,0
+    add hl,de
+    jr as_rev02_expr_hex_loop
+as_rev02_expr_hex_done:
+    ld a,(as_rev02_expr_digits)
+    or a
+    jp z,as_rev02_format
+    xor a
+    ret
+
+as_rev02_expr_hex_nibble:
+    cp '0'
+    jr c,as_rev02_expr_hex_no
+    cp '9'+1
+    jr c,as_rev02_expr_hex_digit
+    cp 'A'
+    jr c,as_rev02_expr_hex_lower
+    cp 'F'+1
+    jr c,as_rev02_expr_hex_upper
+as_rev02_expr_hex_lower:
+    cp 'a'
+    jr c,as_rev02_expr_hex_no
+    cp 'f'+1
+    jr nc,as_rev02_expr_hex_no
+    sub 'a'-10
+    or a
+    ret
+as_rev02_expr_hex_upper:
+    sub 'A'-10
+    or a
+    ret
+as_rev02_expr_hex_digit:
+    sub '0'
+    or a
+    ret
+as_rev02_expr_hex_no:
+    scf
+    ret
+
+as_rev02_expr_advance:
+    ld hl,(r17_txt_p)
+    inc hl
+    ld (r17_txt_p),hl
+    ret
+
+as_rev02_expr_pop_error:
+    pop hl
+    ret
+
+as_rev02_expr_digit:  db 0
+as_rev02_expr_digits: db 0
 
 as_rev02_format:
     ld a,E_FORMAT
