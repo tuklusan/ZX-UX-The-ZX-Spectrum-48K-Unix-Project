@@ -1,0 +1,63 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+name: Phase-11 pre-release REV02 Stage E CC
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/p11-prerelease-rev02-stage-e-cc.yml'
+      - 'tools/p11-prerelease-rev02/cc_include_gate.py'
+      - 'tools/p11-prerelease-rev02/product_tools.py'
+      - 'v1/src/tools/cc.asm'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zxux-p11-prerelease-rev02-stage-e-cc
+  cancel-in-progress: false
+
+jobs:
+  stage-e-cc:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: {fetch-depth: 0}
+      - name: Policy and license gates
+        run: |
+          set -euo pipefail
+          ./tools/check_project_policy.py
+          ./tools/check_license_headers.sh
+      - name: Set up certified ZX-UX runtime
+        uses: ./.github/actions/setup-zxux-runtime
+      - name: Build deterministic ordinary product tools
+        run: |
+          set -euo pipefail
+          tools/runtime/python/bin/python tools/p11-prerelease-rev02/product_tools.py \
+            --root . --output /tmp/rev02-product-tools
+      - name: Prove target-native generic quoted include checkpoint
+        run: |
+          set -euo pipefail
+          tools/runtime/python/bin/python tools/p11-prerelease-rev02/cc_include_gate.py \
+            --root . --output /tmp/rev02-stage-e-cc
+      - name: Upload Stage-E compiler checkpoint
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: zxux-p11-prerelease-rev02-stage-e-cc-${{ github.sha }}
+          path: |
+            /tmp/rev02-stage-e-cc/
+            /tmp/rev02-product-tools/PRODUCT-TOOLS-PREFLIGHT.json
+          retention-days: 90
+          if-no-files-found: error

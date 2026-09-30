@@ -10120,7 +10120,8 @@ CC_REV02_READ_CAP      EQU 64
 CC_REV02_TOKEN_CAP     EQU 32
 CC_REV02_TEXT_CAP      EQU 512
 CC_REV02_OBJ_CAP       EQU 1024
-CC_REV02_BSS_BYTES     EQU CC_REV02_READ_CAP+CC_REV02_TOKEN_CAP+CC_REV02_TEXT_CAP+CC_REV02_OBJ_CAP
+CC_REV02_INCLUDE_CAP   EQU 64
+CC_REV02_BSS_BYTES     EQU CC_REV02_READ_CAP+CC_REV02_TOKEN_CAP+CC_REV02_TEXT_CAP+CC_REV02_OBJ_CAP+CC_REV02_INCLUDE_CAP
 CC_REV02_T_EOF         EQU 0
 CC_REV02_T_ID          EQU 1
 CC_REV02_T_NUM         EQU 2
@@ -10132,6 +10133,7 @@ cc_rev02_readbuf       EQU cc_product_bss
 cc_rev02_token         EQU cc_rev02_readbuf+CC_REV02_READ_CAP
 cc_rev02_text          EQU cc_rev02_token+CC_REV02_TOKEN_CAP
 cc_rev02_objbuf        EQU cc_rev02_text+CC_REV02_TEXT_CAP
+cc_rev02_includebuf    EQU cc_rev02_objbuf+CC_REV02_OBJ_CAP
 cc_rev02_read_ptr:     dw 0
 cc_rev02_read_left:    dw 0
 cc_rev02_have_push:    db 0
@@ -10148,6 +10150,16 @@ cc_rev02_remainder:    dw 0
 cc_rev02_div_count:    db 0
 cc_rev02_main_offset:  dw 0
 cc_rev02_op:           db 0
+cc_rev02_line_start:   db 0
+cc_rev02_include_depth: db 0
+cc_rev02_parent_handle: db HANDLE_FREE
+cc_rev02_parent_read_ptr: dw 0
+cc_rev02_parent_read_left: dw 0
+cc_rev02_pp_len:       db 0
+cc_rev02_pp_new_handle: db HANDLE_FREE
+cc_rev02_pp_name:      defs 11,0
+cc_rev02_pp_stat_req:  defs 4,0
+cc_rev02_pp_stat_out:  defs 10,0
 
 cc_rev02_kw_int:       db 'int',0
 cc_rev02_kw_void:      db 'void',0
@@ -10161,11 +10173,21 @@ cc_rev02_compile_stream:
     ld (cc_rev02_read_left),a
     ld (cc_rev02_read_left+1),a
     ld (cc_rev02_have_push),a
+    ld (cc_rev02_include_depth),a
+    ld (cc_rev02_parent_read_ptr),a
+    ld (cc_rev02_parent_read_ptr+1),a
+    ld (cc_rev02_parent_read_left),a
+    ld (cc_rev02_parent_read_left+1),a
+    inc a
+    ld (cc_rev02_line_start),a
+    xor a
     ld (cc_rev02_text_len),a
     ld (cc_rev02_text_len+1),a
     ld (cc_rev02_saw_main),a
     ld (cc_rev02_main_offset),a
     ld (cc_rev02_main_offset+1),a
+    ld a,HANDLE_FREE
+    ld (cc_rev02_parent_handle),a
     call cc_rev02_next_token
     ret c
 cc_rev02_tu_loop:
@@ -10580,7 +10602,12 @@ cc_rev02_next_char_buffer:
     ld a,(cc_rev02_source_handle)
     ld e,a
     ld d,0
+    ld a,(cc_rev02_include_depth)
+    or a
     ld hl,cc_rev02_readbuf
+    jr z,cc_rev02_next_char_read_dst
+    ld hl,cc_rev02_includebuf
+cc_rev02_next_char_read_dst:
     ld bc,CC_REV02_READ_CAP
     ld a,SYS_READ
     call SYSCALL_GATEWAY
@@ -10589,7 +10616,12 @@ cc_rev02_next_char_buffer:
     or l
     jr z,cc_rev02_next_char_eof
     ld (cc_rev02_read_left),hl
+    ld a,(cc_rev02_include_depth)
+    or a
     ld hl,cc_rev02_readbuf
+    jr z,cc_rev02_next_char_ptr_ready
+    ld hl,cc_rev02_includebuf
+cc_rev02_next_char_ptr_ready:
     ld (cc_rev02_read_ptr),hl
 cc_rev02_next_char_have:
     ld hl,(cc_rev02_read_ptr)
@@ -10602,6 +10634,31 @@ cc_rev02_next_char_have:
     or a
     ret
 cc_rev02_next_char_eof:
+    ld a,(cc_rev02_include_depth)
+    or a
+    jr z,cc_rev02_next_char_root_eof
+    ; End of one-level quoted include: close it, restore the exact buffered
+    ; parent stream, then emit one preprocessing whitespace boundary.
+    ld a,(cc_rev02_source_handle)
+    ld l,a
+    ld h,0
+    ld a,SYS_CLOSE
+    call SYSCALL_GATEWAY
+    ret c
+    ld a,(cc_rev02_parent_handle)
+    ld (cc_rev02_source_handle),a
+    ld a,HANDLE_FREE
+    ld (cc_rev02_parent_handle),a
+    ld hl,(cc_rev02_parent_read_ptr)
+    ld (cc_rev02_read_ptr),hl
+    ld hl,(cc_rev02_parent_read_left)
+    ld (cc_rev02_read_left),hl
+    xor a
+    ld (cc_rev02_include_depth),a
+    ld a,10                 ; include EOF is a preprocessing whitespace boundary
+    or a
+    ret
+cc_rev02_next_char_root_eof:
     xor a
     ret
 cc_rev02_unget_char:
@@ -10623,13 +10680,19 @@ cc_rev02_lex_skip:
     cp 9
     jr z,cc_rev02_lex_skip
     cp 10
-    jr z,cc_rev02_lex_skip
+    jr z,cc_rev02_lex_newline
     cp 13
-    jr z,cc_rev02_lex_skip
+    jr z,cc_rev02_lex_newline
+    cp '#'
+    jr z,cc_rev02_lex_hash
     cp '/'
     jr z,cc_rev02_lex_slash
+    push af
+    xor a
+    ld (cc_rev02_line_start),a
+    pop af
     call cc_rev02_is_alpha_us
-    jr nc,cc_rev02_lex_ident_start
+    jp nc,cc_rev02_lex_ident_start
     call cc_rev02_is_digit
     jp nc,cc_rev02_lex_num_start
     ld (cc_rev02_token),a
@@ -10639,6 +10702,30 @@ cc_rev02_lex_skip:
     ld (cc_rev02_tok_kind),a
     xor a
     ret
+cc_rev02_lex_newline:
+    ld a,1
+    ld (cc_rev02_line_start),a
+    jr cc_rev02_lex_skip
+
+cc_rev02_lex_hash:
+    ld a,(cc_rev02_line_start)
+    or a
+    jr z,cc_rev02_lex_hash_punct
+    call cc_rev02_pp_directive
+    ret c
+    jr cc_rev02_lex_skip
+cc_rev02_lex_hash_punct:
+    xor a
+    ld (cc_rev02_line_start),a
+    ld a,'#'
+    ld (cc_rev02_token),a
+    ld a,1
+    ld (cc_rev02_tok_len),a
+    ld a,CC_REV02_T_PUNCT
+    ld (cc_rev02_tok_kind),a
+    xor a
+    ret
+
 cc_rev02_lex_slash:
     call cc_rev02_next_char
     ret c
@@ -10647,6 +10734,8 @@ cc_rev02_lex_slash:
     cp '*'
     jr z,cc_rev02_block_comment
     call cc_rev02_unget_char
+    xor a
+    ld (cc_rev02_line_start),a
     ld a,'/'
     ld (cc_rev02_token),a
     ld a,1
@@ -10662,22 +10751,37 @@ cc_rev02_line_comment:
     jp z,cc_rev02_lex_eof
     cp 10
     jr nz,cc_rev02_line_comment
-    jr cc_rev02_lex_skip
+    ld a,1
+    ld (cc_rev02_line_start),a
+    jp cc_rev02_lex_skip
 cc_rev02_block_comment:
     call cc_rev02_next_char
     ret c
     or a
     jp z,cc_rev02_format
+    cp 10
+    jr nz,cc_rev02_block_star_check
+    ld a,1
+    ld (cc_rev02_line_start),a
+    jr cc_rev02_block_comment
+cc_rev02_block_star_check:
     cp '*'
     jr nz,cc_rev02_block_comment
+cc_rev02_block_after_star:
     call cc_rev02_next_char
     ret c
     or a
     jp z,cc_rev02_format
+    cp 10
+    jr nz,cc_rev02_block_end_check
+    ld a,1
+    ld (cc_rev02_line_start),a
+    jr cc_rev02_block_comment
+cc_rev02_block_end_check:
     cp '/'
-    jr z,cc_rev02_lex_skip
+    jp z,cc_rev02_lex_skip
     cp '*'
-    jr z,cc_rev02_block_comment
+    jr z,cc_rev02_block_after_star
     jr cc_rev02_block_comment
 cc_rev02_lex_ident_start:
     call cc_rev02_token_put
@@ -10732,6 +10836,198 @@ cc_rev02_lex_eof:
     xor a
     ld (cc_rev02_tok_kind),a
     ret
+
+; Minimal first Stage-E preprocessor closure: one-level quoted local include.
+; It is deliberately source-generic and uses only ordinary STAT/OPEN/READ/CLOSE.
+; Other directives fail closed until the later preprocessor checkpoints.
+cc_rev02_pp_directive:
+    ; A directive in an included stream cannot itself include in version 1.
+    ; This first checkpoint rejects every nested directive, which is stricter
+    ; than the final define-capable path and prevents include cycles now.
+    ld a,(cc_rev02_include_depth)
+    or a
+    jp nz,cc_rev02_notsup
+    xor a
+    ld (cc_rev02_line_start),a
+
+    ; Parse exact lower-case directive word "include" after horizontal space.
+cc_rev02_pp_lead_space:
+    call cc_rev02_next_char
+    ret c
+    cp ' '
+    jr z,cc_rev02_pp_lead_space
+    cp 9
+    jr z,cc_rev02_pp_lead_space
+    ld hl,cc_rev02_pp_kw_include
+cc_rev02_pp_word_loop:
+    ld c,(hl)
+    ld b,a
+    ld a,c
+    or a
+    jr z,cc_rev02_pp_word_done
+    ld a,b
+    cp c
+    jp nz,cc_rev02_notsup
+    inc hl
+    call cc_rev02_next_char
+    ret c
+    jr cc_rev02_pp_word_loop
+cc_rev02_pp_word_done:
+    ld a,b
+    cp ' '
+    jr z,cc_rev02_pp_after_word_space
+    cp 9
+    jp nz,cc_rev02_notsup
+cc_rev02_pp_after_word_space:
+    call cc_rev02_next_char
+    ret c
+    cp ' '
+    jr z,cc_rev02_pp_after_word_space
+    cp 9
+    jr z,cc_rev02_pp_after_word_space
+    cp '"'
+    jp nz,cc_rev02_notsup
+
+    xor a
+    ld (cc_rev02_pp_len),a
+cc_rev02_pp_quote_loop:
+    call cc_rev02_next_char
+    ret c
+    or a
+    jp z,cc_rev02_format
+    cp '"'
+    jr z,cc_rev02_pp_quote_done
+    ld (cc_rev02_pp_char),a
+    call cc_rev02_pp_portable_char
+    jp c,cc_rev02_inval
+    ld a,(cc_rev02_pp_len)
+    cp 10
+    jp nc,cc_rev02_toolong
+    ld e,a
+    ld d,0
+    ld hl,cc_rev02_pp_name
+    add hl,de
+    ld a,(cc_rev02_pp_char)
+    ld (hl),a
+    ld a,(cc_rev02_pp_len)
+    inc a
+    ld (cc_rev02_pp_len),a
+    jr cc_rev02_pp_quote_loop
+cc_rev02_pp_quote_done:
+    ld a,(cc_rev02_pp_len)
+    or a
+    jp z,cc_rev02_inval
+    ld e,a
+    ld d,0
+    ld hl,cc_rev02_pp_name
+    add hl,de
+    ld (hl),0
+    ; Explicitly reject '.' and '..'. Slash never passes portable-char.
+    ld a,(cc_rev02_pp_len)
+    cp 1
+    jr nz,cc_rev02_pp_check_dotdot
+    ld a,(cc_rev02_pp_name)
+    cp '.'
+    jp z,cc_rev02_inval
+    jr cc_rev02_pp_trailer
+cc_rev02_pp_check_dotdot:
+    cp 2
+    jr nz,cc_rev02_pp_trailer
+    ld a,(cc_rev02_pp_name)
+    cp '.'
+    jr nz,cc_rev02_pp_trailer
+    ld a,(cc_rev02_pp_name+1)
+    cp '.'
+    jp z,cc_rev02_inval
+
+cc_rev02_pp_trailer:
+    ; Only horizontal whitespace may follow the closing quote on its line.
+    call cc_rev02_next_char
+    ret c
+cc_rev02_pp_trailer_loop:
+    or a
+    jr z,cc_rev02_pp_trailer_done
+    cp ' '
+    jr z,cc_rev02_pp_trailer_more
+    cp 9
+    jr z,cc_rev02_pp_trailer_more
+    cp 10
+    jr z,cc_rev02_pp_trailer_newline
+    cp 13
+    jr z,cc_rev02_pp_trailer_newline
+    jp cc_rev02_format
+cc_rev02_pp_trailer_more:
+    call cc_rev02_next_char
+    ret c
+    jr cc_rev02_pp_trailer_loop
+cc_rev02_pp_trailer_newline:
+    ld a,1
+    ld (cc_rev02_line_start),a
+cc_rev02_pp_trailer_done:
+    ; Validate typed local header through ordinary namespace semantics.
+    ld hl,cc_rev02_pp_name
+    ld (cc_rev02_pp_stat_req),hl
+    ld de,cc_rev02_pp_stat_out
+    ld (cc_rev02_pp_stat_req+2),de
+    ld hl,cc_rev02_pp_stat_req
+    ld a,SYS_STAT
+    call SYSCALL_GATEWAY
+    ret c
+    ld a,(cc_rev02_pp_stat_out)
+    cp OBJ_C
+    jr z,cc_rev02_pp_type_ok
+    cp OBJ_TXT
+    jp nz,cc_rev02_format
+cc_rev02_pp_type_ok:
+    ld hl,cc_rev02_pp_name
+    ld c,O_READ
+    ld b,0
+    ld a,SYS_OPEN
+    call SYSCALL_GATEWAY
+    ret c
+    ld a,h
+    or a
+    jp nz,cc_rev02_format
+    ld a,l
+    ld (cc_rev02_pp_new_handle),a
+
+    ; Preserve the exact unread parent window. The include uses a distinct
+    ; 64-byte buffer, so these unread bytes cannot be overwritten.
+    ld a,(cc_rev02_source_handle)
+    ld (cc_rev02_parent_handle),a
+    ld hl,(cc_rev02_read_ptr)
+    ld (cc_rev02_parent_read_ptr),hl
+    ld hl,(cc_rev02_read_left)
+    ld (cc_rev02_parent_read_left),hl
+    ld a,(cc_rev02_pp_new_handle)
+    ld (cc_rev02_source_handle),a
+    xor a
+    ld (cc_rev02_read_left),a
+    ld (cc_rev02_read_left+1),a
+    ld (cc_rev02_have_push),a
+    inc a
+    ld (cc_rev02_include_depth),a
+    ld (cc_rev02_line_start),a
+    xor a
+    ret
+
+cc_rev02_pp_portable_char:
+    ld a,(cc_rev02_pp_char)
+    call cc_rev02_is_alnum_us
+    ret nc
+    ld a,(cc_rev02_pp_char)
+    cp '.'
+    jr z,cc_rev02_pp_char_ok
+    cp '-'
+    jr z,cc_rev02_pp_char_ok
+    scf
+    ret
+cc_rev02_pp_char_ok:
+    or a
+    ret
+
+cc_rev02_pp_kw_include: db 'include',0
+cc_rev02_pp_char: db 0
 
 cc_rev02_token_put:
     ld c,a
@@ -10941,6 +11237,10 @@ cc_rev02_nospc:
     ld a,E_NOSPC
     scf
     ret
+cc_rev02_notsup:
+    ld a,E_NOTSUP
+    scf
+    ret
 cc_rev02_format:
     ld a,E_FORMAT
     scf
@@ -10991,6 +11291,25 @@ cc_rev02_last_bad:
     ret
 
 cc_rev02_close_source:
+    ld a,(cc_rev02_include_depth)
+    or a
+    jr z,cc_rev02_close_root
+    ld a,(cc_rev02_source_handle)
+    cp HANDLE_FREE
+    jr z,cc_rev02_close_restore_parent
+    ld l,a
+    ld h,0
+    ld a,SYS_CLOSE
+    call SYSCALL_GATEWAY
+    ret c
+cc_rev02_close_restore_parent:
+    ld a,(cc_rev02_parent_handle)
+    ld (cc_rev02_source_handle),a
+    ld a,HANDLE_FREE
+    ld (cc_rev02_parent_handle),a
+    xor a
+    ld (cc_rev02_include_depth),a
+cc_rev02_close_root:
     ld a,(cc_rev02_source_handle)
     cp HANDLE_FREE
     ret z
