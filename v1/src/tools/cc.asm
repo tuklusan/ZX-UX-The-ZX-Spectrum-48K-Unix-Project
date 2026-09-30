@@ -10145,6 +10145,7 @@ cc_rev02_read_left:    dw 0
 cc_rev02_have_push:    db 0
 cc_rev02_push_char:    db 0
 cc_rev02_push_macro:   db 0
+cc_rev02_macro_push_char: db 0
 cc_rev02_last_macro:   db 0
 cc_rev02_tok_kind:     db 0
 cc_rev02_tok_len:      db 0
@@ -10189,6 +10190,7 @@ cc_rev02_compile_stream:
     ld (cc_rev02_read_left+1),a
     ld (cc_rev02_have_push),a
     ld (cc_rev02_push_macro),a
+    ld (cc_rev02_macro_push_char),a
     ld (cc_rev02_last_macro),a
     ld (cc_rev02_include_depth),a
     ld (cc_rev02_macro_count),a
@@ -10606,27 +10608,32 @@ cc_rev02_emit16:
     jp cc_rev02_emit8
 
 cc_rev02_next_char:
-    ld a,(cc_rev02_have_push)
-    or a
-    jr z,cc_rev02_next_char_no_push
+    ; Macro replacement has an independent lookahead slot.  The source byte
+    ; already pushed while recognizing the macro identifier stays parked until
+    ; the replacement has been tokenized completely.
     ld a,(cc_rev02_push_macro)
     or a
-    jr nz,cc_rev02_next_char_take_push
+    jr nz,cc_rev02_next_char_macro_push
     ld a,(cc_rev02_macro_left)
     or a
     jr nz,cc_rev02_next_char_macro
-cc_rev02_next_char_take_push:
+    ld a,(cc_rev02_have_push)
+    or a
+    jr z,cc_rev02_next_char_buffer
     xor a
     ld (cc_rev02_have_push),a
-    ld a,(cc_rev02_push_macro)
     ld (cc_rev02_last_macro),a
     ld a,(cc_rev02_push_char)
     or a
     ret
-cc_rev02_next_char_no_push:
-    ld a,(cc_rev02_macro_left)
+cc_rev02_next_char_macro_push:
+    xor a
+    ld (cc_rev02_push_macro),a
+    inc a
+    ld (cc_rev02_last_macro),a
+    ld a,(cc_rev02_macro_push_char)
     or a
-    jr z,cc_rev02_next_char_buffer
+    ret
 cc_rev02_next_char_macro:
     ld hl,(cc_rev02_macro_ptr)
     ld a,(hl)
@@ -10710,18 +10717,35 @@ cc_rev02_next_char_root_eof:
     xor a
     ret
 cc_rev02_unget_char:
-    ld (cc_rev02_push_char),a
+    ld c,a
     ld a,(cc_rev02_last_macro)
+    or a
+    jr z,cc_rev02_unget_source
+    ld a,(cc_rev02_push_macro)
+    or a
+    jp nz,cc_rev02_format
+    ld a,c
+    ld (cc_rev02_macro_push_char),a
+    ld a,1
     ld (cc_rev02_push_macro),a
+    ret
+cc_rev02_unget_source:
+    ld a,(cc_rev02_have_push)
+    or a
+    jp nz,cc_rev02_format
+    ld a,c
+    ld (cc_rev02_push_char),a
     ld a,1
     ld (cc_rev02_have_push),a
     ret
 
 cc_rev02_next_token:
-    ; A replacement remains active across every token it contributes.  Clear
-    ; the recursion guard only when a later token request begins after all
-    ; replacement bytes have been consumed.
+    ; Keep the recursion guard until both replacement bytes and replacement
+    ; lookahead are empty.
     ld a,(cc_rev02_macro_left)
+    or a
+    jr nz,cc_rev02_next_token_macro_state_ready
+    ld a,(cc_rev02_push_macro)
     or a
     jr nz,cc_rev02_next_token_macro_state_ready
     xor a
