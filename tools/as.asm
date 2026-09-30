@@ -4539,7 +4539,7 @@ as_rev02_read_more:
     ret c
     ld a,h
     or l
-    jr z,as_rev02_eof
+    jp z,as_rev02_eof
     ld (as_rev02_read_left),hl
     ld hl,AS_REV02_READ_BUF
     ld (as_rev02_read_ptr),hl
