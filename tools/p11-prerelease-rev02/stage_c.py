@@ -24,11 +24,14 @@ def main():
     ap.add_argument("--sdk-root",type=Path,required=True)
     ap.add_argument("--output",type=Path,required=True)
     ap.add_argument("--kernel-probe",type=Path,required=True)
+    ap.add_argument("--product-tools-report",type=Path,required=True)
     ns=ap.parse_args()
     root=ns.root.resolve(); sdk=ns.sdk_root.resolve(); out=ns.output
     out.mkdir(parents=True,exist_ok=True)
     kernel_probe=json.loads(ns.kernel_probe.read_text())
+    product_report=json.loads(ns.product_tools_report.read_text())
     req(kernel_probe.get("kind")=="rev02-kernel-closure-probe" and kernel_probe.get("status")=="PASS","kernel closure probe identity")
+    req(product_report.get("kind")=="rev02-product-tools-preflight" and product_report.get("status")=="PASS","product tools preflight identity")
     rel=json.loads((sdk/"SDK-RELEASE.json").read_text())
     req(rel.get("program_count")==30 and len(rel.get("programs",[]))==30,"SDK program corpus")
 
@@ -79,14 +82,21 @@ def main():
       "as":{"source":"tools/as.asm","text":ass},
       "ld":{"source":"tools/ld.asm","text":ld},
     }
+    for name,spec in product_specs.items():
+        row=product_report.get(name,{})
+        req(row.get("source_sha256")==sha(root/spec["source"]),"product tools source binding: "+name)
+        req(isinstance(row.get("mex1_sha256"),str) and len(row["mex1_sha256"])==64,"product MEX1 hash: "+name)
+        req(isinstance(row.get("m48o_tap_sha256"),str) and len(row["m48o_tap_sha256"])==64,"product M48O hash: "+name)
     closures={}
     for name,s in product_specs.items():
         p=root/s["source"]
         has_product_image=("SAVEBIN" in s["text"] and "MEX1" in s["text"])
         closures[name]={
           "source":s["source"],"source_sha256":sha(p),
-          "ordinary_product_binary_sha256":None,
+          "ordinary_product_binary_sha256":product_report[name]["mex1_sha256"],
+          "ordinary_product_m48o_tap_sha256":product_report[name]["m48o_tap_sha256"],
           "installable_product_image_in_source":has_product_image,
+          "deterministic_installable_product_available":True,
         }
         req(not has_product_image,f"{name}: source unexpectedly has direct product image; Stage-C assumptions changed")
 
@@ -116,9 +126,6 @@ def main():
         })
 
     gaps=[
-      {"id":"C001","failure":"ordinary shell executable/product build+delivery path absent",
-       "observed":"sh.asm is a macro library; no current installable /bin/sh MEX1/M48O exists",
-       "planned_paths":["v1/src/shell/sh.asm","tools/p11-prerelease-rev02/product_tools.py"],"blocks":["developer session"]},
       {"id":"C002","failure":"ordinary /bin/cc semantic compiler route incomplete",
        "observed":"REV02 ordinary cc now consumes arbitrary source through bounded SYS_READ, resolves one-level quoted local OBJ_C/OBJ_TXT includes through ordinary STAT/OPEN/READ/CLOSE with a distinct bounded include window, expands the frozen bounded source-generic object-like #define constant surface, parses a generic integer constant-function subset, emits real OBJ1, and transactionally publishes it; built-in <c48.h>, declarations/lvalues/calls/control flow/full frozen C48 remain incomplete",
        "planned_paths":["v1/src/tools/cc.asm","tools/p11-prerelease-rev02/product_tools.py"],"blocks":["cc","OBJ1"]},
@@ -245,6 +252,7 @@ def main():
       "assertions":{
         "all_30_exact_tapes_accounted":"PASS",
         "planned_outputs_absent":"PASS",
+        "deterministic_product_tool_packaging_available":"PASS",
         "boot_to_real_shell_gap_recorded":"PASS",
         "object_tape_spawn_gap_recorded":"PASS",
         "generic_cli_gaps_recorded":"PASS",
@@ -254,6 +262,7 @@ def main():
         "no_p11pr_compiler_invoked":"PASS",
         "no_internal_cc_or_ld_invoked":"PASS",
         "ordinary_product_path_reproduced_as_unavailable":"PASS",
+        "shell_product_packaging_gap_resolved":"PASS",
         "legacy_publisher_not_used":"PASS",
         "stage_c_requires_rerun_after_product_correction":"PASS"
       }}

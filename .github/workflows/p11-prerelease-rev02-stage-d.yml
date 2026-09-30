@@ -19,14 +19,19 @@ on:
       - 'tools/p11-prerelease-rev02/stage_c.py'
       - 'tools/p11-prerelease-rev02/kernel_closure_probe.py'
       - 'tools/p11-prerelease-rev02/stage_d.py'
+      - 'tools/p11-prerelease-rev02/product_tools.py'
       - 'tools/p11-prerelease/sdk_acquire.py'
       - 'docs/01-ZX-UX-ARCHITECTURE-REV17.md'
       - 'docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV08.md'
       - 'docs/01-ZX-UX-ARCHITECTURE-REV18.md'
       - 'docs/02-ZX-UX-IMPLEMENTATION-STEPS-REV09.md'
-      - 'v1/src/kernel/process.asm'
-      - 'v1/src/kernel/syscall.asm'
-      - 'v1/src/kernel/tape.asm'
+      - 'v1/src/boot/**'
+      - 'v1/src/kernel/**'
+      - 'v1/src/shell/sh.asm'
+      - 'v1/src/tools/cc.asm'
+      - 'v1/src/libc48/runtime_archive.asm'
+      - 'tools/as.asm'
+      - 'tools/ld.asm'
   workflow_dispatch: {}
 
 permissions:
@@ -45,6 +50,11 @@ jobs:
         with: {fetch-depth: 0}
       - name: Set up certified ZX-UX runtime
         uses: ./.github/actions/setup-zxux-runtime
+      - name: Build deterministic ordinary product tools
+        run: |
+          set -euo pipefail
+          tools/runtime/python/bin/python tools/p11-prerelease-rev02/product_tools.py \
+            --root . --output /tmp/rev02-product-tools
       - name: Measure current resident-kernel closure lower bound
         run: |
           set -euo pipefail
@@ -61,7 +71,8 @@ jobs:
           set -euo pipefail
           python3 tools/p11-prerelease-rev02/stage_c.py \
             --root . --sdk-root /tmp/rev02-sdk-reference --output /tmp/rev02-stage-c \
-            --kernel-probe /tmp/rev02-kernel-probe/KERNEL-CLOSURE-PROBE.json
+            --kernel-probe /tmp/rev02-kernel-probe/KERNEL-CLOSURE-PROBE.json \
+            --product-tools-report /tmp/rev02-product-tools/PRODUCT-TOOLS-PREFLIGHT.json
       - name: Classify every current root blocker under frozen authority
         run: |
           set -euo pipefail
