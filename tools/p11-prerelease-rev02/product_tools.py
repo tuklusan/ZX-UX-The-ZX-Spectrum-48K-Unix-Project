@@ -262,7 +262,7 @@ def main():
     as_asm,as_image,as_relocs,as_bss=build_relocatable(
         sj,out,"as",
         f'    INCLUDE "{(root/"v1/include/zx48ux.inc").as_posix()}"\n    INCLUDE "{(root/"tools/as.asm").as_posix()}"\n    INCLUDE "{(root/"tools/as_text.asm").as_posix()}"\n',
-        '    EMIT_P10_AS_OBJ1_SYMBOL_ROUTINES\n    EMIT_P10_AS_OBJ1_RELOC_ROUTINES\n    EMIT_P10_AS_LEXER_ROUTINES\n    EMIT_P10_AS_SYMBOL_ROUTINES\n    EMIT_P10_AS_DIRECTIVE_ROUTINES\n    EMIT_P10_AS_EXPR_ROUTINES\n    EMIT_P10_AS_BINDING_ROUTINES\n    EMIT_P10_AS_OPCODE_COVERAGE\n    EMIT_P10_AS_OBJ1_WRITER\n    EMIT_P10_AS_NAME_ROUTINES\n    EMIT_P10_AS_TRANSACTION_ROUTINES\n    EMIT_R17_AS_NSP1_OBJ1\n    EMIT_R17_AS_TEXT_OBJ1\n    EMIT_REV02_AS_PRODUCT_CLI\n',
+        '    EMIT_P10_AS_OBJ1_SYMBOL_ROUTINES\n    EMIT_P10_AS_OBJ1_RELOC_ROUTINES\n    EMIT_P10_AS_LEXER_ROUTINES\n    EMIT_P10_AS_SYMBOL_ROUTINES\n    EMIT_P10_AS_DIRECTIVE_ROUTINES\n    EMIT_P10_AS_EXPR_ROUTINES\n    EMIT_P10_AS_BINDING_ROUTINES\n    EMIT_P10_AS_OBJ1_WRITER\n    EMIT_P10_AS_NAME_ROUTINES\n    EMIT_P10_AS_TRANSACTION_ROUTINES\n    EMIT_R17_AS_NSP1_OBJ1\n    EMIT_R17_AS_TEXT_OBJ1\n    EMIT_REV02_AS_PRODUCT_CLI\n',
         '    defs AS_REV02_BSS_BYTES,0\n')
     req(as_image.is_file() and 64 <= as_image.stat().st_size <= 12288,"as product image size")
     as_resident=as_image.stat().st_size+as_bss+512
