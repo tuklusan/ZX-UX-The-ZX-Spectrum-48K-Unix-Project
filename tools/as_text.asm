@@ -242,6 +242,12 @@ r17_txt_mn_next:
     ld b,c
 r17_txt_mn_cmp:
     ld a,(de)
+    cp 'A'
+    jr c,r17_txt_mn_cmp_folded
+    cp 'Z'+1
+    jr nc,r17_txt_mn_cmp_folded
+    or $20
+r17_txt_mn_cmp_folded:
     cp (hl)
     jr nz,r17_txt_mn_miss
     inc de
@@ -2170,6 +2176,7 @@ r17_txt_mnemonics:
     db 3,"out",R17_TXT_M_OUT
     db 2,"db",R17_TXT_M_DB
     db 2,"dw",R17_TXT_M_DW
+    db 2,"ds",R17_TXT_M_DEFS
     db 4,"defs",R17_TXT_M_DEFS
     db 3,"org",R17_TXT_M_ORG
     db 3,"rst",R17_TXT_M_RST

@@ -3351,6 +3351,12 @@ r17_as_index_dd:
 ; Compute A = target - (logical PC + 2), requiring signed 8-bit range.
 ; DE=absolute target.
 r17_as_relative:
+    ld a,(r17_as_measure_mode)
+    or a
+    jr z,r17_as_relative_live
+    xor a
+    ret
+r17_as_relative_live:
     ld (r17_as_w0),de
     ld hl,(r17_as_pc)
     inc hl
@@ -4299,11 +4305,22 @@ AS_REV02_ARG1_MIN EQU 13
 AS_REV02_READ_CAP EQU 64
 AS_REV02_LINE_CAP EQU 96
 AS_REV02_TEXT_CAP EQU 8192
-AS_REV02_OBJ_CAP EQU AS_REV02_TEXT_CAP+24
-AS_REV02_BSS_BYTES EQU AS_REV02_READ_CAP+AS_REV02_LINE_CAP+AS_REV02_OBJ_CAP
+AS_REV02_SYM_CAP EQU 64
+AS_REV02_SYM_REC EQU 20
+AS_REV02_RELOC_CAP EQU 128
+AS_REV02_RELOC_REC EQU 6
+AS_REV02_OBJ_CAP EQU 24+AS_REV02_TEXT_CAP+AS_REV02_SYM_CAP*AS_REV02_SYM_REC+AS_REV02_RELOC_CAP*AS_REV02_RELOC_REC
 AS_REV02_READ_BUF EQU as_product_bss
-AS_REV02_LINE_BUF EQU as_product_bss+AS_REV02_READ_CAP
+AS_REV02_LINE_BUF EQU AS_REV02_READ_BUF+AS_REV02_READ_CAP
 AS_REV02_OBJ_BUF EQU AS_REV02_LINE_BUF+AS_REV02_LINE_CAP
+AS_REV02_SYM_BUF EQU AS_REV02_OBJ_BUF+AS_REV02_OBJ_CAP
+AS_REV02_SYM_STATE EQU AS_REV02_SYM_BUF+AS_REV02_SYM_CAP*AS_REV02_SYM_REC
+AS_REV02_RELOC_BUF EQU AS_REV02_SYM_STATE+AS_REV02_SYM_CAP
+AS_REV02_NAME_BUF EQU AS_REV02_RELOC_BUF+AS_REV02_RELOC_CAP*AS_REV02_RELOC_REC
+AS_REV02_DESC_BUF EQU AS_REV02_NAME_BUF+16
+AS_REV02_BSS_BYTES EQU AS_REV02_DESC_BUF+16-as_product_bss
+AS_REV02_STATE_EXTERN EQU 1
+AS_REV02_STATE_GLOBAL EQU 2
 
 as_rev02_arg1_ptr:      dw 0
 as_rev02_arg1_len:      dw 0
@@ -4318,6 +4335,17 @@ as_rev02_comment:       db 0
 as_rev02_pending_space: db 0
 as_rev02_have_sep:      db 0
 as_rev02_obj_len:       dw 0
+as_rev02_text_len:      dw 0
+as_rev02_sym_count:     dw 0
+as_rev02_reloc_count:   dw 0
+as_rev02_pass:          db 0
+as_rev02_fixed_mode:    db 0
+as_rev02_pending_sym:   db 0
+as_rev02_pending_add:   dw 0
+as_rev02_sym_index:     db 0
+as_rev02_sym_section:   db 0
+as_rev02_kw_global:     db "global",0
+as_rev02_kw_extern:     db "extern",0
 
 ; MEX1 entry: HL=ARG1, BC=ARG1 length, DE=ENV1.
 as_rev02_product_entry:
@@ -4438,13 +4466,25 @@ as_rev02_compile_fail:
 ; identity/name never participates.  The ordinary P10 symbol/expression core is
 ; resident in the same product image for the later full-symbol driver closure.
 as_rev02_assemble_stream:
-    ; The ordinary product installs a source-generic constant-expression hook.
-    ; REV17 fixed/projection entries explicitly clear this hook, so the frozen
-    ; self-rebuild parser remains byte-for-byte literal in semantics.
+    ; Two-pass generic ordinary assembler. Pass 1 measures TEXT and freezes the
+    ; case-sensitive symbol namespace; pass 2 emits TEXT plus deterministic OBJ1
+    ; symbols/ABS16 relocations. The REV17 literal path remains hook-disabled.
     ld hl,as_rev02_parse_expr
     ld (r17_txt_expr_hook),hl
-    ld hl,0
+    ld hl,as_rev02_record_reloc
     ld (r17_txt_reloc_hook),hl
+    xor a
+    ld (as_rev02_sym_count),a
+    ld (as_rev02_sym_count+1),a
+    ld (as_rev02_reloc_count),a
+    ld (as_rev02_reloc_count+1),a
+    ld (as_rev02_fixed_mode),a
+    inc a
+    ld (as_rev02_pass),a
+    call as_rev02_pass_init
+    jp as_rev02_read_more
+
+as_rev02_pass_init:
     ld hl,AS_REV02_OBJ_BUF+24
     ld (r17_as_out),hl
     ld hl,AS_REV02_OBJ_BUF
@@ -4458,14 +4498,35 @@ as_rev02_assemble_stream:
     ld (r17_as_end),hl
     ld a,1
     ld (r17_as_single_mode),a
-    xor a
+    ld a,2
+    ld b,a
+    ld a,(as_rev02_pass)
+    sub b
+    neg
     ld (r17_as_measure_mode),a
+    xor a
     ld (r17_as_guard_mode),a
     ld (r17_txt_saw_org),a
     ld (as_rev02_line_len),a
     ld (as_rev02_comment),a
     ld (as_rev02_pending_space),a
     ld (as_rev02_have_sep),a
+    ld (as_rev02_pending_sym),a
+    ret
+
+as_rev02_reopen_source:
+    call as_rev02_close
+    ret c
+    ld hl,(as_rev02_source_ptr)
+    ld c,O_READ
+    ld b,0
+    ld a,SYS_OPEN
+    call SYSCALL_GATEWAY
+    ret c
+    ld a,l
+    ld (as_rev02_source_handle),a
+    xor a
+    ret
 
 as_rev02_read_more:
     ld a,(as_rev02_source_handle)
@@ -4555,20 +4616,29 @@ as_rev02_eof:
     or a
     call nz,as_rev02_finish_line
     ret c
-    ld a,(r17_txt_saw_org)
+    ld a,(as_rev02_pass)
     cp 1
-    jp nz,as_rev02_format
+    jr nz,as_rev02_eof_pass2
     ld hl,(r17_as_produced)
-    ld a,h
-    or l
-    jp z,as_rev02_format
-    ld (r17_as_text_size),hl
-    ld hl,0
-    ld (r17_as_cur),hl
-    ld (r17_as_end),hl
+    ld (as_rev02_text_len),hl
+    call as_rev02_validate_symbols
+    ret c
+    call as_rev02_reopen_source
+    ret c
+    ld a,2
+    ld (as_rev02_pass),a
     xor a
-    ld (r17_as_single_mode),a
-    call r17_as_records_done
+    ld (as_rev02_reloc_count),a
+    ld (as_rev02_reloc_count+1),a
+    call as_rev02_pass_init
+    jp as_rev02_read_more
+as_rev02_eof_pass2:
+    ld hl,(r17_as_produced)
+    ld de,(as_rev02_text_len)
+    or a
+    sbc hl,de
+    jp nz,as_rev02_format
+    call as_rev02_write_obj1
     ret
 
 as_rev02_reset_line:
@@ -4601,12 +4671,15 @@ as_rev02_line_nospc:
     scf
     ret
 
-; Dispatch one canonical non-empty source line.  The first semantic line is an
-; ordinary generic ORG accepted at any 16-bit address; subsequent ORG is illegal.
+; Dispatch one canonical source line through the ordinary symbol/directive
+; driver, then through the qualified documented-Z80 semantic encoder.
 as_rev02_finish_line:
     ld a,(as_rev02_line_len)
     or a
     ret z
+    xor a
+    ld (as_rev02_pending_sym),a
+    ld a,(as_rev02_line_len)
     ld e,a
     ld d,0
     ld hl,AS_REV02_LINE_BUF
@@ -4615,29 +4688,131 @@ as_rev02_finish_line:
     ld (r17_txt_line_end),hl
     ld hl,AS_REV02_LINE_BUF
     ld (r17_txt_p),hl
+    jp as_rev02_drive_line
+
+as_rev02_drive_line:
+    ld hl,(r17_txt_p)
+    ld (r17_txt_line_start),hl
+    call as_rev02_name_parse
+    ret c
+    call r17_txt_peek_soft
+    cp ':'
+    jr z,as_rev02_label
+    cp ' '
+    jr nz,as_rev02_dispatch_line
+
+    ; First-token directives.
+    ld hl,as_rev02_kw_global
+    call as_rev02_name_eq
+    jr z,as_rev02_global
+    ld hl,as_rev02_kw_extern
+    call as_rev02_name_eq
+    jr z,as_rev02_extern
+    call as_rev02_name_is_org
+    jp z,as_rev02_org
+
+    ; symbol EQU expression uses the first token as the symbol name.
+    call as_rev02_is_equ_tail
+    jp z,as_rev02_equ
+as_rev02_dispatch_line:
+    ld hl,(r17_txt_line_start)
+    ld (r17_txt_p),hl
+    call r17_txt_dispatch_line
+    ret
+
+as_rev02_label:
+    ld a,(as_rev02_pass)
+    cp 1
+    jr nz,as_rev02_label_tail
+    ld a,(as_rev02_fixed_mode)
+    or a
+    jr z,as_rev02_label_text
+    ld de,(r17_as_pc)
+    ld c,3
+    jr as_rev02_label_define
+as_rev02_label_text:
+    ld de,(r17_as_produced)
+    ld c,1
+as_rev02_label_define:
+    call as_rev02_sym_define
+    ret c
+as_rev02_label_tail:
+    call as_rev02_expr_advance       ; ':'
+    call r17_txt_peek_soft
+    cp ' '
+    call z,as_rev02_expr_advance
+    ld hl,(r17_txt_p)
+    ld de,(r17_txt_line_end)
+    or a
+    sbc hl,de
+    ret z
+    jp as_rev02_drive_line
+
+as_rev02_global:
+    ld a,(as_rev02_pass)
+    cp 1
+    ret nz
+    call as_rev02_skip_one_space
+    call as_rev02_name_parse
+    ret c
+    call r17_txt_expect_end
+    ret c
+    call as_rev02_sym_get_or_create
+    ret c
+    ld a,(ix+19)
+    or 1
+    ld (ix+19),a
+    ld a,(as_rev02_sym_index)
+    call as_rev02_state_ptr
+    ld a,(hl)
+    bit 1,a
+    jp nz,as_rev02_format
+    or AS_REV02_STATE_GLOBAL
+    ld (hl),a
+    xor a
+    ret
+
+as_rev02_extern:
+    ld a,(as_rev02_pass)
+    cp 1
+    ret nz
+    call as_rev02_skip_one_space
+    call as_rev02_name_parse
+    ret c
+    call r17_txt_expect_end
+    ret c
+    call as_rev02_sym_get_or_create
+    ret c
+    ld a,(ix+18)
+    or a
+    jp nz,as_rev02_format
+    ld a,(as_rev02_sym_index)
+    call as_rev02_state_ptr
+    ld a,(hl)
+    bit 0,a
+    jp nz,as_rev02_format
+    or AS_REV02_STATE_EXTERN
+    ld (hl),a
+    ld a,(ix+19)
+    or 1
+    ld (ix+19),a
+    xor a
+    ret
+
+as_rev02_org:
+    ld hl,(r17_as_produced)
+    ld a,h
+    or l
+    jp nz,as_rev02_format
     ld a,(r17_txt_saw_org)
     or a
-    jr nz,as_rev02_dispatch_line
-    ld hl,AS_REV02_LINE_BUF
-    ld a,(hl)
-    cp 'o'
     jp nz,as_rev02_format
-    inc hl
-    ld a,(hl)
-    cp 'r'
-    jp nz,as_rev02_format
-    inc hl
-    ld a,(hl)
-    cp 'g'
-    jp nz,as_rev02_format
-    inc hl
-    ld a,(hl)
-    cp ' '
-    jp nz,as_rev02_format
-    inc hl
-    ld (r17_txt_p),hl
-    call r17_txt_parse_num
+    call as_rev02_skip_one_space
+    call as_rev02_parse_expr
     ret c
+    ld a,(as_rev02_pending_sym)
+    or a
+    jp nz,as_rev02_format
     push de
     call r17_txt_expect_end
     pop de
@@ -4645,10 +4820,359 @@ as_rev02_finish_line:
     ld (r17_as_pc),de
     ld a,1
     ld (r17_txt_saw_org),a
+    ld (as_rev02_fixed_mode),a
     xor a
     ret
-as_rev02_dispatch_line:
-    call r17_txt_dispatch_line
+
+as_rev02_equ:
+    ld a,(as_rev02_pass)
+    cp 1
+    ret nz
+    ; Canonicalization keeps the first separator and removes later operand
+    ; whitespace, so "NAME EQU expr" reaches this driver as "NAME EQUexpr".
+    call as_rev02_skip_one_space
+    call as_rev02_skip_equ_word
+    ret c
+    call as_rev02_parse_expr
+    ret c
+    push de
+    call r17_txt_expect_end
+    pop de
+    ret c
+    call as_rev02_require_abs_expr
+    ret c
+    ld c,3
+    jp as_rev02_sym_define
+
+as_rev02_skip_one_space:
+    call r17_txt_peek
+    ret c
+    cp ' '
+    jp nz,as_rev02_format
+    jp as_rev02_expr_advance
+
+; Z iff the tail after the current separator starts with case-insensitive EQU.
+as_rev02_is_equ_tail:
+    ld hl,(r17_txt_p)
+    inc hl
+    ld a,(hl)
+    or $20
+    cp 'e'
+    ret nz
+    inc hl
+    ld a,(hl)
+    or $20
+    cp 'q'
+    ret nz
+    inc hl
+    ld a,(hl)
+    or $20
+    cp 'u'
+    ret
+
+as_rev02_skip_equ_word:
+    call r17_txt_get
+    ret c
+    or $20
+    cp 'e'
+    jp nz,as_rev02_format
+    call r17_txt_get
+    ret c
+    or $20
+    cp 'q'
+    jp nz,as_rev02_format
+    call r17_txt_get
+    ret c
+    or $20
+    cp 'u'
+    jp nz,as_rev02_format
+    xor a
+    ret
+
+; Name buffer helpers. P10/OBJ1 identifier character authority is reused.
+as_rev02_name_parse:
+    ld hl,AS_REV02_NAME_BUF
+    ld b,16
+    xor a
+as_rev02_name_zero:
+    ld (hl),a
+    inc hl
+    djnz as_rev02_name_zero
+    call r17_txt_peek
+    ret c
+    call as_obj1_name_first_char
+    jp c,as_rev02_format
+    ld ix,AS_REV02_NAME_BUF
+    ld b,0
+as_rev02_name_loop:
+    call r17_txt_get
+    ret c
+    ld (ix+0),a
+    inc ix
+    inc b
+    ld a,b
+    cp 16
+    jp nc,as_rev02_format
+    call r17_txt_peek_soft
+    call as_obj1_name_next_char
+    jr nc,as_rev02_name_loop
+    xor a
+    ld (ix+0),a
+    ret
+
+; HL -> lower-case keyword, NAME_BUF is compared case-insensitively. Z=match.
+as_rev02_name_eq:
+    ld de,AS_REV02_NAME_BUF
+as_rev02_name_eq_loop:
+    ld a,(de)
+    cp 'A'
+    jr c,as_rev02_name_eq_folded
+    cp 'Z'+1
+    jr nc,as_rev02_name_eq_folded
+    or $20
+as_rev02_name_eq_folded:
+    cp (hl)
+    ret nz
+    or a
+    ret z
+    inc de
+    inc hl
+    jr as_rev02_name_eq_loop
+
+as_rev02_name_is_org:
+    ld de,AS_REV02_NAME_BUF
+    ld a,(de)
+    or $20
+    cp 'o'
+    ret nz
+    inc de
+    ld a,(de)
+    or $20
+    cp 'r'
+    ret nz
+    inc de
+    ld a,(de)
+    or $20
+    cp 'g'
+    ret nz
+    inc de
+    ld a,(de)
+    or a
+    ret
+
+; Internal symbol table is already OBJ1-record shaped. All symbols are emitted;
+; local records simply keep GLOBAL clear, while externs are UNDEF|GLOBAL.
+as_rev02_sym_find:
+    ld a,(as_rev02_sym_count)
+    ld b,a
+    xor a
+    ld (as_rev02_sym_index),a
+    ld ix,AS_REV02_SYM_BUF
+as_rev02_sym_find_loop:
+    ld a,b
+    or a
+    jr z,as_rev02_sym_missing
+    push bc
+    push ix
+    ld hl,AS_REV02_NAME_BUF
+    push ix
+    pop de
+as_rev02_sym_cmp:
+    ld a,(de)
+    cp (hl)
+    jr nz,as_rev02_sym_cmp_no
+    or a
+    jr z,as_rev02_sym_cmp_yes
+    inc de
+    inc hl
+    jr as_rev02_sym_cmp
+as_rev02_sym_cmp_no:
+    pop ix
+    pop bc
+    ld de,AS_REV02_SYM_REC
+    add ix,de
+    ld a,(as_rev02_sym_index)
+    inc a
+    ld (as_rev02_sym_index),a
+    djnz as_rev02_sym_find_loop
+as_rev02_sym_missing:
+    ld a,E_NOENT
+    scf
+    ret
+as_rev02_sym_cmp_yes:
+    pop ix
+    pop bc
+    xor a
+    ret
+
+as_rev02_sym_get_or_create:
+    call as_rev02_sym_find
+    ret nc
+    cp E_NOENT
+    ret nz
+    ld a,(as_rev02_pass)
+    cp 1
+    jp nz,as_rev02_format
+    ld a,(as_rev02_sym_count)
+    cp AS_REV02_SYM_CAP
+    jp nc,as_rev02_nospc
+    ld (as_rev02_sym_index),a
+    call as_rev02_sym_ptr
+    push ix
+    pop hl
+    ld b,AS_REV02_SYM_REC
+    xor a
+as_rev02_sym_clear:
+    ld (hl),a
+    inc hl
+    djnz as_rev02_sym_clear
+    ld hl,AS_REV02_NAME_BUF
+    push ix
+    pop de
+    ld bc,16
+    ldir
+    ld a,(as_rev02_sym_count)
+    inc a
+    ld (as_rev02_sym_count),a
+    xor a
+    ret
+
+; A=symbol index -> IX=record.
+as_rev02_sym_ptr:
+    ld l,a
+    ld h,0
+    add hl,hl
+    add hl,hl                   ; *4
+    push hl
+    add hl,hl
+    add hl,hl                   ; *16
+    pop de
+    add hl,de                   ; *20
+    ld de,AS_REV02_SYM_BUF
+    add hl,de
+    push hl
+    pop ix
+    ret
+
+; A=symbol index -> HL=state byte.
+as_rev02_state_ptr:
+    ld e,a
+    ld d,0
+    ld hl,AS_REV02_SYM_STATE
+    add hl,de
+    ret
+
+; NAME_BUF, DE=value, C=section TEXT(1) or ABS(3).
+as_rev02_sym_define:
+    push bc
+    push de
+    call as_rev02_sym_get_or_create
+    pop de
+    pop bc
+    ret c
+    ld a,(ix+18)
+    or a
+    jp nz,as_rev02_format
+    ld a,(as_rev02_sym_index)
+    push de
+    call as_rev02_state_ptr
+    bit 0,(hl)
+    pop de
+    jp nz,as_rev02_format
+    ld (ix+16),e
+    ld (ix+17),d
+    ld (ix+18),c
+    xor a
+    ret
+
+as_rev02_validate_symbols:
+    ld a,(as_rev02_sym_count)
+    ld b,a
+    xor a
+    ld (as_rev02_sym_index),a
+    ld ix,AS_REV02_SYM_BUF
+as_rev02_validate_sym_loop:
+    ld a,b
+    or a
+    ret z
+    ld a,(ix+18)
+    or a
+    jr nz,as_rev02_validate_sym_next
+    ld a,(as_rev02_sym_index)
+    call as_rev02_state_ptr
+    bit 0,(hl)
+    jp z,as_rev02_format
+    ld a,(ix+19)
+    and 1
+    jp z,as_rev02_format
+as_rev02_validate_sym_next:
+    ld de,AS_REV02_SYM_REC
+    add ix,de
+    ld a,(as_rev02_sym_index)
+    inc a
+    ld (as_rev02_sym_index),a
+    djnz as_rev02_validate_sym_loop
+    xor a
+    ret
+
+as_rev02_require_abs_expr:
+    ld a,(as_rev02_pending_sym)
+    or a
+    ret z
+    dec a
+    call as_rev02_sym_ptr
+    ld a,(ix+18)
+    cp 3
+    jp nz,as_rev02_format
+    xor a
+    ld (as_rev02_pending_sym),a
+    ret
+
+as_rev02_write_obj1:
+    ld hl,AS_REV02_DESC_BUF
+    ld de,AS_REV02_OBJ_BUF
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    inc hl
+    ld de,AS_REV02_OBJ_BUF+24
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    inc hl
+    ld de,(as_rev02_text_len)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    inc hl
+    xor a
+    ld (hl),a                    ; BSS size = 0
+    inc hl
+    ld (hl),a
+    inc hl
+    ld de,AS_REV02_SYM_BUF
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    inc hl
+    ld de,(as_rev02_sym_count)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    inc hl
+    ld de,AS_REV02_RELOC_BUF
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    inc hl
+    ld de,(as_rev02_reloc_count)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    ld hl,AS_REV02_DESC_BUF
+    call as_p1018_write
+    ret c
+    ld hl,(as_p1018_total)
     ret
 
 ; Frozen P10.08 expression grammar wired into the ordinary source driver.
@@ -4661,19 +5185,99 @@ as_rev02_dispatch_line:
 ;   output DE = exact 16-bit value, r17_txt_p -> first delimiter
 ;   error  carry set, A=E_FORMAT
 as_rev02_parse_expr:
+    xor a
+    ld (as_rev02_pending_sym),a
+    ld (as_rev02_pending_add),a
+    ld (as_rev02_pending_add+1),a
+    call r17_txt_peek
+    ret c
+    call as_obj1_name_first_char
+    jr nc,as_rev02_expr_symbol
     call as_rev02_expr_or
     ret c
     ex de,hl
     xor a
     ret
 
+; Relocatable expression form is symbol optionally followed by one +/- constant
+; expression. This matches OBJ1's one-symbol + signed-i16 addend model.
+as_rev02_expr_symbol:
+    call as_rev02_name_parse
+    ret c
+    call as_rev02_sym_get_or_create
+    ret c
+    ld a,(as_rev02_sym_index)
+    inc a
+    ld (as_rev02_pending_sym),a
+    ld a,(ix+18)
+    ld (as_rev02_sym_section),a
+    ld l,(ix+16)
+    ld h,(ix+17)
+    call as_rev02_expr_peek_soft
+    cp '+'
+    jr z,as_rev02_expr_symbol_plus
+    cp '-'
+    jr z,as_rev02_expr_symbol_minus
+    jr as_rev02_expr_symbol_done
+as_rev02_expr_symbol_plus:
+    call as_rev02_expr_advance
+    push hl
+    call as_rev02_expr_or
+    jp c,as_rev02_expr_pop_error
+    bit 7,h
+    jp nz,as_rev02_expr_pop_error_format
+    ld (as_rev02_pending_add),hl
+    ex de,hl
+    pop hl
+    add hl,de
+    jr as_rev02_expr_symbol_done
+as_rev02_expr_symbol_minus:
+    call as_rev02_expr_advance
+    push hl
+    call as_rev02_expr_or
+    jp c,as_rev02_expr_pop_error
+    ld a,h
+    cp $80
+    jr c,as_rev02_expr_symbol_minus_ok
+    jr nz,as_rev02_expr_pop_error_format
+    ld a,l
+    or a
+    jp nz,as_rev02_expr_pop_error_format
+as_rev02_expr_symbol_minus_ok:
+    ex de,hl
+    pop hl
+    or a
+    sbc hl,de
+    push hl
+    xor a
+    sub e
+    ld e,a
+    sbc a,a
+    sub d
+    ld d,a
+    ld (as_rev02_pending_add),de
+    pop hl
+as_rev02_expr_symbol_done:
+    ld a,(as_rev02_sym_section)
+    cp 3
+    jr nz,as_rev02_expr_symbol_ret
+    xor a
+    ld (as_rev02_pending_sym),a
+as_rev02_expr_symbol_ret:
+    ex de,hl
+    xor a
+    ret
+as_rev02_expr_pop_error_format:
+    pop hl
+    jp as_rev02_format
+
 as_rev02_expr_or:
     call as_rev02_expr_xor
     ret c
 as_rev02_expr_or_loop:
-    call r17_txt_peek_soft
+    call as_rev02_expr_peek_soft
     cp '|'
-    ret nz
+    jp nz,as_rev02_expr_done
     call as_rev02_expr_advance
     push hl
     call as_rev02_expr_xor
@@ -4689,9 +5293,9 @@ as_rev02_expr_xor:
     call as_rev02_expr_and
     ret c
 as_rev02_expr_xor_loop:
-    call r17_txt_peek_soft
+    call as_rev02_expr_peek_soft
     cp '^'
-    ret nz
+    jp nz,as_rev02_expr_done
     call as_rev02_expr_advance
     push hl
     call as_rev02_expr_and
@@ -4707,9 +5311,9 @@ as_rev02_expr_and:
     call as_rev02_expr_shift
     ret c
 as_rev02_expr_and_loop:
-    call r17_txt_peek_soft
+    call as_rev02_expr_peek_soft
     cp '&'
-    ret nz
+    jp nz,as_rev02_expr_done
     call as_rev02_expr_advance
     push hl
     call as_rev02_expr_shift
@@ -4725,13 +5329,13 @@ as_rev02_expr_shift:
     call as_rev02_expr_add
     ret c
 as_rev02_expr_shift_loop:
-    call r17_txt_peek_soft
+    call as_rev02_expr_peek_soft
     cp '<'
     jr z,as_rev02_expr_shl
     cp '>'
-    ret nz
+    jp nz,as_rev02_expr_done
     call as_rev02_expr_advance
-    call r17_txt_peek_soft
+    call as_rev02_expr_peek_soft
     cp '>'
     jp nz,as_rev02_format
     call as_rev02_expr_advance
@@ -4746,7 +5350,7 @@ as_rev02_expr_shift_loop:
     jr as_rev02_expr_shift_loop
 as_rev02_expr_shl:
     call as_rev02_expr_advance
-    call r17_txt_peek_soft
+    call as_rev02_expr_peek_soft
     cp '<'
     jp nz,as_rev02_format
     call as_rev02_expr_advance
@@ -4764,11 +5368,11 @@ as_rev02_expr_add:
     call as_rev02_expr_mul
     ret c
 as_rev02_expr_add_loop:
-    call r17_txt_peek_soft
+    call as_rev02_expr_peek_soft
     cp '+'
     jr z,as_rev02_expr_plus
     cp '-'
-    ret nz
+    jp nz,as_rev02_expr_done
     call as_rev02_expr_advance
     push hl
     call as_rev02_expr_mul
@@ -4795,13 +5399,13 @@ as_rev02_expr_mul:
     call as_rev02_expr_unary
     ret c
 as_rev02_expr_mul_loop:
-    call r17_txt_peek_soft
+    call as_rev02_expr_peek_soft
     cp '*'
     jr z,as_rev02_expr_times
     cp '/'
     jr z,as_rev02_expr_div
     cp '%'
-    ret nz
+    jp nz,as_rev02_expr_done
     call as_rev02_expr_advance
     push hl
     call as_rev02_expr_unary
@@ -4834,6 +5438,10 @@ as_rev02_expr_div:
     call as_p1008_apply
     ret c
     jr as_rev02_expr_mul_loop
+
+as_rev02_expr_done:
+    or a
+    ret
 
 as_rev02_expr_unary:
     call r17_txt_peek
@@ -4894,7 +5502,7 @@ as_rev02_expr_decimal:
     xor a
     ld (as_rev02_expr_digits),a
 as_rev02_expr_decimal_loop:
-    call r17_txt_peek_soft
+    call as_rev02_expr_peek_soft
     cp '0'
     jr c,as_rev02_expr_decimal_done
     cp '9'+1
@@ -4935,7 +5543,7 @@ as_rev02_expr_hex:
     xor a
     ld (as_rev02_expr_digits),a
 as_rev02_expr_hex_loop:
-    call r17_txt_peek_soft
+    call as_rev02_expr_peek_soft
     call as_rev02_expr_hex_nibble
     jr c,as_rev02_expr_hex_done
     ld (as_rev02_expr_digit),a
@@ -4991,9 +5599,17 @@ as_rev02_expr_hex_no:
     ret
 
 as_rev02_expr_advance:
+    push hl
     ld hl,(r17_txt_p)
     inc hl
     ld (r17_txt_p),hl
+    pop hl
+    ret
+
+as_rev02_expr_peek_soft:
+    push hl
+    call r17_txt_peek_soft
+    pop hl
     ret
 
 as_rev02_expr_pop_error:
@@ -5002,6 +5618,160 @@ as_rev02_expr_pop_error:
 
 as_rev02_expr_digit:  db 0
 as_rev02_expr_digits: db 0
+
+; A=semantic record kind, BC=TEXT start offset. Pass 1 is measure-only.
+; ABS symbols are already assembly-time constants. TEXT/UNDEF symbols may only
+; occupy an OBJ1 ABS16 field; JR/DJNZ require a defined TEXT target.
+as_rev02_record_reloc:
+    push af
+    ld a,(as_rev02_pass)
+    cp 2
+    jr nz,as_rev02_reloc_clear_ok
+    ld a,(as_rev02_pending_sym)
+    or a
+    jr z,as_rev02_reloc_clear_ok
+    dec a
+    ld (as_rev02_sym_index),a
+    call as_rev02_sym_ptr
+    ld a,(ix+18)
+    cp 3
+    jr z,as_rev02_reloc_clear_ok
+    pop af
+    cp 30
+    jr z,as_rev02_reloc_relative
+    cp 31
+    jr z,as_rev02_reloc_relative
+    push af
+    ld a,(ix+18)
+    or a
+    jr nz,as_rev02_reloc_abs_kind
+    ld a,(ix+19)
+    and 1
+    jp z,as_rev02_reloc_error_pop
+as_rev02_reloc_abs_kind:
+    pop af
+    call as_rev02_reloc_delta
+    ret c
+    ; BC += relocation word delta.
+    ld e,a
+    ld d,0
+    ld h,b
+    ld l,c
+    add hl,de
+    push hl
+    ; Patch encoded word to exact signed addend before OBJ1 relocation is stored.
+    ld de,AS_REV02_OBJ_BUF+24
+    add hl,de
+    ld de,(as_rev02_pending_add)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    pop bc
+    call as_rev02_append_reloc
+    ret c
+    xor a
+    ld (as_rev02_pending_sym),a
+    ret
+as_rev02_reloc_relative:
+    ld a,(ix+18)
+    cp 1
+    jp nz,as_rev02_format
+    xor a
+    ld (as_rev02_pending_sym),a
+    ret
+as_rev02_reloc_clear_ok:
+    pop af
+    xor a
+    ld (as_rev02_pending_sym),a
+    ret
+as_rev02_reloc_error_pop:
+    pop af
+    jp as_rev02_format
+
+; A=record kind -> A=ABS16 byte delta from record start.
+as_rev02_reloc_delta:
+    cp 9
+    jr z,as_rev02_reloc_d1
+    cp 10
+    jr z,as_rev02_reloc_d1
+    cp 11
+    jr z,as_rev02_reloc_d1
+    cp 12
+    jr z,as_rev02_reloc_pair
+    cp 13
+    jr z,as_rev02_reloc_pair
+    cp 14
+    jr z,as_rev02_reloc_d2
+    cp 15
+    jr z,as_rev02_reloc_d2
+    cp 16
+    jr z,as_rev02_reloc_d2
+    cp 29
+    jr z,as_rev02_reloc_d1
+    cp 41
+    jr z,as_rev02_reloc_d0
+    jp as_rev02_format
+as_rev02_reloc_pair:
+    ld a,(r17_txt_rec+1)
+    cp 2
+    jr z,as_rev02_reloc_d1
+as_rev02_reloc_d2:
+    ld a,2
+    or a
+    ret
+as_rev02_reloc_d1:
+    ld a,1
+    or a
+    ret
+as_rev02_reloc_d0:
+    xor a
+    ret
+
+; BC=TEXT relocation offset, pending_sym is one-based internal symbol index.
+as_rev02_append_reloc:
+    ld hl,(as_rev02_reloc_count)
+    ld a,h
+    or a
+    jp nz,as_rev02_nospc
+    ld a,l
+    cp AS_REV02_RELOC_CAP
+    jp nc,as_rev02_nospc
+    ; DE = count*6.
+    ld e,l
+    ld d,0
+    push de
+    add hl,hl                    ; count*2
+    pop de
+    add hl,de                    ; count*3
+    add hl,hl                    ; count*6
+    ld de,AS_REV02_RELOC_BUF
+    add hl,de
+    ld (hl),c
+    inc hl
+    ld (hl),b
+    inc hl
+    ld a,(as_rev02_pending_sym)
+    dec a
+    ld (hl),a
+    inc hl
+    xor a
+    ld (hl),a
+    inc hl
+    ld a,1
+    ld (hl),a
+    inc hl
+    xor a
+    ld (hl),a
+    ld hl,(as_rev02_reloc_count)
+    inc hl
+    ld (as_rev02_reloc_count),hl
+    xor a
+    ret
+
+as_rev02_nospc:
+    ld a,E_NOSPC
+    scf
+    ret
 
 as_rev02_format:
     ld a,E_FORMAT
