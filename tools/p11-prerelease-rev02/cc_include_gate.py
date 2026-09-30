@@ -409,15 +409,15 @@ gate_read_root:
     ex de,hl
     ld a,(mode)
     cp 2
-    jr z,gate_read_bad_name
+    jp z,gate_read_bad_name
     cp 4
-    jr z,gate_read_recursive
+    jp z,gate_read_recursive
     cp 5
-    jr z,gate_read_function_macro
+    jp z,gate_read_function_macro
     cp 6
-    jr z,gate_read_define_single
+    jp z,gate_read_define_single
     cp 7
-    jr z,gate_read_define_multi
+    jp z,gate_read_define_multi
     ld hl,root_source
     ld bc,root_source_end-root_source
     ldir
@@ -469,7 +469,7 @@ gate_read_header:
     ex de,hl
     ld a,(mode)
     cp 1
-    jr z,gate_read_nested
+    jp z,gate_read_nested
     ld hl,header_source
     ld bc,header_source_end-header_source
     ldir
