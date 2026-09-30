@@ -94,7 +94,7 @@ root_source:
     db 'int main(void){{return 7;}}',10
 root_source_end:
 header_source:
-    db 'int helper(void);',10
+    db '/* included through ordinary target path */',10
 header_source_end:
 nested_header_source:
     db '#include "n.h"',10
