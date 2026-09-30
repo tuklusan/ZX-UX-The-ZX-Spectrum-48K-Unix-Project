@@ -10121,7 +10121,11 @@ CC_REV02_TOKEN_CAP     EQU 32
 CC_REV02_TEXT_CAP      EQU 512
 CC_REV02_OBJ_CAP       EQU 1024
 CC_REV02_INCLUDE_CAP   EQU 64
-CC_REV02_BSS_BYTES     EQU CC_REV02_READ_CAP+CC_REV02_TOKEN_CAP+CC_REV02_TEXT_CAP+CC_REV02_OBJ_CAP+CC_REV02_INCLUDE_CAP
+CC_REV02_MACRO_CAP     EQU 16
+CC_REV02_MACRO_REPL_CAP EQU 32
+CC_REV02_MACRO_ENTRY   EQU 49
+CC_REV02_PP_REPL_CAP   EQU 33
+CC_REV02_BSS_BYTES     EQU CC_REV02_READ_CAP+CC_REV02_TOKEN_CAP+CC_REV02_TEXT_CAP+CC_REV02_OBJ_CAP+CC_REV02_INCLUDE_CAP+CC_REV02_MACRO_CAP*CC_REV02_MACRO_ENTRY+CC_REV02_PP_REPL_CAP
 CC_REV02_T_EOF         EQU 0
 CC_REV02_T_ID          EQU 1
 CC_REV02_T_NUM         EQU 2
@@ -10134,6 +10138,8 @@ cc_rev02_token         EQU cc_rev02_readbuf+CC_REV02_READ_CAP
 cc_rev02_text          EQU cc_rev02_token+CC_REV02_TOKEN_CAP
 cc_rev02_objbuf        EQU cc_rev02_text+CC_REV02_TEXT_CAP
 cc_rev02_includebuf    EQU cc_rev02_objbuf+CC_REV02_OBJ_CAP
+cc_rev02_macro_table   EQU cc_rev02_includebuf+CC_REV02_INCLUDE_CAP
+cc_rev02_pp_repl       EQU cc_rev02_macro_table+CC_REV02_MACRO_CAP*CC_REV02_MACRO_ENTRY
 cc_rev02_read_ptr:     dw 0
 cc_rev02_read_left:    dw 0
 cc_rev02_have_push:    db 0
@@ -10157,7 +10163,13 @@ cc_rev02_parent_read_ptr: dw 0
 cc_rev02_parent_read_left: dw 0
 cc_rev02_pp_len:       db 0
 cc_rev02_pp_new_handle: db HANDLE_FREE
-cc_rev02_pp_name:      defs 11,0
+cc_rev02_pp_name:      defs 16,0
+cc_rev02_pp_name_len:  db 0
+cc_rev02_pp_repl_len:  db 0
+cc_rev02_macro_count:  db 0
+cc_rev02_macro_ptr:    dw 0
+cc_rev02_macro_left:   db 0
+cc_rev02_macro_depth:  db 0
 cc_rev02_pp_stat_req:  defs 4,0
 cc_rev02_pp_stat_out:  defs 10,0
 
@@ -10165,6 +10177,7 @@ cc_rev02_kw_int:       db 'int',0
 cc_rev02_kw_void:      db 'void',0
 cc_rev02_kw_return:    db 'return',0
 cc_rev02_kw_main:      db 'main',0
+cc_rev02_pp_kw_define: db 'define',0
 
 ; Returns HL=exact OBJ1 length.  Output lives in cc_rev02_objbuf and is then
 ; published only through the admitted /tmp + rename transaction.
@@ -10174,6 +10187,9 @@ cc_rev02_compile_stream:
     ld (cc_rev02_read_left+1),a
     ld (cc_rev02_have_push),a
     ld (cc_rev02_include_depth),a
+    ld (cc_rev02_macro_count),a
+    ld (cc_rev02_macro_left),a
+    ld (cc_rev02_macro_depth),a
     ld (cc_rev02_parent_read_ptr),a
     ld (cc_rev02_parent_read_ptr+1),a
     ld (cc_rev02_parent_read_left),a
@@ -10586,6 +10602,18 @@ cc_rev02_emit16:
     jp cc_rev02_emit8
 
 cc_rev02_next_char:
+    ld a,(cc_rev02_macro_left)
+    or a
+    jr z,cc_rev02_next_char_no_macro
+    ld hl,(cc_rev02_macro_ptr)
+    ld a,(hl)
+    inc hl
+    ld (cc_rev02_macro_ptr),hl
+    ld hl,cc_rev02_macro_left
+    dec (hl)
+    or a
+    ret
+cc_rev02_next_char_no_macro:
     ld a,(cc_rev02_have_push)
     or a
     jr z,cc_rev02_next_char_buffer
@@ -10668,6 +10696,15 @@ cc_rev02_unget_char:
     ret
 
 cc_rev02_next_token:
+    ; A replacement remains active across every token it contributes.  Clear
+    ; the recursion guard only when a later token request begins after all
+    ; replacement bytes have been consumed.
+    ld a,(cc_rev02_macro_left)
+    or a
+    jr nz,cc_rev02_next_token_macro_state_ready
+    xor a
+    ld (cc_rev02_macro_depth),a
+cc_rev02_next_token_macro_state_ready:
     xor a
     ld (cc_rev02_tok_len),a
 cc_rev02_lex_skip:
@@ -10803,6 +10840,10 @@ cc_rev02_lex_ident_stop:
     call cc_rev02_unget_char
 cc_rev02_lex_ident_done:
     call cc_rev02_token_zero
+    call cc_rev02_macro_try
+    ret c
+    or a
+    jp nz,cc_rev02_next_token
     ld a,CC_REV02_T_ID
     ld (cc_rev02_tok_kind),a
     xor a
@@ -10858,6 +10899,8 @@ cc_rev02_pp_lead_space:
     jr z,cc_rev02_pp_lead_space
     cp 9
     jr z,cc_rev02_pp_lead_space
+    cp 'd'
+    jr z,cc_rev02_pp_define_word_start
     ld hl,cc_rev02_pp_kw_include
 cc_rev02_pp_word_loop:
     ld c,(hl)
@@ -11011,6 +11054,210 @@ cc_rev02_pp_type_ok:
     ld (cc_rev02_include_depth),a
     ld (cc_rev02_line_start),a
     xor a
+    ret
+
+cc_rev02_pp_define_word_start:
+    ld hl,cc_rev02_pp_kw_define
+cc_rev02_pp_define_word_loop:
+    ld c,(hl)
+    ld b,a
+    ld a,c
+    or a
+    jr z,cc_rev02_pp_define_word_done
+    ld a,b
+    cp c
+    jp nz,cc_rev02_notsup
+    inc hl
+    push hl
+    call cc_rev02_next_char
+    pop hl
+    ret c
+    jr cc_rev02_pp_define_word_loop
+cc_rev02_pp_define_word_done:
+    ld a,b
+    cp ' '
+    jr z,cc_rev02_pp_define_name_space
+    cp 9
+    jp nz,cc_rev02_notsup
+cc_rev02_pp_define_name_space:
+    call cc_rev02_next_char
+    ret c
+    cp ' '
+    jr z,cc_rev02_pp_define_name_space
+    cp 9
+    jr z,cc_rev02_pp_define_name_space
+    call cc_rev02_is_alpha_us
+    jp c,cc_rev02_invalid
+    ld hl,cc_rev02_pp_name
+    ld (hl),a
+    inc hl
+    ld a,1
+    ld (cc_rev02_pp_name_len),a
+cc_rev02_pp_define_name_loop:
+    call cc_rev02_next_char
+    ret c
+    cp '('
+    jp z,cc_rev02_notsup
+    cp ' '
+    jr z,cc_rev02_pp_define_repl_space
+    cp 9
+    jr z,cc_rev02_pp_define_repl_space
+    cp 10
+    jp z,cc_rev02_format
+    cp 13
+    jp z,cc_rev02_format
+    or a
+    jp z,cc_rev02_format
+    ld (cc_rev02_pp_char),a
+    call cc_rev02_is_alnum_us
+    jp c,cc_rev02_invalid
+    ld a,(cc_rev02_pp_name_len)
+    cp 15
+    jp nc,cc_rev02_toolong
+    inc a
+    ld (cc_rev02_pp_name_len),a
+    ld a,(cc_rev02_pp_char)
+    ld (hl),a
+    inc hl
+    jr cc_rev02_pp_define_name_loop
+cc_rev02_pp_define_repl_space:
+    xor a
+    ld (hl),a
+cc_rev02_pp_define_repl_lead:
+    call cc_rev02_next_char
+    ret c
+    cp ' '
+    jr z,cc_rev02_pp_define_repl_lead
+    cp 9
+    jr z,cc_rev02_pp_define_repl_lead
+    cp 10
+    jp z,cc_rev02_format
+    cp 13
+    jp z,cc_rev02_format
+    or a
+    jp z,cc_rev02_format
+    ld (cc_rev02_pp_char),a
+    xor a
+    ld (cc_rev02_pp_repl_len),a
+    ld hl,cc_rev02_pp_repl
+cc_rev02_pp_define_repl_loop:
+    ld a,(cc_rev02_pp_repl_len)
+    cp CC_REV02_MACRO_REPL_CAP
+    jp nc,cc_rev02_toolong
+    ld a,(cc_rev02_pp_char)
+    ld (hl),a
+    inc hl
+    ld a,(cc_rev02_pp_repl_len)
+    inc a
+    ld (cc_rev02_pp_repl_len),a
+    call cc_rev02_next_char
+    ret c
+    cp 10
+    jr z,cc_rev02_pp_define_repl_end_line
+    cp 13
+    jr z,cc_rev02_pp_define_repl_end_line
+    or a
+    jr z,cc_rev02_pp_define_repl_end
+    ld (cc_rev02_pp_char),a
+    jr cc_rev02_pp_define_repl_loop
+cc_rev02_pp_define_repl_end_line:
+    ld a,1
+    ld (cc_rev02_line_start),a
+cc_rev02_pp_define_repl_end:
+cc_rev02_pp_define_trim:
+    ld a,(cc_rev02_pp_repl_len)
+    or a
+    jp z,cc_rev02_format
+    dec a
+    ld e,a
+    ld d,0
+    ld hl,cc_rev02_pp_repl
+    add hl,de
+    ld a,(hl)
+    cp ' '
+    jr z,cc_rev02_pp_define_trim_take
+    cp 9
+    jr nz,cc_rev02_pp_define_store
+cc_rev02_pp_define_trim_take:
+    ld a,(cc_rev02_pp_repl_len)
+    dec a
+    ld (cc_rev02_pp_repl_len),a
+    jr cc_rev02_pp_define_trim
+
+cc_rev02_pp_define_store:
+    ld a,(cc_rev02_macro_count)
+    cp CC_REV02_MACRO_CAP
+    jp nc,cc_rev02_nospc
+    ld e,a
+    ld d,0
+    ld hl,cc_rev02_macro_table
+    ld bc,CC_REV02_MACRO_ENTRY
+cc_rev02_pp_define_store_seek:
+    ld a,e
+    or d
+    jr z,cc_rev02_pp_define_store_ready
+    add hl,bc
+    dec de
+    jr cc_rev02_pp_define_store_seek
+cc_rev02_pp_define_store_ready:
+    push hl
+    ex de,hl
+    ld hl,cc_rev02_pp_name
+    ld bc,16
+    ldir
+    pop hl
+    ld de,16
+    add hl,de
+    ld a,(cc_rev02_pp_repl_len)
+    ld (hl),a
+    inc hl
+    ex de,hl
+    ld hl,cc_rev02_pp_repl
+    ld c,a
+    ld b,0
+    ldir
+    ld hl,cc_rev02_macro_count
+    inc (hl)
+    xor a
+    ret
+
+; Try to replace cc_rev02_token with one bounded object-like replacement.
+; A=0 means no definition; A=1 starts replacement-token lexing.  A macro
+; referenced by another replacement fails E_NOTSUP rather than recursing.
+cc_rev02_macro_try:
+    ld a,(cc_rev02_macro_count)
+    or a
+    ret z
+    ld b,a
+    ld hl,cc_rev02_macro_table
+cc_rev02_macro_find:
+    push bc
+    push hl
+    ex de,hl
+    ld hl,cc_rev02_token
+    call cc_rev02_streq
+    pop hl
+    pop bc
+    jr z,cc_rev02_macro_found
+    ld de,CC_REV02_MACRO_ENTRY
+    add hl,de
+    djnz cc_rev02_macro_find
+    xor a
+    ret
+cc_rev02_macro_found:
+    ld a,(cc_rev02_macro_depth)
+    or a
+    jp nz,cc_rev02_notsup
+    ld de,16
+    add hl,de
+    ld a,(hl)
+    or a
+    jp z,cc_rev02_format
+    ld (cc_rev02_macro_left),a
+    inc hl
+    ld (cc_rev02_macro_ptr),hl
+    ld a,1
+    ld (cc_rev02_macro_depth),a
     ret
 
 cc_rev02_pp_portable_char:
