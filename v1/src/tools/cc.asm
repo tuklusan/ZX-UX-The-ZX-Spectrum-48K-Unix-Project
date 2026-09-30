@@ -11134,9 +11134,7 @@ cc_rev02_pp_define_name_space:
     jr z,cc_rev02_pp_define_name_space
     call cc_rev02_is_alpha_us
     jp c,cc_rev02_invalid
-    ld hl,cc_rev02_pp_name
-    ld (hl),a
-    inc hl
+    ld (cc_rev02_pp_name),a
     ld a,1
     ld (cc_rev02_pp_name_len),a
 cc_rev02_pp_define_name_loop:
@@ -11160,15 +11158,23 @@ cc_rev02_pp_define_name_loop:
     ld a,(cc_rev02_pp_name_len)
     cp 15
     jp nc,cc_rev02_toolong
-    inc a
-    ld (cc_rev02_pp_name_len),a
+    ld e,a
+    ld d,0
+    ld hl,cc_rev02_pp_name
+    add hl,de
     ld a,(cc_rev02_pp_char)
     ld (hl),a
-    inc hl
+    ld a,(cc_rev02_pp_name_len)
+    inc a
+    ld (cc_rev02_pp_name_len),a
     jr cc_rev02_pp_define_name_loop
 cc_rev02_pp_define_repl_space:
-    xor a
-    ld (hl),a
+    ld a,(cc_rev02_pp_name_len)
+    ld e,a
+    ld d,0
+    ld hl,cc_rev02_pp_name
+    add hl,de
+    ld (hl),0
 cc_rev02_pp_define_repl_lead:
     call cc_rev02_next_char
     ret c
@@ -11185,14 +11191,16 @@ cc_rev02_pp_define_repl_lead:
     ld (cc_rev02_pp_char),a
     xor a
     ld (cc_rev02_pp_repl_len),a
-    ld hl,cc_rev02_pp_repl
 cc_rev02_pp_define_repl_loop:
     ld a,(cc_rev02_pp_repl_len)
     cp CC_REV02_MACRO_REPL_CAP
     jp nc,cc_rev02_toolong
+    ld e,a
+    ld d,0
+    ld hl,cc_rev02_pp_repl
+    add hl,de
     ld a,(cc_rev02_pp_char)
     ld (hl),a
-    inc hl
     ld a,(cc_rev02_pp_repl_len)
     inc a
     ld (cc_rev02_pp_repl_len),a
