@@ -239,8 +239,10 @@ def main():
     cc_asm,cc_image,cc_relocs,cc_bss=build_relocatable(
         sj,out,"cc",
         f'    INCLUDE "{(root/"v1/include/zx48ux.inc").as_posix()}"\n    INCLUDE "{(root/"v1/src/tools/cc.asm").as_posix()}"\n',
-        '    EMIT_P1128_CC_OBJ1_WRITER\n    EMIT_P1129_CC_TRANSACTION_ROUTINES\n    EMIT_REV02_CC_PRODUCT_CLI\n')
+        '    EMIT_P11_CC_STREAMING_CORE\n    EMIT_P11_CC_PREPROCESSOR\n    EMIT_P11_CC_LEXER\n    EMIT_P11_CC_DECL_PARSER\n    EMIT_P11_CC_STATEMENTS\n    EMIT_P11_CC_EXPRESSIONS\n    EMIT_P11_CC_INT_SEMANTICS\n    EMIT_P11_CC_POINTER_ARITH\n    EMIT_P11_CC_LITERALS\n    EMIT_P11_CC_GLOBAL_STORAGE\n    EMIT_P11_CC_FRAME_LAYOUT\n    EMIT_P11_CC_REGCALL\n    EMIT_P11_CC_FLOAT5\n    EMIT_P11_CC_FLOAT_ARGS\n    EMIT_P11_CC_FLOAT_RETURN\n    EMIT_P1118_CC_CASTS\n    EMIT_P1119_CC_FLOAT_COMPARE\n    EMIT_P1128_CC_OBJ1_WRITER\n    EMIT_P1129_CC_TRANSACTION_ROUTINES\n    EMIT_P1131_CC_CONTROL_FLOW\n    EMIT_P1132_CC_DATA_OPS\n    EMIT_P1133_CC_BLOCK_OPS\n    EMIT_REV02_CC_PRODUCT_CLI\n')
     req(cc_image.is_file() and 64 <= cc_image.stat().st_size <= 20480,"cc product image size")
+    cc_resident=cc_image.stat().st_size+cc_bss+512
+    req(cc_resident <= 32768,"cc 48K process residency")
     cc_mex=mex1(cc_image.read_bytes(),stack=512,bss=cc_bss,relocations=cc_relocs); (out/"cc.mex1").write_bytes(cc_mex)
     run([sys.executable,inspect,out/"cc.mex1","--base","0x6000"],root)
     cc_tap=mt.m48o_blocks(mt.M48OObject("cc",mt.M48O_BIN,mt.DIR_BIN,cc_mex))
@@ -294,10 +296,10 @@ def main():
         "entry":"EMIT_P601_SH_IMAGE","semantic_status":"PACKAGING-ONLY-IDLE-ENTRY-NOT-GATE-G-READY"},
       "cc":{
         "source":"v1/src/tools/cc.asm","source_sha256":sha(ccsrc),
-        "image_sha256":sha(cc_image),"image_bytes":cc_image.stat().st_size,"relocation_count":len(cc_relocs),
+        "image_sha256":sha(cc_image),"image_bytes":cc_image.stat().st_size,"bss_bytes":cc_bss,"resident_bytes_including_stack":cc_resident,"relocation_count":len(cc_relocs),
         "mex1_sha256":sha(out/"cc.mex1"),"m48o_tap_sha256":sha(out/"cc.m48o.tap"),
         "entry":"EMIT_REV02_CC_PRODUCT_CLI",
-        "semantic_status":"GENERIC-CLI-AND-SOURCE-OPEN-SCAFFOLD; CODEGEN-NOT-YET-ATTACHED"},
+        "semantic_status":"GENERIC-C48-PARSER-SEMANTIC-CODEGEN-PRIMITIVES-EMBEDDED; PRODUCT-DRIVER-NOT-YET-ATTACHED"},
       "as":{
         "source":"tools/as.asm","source_sha256":sha(assrc),
         "image_sha256":sha(as_image),"image_bytes":as_image.stat().st_size,"bss_bytes":as_bss,"resident_bytes_including_stack":as_resident,"relocation_count":len(as_relocs),
