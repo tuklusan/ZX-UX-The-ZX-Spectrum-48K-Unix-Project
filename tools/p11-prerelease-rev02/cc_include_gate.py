@@ -262,6 +262,43 @@ test_define_include_unused:
     xor a
     ret
 
+test_define_include_compile_only:
+    xor a
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ret
+
+test_define_include_text:
+    xor a
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ret c
+    ld hl,(cc_rev02_text_len)
+    ld de,4
+    or a
+    sbc hl,de
+    jp nz,test_fail
+    ld hl,cc_rev02_text
+    ld a,(hl)
+    cp $21
+    jp nz,test_fail
+    inc hl
+    ld a,(hl)
+    cp 7
+    jp nz,test_fail
+    inc hl
+    ld a,(hl)
+    or a
+    jp nz,test_fail
+    inc hl
+    ld a,(hl)
+    cp $C9
+    jp nz,test_fail
+    xor a
+    ret
+
 test_include_ok:
     xor a
     ld (mode),a
@@ -592,7 +629,7 @@ gateway_end:
     run([sj, "--nologo", f"--sym={sym.as_posix()}", asm.as_posix()], out)
     req(main_bin.is_file() and gate_bin.is_file(), "fixture binaries missing")
     syms = symbols(sym)
-    names = ("test_define_single", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_include_ok", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
+    names = ("test_define_single", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
     for name in names:
         req(name in syms, "fixture symbol missing: " + name)
 
@@ -626,6 +663,8 @@ gateway_end:
             "one_level_local_include": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "include_without_define": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "define_survives_include_when_unused": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "define_include_compile_only": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "define_include_text_exact": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "object_like_define_single_token": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "object_like_define_multitoken": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "recursive_macro_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",
