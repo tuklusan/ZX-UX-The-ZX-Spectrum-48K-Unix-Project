@@ -71,9 +71,9 @@ def main():
     req(kernel.count(include_anchor)==1,"UDG include anchor")
     candidate=kernel.replace(include_anchor,include_anchor+'    INCLUDE "graphics.asm"\n    INCLUDE "sound.asm"\n')
     measure_origin=0x8000
-    origin_anchor="    ORG KERNEL_START\n    ASSERT $ = KERNEL_START\n"
+    origin_anchor="    ORG KERNEL_START\n"
     req(candidate.count(origin_anchor)==1,"kernel origin anchor")
-    candidate=candidate.replace(origin_anchor,"    ORG $8000\n    ASSERT $ = $8000\n",1)
+    candidate=candidate.replace(origin_anchor,"    ORG $8000\n",1)
     emit_anchor="kernel_mod_udg:\n    EMIT_UDG_ROUTINES\n"
     req(candidate.count(emit_anchor)==1,"UDG emit anchor")
     extra="""kernel_mod_rev02_graphics:
