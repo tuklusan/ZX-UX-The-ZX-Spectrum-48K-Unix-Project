@@ -116,6 +116,26 @@ fixture_reset:
     ld (cc_rev02_source_handle),a
     ret
 
+test_include_path_progress:
+    xor a
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ld a,(stat_count)
+    cp 1
+    jp nz,test_fail
+    ld a,(open_count)
+    cp 1
+    jp nz,test_fail
+    ld a,(header_done)
+    cp 1
+    jp nz,test_fail
+    ld a,(close_count)
+    cp 1
+    jp nz,test_fail
+    xor a
+    ret
+
 test_include_compile_only:
     xor a
     ld (mode),a
@@ -365,7 +385,7 @@ gateway_end:
     run([sj, "--nologo", f"--sym={sym.as_posix()}", asm.as_posix()], out)
     req(main_bin.is_file() and gate_bin.is_file(), "fixture binaries missing")
     syms = symbols(sym)
-    names = ("test_include_compile_only", "test_include_ok", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
+    names = ("test_include_path_progress", "test_include_compile_only", "test_include_ok", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
     for name in names:
         req(name in syms, "fixture symbol missing: " + name)
 
