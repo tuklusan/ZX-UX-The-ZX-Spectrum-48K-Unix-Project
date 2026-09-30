@@ -41,14 +41,20 @@ def assemble(root:Path,name:str,text:str,start:int=KERNEL_START)->dict:
     source=srcdir/f"rev02-{name}-probe.asm"
     sym=build/f"rev02-{name}-probe.sym"
     binary=build/f"rev02-{name}-probe.bin"
+    sym.unlink(missing_ok=True); binary.unlink(missing_ok=True)
     source.write_text(source_prefix(text,binary.name),encoding="utf-8",newline="\n")
     try:
         p=subprocess.run([str(sj),"--nologo",f"--sym={sym}",source.name],cwd=srcdir,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
     finally:
         source.unlink(missing_ok=True)
-    row={"command_exit":p.returncode,"stdout":p.stdout[-4000:],"stderr":p.stderr[-4000:]}
+    diagnostics=p.stdout+p.stderr
+    row={"command_exit":p.returncode,"stdout":p.stdout[-16000:],"stderr":p.stderr[-16000:],
+         "diagnostics_clean":not any(x in diagnostics for x in ("Label has different value in pass 3","truncated to 16bit"))}
     if p.returncode!=0:
         row.update({"status":"ASSEMBLY-FAIL","ordinary_bytes":None,"pool_bytes":KERNEL_POOL_BYTES,"slack_bytes":None})
+        return row
+    if not row["diagnostics_clean"]:
+        row.update({"status":"ASSEMBLY-UNSTABLE","ordinary_bytes":None,"pool_bytes":KERNEL_POOL_BYTES,"slack_bytes":None})
         return row
     end=parse_symbol(sym,"kernel_ordinary_used_end")
     used=end-start
@@ -65,15 +71,24 @@ def main():
     ns=ap.parse_args()
     root=ns.root.resolve(); out=ns.output.resolve(); out.mkdir(parents=True,exist_ok=True)
     kernel=(root/"v1/src/kernel/kernel.asm").read_text(encoding="utf-8")
+    syscall=(root/"v1/src/kernel/syscall.asm").read_text(encoding="utf-8")
     baseline=assemble(root,"kernel-baseline",kernel)
 
     include_anchor='    INCLUDE "udg.asm"\n'
     req(kernel.count(include_anchor)==1,"UDG include anchor")
-    candidate=kernel.replace(include_anchor,include_anchor+'    INCLUDE "graphics.asm"\n    INCLUDE "sound.asm"\n')
+    req(syscall.count('    INCLUDE "graphics.asm"\n')==1,"syscall graphics include ownership")
+    candidate=kernel.replace(include_anchor,include_anchor+'    INCLUDE "sound.asm"\n')
     measure_origin=0x8000
     origin_anchor="    ORG KERNEL_START\n"
     req(candidate.count(origin_anchor)==1,"kernel origin anchor")
-    candidate=candidate.replace(origin_anchor,"    ORG $8000\n",1)
+    candidate=candidate.replace(origin_anchor,f"    ORG ${measure_origin:04X}\n",1)
+    gateway_asserts=(
+      ("    ASSERT $ = BOOT_GATEWAY\n",f"    ASSERT $ = ${measure_origin+3:04X}\n"),
+      ("    ASSERT $ = BOOT_GATEWAY+3\n",f"    ASSERT $ = ${measure_origin+6:04X}\n"),
+    )
+    for old,new in gateway_asserts:
+        req(candidate.count(old)==1,"kernel gateway assertion anchor")
+        candidate=candidate.replace(old,new,1)
     emit_anchor="kernel_mod_udg:\n    EMIT_UDG_ROUTINES\n"
     req(candidate.count(emit_anchor)==1,"UDG emit anchor")
     extra="""kernel_mod_rev02_graphics:
@@ -111,6 +126,7 @@ kernel_mod_rev02_fp_syscalls:
             "kernel_pool_bytes":KERNEL_POOL_BYTES,
             "baseline":baseline,"public_api_lower_bound":public_api,
             "measurement_origin":measure_origin,
+            "measurement_method":"size-only relocation preserves relative gateway placement; graphics macro is sourced once through syscall.asm; production kernel remains at $E000",
             "scope":"size-only relocated lower-bound: graphics/sound/UDG/ROM/FP handlers; excludes object/tape/zxpack/spawn closure and final selector routing"}
     (out/"KERNEL-CLOSURE-PROBE.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n",encoding="utf-8")
     req(baseline["status"]=="PASS","baseline kernel probe must assemble")
