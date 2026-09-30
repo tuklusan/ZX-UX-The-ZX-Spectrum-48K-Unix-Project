@@ -11679,7 +11679,10 @@ cc_rev02_emit_call_opcode:
     ret c
     ld a,(cc_rev02_call_arg_count)
     cp 4
-    ret c
+    jr nc,cc_rev02_emit_call_cleanup_setup
+    xor a
+    ret
+cc_rev02_emit_call_cleanup_setup:
     sub 3
     ld b,a
 cc_rev02_emit_call_cleanup:

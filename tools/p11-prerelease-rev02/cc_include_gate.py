@@ -186,46 +186,6 @@ generic_call_compile_once:
     call cc_rev02_compile_stream
     ret
 
-test_generic_call_error_format:
-    call generic_call_compile_once
-    ret nc
-    cp E_FORMAT
-    jp z,test_fail
-    xor a
-    ret
-
-test_generic_call_error_notsup:
-    call generic_call_compile_once
-    ret nc
-    cp E_NOTSUP
-    jp z,test_fail
-    xor a
-    ret
-
-test_generic_call_error_nospc:
-    call generic_call_compile_once
-    ret nc
-    cp E_NOSPC
-    jp z,test_fail
-    xor a
-    ret
-
-test_generic_call_error_toolong:
-    call generic_call_compile_once
-    ret nc
-    cp E_TOOLONG
-    jp z,test_fail
-    xor a
-    ret
-
-test_generic_call_error_inval:
-    call generic_call_compile_once
-    ret nc
-    cp E_INVAL
-    jp z,test_fail
-    xor a
-    ret
-
 test_generic_call_compile:
     call generic_call_compile_once
     ret
@@ -795,7 +755,7 @@ gateway_end:
     run([sj, "--nologo", f"--sym={sym.as_posix()}", asm.as_posix()], out)
     req(main_bin.is_file() and gate_bin.is_file(), "fixture binaries missing")
     syms = symbols(sym)
-    names = ("test_define_single", "test_generic_call_error_format", "test_generic_call_error_notsup", "test_generic_call_error_nospc", "test_generic_call_error_toolong", "test_generic_call_error_inval", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
+    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
     for name in names:
         req(name in syms, "fixture symbol missing: " + name)
 
