@@ -82,8 +82,9 @@ def main():
       "as":{"source":"tools/as.asm","text":ass},
       "ld":{"source":"tools/ld.asm","text":ld},
     }
+    report_names={"sh":"shell","cc":"cc","as":"as","ld":"ld"}
     for name,spec in product_specs.items():
-        row=product_report.get(name,{})
+        row=product_report.get(report_names[name],{})
         req(row.get("source_sha256")==sha(root/spec["source"]),"product tools source binding: "+name)
         req(isinstance(row.get("mex1_sha256"),str) and len(row["mex1_sha256"])==64,"product MEX1 hash: "+name)
         req(isinstance(row.get("m48o_tap_sha256"),str) and len(row["m48o_tap_sha256"])==64,"product M48O hash: "+name)
@@ -93,8 +94,8 @@ def main():
         has_product_image=("SAVEBIN" in s["text"] and "MEX1" in s["text"])
         closures[name]={
           "source":s["source"],"source_sha256":sha(p),
-          "ordinary_product_binary_sha256":product_report[name]["mex1_sha256"],
-          "ordinary_product_m48o_tap_sha256":product_report[name]["m48o_tap_sha256"],
+          "ordinary_product_binary_sha256":product_report[report_names[name]]["mex1_sha256"],
+          "ordinary_product_m48o_tap_sha256":product_report[report_names[name]]["m48o_tap_sha256"],
           "installable_product_image_in_source":has_product_image,
           "deterministic_installable_product_available":True,
         }
