@@ -15057,7 +15057,7 @@ cc_rev02_call_arg_loop:
     cp CC_REV02_T_STRING
     jr z,cc_rev02_call_arg_string
     cp CC_REV02_T_FLOAT
-    jr z,cc_rev02_call_arg_float
+    jp z,cc_rev02_call_arg_float
     cp CC_REV02_T_ID
     jr z,cc_rev02_call_arg_runtime
     cp CC_REV02_T_PUNCT
@@ -15130,7 +15130,7 @@ cc_rev02_call_arg_push:
     jp nz,cc_rev02_format
     call cc_rev02_next_token
     ret c
-    jr cc_rev02_call_arg_loop
+    jp cc_rev02_call_arg_loop
 cc_rev02_call_args_done:
     jp cc_rev02_next_token
 
