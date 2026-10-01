@@ -10268,6 +10268,7 @@ cc_rev02_kw_return:    db 'return',0
 cc_rev02_kw_if:        db 'if',0
 cc_rev02_kw_else:      db 'else',0
 cc_rev02_kw_while:     db 'while',0
+cc_rev02_kw_do:        db 'do',0
 cc_rev02_kw_for:       db 'for',0
 cc_rev02_kw_break:     db 'break',0
 cc_rev02_kw_continue:  db 'continue',0
@@ -11362,6 +11363,10 @@ cc_rev02_statement_id:
     call cc_rev02_streq
     jp z,cc_rev02_body_while
     ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_do
+    call cc_rev02_streq
+    jp z,cc_rev02_body_do
+    ld hl,cc_rev02_token
     ld de,cc_rev02_kw_for
     call cc_rev02_streq
     jp z,cc_rev02_body_for
@@ -11952,6 +11957,93 @@ cc_rev02_body_while:
     call cc_rev02_patch_function_target
     ret c
     jp cc_rev02_loop_leave
+
+cc_rev02_body_do:
+    call cc_rev02_next_token
+    ret c
+    ld a,1
+    ld (cc_rev02_exec_seen),a
+
+    ; Source order puts the condition after the body. Emit a tiny continue
+    ; trampoline before the body so continue has a stable target without
+    ; buffering source or inventing a source-specific lowering path.
+    ld b,$C3
+    call cc_rev02_emit_forward_function_jp
+    ret c
+    push hl                  ; entry -> body patch
+    ld hl,(cc_rev02_text_len)
+    push hl                  ; continue trampoline target
+    ld b,$C3
+    call cc_rev02_emit_forward_function_jp
+    jp c,cc_rev02_drop_2hl_err
+    push hl                  ; continue trampoline -> condition patch
+    ld hl,(cc_rev02_text_len)
+    push hl                  ; body target
+
+    ; Patch the entry jump to the body while retaining continue/condition/body
+    ; state across the recursively parsed statement.
+    pop de                   ; body target
+    pop bc                   ; condition patch
+    pop ix                   ; continue target
+    pop hl                   ; entry patch
+    push ix                  ; continue target
+    push bc                  ; condition patch
+    push de                  ; body target
+    call cc_rev02_patch_function_target
+    jp c,cc_rev02_drop_3hl_err
+
+    pop de                   ; body target
+    pop bc                   ; condition patch
+    pop ix                   ; continue target
+    push bc                  ; retain condition patch
+    push de                  ; retain body target
+    push ix
+    pop de                   ; loop continue target
+    call cc_rev02_loop_enter
+    jp c,cc_rev02_drop_2hl_err
+    call cc_rev02_parse_statement
+    jp c,cc_rev02_drop_2hl_err
+
+    ; The post-test clause is mandatory: while (expr);
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_ID
+    jp nz,cc_rev02_do_drop_2_format
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_while
+    call cc_rev02_streq
+    jp nz,cc_rev02_do_drop_2_format
+    call cc_rev02_next_token
+    jp c,cc_rev02_drop_2hl_err
+    ld a,'('
+    call cc_rev02_expect_punct
+    jp c,cc_rev02_drop_2hl_err
+
+    ; Condition code begins here. Patch continue's trampoline to it.
+    pop de                   ; body target
+    pop hl                   ; condition trampoline patch
+    push de                  ; retain body target
+    call cc_rev02_patch_function_target
+    jp c,cc_rev02_drop_hl_err
+    call cc_rev02_parse_value_expr
+    jp c,cc_rev02_drop_hl_err
+    ld a,')'
+    call cc_rev02_expect_punct
+    jp c,cc_rev02_drop_hl_err
+    ld a,';'
+    call cc_rev02_expect_punct
+    jp c,cc_rev02_drop_hl_err
+    call cc_rev02_emit_test_hl
+    jp c,cc_rev02_drop_hl_err
+    pop de                   ; body target
+    ld b,$C2                 ; JP NZ,body
+    call cc_rev02_emit_function_jp_to
+    ret c
+    jp cc_rev02_loop_leave
+
+cc_rev02_do_drop_2_format:
+    ld a,E_FORMAT
+    scf
+    jp cc_rev02_drop_2hl_err
 
 cc_rev02_body_for:
     call cc_rev02_next_token

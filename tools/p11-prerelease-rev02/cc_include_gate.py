@@ -343,6 +343,10 @@ main_argv_source:
     db 'int first(char *p){{return *p;}}',10
     db 'int main(int argc,char **argv){{if(argc<2)return 0;return first(argv[1]);}}',10
 main_argv_source_end:
+do_while_source:
+    db 'int main(void){{int x;int y;x=0;y=0;do{{x++;if(x==2)continue;y=y+x;',10
+    db 'if(x==4)break;}}while(x<6);return x*10+y;}}',10
+do_while_source_end:
 argv0_text: db 'P',0
 argv1_text: db 'Z',0
 argv_words: dw argv0_text,argv1_text
@@ -1847,6 +1851,24 @@ test_main_argv_return:
     xor a
     ret
 
+test_do_while_codegen:
+    ld a,55
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ret c
+    call test_patch_logic_relocs
+    ret c
+    call call_compiled_main
+    ld a,h
+    or a
+    jp nz,test_fail
+    ld a,l
+    cp 48
+    jp nz,test_fail
+    xor a
+    ret
+
 test_define_multi:
     ld a,7
     ld (mode),a
@@ -2374,6 +2396,8 @@ gate_read_root_first:
     jp z,gate_read_unsigned_runtime
     cp 54
     jp z,gate_read_main_argv
+    cp 55
+    jp z,gate_read_do_while
     ld hl,root_source
     ld bc,CC_REV02_READ_CAP
     ldir
@@ -2632,6 +2656,12 @@ gate_read_main_argv:
     ld hl,main_argv_source_end-main_argv_source
     ld (fixture_source_left),hl
     jp gate_read_fixture_chunk
+gate_read_do_while:
+    ld hl,do_while_source
+    ld (fixture_source_ptr),hl
+    ld hl,do_while_source_end-do_while_source
+    ld (fixture_source_left),hl
+    jp gate_read_fixture_chunk
 
 ; Direct source fixtures obey the compiler's bounded read contract exactly.
 ; DE is the caller destination. Each read returns at most CC_REV02_READ_CAP.
@@ -2779,7 +2809,7 @@ gateway_end:
     run([sj, "--nologo", f"--sym={sym.as_posix()}", asm.as_posix()], out)
     req(main_bin.is_file() and gate_bin.is_file(), "fixture binaries missing")
     syms = symbols(sym)
-    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_builtin_c48", "test_local_scalar_codegen", "test_dynamic_call_abi", "test_runtime_muldiv_codegen", "test_runtime_bitwise_codegen", "test_runtime_shift_codegen", "test_runtime_compare_a", "test_runtime_compare_b", "test_runtime_logic_a", "test_runtime_logic_b", "test_postfix_local_codegen", "test_if_else_codegen", "test_while_codegen", "test_for_codegen", "test_break_continue_codegen", "test_nested_break_codegen", "test_break_outside_reject", "test_continue_outside_reject", "test_recursive_params_codegen", "test_global_scalar_codegen", "test_global_array_compile", "test_global_array_bss", "test_global_array_symbols", "test_global_array_patch", "test_global_array_codegen", "test_global_init_codegen", "test_local_array_codegen", "test_pointer_basic_codegen", "test_local_pointer_assign_codegen", "test_local_pointer_metadata", "test_local_pointer_literal", "test_local_pointer_value_codegen", "test_local_pointer_deref_codegen", "test_local_pointer_codegen", "test_character_literal_codegen", "test_integer_cast_codegen", "test_pointer_post_codegen", "test_pointer_array_codegen", "test_float_literal_codegen", "test_void_return_codegen", "test_call_expression_codegen", "test_mixed_call_arg_codegen", "test_local_array_init_codegen", "test_local_pointer_init_codegen", "test_nested_call_codegen", "test_wide_call_codegen", "test_symbol_capacity_codegen", "test_unsigned_runtime_codegen", "test_main_argv_codegen", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
+    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_builtin_c48", "test_local_scalar_codegen", "test_dynamic_call_abi", "test_runtime_muldiv_codegen", "test_runtime_bitwise_codegen", "test_runtime_shift_codegen", "test_runtime_compare_a", "test_runtime_compare_b", "test_runtime_logic_a", "test_runtime_logic_b", "test_postfix_local_codegen", "test_if_else_codegen", "test_while_codegen", "test_for_codegen", "test_break_continue_codegen", "test_nested_break_codegen", "test_break_outside_reject", "test_continue_outside_reject", "test_recursive_params_codegen", "test_global_scalar_codegen", "test_global_array_compile", "test_global_array_bss", "test_global_array_symbols", "test_global_array_patch", "test_global_array_codegen", "test_global_init_codegen", "test_local_array_codegen", "test_pointer_basic_codegen", "test_local_pointer_assign_codegen", "test_local_pointer_metadata", "test_local_pointer_literal", "test_local_pointer_value_codegen", "test_local_pointer_deref_codegen", "test_local_pointer_codegen", "test_character_literal_codegen", "test_integer_cast_codegen", "test_pointer_post_codegen", "test_pointer_array_codegen", "test_float_literal_codegen", "test_void_return_codegen", "test_call_expression_codegen", "test_mixed_call_arg_codegen", "test_local_array_init_codegen", "test_local_pointer_init_codegen", "test_nested_call_codegen", "test_wide_call_codegen", "test_symbol_capacity_codegen", "test_unsigned_runtime_codegen", "test_main_argv_codegen", "test_do_while_codegen", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
     for name in names:
         req(name in syms, "fixture symbol missing: " + name)
 
@@ -2795,6 +2825,8 @@ gateway_end:
         "wide-call fixture must cross the 64-byte direct-source read boundary")
     req(len(b"int first(char *p){return *p;}\nint main(int argc,char **argv){if(argc<2)return 0;return first(argv[1]);}\n") > 64,
         "main argc/argv fixture must cross the 64-byte direct-source read boundary")
+    req(len(b"int main(void){int x;int y;x=0;y=0;do{x++;if(x==2)continue;y=y+x;if(x==4)break;}while(x<6);return x*10+y;}\n") > 64,
+        "do/while fixture must cross the 64-byte direct-source read boundary")
     req(len(b"int main(void){int a[4];char c[3];int i;i=0;for(i=0;i<4;i++)a[i]=i+1;c[0]=2;c[1]=3;c[2]=4;a[2]++;return a[0]+a[1]+a[2]+a[3]+c[0]+c[1]+c[2];}\n") > 64,
         "local-array fixture must cross the 64-byte direct-source read boundary")
     req(len(b"void add3(int *p){*p=*p+3;}void setc(char *p){*p=9;}int main(void){int x;char c;x=4;c=1;add3(&x);setc(&c);return x+c;}\n") > 64,
@@ -2859,6 +2891,7 @@ gateway_end:
             "generic_symbol_capacity_over_32": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_unsigned_integer_runtime_semantics": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_main_argc_argv_regcall": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "generic_do_while_control_flow": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_if_else_control_flow": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_nested_while_control_flow": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_nested_for_control_flow": "PASS" if not ns.assemble_only else "ASSEMBLED",
