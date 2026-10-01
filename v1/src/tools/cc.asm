@@ -10129,9 +10129,11 @@ CC_REV02_SYMBOL_CAP     EQU 32
 CC_REV02_RELOC_CAP      EQU 64
 CC_REV02_LITERAL_CAP    EQU 256
 CC_REV02_ARG_CAP        EQU 6
+CC_REV02_LOCAL_CAP      EQU 16
+CC_REV02_LOCAL_ENTRY    EQU 17
 CC_REV02_SYMBOL_BYTES   EQU CC_REV02_SYMBOL_CAP*CC_OBJ1_SYMBOL_SIZE
 CC_REV02_RELOC_BYTES    EQU CC_REV02_RELOC_CAP*CC_OBJ1_RELOC_SIZE
-CC_REV02_BSS_BYTES      EQU CC_REV02_READ_CAP+CC_REV02_TOKEN_CAP+CC_REV02_TEXT_CAP+CC_REV02_OBJ_CAP+CC_REV02_INCLUDE_CAP+CC_REV02_MACRO_CAP*CC_REV02_MACRO_ENTRY+CC_REV02_PP_REPL_CAP+CC_REV02_SYMBOL_BYTES+CC_REV02_RELOC_BYTES+CC_REV02_LITERAL_CAP
+CC_REV02_BSS_BYTES      EQU CC_REV02_READ_CAP+CC_REV02_TOKEN_CAP+CC_REV02_TEXT_CAP+CC_REV02_OBJ_CAP+CC_REV02_INCLUDE_CAP+CC_REV02_MACRO_CAP*CC_REV02_MACRO_ENTRY+CC_REV02_PP_REPL_CAP+CC_REV02_SYMBOL_BYTES+CC_REV02_RELOC_BYTES+CC_REV02_LITERAL_CAP+CC_REV02_LOCAL_CAP*CC_REV02_LOCAL_ENTRY
 CC_REV02_T_EOF          EQU 0
 CC_REV02_T_ID           EQU 1
 CC_REV02_T_NUM          EQU 2
@@ -10150,6 +10152,7 @@ cc_rev02_pp_repl       EQU cc_rev02_macro_table+CC_REV02_MACRO_CAP*CC_REV02_MACR
 cc_rev02_symbols       EQU cc_rev02_pp_repl+CC_REV02_PP_REPL_CAP
 cc_rev02_relocs        EQU cc_rev02_symbols+CC_REV02_SYMBOL_BYTES
 cc_rev02_literals      EQU cc_rev02_relocs+CC_REV02_RELOC_BYTES
+cc_rev02_locals        EQU cc_rev02_literals+CC_REV02_LITERAL_CAP
 cc_rev02_read_ptr:     dw 0
 cc_rev02_read_left:    dw 0
 cc_rev02_have_push:    db 0
@@ -10197,6 +10200,10 @@ cc_rev02_arg_values:   defs CC_REV02_ARG_CAP*2,0
 cc_rev02_arg_symbols:  defs CC_REV02_ARG_CAP,255
 cc_rev02_call_symbol:  db 0
 cc_rev02_return_seen:  db 0
+cc_rev02_local_count:  db 0
+cc_rev02_frame_active: db 0
+cc_rev02_exec_seen:    db 0
+cc_rev02_local_disp:   db 0
 cc_rev02_temp_symbol:  db 0
 cc_rev02_temp_index:   db 0
 cc_rev02_name_ptr:     dw 0
@@ -10370,6 +10377,9 @@ cc_rev02_external_param_close:
 cc_rev02_external_nonmain:
     xor a
     ld (cc_rev02_return_seen),a
+    ld (cc_rev02_local_count),a
+    ld (cc_rev02_frame_active),a
+    ld (cc_rev02_exec_seen),a
     call cc_rev02_next_token
     ret c
     call cc_rev02_parse_simple_body
@@ -10386,17 +10396,18 @@ cc_rev02_external_decl_done:
     call cc_rev02_next_token
     ret
 
-; Initial generic executable-body closure: ordinary call statements with up to
-; six constant/string arguments plus integer constant-expression returns.
+; Generic executable-body closure grows monotonically from source semantics.
+; This checkpoint supports leading int locals, scalar assignment/rvalue loads and
+; additive expressions in addition to ordinary calls and constant expressions.
 cc_rev02_parse_simple_body:
     ld a,(cc_rev02_tok_kind)
     cp CC_REV02_T_PUNCT
     jr nz,cc_rev02_body_not_end
     ld a,(cc_rev02_token)
     cp '}'
-    jr z,cc_rev02_body_done
+    jp z,cc_rev02_body_done
     cp ';'
-    jr z,cc_rev02_body_empty
+    jp z,cc_rev02_body_empty
 cc_rev02_body_not_end:
     ld a,(cc_rev02_tok_kind)
     cp CC_REV02_T_ID
@@ -10404,12 +10415,21 @@ cc_rev02_body_not_end:
     ld hl,cc_rev02_token
     ld de,cc_rev02_kw_return
     call cc_rev02_streq
-    jr z,cc_rev02_body_return
+    jp z,cc_rev02_body_return
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_int
+    call cc_rev02_streq
+    jp z,cc_rev02_body_local_int
+
+    ; An ordinary identifier statement is either a function call or assignment.
     ld hl,cc_rev02_token
     ld de,cc_rev02_call_name
     call cc_rev02_copy_name16
     call cc_rev02_next_token
     ret c
+    ld a,'('
+    call cc_rev02_tok_is_punct
+    jr nz,cc_rev02_body_assignment_check
     ld a,'('
     call cc_rev02_expect_punct
     ret c
@@ -10420,29 +10440,230 @@ cc_rev02_body_not_end:
     ld a,';'
     call cc_rev02_expect_punct
     ret c
-    jr cc_rev02_parse_simple_body
+    ld a,1
+    ld (cc_rev02_exec_seen),a
+    jp cc_rev02_parse_simple_body
+
+cc_rev02_body_assignment_check:
+    ld a,'='
+    call cc_rev02_tok_is_punct
+    jp nz,cc_rev02_notsup
+    ld hl,cc_rev02_call_name
+    call cc_rev02_local_find
+    jp c,cc_rev02_format
+    ld (cc_rev02_local_disp),a
+    call cc_rev02_next_token
+    ret c
+    call cc_rev02_parse_value_expr
+    ret c
+    ld a,(cc_rev02_local_disp)
+    call cc_rev02_emit_local_store
+    ret c
+    ld a,';'
+    call cc_rev02_expect_punct
+    ret c
+    ld a,1
+    ld (cc_rev02_exec_seen),a
+    jp cc_rev02_parse_simple_body
+
+cc_rev02_body_local_int:
+    ld a,(cc_rev02_exec_seen)
+    or a
+    jp nz,cc_rev02_notsup
+    call cc_rev02_frame_ensure
+    ret c
+    call cc_rev02_next_token
+    ret c
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_ID
+    jp nz,cc_rev02_format
+    ld hl,cc_rev02_token
+    call cc_rev02_local_add
+    ret c
+    ld (cc_rev02_local_disp),a
+    ld a,$F5                 ; PUSH AF reserves one aligned int local
+    call cc_rev02_emit8
+    ret c
+    call cc_rev02_next_token
+    ret c
+    ld a,';'
+    call cc_rev02_tok_is_punct
+    jr z,cc_rev02_body_local_done
+    ld a,'='
+    call cc_rev02_tok_is_punct
+    jp nz,cc_rev02_format
+    call cc_rev02_next_token
+    ret c
+    call cc_rev02_parse_value_expr
+    ret c
+    ld a,(cc_rev02_local_disp)
+    call cc_rev02_emit_local_store
+    ret c
+cc_rev02_body_local_done:
+    ld a,';'
+    call cc_rev02_expect_punct
+    ret c
+    jp cc_rev02_parse_simple_body
+
 cc_rev02_body_return:
     call cc_rev02_next_token
     ret c
-    call cc_rev02_parse_const_expr
+    call cc_rev02_parse_value_expr
     ret c
-    push hl
     ld a,';'
     call cc_rev02_expect_punct
-    pop hl
     ret c
-    call cc_rev02_emit_return_hl
+    call cc_rev02_emit_function_return
     ret c
     ld a,1
     ld (cc_rev02_return_seen),a
-    jr cc_rev02_parse_simple_body
+    ld (cc_rev02_exec_seen),a
+    jp cc_rev02_parse_simple_body
 cc_rev02_body_empty:
     call cc_rev02_next_token
     ret c
-    jr cc_rev02_parse_simple_body
+    jp cc_rev02_parse_simple_body
 cc_rev02_body_done:
     call cc_rev02_next_token
     ret
+
+; Runtime-value expression subset. Every successful parse leaves generated HL
+; holding the value. This is distinct from the constant-only argument parser.
+cc_rev02_parse_value_expr:
+    jp cc_rev02_value_add
+cc_rev02_value_add:
+    call cc_rev02_value_unary
+    ret c
+cc_rev02_value_add_loop:
+    ld a,'+'
+    call cc_rev02_tok_is_punct
+    jr z,cc_rev02_value_add_plus
+    ld a,'-'
+    call cc_rev02_tok_is_punct
+    ret nz
+    ld a,1
+    jr cc_rev02_value_add_take
+cc_rev02_value_add_plus:
+    xor a
+cc_rev02_value_add_take:
+    ld (cc_rev02_op),a
+    ld a,$E5                 ; preserve lhs value
+    call cc_rev02_emit8
+    ret c
+    call cc_rev02_next_token
+    ret c
+    call cc_rev02_value_unary
+    ret c
+    ld a,$EB                 ; rhs -> DE
+    call cc_rev02_emit8
+    ret c
+    ld a,$E1                 ; restore lhs -> HL
+    call cc_rev02_emit8
+    ret c
+    ld a,(cc_rev02_op)
+    or a
+    jr nz,cc_rev02_value_sub_emit
+    ld a,$19                 ; ADD HL,DE
+    call cc_rev02_emit8
+    ret c
+    jr cc_rev02_value_add_loop
+cc_rev02_value_sub_emit:
+    ld a,$B7                 ; OR A clears carry
+    call cc_rev02_emit8
+    ret c
+    ld a,$ED
+    call cc_rev02_emit8
+    ret c
+    ld a,$52                 ; SBC HL,DE
+    call cc_rev02_emit8
+    ret c
+    jr cc_rev02_value_add_loop
+
+cc_rev02_value_unary:
+    ld a,'+'
+    call cc_rev02_tok_is_punct
+    jr z,cc_rev02_value_unary_plus
+    ld a,'-'
+    call cc_rev02_tok_is_punct
+    jr z,cc_rev02_value_unary_minus
+    ld a,'~'
+    call cc_rev02_tok_is_punct
+    jr z,cc_rev02_value_unary_not
+    ld a,'('
+    call cc_rev02_tok_is_punct
+    jp z,cc_rev02_value_group
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_NUM
+    jr z,cc_rev02_value_number
+    cp CC_REV02_T_ID
+    jp nz,cc_rev02_format
+    ld hl,cc_rev02_token
+    call cc_rev02_local_find
+    jp c,cc_rev02_format
+    ld (cc_rev02_local_disp),a
+    call cc_rev02_next_token
+    ret c
+    ld a,(cc_rev02_local_disp)
+    jp cc_rev02_emit_local_load
+cc_rev02_value_number:
+    call cc_rev02_number_value
+    ret c
+    push hl
+    call cc_rev02_next_token
+    pop hl
+    ret c
+    jp cc_rev02_emit_ld_hl
+cc_rev02_value_unary_plus:
+    call cc_rev02_next_token
+    jp cc_rev02_value_unary
+cc_rev02_value_unary_minus:
+    call cc_rev02_next_token
+    call cc_rev02_value_unary
+    ret c
+    ld a,$AF                 ; XOR A
+    call cc_rev02_emit8
+    ret c
+    ld a,$95                 ; SUB L
+    call cc_rev02_emit8
+    ret c
+    ld a,$6F                 ; LD L,A
+    call cc_rev02_emit8
+    ret c
+    ld a,$9F                 ; SBC A,A
+    call cc_rev02_emit8
+    ret c
+    ld a,$94                 ; SUB H
+    call cc_rev02_emit8
+    ret c
+    ld a,$67                 ; LD H,A
+    jp cc_rev02_emit8
+cc_rev02_value_unary_not:
+    call cc_rev02_next_token
+    call cc_rev02_value_unary
+    ret c
+    ld a,$7D                 ; LD A,L
+    call cc_rev02_emit8
+    ret c
+    ld a,$2F                 ; CPL
+    call cc_rev02_emit8
+    ret c
+    ld a,$6F                 ; LD L,A
+    call cc_rev02_emit8
+    ret c
+    ld a,$7C                 ; LD A,H
+    call cc_rev02_emit8
+    ret c
+    ld a,$2F
+    call cc_rev02_emit8
+    ret c
+    ld a,$67                 ; LD H,A
+    jp cc_rev02_emit8
+cc_rev02_value_group:
+    call cc_rev02_next_token
+    call cc_rev02_parse_value_expr
+    ret c
+    ld a,')'
+    jp cc_rev02_expect_punct
 
 cc_rev02_parse_const_expr:
     jp cc_rev02_parse_bor
@@ -11549,16 +11770,187 @@ cc_rev02_pp_kw_include: db 'include',0
 cc_rev02_pp_kw_c48: db 'c48.h',0
 cc_rev02_pp_char: db 0
 
-cc_rev02_emit_return_hl:
+cc_rev02_emit_ld_hl:
     push hl
     ld a,$21
     call cc_rev02_emit8
     pop hl
     ret c
-    call cc_rev02_emit16
+    jp cc_rev02_emit16
+
+cc_rev02_emit_return_hl:
+    call cc_rev02_emit_ld_hl
     ret c
+    jp cc_rev02_emit_function_return
+
+cc_rev02_emit_function_return:
+    ld a,(cc_rev02_frame_active)
+    or a
+    jr z,cc_rev02_emit_plain_return
+    ld a,$DD
+    call cc_rev02_emit8
+    ret c
+    ld a,$F9                 ; LD SP,IX
+    call cc_rev02_emit8
+    ret c
+    ld a,$DD
+    call cc_rev02_emit8
+    ret c
+    ld a,$E1                 ; POP IX
+    call cc_rev02_emit8
+    ret c
+cc_rev02_emit_plain_return:
     ld a,$C9
     jp cc_rev02_emit8
+
+cc_rev02_frame_ensure:
+    ld a,(cc_rev02_frame_active)
+    or a
+    ret nz
+    ld a,$DD
+    call cc_rev02_emit8
+    ret c
+    ld a,$E5                 ; PUSH IX
+    call cc_rev02_emit8
+    ret c
+    ld a,$DD
+    call cc_rev02_emit8
+    ret c
+    ld a,$21                 ; LD IX,0
+    call cc_rev02_emit8
+    ret c
+    xor a
+    call cc_rev02_emit8
+    ret c
+    xor a
+    call cc_rev02_emit8
+    ret c
+    ld a,$DD
+    call cc_rev02_emit8
+    ret c
+    ld a,$39                 ; ADD IX,SP
+    call cc_rev02_emit8
+    ret c
+    ld a,1
+    ld (cc_rev02_frame_active),a
+    xor a
+    ret
+
+; A=signed IX displacement of local low byte.
+cc_rev02_emit_local_load:
+    ld (cc_rev02_local_disp),a
+    ld a,$DD
+    call cc_rev02_emit8
+    ret c
+    ld a,$6E                 ; LD L,(IX+d)
+    call cc_rev02_emit8
+    ret c
+    ld a,(cc_rev02_local_disp)
+    call cc_rev02_emit8
+    ret c
+    ld a,$DD
+    call cc_rev02_emit8
+    ret c
+    ld a,$66                 ; LD H,(IX+d+1)
+    call cc_rev02_emit8
+    ret c
+    ld a,(cc_rev02_local_disp)
+    inc a
+    jp cc_rev02_emit8
+
+; A=signed IX displacement; generated HL is stored little-endian.
+cc_rev02_emit_local_store:
+    ld (cc_rev02_local_disp),a
+    ld a,$DD
+    call cc_rev02_emit8
+    ret c
+    ld a,$75                 ; LD (IX+d),L
+    call cc_rev02_emit8
+    ret c
+    ld a,(cc_rev02_local_disp)
+    call cc_rev02_emit8
+    ret c
+    ld a,$DD
+    call cc_rev02_emit8
+    ret c
+    ld a,$74                 ; LD (IX+d+1),H
+    call cc_rev02_emit8
+    ret c
+    ld a,(cc_rev02_local_disp)
+    inc a
+    jp cc_rev02_emit8
+
+; Current-function local table: 16-byte name plus signed IX displacement.
+cc_rev02_local_find:
+    ld (cc_rev02_name_ptr),hl
+    ld a,(cc_rev02_local_count)
+    ld b,a
+    xor a
+    ld (cc_rev02_temp_index),a
+cc_rev02_local_find_loop:
+    ld a,b
+    or a
+    jr z,cc_rev02_local_find_none
+    ld a,(cc_rev02_temp_index)
+    call cc_rev02_local_ptr_for_index
+    ex de,hl
+    ld hl,(cc_rev02_name_ptr)
+    call cc_rev02_streq
+    jr z,cc_rev02_local_find_yes
+    ld a,(cc_rev02_temp_index)
+    inc a
+    ld (cc_rev02_temp_index),a
+    djnz cc_rev02_local_find_loop
+cc_rev02_local_find_none:
+    scf
+    ret
+cc_rev02_local_find_yes:
+    ld a,(cc_rev02_temp_index)
+    call cc_rev02_local_ptr_for_index
+    ld de,16
+    add hl,de
+    ld a,(hl)
+    or a
+    ret
+
+cc_rev02_local_add:
+    ld (cc_rev02_name_ptr),hl
+    call cc_rev02_local_find
+    jr c,cc_rev02_local_add_new
+    ld a,E_EXIST
+    scf
+    ret
+cc_rev02_local_add_new:
+    ld a,(cc_rev02_local_count)
+    cp CC_REV02_LOCAL_CAP
+    jp nc,cc_rev02_nospc
+    ld (cc_rev02_temp_index),a
+    call cc_rev02_local_ptr_for_index
+    ex de,hl
+    ld hl,(cc_rev02_name_ptr)
+    call cc_rev02_copy_name16
+    ld a,(cc_rev02_temp_index)
+    inc a
+    add a,a
+    neg
+    ld (de),a
+    ld hl,cc_rev02_local_count
+    inc (hl)
+    or a
+    ret
+
+cc_rev02_local_ptr_for_index:
+    ld e,a
+    ld d,0
+    ld hl,cc_rev02_locals
+    ld bc,CC_REV02_LOCAL_ENTRY
+cc_rev02_local_ptr_seek:
+    ld a,e
+    or d
+    ret z
+    add hl,bc
+    dec de
+    jr cc_rev02_local_ptr_seek
 
 ; Parse arguments after the opening parenthesis has already been consumed.
 cc_rev02_parse_call_args:
