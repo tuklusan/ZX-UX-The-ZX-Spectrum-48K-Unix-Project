@@ -10219,6 +10219,8 @@ cc_rev02_escape_char:  db 0
 cc_rev02_kw_int:       db 'int',0
 cc_rev02_kw_void:      db 'void',0
 cc_rev02_kw_return:    db 'return',0
+cc_rev02_kw_if:        db 'if',0
+cc_rev02_kw_else:      db 'else',0
 cc_rev02_kw_main:      db 'main',0
 cc_rev02_pp_kw_define: db 'define',0
 
@@ -10411,13 +10413,30 @@ cc_rev02_external_decl_done:
 cc_rev02_parse_simple_body:
     ld a,(cc_rev02_tok_kind)
     cp CC_REV02_T_PUNCT
-    jr nz,cc_rev02_body_not_end
+    jr nz,cc_rev02_body_have_statement
     ld a,(cc_rev02_token)
     cp '}'
     jp z,cc_rev02_body_done
+cc_rev02_body_have_statement:
+    call cc_rev02_parse_statement
+    ret c
+    jp cc_rev02_parse_simple_body
+
+; Parse exactly one C48 statement. Blocks recurse through the same generic
+; statement parser so control flow is source-semantic rather than corpus-shaped.
+cc_rev02_parse_statement:
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_PUNCT
+    jr nz,cc_rev02_statement_id
+    ld a,(cc_rev02_token)
     cp ';'
     jp z,cc_rev02_body_empty
-cc_rev02_body_not_end:
+    cp '{'
+    jr nz,cc_rev02_statement_id
+    call cc_rev02_next_token
+    ret c
+    jp cc_rev02_parse_simple_body
+cc_rev02_statement_id:
     ld a,(cc_rev02_tok_kind)
     cp CC_REV02_T_ID
     jp nz,cc_rev02_notsup
@@ -10429,6 +10448,10 @@ cc_rev02_body_not_end:
     ld de,cc_rev02_kw_int
     call cc_rev02_streq
     jp z,cc_rev02_body_local_int
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_if
+    call cc_rev02_streq
+    jp z,cc_rev02_body_if
 
     ; An ordinary identifier statement is either a function call or assignment.
     ld hl,cc_rev02_token
@@ -10451,7 +10474,8 @@ cc_rev02_body_not_end:
     ret c
     ld a,1
     ld (cc_rev02_exec_seen),a
-    jp cc_rev02_parse_simple_body
+    xor a
+    ret
 
 cc_rev02_body_assignment_check:
     ld d,'+'
@@ -10481,7 +10505,8 @@ cc_rev02_body_assignment_check:
     ret c
     ld a,1
     ld (cc_rev02_exec_seen),a
-    jp cc_rev02_parse_simple_body
+    xor a
+    ret
 
 cc_rev02_body_post_inc:
     xor a
@@ -10497,7 +10522,6 @@ cc_rev02_body_post_step:
     call cc_rev02_emit_local_load
     ret c
     ld a,(cc_rev02_lhs_disp)
-    ld b,0
     ld c,a
     ld a,(cc_rev02_step_kind)
     ld b,a
@@ -10511,7 +10535,8 @@ cc_rev02_body_post_step:
     ret c
     ld a,1
     ld (cc_rev02_exec_seen),a
-    jp cc_rev02_parse_simple_body
+    xor a
+    ret
 
 cc_rev02_body_local_int:
     ld a,(cc_rev02_exec_seen)
@@ -10548,9 +10573,7 @@ cc_rev02_body_local_int:
     ret c
 cc_rev02_body_local_done:
     ld a,';'
-    call cc_rev02_expect_punct
-    ret c
-    jp cc_rev02_parse_simple_body
+    jp cc_rev02_expect_punct
 
 cc_rev02_body_return:
     call cc_rev02_next_token
@@ -10565,11 +10588,59 @@ cc_rev02_body_return:
     ld a,1
     ld (cc_rev02_return_seen),a
     ld (cc_rev02_exec_seen),a
-    jp cc_rev02_parse_simple_body
-cc_rev02_body_empty:
+    xor a
+    ret
+
+cc_rev02_body_if:
     call cc_rev02_next_token
     ret c
-    jp cc_rev02_parse_simple_body
+    ld a,'('
+    call cc_rev02_expect_punct
+    ret c
+    call cc_rev02_parse_value_expr
+    ret c
+    ld a,')'
+    call cc_rev02_expect_punct
+    ret c
+    ld a,1
+    ld (cc_rev02_exec_seen),a
+    call cc_rev02_emit_test_hl
+    ret c
+    ld b,$CA                 ; JP Z,false/end
+    call cc_rev02_emit_forward_function_jp
+    ret c
+    push hl                  ; false-target relocation operand offset
+    call cc_rev02_parse_statement
+    jp c,cc_rev02_drop_hl_err
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_ID
+    jr nz,cc_rev02_body_if_no_else
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_else
+    call cc_rev02_streq
+    jr nz,cc_rev02_body_if_no_else
+
+    ld b,$C3                 ; JP end skips the else statement
+    call cc_rev02_emit_forward_function_jp
+    jp c,cc_rev02_drop_hl_err
+    push hl                  ; end-target relocation operand offset
+    pop bc
+    pop hl                   ; false target
+    push bc                  ; preserve end target
+    call cc_rev02_patch_function_target
+    jp c,cc_rev02_drop_hl_err
+    call cc_rev02_next_token ; consume else
+    jp c,cc_rev02_drop_hl_err
+    call cc_rev02_parse_statement
+    jp c,cc_rev02_drop_hl_err
+    pop hl
+    jp cc_rev02_patch_function_target
+cc_rev02_body_if_no_else:
+    pop hl
+    jp cc_rev02_patch_function_target
+
+cc_rev02_body_empty:
+    jp cc_rev02_next_token
 cc_rev02_body_done:
     call cc_rev02_next_token
     ret
