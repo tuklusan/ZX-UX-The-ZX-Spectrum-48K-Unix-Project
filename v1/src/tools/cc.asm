@@ -15048,7 +15048,7 @@ cc_rev02_parse_call_args:
     jr nz,cc_rev02_call_arg_loop
     ld a,(cc_rev02_token)
     cp ')'
-    jr z,cc_rev02_call_args_done
+    jp z,cc_rev02_call_args_done
 cc_rev02_call_arg_loop:
     ld a,(cc_rev02_call_arg_count)
     cp CC_REV02_ARG_CAP
