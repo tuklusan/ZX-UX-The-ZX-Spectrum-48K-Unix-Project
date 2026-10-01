@@ -77,7 +77,10 @@ def main() -> None:
     INCLUDE "{(root / "v1/include/zx48ux.inc").as_posix()}"
     INCLUDE "{(root / "v1/src/tools/cc.asm").as_posix()}"
     INCLUDE "{(root / "v1/src/libc48/int_runtime.asm").as_posix()}"
-cc_product_bss EQU $A000
+; Keep the proof image, its execution stack, product BSS, and the E000 syscall
+; gateway disjoint.  Compiler growth made the old A000 harness BSS overlap the
+; assembled proof image; this address is harness-only and is not a product ABI.
+cc_product_bss EQU $C000
 ROOT_HANDLE EQU 1
 HEADER_HANDLE EQU 2
     ORG $4000
@@ -2138,6 +2141,8 @@ test_fail:
     ret
 
 fixture_end:
+    ASSERT fixture_end <= $B800
+    ASSERT cc_product_bss+CC_REV02_BSS_BYTES <= $E000
     SAVEBIN "{main_bin.as_posix()}",fixture_start,fixture_end-fixture_start
 
     ORG $E000
@@ -2984,6 +2989,7 @@ gateway_end:
             "nested_include_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "portable_basename_enforced_before_lookup": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "wrong_object_type_rejected_before_open": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "proof_fixture_code_bss_gateway_disjoint": "PASS",
             "source_identity_dispatch_absent": "PASS",
         },
     }
