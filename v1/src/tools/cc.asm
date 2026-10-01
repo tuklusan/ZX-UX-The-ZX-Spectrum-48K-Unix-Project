@@ -10204,6 +10204,7 @@ cc_rev02_local_count:  db 0
 cc_rev02_frame_active: db 0
 cc_rev02_exec_seen:    db 0
 cc_rev02_local_disp:   db 0
+cc_rev02_lhs_disp:     db 0
 cc_rev02_temp_symbol:  db 0
 cc_rev02_temp_index:   db 0
 cc_rev02_name_ptr:     dw 0
@@ -10451,12 +10452,12 @@ cc_rev02_body_assignment_check:
     ld hl,cc_rev02_call_name
     call cc_rev02_local_find
     jp c,cc_rev02_format
-    ld (cc_rev02_local_disp),a
+    ld (cc_rev02_lhs_disp),a
     call cc_rev02_next_token
     ret c
     call cc_rev02_parse_value_expr
     ret c
-    ld a,(cc_rev02_local_disp)
+    ld a,(cc_rev02_lhs_disp)
     call cc_rev02_emit_local_store
     ret c
     ld a,';'
@@ -10480,7 +10481,7 @@ cc_rev02_body_local_int:
     ld hl,cc_rev02_token
     call cc_rev02_local_add
     ret c
-    ld (cc_rev02_local_disp),a
+    ld (cc_rev02_lhs_disp),a
     ld a,$F5                 ; PUSH AF reserves one aligned int local
     call cc_rev02_emit8
     ret c
@@ -10496,7 +10497,7 @@ cc_rev02_body_local_int:
     ret c
     call cc_rev02_parse_value_expr
     ret c
-    ld a,(cc_rev02_local_disp)
+    ld a,(cc_rev02_lhs_disp)
     call cc_rev02_emit_local_store
     ret c
 cc_rev02_body_local_done:
@@ -11940,6 +11941,7 @@ cc_rev02_local_add_new:
     ret
 
 cc_rev02_local_ptr_for_index:
+    push bc
     ld e,a
     ld d,0
     ld hl,cc_rev02_locals
@@ -11947,10 +11949,13 @@ cc_rev02_local_ptr_for_index:
 cc_rev02_local_ptr_seek:
     ld a,e
     or d
-    ret z
+    jr z,cc_rev02_local_ptr_done
     add hl,bc
     dec de
     jr cc_rev02_local_ptr_seek
+cc_rev02_local_ptr_done:
+    pop bc
+    ret
 
 ; Parse arguments after the opening parenthesis has already been consumed.
 cc_rev02_parse_call_args:
