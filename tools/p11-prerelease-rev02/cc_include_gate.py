@@ -711,7 +711,6 @@ test_patch_logic_write:
     jp test_patch_logic_loop
 
 test_runtime_logic_a:
-test_runtime_logic_a:
     ld a,20
     ld (mode),a
     call fixture_reset
