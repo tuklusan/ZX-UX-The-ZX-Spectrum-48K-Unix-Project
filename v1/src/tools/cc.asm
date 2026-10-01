@@ -11134,16 +11134,16 @@ cc_rev02_value_mul_times:
 cc_rev02_value_unary:
     ld a,'!'
     call cc_rev02_tok_is_punct
-    jr z,cc_rev02_value_unary_lnot
+    jp z,cc_rev02_value_unary_lnot
     ld a,'+'
     call cc_rev02_tok_is_punct
-    jr z,cc_rev02_value_unary_plus
+    jp z,cc_rev02_value_unary_plus
     ld a,'-'
     call cc_rev02_tok_is_punct
-    jr z,cc_rev02_value_unary_minus
+    jp z,cc_rev02_value_unary_minus
     ld a,'~'
     call cc_rev02_tok_is_punct
-    jr z,cc_rev02_value_unary_not
+    jp z,cc_rev02_value_unary_not
     ld a,'('
     call cc_rev02_tok_is_punct
     jp z,cc_rev02_value_group
