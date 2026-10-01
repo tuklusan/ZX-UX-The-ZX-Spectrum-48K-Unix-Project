@@ -333,6 +333,12 @@ symbol_capacity_source:
     db 'int f39(void){{return 39;}}',10
     db 'int main(void){{return f39();}}',10
 symbol_capacity_source_end:
+unsigned_runtime_source:
+    db 'unsigned int ug=44257u;unsigned int half(unsigned int x){{return x>>1;}}',10
+    db 'int main(void){{unsigned int u;u=ug;if(half(u)!=22128u)return 1;',10
+    db 'if(u%97u!=25u)return 2;if(!(u>1000u))return 3;',10
+    db 'u=(unsigned int)-1;if((u>>15)!=1u)return 4;return 0;}}',10
+unsigned_runtime_source_end:
 fp_oracle_table:
     db 4,'0','.','2','5',0,0,0,0,$11,$12,$13,$14,$15
     db 3,'4','.','0',0,0,0,0,0,$21,$22,$23,$24,$25
@@ -880,22 +886,52 @@ test_patch_logic_bss:
 test_patch_logic_undef:
     ld hl,cc_rev02_rt_cmp_s16
     call cc_rev02_symbol_find
-    jr c,test_patch_logic_undef_div
+    jr c,test_patch_logic_undef_cmp_u
     ld c,a
     ld a,(patch_sym)
     cp c
-    jr nz,test_patch_logic_undef_div
+    jr nz,test_patch_logic_undef_cmp_u
     ld de,c48_cmp_s16
     jr test_patch_logic_write
-test_patch_logic_undef_div:
+test_patch_logic_undef_cmp_u:
+    ld hl,cc_rev02_rt_cmp_u16
+    call cc_rev02_symbol_find
+    jr c,test_patch_logic_undef_div_s
+    ld c,a
+    ld a,(patch_sym)
+    cp c
+    jr nz,test_patch_logic_undef_div_s
+    ld de,c48_cmp_u16
+    jr test_patch_logic_write
+test_patch_logic_undef_div_s:
     ld hl,cc_rev02_rt_s16_divmod
+    call cc_rev02_symbol_find
+    jr c,test_patch_logic_undef_div_u
+    ld c,a
+    ld a,(patch_sym)
+    cp c
+    jr nz,test_patch_logic_undef_div_u
+    ld de,c48_s16_divmod
+    jr test_patch_logic_write
+test_patch_logic_undef_div_u:
+    ld hl,cc_rev02_rt_u16_divmod
+    call cc_rev02_symbol_find
+    jr c,test_patch_logic_undef_shr_u
+    ld c,a
+    ld a,(patch_sym)
+    cp c
+    jr nz,test_patch_logic_undef_shr_u
+    ld de,c48_u16_divmod
+    jr test_patch_logic_write
+test_patch_logic_undef_shr_u:
+    ld hl,cc_rev02_rt_u16_shr
     call cc_rev02_symbol_find
     jp c,test_fail
     ld c,a
     ld a,(patch_sym)
     cp c
     jp nz,test_fail
-    ld de,c48_s16_divmod
+    ld de,c48_u16_shr
 
 test_patch_logic_write:
     ld hl,cc_rev02_text
@@ -1754,6 +1790,21 @@ test_symbol_capacity_codegen:
     xor a
     ret
 
+test_unsigned_runtime_codegen:
+    ld a,53
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ret c
+    call test_patch_logic_relocs
+    ret c
+    call call_compiled_main
+    ld a,h
+    or l
+    jp nz,test_fail
+    xor a
+    ret
+
 test_define_multi:
     ld a,7
     ld (mode),a
@@ -2277,6 +2328,8 @@ gate_read_root_first:
     jp z,gate_read_wide_call
     cp 52
     jp z,gate_read_symbol_capacity
+    cp 53
+    jp z,gate_read_unsigned_runtime
     ld hl,root_source
     ld bc,CC_REV02_READ_CAP
     ldir
@@ -2523,6 +2576,12 @@ gate_read_symbol_capacity:
     ld hl,symbol_capacity_source_end-symbol_capacity_source
     ld (fixture_source_left),hl
     jp gate_read_fixture_chunk
+gate_read_unsigned_runtime:
+    ld hl,unsigned_runtime_source
+    ld (fixture_source_ptr),hl
+    ld hl,unsigned_runtime_source_end-unsigned_runtime_source
+    ld (fixture_source_left),hl
+    jp gate_read_fixture_chunk
 
 ; Direct source fixtures obey the compiler's bounded read contract exactly.
 ; DE is the caller destination. Each read returns at most CC_REV02_READ_CAP.
@@ -2670,7 +2729,7 @@ gateway_end:
     run([sj, "--nologo", f"--sym={sym.as_posix()}", asm.as_posix()], out)
     req(main_bin.is_file() and gate_bin.is_file(), "fixture binaries missing")
     syms = symbols(sym)
-    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_builtin_c48", "test_local_scalar_codegen", "test_dynamic_call_abi", "test_runtime_muldiv_codegen", "test_runtime_bitwise_codegen", "test_runtime_shift_codegen", "test_runtime_compare_a", "test_runtime_compare_b", "test_runtime_logic_a", "test_runtime_logic_b", "test_postfix_local_codegen", "test_if_else_codegen", "test_while_codegen", "test_for_codegen", "test_break_continue_codegen", "test_nested_break_codegen", "test_break_outside_reject", "test_continue_outside_reject", "test_recursive_params_codegen", "test_global_scalar_codegen", "test_global_array_compile", "test_global_array_bss", "test_global_array_symbols", "test_global_array_patch", "test_global_array_codegen", "test_global_init_codegen", "test_local_array_codegen", "test_pointer_basic_codegen", "test_local_pointer_assign_codegen", "test_local_pointer_metadata", "test_local_pointer_literal", "test_local_pointer_value_codegen", "test_local_pointer_deref_codegen", "test_local_pointer_codegen", "test_character_literal_codegen", "test_integer_cast_codegen", "test_pointer_post_codegen", "test_pointer_array_codegen", "test_float_literal_codegen", "test_void_return_codegen", "test_call_expression_codegen", "test_mixed_call_arg_codegen", "test_local_array_init_codegen", "test_local_pointer_init_codegen", "test_nested_call_codegen", "test_wide_call_codegen", "test_symbol_capacity_codegen", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
+    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_builtin_c48", "test_local_scalar_codegen", "test_dynamic_call_abi", "test_runtime_muldiv_codegen", "test_runtime_bitwise_codegen", "test_runtime_shift_codegen", "test_runtime_compare_a", "test_runtime_compare_b", "test_runtime_logic_a", "test_runtime_logic_b", "test_postfix_local_codegen", "test_if_else_codegen", "test_while_codegen", "test_for_codegen", "test_break_continue_codegen", "test_nested_break_codegen", "test_break_outside_reject", "test_continue_outside_reject", "test_recursive_params_codegen", "test_global_scalar_codegen", "test_global_array_compile", "test_global_array_bss", "test_global_array_symbols", "test_global_array_patch", "test_global_array_codegen", "test_global_init_codegen", "test_local_array_codegen", "test_pointer_basic_codegen", "test_local_pointer_assign_codegen", "test_local_pointer_metadata", "test_local_pointer_literal", "test_local_pointer_value_codegen", "test_local_pointer_deref_codegen", "test_local_pointer_codegen", "test_character_literal_codegen", "test_integer_cast_codegen", "test_pointer_post_codegen", "test_pointer_array_codegen", "test_float_literal_codegen", "test_void_return_codegen", "test_call_expression_codegen", "test_mixed_call_arg_codegen", "test_local_array_init_codegen", "test_local_pointer_init_codegen", "test_nested_call_codegen", "test_wide_call_codegen", "test_symbol_capacity_codegen", "test_unsigned_runtime_codegen", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
     for name in names:
         req(name in syms, "fixture symbol missing: " + name)
 
@@ -2746,6 +2805,7 @@ gateway_end:
             "generic_nested_function_calls": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_wide_regcall_and_local_capacity": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_symbol_capacity_over_32": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "generic_unsigned_integer_runtime_semantics": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_if_else_control_flow": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_nested_while_control_flow": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_nested_for_control_flow": "PASS" if not ns.assemble_only else "ASSEMBLED",

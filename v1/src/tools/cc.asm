@@ -10256,6 +10256,7 @@ cc_rev02_temp_symbol:  db 0
 cc_rev02_temp_index:   db 0
 cc_rev02_name_ptr:     dw 0
 cc_rev02_escape_char:  db 0
+cc_rev02_value_unsigned: db 0
 
 cc_rev02_kw_int:       db 'int',0
 cc_rev02_kw_char:      db 'char',0
@@ -10384,7 +10385,12 @@ cc_rev02_external_scan:
     ld hl,cc_rev02_token
     ld de,cc_rev02_kw_unsigned
     call cc_rev02_streq
-    jr z,cc_rev02_external_type_next
+    jr nz,cc_rev02_external_type_int_check
+    ld a,(cc_rev02_global_pointee)
+    or $80
+    ld (cc_rev02_global_pointee),a
+    jr cc_rev02_external_type_next
+cc_rev02_external_type_int_check:
     ld hl,cc_rev02_token
     ld de,cc_rev02_kw_int
     call cc_rev02_streq
@@ -10416,6 +10422,9 @@ cc_rev02_external_type_int:
 cc_rev02_external_type_char:
     ld a,1
     ld (cc_rev02_global_size),a
+    ld a,(cc_rev02_global_pointee)
+    or $80
+    ld (cc_rev02_global_pointee),a
     jr cc_rev02_external_type_next
 cc_rev02_external_type_float:
     ld a,5
@@ -10473,11 +10482,15 @@ cc_rev02_external_pointer:
     ld (cc_rev02_global_ptr_depth),a
     cp 1
     jr nz,cc_rev02_external_pointer_nested
+    ld a,(cc_rev02_global_pointee)
+    and $80
+    ld b,a
     ld a,(cc_rev02_global_size)
+    or b
     ld (cc_rev02_global_pointee),a
     jr cc_rev02_external_pointer_size
 cc_rev02_external_pointer_nested:
-    ld a,2                  ; pointer-to-pointer indexes one pointer object
+    ld a,$82                ; pointer-to-pointer indexes one pointer object
     ld (cc_rev02_global_pointee),a
 cc_rev02_external_pointer_size:
     ld a,2
@@ -10735,13 +10748,13 @@ cc_rev02_external_param_loop:
     jp nz,cc_rev02_format
     ld a,(cc_rev02_token)
     cp '('
-    jr z,cc_rev02_external_param_open
+    jp z,cc_rev02_external_param_open
     cp ')'
     jp z,cc_rev02_external_param_close
     cp ','
     jp z,cc_rev02_external_param_comma
     cp '*'
-    jr z,cc_rev02_external_param_pointer
+    jp z,cc_rev02_external_param_pointer
     jr cc_rev02_external_param_loop
 
 cc_rev02_external_param_id:
@@ -10749,10 +10762,19 @@ cc_rev02_external_param_id:
     cp 1
     jr nz,cc_rev02_external_param_loop
     ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_unsigned
+    call cc_rev02_streq
+    jr nz,cc_rev02_external_param_char_check
+    ld a,(cc_rev02_param_base_size)
+    or $80
+    ld (cc_rev02_param_base_size),a
+    jp cc_rev02_external_param_loop
+cc_rev02_external_param_char_check:
+    ld hl,cc_rev02_token
     ld de,cc_rev02_kw_char
     call cc_rev02_streq
     jr nz,cc_rev02_external_param_type_int
-    ld a,1
+    ld a,$81
     ld (cc_rev02_param_base_size),a
     jr cc_rev02_external_param_capture
 cc_rev02_external_param_type_int:
@@ -10780,7 +10802,9 @@ cc_rev02_external_param_type_void:
     ld (cc_rev02_param_base_size),a
     jr cc_rev02_external_param_capture
 cc_rev02_external_param_base2:
-    ld a,2
+    ld a,(cc_rev02_param_base_size)
+    and $80
+    or 2
     ld (cc_rev02_param_base_size),a
 cc_rev02_external_param_capture:
     ld hl,cc_rev02_token
@@ -11155,6 +11179,8 @@ cc_rev02_param_store_candidate:
     call cc_rev02_copy_name16
     xor a
     ld b,a
+    ld a,(cc_rev02_param_base_size)
+    and $80
     ld c,a
     ld a,(cc_rev02_param_ptr_depth)
     or a
@@ -11166,7 +11192,7 @@ cc_rev02_param_store_candidate:
     ld c,a
     jr cc_rev02_param_meta_store
 cc_rev02_param_pointee_ptr:
-    ld c,2
+    ld c,$82
 cc_rev02_param_meta_store:
     ld a,b
     ld (de),a
@@ -11544,7 +11570,7 @@ cc_rev02_body_deref_assignment:
     ld a,(cc_rev02_local_symbol)
     call cc_rev02_local_pointee_ptr
     ld a,(hl)
-    or a
+    and $7F
     jp z,cc_rev02_notsup
     push af
     ld a,(cc_rev02_lhs_disp)
@@ -11573,10 +11599,14 @@ cc_rev02_body_deref_assignment:
     ret
 
 cc_rev02_body_local_int:
+    xor a
+    ld (cc_rev02_local_pointee),a
     ld a,2
     ld (cc_rev02_local_size),a
     jr cc_rev02_body_local_type
 cc_rev02_body_local_char:
+    ld a,$80
+    ld (cc_rev02_local_pointee),a
     ld a,1
     ld (cc_rev02_local_size),a
 cc_rev02_body_local_type:
@@ -11595,6 +11625,8 @@ cc_rev02_body_local_unsigned:
     jp nz,cc_rev02_notsup
     call cc_rev02_frame_ensure
     ret c
+    ld a,$80
+    ld (cc_rev02_local_pointee),a
     ld a,2
     ld (cc_rev02_local_size),a
     call cc_rev02_next_token
@@ -11627,11 +11659,14 @@ cc_rev02_body_local_unsigned_consume:
 cc_rev02_body_local_after_type:
     xor a
     ld (cc_rev02_local_kind),a
-    ld (cc_rev02_local_pointee),a
     ld a,'*'
     call cc_rev02_tok_is_punct
     jr nz,cc_rev02_body_local_have_name
+    ld a,(cc_rev02_local_pointee)
+    and $80
+    ld b,a
     ld a,(cc_rev02_local_size)
+    or b
     ld (cc_rev02_local_pointee),a
     ld a,2
     ld (cc_rev02_local_size),a
@@ -11642,7 +11677,7 @@ cc_rev02_body_local_pointer_star:
     ld a,'*'
     call cc_rev02_tok_is_punct
     jr nz,cc_rev02_body_local_have_name
-    ld a,2
+    ld a,$82
     ld (cc_rev02_local_pointee),a
     jr cc_rev02_body_local_pointer_star
 
@@ -12204,8 +12239,24 @@ cc_rev02_body_done:
 
 ; Runtime-value expression subset. Every successful parse leaves generated HL
 ; holding the value. This is distinct from the constant-only argument parser.
+cc_rev02_value_set_signed:
+    xor a
+    jr cc_rev02_value_store_unsigned
+cc_rev02_value_set_pointer:
+    ld a,$80
+    jr cc_rev02_value_store_unsigned
+cc_rev02_value_set_meta_unsigned:
+    and $80
+cc_rev02_value_store_unsigned:
+    ld (cc_rev02_value_unsigned),a
+    ret
+
 cc_rev02_parse_value_expr:
     jp cc_rev02_value_lor
+
+cc_rev02_value_drop_type_err:
+    pop bc
+    ret
 
 ; Logical OR/AND use ordinary TEXT labels and ABS16 relocations so
 ; short-circuit semantics do not depend on an 8-bit branch-range accident.
@@ -12241,6 +12292,7 @@ cc_rev02_value_lor_loop:
     ld hl,1
     call cc_rev02_emit_ld_hl
     ret c
+    call cc_rev02_value_set_signed
     jp cc_rev02_value_lor_loop
 
 cc_rev02_value_land:
@@ -12275,6 +12327,7 @@ cc_rev02_value_land_loop:
     ld hl,0
     call cc_rev02_emit_ld_hl
     ret c
+    call cc_rev02_value_set_signed
     jp cc_rev02_value_land_loop
 
 cc_rev02_value_bor:
@@ -12287,10 +12340,17 @@ cc_rev02_value_bor_loop:
     ld a,$E5                 ; PUSH HL preserves lhs
     call cc_rev02_emit8
     ret c
+    ld a,(cc_rev02_value_unsigned)
+    push af
     call cc_rev02_next_token
-    ret c
+    jp c,cc_rev02_value_drop_type_err
     call cc_rev02_value_bxor
-    ret c
+    jp c,cc_rev02_value_drop_type_err
+    ld a,(cc_rev02_value_unsigned)
+    ld b,a
+    pop af
+    or b
+    ld (cc_rev02_value_unsigned),a
     ld a,$EB                 ; rhs -> DE
     call cc_rev02_emit8
     ret c
@@ -12327,10 +12387,17 @@ cc_rev02_value_bxor_loop:
     ld a,$E5
     call cc_rev02_emit8
     ret c
+    ld a,(cc_rev02_value_unsigned)
+    push af
     call cc_rev02_next_token
-    ret c
+    jp c,cc_rev02_value_drop_type_err
     call cc_rev02_value_band
-    ret c
+    jp c,cc_rev02_value_drop_type_err
+    ld a,(cc_rev02_value_unsigned)
+    ld b,a
+    pop af
+    or b
+    ld (cc_rev02_value_unsigned),a
     ld a,$EB
     call cc_rev02_emit8
     ret c
@@ -12367,10 +12434,17 @@ cc_rev02_value_band_loop:
     ld a,$E5
     call cc_rev02_emit8
     ret c
+    ld a,(cc_rev02_value_unsigned)
+    push af
     call cc_rev02_next_token
-    ret c
+    jp c,cc_rev02_value_drop_type_err
     call cc_rev02_value_eq
-    ret c
+    jp c,cc_rev02_value_drop_type_err
+    ld a,(cc_rev02_value_unsigned)
+    ld b,a
+    pop af
+    or b
+    ld (cc_rev02_value_unsigned),a
     ld a,$EB
     call cc_rev02_emit8
     ret c
@@ -12438,6 +12512,7 @@ cc_rev02_value_eq_take:
     pop af
     call cc_rev02_emit_cmp_bool
     ret c
+    call cc_rev02_value_set_signed
     jr cc_rev02_value_eq_loop
 
 cc_rev02_value_rel:
@@ -12473,24 +12548,34 @@ cc_rev02_value_rel_take:
     ld a,$E5
     call cc_rev02_emit8
     jp c,cc_rev02_value_cmp_drop_op_error
+    ld a,(cc_rev02_value_unsigned)
+    push af
     call cc_rev02_next_token
-    jp c,cc_rev02_value_cmp_drop_op_error
+    jp c,cc_rev02_value_cmp_drop_type_op_error
     call cc_rev02_value_shift
-    jp c,cc_rev02_value_cmp_drop_op_error
+    jp c,cc_rev02_value_cmp_drop_type_op_error
+    ld a,(cc_rev02_value_unsigned)
+    ld b,a
+    pop af
+    or b
+    ld (cc_rev02_value_unsigned),a
     ld a,$EB
     call cc_rev02_emit8
     jp c,cc_rev02_value_cmp_drop_op_error
     ld a,$E1
     call cc_rev02_emit8
     jp c,cc_rev02_value_cmp_drop_op_error
-    ld hl,cc_rev02_rt_cmp_s16
+    call cc_rev02_select_cmp
     call cc_rev02_emit_named_call
     jp c,cc_rev02_value_cmp_drop_op_error
     pop af
     call cc_rev02_emit_cmp_bool
     ret c
+    call cc_rev02_value_set_signed
     jr cc_rev02_value_rel_loop
 
+cc_rev02_value_cmp_drop_type_op_error:
+    pop bc
 cc_rev02_value_cmp_drop_op_error:
     pop bc
     scf
@@ -12599,17 +12684,21 @@ cc_rev02_value_shift_right:
     ld a,$E5                 ; PUSH HL preserves lhs
     call cc_rev02_emit8
     ret c
+    ld a,(cc_rev02_value_unsigned)
+    push af
     call cc_rev02_next_token
-    ret c
+    jp c,cc_rev02_value_drop_type_err
     call cc_rev02_value_add
-    ret c
+    jp c,cc_rev02_value_drop_type_err
+    pop af
+    ld (cc_rev02_value_unsigned),a
     ld a,$EB                 ; rhs count -> DE
     call cc_rev02_emit8
     ret c
     ld a,$E1                 ; lhs -> HL
     call cc_rev02_emit8
     ret c
-    ld hl,cc_rev02_rt_s16_shr
+    call cc_rev02_select_shr
     call cc_rev02_emit_named_call
     ret c
     jr cc_rev02_value_shift_loop
@@ -12617,10 +12706,14 @@ cc_rev02_value_shift_left:
     ld a,$E5
     call cc_rev02_emit8
     ret c
+    ld a,(cc_rev02_value_unsigned)
+    push af
     call cc_rev02_next_token
-    ret c
+    jp c,cc_rev02_value_drop_type_err
     call cc_rev02_value_add
-    ret c
+    jp c,cc_rev02_value_drop_type_err
+    pop af
+    ld (cc_rev02_value_unsigned),a
     ld a,$EB
     call cc_rev02_emit8
     ret c
@@ -12646,10 +12739,17 @@ cc_rev02_value_add_minus:
     ld a,$E5                 ; preserve lhs value
     call cc_rev02_emit8
     ret c
+    ld a,(cc_rev02_value_unsigned)
+    push af
     call cc_rev02_next_token
-    ret c
+    jp c,cc_rev02_value_drop_type_err
     call cc_rev02_value_mul
-    ret c
+    jp c,cc_rev02_value_drop_type_err
+    ld a,(cc_rev02_value_unsigned)
+    ld b,a
+    pop af
+    or b
+    ld (cc_rev02_value_unsigned),a
     ld a,$EB                 ; rhs -> DE
     call cc_rev02_emit8
     ret c
@@ -12670,10 +12770,17 @@ cc_rev02_value_add_plus:
     ld a,$E5
     call cc_rev02_emit8
     ret c
+    ld a,(cc_rev02_value_unsigned)
+    push af
     call cc_rev02_next_token
-    ret c
+    jp c,cc_rev02_value_drop_type_err
     call cc_rev02_value_mul
-    ret c
+    jp c,cc_rev02_value_drop_type_err
+    ld a,(cc_rev02_value_unsigned)
+    ld b,a
+    pop af
+    or b
+    ld (cc_rev02_value_unsigned),a
     ld a,$EB
     call cc_rev02_emit8
     ret c
@@ -12705,17 +12812,24 @@ cc_rev02_value_mul_mod:
     ld a,$E5
     call cc_rev02_emit8
     ret c
+    ld a,(cc_rev02_value_unsigned)
+    push af
     call cc_rev02_next_token
-    ret c
+    jp c,cc_rev02_value_drop_type_err
     call cc_rev02_value_unary
-    ret c
+    jp c,cc_rev02_value_drop_type_err
+    ld a,(cc_rev02_value_unsigned)
+    ld b,a
+    pop af
+    or b
+    ld (cc_rev02_value_unsigned),a
     ld a,$EB
     call cc_rev02_emit8
     ret c
     ld a,$E1
     call cc_rev02_emit8
     ret c
-    ld hl,cc_rev02_rt_s16_divmod
+    call cc_rev02_select_divmod
     call cc_rev02_emit_named_call
     ret c
     ld a,$EB                 ; remainder DE -> result HL
@@ -12726,17 +12840,24 @@ cc_rev02_value_mul_div:
     ld a,$E5
     call cc_rev02_emit8
     ret c
+    ld a,(cc_rev02_value_unsigned)
+    push af
     call cc_rev02_next_token
-    ret c
+    jp c,cc_rev02_value_drop_type_err
     call cc_rev02_value_unary
-    ret c
+    jp c,cc_rev02_value_drop_type_err
+    ld a,(cc_rev02_value_unsigned)
+    ld b,a
+    pop af
+    or b
+    ld (cc_rev02_value_unsigned),a
     ld a,$EB
     call cc_rev02_emit8
     ret c
     ld a,$E1
     call cc_rev02_emit8
     ret c
-    ld hl,cc_rev02_rt_s16_divmod
+    call cc_rev02_select_divmod
     call cc_rev02_emit_named_call
     ret c
     jp cc_rev02_value_mul_loop
@@ -12744,10 +12865,17 @@ cc_rev02_value_mul_times:
     ld a,$E5
     call cc_rev02_emit8
     ret c
+    ld a,(cc_rev02_value_unsigned)
+    push af
     call cc_rev02_next_token
-    ret c
+    jp c,cc_rev02_value_drop_type_err
     call cc_rev02_value_unary
-    ret c
+    jp c,cc_rev02_value_drop_type_err
+    ld a,(cc_rev02_value_unsigned)
+    ld b,a
+    pop af
+    or b
+    ld (cc_rev02_value_unsigned),a
     ld a,$EB
     call cc_rev02_emit8
     ret c
@@ -12812,12 +12940,14 @@ cc_rev02_value_local_array:
     ld a,'['
     call cc_rev02_tok_is_punct
     jr z,cc_rev02_value_local_index
+    call cc_rev02_value_set_pointer
     ld a,(cc_rev02_local_disp)
     jp cc_rev02_emit_local_address
 cc_rev02_value_local_pointer:
     ld a,'['
     call cc_rev02_tok_is_punct
     jr z,cc_rev02_value_local_index
+    call cc_rev02_value_set_pointer
     ld a,(cc_rev02_local_disp)
     call cc_rev02_emit_local_load_selected
     ret c
@@ -12827,6 +12957,10 @@ cc_rev02_value_local_index:
     ret c
     call cc_rev02_emit_index_load
     ret c
+    ld a,(cc_rev02_local_symbol)
+    call cc_rev02_local_pointee_ptr
+    ld a,(hl)
+    call cc_rev02_value_set_meta_unsigned
     ld d,'+'
     ld e,'+'
     call cc_rev02_tok_is_op2
@@ -12841,6 +12975,10 @@ cc_rev02_value_local_scalar:
     ld a,(cc_rev02_local_disp)
     call cc_rev02_emit_local_load_selected
     ret c
+    ld a,(cc_rev02_local_symbol)
+    call cc_rev02_local_pointee_ptr
+    ld a,(hl)
+    call cc_rev02_value_set_meta_unsigned
 cc_rev02_value_local_postcheck:
     ld d,'+'
     ld e,'+'
@@ -12892,6 +13030,7 @@ cc_rev02_value_global:
     ld a,'['
     call cc_rev02_tok_is_punct
     jr z,cc_rev02_value_global_index
+    call cc_rev02_value_set_pointer
     ld a,(cc_rev02_global_symbol)
     jp cc_rev02_emit_global_address
 cc_rev02_value_function_call:
@@ -12908,7 +13047,9 @@ cc_rev02_value_function_call:
     jr c,cc_rev02_value_call_drop_err
     pop af
     ld (cc_rev02_call_symbol),a
-    jp cc_rev02_emit_call
+    call cc_rev02_emit_call
+    ret c
+    jp cc_rev02_value_set_signed
 cc_rev02_value_call_drop_err:
     pop bc
     ret
@@ -12918,6 +13059,10 @@ cc_rev02_value_global_index:
     ret c
     call cc_rev02_emit_index_load
     ret c
+    ld a,(cc_rev02_global_symbol)
+    call cc_rev02_global_pointee_ptr
+    ld a,(hl)
+    call cc_rev02_value_set_meta_unsigned
     ld a,'['
     call cc_rev02_tok_is_punct
     jp z,cc_rev02_value_global_pointer_index
@@ -12941,7 +13086,7 @@ cc_rev02_value_global_pointer_index:
     ld a,(cc_rev02_global_symbol)
     call cc_rev02_global_pointee_ptr
     ld a,(hl)
-    or a
+    and $7F
     jp z,cc_rev02_notsup
     push af                  ; preserve pointed-to element width
     ld a,$E5                 ; preserve loaded pointer base
@@ -12986,6 +13131,10 @@ cc_rev02_value_global_scalar:
     ld a,(cc_rev02_global_symbol)
     call cc_rev02_emit_global_load
     ret c
+    ld a,(cc_rev02_global_symbol)
+    call cc_rev02_global_pointee_ptr
+    ld a,(hl)
+    call cc_rev02_value_set_meta_unsigned
     ld d,'+'
     ld e,'+'
     call cc_rev02_tok_is_op2
@@ -13019,6 +13168,7 @@ cc_rev02_value_global_post_opcode:
     ret c
     jp cc_rev02_next_token
 cc_rev02_value_unary_address:
+    call cc_rev02_value_set_pointer
     call cc_rev02_next_token
     ret c
     ld a,(cc_rev02_tok_kind)
@@ -13080,12 +13230,17 @@ cc_rev02_value_unary_deref:
     ret c
     call cc_rev02_next_token
     ret c
-    jp cc_rev02_emit_index_load
+    call cc_rev02_emit_index_load
+    ret c
+    ld a,(cc_rev02_local_symbol)
+    call cc_rev02_local_pointee_ptr
+    ld a,(hl)
+    jp cc_rev02_value_set_meta_unsigned
 cc_rev02_value_deref_local_pointer:
     ld a,(cc_rev02_local_symbol)
     call cc_rev02_local_pointee_ptr
     ld a,(hl)
-    or a
+    and $7F
     jp z,cc_rev02_notsup
     ld (cc_rev02_index_size),a
     ld a,(cc_rev02_local_disp)
@@ -13101,7 +13256,12 @@ cc_rev02_value_deref_local_pointer:
     ld e,'-'
     call cc_rev02_tok_is_op2
     jr z,cc_rev02_value_deref_pointer_post_dec
-    jp cc_rev02_emit_index_load
+    call cc_rev02_emit_index_load
+    ret c
+    ld a,(cc_rev02_local_symbol)
+    call cc_rev02_local_pointee_ptr
+    ld a,(hl)
+    jp cc_rev02_value_set_meta_unsigned
 cc_rev02_value_deref_pointer_post_inc:
     xor a
     jr cc_rev02_value_deref_pointer_post_step
@@ -13124,7 +13284,13 @@ cc_rev02_value_deref_pointer_post_step:
     ret c
     call cc_rev02_next_token
     ret c
-    jp cc_rev02_emit_index_load
+    call cc_rev02_emit_index_load
+    ret c
+    ld a,(cc_rev02_local_symbol)
+    call cc_rev02_local_pointee_ptr
+    ld a,(hl)
+    call cc_rev02_value_set_meta_unsigned
+    ret
 cc_rev02_value_deref_global:
     ld hl,cc_rev02_token
     call cc_rev02_global_find
@@ -13143,9 +13309,15 @@ cc_rev02_value_deref_global:
     ret c
     call cc_rev02_next_token
     ret c
-    jp cc_rev02_emit_index_load
+    call cc_rev02_emit_index_load
+    ret c
+    ld a,(cc_rev02_global_symbol)
+    call cc_rev02_global_pointee_ptr
+    ld a,(hl)
+    jp cc_rev02_value_set_meta_unsigned
 
 cc_rev02_value_char:
+    call cc_rev02_value_set_signed
     call cc_rev02_char_value
     push hl
     call cc_rev02_next_token
@@ -13154,6 +13326,7 @@ cc_rev02_value_char:
     jp cc_rev02_emit_ld_hl
 
 cc_rev02_value_string:
+    call cc_rev02_value_set_pointer
     call cc_rev02_add_string_literal
     ret c
     ld (cc_rev02_temp_symbol),a
@@ -13174,6 +13347,7 @@ cc_rev02_value_string:
 ; Floating expression values are represented by their caller-owned five-byte
 ; storage address, exactly as required by C48_REGCALL.
 cc_rev02_value_float:
+    call cc_rev02_value_set_signed
     call cc_rev02_add_float_literal
     ret c
     ld (cc_rev02_temp_symbol),a
@@ -13204,7 +13378,9 @@ cc_rev02_value_unary_lnot:
     ret c
     call cc_rev02_value_unary
     ret c
-    jp cc_rev02_emit_logical_not
+    call cc_rev02_emit_logical_not
+    ret c
+    jp cc_rev02_value_set_signed
 cc_rev02_value_unary_plus:
     call cc_rev02_next_token
     jp cc_rev02_value_unary
@@ -13290,22 +13466,34 @@ cc_rev02_value_cast_unsigned:
     ld hl,cc_rev02_token
     ld de,cc_rev02_kw_char
     call cc_rev02_streq
-    jp z,cc_rev02_value_cast_char
+    jp z,cc_rev02_value_cast_unsigned_char
     ld hl,cc_rev02_token
     ld de,cc_rev02_kw_short
     call cc_rev02_streq
-    jp z,cc_rev02_value_cast_word
+    jp z,cc_rev02_value_cast_unsigned_word
     ld hl,cc_rev02_token
     ld de,cc_rev02_kw_int
     call cc_rev02_streq
     jp nz,cc_rev02_format
+cc_rev02_value_cast_unsigned_word:
+    call cc_rev02_next_token
+    ret c
+    ld a,')'
+    call cc_rev02_expect_punct
+    ret c
+    call cc_rev02_value_unary
+    ret c
+    jp cc_rev02_value_set_pointer
 cc_rev02_value_cast_word:
     call cc_rev02_next_token
     ret c
     ld a,')'
     call cc_rev02_expect_punct
     ret c
-    jp cc_rev02_value_unary
+    call cc_rev02_value_unary
+    ret c
+    jp cc_rev02_value_set_signed
+cc_rev02_value_cast_unsigned_char:
 cc_rev02_value_cast_char:
     call cc_rev02_next_token
     ret c
@@ -13318,7 +13506,9 @@ cc_rev02_value_cast_char:
     call cc_rev02_emit8
     ret c
     xor a
-    jp cc_rev02_emit8
+    call cc_rev02_emit8
+    ret c
+    jp cc_rev02_value_set_pointer
 
 cc_rev02_parse_const_expr:
     jp cc_rev02_parse_bor
@@ -14905,7 +15095,7 @@ cc_rev02_emit_local_index_address:
     ld a,(cc_rev02_local_symbol)
     call cc_rev02_local_pointee_ptr
     ld a,(hl)
-    or a
+    and $7F
     jp z,cc_rev02_notsup
     push af
     ld a,(cc_rev02_local_disp)
@@ -14965,7 +15155,7 @@ cc_rev02_emit_local_step_selected:
     ld a,(cc_rev02_local_symbol)
     call cc_rev02_local_pointee_ptr
     ld a,(hl)
-    or a
+    and $7F
     jp z,cc_rev02_notsup
     cp 6
     jp nc,cc_rev02_notsup
@@ -15293,11 +15483,36 @@ cc_rev02_emit_named_call:
     ld a,(cc_rev02_temp_symbol)
     jp cc_rev02_add_reloc
 
+cc_rev02_select_divmod:
+    ld a,(cc_rev02_value_unsigned)
+    or a
+    ld hl,cc_rev02_rt_s16_divmod
+    ret z
+    ld hl,cc_rev02_rt_u16_divmod
+    ret
+cc_rev02_select_shr:
+    ld a,(cc_rev02_value_unsigned)
+    or a
+    ld hl,cc_rev02_rt_s16_shr
+    ret z
+    ld hl,cc_rev02_rt_u16_shr
+    ret
+cc_rev02_select_cmp:
+    ld a,(cc_rev02_value_unsigned)
+    or a
+    ld hl,cc_rev02_rt_cmp_s16
+    ret z
+    ld hl,cc_rev02_rt_cmp_u16
+    ret
+
 cc_rev02_rt_s16_mul: db 'c48_s16_mul',0
 cc_rev02_rt_s16_divmod: db 'c48_s16_divmod',0
+cc_rev02_rt_u16_divmod: db 'c48_u16_divmod',0
 cc_rev02_rt_s16_shl: db 'c48_s16_shl',0
 cc_rev02_rt_s16_shr: db 'c48_s16_shr',0
+cc_rev02_rt_u16_shr: db 'c48_u16_shr',0
 cc_rev02_rt_cmp_s16: db 'c48_cmp_s16',0
+cc_rev02_rt_cmp_u16: db 'c48_cmp_u16',0
 
 ; Emit one ordinary C48_REGCALL.  Argument expressions were evaluated
 ; left-to-right and parked as temporary words.  The generated marshaller walks
@@ -15931,6 +16146,7 @@ cc_rev02_streq:
     jr cc_rev02_streq
 
 cc_rev02_number_value:
+    call cc_rev02_value_set_signed
     ld ix,cc_rev02_token
     ld hl,0
     ld a,(ix+0)
@@ -15990,6 +16206,9 @@ cc_rev02_num_hex:
     inc ix
     jr cc_rev02_num_hex
 cc_rev02_num_suffix:
+    push hl
+    call cc_rev02_value_set_pointer
+    pop hl
     inc ix
     ld a,(ix+0)
     or a
