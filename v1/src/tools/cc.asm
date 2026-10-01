@@ -10172,6 +10172,8 @@ cc_rev02_remainder:    dw 0
 cc_rev02_div_count:    db 0
 cc_rev02_main_offset:  dw 0
 cc_rev02_op:           db 0
+cc_rev02_value_add_op: db 0
+cc_rev02_value_mul_op_kind: db 0
 cc_rev02_line_start:   db 0
 cc_rev02_include_depth: db 0
 cc_rev02_parent_handle: db HANDLE_FREE
@@ -10533,7 +10535,7 @@ cc_rev02_body_done:
 cc_rev02_parse_value_expr:
     jp cc_rev02_value_add
 cc_rev02_value_add:
-    call cc_rev02_value_unary
+    call cc_rev02_value_mul
     ret c
 cc_rev02_value_add_loop:
     ld a,'+'
@@ -10547,13 +10549,13 @@ cc_rev02_value_add_loop:
 cc_rev02_value_add_plus:
     xor a
 cc_rev02_value_add_take:
-    ld (cc_rev02_op),a
+    ld (cc_rev02_value_add_op),a
     ld a,$E5                 ; preserve lhs value
     call cc_rev02_emit8
     ret c
     call cc_rev02_next_token
     ret c
-    call cc_rev02_value_unary
+    call cc_rev02_value_mul
     ret c
     ld a,$EB                 ; rhs -> DE
     call cc_rev02_emit8
@@ -10561,7 +10563,7 @@ cc_rev02_value_add_take:
     ld a,$E1                 ; restore lhs -> HL
     call cc_rev02_emit8
     ret c
-    ld a,(cc_rev02_op)
+    ld a,(cc_rev02_value_add_op)
     or a
     jr nz,cc_rev02_value_sub_emit
     ld a,$19                 ; ADD HL,DE
@@ -10579,6 +10581,63 @@ cc_rev02_value_sub_emit:
     call cc_rev02_emit8
     ret c
     jr cc_rev02_value_add_loop
+
+; Multiplicative runtime-value layer for ordinary signed int expressions.
+; lhs is parked while rhs is evaluated; the frozen libc48 helpers own exact
+; C48 multiply/divide/remainder behavior, including divide-by-zero termination.
+cc_rev02_value_mul:
+    call cc_rev02_value_unary
+    ret c
+cc_rev02_value_mul_loop:
+    ld a,'*'
+    call cc_rev02_tok_is_punct
+    jr z,cc_rev02_value_mul_take
+    ld a,'/'
+    call cc_rev02_tok_is_punct
+    jr z,cc_rev02_value_div_take
+    ld a,'%'
+    call cc_rev02_tok_is_punct
+    ret nz
+    ld a,2
+    jr cc_rev02_value_mul_op
+cc_rev02_value_mul_take:
+    xor a
+    jr cc_rev02_value_mul_op
+cc_rev02_value_div_take:
+    ld a,1
+cc_rev02_value_mul_op:
+    ld (cc_rev02_value_mul_op_kind),a
+    ld a,$E5                 ; PUSH HL preserves lhs
+    call cc_rev02_emit8
+    ret c
+    call cc_rev02_next_token
+    ret c
+    call cc_rev02_value_unary
+    ret c
+    ld a,$EB                 ; EX DE,HL => rhs in DE
+    call cc_rev02_emit8
+    ret c
+    ld a,$E1                 ; POP HL => lhs in HL
+    call cc_rev02_emit8
+    ret c
+    ld a,(cc_rev02_value_mul_op_kind)
+    or a
+    jr nz,cc_rev02_value_divmod_emit
+    ld hl,cc_rev02_rt_s16_mul
+    call cc_rev02_emit_named_call
+    ret c
+    jr cc_rev02_value_mul_loop
+cc_rev02_value_divmod_emit:
+    ld hl,cc_rev02_rt_s16_divmod
+    call cc_rev02_emit_named_call
+    ret c
+    ld a,(cc_rev02_value_mul_op_kind)
+    cp 2
+    jr nz,cc_rev02_value_mul_loop
+    ld a,$EB                 ; remainder DE -> result HL
+    call cc_rev02_emit8
+    ret c
+    jr cc_rev02_value_mul_loop
 
 cc_rev02_value_unary:
     ld a,'+'
@@ -12058,6 +12117,28 @@ cc_rev02_store_arg_symbol:
     ld a,b
     ld (hl),a
     ret
+
+; HL=NUL-terminated undefined helper name. Emit CALL nn and attach one
+; ordinary ABS16 relocation. This is generic runtime-symbol resolution, not a
+; source-name or source-identity dispatch path.
+cc_rev02_emit_named_call:
+    call cc_rev02_symbol_get_undef
+    ret c
+    ld (cc_rev02_temp_symbol),a
+    ld a,$CD
+    call cc_rev02_emit8
+    ret c
+    ld hl,(cc_rev02_text_len)
+    push hl
+    ld hl,0
+    call cc_rev02_emit16
+    pop hl
+    ret c
+    ld a,(cc_rev02_temp_symbol)
+    jp cc_rev02_add_reloc
+
+cc_rev02_rt_s16_mul: db 'c48_s16_mul',0
+cc_rev02_rt_s16_divmod: db 'c48_s16_divmod',0
 
 ; Emit one ordinary C48_REGCALL.  Argument expressions were evaluated
 ; left-to-right and parked as temporary words.  The generated marshaller walks

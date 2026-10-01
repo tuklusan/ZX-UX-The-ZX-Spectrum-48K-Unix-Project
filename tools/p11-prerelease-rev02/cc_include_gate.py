@@ -75,6 +75,7 @@ def main() -> None:
     asm.write_text(f'''    DEVICE ZXSPECTRUM48
     INCLUDE "{(root / "v1/include/zx48ux.inc").as_posix()}"
     INCLUDE "{(root / "v1/src/tools/cc.asm").as_posix()}"
+    INCLUDE "{(root / "v1/src/libc48/int_runtime.asm").as_posix()}"
 cc_product_bss EQU $A000
 ROOT_HANDLE EQU 1
 HEADER_HANDLE EQU 2
@@ -82,6 +83,7 @@ HEADER_HANDLE EQU 2
 fixture_start:
     EMIT_P1128_CC_OBJ1_WRITER
     EMIT_P1129_CC_TRANSACTION_ROUTINES
+    EMIT_C48_INT_RUNTIME
     EMIT_REV02_CC_PRODUCT_CLI
 
 root_done: db 0
@@ -93,6 +95,8 @@ mode: db 0
 probe_seen: db 0
 probe_bad: db 0
 probe_symbol: db 0
+mul_symbol: db 0
+div_symbol: db 0
 
 root_source:
     db '#define ANSWER 3 + 4',10
@@ -151,6 +155,9 @@ local_scalar_source_end:
 dynamic_call_source:
     db 'int main(void){{int x;x=1;probe(x,x+1,3,4,5,6);return 0;}}',10
 dynamic_call_source_end:
+runtime_muldiv_source:
+    db 'int main(void){{int x;int y;x=7;y=3;return x*y+x/y+x%y;}}',10
+runtime_muldiv_source_end:
 
 fixture_reset:
     xor a
@@ -407,6 +414,65 @@ probe_mark_bad:
     ret
 probe_name:
     db 'probe',0
+
+test_runtime_muldiv_codegen:
+    ld a,15
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ret c
+    ld hl,cc_rev02_rt_s16_mul
+    call cc_rev02_symbol_find
+    jp c,test_fail
+    ld (mul_symbol),a
+    ld hl,cc_rev02_rt_s16_divmod
+    call cc_rev02_symbol_find
+    jp c,test_fail
+    ld (div_symbol),a
+    ld a,(cc_rev02_reloc_count)
+    cp 3
+    jp nz,test_fail
+    ld b,a
+    ld ix,cc_rev02_relocs
+test_runtime_patch_loop:
+    ld e,(ix+0)
+    ld d,(ix+1)
+    ld a,(ix+2)
+    ld c,a
+    ld a,(mul_symbol)
+    cp c
+    jr z,test_runtime_patch_mul
+    ld a,(div_symbol)
+    cp c
+    jp nz,test_fail
+    ld hl,c48_s16_divmod
+    jr test_runtime_patch_target
+test_runtime_patch_mul:
+    ld hl,c48_s16_mul
+test_runtime_patch_target:
+    push bc
+    push ix
+    push hl
+    ld hl,cc_rev02_text
+    add hl,de
+    pop de
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    pop ix
+    pop bc
+    ld de,CC_OBJ1_RELOC_SIZE
+    add ix,de
+    djnz test_runtime_patch_loop
+    call cc_rev02_text
+    ld a,h
+    or a
+    jp nz,test_fail
+    ld a,l
+    cp 24
+    jp nz,test_fail
+    xor a
+    ret
 
 test_define_multi:
     ld a,7
@@ -780,6 +846,8 @@ gate_read_root_first:
     jp z,gate_read_local_scalar
     cp 14
     jp z,gate_read_dynamic_call
+    cp 15
+    jp z,gate_read_runtime_muldiv
     ld hl,root_source
     ld bc,CC_REV02_READ_CAP
     ldir
@@ -798,6 +866,13 @@ gate_read_dynamic_call:
     ld bc,dynamic_call_source_end-dynamic_call_source
     ldir
     ld hl,dynamic_call_source_end-dynamic_call_source
+    xor a
+    ret
+gate_read_runtime_muldiv:
+    ld hl,runtime_muldiv_source
+    ld bc,runtime_muldiv_source_end-runtime_muldiv_source
+    ldir
+    ld hl,runtime_muldiv_source_end-runtime_muldiv_source
     xor a
     ret
 gate_read_builtin_c48:
@@ -915,7 +990,7 @@ gateway_end:
     run([sj, "--nologo", f"--sym={sym.as_posix()}", asm.as_posix()], out)
     req(main_bin.is_file() and gate_bin.is_file(), "fixture binaries missing")
     syms = symbols(sym)
-    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_builtin_c48", "test_local_scalar_codegen", "test_dynamic_call_abi", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
+    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_builtin_c48", "test_local_scalar_codegen", "test_dynamic_call_abi", "test_runtime_muldiv_codegen", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
     for name in names:
         req(name in syms, "fixture symbol missing: " + name)
 
@@ -960,6 +1035,7 @@ gateway_end:
             "builtin_c48_header": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_local_scalar_assignment_codegen": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_runtime_expression_c48_regcall_abi": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "generic_runtime_int_mul_div_mod": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "recursive_macro_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "function_macro_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "ordinary_stat_open_read_close": "PASS" if not ns.assemble_only else "ASSEMBLED",
