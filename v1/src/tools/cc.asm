@@ -11221,7 +11221,9 @@ cc_rev02_pp_check_dotdot:
 cc_rev02_pp_system_c48:
     ld hl,cc_rev02_pp_kw_c48
 cc_rev02_pp_system_loop:
+    push hl
     call cc_rev02_next_char
+    pop hl
     ret c
     ld b,a
     ld a,(hl)
