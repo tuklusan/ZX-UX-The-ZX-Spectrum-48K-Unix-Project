@@ -10201,6 +10201,7 @@ cc_rev02_bss_size: dw 0
 cc_rev02_global_size: db 0
 cc_rev02_global_kind: db 0
 cc_rev02_global_count: dw 1
+cc_rev02_global_init_count: dw 0
 cc_rev02_global_bytes: dw 0
 cc_rev02_global_symbol: db 0
 cc_rev02_step_kind: db 0
@@ -10294,6 +10295,11 @@ cc_rev02_compile_stream:
     ld (cc_rev02_param_count),a
     ld (cc_rev02_bss_size),a
     ld (cc_rev02_bss_size+1),a
+    ld hl,cc_rev02_global_sizes
+    ld de,cc_rev02_global_sizes+1
+    ld bc,CC_REV02_GLOBAL_META_BYTES-1
+    ld (hl),a
+    ldir
     ld a,HANDLE_FREE
     ld (cc_rev02_parent_handle),a
     call cc_rev02_next_token
@@ -10419,7 +10425,7 @@ cc_rev02_external_punct:
     cp '['
     jp z,cc_rev02_external_array
     cp '='
-    jp z,cc_rev02_notsup
+    jp z,cc_rev02_external_initializer
     call cc_rev02_next_token
     ret c
     jp cc_rev02_external_scan
@@ -10449,6 +10455,141 @@ cc_rev02_external_pointer:
     ret c
     jp cc_rev02_external_scan
 
+; Version-1 simple constant scalar and one-dimensional array initializers live
+; in ordinary OBJ1 TEXT/data bytes. The process image is writable and ABS16
+; relocations name the same symbol regardless of TEXT versus BSS storage.
+cc_rev02_external_initializer:
+    ld a,(cc_rev02_function_name)
+    or a
+    jp z,cc_rev02_format
+    ld a,(cc_rev02_global_size)
+    cp 1
+    jp z,cc_rev02_external_init_width_ok
+    cp 2
+    jp nz,cc_rev02_notsup
+    ; Two-byte objects have the frozen two-byte alignment.
+    ld hl,(cc_rev02_text_len)
+    bit 0,l
+    jp z,cc_rev02_external_init_width_ok
+    xor a
+    call cc_rev02_emit8
+    ret c
+cc_rev02_external_init_width_ok:
+    ld hl,(cc_rev02_text_len)
+    ex de,hl
+    ld hl,cc_rev02_function_name
+    ld a,1                   ; OBJ1 TEXT/data
+    call cc_rev02_symbol_define
+    ret c
+    ld (cc_rev02_global_symbol),a
+    call cc_rev02_global_record_meta
+    ret c
+
+    call cc_rev02_next_token ; consume '='
+    ret c
+    ld a,(cc_rev02_global_kind)
+    or a
+    jp nz,cc_rev02_external_init_array
+
+    call cc_rev02_parse_const_expr
+    ret c
+    call cc_rev02_emit_global_const
+    ret c
+    ld a,';'
+    call cc_rev02_tok_is_punct
+    jp nz,cc_rev02_format
+    jp cc_rev02_external_decl_done
+
+cc_rev02_external_init_array:
+    ld a,'{'
+    call cc_rev02_expect_punct
+    ret c
+    xor a
+    ld (cc_rev02_global_init_count),a
+    ld (cc_rev02_global_init_count+1),a
+cc_rev02_external_init_array_loop:
+    ld a,'}'
+    call cc_rev02_tok_is_punct
+    jp z,cc_rev02_external_init_array_fill
+
+    ld hl,(cc_rev02_global_init_count)
+    ld de,(cc_rev02_global_count)
+    or a
+    sbc hl,de
+    jp nc,cc_rev02_format
+
+    call cc_rev02_parse_const_expr
+    ret c
+    call cc_rev02_emit_global_const
+    ret c
+    ld hl,(cc_rev02_global_init_count)
+    inc hl
+    ld (cc_rev02_global_init_count),hl
+
+    ld a,'}'
+    call cc_rev02_tok_is_punct
+    jp z,cc_rev02_external_init_array_fill
+    ld a,','
+    call cc_rev02_expect_punct
+    ret c
+    jp cc_rev02_external_init_array_loop
+
+cc_rev02_external_init_array_fill:
+    ld a,'}'
+    call cc_rev02_expect_punct
+    ret c
+cc_rev02_external_init_array_fill_loop:
+    ld hl,(cc_rev02_global_init_count)
+    ld de,(cc_rev02_global_count)
+    or a
+    sbc hl,de
+    jp z,cc_rev02_external_init_array_done
+    jp nc,cc_rev02_format
+    ld hl,0
+    call cc_rev02_emit_global_const
+    ret c
+    ld hl,(cc_rev02_global_init_count)
+    inc hl
+    ld (cc_rev02_global_init_count),hl
+    jp cc_rev02_external_init_array_fill_loop
+cc_rev02_external_init_array_done:
+    ld a,';'
+    call cc_rev02_tok_is_punct
+    jp nz,cc_rev02_format
+    jp cc_rev02_external_decl_done
+
+; Generated HL is one initializer value. Width 1 truncates exactly as unsigned
+; char; width 2 preserves the complete little-endian C48 scalar bit pattern.
+cc_rev02_emit_global_const:
+    ld a,(cc_rev02_global_size)
+    cp 1
+    jp z,cc_rev02_emit_global_const8
+    cp 2
+    jp nz,cc_rev02_notsup
+    jp cc_rev02_emit16
+cc_rev02_emit_global_const8:
+    ld a,l
+    jp cc_rev02_emit8
+
+; Record C48 object metadata for either TEXT/data initialized storage or BSS.
+cc_rev02_global_record_meta:
+    ld a,(cc_rev02_global_symbol)
+    call cc_rev02_global_size_ptr
+    ld a,(cc_rev02_global_size)
+    ld (hl),a
+    ld a,(cc_rev02_global_symbol)
+    call cc_rev02_global_kind_ptr
+    ld a,(cc_rev02_global_kind)
+    ld (hl),a
+    ld a,(cc_rev02_global_symbol)
+    call cc_rev02_global_count_ptr
+    ld de,(cc_rev02_global_count)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    xor a
+    ret
+
 cc_rev02_external_global_done:
     ld a,(cc_rev02_function_name)
     or a
@@ -10473,19 +10614,8 @@ cc_rev02_external_global_aligned:
     call cc_rev02_symbol_define
     ret c
     ld (cc_rev02_global_symbol),a
-    call cc_rev02_global_size_ptr
-    ld a,(cc_rev02_global_size)
-    ld (hl),a
-    ld a,(cc_rev02_global_symbol)
-    call cc_rev02_global_kind_ptr
-    ld a,(cc_rev02_global_kind)
-    ld (hl),a
-    ld a,(cc_rev02_global_symbol)
-    call cc_rev02_global_count_ptr
-    ld de,(cc_rev02_global_count)
-    ld (hl),e
-    inc hl
-    ld (hl),d
+    call cc_rev02_global_record_meta
+    ret c
 
     ld hl,(cc_rev02_global_count)
     ld a,(cc_rev02_global_size)
@@ -10672,8 +10802,11 @@ cc_rev02_global_find:
     ld de,18
     add hl,de
     ld a,(hl)
+    cp 1
+    jp z,cc_rev02_global_find_meta
     cp 2
-    jr nz,cc_rev02_global_find_no
+    jp nz,cc_rev02_global_find_no
+cc_rev02_global_find_meta:
     ld a,(cc_rev02_global_symbol)
     call cc_rev02_global_size_ptr
     ld b,(hl)
