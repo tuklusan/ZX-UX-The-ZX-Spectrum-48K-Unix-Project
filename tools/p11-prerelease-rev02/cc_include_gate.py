@@ -375,6 +375,18 @@ sizeof_object_source_end:
 sizeof_literal_source:
     db 'int main(void){{return sizeof("abc")+sizeof(',39,'A',39,')+sizeof(1)+sizeof(1.0);}}',10
 sizeof_literal_source_end:
+sizeof_string_source:
+    db 'int main(void){{return sizeof("abc");}}',10
+sizeof_string_source_end:
+sizeof_char_source:
+    db 'int main(void){{return sizeof(',39,'A',39,');}}',10
+sizeof_char_source_end:
+sizeof_integer_source:
+    db 'int main(void){{return sizeof(1);}}',10
+sizeof_integer_source_end:
+sizeof_float_source:
+    db 'int main(void){{return sizeof(1.0);}}',10
+sizeof_float_source_end:
 sizeof_unsigned_source:
     db 'int main(void){{return 10*(sizeof(int)>-1);}}',10
 sizeof_unsigned_source_end:
@@ -1931,6 +1943,34 @@ test_sizeof_object_compile:
     call cc_rev02_compile_stream
     ret
 
+test_sizeof_string_compile:
+    ld a,63
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ret
+
+test_sizeof_char_compile:
+    ld a,64
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ret
+
+test_sizeof_integer_compile:
+    ld a,65
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ret
+
+test_sizeof_float_compile:
+    ld a,66
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ret
+
 test_sizeof_literal_compile:
     ld a,61
     ld (mode),a
@@ -2564,6 +2604,14 @@ gate_read_root_first:
     jp z,gate_read_sizeof_literal
     cp 62
     jp z,gate_read_sizeof_unsigned
+    cp 63
+    jp z,gate_read_sizeof_string
+    cp 64
+    jp z,gate_read_sizeof_char
+    cp 65
+    jp z,gate_read_sizeof_integer
+    cp 66
+    jp z,gate_read_sizeof_float
     ld hl,root_source
     ld bc,CC_REV02_READ_CAP
     ldir
@@ -2872,6 +2920,31 @@ gate_read_sizeof_unsigned:
     ld (fixture_source_left),hl
     jp gate_read_fixture_chunk
 
+gate_read_sizeof_string:
+    ld hl,sizeof_string_source
+    ld (fixture_source_ptr),hl
+    ld hl,sizeof_string_source_end-sizeof_string_source
+    ld (fixture_source_left),hl
+    jp gate_read_fixture_chunk
+gate_read_sizeof_char:
+    ld hl,sizeof_char_source
+    ld (fixture_source_ptr),hl
+    ld hl,sizeof_char_source_end-sizeof_char_source
+    ld (fixture_source_left),hl
+    jp gate_read_fixture_chunk
+gate_read_sizeof_integer:
+    ld hl,sizeof_integer_source
+    ld (fixture_source_ptr),hl
+    ld hl,sizeof_integer_source_end-sizeof_integer_source
+    ld (fixture_source_left),hl
+    jp gate_read_fixture_chunk
+gate_read_sizeof_float:
+    ld hl,sizeof_float_source
+    ld (fixture_source_ptr),hl
+    ld hl,sizeof_float_source_end-sizeof_float_source
+    ld (fixture_source_left),hl
+    jp gate_read_fixture_chunk
+
 ; Direct source fixtures obey the compiler's bounded read contract exactly.
 ; DE is the caller destination. Each read returns at most CC_REV02_READ_CAP.
 gate_read_fixture_chunk:
@@ -3018,7 +3091,7 @@ gateway_end:
     run([sj, "--nologo", f"--sym={sym.as_posix()}", asm.as_posix()], out)
     req(main_bin.is_file() and gate_bin.is_file(), "fixture binaries missing")
     syms = symbols(sym)
-    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_builtin_c48", "test_local_scalar_codegen", "test_dynamic_call_abi", "test_runtime_muldiv_codegen", "test_runtime_bitwise_codegen", "test_runtime_shift_codegen", "test_runtime_compare_a", "test_runtime_compare_b", "test_runtime_logic_a", "test_runtime_logic_b", "test_postfix_local_codegen", "test_if_else_codegen", "test_while_codegen", "test_for_codegen", "test_break_continue_codegen", "test_nested_break_codegen", "test_break_outside_reject", "test_continue_outside_reject", "test_recursive_params_codegen", "test_global_scalar_codegen", "test_global_array_compile", "test_global_array_bss", "test_global_array_symbols", "test_global_array_patch", "test_global_array_codegen", "test_global_init_codegen", "test_local_array_codegen", "test_pointer_basic_codegen", "test_local_pointer_assign_codegen", "test_local_pointer_metadata", "test_local_pointer_literal", "test_local_pointer_value_codegen", "test_local_pointer_deref_codegen", "test_local_pointer_codegen", "test_character_literal_codegen", "test_integer_cast_codegen", "test_pointer_post_codegen", "test_pointer_array_codegen", "test_float_literal_codegen", "test_void_return_codegen", "test_call_expression_codegen", "test_mixed_call_arg_codegen", "test_local_array_init_codegen", "test_local_pointer_init_codegen", "test_nested_call_codegen", "test_wide_call_codegen", "test_symbol_capacity_codegen", "test_unsigned_runtime_codegen", "test_main_argv_codegen", "test_do_while_codegen", "test_sizeof_type_compile", "test_sizeof_bounds_compile", "test_sizeof_object_compile", "test_sizeof_literal_compile", "test_sizeof_unsigned_compile", "test_sizeof_compile", "test_sizeof_bss", "test_sizeof_symbols", "test_sizeof_relocs", "test_sizeof_codegen", "test_sizeof_void_reject", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
+    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_builtin_c48", "test_local_scalar_codegen", "test_dynamic_call_abi", "test_runtime_muldiv_codegen", "test_runtime_bitwise_codegen", "test_runtime_shift_codegen", "test_runtime_compare_a", "test_runtime_compare_b", "test_runtime_logic_a", "test_runtime_logic_b", "test_postfix_local_codegen", "test_if_else_codegen", "test_while_codegen", "test_for_codegen", "test_break_continue_codegen", "test_nested_break_codegen", "test_break_outside_reject", "test_continue_outside_reject", "test_recursive_params_codegen", "test_global_scalar_codegen", "test_global_array_compile", "test_global_array_bss", "test_global_array_symbols", "test_global_array_patch", "test_global_array_codegen", "test_global_init_codegen", "test_local_array_codegen", "test_pointer_basic_codegen", "test_local_pointer_assign_codegen", "test_local_pointer_metadata", "test_local_pointer_literal", "test_local_pointer_value_codegen", "test_local_pointer_deref_codegen", "test_local_pointer_codegen", "test_character_literal_codegen", "test_integer_cast_codegen", "test_pointer_post_codegen", "test_pointer_array_codegen", "test_float_literal_codegen", "test_void_return_codegen", "test_call_expression_codegen", "test_mixed_call_arg_codegen", "test_local_array_init_codegen", "test_local_pointer_init_codegen", "test_nested_call_codegen", "test_wide_call_codegen", "test_symbol_capacity_codegen", "test_unsigned_runtime_codegen", "test_main_argv_codegen", "test_do_while_codegen", "test_sizeof_type_compile", "test_sizeof_bounds_compile", "test_sizeof_object_compile", "test_sizeof_string_compile", "test_sizeof_char_compile", "test_sizeof_integer_compile", "test_sizeof_float_compile", "test_sizeof_literal_compile", "test_sizeof_unsigned_compile", "test_sizeof_compile", "test_sizeof_bss", "test_sizeof_symbols", "test_sizeof_relocs", "test_sizeof_codegen", "test_sizeof_void_reject", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
     for name in names:
         req(name in syms, "fixture symbol missing: " + name)
 
@@ -3114,6 +3187,10 @@ gateway_end:
             "generic_sizeof_type_forms_compile": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_sizeof_constant_array_bounds_compile": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_sizeof_object_expression_compile": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "generic_sizeof_string_literal_compile": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "generic_sizeof_character_literal_compile": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "generic_sizeof_integer_literal_compile": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "generic_sizeof_float_literal_compile": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_sizeof_literal_expression_compile": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_sizeof_unsigned_result_expression_compile": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_sizeof_compile": "PASS" if not ns.assemble_only else "ASSEMBLED",
