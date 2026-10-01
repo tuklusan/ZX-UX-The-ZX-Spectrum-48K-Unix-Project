@@ -10135,7 +10135,7 @@ CC_REV02_LOOP_CAP       EQU 16
 CC_REV02_BREAK_CAP      EQU CC_REV02_RELOC_CAP
 CC_REV02_PARAM_CAP      EQU CC_REV02_ARG_CAP
 CC_REV02_PARAM_ENTRY    EQU 16
-CC_REV02_GLOBAL_META_BYTES EQU CC_REV02_SYMBOL_CAP
+CC_REV02_GLOBAL_META_BYTES EQU CC_REV02_SYMBOL_CAP*4
 CC_REV02_SYMBOL_BYTES   EQU CC_REV02_SYMBOL_CAP*CC_OBJ1_SYMBOL_SIZE
 CC_REV02_RELOC_BYTES    EQU CC_REV02_RELOC_CAP*CC_OBJ1_RELOC_SIZE
 CC_REV02_BSS_BYTES      EQU CC_REV02_READ_CAP+CC_REV02_TOKEN_CAP+CC_REV02_TEXT_CAP+CC_REV02_OBJ_CAP+CC_REV02_INCLUDE_CAP+CC_REV02_MACRO_CAP*CC_REV02_MACRO_ENTRY+CC_REV02_PP_REPL_CAP+CC_REV02_SYMBOL_BYTES+CC_REV02_RELOC_BYTES+CC_REV02_LITERAL_CAP+CC_REV02_LOCAL_CAP*CC_REV02_LOCAL_ENTRY+CC_REV02_LOOP_CAP*3+CC_REV02_BREAK_CAP*2+CC_REV02_PARAM_CAP*CC_REV02_PARAM_ENTRY+CC_REV02_GLOBAL_META_BYTES
@@ -10163,6 +10163,8 @@ cc_rev02_loop_break_base EQU cc_rev02_loop_continue+CC_REV02_LOOP_CAP*2
 cc_rev02_break_patches EQU cc_rev02_loop_break_base+CC_REV02_LOOP_CAP
 cc_rev02_params        EQU cc_rev02_break_patches+CC_REV02_BREAK_CAP*2
 cc_rev02_global_sizes  EQU cc_rev02_params+CC_REV02_PARAM_CAP*CC_REV02_PARAM_ENTRY
+cc_rev02_global_kinds  EQU cc_rev02_global_sizes+CC_REV02_SYMBOL_CAP
+cc_rev02_global_counts EQU cc_rev02_global_kinds+CC_REV02_SYMBOL_CAP
 cc_rev02_read_ptr:     dw 0
 cc_rev02_read_left:    dw 0
 cc_rev02_have_push:    db 0
@@ -10197,6 +10199,9 @@ cc_rev02_param_index: db 0
 cc_rev02_param_candidate: defs 16,0
 cc_rev02_bss_size: dw 0
 cc_rev02_global_size: db 0
+cc_rev02_global_kind: db 0
+cc_rev02_global_count: dw 1
+cc_rev02_global_bytes: dw 0
 cc_rev02_global_symbol: db 0
 cc_rev02_step_kind: db 0
 cc_rev02_line_start:   db 0
@@ -10341,6 +10346,11 @@ cc_rev02_parse_external:
     xor a
     ld (cc_rev02_function_name),a
     ld (cc_rev02_global_size),a
+    ld (cc_rev02_global_kind),a
+    inc a
+    ld (cc_rev02_global_count),a
+    xor a
+    ld (cc_rev02_global_count+1),a
 cc_rev02_external_scan:
     ld a,(cc_rev02_tok_kind)
     or a
@@ -10407,12 +10417,31 @@ cc_rev02_external_punct:
     cp '*'
     jr z,cc_rev02_external_pointer
     cp '['
-    jp z,cc_rev02_notsup
+    jp z,cc_rev02_external_array
     cp '='
     jp z,cc_rev02_notsup
     call cc_rev02_next_token
     ret c
     jp cc_rev02_external_scan
+cc_rev02_external_array:
+    ld a,(cc_rev02_global_kind)
+    or a
+    jp nz,cc_rev02_format
+    inc a
+    ld (cc_rev02_global_kind),a
+    call cc_rev02_next_token
+    ret c
+    call cc_rev02_parse_const_expr
+    ret c
+    ld a,h
+    or l
+    jp z,cc_rev02_format
+    ld (cc_rev02_global_count),hl
+    ld a,']'
+    call cc_rev02_expect_punct
+    ret c
+    jp cc_rev02_external_scan
+
 cc_rev02_external_pointer:
     ld a,2
     ld (cc_rev02_global_size),a
@@ -10447,9 +10476,27 @@ cc_rev02_external_global_aligned:
     call cc_rev02_global_size_ptr
     ld a,(cc_rev02_global_size)
     ld (hl),a
+    ld a,(cc_rev02_global_symbol)
+    call cc_rev02_global_kind_ptr
+    ld a,(cc_rev02_global_kind)
+    ld (hl),a
+    ld a,(cc_rev02_global_symbol)
+    call cc_rev02_global_count_ptr
+    ld de,(cc_rev02_global_count)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+
+    ld hl,(cc_rev02_global_count)
+    ld a,(cc_rev02_global_size)
     ld e,a
     ld d,0
-    ld hl,(cc_rev02_bss_size)
+    call cc_rev02_umul16
+    ld (cc_rev02_global_bytes),hl
+    ld a,h
+    or l
+    jp z,cc_rev02_format
+    ld de,(cc_rev02_bss_size)
     add hl,de
     jp c,cc_rev02_nospc
     ld (cc_rev02_bss_size),hl
@@ -10601,6 +10648,22 @@ cc_rev02_global_size_ptr:
     add hl,de
     ret
 
+cc_rev02_global_kind_ptr:
+    ld e,a
+    ld d,0
+    ld hl,cc_rev02_global_kinds
+    add hl,de
+    ret
+
+cc_rev02_global_count_ptr:
+    ld e,a
+    ld d,0
+    sla e
+    rl d
+    ld hl,cc_rev02_global_counts
+    add hl,de
+    ret
+
 cc_rev02_global_find:
     call cc_rev02_symbol_find
     ret c
@@ -10681,6 +10744,109 @@ cc_rev02_emit_global_store8:
     ld a,(cc_rev02_global_symbol)
     ld b,$32
     jp cc_rev02_emit_symbol_word_op
+
+; A=BSS symbol index -> generated HL=&object.
+cc_rev02_emit_global_address:
+    ld b,$21                 ; LD HL,nn
+    jp cc_rev02_emit_symbol_word_op
+
+; Current token is '[' and cc_rev02_global_symbol names an array.
+; Success generates HL=element address and leaves the token after ']'.
+cc_rev02_emit_global_index_address:
+    ld a,(cc_rev02_global_symbol)
+    call cc_rev02_global_kind_ptr
+    ld a,(hl)
+    or a
+    jp z,cc_rev02_format
+    ld a,(cc_rev02_global_symbol)
+    call cc_rev02_emit_global_address
+    ret c
+    ld a,$E5                 ; preserve base
+    call cc_rev02_emit8
+    ret c
+    call cc_rev02_next_token
+    ret c
+    call cc_rev02_parse_value_expr
+    ret c
+    ld a,']'
+    call cc_rev02_expect_punct
+    ret c
+    ld a,(cc_rev02_global_symbol)
+    call cc_rev02_global_size_ptr
+    ld a,(hl)
+    cp 1
+    jr z,cc_rev02_global_index_scaled
+    cp 2
+    jp nz,cc_rev02_notsup
+    ld a,$29                 ; ADD HL,HL for 16-bit element stride
+    call cc_rev02_emit8
+    ret c
+cc_rev02_global_index_scaled:
+    ld a,$EB                 ; scaled index -> DE
+    call cc_rev02_emit8
+    ret c
+    ld a,$E1                 ; base -> HL
+    call cc_rev02_emit8
+    ret c
+    ld a,$19                 ; ADD HL,DE
+    jp cc_rev02_emit8
+
+; Generated HL is an array-element address. Load according to element width.
+cc_rev02_emit_index_load:
+    ld a,(cc_rev02_global_symbol)
+    call cc_rev02_global_size_ptr
+    ld a,(hl)
+    cp 1
+    jr z,cc_rev02_emit_index_load8
+    cp 2
+    jp nz,cc_rev02_notsup
+    ld a,$5E                 ; LD E,(HL)
+    call cc_rev02_emit8
+    ret c
+    ld a,$23
+    call cc_rev02_emit8
+    ret c
+    ld a,$56                 ; LD D,(HL)
+    call cc_rev02_emit8
+    ret c
+    ld a,$EB                 ; EX DE,HL
+    jp cc_rev02_emit8
+cc_rev02_emit_index_load8:
+    ld a,$6E                 ; LD L,(HL)
+    call cc_rev02_emit8
+    ret c
+    ld a,$26                 ; LD H,0
+    call cc_rev02_emit8
+    ret c
+    xor a
+    jp cc_rev02_emit8
+
+; Runtime stack top is element address; generated HL is the new value.
+cc_rev02_emit_index_store:
+    ld a,$EB                 ; new value -> DE
+    call cc_rev02_emit8
+    ret c
+    ld a,$E1                 ; element address -> HL
+    call cc_rev02_emit8
+    ret c
+    ld a,(cc_rev02_global_symbol)
+    call cc_rev02_global_size_ptr
+    ld a,(hl)
+    cp 1
+    jr z,cc_rev02_emit_index_store8
+    cp 2
+    jp nz,cc_rev02_notsup
+    ld a,$73                 ; LD (HL),E
+    call cc_rev02_emit8
+    ret c
+    ld a,$23
+    call cc_rev02_emit8
+    ret c
+    ld a,$72                 ; LD (HL),D
+    jp cc_rev02_emit8
+cc_rev02_emit_index_store8:
+    ld a,$73
+    jp cc_rev02_emit8
 
 ; Store the final identifier of one parameter declaration. Definitions later
 ; spill each incoming C48_REGCALL slot into an ordinary IX-relative local slot.
@@ -10868,6 +11034,9 @@ cc_rev02_parse_named_clause:
     jp cc_rev02_emit_call
 
 cc_rev02_named_assignment_check:
+    ld a,'['
+    call cc_rev02_tok_is_punct
+    jp z,cc_rev02_named_index
     ld d,'+'
     ld e,'+'
     call cc_rev02_tok_is_op2
@@ -10900,6 +11069,56 @@ cc_rev02_named_assignment_global:
     ret c
     ld a,(cc_rev02_global_symbol)
     jp cc_rev02_emit_global_store
+
+cc_rev02_named_index:
+    ld hl,cc_rev02_call_name
+    call cc_rev02_global_find
+    jp c,cc_rev02_format
+    ld (cc_rev02_global_symbol),a
+    call cc_rev02_emit_global_index_address
+    ret c
+    ld d,'+'
+    ld e,'+'
+    call cc_rev02_tok_is_op2
+    jr z,cc_rev02_named_index_inc
+    ld d,'-'
+    ld e,'-'
+    call cc_rev02_tok_is_op2
+    jr z,cc_rev02_named_index_dec
+    ld a,'='
+    call cc_rev02_tok_is_punct
+    jp nz,cc_rev02_notsup
+    ld a,$E5                 ; preserve element address across RHS
+    call cc_rev02_emit8
+    ret c
+    call cc_rev02_next_token
+    ret c
+    call cc_rev02_parse_value_expr
+    ret c
+    jp cc_rev02_emit_index_store
+cc_rev02_named_index_inc:
+    xor a
+    jr cc_rev02_named_index_step
+cc_rev02_named_index_dec:
+    ld a,1
+cc_rev02_named_index_step:
+    ld (cc_rev02_step_kind),a
+    ld a,$E5                 ; preserve element address
+    call cc_rev02_emit8
+    ret c
+    call cc_rev02_emit_index_load
+    ret c
+    ld a,(cc_rev02_step_kind)
+    or a
+    ld a,$23
+    jr z,cc_rev02_named_index_step_opcode
+    ld a,$2B
+cc_rev02_named_index_step_opcode:
+    call cc_rev02_emit8
+    ret c
+    call cc_rev02_emit_index_store
+    ret c
+    jp cc_rev02_next_token
 
 cc_rev02_named_post_inc:
     xor a
@@ -11990,6 +12209,40 @@ cc_rev02_value_global:
     ld (cc_rev02_global_symbol),a
     call cc_rev02_next_token
     ret c
+    ld a,(cc_rev02_global_symbol)
+    call cc_rev02_global_kind_ptr
+    ld a,(hl)
+    or a
+    jr z,cc_rev02_value_global_scalar
+    ld a,'['
+    call cc_rev02_tok_is_punct
+    jr z,cc_rev02_value_global_index
+    ld a,(cc_rev02_global_symbol)
+    jp cc_rev02_emit_global_address
+cc_rev02_value_global_index:
+    call cc_rev02_emit_global_index_address
+    ret c
+    call cc_rev02_emit_index_load
+    ret c
+    ; Indexed postfix steps preserve the old expression value.
+    ld d,'+'
+    ld e,'+'
+    call cc_rev02_tok_is_op2
+    jr z,cc_rev02_value_global_index_inc
+    ld d,'-'
+    ld e,'-'
+    call cc_rev02_tok_is_op2
+    ret nz
+    ld a,1
+    jr cc_rev02_value_global_index_step
+cc_rev02_value_global_index_inc:
+    xor a
+cc_rev02_value_global_index_step:
+    ld (cc_rev02_step_kind),a
+    ; Recompute the indexed lvalue would duplicate side effects, so expression
+    ; postfix on array elements remains outside this checkpoint.
+    jp cc_rev02_notsup
+cc_rev02_value_global_scalar:
     ld a,(cc_rev02_global_symbol)
     call cc_rev02_emit_global_load
     ret c
