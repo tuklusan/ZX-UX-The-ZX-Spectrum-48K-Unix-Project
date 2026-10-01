@@ -10177,6 +10177,7 @@ cc_rev02_cmp_jr: db 0
 cc_rev02_current_function_symbol: db 0
 cc_rev02_current_function_offset: dw 0
 cc_rev02_patch_offset: dw 0
+cc_rev02_step_kind: db 0
 cc_rev02_line_start:   db 0
 cc_rev02_include_depth: db 0
 cc_rev02_parent_handle: db HANDLE_FREE
@@ -10453,6 +10454,14 @@ cc_rev02_body_not_end:
     jp cc_rev02_parse_simple_body
 
 cc_rev02_body_assignment_check:
+    ld d,'+'
+    ld e,'+'
+    call cc_rev02_tok_is_op2
+    jr z,cc_rev02_body_post_inc
+    ld d,'-'
+    ld e,'-'
+    call cc_rev02_tok_is_op2
+    jr z,cc_rev02_body_post_dec
     ld a,'='
     call cc_rev02_tok_is_punct
     jp nz,cc_rev02_notsup
@@ -10466,6 +10475,36 @@ cc_rev02_body_assignment_check:
     ret c
     ld a,(cc_rev02_lhs_disp)
     call cc_rev02_emit_local_store
+    ret c
+    ld a,';'
+    call cc_rev02_expect_punct
+    ret c
+    ld a,1
+    ld (cc_rev02_exec_seen),a
+    jp cc_rev02_parse_simple_body
+
+cc_rev02_body_post_inc:
+    xor a
+    jr cc_rev02_body_post_step
+cc_rev02_body_post_dec:
+    ld a,1
+cc_rev02_body_post_step:
+    ld (cc_rev02_step_kind),a
+    ld hl,cc_rev02_call_name
+    call cc_rev02_local_find
+    jp c,cc_rev02_format
+    ld (cc_rev02_lhs_disp),a
+    call cc_rev02_emit_local_load
+    ret c
+    ld a,(cc_rev02_lhs_disp)
+    ld b,0
+    ld c,a
+    ld a,(cc_rev02_step_kind)
+    ld b,a
+    ld a,c
+    call cc_rev02_emit_local_step
+    ret c
+    call cc_rev02_next_token
     ret c
     ld a,';'
     call cc_rev02_expect_punct
@@ -11120,7 +11159,36 @@ cc_rev02_value_unary:
     call cc_rev02_next_token
     ret c
     ld a,(cc_rev02_local_disp)
-    jp cc_rev02_emit_local_load
+    call cc_rev02_emit_local_load
+    ret c
+    ld d,'+'
+    ld e,'+'
+    call cc_rev02_tok_is_op2
+    jr z,cc_rev02_value_post_inc
+    ld d,'-'
+    ld e,'-'
+    call cc_rev02_tok_is_op2
+    ret nz
+    ld a,1
+    jr cc_rev02_value_post_step
+cc_rev02_value_post_inc:
+    xor a
+cc_rev02_value_post_step:
+    ld (cc_rev02_step_kind),a
+    ld a,$E5                 ; preserve postfix expression result
+    call cc_rev02_emit8
+    ret c
+    ld a,(cc_rev02_local_disp)
+    ld c,a
+    ld a,(cc_rev02_step_kind)
+    ld b,a
+    ld a,c
+    call cc_rev02_emit_local_step
+    ret c
+    ld a,$E1                 ; restore old value to HL
+    call cc_rev02_emit8
+    ret c
+    jp cc_rev02_next_token
 cc_rev02_value_number:
     call cc_rev02_number_value
     ret c
@@ -12468,6 +12536,22 @@ cc_rev02_emit_local_store:
     ld a,(cc_rev02_local_disp)
     inc a
     jp cc_rev02_emit8
+
+; A=signed IX displacement, B=0 increment / 1 decrement. HL holds the
+; current int value and leaves the updated value in HL after storing it.
+cc_rev02_emit_local_step:
+    ld (cc_rev02_local_disp),a
+    ld a,b
+    ld (cc_rev02_step_kind),a
+    or a
+    ld a,$23                 ; INC HL
+    jr z,cc_rev02_emit_local_step_opcode
+    ld a,$2B                 ; DEC HL
+cc_rev02_emit_local_step_opcode:
+    call cc_rev02_emit8
+    ret c
+    ld a,(cc_rev02_local_disp)
+    jp cc_rev02_emit_local_store
 
 ; Current-function local table: 16-byte name plus signed IX displacement.
 cc_rev02_local_find:
