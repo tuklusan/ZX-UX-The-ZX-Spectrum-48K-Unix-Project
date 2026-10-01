@@ -10666,9 +10666,9 @@ cc_rev02_external_param_loop:
     cp '('
     jr z,cc_rev02_external_param_open
     cp ')'
-    jr z,cc_rev02_external_param_close
+    jp z,cc_rev02_external_param_close
     cp ','
-    jr z,cc_rev02_external_param_comma
+    jp z,cc_rev02_external_param_comma
     cp '*'
     jr z,cc_rev02_external_param_pointer
     jr cc_rev02_external_param_loop
@@ -10717,35 +10717,35 @@ cc_rev02_external_param_capture:
     call cc_rev02_copy_name16
     ld hl,cc_rev02_param_ids
     inc (hl)
-    jr cc_rev02_external_param_loop
+    jp cc_rev02_external_param_loop
 
 cc_rev02_external_param_open:
     ld hl,cc_rev02_paren_depth
     inc (hl)
-    jr cc_rev02_external_param_loop
+    jp cc_rev02_external_param_loop
 
 cc_rev02_external_param_pointer:
     ld a,(cc_rev02_paren_depth)
     cp 1
-    jr nz,cc_rev02_external_param_loop
+    jp nz,cc_rev02_external_param_loop
     ld a,(cc_rev02_param_ptr_depth)
     cp 8
     jp nc,cc_rev02_nospc
     inc a
     ld (cc_rev02_param_ptr_depth),a
-    jr cc_rev02_external_param_loop
+    jp cc_rev02_external_param_loop
 
 cc_rev02_external_param_comma:
     ld a,(cc_rev02_paren_depth)
     cp 1
-    jr nz,cc_rev02_external_param_loop
+    jp nz,cc_rev02_external_param_loop
     ld a,(cc_rev02_param_ids)
     or a
     jp z,cc_rev02_format
     call cc_rev02_param_store_candidate
     ret c
     call cc_rev02_param_candidate_reset
-    jr cc_rev02_external_param_loop
+    jp cc_rev02_external_param_loop
 
 cc_rev02_param_candidate_reset:
     xor a
@@ -10763,7 +10763,7 @@ cc_rev02_external_param_close:
     jr z,cc_rev02_external_param_outer_close
     ld hl,cc_rev02_paren_depth
     dec (hl)
-    jr cc_rev02_external_param_loop
+    jp cc_rev02_external_param_loop
 
 cc_rev02_external_param_outer_close:
     ld a,(cc_rev02_param_ids)
@@ -12582,7 +12582,7 @@ cc_rev02_value_unary:
     jp nz,cc_rev02_format
     ld hl,cc_rev02_token
     call cc_rev02_local_find
-    jr c,cc_rev02_value_global
+    jp c,cc_rev02_value_global
     ld (cc_rev02_local_disp),a
     call cc_rev02_next_token
     ret c
