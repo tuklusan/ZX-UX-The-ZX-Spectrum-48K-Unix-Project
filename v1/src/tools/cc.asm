@@ -10130,11 +10130,11 @@ CC_REV02_RELOC_CAP      EQU 64
 CC_REV02_LITERAL_CAP    EQU 256
 CC_REV02_ARG_CAP        EQU 6
 CC_REV02_LOCAL_CAP      EQU 16
-CC_REV02_LOCAL_ENTRY    EQU 21
+CC_REV02_LOCAL_ENTRY    EQU 22
 CC_REV02_LOOP_CAP       EQU 16
 CC_REV02_BREAK_CAP      EQU CC_REV02_RELOC_CAP
 CC_REV02_PARAM_CAP      EQU CC_REV02_ARG_CAP
-CC_REV02_PARAM_ENTRY    EQU 16
+CC_REV02_PARAM_ENTRY    EQU 18
 CC_REV02_GLOBAL_META_BYTES EQU CC_REV02_SYMBOL_CAP*4
 CC_REV02_SYMBOL_BYTES   EQU CC_REV02_SYMBOL_CAP*CC_OBJ1_SYMBOL_SIZE
 CC_REV02_RELOC_BYTES    EQU CC_REV02_RELOC_CAP*CC_OBJ1_RELOC_SIZE
@@ -10196,6 +10196,8 @@ cc_rev02_break_floor: db 0
 cc_rev02_param_count: db 0
 cc_rev02_param_ids: db 0
 cc_rev02_param_index: db 0
+cc_rev02_param_base_size: db 0
+cc_rev02_param_ptr_depth: db 0
 cc_rev02_param_candidate: defs 16,0
 cc_rev02_bss_size: dw 0
 cc_rev02_global_size: db 0
@@ -10239,6 +10241,7 @@ cc_rev02_local_symbol: db 0
 cc_rev02_local_size:   db 0
 cc_rev02_local_kind:   db 0
 cc_rev02_local_extent: dw 0
+cc_rev02_local_pointee: db 0
 cc_rev02_local_storage: db 0
 cc_rev02_index_size:   db 0
 cc_rev02_frame_active: db 0
@@ -10644,6 +10647,9 @@ cc_rev02_external_params:
     ld (cc_rev02_param_count),a
     ld (cc_rev02_param_ids),a
     ld (cc_rev02_param_candidate),a
+    ld (cc_rev02_param_ptr_depth),a
+    ld a,2
+    ld (cc_rev02_param_base_size),a
     ld a,1
     ld (cc_rev02_paren_depth),a
 cc_rev02_external_param_loop:
@@ -10663,12 +10669,49 @@ cc_rev02_external_param_loop:
     jr z,cc_rev02_external_param_close
     cp ','
     jr z,cc_rev02_external_param_comma
+    cp '*'
+    jr z,cc_rev02_external_param_pointer
     jr cc_rev02_external_param_loop
 
 cc_rev02_external_param_id:
     ld a,(cc_rev02_paren_depth)
     cp 1
     jr nz,cc_rev02_external_param_loop
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_char
+    call cc_rev02_streq
+    jr nz,cc_rev02_external_param_type_int
+    ld a,1
+    ld (cc_rev02_param_base_size),a
+    jr cc_rev02_external_param_capture
+cc_rev02_external_param_type_int:
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_int
+    call cc_rev02_streq
+    jr z,cc_rev02_external_param_base2
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_short
+    call cc_rev02_streq
+    jr z,cc_rev02_external_param_base2
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_float
+    call cc_rev02_streq
+    jr nz,cc_rev02_external_param_type_void
+    ld a,5
+    ld (cc_rev02_param_base_size),a
+    jr cc_rev02_external_param_capture
+cc_rev02_external_param_type_void:
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_void
+    call cc_rev02_streq
+    jr nz,cc_rev02_external_param_capture
+    xor a
+    ld (cc_rev02_param_base_size),a
+    jr cc_rev02_external_param_capture
+cc_rev02_external_param_base2:
+    ld a,2
+    ld (cc_rev02_param_base_size),a
+cc_rev02_external_param_capture:
     ld hl,cc_rev02_token
     ld de,cc_rev02_param_candidate
     call cc_rev02_copy_name16
@@ -10681,6 +10724,17 @@ cc_rev02_external_param_open:
     inc (hl)
     jr cc_rev02_external_param_loop
 
+cc_rev02_external_param_pointer:
+    ld a,(cc_rev02_paren_depth)
+    cp 1
+    jr nz,cc_rev02_external_param_loop
+    ld a,(cc_rev02_param_ptr_depth)
+    cp 8
+    jp nc,cc_rev02_nospc
+    inc a
+    ld (cc_rev02_param_ptr_depth),a
+    jr cc_rev02_external_param_loop
+
 cc_rev02_external_param_comma:
     ld a,(cc_rev02_paren_depth)
     cp 1
@@ -10690,10 +10744,18 @@ cc_rev02_external_param_comma:
     jp z,cc_rev02_format
     call cc_rev02_param_store_candidate
     ret c
+    call cc_rev02_param_candidate_reset
+    jr cc_rev02_external_param_loop
+
+cc_rev02_param_candidate_reset:
     xor a
     ld (cc_rev02_param_ids),a
     ld (cc_rev02_param_candidate),a
-    jr cc_rev02_external_param_loop
+    ld (cc_rev02_param_ptr_depth),a
+    ld a,2
+    ld (cc_rev02_param_base_size),a
+    xor a
+    ret
 
 cc_rev02_external_param_close:
     ld a,(cc_rev02_paren_depth)
@@ -10995,8 +11057,8 @@ cc_rev02_emit_index_store8:
     ld a,$73
     jp cc_rev02_emit8
 
-; Store the final identifier of one parameter declaration. Definitions later
-; spill each incoming C48_REGCALL slot into an ordinary IX-relative local slot.
+; Store the final identifier plus pointer metadata for one parameter.
+; Entry layout: name[16], local kind (0 scalar / 2 pointer), pointee sizeof.
 cc_rev02_param_store_candidate:
     ld a,(cc_rev02_param_count)
     cp CC_REV02_PARAM_CAP
@@ -11006,6 +11068,26 @@ cc_rev02_param_store_candidate:
     ex de,hl
     ld hl,cc_rev02_param_candidate
     call cc_rev02_copy_name16
+    xor a
+    ld b,a
+    ld c,a
+    ld a,(cc_rev02_param_ptr_depth)
+    or a
+    jr z,cc_rev02_param_meta_store
+    ld b,2
+    cp 2
+    jr nc,cc_rev02_param_pointee_ptr
+    ld a,(cc_rev02_param_base_size)
+    ld c,a
+    jr cc_rev02_param_meta_store
+cc_rev02_param_pointee_ptr:
+    ld c,2
+cc_rev02_param_meta_store:
+    ld a,b
+    ld (de),a
+    inc de
+    ld a,c
+    ld (de),a
     ld hl,cc_rev02_param_count
     inc (hl)
     xor a
@@ -11042,7 +11124,24 @@ cc_rev02_emit_param_loop:
     jr z,cc_rev02_emit_param_done
     ld a,b
     call cc_rev02_param_ptr_for_index
-    call cc_rev02_local_add
+    push hl
+    ld de,16
+    add hl,de
+    ld a,(hl)
+    ld (cc_rev02_local_kind),a
+    inc hl
+    ld a,(hl)
+    ld (cc_rev02_local_pointee),a
+    pop hl
+    ld a,2
+    ld (cc_rev02_local_size),a
+    ld a,1
+    ld (cc_rev02_local_extent),a
+    xor a
+    ld (cc_rev02_local_extent+1),a
+    ld a,2
+    ld (cc_rev02_local_storage),a
+    call cc_rev02_local_add_sized
     ret c
     ld (cc_rev02_lhs_disp),a
     ld a,$F5                 ; reserve one aligned 16-bit spill slot
@@ -11112,6 +11211,8 @@ cc_rev02_parse_statement:
     ld a,(cc_rev02_token)
     cp ';'
     jp z,cc_rev02_body_empty
+    cp '*'
+    jp z,cc_rev02_body_deref_assignment
     cp '{'
     jr nz,cc_rev02_statement_id
     call cc_rev02_next_token
@@ -11328,6 +11429,52 @@ cc_rev02_named_post_global_step:
     ret c
     jp cc_rev02_next_token
 
+cc_rev02_body_deref_assignment:
+    call cc_rev02_next_token
+    ret c
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_ID
+    jp nz,cc_rev02_format
+    ld hl,cc_rev02_token
+    call cc_rev02_local_find
+    jp c,cc_rev02_notsup
+    ld (cc_rev02_lhs_disp),a
+    ld a,(cc_rev02_local_symbol)
+    call cc_rev02_local_kind_ptr
+    ld a,(hl)
+    cp 2
+    jp nz,cc_rev02_format
+    ld a,(cc_rev02_local_symbol)
+    call cc_rev02_local_pointee_ptr
+    ld a,(hl)
+    or a
+    jp z,cc_rev02_notsup
+    push af
+    ld a,(cc_rev02_lhs_disp)
+    call cc_rev02_emit_local_load_selected
+    jp c,cc_rev02_index_drop_saved_width_err
+    ld a,$E5
+    call cc_rev02_emit8
+    jp c,cc_rev02_index_drop_saved_width_err
+    call cc_rev02_next_token
+    jp c,cc_rev02_index_drop_saved_width_err
+    ld a,'='
+    call cc_rev02_expect_punct
+    jp c,cc_rev02_index_drop_saved_width_err
+    call cc_rev02_parse_value_expr
+    jp c,cc_rev02_index_drop_saved_width_err
+    pop af
+    ld (cc_rev02_index_size),a
+    call cc_rev02_emit_index_store
+    ret c
+    ld a,';'
+    call cc_rev02_expect_punct
+    ret c
+    ld a,1
+    ld (cc_rev02_exec_seen),a
+    xor a
+    ret
+
 cc_rev02_body_local_int:
     ld a,2
     ld (cc_rev02_local_size),a
@@ -11389,6 +11536,7 @@ cc_rev02_body_local_have_name:
     call cc_rev02_copy_name16
     xor a
     ld (cc_rev02_local_kind),a
+    ld (cc_rev02_local_pointee),a
     inc a
     ld (cc_rev02_local_extent),a
     xor a
@@ -12409,6 +12557,12 @@ cc_rev02_value_unary:
     ld a,'!'
     call cc_rev02_tok_is_punct
     jp z,cc_rev02_value_unary_lnot
+    ld a,'&'
+    call cc_rev02_tok_is_punct
+    jp z,cc_rev02_value_unary_address
+    ld a,'*'
+    call cc_rev02_tok_is_punct
+    jp z,cc_rev02_value_unary_deref
     ld a,'+'
     call cc_rev02_tok_is_punct
     jp z,cc_rev02_value_unary_plus
@@ -12437,11 +12591,23 @@ cc_rev02_value_unary:
     ld a,(hl)
     or a
     jr z,cc_rev02_value_local_scalar
+    cp 1
+    jr z,cc_rev02_value_local_array
+    cp 2
+    jr z,cc_rev02_value_local_pointer
+    jp cc_rev02_notsup
+cc_rev02_value_local_array:
     ld a,'['
     call cc_rev02_tok_is_punct
     jr z,cc_rev02_value_local_index
     ld a,(cc_rev02_local_disp)
     jp cc_rev02_emit_local_address
+cc_rev02_value_local_pointer:
+    ld a,'['
+    call cc_rev02_tok_is_punct
+    jp z,cc_rev02_notsup
+    ld a,(cc_rev02_local_disp)
+    jp cc_rev02_emit_local_load_selected
 cc_rev02_value_local_index:
     call cc_rev02_emit_local_index_address
     ret c
@@ -12566,6 +12732,102 @@ cc_rev02_value_global_post_opcode:
     call cc_rev02_emit8
     ret c
     jp cc_rev02_next_token
+cc_rev02_value_unary_address:
+    call cc_rev02_next_token
+    ret c
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_ID
+    jp nz,cc_rev02_format
+    ld hl,cc_rev02_token
+    call cc_rev02_local_find
+    jr c,cc_rev02_value_address_global
+    ld (cc_rev02_local_disp),a
+    call cc_rev02_next_token
+    ret c
+    ld a,'['
+    call cc_rev02_tok_is_punct
+    jr nz,cc_rev02_value_address_local_plain
+    call cc_rev02_emit_local_index_address
+    ret
+cc_rev02_value_address_local_plain:
+    ld a,(cc_rev02_local_disp)
+    jp cc_rev02_emit_local_address
+cc_rev02_value_address_global:
+    ld hl,cc_rev02_token
+    call cc_rev02_global_find
+    jp c,cc_rev02_format
+    ld (cc_rev02_global_symbol),a
+    call cc_rev02_next_token
+    ret c
+    ld a,'['
+    call cc_rev02_tok_is_punct
+    jr nz,cc_rev02_value_address_global_plain
+    call cc_rev02_emit_global_index_address
+    ret
+cc_rev02_value_address_global_plain:
+    ld a,(cc_rev02_global_symbol)
+    jp cc_rev02_emit_global_address
+
+cc_rev02_value_unary_deref:
+    call cc_rev02_next_token
+    ret c
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_ID
+    jp nz,cc_rev02_notsup
+    ld hl,cc_rev02_token
+    call cc_rev02_local_find
+    jr c,cc_rev02_value_deref_global
+    ld (cc_rev02_local_disp),a
+    ld a,(cc_rev02_local_symbol)
+    call cc_rev02_local_kind_ptr
+    ld a,(hl)
+    cp 2
+    jr z,cc_rev02_value_deref_local_pointer
+    cp 1
+    jp nz,cc_rev02_format
+    ld a,(cc_rev02_local_symbol)
+    call cc_rev02_local_size_ptr
+    ld a,(hl)
+    ld (cc_rev02_index_size),a
+    ld a,(cc_rev02_local_disp)
+    call cc_rev02_emit_local_address
+    ret c
+    call cc_rev02_next_token
+    ret c
+    jp cc_rev02_emit_index_load
+cc_rev02_value_deref_local_pointer:
+    ld a,(cc_rev02_local_symbol)
+    call cc_rev02_local_pointee_ptr
+    ld a,(hl)
+    or a
+    jp z,cc_rev02_notsup
+    ld (cc_rev02_index_size),a
+    ld a,(cc_rev02_local_disp)
+    call cc_rev02_emit_local_load_selected
+    ret c
+    call cc_rev02_next_token
+    ret c
+    jp cc_rev02_emit_index_load
+cc_rev02_value_deref_global:
+    ld hl,cc_rev02_token
+    call cc_rev02_global_find
+    jp c,cc_rev02_format
+    ld (cc_rev02_global_symbol),a
+    call cc_rev02_global_kind_ptr
+    ld a,(hl)
+    cp 1
+    jp nz,cc_rev02_notsup
+    ld a,(cc_rev02_global_symbol)
+    call cc_rev02_global_size_ptr
+    ld a,(hl)
+    ld (cc_rev02_index_size),a
+    ld a,(cc_rev02_global_symbol)
+    call cc_rev02_emit_global_address
+    ret c
+    call cc_rev02_next_token
+    ret c
+    jp cc_rev02_emit_index_load
+
 cc_rev02_value_number:
     call cc_rev02_number_value
     ret c
@@ -13991,8 +14253,8 @@ cc_rev02_emit_local_index_address:
     ld a,(cc_rev02_local_symbol)
     call cc_rev02_local_kind_ptr
     ld a,(hl)
-    or a
-    jp z,cc_rev02_format
+    cp 1
+    jp nz,cc_rev02_format
     ld a,(cc_rev02_local_symbol)
     call cc_rev02_local_size_ptr
     ld a,(hl)
@@ -14104,6 +14366,7 @@ cc_rev02_local_add:
     ld (cc_rev02_local_size),a
     xor a
     ld (cc_rev02_local_kind),a
+    ld (cc_rev02_local_pointee),a
     inc a
     ld (cc_rev02_local_extent),a
     xor a
@@ -14153,6 +14416,9 @@ cc_rev02_local_add_new:
     ld (de),a
     inc de
     ld a,h
+    ld (de),a
+    inc de
+    ld a,(cc_rev02_local_pointee)
     ld (de),a
     ld a,(cc_rev02_temp_index)
     ld (cc_rev02_local_symbol),a
@@ -14209,6 +14475,11 @@ cc_rev02_local_extent_ptr:
     ld de,19
     add hl,de
     ret
+cc_rev02_local_pointee_ptr:
+    call cc_rev02_local_ptr_for_index
+    ld de,21
+    add hl,de
+    ret
 
 ; Parse call arguments after the opening parenthesis has already been consumed.
 ; Local-identifier arguments use the runtime-value expression path.  Other
@@ -14234,6 +14505,14 @@ cc_rev02_call_arg_loop:
     jr z,cc_rev02_call_arg_string
     cp CC_REV02_T_ID
     jr z,cc_rev02_call_arg_runtime
+    cp CC_REV02_T_PUNCT
+    jr nz,cc_rev02_call_arg_const
+    ld a,(cc_rev02_token)
+    cp '&'
+    jr z,cc_rev02_call_arg_runtime
+    cp '*'
+    jr z,cc_rev02_call_arg_runtime
+cc_rev02_call_arg_const:
     call cc_rev02_parse_const_expr
     ret c
     call cc_rev02_emit_ld_hl
