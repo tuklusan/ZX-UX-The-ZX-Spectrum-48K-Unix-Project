@@ -10173,6 +10173,7 @@ cc_rev02_div_count:    db 0
 cc_rev02_main_offset:  dw 0
 cc_rev02_op:           db 0
 cc_rev02_punct_first: db 0
+cc_rev02_cmp_jr: db 0
 cc_rev02_line_start:   db 0
 cc_rev02_include_depth: db 0
 cc_rev02_parent_handle: db HANDLE_FREE
@@ -10615,7 +10616,7 @@ cc_rev02_value_bxor_loop:
     jr cc_rev02_value_bxor_loop
 
 cc_rev02_value_band:
-    call cc_rev02_value_shift
+    call cc_rev02_value_eq
     ret c
 cc_rev02_value_band_loop:
     ld a,'&'
@@ -10626,7 +10627,7 @@ cc_rev02_value_band_loop:
     ret c
     call cc_rev02_next_token
     ret c
-    call cc_rev02_value_shift
+    call cc_rev02_value_eq
     ret c
     ld a,$EB
     call cc_rev02_emit8
@@ -10653,6 +10654,192 @@ cc_rev02_value_band_loop:
     call cc_rev02_emit8
     ret c
     jr cc_rev02_value_band_loop
+
+; Signed-int equality and relational layers. The frozen runtime compare helper
+; returns A=$FF/0/1 for less/equal/greater; generated code normalizes that to
+; C48 int boolean 0 or 1. Parser operator state lives on the compiler stack so
+; nested parenthesized expressions cannot overwrite an outer comparison.
+cc_rev02_value_eq:
+    call cc_rev02_value_rel
+    ret c
+cc_rev02_value_eq_loop:
+    ld d,'='
+    ld e,'='
+    call cc_rev02_tok_is_op2
+    jr z,cc_rev02_value_eq_equal
+    ld d,'!'
+    ld e,'='
+    call cc_rev02_tok_is_op2
+    ret nz
+    ld a,5                   ; !=
+    jr cc_rev02_value_eq_take
+cc_rev02_value_eq_equal:
+    ld a,4                   ; ==
+cc_rev02_value_eq_take:
+    push af
+    ld a,$E5
+    call cc_rev02_emit8
+    jp c,cc_rev02_value_cmp_drop_op_error
+    call cc_rev02_next_token
+    jp c,cc_rev02_value_cmp_drop_op_error
+    call cc_rev02_value_rel
+    jp c,cc_rev02_value_cmp_drop_op_error
+    ld a,$EB
+    call cc_rev02_emit8
+    jp c,cc_rev02_value_cmp_drop_op_error
+    ld a,$E1
+    call cc_rev02_emit8
+    jp c,cc_rev02_value_cmp_drop_op_error
+    ld hl,cc_rev02_rt_cmp_s16
+    call cc_rev02_emit_named_call
+    jp c,cc_rev02_value_cmp_drop_op_error
+    pop af
+    call cc_rev02_emit_cmp_bool
+    ret c
+    jr cc_rev02_value_eq_loop
+
+cc_rev02_value_rel:
+    call cc_rev02_value_shift
+    ret c
+cc_rev02_value_rel_loop:
+    ld d,'<'
+    ld e,'='
+    call cc_rev02_tok_is_op2
+    jr z,cc_rev02_value_rel_le
+    ld d,'>'
+    ld e,'='
+    call cc_rev02_tok_is_op2
+    jr z,cc_rev02_value_rel_ge
+    ld a,'<'
+    call cc_rev02_tok_is_punct
+    jr z,cc_rev02_value_rel_lt
+    ld a,'>'
+    call cc_rev02_tok_is_punct
+    ret nz
+    ld a,2                   ; >
+    jr cc_rev02_value_rel_take
+cc_rev02_value_rel_lt:
+    xor a                    ; <
+    jr cc_rev02_value_rel_take
+cc_rev02_value_rel_le:
+    ld a,1                   ; <=
+    jr cc_rev02_value_rel_take
+cc_rev02_value_rel_ge:
+    ld a,3                   ; >=
+cc_rev02_value_rel_take:
+    push af
+    ld a,$E5
+    call cc_rev02_emit8
+    jp c,cc_rev02_value_cmp_drop_op_error
+    call cc_rev02_next_token
+    jp c,cc_rev02_value_cmp_drop_op_error
+    call cc_rev02_value_shift
+    jp c,cc_rev02_value_cmp_drop_op_error
+    ld a,$EB
+    call cc_rev02_emit8
+    jp c,cc_rev02_value_cmp_drop_op_error
+    ld a,$E1
+    call cc_rev02_emit8
+    jp c,cc_rev02_value_cmp_drop_op_error
+    ld hl,cc_rev02_rt_cmp_s16
+    call cc_rev02_emit_named_call
+    jp c,cc_rev02_value_cmp_drop_op_error
+    pop af
+    call cc_rev02_emit_cmp_bool
+    ret c
+    jr cc_rev02_value_rel_loop
+
+cc_rev02_value_cmp_drop_op_error:
+    pop bc
+    scf
+    ret
+
+; A=0 <, 1 <=, 2 >, 3 >=, 4 ==, 5 !=. Runtime A still holds the
+; c48_cmp_s16 result when these emitted test bytes execute.
+cc_rev02_emit_cmp_bool:
+    cp 6
+    jp nc,cc_rev02_format
+    cp 4
+    jr z,cc_rev02_emit_cmp_eq
+    cp 5
+    jr z,cc_rev02_emit_cmp_ne
+    cp 0
+    jr z,cc_rev02_emit_cmp_lt
+    cp 1
+    jr z,cc_rev02_emit_cmp_le
+    cp 2
+    jr z,cc_rev02_emit_cmp_gt
+    ; >= : true unless compare result is $FF
+    ld a,$FE                 ; CP n
+    call cc_rev02_emit8
+    ret c
+    ld a,$FF
+    call cc_rev02_emit8
+    ret c
+    ld a,$28                 ; JR Z,+1 skips INC L
+    ld (cc_rev02_cmp_jr),a
+    jr cc_rev02_emit_cmp_finish
+cc_rev02_emit_cmp_lt:
+    ld a,$FE
+    call cc_rev02_emit8
+    ret c
+    ld a,$FF
+    call cc_rev02_emit8
+    ret c
+    ld a,$20                 ; JR NZ,+1
+    ld (cc_rev02_cmp_jr),a
+    jr cc_rev02_emit_cmp_finish
+cc_rev02_emit_cmp_le:
+    ld a,$FE
+    call cc_rev02_emit8
+    ret c
+    ld a,1
+    call cc_rev02_emit8
+    ret c
+    ld a,$28                 ; false only when greater (A==1)
+    ld (cc_rev02_cmp_jr),a
+    jr cc_rev02_emit_cmp_finish
+cc_rev02_emit_cmp_gt:
+    ld a,$FE
+    call cc_rev02_emit8
+    ret c
+    ld a,1
+    call cc_rev02_emit8
+    ret c
+    ld a,$20                 ; true only when A==1
+    ld (cc_rev02_cmp_jr),a
+    jr cc_rev02_emit_cmp_finish
+cc_rev02_emit_cmp_eq:
+    ld a,$B7                 ; OR A
+    call cc_rev02_emit8
+    ret c
+    ld a,$20                 ; true only when zero
+    ld (cc_rev02_cmp_jr),a
+    jr cc_rev02_emit_cmp_finish
+cc_rev02_emit_cmp_ne:
+    ld a,$B7
+    call cc_rev02_emit8
+    ret c
+    ld a,$28                 ; false only when zero
+    ld (cc_rev02_cmp_jr),a
+cc_rev02_emit_cmp_finish:
+    ld a,$21                 ; LD HL,0 preserves flags
+    call cc_rev02_emit8
+    ret c
+    xor a
+    call cc_rev02_emit8
+    ret c
+    xor a
+    call cc_rev02_emit8
+    ret c
+    ld a,(cc_rev02_cmp_jr)
+    call cc_rev02_emit8
+    ret c
+    ld a,1
+    call cc_rev02_emit8
+    ret c
+    ld a,$2C                 ; INC L
+    jp cc_rev02_emit8
 
 cc_rev02_value_shift:
     call cc_rev02_value_add
@@ -12399,6 +12586,7 @@ cc_rev02_rt_s16_mul: db 'c48_s16_mul',0
 cc_rev02_rt_s16_divmod: db 'c48_s16_divmod',0
 cc_rev02_rt_s16_shl: db 'c48_s16_shl',0
 cc_rev02_rt_s16_shr: db 'c48_s16_shr',0
+cc_rev02_rt_cmp_s16: db 'c48_cmp_s16',0
 
 ; Emit one ordinary C48_REGCALL.  Argument expressions were evaluated
 ; left-to-right and parked as temporary words.  The generated marshaller walks
