@@ -10394,7 +10394,7 @@ cc_rev02_external_type_void:
 cc_rev02_external_type_next:
     call cc_rev02_next_token
     ret c
-    jr cc_rev02_external_scan
+    jp cc_rev02_external_scan
 
 cc_rev02_external_punct:
     cp CC_REV02_T_PUNCT
@@ -10412,13 +10412,13 @@ cc_rev02_external_punct:
     jp z,cc_rev02_notsup
     call cc_rev02_next_token
     ret c
-    jr cc_rev02_external_scan
+    jp cc_rev02_external_scan
 cc_rev02_external_pointer:
     ld a,2
     ld (cc_rev02_global_size),a
     call cc_rev02_next_token
     ret c
-    jr cc_rev02_external_scan
+    jp cc_rev02_external_scan
 
 cc_rev02_external_global_done:
     ld a,(cc_rev02_function_name)
@@ -11942,7 +11942,7 @@ cc_rev02_value_unary:
     jp z,cc_rev02_value_group
     ld a,(cc_rev02_tok_kind)
     cp CC_REV02_T_NUM
-    jr z,cc_rev02_value_number
+    jp z,cc_rev02_value_number
     cp CC_REV02_T_ID
     jp nz,cc_rev02_format
     ld hl,cc_rev02_token
