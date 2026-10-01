@@ -11718,11 +11718,18 @@ cc_rev02_body_local_done:
 cc_rev02_body_return:
     call cc_rev02_next_token
     ret c
+    ld a,';'
+    call cc_rev02_tok_is_punct
+    jr nz,cc_rev02_body_return_value
+    ld hl,0                  ; void return has no value; keep deterministic HL
+    jr cc_rev02_body_return_emit
+cc_rev02_body_return_value:
     call cc_rev02_parse_value_expr
     ret c
     ld a,';'
     call cc_rev02_expect_punct
     ret c
+cc_rev02_body_return_emit:
     call cc_rev02_emit_function_return
     ret c
     ld a,1
@@ -12773,9 +12780,15 @@ cc_rev02_value_post_step:
     jp cc_rev02_next_token
 
 cc_rev02_value_global:
+    ; A non-local identifier may be an object or an ordinary function call.
+    ; Preserve its spelling before consuming lookahead so value expressions use
+    ; the same source-generic call machinery as statement calls.
     ld hl,cc_rev02_token
+    ld de,cc_rev02_call_name
+    call cc_rev02_copy_name16
+    ld hl,cc_rev02_call_name
     call cc_rev02_global_find
-    jp c,cc_rev02_format
+    jr c,cc_rev02_value_function_call
     ld (cc_rev02_global_symbol),a
     call cc_rev02_next_token
     ret c
@@ -12789,6 +12802,16 @@ cc_rev02_value_global:
     jr z,cc_rev02_value_global_index
     ld a,(cc_rev02_global_symbol)
     jp cc_rev02_emit_global_address
+cc_rev02_value_function_call:
+    call cc_rev02_next_token
+    ret c
+    ld a,'('
+    call cc_rev02_expect_punct
+    ret c
+    call cc_rev02_parse_call_args
+    ret c
+    jp cc_rev02_emit_call
+
 cc_rev02_value_global_index:
     call cc_rev02_emit_global_index_address
     ret c
@@ -15053,66 +15076,11 @@ cc_rev02_call_arg_loop:
     ld a,(cc_rev02_call_arg_count)
     cp CC_REV02_ARG_CAP
     jp nc,cc_rev02_notsup
-    ld a,(cc_rev02_tok_kind)
-    cp CC_REV02_T_STRING
-    jr z,cc_rev02_call_arg_string
-    cp CC_REV02_T_FLOAT
-    jp z,cc_rev02_call_arg_float
-    cp CC_REV02_T_ID
-    jr z,cc_rev02_call_arg_runtime
-    cp CC_REV02_T_PUNCT
-    jr nz,cc_rev02_call_arg_const
-    ld a,(cc_rev02_token)
-    cp '&'
-    jr z,cc_rev02_call_arg_runtime
-    cp '*'
-    jr z,cc_rev02_call_arg_runtime
-cc_rev02_call_arg_const:
-    call cc_rev02_parse_const_expr
-    ret c
-    call cc_rev02_emit_ld_hl
-    ret c
-    jr cc_rev02_call_arg_push
-cc_rev02_call_arg_runtime:
+    ; Every ordinary C48 argument is a runtime-value expression.  The value
+    ; parser already handles constants, strings, floating literals, pointers,
+    ; nested calls and mixed expressions generically, so argument semantics do
+    ; not depend on the spelling of the first token.
     call cc_rev02_parse_value_expr
-    ret c
-    jr cc_rev02_call_arg_push
-cc_rev02_call_arg_string:
-    call cc_rev02_add_string_literal
-    ret c
-    ld (cc_rev02_temp_symbol),a
-    ld a,$21                 ; generated LD HL,string-address
-    call cc_rev02_emit8
-    ret c
-    ld hl,(cc_rev02_text_len)
-    push hl
-    ld hl,0
-    call cc_rev02_emit16
-    pop hl
-    ret c
-    ld a,(cc_rev02_temp_symbol)
-    call cc_rev02_add_reloc
-    ret c
-    call cc_rev02_next_token
-    ret c
-    jr cc_rev02_call_arg_push
-cc_rev02_call_arg_float:
-    call cc_rev02_add_float_literal
-    ret c
-    ld (cc_rev02_temp_symbol),a
-    ld a,$21                 ; generated LD HL,five-byte literal address
-    call cc_rev02_emit8
-    ret c
-    ld hl,(cc_rev02_text_len)
-    push hl
-    ld hl,0
-    call cc_rev02_emit16
-    pop hl
-    ret c
-    ld a,(cc_rev02_temp_symbol)
-    call cc_rev02_add_reloc
-    ret c
-    call cc_rev02_next_token
     ret c
 cc_rev02_call_arg_push:
     ld a,$E5                 ; generated PUSH HL parks this argument value
