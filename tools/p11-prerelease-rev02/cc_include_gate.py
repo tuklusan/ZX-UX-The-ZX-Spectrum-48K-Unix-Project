@@ -190,6 +190,15 @@ postfix_local_source_end:
 if_else_source:
     db 'int main(void){{int x;x=1;if (x) x=4;else x=9;if (!x) x=7;else x=x+1;return x;}}',10
 if_else_source_end:
+if_no_else_source:
+    db 'int main(void){{int x;x=1;if (x) x=4;return x;}}',10
+if_no_else_source_end:
+if_single_else_source:
+    db 'int main(void){{int x;x=1;if (x) x=4;else x=9;return x;}}',10
+if_single_else_source_end:
+if_not_else_source:
+    db 'int main(void){{int x;x=4;if (!x) x=7;else x=x+1;return x;}}',10
+if_not_else_source_end:
 
 fixture_reset:
     xor a
@@ -786,6 +795,27 @@ test_postfix_local_codegen:
     xor a
     ret
 
+test_if_no_else_compile:
+    ld a,24
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ret
+
+test_if_single_else_compile:
+    ld a,25
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ret
+
+test_if_not_else_compile:
+    ld a,26
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ret
+
 test_if_errno_format:
     ld a,23
     ld (mode),a
@@ -1293,6 +1323,12 @@ gate_read_root_first:
     jp z,gate_read_postfix_local
     cp 23
     jp z,gate_read_if_else
+    cp 24
+    jp z,gate_read_if_no_else
+    cp 25
+    jp z,gate_read_if_single_else
+    cp 26
+    jp z,gate_read_if_not_else
     ld hl,root_source
     ld bc,CC_REV02_READ_CAP
     ldir
@@ -1374,6 +1410,27 @@ gate_read_if_else:
     ld bc,if_else_source_end-if_else_source
     ldir
     ld hl,if_else_source_end-if_else_source
+    xor a
+    ret
+gate_read_if_no_else:
+    ld hl,if_no_else_source
+    ld bc,if_no_else_source_end-if_no_else_source
+    ldir
+    ld hl,if_no_else_source_end-if_no_else_source
+    xor a
+    ret
+gate_read_if_single_else:
+    ld hl,if_single_else_source
+    ld bc,if_single_else_source_end-if_single_else_source
+    ldir
+    ld hl,if_single_else_source_end-if_single_else_source
+    xor a
+    ret
+gate_read_if_not_else:
+    ld hl,if_not_else_source
+    ld bc,if_not_else_source_end-if_not_else_source
+    ldir
+    ld hl,if_not_else_source_end-if_not_else_source
     xor a
     ret
 gate_read_builtin_c48:
@@ -1491,7 +1548,7 @@ gateway_end:
     run([sj, "--nologo", f"--sym={sym.as_posix()}", asm.as_posix()], out)
     req(main_bin.is_file() and gate_bin.is_file(), "fixture binaries missing")
     syms = symbols(sym)
-    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_builtin_c48", "test_local_scalar_codegen", "test_dynamic_call_abi", "test_runtime_muldiv_codegen", "test_runtime_bitwise_codegen", "test_runtime_shift_codegen", "test_runtime_compare_a", "test_runtime_compare_b", "test_runtime_logic_a", "test_runtime_logic_b", "test_postfix_local_codegen", "test_if_errno_format", "test_if_errno_notsup", "test_if_errno_nospc", "test_if_errno_toolong", "test_if_errno_exist", "test_if_else_compile", "test_if_else_counts", "test_if_else_patch", "test_if_else_runtime", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
+    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_builtin_c48", "test_local_scalar_codegen", "test_dynamic_call_abi", "test_runtime_muldiv_codegen", "test_runtime_bitwise_codegen", "test_runtime_shift_codegen", "test_runtime_compare_a", "test_runtime_compare_b", "test_runtime_logic_a", "test_runtime_logic_b", "test_postfix_local_codegen", "test_if_no_else_compile", "test_if_single_else_compile", "test_if_not_else_compile", "test_if_errno_format", "test_if_errno_notsup", "test_if_errno_nospc", "test_if_errno_toolong", "test_if_errno_exist", "test_if_else_compile", "test_if_else_counts", "test_if_else_patch", "test_if_else_runtime", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
     for name in names:
         req(name in syms, "fixture symbol missing: " + name)
 
