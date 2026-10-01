@@ -10264,6 +10264,11 @@ cc_rev02_temp_index:   db 0
 cc_rev02_name_ptr:     dw 0
 cc_rev02_escape_char:  db 0
 cc_rev02_value_unsigned: db 0
+cc_rev02_value_size:   db 0
+cc_rev02_value_array:  db 0
+cc_rev02_value_extent: dw 0
+cc_rev02_sizeof_type_size: db 0
+cc_rev02_sizeof_type_void: db 0
 
 cc_rev02_kw_int:       db 'int',0
 cc_rev02_kw_char:      db 'char',0
@@ -10279,6 +10284,7 @@ cc_rev02_kw_do:        db 'do',0
 cc_rev02_kw_for:       db 'for',0
 cc_rev02_kw_break:     db 'break',0
 cc_rev02_kw_continue:  db 'continue',0
+cc_rev02_kw_sizeof:    db 'sizeof',0
 cc_rev02_kw_main:      db 'main',0
 cc_rev02_pp_kw_define: db 'define',0
 
@@ -12338,16 +12344,88 @@ cc_rev02_body_done:
 
 ; Runtime-value expression subset. Every successful parse leaves generated HL
 ; holding the value. This is distinct from the constant-only argument parser.
+cc_rev02_value_clear_array:
+    xor a
+    ld (cc_rev02_value_array),a
+    ld (cc_rev02_value_extent),a
+    ld (cc_rev02_value_extent+1),a
+    ret
+cc_rev02_value_set_word_shape:
+    ld a,2
+    ld (cc_rev02_value_size),a
+    jp cc_rev02_value_clear_array
+cc_rev02_value_promote_arith:
+    ld a,(cc_rev02_value_size)
+    cp 5
+    ret z
+    jp cc_rev02_value_set_word_shape
 cc_rev02_value_set_signed:
+    call cc_rev02_value_set_word_shape
     xor a
     jr cc_rev02_value_store_unsigned
 cc_rev02_value_set_pointer:
+    call cc_rev02_value_set_word_shape
+    ld a,$80
+    jr cc_rev02_value_store_unsigned
+cc_rev02_value_set_char_unsigned:
+    ld a,1
+    ld (cc_rev02_value_size),a
+    call cc_rev02_value_clear_array
     ld a,$80
     jr cc_rev02_value_store_unsigned
 cc_rev02_value_set_meta_unsigned:
+    push af
+    and $7F
+    jr nz,cc_rev02_value_meta_size_ready
+    ld a,2
+cc_rev02_value_meta_size_ready:
+    ld (cc_rev02_value_size),a
+    call cc_rev02_value_clear_array
+    pop af
     and $80
 cc_rev02_value_store_unsigned:
     ld (cc_rev02_value_unsigned),a
+    ret
+
+; Preserve the non-decayed object extent for sizeof while ordinary expression
+; code generation still uses the array's address value.
+cc_rev02_value_mark_local_array:
+    ld a,(cc_rev02_local_symbol)
+    call cc_rev02_local_ptr_for_index
+    ld de,19
+    add hl,de
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    push de
+    ld a,(cc_rev02_local_symbol)
+    call cc_rev02_local_size_ptr
+    ld a,(hl)
+    ld l,a
+    ld h,0
+    pop de
+    call cc_rev02_umul16
+    ld (cc_rev02_value_extent),hl
+    ld a,1
+    ld (cc_rev02_value_array),a
+    ret
+cc_rev02_value_mark_global_array:
+    ld a,(cc_rev02_global_symbol)
+    call cc_rev02_global_count_ptr
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    push de
+    ld a,(cc_rev02_global_symbol)
+    call cc_rev02_global_size_ptr
+    ld a,(hl)
+    ld l,a
+    ld h,0
+    pop de
+    call cc_rev02_umul16
+    ld (cc_rev02_value_extent),hl
+    ld a,1
+    ld (cc_rev02_value_array),a
     ret
 
 cc_rev02_parse_value_expr:
@@ -12474,6 +12552,7 @@ cc_rev02_value_bor_loop:
     ld a,$67                 ; LD H,A
     call cc_rev02_emit8
     ret c
+    call cc_rev02_value_set_word_shape
     jr cc_rev02_value_bor_loop
 
 cc_rev02_value_bxor:
@@ -12521,6 +12600,7 @@ cc_rev02_value_bxor_loop:
     ld a,$67
     call cc_rev02_emit8
     ret c
+    call cc_rev02_value_set_word_shape
     jr cc_rev02_value_bxor_loop
 
 cc_rev02_value_band:
@@ -12568,6 +12648,7 @@ cc_rev02_value_band_loop:
     ld a,$67
     call cc_rev02_emit8
     ret c
+    call cc_rev02_value_set_word_shape
     jr cc_rev02_value_band_loop
 
 ; Signed-int equality and relational layers. The frozen runtime compare helper
@@ -12800,6 +12881,7 @@ cc_rev02_value_shift_right:
     call cc_rev02_select_shr
     call cc_rev02_emit_named_call
     ret c
+    call cc_rev02_value_set_word_shape
     jr cc_rev02_value_shift_loop
 cc_rev02_value_shift_left:
     ld a,$E5
@@ -12822,6 +12904,7 @@ cc_rev02_value_shift_left:
     ld hl,cc_rev02_rt_s16_shl
     call cc_rev02_emit_named_call
     ret c
+    call cc_rev02_value_set_word_shape
     jr cc_rev02_value_shift_loop
 
 cc_rev02_value_add:
@@ -12864,6 +12947,7 @@ cc_rev02_value_add_minus:
     ld a,$52                 ; SBC HL,DE
     call cc_rev02_emit8
     ret c
+    call cc_rev02_value_set_word_shape
     jr cc_rev02_value_add_loop
 cc_rev02_value_add_plus:
     ld a,$E5
@@ -12889,6 +12973,7 @@ cc_rev02_value_add_plus:
     ld a,$19                 ; ADD HL,DE
     call cc_rev02_emit8
     ret c
+    call cc_rev02_value_set_word_shape
     jr cc_rev02_value_add_loop
 
 ; Multiplicative runtime-value layer for ordinary signed int expressions.
@@ -12934,6 +13019,7 @@ cc_rev02_value_mul_mod:
     ld a,$EB                 ; remainder DE -> result HL
     call cc_rev02_emit8
     ret c
+    call cc_rev02_value_set_word_shape
     jp cc_rev02_value_mul_loop
 cc_rev02_value_mul_div:
     ld a,$E5
@@ -12959,6 +13045,7 @@ cc_rev02_value_mul_div:
     call cc_rev02_select_divmod
     call cc_rev02_emit_named_call
     ret c
+    call cc_rev02_value_set_word_shape
     jp cc_rev02_value_mul_loop
 cc_rev02_value_mul_times:
     ld a,$E5
@@ -12984,6 +13071,7 @@ cc_rev02_value_mul_times:
     ld hl,cc_rev02_rt_s16_mul
     call cc_rev02_emit_named_call
     ret c
+    call cc_rev02_value_set_word_shape
     jp cc_rev02_value_mul_loop
 
 cc_rev02_value_unary:
@@ -13020,6 +13108,10 @@ cc_rev02_value_unary:
     cp CC_REV02_T_ID
     jp nz,cc_rev02_format
     ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_sizeof
+    call cc_rev02_streq
+    jp z,cc_rev02_value_sizeof
+    ld hl,cc_rev02_token
     call cc_rev02_local_find
     jp c,cc_rev02_value_global
     ld (cc_rev02_local_disp),a
@@ -13040,6 +13132,7 @@ cc_rev02_value_local_array:
     call cc_rev02_tok_is_punct
     jr z,cc_rev02_value_local_index
     call cc_rev02_value_set_pointer
+    call cc_rev02_value_mark_local_array
     ld a,(cc_rev02_local_disp)
     jp cc_rev02_emit_local_address
 cc_rev02_value_local_pointer:
@@ -13060,6 +13153,8 @@ cc_rev02_value_local_index:
     call cc_rev02_local_pointee_ptr
     ld a,(hl)
     call cc_rev02_value_set_meta_unsigned
+    ld a,(cc_rev02_index_size)
+    ld (cc_rev02_value_size),a
     ld d,'+'
     ld e,'+'
     call cc_rev02_tok_is_op2
@@ -13078,6 +13173,10 @@ cc_rev02_value_local_scalar:
     call cc_rev02_local_pointee_ptr
     ld a,(hl)
     call cc_rev02_value_set_meta_unsigned
+    ld a,(cc_rev02_local_symbol)
+    call cc_rev02_local_size_ptr
+    ld a,(hl)
+    ld (cc_rev02_value_size),a
 cc_rev02_value_local_postcheck:
     ld d,'+'
     ld e,'+'
@@ -13130,6 +13229,7 @@ cc_rev02_value_global:
     call cc_rev02_tok_is_punct
     jr z,cc_rev02_value_global_index
     call cc_rev02_value_set_pointer
+    call cc_rev02_value_mark_global_array
     ld a,(cc_rev02_global_symbol)
     jp cc_rev02_emit_global_address
 cc_rev02_value_function_call:
@@ -13162,6 +13262,8 @@ cc_rev02_value_global_index:
     call cc_rev02_global_pointee_ptr
     ld a,(hl)
     call cc_rev02_value_set_meta_unsigned
+    ld a,(cc_rev02_index_size)
+    ld (cc_rev02_value_size),a
     ld a,'['
     call cc_rev02_tok_is_punct
     jp z,cc_rev02_value_global_pointer_index
@@ -13234,6 +13336,10 @@ cc_rev02_value_global_scalar:
     call cc_rev02_global_pointee_ptr
     ld a,(hl)
     call cc_rev02_value_set_meta_unsigned
+    ld a,(cc_rev02_global_symbol)
+    call cc_rev02_global_size_ptr
+    ld a,(hl)
+    ld (cc_rev02_value_size),a
     ld d,'+'
     ld e,'+'
     call cc_rev02_tok_is_op2
@@ -13334,7 +13440,10 @@ cc_rev02_value_unary_deref:
     ld a,(cc_rev02_local_symbol)
     call cc_rev02_local_pointee_ptr
     ld a,(hl)
-    jp cc_rev02_value_set_meta_unsigned
+    call cc_rev02_value_set_meta_unsigned
+    ld a,(cc_rev02_index_size)
+    ld (cc_rev02_value_size),a
+    ret
 cc_rev02_value_deref_local_pointer:
     ld a,(cc_rev02_local_symbol)
     call cc_rev02_local_pointee_ptr
@@ -13360,7 +13469,10 @@ cc_rev02_value_deref_local_pointer:
     ld a,(cc_rev02_local_symbol)
     call cc_rev02_local_pointee_ptr
     ld a,(hl)
-    jp cc_rev02_value_set_meta_unsigned
+    call cc_rev02_value_set_meta_unsigned
+    ld a,(cc_rev02_index_size)
+    ld (cc_rev02_value_size),a
+    ret
 cc_rev02_value_deref_pointer_post_inc:
     xor a
     jr cc_rev02_value_deref_pointer_post_step
@@ -13389,6 +13501,8 @@ cc_rev02_value_deref_pointer_post_step:
     call cc_rev02_local_pointee_ptr
     ld a,(hl)
     call cc_rev02_value_set_meta_unsigned
+    ld a,(cc_rev02_index_size)
+    ld (cc_rev02_value_size),a
     ret
 cc_rev02_value_deref_global:
     ld hl,cc_rev02_token
@@ -13413,7 +13527,10 @@ cc_rev02_value_deref_global:
     ld a,(cc_rev02_global_symbol)
     call cc_rev02_global_pointee_ptr
     ld a,(hl)
-    jp cc_rev02_value_set_meta_unsigned
+    call cc_rev02_value_set_meta_unsigned
+    ld a,(cc_rev02_index_size)
+    ld (cc_rev02_value_size),a
+    ret
 
 cc_rev02_value_char:
     call cc_rev02_value_set_signed
@@ -13426,6 +13543,13 @@ cc_rev02_value_char:
 
 cc_rev02_value_string:
     call cc_rev02_value_set_pointer
+    ld a,(cc_rev02_tok_len)
+    ld l,a
+    ld h,0
+    inc hl
+    ld (cc_rev02_value_extent),hl
+    ld a,1
+    ld (cc_rev02_value_array),a
     call cc_rev02_add_string_literal
     ret c
     ld (cc_rev02_temp_symbol),a
@@ -13447,6 +13571,8 @@ cc_rev02_value_string:
 ; storage address, exactly as required by C48_REGCALL.
 cc_rev02_value_float:
     call cc_rev02_value_set_signed
+    ld a,5
+    ld (cc_rev02_value_size),a
     call cc_rev02_add_float_literal
     ret c
     ld (cc_rev02_temp_symbol),a
@@ -13472,6 +13598,252 @@ cc_rev02_value_number:
     pop hl
     ret c
     jp cc_rev02_emit_ld_hl
+; C48 sizeof is compile-time only.  Parse the ordinary unary-expression using
+; the same source-semantic parser, retain its static width/non-decayed array
+; extent, then roll back every generated TEXT/symbol/relocation/literal byte.
+; This guarantees side-effecting operands are not executed or published.
+cc_rev02_value_sizeof:
+    call cc_rev02_next_token
+    ret c
+    ld a,'('
+    call cc_rev02_tok_is_punct
+    jr nz,cc_rev02_sizeof_unary_expr
+    call cc_rev02_next_token
+    ret c
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_ID
+    jr nz,cc_rev02_sizeof_group_expr
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_char
+    call cc_rev02_streq
+    jp z,cc_rev02_sizeof_type_char
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_short
+    call cc_rev02_streq
+    jp z,cc_rev02_sizeof_type_word
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_int
+    call cc_rev02_streq
+    jp z,cc_rev02_sizeof_type_word
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_float
+    call cc_rev02_streq
+    jp z,cc_rev02_sizeof_type_float
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_void
+    call cc_rev02_streq
+    jp z,cc_rev02_sizeof_type_void
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_unsigned
+    call cc_rev02_streq
+    jp z,cc_rev02_sizeof_type_unsigned
+cc_rev02_sizeof_group_expr:
+    call cc_rev02_sizeof_parse_group_runtime
+    ret c
+    ld a,h
+    or l
+    jp z,cc_rev02_format
+    push hl
+    ld a,')'
+    call cc_rev02_expect_punct
+    pop hl
+    ret c
+    jr cc_rev02_sizeof_result
+cc_rev02_sizeof_unary_expr:
+    call cc_rev02_sizeof_parse_unary_runtime
+    ret c
+    ld a,h
+    or l
+    jp z,cc_rev02_format
+    jr cc_rev02_sizeof_result
+cc_rev02_sizeof_type_char:
+    ld a,1
+    jr cc_rev02_sizeof_type_scalar
+cc_rev02_sizeof_type_word:
+    ld a,2
+    jr cc_rev02_sizeof_type_scalar
+cc_rev02_sizeof_type_float:
+    ld a,5
+cc_rev02_sizeof_type_scalar:
+    ld (cc_rev02_sizeof_type_size),a
+    xor a
+    ld (cc_rev02_sizeof_type_void),a
+    call cc_rev02_next_token
+    ret c
+    jr cc_rev02_sizeof_type_stars
+cc_rev02_sizeof_type_void:
+    xor a
+    ld (cc_rev02_sizeof_type_size),a
+    inc a
+    ld (cc_rev02_sizeof_type_void),a
+    call cc_rev02_next_token
+    ret c
+    jr cc_rev02_sizeof_type_stars
+cc_rev02_sizeof_type_unsigned:
+    call cc_rev02_next_token
+    ret c
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_ID
+    jp nz,cc_rev02_format
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_char
+    call cc_rev02_streq
+    jr z,cc_rev02_sizeof_type_unsigned_char
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_short
+    call cc_rev02_streq
+    jr z,cc_rev02_sizeof_type_unsigned_word
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_int
+    call cc_rev02_streq
+    jp nz,cc_rev02_format
+cc_rev02_sizeof_type_unsigned_word:
+    ld a,2
+    jr cc_rev02_sizeof_type_unsigned_set
+cc_rev02_sizeof_type_unsigned_char:
+    ld a,1
+cc_rev02_sizeof_type_unsigned_set:
+    ld (cc_rev02_sizeof_type_size),a
+    xor a
+    ld (cc_rev02_sizeof_type_void),a
+    call cc_rev02_next_token
+    ret c
+cc_rev02_sizeof_type_stars:
+    ld a,'*'
+    call cc_rev02_tok_is_punct
+    jr nz,cc_rev02_sizeof_type_done
+    ld a,2
+    ld (cc_rev02_sizeof_type_size),a
+    xor a
+    ld (cc_rev02_sizeof_type_void),a
+    call cc_rev02_next_token
+    ret c
+    jr cc_rev02_sizeof_type_stars
+cc_rev02_sizeof_type_done:
+    ld a,(cc_rev02_sizeof_type_void)
+    or a
+    jp nz,cc_rev02_format
+    ld a,')'
+    call cc_rev02_expect_punct
+    ret c
+    ld a,(cc_rev02_sizeof_type_size)
+    ld l,a
+    ld h,0
+cc_rev02_sizeof_result:
+    push hl
+    call cc_rev02_emit_ld_hl
+    pop hl
+    ret c
+    jp cc_rev02_value_set_pointer
+; Parse/evaluate sizeof operands under a stack-local compiler-state transaction.
+; Mode 0 parses a parenthesized expression, mode 1 one unary expression, and
+; mode 2 reuses the full sizeof parser for integer-constant-expression sites.
+; Stack-local snapshots make nested sizeof naturally nest.  Generated operand
+; bytes and temporary literal/symbol/relocation entries never escape.
+cc_rev02_sizeof_parse_group_runtime:
+    xor a
+    jr cc_rev02_sizeof_parse_transaction
+cc_rev02_sizeof_parse_unary_runtime:
+    ld a,1
+cc_rev02_sizeof_parse_transaction:
+    ld c,a
+    ld hl,(cc_rev02_text_len)
+    push hl
+    ld hl,(cc_rev02_literal_len)
+    push hl
+    ld a,(cc_rev02_symbol_count)
+    ld l,a
+    ld h,0
+    push hl
+    ld a,(cc_rev02_reloc_count)
+    ld l,a
+    ld h,0
+    push hl
+    ld a,(cc_rev02_string_count)
+    ld l,a
+    ld h,0
+    push hl
+    ld a,(cc_rev02_float_count)
+    ld l,a
+    ld h,0
+    push hl
+    ld l,c
+    ld h,0
+    push hl
+    ld a,c
+    or a
+    jr z,cc_rev02_sizeof_parse_group_call
+    cp 1
+    jr z,cc_rev02_sizeof_parse_unary_call
+    call cc_rev02_value_sizeof
+    jr cc_rev02_sizeof_parse_finish
+cc_rev02_sizeof_parse_group_call:
+    call cc_rev02_parse_value_expr
+    jr cc_rev02_sizeof_parse_finish
+cc_rev02_sizeof_parse_unary_call:
+    call cc_rev02_value_unary
+cc_rev02_sizeof_parse_finish:
+    jr c,cc_rev02_sizeof_parse_finish_error
+    pop bc                   ; C=transaction mode
+    ld a,c
+    cp 2
+    jr z,cc_rev02_sizeof_parse_have_value
+    call cc_rev02_sizeof_capture
+cc_rev02_sizeof_parse_have_value:
+    ex de,hl
+    pop hl
+    ld a,l
+    ld (cc_rev02_float_count),a
+    pop hl
+    ld a,l
+    ld (cc_rev02_string_count),a
+    pop hl
+    ld a,l
+    ld (cc_rev02_reloc_count),a
+    pop hl
+    ld a,l
+    ld (cc_rev02_symbol_count),a
+    pop hl
+    ld (cc_rev02_literal_len),hl
+    pop hl
+    ld (cc_rev02_text_len),hl
+    ex de,hl
+    or a
+    ret
+cc_rev02_sizeof_parse_finish_error:
+    pop hl                   ; discard transaction mode
+    ld b,a
+    pop hl
+    ld a,l
+    ld (cc_rev02_float_count),a
+    pop hl
+    ld a,l
+    ld (cc_rev02_string_count),a
+    pop hl
+    ld a,l
+    ld (cc_rev02_reloc_count),a
+    pop hl
+    ld a,l
+    ld (cc_rev02_symbol_count),a
+    pop hl
+    ld (cc_rev02_literal_len),hl
+    pop hl
+    ld (cc_rev02_text_len),hl
+    ld a,b
+    scf
+    ret
+cc_rev02_sizeof_capture:
+    ld a,(cc_rev02_value_array)
+    or a
+    jr z,cc_rev02_sizeof_capture_scalar
+    ld hl,(cc_rev02_value_extent)
+    ret
+cc_rev02_sizeof_capture_scalar:
+    ld a,(cc_rev02_value_size)
+    ld l,a
+    ld h,0
+    ret
+
 cc_rev02_value_unary_lnot:
     call cc_rev02_next_token
     ret c
@@ -13482,7 +13854,9 @@ cc_rev02_value_unary_lnot:
     jp cc_rev02_value_set_signed
 cc_rev02_value_unary_plus:
     call cc_rev02_next_token
-    jp cc_rev02_value_unary
+    call cc_rev02_value_unary
+    ret c
+    jp cc_rev02_value_promote_arith
 cc_rev02_value_unary_minus:
     call cc_rev02_next_token
     call cc_rev02_value_unary
@@ -13503,7 +13877,9 @@ cc_rev02_value_unary_minus:
     call cc_rev02_emit8
     ret c
     ld a,$67                 ; LD H,A
-    jp cc_rev02_emit8
+    call cc_rev02_emit8
+    ret c
+    jp cc_rev02_value_promote_arith
 cc_rev02_value_unary_not:
     call cc_rev02_next_token
     call cc_rev02_value_unary
@@ -13524,7 +13900,9 @@ cc_rev02_value_unary_not:
     call cc_rev02_emit8
     ret c
     ld a,$67                 ; LD H,A
-    jp cc_rev02_emit8
+    call cc_rev02_emit8
+    ret c
+    jp cc_rev02_value_set_word_shape
 cc_rev02_value_group:
     call cc_rev02_next_token
     ret c
@@ -13607,7 +13985,7 @@ cc_rev02_value_cast_char:
     xor a
     call cc_rev02_emit8
     ret c
-    jp cc_rev02_value_set_pointer
+    jp cc_rev02_value_set_char_unsigned
 
 cc_rev02_parse_const_expr:
     jp cc_rev02_parse_bor
@@ -13767,6 +14145,14 @@ cc_rev02_parse_unary:
     call cc_rev02_tok_is_punct
     jr z,cc_rev02_unary_group
     ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_ID
+    jr nz,cc_rev02_const_unary_literal
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_sizeof
+    call cc_rev02_streq
+    jp z,cc_rev02_const_sizeof
+    jp cc_rev02_format
+cc_rev02_const_unary_literal:
     cp CC_REV02_T_NUM
     jr z,cc_rev02_unary_number
     cp CC_REV02_T_CHAR
@@ -13781,6 +14167,10 @@ cc_rev02_unary_literal_ready:
     call cc_rev02_next_token
     pop hl
     ret
+cc_rev02_const_sizeof:
+    ld a,2
+    jp cc_rev02_sizeof_parse_transaction
+
 cc_rev02_char_value:
     ld a,(cc_rev02_token)
     ld l,a
