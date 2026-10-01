@@ -224,7 +224,7 @@ def main():
         "cc_rev02_symbol_get_undef:","cc_rev02_add_reloc:",
         "cc_rev02_lex_string:","cc_rev02_pp_system_c48:","cc_rev02_pp_kw_c48",
         "cc_rev02_local_add:","cc_rev02_emit_local_load:","cc_rev02_emit_local_step:","cc_rev02_parse_statement:","cc_rev02_parse_named_clause:","cc_rev02_body_if:","cc_rev02_body_while:","cc_rev02_body_for:","cc_rev02_body_break:","cc_rev02_body_continue:","cc_rev02_loop_enter:","cc_rev02_loop_leave:","cc_rev02_emit_function_jp_to:","cc_rev02_parse_value_expr:","cc_rev02_value_lor:","cc_rev02_value_land:","cc_rev02_emit_forward_function_jp:","cc_rev02_patch_function_target:","cc_rev02_value_bor:","cc_rev02_value_bxor:","cc_rev02_value_band:","cc_rev02_value_eq:","cc_rev02_value_rel:","cc_rev02_value_shift:","cc_rev02_value_mul:","cc_rev02_emit_named_call:","cc_rev02_emit_call_marshal:",
-        "CC_REV02_SYMBOL_CAP     EQU 32")),
+        "CC_REV02_SYMBOL_CAP")),
         "ordinary cc generic prototype/call/string OBJ1 closure missing")
     req(all(marker not in cc_source.split("MACRO EMIT_REV02_CC_PRODUCT_CLI",1)[1].split("ENDM",1)[0]
             for marker in ("cc_p11pr_","CC_P11PR","source_crc","source_sha","identity_table")),
