@@ -1397,7 +1397,7 @@ test_local_pointer_metadata:
     ld a,(cc_rev02_local_symbol)
     call cc_rev02_local_pointee_ptr
     ld a,(hl)
-    cp 1
+    cp $81                 ; plain char is unsigned; high bit carries unsigned metadata
     jp nz,test_fail
     xor a
     ret
