@@ -10172,8 +10172,7 @@ cc_rev02_remainder:    dw 0
 cc_rev02_div_count:    db 0
 cc_rev02_main_offset:  dw 0
 cc_rev02_op:           db 0
-cc_rev02_value_add_op: db 0
-cc_rev02_value_mul_op_kind: db 0
+cc_rev02_punct_first: db 0
 cc_rev02_line_start:   db 0
 cc_rev02_include_depth: db 0
 cc_rev02_parent_handle: db HANDLE_FREE
@@ -10533,7 +10532,177 @@ cc_rev02_body_done:
 ; Runtime-value expression subset. Every successful parse leaves generated HL
 ; holding the value. This is distinct from the constant-only argument parser.
 cc_rev02_parse_value_expr:
-    jp cc_rev02_value_add
+    jp cc_rev02_value_bor
+
+cc_rev02_value_bor:
+    call cc_rev02_value_bxor
+    ret c
+cc_rev02_value_bor_loop:
+    ld a,'|'
+    call cc_rev02_tok_is_punct
+    ret nz
+    ld a,$E5                 ; PUSH HL preserves lhs
+    call cc_rev02_emit8
+    ret c
+    call cc_rev02_next_token
+    ret c
+    call cc_rev02_value_bxor
+    ret c
+    ld a,$EB                 ; rhs -> DE
+    call cc_rev02_emit8
+    ret c
+    ld a,$E1                 ; lhs -> HL
+    call cc_rev02_emit8
+    ret c
+    ld a,$7D                 ; L |= E
+    call cc_rev02_emit8
+    ret c
+    ld a,$B3                 ; OR E
+    call cc_rev02_emit8
+    ret c
+    ld a,$6F                 ; LD L,A
+    call cc_rev02_emit8
+    ret c
+    ld a,$7C                 ; H |= D
+    call cc_rev02_emit8
+    ret c
+    ld a,$B2                 ; OR D
+    call cc_rev02_emit8
+    ret c
+    ld a,$67                 ; LD H,A
+    call cc_rev02_emit8
+    ret c
+    jr cc_rev02_value_bor_loop
+
+cc_rev02_value_bxor:
+    call cc_rev02_value_band
+    ret c
+cc_rev02_value_bxor_loop:
+    ld a,'^'
+    call cc_rev02_tok_is_punct
+    ret nz
+    ld a,$E5
+    call cc_rev02_emit8
+    ret c
+    call cc_rev02_next_token
+    ret c
+    call cc_rev02_value_band
+    ret c
+    ld a,$EB
+    call cc_rev02_emit8
+    ret c
+    ld a,$E1
+    call cc_rev02_emit8
+    ret c
+    ld a,$7D
+    call cc_rev02_emit8
+    ret c
+    ld a,$AB                 ; XOR E
+    call cc_rev02_emit8
+    ret c
+    ld a,$6F
+    call cc_rev02_emit8
+    ret c
+    ld a,$7C
+    call cc_rev02_emit8
+    ret c
+    ld a,$AA                 ; XOR D
+    call cc_rev02_emit8
+    ret c
+    ld a,$67
+    call cc_rev02_emit8
+    ret c
+    jr cc_rev02_value_bxor_loop
+
+cc_rev02_value_band:
+    call cc_rev02_value_shift
+    ret c
+cc_rev02_value_band_loop:
+    ld a,'&'
+    call cc_rev02_tok_is_punct
+    ret nz
+    ld a,$E5
+    call cc_rev02_emit8
+    ret c
+    call cc_rev02_next_token
+    ret c
+    call cc_rev02_value_shift
+    ret c
+    ld a,$EB
+    call cc_rev02_emit8
+    ret c
+    ld a,$E1
+    call cc_rev02_emit8
+    ret c
+    ld a,$7D
+    call cc_rev02_emit8
+    ret c
+    ld a,$A3                 ; AND E
+    call cc_rev02_emit8
+    ret c
+    ld a,$6F
+    call cc_rev02_emit8
+    ret c
+    ld a,$7C
+    call cc_rev02_emit8
+    ret c
+    ld a,$A2                 ; AND D
+    call cc_rev02_emit8
+    ret c
+    ld a,$67
+    call cc_rev02_emit8
+    ret c
+    jr cc_rev02_value_band_loop
+
+cc_rev02_value_shift:
+    call cc_rev02_value_add
+    ret c
+cc_rev02_value_shift_loop:
+    ld d,'<'
+    ld e,'<'
+    call cc_rev02_tok_is_op2
+    jr z,cc_rev02_value_shift_left
+    ld d,'>'
+    ld e,'>'
+    call cc_rev02_tok_is_op2
+    ret nz
+cc_rev02_value_shift_right:
+    ld a,$E5                 ; PUSH HL preserves lhs
+    call cc_rev02_emit8
+    ret c
+    call cc_rev02_next_token
+    ret c
+    call cc_rev02_value_add
+    ret c
+    ld a,$EB                 ; rhs count -> DE
+    call cc_rev02_emit8
+    ret c
+    ld a,$E1                 ; lhs -> HL
+    call cc_rev02_emit8
+    ret c
+    ld hl,cc_rev02_rt_s16_shr
+    call cc_rev02_emit_named_call
+    ret c
+    jr cc_rev02_value_shift_loop
+cc_rev02_value_shift_left:
+    ld a,$E5
+    call cc_rev02_emit8
+    ret c
+    call cc_rev02_next_token
+    ret c
+    call cc_rev02_value_add
+    ret c
+    ld a,$EB
+    call cc_rev02_emit8
+    ret c
+    ld a,$E1
+    call cc_rev02_emit8
+    ret c
+    ld hl,cc_rev02_rt_s16_shl
+    call cc_rev02_emit_named_call
+    ret c
+    jr cc_rev02_value_shift_loop
+
 cc_rev02_value_add:
     call cc_rev02_value_mul
     ret c
@@ -10544,12 +10713,7 @@ cc_rev02_value_add_loop:
     ld a,'-'
     call cc_rev02_tok_is_punct
     ret nz
-    ld a,1
-    jr cc_rev02_value_add_take
-cc_rev02_value_add_plus:
-    xor a
-cc_rev02_value_add_take:
-    ld (cc_rev02_value_add_op),a
+cc_rev02_value_add_minus:
     ld a,$E5                 ; preserve lhs value
     call cc_rev02_emit8
     ret c
@@ -10563,14 +10727,6 @@ cc_rev02_value_add_take:
     ld a,$E1                 ; restore lhs -> HL
     call cc_rev02_emit8
     ret c
-    ld a,(cc_rev02_value_add_op)
-    or a
-    jr nz,cc_rev02_value_sub_emit
-    ld a,$19                 ; ADD HL,DE
-    call cc_rev02_emit8
-    ret c
-    jr cc_rev02_value_add_loop
-cc_rev02_value_sub_emit:
     ld a,$B7                 ; OR A clears carry
     call cc_rev02_emit8
     ret c
@@ -10578,6 +10734,24 @@ cc_rev02_value_sub_emit:
     call cc_rev02_emit8
     ret c
     ld a,$52                 ; SBC HL,DE
+    call cc_rev02_emit8
+    ret c
+    jr cc_rev02_value_add_loop
+cc_rev02_value_add_plus:
+    ld a,$E5
+    call cc_rev02_emit8
+    ret c
+    call cc_rev02_next_token
+    ret c
+    call cc_rev02_value_mul
+    ret c
+    ld a,$EB
+    call cc_rev02_emit8
+    ret c
+    ld a,$E1
+    call cc_rev02_emit8
+    ret c
+    ld a,$19                 ; ADD HL,DE
     call cc_rev02_emit8
     ret c
     jr cc_rev02_value_add_loop
@@ -10591,53 +10765,70 @@ cc_rev02_value_mul:
 cc_rev02_value_mul_loop:
     ld a,'*'
     call cc_rev02_tok_is_punct
-    jr z,cc_rev02_value_mul_take
+    jr z,cc_rev02_value_mul_times
     ld a,'/'
     call cc_rev02_tok_is_punct
-    jr z,cc_rev02_value_div_take
+    jr z,cc_rev02_value_mul_div
     ld a,'%'
     call cc_rev02_tok_is_punct
     ret nz
-    ld a,2
-    jr cc_rev02_value_mul_op
-cc_rev02_value_mul_take:
-    xor a
-    jr cc_rev02_value_mul_op
-cc_rev02_value_div_take:
-    ld a,1
-cc_rev02_value_mul_op:
-    ld (cc_rev02_value_mul_op_kind),a
-    ld a,$E5                 ; PUSH HL preserves lhs
+cc_rev02_value_mul_mod:
+    ld a,$E5
     call cc_rev02_emit8
     ret c
     call cc_rev02_next_token
     ret c
     call cc_rev02_value_unary
     ret c
-    ld a,$EB                 ; EX DE,HL => rhs in DE
+    ld a,$EB
     call cc_rev02_emit8
     ret c
-    ld a,$E1                 ; POP HL => lhs in HL
+    ld a,$E1
     call cc_rev02_emit8
     ret c
-    ld a,(cc_rev02_value_mul_op_kind)
-    or a
-    jr nz,cc_rev02_value_divmod_emit
-    ld hl,cc_rev02_rt_s16_mul
-    call cc_rev02_emit_named_call
-    ret c
-    jr cc_rev02_value_mul_loop
-cc_rev02_value_divmod_emit:
     ld hl,cc_rev02_rt_s16_divmod
     call cc_rev02_emit_named_call
     ret c
-    ld a,(cc_rev02_value_mul_op_kind)
-    cp 2
-    jr nz,cc_rev02_value_mul_loop
     ld a,$EB                 ; remainder DE -> result HL
     call cc_rev02_emit8
     ret c
-    jr cc_rev02_value_mul_loop
+    jp cc_rev02_value_mul_loop
+cc_rev02_value_mul_div:
+    ld a,$E5
+    call cc_rev02_emit8
+    ret c
+    call cc_rev02_next_token
+    ret c
+    call cc_rev02_value_unary
+    ret c
+    ld a,$EB
+    call cc_rev02_emit8
+    ret c
+    ld a,$E1
+    call cc_rev02_emit8
+    ret c
+    ld hl,cc_rev02_rt_s16_divmod
+    call cc_rev02_emit_named_call
+    ret c
+    jp cc_rev02_value_mul_loop
+cc_rev02_value_mul_times:
+    ld a,$E5
+    call cc_rev02_emit8
+    ret c
+    call cc_rev02_next_token
+    ret c
+    call cc_rev02_value_unary
+    ret c
+    ld a,$EB
+    call cc_rev02_emit8
+    ret c
+    ld a,$E1
+    call cc_rev02_emit8
+    ret c
+    ld hl,cc_rev02_rt_s16_mul
+    call cc_rev02_emit_named_call
+    ret c
+    jp cc_rev02_value_mul_loop
 
 cc_rev02_value_unary:
     ld a,'+'
@@ -11168,13 +11359,13 @@ cc_rev02_lex_skip:
     cp 9
     jr z,cc_rev02_lex_skip
     cp 10
-    jr z,cc_rev02_lex_newline
+    jp z,cc_rev02_lex_newline
     cp 13
-    jr z,cc_rev02_lex_newline
+    jp z,cc_rev02_lex_newline
     cp '#'
-    jr z,cc_rev02_lex_hash
+    jp z,cc_rev02_lex_hash
     cp '/'
-    jr z,cc_rev02_lex_slash
+    jp z,cc_rev02_lex_slash
     cp '"'
     jp z,cc_rev02_lex_string
     push af
@@ -11185,9 +11376,76 @@ cc_rev02_lex_skip:
     jp nc,cc_rev02_lex_ident_start
     call cc_rev02_is_digit
     jp nc,cc_rev02_lex_num_start
-    ld (cc_rev02_token),a
-    ld a,1
-    ld (cc_rev02_tok_len),a
+    jp cc_rev02_lex_punct_start
+cc_rev02_lex_punct_start:
+    ld (cc_rev02_punct_first),a
+    call cc_rev02_token_put
+    ret c
+    ld a,(cc_rev02_punct_first)
+    cp '='
+    jr z,cc_rev02_lex_punct_maybe_equal
+    cp '!'
+    jr z,cc_rev02_lex_punct_maybe_equal
+    cp '<'
+    jr z,cc_rev02_lex_punct_maybe_ltgt
+    cp '>'
+    jr z,cc_rev02_lex_punct_maybe_ltgt
+    cp '&'
+    jr z,cc_rev02_lex_punct_maybe_same
+    cp '|'
+    jr z,cc_rev02_lex_punct_maybe_same
+    cp '+'
+    jr z,cc_rev02_lex_punct_maybe_same
+    cp '-'
+    jr z,cc_rev02_lex_punct_maybe_same
+    jr cc_rev02_lex_punct_done
+cc_rev02_lex_punct_maybe_equal:
+    call cc_rev02_next_char
+    ret c
+    or a
+    jr z,cc_rev02_lex_punct_done
+    ld c,a
+    cp '='
+    jr z,cc_rev02_lex_punct_take_second
+    ld a,c
+    call cc_rev02_unget_char
+    ret c
+    jr cc_rev02_lex_punct_done
+cc_rev02_lex_punct_maybe_ltgt:
+    call cc_rev02_next_char
+    ret c
+    or a
+    jr z,cc_rev02_lex_punct_done
+    ld c,a
+    cp '='
+    jr z,cc_rev02_lex_punct_take_second
+    ld a,(cc_rev02_punct_first)
+    cp c
+    jr z,cc_rev02_lex_punct_take_second_c
+    ld a,c
+    call cc_rev02_unget_char
+    ret c
+    jr cc_rev02_lex_punct_done
+cc_rev02_lex_punct_maybe_same:
+    call cc_rev02_next_char
+    ret c
+    or a
+    jr z,cc_rev02_lex_punct_done
+    ld c,a
+    ld a,(cc_rev02_punct_first)
+    cp c
+    jr z,cc_rev02_lex_punct_take_second_c
+    ld a,c
+    call cc_rev02_unget_char
+    ret c
+    jr cc_rev02_lex_punct_done
+cc_rev02_lex_punct_take_second_c:
+    ld a,c
+cc_rev02_lex_punct_take_second:
+    call cc_rev02_token_put
+    ret c
+cc_rev02_lex_punct_done:
+    call cc_rev02_token_zero
     ld a,CC_REV02_T_PUNCT
     ld (cc_rev02_tok_kind),a
     xor a
@@ -11195,7 +11453,7 @@ cc_rev02_lex_skip:
 cc_rev02_lex_newline:
     ld a,1
     ld (cc_rev02_line_start),a
-    jr cc_rev02_lex_skip
+    jp cc_rev02_lex_skip
 
 cc_rev02_lex_hash:
     ld a,(cc_rev02_line_start)
@@ -11203,7 +11461,7 @@ cc_rev02_lex_hash:
     jr z,cc_rev02_lex_hash_punct
     call cc_rev02_pp_directive
     ret c
-    jr cc_rev02_lex_skip
+    jp cc_rev02_lex_skip
 cc_rev02_lex_hash_punct:
     xor a
     ld (cc_rev02_line_start),a
@@ -12139,6 +12397,8 @@ cc_rev02_emit_named_call:
 
 cc_rev02_rt_s16_mul: db 'c48_s16_mul',0
 cc_rev02_rt_s16_divmod: db 'c48_s16_divmod',0
+cc_rev02_rt_s16_shl: db 'c48_s16_shl',0
+cc_rev02_rt_s16_shr: db 'c48_s16_shr',0
 
 ; Emit one ordinary C48_REGCALL.  Argument expressions were evaluated
 ; left-to-right and parked as temporary words.  The generated marshaller walks
@@ -12705,6 +12965,9 @@ cc_rev02_expect_punct:
     ld a,(cc_rev02_tok_kind)
     cp CC_REV02_T_PUNCT
     jp nz,cc_rev02_format
+    ld a,(cc_rev02_tok_len)
+    cp 1
+    jp nz,cc_rev02_format
     ld a,(cc_rev02_token)
     cp c
     jp nz,cc_rev02_format
@@ -12713,6 +12976,9 @@ cc_rev02_tok_is_punct:
     ld c,a
     ld a,(cc_rev02_tok_kind)
     cp CC_REV02_T_PUNCT
+    jr nz,cc_rev02_tok_punct_no
+    ld a,(cc_rev02_tok_len)
+    cp 1
     jr nz,cc_rev02_tok_punct_no
     ld a,(cc_rev02_token)
     cp c
@@ -12723,6 +12989,25 @@ cc_rev02_tok_punct_no:
     ret
 cc_rev02_tok_punct_yes:
     xor a
+    ret
+
+; D/E are the exact two punctuation bytes. Return Z only for that token.
+cc_rev02_tok_is_op2:
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_PUNCT
+    jr nz,cc_rev02_tok_op2_no
+    ld a,(cc_rev02_tok_len)
+    cp 2
+    jr nz,cc_rev02_tok_op2_no
+    ld a,(cc_rev02_token)
+    cp d
+    jr nz,cc_rev02_tok_op2_no
+    ld a,(cc_rev02_token+1)
+    cp e
+    jr z,cc_rev02_tok_punct_yes
+cc_rev02_tok_op2_no:
+    ld a,1
+    or a
     ret
 cc_rev02_token_is_main:
     ld hl,cc_rev02_token

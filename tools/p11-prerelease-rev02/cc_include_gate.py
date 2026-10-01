@@ -97,6 +97,8 @@ probe_bad: db 0
 probe_symbol: db 0
 mul_symbol: db 0
 div_symbol: db 0
+shl_symbol: db 0
+shr_symbol: db 0
 
 root_source:
     db '#define ANSWER 3 + 4',10
@@ -158,6 +160,12 @@ dynamic_call_source_end:
 runtime_muldiv_source:
     db 'int main(void){{int x;int y;x=7;y=3;return x*y+x/y+x%y;}}',10
 runtime_muldiv_source_end:
+runtime_bitwise_source:
+    db 'int main(void){{int x;int y;x=3855;y=243;return (x&y)^(x|y);}}',10
+runtime_bitwise_source_end:
+runtime_shift_source:
+    db 'int main(void){{int x;x=3;return (x<<4)+(x>>1);}}',10
+runtime_shift_source_end:
 
 fixture_reset:
     xor a
@@ -470,6 +478,79 @@ test_runtime_patch_target:
     jp nz,test_fail
     ld a,l
     cp 24
+    jp nz,test_fail
+    xor a
+    ret
+
+test_runtime_bitwise_codegen:
+    ld a,16
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ret c
+    call cc_rev02_text
+    ld de,4092
+    or a
+    sbc hl,de
+    jp nz,test_fail
+    xor a
+    ret
+
+test_runtime_shift_codegen:
+    ld a,17
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ret c
+    ld hl,cc_rev02_rt_s16_shl
+    call cc_rev02_symbol_find
+    jp c,test_fail
+    ld (shl_symbol),a
+    ld hl,cc_rev02_rt_s16_shr
+    call cc_rev02_symbol_find
+    jp c,test_fail
+    ld (shr_symbol),a
+    ld a,(cc_rev02_reloc_count)
+    cp 2
+    jp nz,test_fail
+    ld b,a
+    ld ix,cc_rev02_relocs
+test_shift_patch_loop:
+    ld e,(ix+0)
+    ld d,(ix+1)
+    ld a,(ix+2)
+    ld c,a
+    ld a,(shl_symbol)
+    cp c
+    jr z,test_shift_patch_shl
+    ld a,(shr_symbol)
+    cp c
+    jp nz,test_fail
+    ld hl,c48_s16_shr
+    jr test_shift_patch_target
+test_shift_patch_shl:
+    ld hl,c48_s16_shl
+test_shift_patch_target:
+    push bc
+    push ix
+    push hl
+    ld hl,cc_rev02_text
+    add hl,de
+    pop de
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    pop ix
+    pop bc
+    ld de,CC_OBJ1_RELOC_SIZE
+    add ix,de
+    djnz test_shift_patch_loop
+    call cc_rev02_text
+    ld a,h
+    or a
+    jp nz,test_fail
+    ld a,l
+    cp 49
     jp nz,test_fail
     xor a
     ret
@@ -848,6 +929,10 @@ gate_read_root_first:
     jp z,gate_read_dynamic_call
     cp 15
     jp z,gate_read_runtime_muldiv
+    cp 16
+    jp z,gate_read_runtime_bitwise
+    cp 17
+    jp z,gate_read_runtime_shift
     ld hl,root_source
     ld bc,CC_REV02_READ_CAP
     ldir
@@ -873,6 +958,20 @@ gate_read_runtime_muldiv:
     ld bc,runtime_muldiv_source_end-runtime_muldiv_source
     ldir
     ld hl,runtime_muldiv_source_end-runtime_muldiv_source
+    xor a
+    ret
+gate_read_runtime_bitwise:
+    ld hl,runtime_bitwise_source
+    ld bc,runtime_bitwise_source_end-runtime_bitwise_source
+    ldir
+    ld hl,runtime_bitwise_source_end-runtime_bitwise_source
+    xor a
+    ret
+gate_read_runtime_shift:
+    ld hl,runtime_shift_source
+    ld bc,runtime_shift_source_end-runtime_shift_source
+    ldir
+    ld hl,runtime_shift_source_end-runtime_shift_source
     xor a
     ret
 gate_read_builtin_c48:
@@ -990,7 +1089,7 @@ gateway_end:
     run([sj, "--nologo", f"--sym={sym.as_posix()}", asm.as_posix()], out)
     req(main_bin.is_file() and gate_bin.is_file(), "fixture binaries missing")
     syms = symbols(sym)
-    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_builtin_c48", "test_local_scalar_codegen", "test_dynamic_call_abi", "test_runtime_muldiv_codegen", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
+    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_builtin_c48", "test_local_scalar_codegen", "test_dynamic_call_abi", "test_runtime_muldiv_codegen", "test_runtime_bitwise_codegen", "test_runtime_shift_codegen", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
     for name in names:
         req(name in syms, "fixture symbol missing: " + name)
 
@@ -1036,6 +1135,8 @@ gateway_end:
             "generic_local_scalar_assignment_codegen": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_runtime_expression_c48_regcall_abi": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_runtime_int_mul_div_mod": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "generic_runtime_int_bitwise": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "generic_runtime_int_shifts": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "recursive_macro_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "function_macro_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "ordinary_stat_open_read_close": "PASS" if not ns.assemble_only else "ASSEMBLED",
