@@ -41,6 +41,18 @@ def main():
     boot=(root/"v1/src/boot/entry.asm").read_text()
     shell=(root/"v1/src/shell/sh.asm").read_text()
     cc=(root/"v1/src/tools/cc.asm").read_text()
+    sizeof_probe=b"int main(void){return sizeof(int);}\n"
+    sizeof_ready=("cc_rev02_kw_sizeof:" in cc and "cc_rev02_value_sizeof:" in cc)
+    sizeof_detail={
+      "id":"C002-SIZEOF","input":"int main(void){return sizeof(int);}",
+      "input_sha256":hashlib.sha256(sizeof_probe).hexdigest(),
+      "tool_source_sha256":sha(root/"v1/src/tools/cc.asm"),
+      "status":"RESOLVED" if sizeof_ready else "REPRODUCED",
+      "observed":("generic production sizeof lowering is present" if sizeof_ready else
+                  "production runtime-value parser has no sizeof lowering; sizeof is treated as an ordinary identifier/call and sizeof(int) fails before OBJ1 publication"),
+      "expected":"ordinary production cc compiles sizeof(int) as constant 2 with unsigned-int result type",
+      "authority":["REV18 §25.1","REV18 §25.2","REV09 P11.34","historical REV17 §25.2"],
+    }
     ass=(root/"tools/as.asm").read_text()
     ld=(root/"tools/ld.asm").read_text()
     runtime=(root/"v1/src/libc48/runtime_archive.asm").read_text()
@@ -135,7 +147,8 @@ def main():
 
     gaps=[
       {"id":"C002","failure":"ordinary /bin/cc semantic compiler route incomplete",
-       "observed":"REV02 ordinary cc now consumes arbitrary source through bounded SYS_READ, resolves one-level quoted local OBJ_C/OBJ_TXT includes through ordinary STAT/OPEN/READ/CLOSE with a distinct bounded include window, expands the frozen bounded source-generic object-like #define constant surface, parses a generic integer constant-function subset, emits real OBJ1, and transactionally publishes it; built-in <c48.h>, declarations/lvalues/calls/control flow/full frozen C48 remain incomplete",
+       "observed":"REV02 ordinary cc now consumes arbitrary source through bounded SYS_READ, resolves one-level quoted local OBJ_C/OBJ_TXT includes through ordinary STAT/OPEN/READ/CLOSE with a distinct bounded include window, expands the frozen bounded source-generic object-like #define constant surface, parses a generic integer constant-function subset, emits real OBJ1, and transactionally publishes it; full frozen C48 remains incomplete",
+       "detail_reproductions":[sizeof_detail],
        "planned_paths":["v1/src/tools/cc.asm","tools/p11-prerelease-rev02/product_tools.py"],"blocks":["cc","OBJ1"]},
     ]
     if not as_full:

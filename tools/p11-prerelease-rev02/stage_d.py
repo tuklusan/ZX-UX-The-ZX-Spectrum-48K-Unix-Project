@@ -55,7 +55,7 @@ def main():
 
     citations={
       "C001":["REV18 §2.2 machine-native implementation","REV18 §32 required /bin/sh"],
-      "C002":["REV18 §2.2 machine-native implementation","REV18 §32 required /bin/cc","REV18 §41.9 compiler"],
+      "C002":["REV18 §2.2 machine-native implementation","REV18 §32 required /bin/cc","REV18 §41.9 compiler","REV18 §25.1 C48 sizeof surface","REV18 §25.2 exact sizeof/data-model contract","REV09 P11.34 sizeof/alignment/array-stride suite","historical REV17 §25.2 frozen data-model baseline"],
       "C003":["REV18 §2.2 machine-native implementation","REV18 §32 required /bin/as","REV18 carried-forward R17 native-as rebuild contract"],
       "C004":["REV18 §2.2 machine-native implementation","REV18 §32 required /bin/ld","REV18 §41.9 standard runtime resolution"],
       "C005":["REV18 §32 executable namespace","REV18 §42 edit/compile/link/run workflow","REV09 carried-forward post-R17 native-tool path"],
@@ -109,13 +109,14 @@ def main():
         rows.append({
           "gap_id":gid,
           "classification":"EXISTING-AUTHORITY-DEFECT",
-          "failing_reproduction":{"stage_c_status":c["status"],"failure":g["failure"],"observed":g["observed"]},
+          "failing_reproduction":{"stage_c_status":c["status"],"failure":g["failure"],"observed":g["observed"],"details":g.get("detail_reproductions",[])},
           "authority":citations[gid],"planned_changed_paths":changed[gid],
           "regression_negative_set":[
             "three unchanged-byte scans","exact-head regression","Phase-11 aggregate replay",
             "historical immutable-scope check","ordinary shell PATH/process route",
             "product MEX1/OBJ1 validation","anti-source-specialization scan",
-            "no P11PR helper in product closure","48K memory/resource gate"],
+            "no P11PR helper in product closure","48K memory/resource gate"] +
+            (["disjoint non-SDK generic sizeof type/expression fixture"] if gid in ("C002","C009") else []),
           "authority_gap":authority_gap,"sdk_defect":False,"proof_harness_only":False,
           "lane_status":"AUTHORIZED-PROSPECTIVE-CORRECTION",
         })
