@@ -212,9 +212,9 @@ continue_outside_source:
     db 'int main(void){{continue;return 0;}}',10
 continue_outside_source_end:
 recursive_params_source:
+    db 'int dive(int n,int a,int b,int c,int d);int main(void){{dive(3,1,2,3,4);return 0;}}'
     db 'int dive(int n,int a,int b,int c,int d){{if(!n){{if(a-4)return 1/0;if(b-8)return 1/0;'
-    db 'if(c-12)return 1/0;if(d-16)return 1/0;return 0;}}dive(n-1,a+1,b+2,c+3,d+4);return 0;}}'
-    db 'int main(void){{dive(3,1,2,3,4);return 0;}}',10
+    db 'if(c-12)return 1/0;if(d-16)return 1/0;return 0;}}dive(n-1,a+1,b+2,c+3,d+4);return 0;}}',10
 recursive_params_source_end:
 fixture_reset:
     xor a
