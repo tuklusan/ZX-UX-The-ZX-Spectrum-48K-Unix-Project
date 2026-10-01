@@ -216,6 +216,10 @@ recursive_params_source:
     db 'int dive(int n,int a,int b,int c,int d){{if(!n){{if(a-4)return 1/0;if(b-8)return 1/0;'
     db 'if(c-12)return 1/0;if(d-16)return 1/0;return 0;}}dive(n-1,a+1,b+2,c+3,d+4);return 0;}}',10
 recursive_params_source_end:
+global_scalar_source:
+    db 'int bump(void);int g;char c;int main(void){{g=2;c=1;bump();return g+c;}}'
+    db 'int bump(void){{g=4;c=3;g++;return g++ + c;}}',10
+global_scalar_source_end:
 fixture_reset:
     xor a
     ld (root_done),a
@@ -707,8 +711,13 @@ test_patch_logic_loop:
     ld a,(hl)
     or a
     jr z,test_patch_logic_undef
+    cp 1
+    jr z,test_patch_logic_text
+    cp 2
+    jr z,test_patch_logic_bss
+    jp test_fail
 
-    ; Defined TEXT symbol: linked target = text base + symbol value + addend.
+test_patch_logic_text:
     ld hl,cc_rev02_text
     ld de,(patch_reloc_off)
     add hl,de
@@ -716,6 +725,22 @@ test_patch_logic_loop:
     inc hl
     ld d,(hl)
     ld hl,(patch_symbol_val)
+    add hl,de
+    ld de,cc_rev02_text
+    add hl,de
+    ex de,hl
+    jr test_patch_logic_write
+
+test_patch_logic_bss:
+    ld hl,cc_rev02_text
+    ld de,(patch_reloc_off)
+    add hl,de
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld hl,(cc_rev02_text_len)
+    add hl,de
+    ld de,(patch_symbol_val)
     add hl,de
     ld de,cc_rev02_text
     add hl,de
@@ -962,6 +987,34 @@ test_recursive_params_codegen:
     jp nz,test_fail
     ld a,h
     or l
+    jp nz,test_fail
+    xor a
+    ret
+
+test_global_scalar_codegen:
+    ld a,31
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ret c
+    ld hl,(cc_obj1_bss_size)
+    ld a,h
+    or a
+    jp nz,test_fail
+    ld a,l
+    cp 3
+    jp nz,test_fail
+    ld a,(cc_rev02_symbol_count)
+    cp 4
+    jp nz,test_fail
+    call test_patch_logic_relocs
+    ret c
+    call cc_rev02_text
+    ld a,h
+    or a
+    jp nz,test_fail
+    ld a,l
+    cp 9
     jp nz,test_fail
     xor a
     ret
@@ -1383,6 +1436,8 @@ gate_read_root_first:
     jp z,gate_read_continue_outside
     cp 30
     jp z,gate_read_recursive_params
+    cp 31
+    jp z,gate_read_global_scalar
     ld hl,root_source
     ld bc,CC_REV02_READ_CAP
     ldir
@@ -1495,6 +1550,12 @@ gate_read_recursive_params:
     ld hl,recursive_params_source
     ld (fixture_source_ptr),hl
     ld hl,recursive_params_source_end-recursive_params_source
+    ld (fixture_source_left),hl
+    jp gate_read_fixture_chunk
+gate_read_global_scalar:
+    ld hl,global_scalar_source
+    ld (fixture_source_ptr),hl
+    ld hl,global_scalar_source_end-global_scalar_source
     ld (fixture_source_left),hl
     jp gate_read_fixture_chunk
 
@@ -1644,7 +1705,7 @@ gateway_end:
     run([sj, "--nologo", f"--sym={sym.as_posix()}", asm.as_posix()], out)
     req(main_bin.is_file() and gate_bin.is_file(), "fixture binaries missing")
     syms = symbols(sym)
-    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_builtin_c48", "test_local_scalar_codegen", "test_dynamic_call_abi", "test_runtime_muldiv_codegen", "test_runtime_bitwise_codegen", "test_runtime_shift_codegen", "test_runtime_compare_a", "test_runtime_compare_b", "test_runtime_logic_a", "test_runtime_logic_b", "test_postfix_local_codegen", "test_if_else_codegen", "test_while_codegen", "test_for_codegen", "test_break_continue_codegen", "test_nested_break_codegen", "test_break_outside_reject", "test_continue_outside_reject", "test_recursive_params_codegen", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
+    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_builtin_c48", "test_local_scalar_codegen", "test_dynamic_call_abi", "test_runtime_muldiv_codegen", "test_runtime_bitwise_codegen", "test_runtime_shift_codegen", "test_runtime_compare_a", "test_runtime_compare_b", "test_runtime_logic_a", "test_runtime_logic_b", "test_postfix_local_codegen", "test_if_else_codegen", "test_while_codegen", "test_for_codegen", "test_break_continue_codegen", "test_nested_break_codegen", "test_break_outside_reject", "test_continue_outside_reject", "test_recursive_params_codegen", "test_global_scalar_codegen", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
     for name in names:
         req(name in syms, "fixture symbol missing: " + name)
 
@@ -1708,6 +1769,7 @@ gateway_end:
             "generic_nested_break_scope": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "break_continue_outside_loop_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_regcall_parameter_spill_recursion": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "generic_global_scalar_bss": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_direct_source_multiread": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "recursive_macro_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "function_macro_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",
