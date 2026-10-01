@@ -10131,9 +10131,11 @@ CC_REV02_LITERAL_CAP    EQU 256
 CC_REV02_ARG_CAP        EQU 6
 CC_REV02_LOCAL_CAP      EQU 16
 CC_REV02_LOCAL_ENTRY    EQU 17
+CC_REV02_LOOP_CAP       EQU 16
+CC_REV02_BREAK_CAP      EQU CC_REV02_RELOC_CAP
 CC_REV02_SYMBOL_BYTES   EQU CC_REV02_SYMBOL_CAP*CC_OBJ1_SYMBOL_SIZE
 CC_REV02_RELOC_BYTES    EQU CC_REV02_RELOC_CAP*CC_OBJ1_RELOC_SIZE
-CC_REV02_BSS_BYTES      EQU CC_REV02_READ_CAP+CC_REV02_TOKEN_CAP+CC_REV02_TEXT_CAP+CC_REV02_OBJ_CAP+CC_REV02_INCLUDE_CAP+CC_REV02_MACRO_CAP*CC_REV02_MACRO_ENTRY+CC_REV02_PP_REPL_CAP+CC_REV02_SYMBOL_BYTES+CC_REV02_RELOC_BYTES+CC_REV02_LITERAL_CAP+CC_REV02_LOCAL_CAP*CC_REV02_LOCAL_ENTRY
+CC_REV02_BSS_BYTES      EQU CC_REV02_READ_CAP+CC_REV02_TOKEN_CAP+CC_REV02_TEXT_CAP+CC_REV02_OBJ_CAP+CC_REV02_INCLUDE_CAP+CC_REV02_MACRO_CAP*CC_REV02_MACRO_ENTRY+CC_REV02_PP_REPL_CAP+CC_REV02_SYMBOL_BYTES+CC_REV02_RELOC_BYTES+CC_REV02_LITERAL_CAP+CC_REV02_LOCAL_CAP*CC_REV02_LOCAL_ENTRY+CC_REV02_LOOP_CAP*3+CC_REV02_BREAK_CAP*2
 CC_REV02_T_EOF          EQU 0
 CC_REV02_T_ID           EQU 1
 CC_REV02_T_NUM          EQU 2
@@ -10153,6 +10155,9 @@ cc_rev02_symbols       EQU cc_rev02_pp_repl+CC_REV02_PP_REPL_CAP
 cc_rev02_relocs        EQU cc_rev02_symbols+CC_REV02_SYMBOL_BYTES
 cc_rev02_literals      EQU cc_rev02_relocs+CC_REV02_RELOC_BYTES
 cc_rev02_locals        EQU cc_rev02_literals+CC_REV02_LITERAL_CAP
+cc_rev02_loop_continue EQU cc_rev02_locals+CC_REV02_LOCAL_CAP*CC_REV02_LOCAL_ENTRY
+cc_rev02_loop_break_base EQU cc_rev02_loop_continue+CC_REV02_LOOP_CAP*2
+cc_rev02_break_patches EQU cc_rev02_loop_break_base+CC_REV02_LOOP_CAP
 cc_rev02_read_ptr:     dw 0
 cc_rev02_read_left:    dw 0
 cc_rev02_have_push:    db 0
@@ -10178,6 +10183,9 @@ cc_rev02_current_function_symbol: db 0
 cc_rev02_current_function_offset: dw 0
 cc_rev02_patch_offset: dw 0
 cc_rev02_known_target: dw 0
+cc_rev02_loop_depth: db 0
+cc_rev02_break_count: db 0
+cc_rev02_break_floor: db 0
 cc_rev02_step_kind: db 0
 cc_rev02_line_start:   db 0
 cc_rev02_include_depth: db 0
@@ -10224,6 +10232,8 @@ cc_rev02_kw_if:        db 'if',0
 cc_rev02_kw_else:      db 'else',0
 cc_rev02_kw_while:     db 'while',0
 cc_rev02_kw_for:       db 'for',0
+cc_rev02_kw_break:     db 'break',0
+cc_rev02_kw_continue:  db 'continue',0
 cc_rev02_kw_main:      db 'main',0
 cc_rev02_pp_kw_define: db 'define',0
 
@@ -10258,6 +10268,8 @@ cc_rev02_compile_stream:
     ld (cc_rev02_literal_len),a
     ld (cc_rev02_literal_len+1),a
     ld (cc_rev02_string_count),a
+    ld (cc_rev02_loop_depth),a
+    ld (cc_rev02_break_count),a
     ld a,HANDLE_FREE
     ld (cc_rev02_parent_handle),a
     call cc_rev02_next_token
@@ -10463,6 +10475,14 @@ cc_rev02_statement_id:
     ld de,cc_rev02_kw_for
     call cc_rev02_streq
     jp z,cc_rev02_body_for
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_break
+    call cc_rev02_streq
+    jp z,cc_rev02_body_break
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_continue
+    call cc_rev02_streq
+    jp z,cc_rev02_body_continue
 
     ; Ordinary identifier statements and for-header clauses share one generic
     ; mutation/call parser.
@@ -10661,16 +10681,24 @@ cc_rev02_body_while:
     call cc_rev02_emit_forward_function_jp
     jp c,cc_rev02_drop_hl_err
     push hl
+    pop hl                   ; end-target patch
+    pop de                   ; condition target
+    push de
+    push hl
+    call cc_rev02_loop_enter
+    jp c,cc_rev02_drop_2hl_err
     call cc_rev02_parse_statement
     jp c,cc_rev02_drop_2hl_err
-    pop hl
-    pop de
+    pop hl                   ; end-target patch
+    pop de                   ; condition target
     push hl
     ld b,$C3
     call cc_rev02_emit_function_jp_to
     jp c,cc_rev02_drop_hl_err
     pop hl
-    jp cc_rev02_patch_function_target
+    call cc_rev02_patch_function_target
+    ret c
+    jp cc_rev02_loop_leave
 
 cc_rev02_body_for:
     call cc_rev02_next_token
@@ -10766,6 +10794,10 @@ cc_rev02_for_step_done:
     call cc_rev02_patch_function_target
     jp c,cc_rev02_drop_2hl_err
 
+    pop de                   ; step target
+    push de
+    call cc_rev02_loop_enter
+    jp c,cc_rev02_drop_2hl_err
     ld a,1
     ld (cc_rev02_exec_seen),a
     call cc_rev02_parse_statement
@@ -10782,8 +10814,38 @@ cc_rev02_for_step_done:
     cp $FF
     jr z,cc_rev02_for_done
 cc_rev02_for_patch_end:
-    jp cc_rev02_patch_function_target
+    call cc_rev02_patch_function_target
+    ret c
+    jp cc_rev02_loop_leave
 cc_rev02_for_done:
+    jp cc_rev02_loop_leave
+
+cc_rev02_body_break:
+    call cc_rev02_next_token
+    ret c
+    ld a,';'
+    call cc_rev02_expect_punct
+    ret c
+    call cc_rev02_loop_add_break
+    ret c
+    ld a,1
+    ld (cc_rev02_exec_seen),a
+    xor a
+    ret
+
+cc_rev02_body_continue:
+    call cc_rev02_next_token
+    ret c
+    ld a,';'
+    call cc_rev02_expect_punct
+    ret c
+    call cc_rev02_loop_continue_target
+    ret c
+    ld b,$C3
+    call cc_rev02_emit_function_jp_to
+    ret c
+    ld a,1
+    ld (cc_rev02_exec_seen),a
     xor a
     ret
 
@@ -10798,6 +10860,122 @@ cc_rev02_drop_2hl_err:
     pop hl
 cc_rev02_drop_hl_err:
     pop hl
+    ret
+
+cc_rev02_loop_continue_ptr:
+    ld e,a
+    ld d,0
+    sla e
+    rl d
+    ld hl,cc_rev02_loop_continue
+    add hl,de
+    ret
+
+cc_rev02_loop_break_base_ptr:
+    ld e,a
+    ld d,0
+    ld hl,cc_rev02_loop_break_base
+    add hl,de
+    ret
+
+cc_rev02_break_patch_ptr:
+    ld e,a
+    ld d,0
+    sla e
+    rl d
+    ld hl,cc_rev02_break_patches
+    add hl,de
+    ret
+
+; DE=continue target TEXT offset. The current break-list length is this loop's base.
+cc_rev02_loop_enter:
+    ld (cc_rev02_known_target),de
+    ld a,(cc_rev02_loop_depth)
+    cp CC_REV02_LOOP_CAP
+    jp nc,cc_rev02_nospc
+    ld (cc_rev02_temp_index),a
+    call cc_rev02_loop_continue_ptr
+    ld de,(cc_rev02_known_target)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    ld a,(cc_rev02_temp_index)
+    call cc_rev02_loop_break_base_ptr
+    ld a,(cc_rev02_break_count)
+    ld (hl),a
+    ld hl,cc_rev02_loop_depth
+    inc (hl)
+    xor a
+    ret
+
+; Success DE=current loop continue target.
+cc_rev02_loop_continue_target:
+    ld a,(cc_rev02_loop_depth)
+    or a
+    jp z,cc_rev02_notsup
+    dec a
+    call cc_rev02_loop_continue_ptr
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    xor a
+    ret
+
+; Emit an unconditional forward break branch and retain its operand offset.
+cc_rev02_loop_add_break:
+    ld a,(cc_rev02_loop_depth)
+    or a
+    jp z,cc_rev02_notsup
+    ld a,(cc_rev02_break_count)
+    cp CC_REV02_BREAK_CAP
+    jp nc,cc_rev02_nospc
+    ld (cc_rev02_temp_index),a
+    ld b,$C3
+    call cc_rev02_emit_forward_function_jp
+    ret c
+    ld (cc_rev02_patch_offset),hl
+    ld a,(cc_rev02_temp_index)
+    call cc_rev02_break_patch_ptr
+    ld de,(cc_rev02_patch_offset)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    ld hl,cc_rev02_break_count
+    inc (hl)
+    xor a
+    ret
+
+; Patch only the innermost loop's break branches to current TEXT end, then pop it.
+cc_rev02_loop_leave:
+    ld a,(cc_rev02_loop_depth)
+    or a
+    jp z,cc_rev02_format
+    dec a
+    ld (cc_rev02_temp_index),a
+    call cc_rev02_loop_break_base_ptr
+    ld a,(hl)
+    ld (cc_rev02_break_floor),a
+cc_rev02_loop_leave_patch:
+    ld a,(cc_rev02_break_count)
+    ld b,a
+    ld a,(cc_rev02_break_floor)
+    cp b
+    jr z,cc_rev02_loop_leave_done
+    ld a,b
+    dec a
+    ld (cc_rev02_break_count),a
+    call cc_rev02_break_patch_ptr
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ex de,hl
+    call cc_rev02_patch_function_target
+    ret c
+    jr cc_rev02_loop_leave_patch
+cc_rev02_loop_leave_done:
+    ld hl,cc_rev02_loop_depth
+    dec (hl)
+    xor a
     ret
 
 cc_rev02_body_empty:
