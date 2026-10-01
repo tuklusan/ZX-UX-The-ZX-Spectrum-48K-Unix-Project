@@ -361,13 +361,16 @@ sizeof_void_source:
     db 'int main(void){{return sizeof(void);}}',10
 sizeof_void_source_end:
 sizeof_type_source:
-    db 'int main(void){{return sizeof(char)+sizeof(unsigned char)+sizeof(short)+sizeof(unsigned short)+sizeof(int)+sizeof(unsigned int)+sizeof(float)+sizeof(void*);}}',10
+    db 'int main(void){{return sizeof(char)+sizeof(unsigned char)+sizeof(short)+',10
+    db 'sizeof(unsigned short)+sizeof(int)+sizeof(unsigned int)+sizeof(float)+sizeof(void*);}}',10
 sizeof_type_source_end:
 sizeof_bounds_source:
-    db 'int ga[sizeof(int)+1];int main(void){{int a[sizeof(int)+2];return sizeof ga+sizeof a;}}',10
+    db 'int ga[sizeof(int)+1];int main(void){{int a[sizeof(int)+2];',10
+    db 'return sizeof ga+sizeof a;}}',10
 sizeof_bounds_source_end:
 sizeof_object_source:
-    db 'int main(void){{char c;int a[4];int *p;c=7;p=&a[0];return sizeof c+sizeof p+sizeof *p+sizeof(a[1])+sizeof(c++)+sizeof(c+1);}}',10
+    db 'int main(void){{char c;int a[4];int *p;c=7;p=&a[0];',10
+    db 'return sizeof c+sizeof p+sizeof *p+sizeof(a[1])+sizeof(c++)+sizeof(c+1);}}',10
 sizeof_object_source_end:
 sizeof_literal_source:
     db 'int main(void){{return sizeof("abc")+sizeof(',39,'A',39,')+sizeof(1)+sizeof(1.0);}}',10
