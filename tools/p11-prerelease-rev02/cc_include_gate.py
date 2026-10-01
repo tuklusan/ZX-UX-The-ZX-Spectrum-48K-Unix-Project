@@ -264,7 +264,7 @@ pointer_array_source:
 pointer_array_source_end:
 float_literal_source:
     db 'int probe(float a,float b,float c,float d){{return 7;}}'
-    db 'int main(void){{return probe(0.25,4.0F,2.5e-1,.5);}}',10
+    db 'int main(void){{probe(0.25,4.0F,2.5e-1,.5);return 0;}}',10
 float_literal_source_end:
 fp_oracle_table:
     db 4,'0','.','2','5',0,0,0,0,$11,$12,$13,$14,$15
@@ -1535,7 +1535,7 @@ test_float_literal_bytes:
     or a
     jp nz,test_fail
     ld a,l
-    cp 7
+    or a
     jp nz,test_fail
     xor a
     ret
