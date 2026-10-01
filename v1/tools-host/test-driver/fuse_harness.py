@@ -47,13 +47,13 @@ def make_sna(code: bytes, *, entry: int = ENTRY_PC, patch: Callable[[bytearray],
     return bytes(header) + bytes(ram)
 
 
-def run_sna(root: Path, code: bytes, *, patch: Callable[[bytearray], None] | None = None, timeout: float = 15.0):
+def run_sna(root: Path, code: bytes, *, patch: Callable[[bytearray], None] | None = None, timeout: float = 15.0, entry: int = ENTRY_PC):
     fuse = root / "tools/runtime/fuse/bin/fuse"
     if not fuse.is_file():
         raise DriverError("project-local FUSE executable missing")
     with tempfile.TemporaryDirectory(prefix="zxux-fuse-") as temporary:
         sna = Path(temporary) / "fixture.sna"
-        sna_bytes = make_sna(code, patch=patch)
+        sna_bytes = make_sna(code, entry=entry, patch=patch)
         retain_media_bytes(sna_bytes, ".sna", label="fixture")
         sna.write_bytes(sna_bytes)
         command = (

@@ -11374,12 +11374,24 @@ cc_rev02_parse_named_clause:
     ld a,'('
     call cc_rev02_tok_is_punct
     jr nz,cc_rev02_named_assignment_check
+    ; Resolve the outer callee before parsing arguments.  Nested call
+    ; expressions may reuse cc_rev02_call_name/call_symbol, so preserve this
+    ; exact symbol on the compiler stack until the outer argument list closes.
+    ld hl,cc_rev02_call_name
+    call cc_rev02_symbol_get_undef
+    ret c
+    push af
     ld a,'('
     call cc_rev02_expect_punct
-    ret c
+    jr c,cc_rev02_named_call_drop_err
     call cc_rev02_parse_call_args
-    ret c
+    jr c,cc_rev02_named_call_drop_err
+    pop af
+    ld (cc_rev02_call_symbol),a
     jp cc_rev02_emit_call
+cc_rev02_named_call_drop_err:
+    pop bc
+    ret
 
 cc_rev02_named_assignment_check:
     ld a,'['
@@ -11696,11 +11708,14 @@ cc_rev02_body_local_add:
     call cc_rev02_emit_local_reserve
     ret c
     ld a,(cc_rev02_local_kind)
-    or a
-    jr nz,cc_rev02_body_local_done
+    cp 1
+    jr z,cc_rev02_body_local_array_init_check
+    ; Scalars and pointers are both ordinary two-/one-byte local objects.
+    ; Their optional initializer uses the same runtime expression path as later
+    ; assignment, including string/pointer and function-call values.
     ld a,';'
     call cc_rev02_tok_is_punct
-    jr z,cc_rev02_body_local_done
+    jp z,cc_rev02_body_local_done
     ld a,'='
     call cc_rev02_tok_is_punct
     jp nz,cc_rev02_format
@@ -11711,6 +11726,86 @@ cc_rev02_body_local_add:
     ld a,(cc_rev02_lhs_disp)
     call cc_rev02_emit_local_store_selected
     ret c
+    jp cc_rev02_body_local_done
+
+; C48 one-dimensional constant local-array initialization.  Storage has already
+; been reserved in the IX frame.  Emit direct element stores in source order and
+; zero-fill any omitted tail exactly like static array initialization.
+cc_rev02_body_local_array_init_check:
+    ld a,';'
+    call cc_rev02_tok_is_punct
+    jp z,cc_rev02_body_local_done
+    ld a,'='
+    call cc_rev02_expect_punct
+    ret c
+    ld a,'{'
+    call cc_rev02_expect_punct
+    ret c
+    xor a
+    ld (cc_rev02_global_init_count),a
+    ld (cc_rev02_global_init_count+1),a
+cc_rev02_body_local_array_init_loop:
+    ld a,'}'
+    call cc_rev02_tok_is_punct
+    jr z,cc_rev02_body_local_array_fill
+    ld hl,(cc_rev02_global_init_count)
+    ld de,(cc_rev02_local_extent)
+    or a
+    sbc hl,de
+    jp nc,cc_rev02_format
+    call cc_rev02_parse_const_expr
+    ret c
+    call cc_rev02_emit_ld_hl
+    ret c
+    call cc_rev02_emit_local_array_init_store
+    ret c
+    ld hl,(cc_rev02_global_init_count)
+    inc hl
+    ld (cc_rev02_global_init_count),hl
+    ld a,'}'
+    call cc_rev02_tok_is_punct
+    jr z,cc_rev02_body_local_array_fill
+    ld a,','
+    call cc_rev02_expect_punct
+    ret c
+    jr cc_rev02_body_local_array_init_loop
+cc_rev02_body_local_array_fill:
+    ld a,'}'
+    call cc_rev02_expect_punct
+    ret c
+cc_rev02_body_local_array_fill_loop:
+    ld hl,(cc_rev02_global_init_count)
+    ld de,(cc_rev02_local_extent)
+    or a
+    sbc hl,de
+    jp z,cc_rev02_body_local_done
+    jp nc,cc_rev02_format
+    ld hl,0
+    call cc_rev02_emit_ld_hl
+    ret c
+    call cc_rev02_emit_local_array_init_store
+    ret c
+    ld hl,(cc_rev02_global_init_count)
+    inc hl
+    ld (cc_rev02_global_init_count),hl
+    jr cc_rev02_body_local_array_fill_loop
+
+; Generated HL is one constant array element.  Compute IX displacement from the
+; local base plus element-index*element-size and store at the frozen C48 width.
+cc_rev02_emit_local_array_init_store:
+    ld a,(cc_rev02_global_init_count)
+    ld b,a
+    ld a,(cc_rev02_local_size)
+    cp 2
+    ld a,b
+    jr nz,cc_rev02_local_array_init_offset_ready
+    add a,a
+cc_rev02_local_array_init_offset_ready:
+    ld b,a
+    ld a,(cc_rev02_lhs_disp)
+    add a,b
+    jp cc_rev02_emit_local_store_selected
+
 cc_rev02_body_local_done:
     ld a,';'
     jp cc_rev02_expect_punct
@@ -12803,14 +12898,23 @@ cc_rev02_value_global:
     ld a,(cc_rev02_global_symbol)
     jp cc_rev02_emit_global_address
 cc_rev02_value_function_call:
-    call cc_rev02_next_token
+    ld hl,cc_rev02_call_name
+    call cc_rev02_symbol_get_undef
     ret c
+    push af
+    call cc_rev02_next_token
+    jr c,cc_rev02_value_call_drop_err
     ld a,'('
     call cc_rev02_expect_punct
-    ret c
+    jr c,cc_rev02_value_call_drop_err
     call cc_rev02_parse_call_args
-    ret c
+    jr c,cc_rev02_value_call_drop_err
+    pop af
+    ld (cc_rev02_call_symbol),a
     jp cc_rev02_emit_call
+cc_rev02_value_call_drop_err:
+    pop bc
+    ret
 
 cc_rev02_value_global_index:
     call cc_rev02_emit_global_index_address
@@ -15076,12 +15180,15 @@ cc_rev02_call_arg_loop:
     ld a,(cc_rev02_call_arg_count)
     cp CC_REV02_ARG_CAP
     jp nc,cc_rev02_notsup
-    ; Every ordinary C48 argument is a runtime-value expression.  The value
-    ; parser already handles constants, strings, floating literals, pointers,
-    ; nested calls and mixed expressions generically, so argument semantics do
-    ; not depend on the spelling of the first token.
+    ; Every ordinary C48 argument is a runtime-value expression. Preserve the
+    ; outer count while that expression is parsed: a nested call owns the same
+    ; bounded call-count scratch byte during its balanced recursive parse.
+    ld a,(cc_rev02_call_arg_count)
+    push af
     call cc_rev02_parse_value_expr
-    ret c
+    jr c,cc_rev02_call_arg_drop_count_err
+    pop af
+    ld (cc_rev02_call_arg_count),a
 cc_rev02_call_arg_push:
     ld a,$E5                 ; generated PUSH HL parks this argument value
     call cc_rev02_emit8
@@ -15101,6 +15208,9 @@ cc_rev02_call_arg_push:
     jp cc_rev02_call_arg_loop
 cc_rev02_call_args_done:
     jp cc_rev02_next_token
+cc_rev02_call_arg_drop_count_err:
+    pop bc
+    ret
 
 ; A=argument index, HL=value.
 cc_rev02_store_arg_value:
@@ -15264,10 +15374,8 @@ cc_rev02_rt_cmp_s16: db 'c48_cmp_s16',0
 ; removes both the ABI stack words and all temporary expression words without
 ; touching the HL return value.
 cc_rev02_emit_call:
-    ld hl,cc_rev02_call_name
-    call cc_rev02_symbol_get_undef
-    ret c
-    ld (cc_rev02_call_symbol),a
+    ; cc_rev02_call_symbol is resolved before argument parsing so nested calls
+    ; cannot redirect the outer relocation target.
     ld a,(cc_rev02_call_arg_count)
     or a
     jp z,cc_rev02_emit_call_opcode

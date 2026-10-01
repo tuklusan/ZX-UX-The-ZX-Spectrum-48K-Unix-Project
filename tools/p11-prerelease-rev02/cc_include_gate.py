@@ -275,6 +275,16 @@ call_expression_source_end:
 mixed_call_arg_source:
     db 'int add(int a,int b){{return a+b;}}int main(void){{int x;x=3;return add(2+x,4);}}',10
 mixed_call_arg_source_end:
+local_array_init_source:
+    db 'int main(void){{unsigned char a[8]={{24,60,126}};return a[0]+a[1]+a[2]+a[3]+a[7];}}',10
+local_array_init_source_end:
+local_pointer_init_source:
+    db 'int main(void){{char *p="ABC";return p[1];}}',10
+local_pointer_init_source_end:
+nested_call_source:
+    db 'int inc(int x){{return x+1;}}int sum(int a,int b){{return a+b;}}'
+    db 'int main(void){{return sum(inc(3),inc(4))+inc(sum(1,2));}}',10
+nested_call_source_end:
 fp_oracle_table:
     db 4,'0','.','2','5',0,0,0,0,$11,$12,$13,$14,$15
     db 3,'4','.','0',0,0,0,0,0,$21,$22,$23,$24,$25
@@ -1603,6 +1613,60 @@ test_mixed_call_arg_codegen:
     xor a
     ret
 
+test_local_array_init_codegen:
+    ld a,48
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ret c
+    call test_patch_logic_relocs
+    ret c
+    call call_compiled_main
+    ld a,h
+    or a
+    jp nz,test_fail
+    ld a,l
+    cp 210
+    jp nz,test_fail
+    xor a
+    ret
+
+test_local_pointer_init_codegen:
+    ld a,49
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ret c
+    call test_patch_logic_relocs
+    ret c
+    call call_compiled_main
+    ld a,h
+    or a
+    jp nz,test_fail
+    ld a,l
+    cp 66
+    jp nz,test_fail
+    xor a
+    ret
+
+test_nested_call_codegen:
+    ld a,50
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ret c
+    call test_patch_logic_relocs
+    ret c
+    call call_compiled_main
+    ld a,h
+    or a
+    jp nz,test_fail
+    ld a,l
+    cp 13
+    jp nz,test_fail
+    xor a
+    ret
+
 test_define_multi:
     ld a,7
     ld (mode),a
@@ -2116,6 +2180,12 @@ gate_read_root_first:
     jp z,gate_read_call_expression
     cp 47
     jp z,gate_read_mixed_call_arg
+    cp 48
+    jp z,gate_read_local_array_init
+    cp 49
+    jp z,gate_read_local_pointer_init
+    cp 50
+    jp z,gate_read_nested_call
     ld hl,root_source
     ld bc,CC_REV02_READ_CAP
     ldir
@@ -2332,6 +2402,24 @@ gate_read_mixed_call_arg:
     ld hl,mixed_call_arg_source_end-mixed_call_arg_source
     ld (fixture_source_left),hl
     jp gate_read_fixture_chunk
+gate_read_local_array_init:
+    ld hl,local_array_init_source
+    ld (fixture_source_ptr),hl
+    ld hl,local_array_init_source_end-local_array_init_source
+    ld (fixture_source_left),hl
+    jp gate_read_fixture_chunk
+gate_read_local_pointer_init:
+    ld hl,local_pointer_init_source
+    ld (fixture_source_ptr),hl
+    ld hl,local_pointer_init_source_end-local_pointer_init_source
+    ld (fixture_source_left),hl
+    jp gate_read_fixture_chunk
+gate_read_nested_call:
+    ld hl,nested_call_source
+    ld (fixture_source_ptr),hl
+    ld hl,nested_call_source_end-nested_call_source
+    ld (fixture_source_left),hl
+    jp gate_read_fixture_chunk
 
 ; Direct source fixtures obey the compiler's bounded read contract exactly.
 ; DE is the caller destination. Each read returns at most CC_REV02_READ_CAP.
@@ -2479,7 +2567,7 @@ gateway_end:
     run([sj, "--nologo", f"--sym={sym.as_posix()}", asm.as_posix()], out)
     req(main_bin.is_file() and gate_bin.is_file(), "fixture binaries missing")
     syms = symbols(sym)
-    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_builtin_c48", "test_local_scalar_codegen", "test_dynamic_call_abi", "test_runtime_muldiv_codegen", "test_runtime_bitwise_codegen", "test_runtime_shift_codegen", "test_runtime_compare_a", "test_runtime_compare_b", "test_runtime_logic_a", "test_runtime_logic_b", "test_postfix_local_codegen", "test_if_else_codegen", "test_while_codegen", "test_for_codegen", "test_break_continue_codegen", "test_nested_break_codegen", "test_break_outside_reject", "test_continue_outside_reject", "test_recursive_params_codegen", "test_global_scalar_codegen", "test_global_array_compile", "test_global_array_bss", "test_global_array_symbols", "test_global_array_patch", "test_global_array_codegen", "test_global_init_codegen", "test_local_array_codegen", "test_pointer_basic_codegen", "test_local_pointer_assign_codegen", "test_local_pointer_metadata", "test_local_pointer_literal", "test_local_pointer_value_codegen", "test_local_pointer_deref_codegen", "test_local_pointer_codegen", "test_character_literal_codegen", "test_integer_cast_codegen", "test_pointer_post_codegen", "test_pointer_array_codegen", "test_float_literal_codegen", "test_void_return_codegen", "test_call_expression_codegen", "test_mixed_call_arg_codegen", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
+    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_builtin_c48", "test_local_scalar_codegen", "test_dynamic_call_abi", "test_runtime_muldiv_codegen", "test_runtime_bitwise_codegen", "test_runtime_shift_codegen", "test_runtime_compare_a", "test_runtime_compare_b", "test_runtime_logic_a", "test_runtime_logic_b", "test_postfix_local_codegen", "test_if_else_codegen", "test_while_codegen", "test_for_codegen", "test_break_continue_codegen", "test_nested_break_codegen", "test_break_outside_reject", "test_continue_outside_reject", "test_recursive_params_codegen", "test_global_scalar_codegen", "test_global_array_compile", "test_global_array_bss", "test_global_array_symbols", "test_global_array_patch", "test_global_array_codegen", "test_global_init_codegen", "test_local_array_codegen", "test_pointer_basic_codegen", "test_local_pointer_assign_codegen", "test_local_pointer_metadata", "test_local_pointer_literal", "test_local_pointer_value_codegen", "test_local_pointer_deref_codegen", "test_local_pointer_codegen", "test_character_literal_codegen", "test_integer_cast_codegen", "test_pointer_post_codegen", "test_pointer_array_codegen", "test_float_literal_codegen", "test_void_return_codegen", "test_call_expression_codegen", "test_mixed_call_arg_codegen", "test_local_array_init_codegen", "test_local_pointer_init_codegen", "test_nested_call_codegen", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
     for name in names:
         req(name in syms, "fixture symbol missing: " + name)
 
@@ -2513,7 +2601,7 @@ gateway_end:
             print("REV02 CC INCLUDE TEST " + name, flush=True)
             code = (b"\xF3" + phase1._ld_sp(0xBFC0) + phase1._call(syms[name])
                     + phase1._jp_c(FAIL_PC) + phase1._jp(PASS_PC))
-            run_sna(root, code, patch=patch, timeout=20)
+            run_sna(root, code, patch=patch, timeout=20, entry=0x9800)
             checks[name] = "PASS"
 
     report = {
@@ -2548,6 +2636,9 @@ gateway_end:
             "generic_void_return_statement": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_function_call_expressions": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_mixed_runtime_call_arguments": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "generic_local_array_constant_initializers": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "generic_local_pointer_initializers": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "generic_nested_function_calls": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_if_else_control_flow": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_nested_while_control_flow": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_nested_for_control_flow": "PASS" if not ns.assemble_only else "ASSEMBLED",
