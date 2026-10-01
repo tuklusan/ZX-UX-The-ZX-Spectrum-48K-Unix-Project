@@ -2920,7 +2920,7 @@ gateway_end:
             print("REV02 CC INCLUDE TEST " + name, flush=True)
             code = (b"\xF3" + phase1._ld_sp(0xBFC0) + phase1._call(syms[name])
                     + phase1._jp_c(FAIL_PC) + phase1._jp(PASS_PC))
-            run_sna(root, code, patch=patch, timeout=20, entry=0x9800)
+            run_sna(root, code, patch=patch, timeout=20, entry=0xB800)
             checks[name] = "PASS"
 
     report = {
@@ -2989,7 +2989,7 @@ gateway_end:
             "nested_include_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "portable_basename_enforced_before_lookup": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "wrong_object_type_rejected_before_open": "PASS" if not ns.assemble_only else "ASSEMBLED",
-            "proof_fixture_code_bss_gateway_disjoint": "PASS",
+            "proof_fixture_code_entry_stack_bss_gateway_disjoint": "PASS",
             "source_identity_dispatch_absent": "PASS",
         },
     }
