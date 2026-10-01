@@ -10237,8 +10237,6 @@ cc_rev02_float_count:  db 0
 cc_rev02_function_name: defs 16,0
 cc_rev02_call_name:    defs 16,0
 cc_rev02_call_arg_count: db 0
-cc_rev02_arg_values:   defs CC_REV02_ARG_CAP*2,0
-cc_rev02_arg_symbols:  defs CC_REV02_ARG_CAP,255
 cc_rev02_call_symbol:  db 0
 cc_rev02_return_seen:  db 0
 cc_rev02_local_count:  db 0
@@ -14988,22 +14986,6 @@ cc_rev02_emit_local_step_selected_opcode:
     ld a,(cc_rev02_local_disp)
     jp cc_rev02_emit_local_store_selected
 
-; A=signed IX displacement, B=0 increment / 1 decrement. HL holds the
-; current int value and leaves the updated value in HL after storing it.
-cc_rev02_emit_local_step:
-    ld (cc_rev02_local_disp),a
-    ld a,b
-    ld (cc_rev02_step_kind),a
-    or a
-    ld a,$23                 ; INC HL
-    jr z,cc_rev02_emit_local_step_opcode
-    ld a,$2B                 ; DEC HL
-cc_rev02_emit_local_step_opcode:
-    call cc_rev02_emit8
-    ret c
-    ld a,(cc_rev02_local_disp)
-    jp cc_rev02_emit_local_store
-
 ; Current-function local table: 16-byte name, signed IX base displacement,
 ; element width, array/scalar kind, and 16-bit element extent.
 cc_rev02_local_find:
@@ -15039,19 +15021,6 @@ cc_rev02_local_find_yes:
     or a
     ret
 
-; Default scalar/parameter slot is one aligned 16-bit object.
-cc_rev02_local_add:
-    ld a,2
-    ld (cc_rev02_local_size),a
-    xor a
-    ld (cc_rev02_local_kind),a
-    ld (cc_rev02_local_pointee),a
-    inc a
-    ld (cc_rev02_local_extent),a
-    xor a
-    ld (cc_rev02_local_extent+1),a
-    ld a,2
-    ld (cc_rev02_local_storage),a
 cc_rev02_local_add_sized:
     ld (cc_rev02_name_ptr),hl
     call cc_rev02_local_find
@@ -15149,11 +15118,6 @@ cc_rev02_local_kind_ptr:
     ld de,18
     add hl,de
     ret
-cc_rev02_local_extent_ptr:
-    call cc_rev02_local_ptr_for_index
-    ld de,19
-    add hl,de
-    ret
 cc_rev02_local_pointee_ptr:
     call cc_rev02_local_ptr_for_index
     ld de,21
@@ -15209,37 +15173,6 @@ cc_rev02_call_args_done:
     jp cc_rev02_next_token
 cc_rev02_call_arg_drop_count_err:
     pop bc
-    ret
-
-; A=argument index, HL=value.
-cc_rev02_store_arg_value:
-    ld e,a
-    ld d,0
-    sla e
-    rl d
-    push hl
-    ld hl,cc_rev02_arg_values
-    add hl,de
-    ex de,hl
-    pop hl
-    ld a,l
-    ld (de),a
-    inc de
-    ld a,h
-    ld (de),a
-    ret
-
-; A=symbol marker: 0 immediate, otherwise symbol-index+1. C/index retained for
-; string callers; immediate callers use cc_rev02_temp_index.
-cc_rev02_store_arg_symbol:
-    ld b,a
-    ld a,(cc_rev02_temp_index)
-    ld e,a
-    ld d,0
-    ld hl,cc_rev02_arg_symbols
-    add hl,de
-    ld a,b
-    ld (hl),a
     ret
 
 ; Structured forward branches relocate against the current function symbol.
@@ -15489,70 +15422,6 @@ cc_rev02_emit_call_cleanup:
     djnz cc_rev02_emit_call_cleanup
 cc_rev02_emit_call_done:
     xor a
-    ret
-
-; A=index, B=LD rr,nn opcode.
-cc_rev02_emit_arg_reg:
-    ld (cc_rev02_temp_index),a
-    ld a,b
-    call cc_rev02_emit8
-    ret c
-    ld hl,(cc_rev02_text_len)
-    push hl
-    ld a,(cc_rev02_temp_index)
-    call cc_rev02_load_arg_value
-    call cc_rev02_emit16
-    pop hl
-    ret c
-    push hl
-    ld a,(cc_rev02_temp_index)
-    call cc_rev02_load_arg_symbol
-    pop hl
-    or a
-    ret z
-    dec a
-    jp cc_rev02_add_reloc
-
-; A=index; emits LD HL,nn for stack argument and relocates when needed.
-cc_rev02_emit_arg_hl:
-    ld (cc_rev02_temp_index),a
-    ld a,$21
-    call cc_rev02_emit8
-    ret c
-    ld hl,(cc_rev02_text_len)
-    push hl
-    ld a,(cc_rev02_temp_index)
-    call cc_rev02_load_arg_value
-    call cc_rev02_emit16
-    pop hl
-    ret c
-    push hl
-    ld a,(cc_rev02_temp_index)
-    call cc_rev02_load_arg_symbol
-    pop hl
-    or a
-    ret z
-    dec a
-    jp cc_rev02_add_reloc
-
-cc_rev02_load_arg_value:
-    ld e,a
-    ld d,0
-    sla e
-    rl d
-    ld hl,cc_rev02_arg_values
-    add hl,de
-    ld e,(hl)
-    inc hl
-    ld d,(hl)
-    ex de,hl
-    ret
-cc_rev02_load_arg_symbol:
-    ld e,a
-    ld d,0
-    ld hl,cc_rev02_arg_symbols
-    add hl,de
-    ld a,(hl)
     ret
 
 ; HL=relocation TEXT offset, A=symbol index.
@@ -16002,19 +15871,6 @@ cc_rev02_token_zero:
     ld (hl),a
     ret
 
-cc_rev02_expect_id:
-    push hl
-    ld a,(cc_rev02_tok_kind)
-    cp CC_REV02_T_ID
-    jp nz,cc_rev02_expect_id_bad
-    pop de
-    ld hl,cc_rev02_token
-    call cc_rev02_streq
-    jp nz,cc_rev02_format
-    jp cc_rev02_next_token
-cc_rev02_expect_id_bad:
-    pop hl
-    jp cc_rev02_format
 cc_rev02_expect_punct:
     ld c,a
     ld a,(cc_rev02_tok_kind)
@@ -16063,14 +15919,6 @@ cc_rev02_tok_is_op2:
 cc_rev02_tok_op2_no:
     ld a,1
     or a
-    ret
-cc_rev02_token_is_main:
-    ld hl,cc_rev02_token
-    ld de,cc_rev02_kw_main
-    call cc_rev02_streq
-    ld a,0
-    ret nz
-    inc a
     ret
 cc_rev02_streq:
     ld a,(de)
