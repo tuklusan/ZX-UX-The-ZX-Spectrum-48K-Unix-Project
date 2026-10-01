@@ -950,12 +950,22 @@ test_patch_logic_undef_div_u:
 test_patch_logic_undef_shr_u:
     ld hl,cc_rev02_rt_u16_shr
     call cc_rev02_symbol_find
+    jr c,test_patch_logic_undef_mul
+    ld c,a
+    ld a,(patch_sym)
+    cp c
+    jr nz,test_patch_logic_undef_mul
+    ld de,c48_u16_shr
+    jr test_patch_logic_write
+test_patch_logic_undef_mul:
+    ld hl,cc_rev02_rt_s16_mul
+    call cc_rev02_symbol_find
     jp c,test_fail
     ld c,a
     ld a,(patch_sym)
     cp c
     jp nz,test_fail
-    ld de,c48_u16_shr
+    ld de,c48_s16_mul
 
 test_patch_logic_write:
     ld hl,cc_rev02_text
@@ -1894,11 +1904,13 @@ test_sizeof_codegen:
     sbc hl,de
     jp nz,test_fail
     ld a,(cc_rev02_symbol_count)
-    cp 4
+    cp 6
     jp nz,test_fail
     ld a,(cc_rev02_reloc_count)
-    or a
+    cp 2
     jp nz,test_fail
+    call test_patch_logic_relocs
+    ret c
     call call_compiled_main
     ld a,h
     or a
