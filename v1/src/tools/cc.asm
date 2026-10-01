@@ -10144,6 +10144,7 @@ CC_REV02_T_ID           EQU 1
 CC_REV02_T_NUM          EQU 2
 CC_REV02_T_PUNCT        EQU 3
 CC_REV02_T_STRING       EQU 4
+CC_REV02_T_CHAR         EQU 5
 
 ; Large transient source/token/TEXT/OBJ1 work buffers live in process BSS so the
 ; compiler image itself remains small.  They are ordinary process-owned RAM.
@@ -12597,6 +12598,8 @@ cc_rev02_value_unary:
     ld a,(cc_rev02_tok_kind)
     cp CC_REV02_T_NUM
     jp z,cc_rev02_value_number
+    cp CC_REV02_T_CHAR
+    jp z,cc_rev02_value_char
     cp CC_REV02_T_STRING
     jp z,cc_rev02_value_string
     cp CC_REV02_T_ID
@@ -12849,6 +12852,14 @@ cc_rev02_value_deref_global:
     ret c
     jp cc_rev02_emit_index_load
 
+cc_rev02_value_char:
+    call cc_rev02_char_value
+    push hl
+    call cc_rev02_next_token
+    pop hl
+    ret c
+    jp cc_rev02_emit_ld_hl
+
 cc_rev02_value_string:
     call cc_rev02_add_string_literal
     ret c
@@ -13092,12 +13103,23 @@ cc_rev02_parse_unary:
     jr z,cc_rev02_unary_group
     ld a,(cc_rev02_tok_kind)
     cp CC_REV02_T_NUM
+    jr z,cc_rev02_unary_number
+    cp CC_REV02_T_CHAR
     jp nz,cc_rev02_format
+    call cc_rev02_char_value
+    jr cc_rev02_unary_literal_ready
+cc_rev02_unary_number:
     call cc_rev02_number_value
     ret c
+cc_rev02_unary_literal_ready:
     push hl
     call cc_rev02_next_token
     pop hl
+    ret
+cc_rev02_char_value:
+    ld a,(cc_rev02_token)
+    ld l,a
+    ld h,0
     ret
 cc_rev02_unary_plus:
     call cc_rev02_next_token
@@ -13381,6 +13403,8 @@ cc_rev02_lex_skip:
     jp z,cc_rev02_lex_slash
     cp '"'
     jp z,cc_rev02_lex_string
+    cp 39
+    jp z,cc_rev02_lex_char
     push af
     xor a
     ld (cc_rev02_line_start),a
@@ -13544,6 +13568,62 @@ cc_rev02_block_end_check:
     cp '*'
     jr z,cc_rev02_block_after_star
     jr cc_rev02_block_comment
+
+cc_rev02_lex_char:
+    xor a
+    ld (cc_rev02_line_start),a
+    ld (cc_rev02_tok_len),a
+    call cc_rev02_next_char
+    ret c
+    or a
+    jp z,cc_rev02_format
+    cp 10
+    jp z,cc_rev02_format
+    cp 13
+    jp z,cc_rev02_format
+    cp 92
+    jr nz,cc_rev02_lex_char_store
+    call cc_rev02_next_char
+    ret c
+    or a
+    jp z,cc_rev02_format
+    ld (cc_rev02_escape_char),a
+    cp 'n'
+    jr nz,cc_rev02_lex_char_escape_r
+    ld a,10
+    jr cc_rev02_lex_char_store
+cc_rev02_lex_char_escape_r:
+    ld a,(cc_rev02_escape_char)
+    cp 'r'
+    jr nz,cc_rev02_lex_char_escape_t
+    ld a,13
+    jr cc_rev02_lex_char_store
+cc_rev02_lex_char_escape_t:
+    cp 't'
+    jr nz,cc_rev02_lex_char_escape_zero
+    ld a,9
+    jr cc_rev02_lex_char_store
+cc_rev02_lex_char_escape_zero:
+    cp '0'
+    jr nz,cc_rev02_lex_char_escape_raw
+    xor a
+    jr cc_rev02_lex_char_store
+cc_rev02_lex_char_escape_raw:
+    ld a,(cc_rev02_escape_char)
+cc_rev02_lex_char_store:
+    ld (cc_rev02_token),a
+    call cc_rev02_next_char
+    ret c
+    cp 39
+    jp nz,cc_rev02_format
+    ld a,1
+    ld (cc_rev02_tok_len),a
+    xor a
+    ld (cc_rev02_token+1),a
+    ld a,CC_REV02_T_CHAR
+    ld (cc_rev02_tok_kind),a
+    xor a
+    ret
 
 cc_rev02_lex_string:
     xor a
