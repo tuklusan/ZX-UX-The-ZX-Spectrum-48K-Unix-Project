@@ -10145,6 +10145,7 @@ CC_REV02_T_NUM          EQU 2
 CC_REV02_T_PUNCT        EQU 3
 CC_REV02_T_STRING       EQU 4
 CC_REV02_T_CHAR         EQU 5
+CC_REV02_T_FLOAT        EQU 6
 
 ; Large transient source/token/TEXT/OBJ1 work buffers live in process BSS so the
 ; compiler image itself remains small.  They are ordinary process-owned RAM.
@@ -10233,6 +10234,7 @@ cc_rev02_symbol_count: db 0
 cc_rev02_reloc_count:  db 0
 cc_rev02_literal_len:  dw 0
 cc_rev02_string_count: db 0
+cc_rev02_float_count:  db 0
 cc_rev02_function_name: defs 16,0
 cc_rev02_call_name:    defs 16,0
 cc_rev02_call_arg_count: db 0
@@ -10305,6 +10307,7 @@ cc_rev02_compile_stream:
     ld (cc_rev02_literal_len),a
     ld (cc_rev02_literal_len+1),a
     ld (cc_rev02_string_count),a
+    ld (cc_rev02_float_count),a
     ld (cc_rev02_loop_depth),a
     ld (cc_rev02_break_count),a
     ld (cc_rev02_param_count),a
@@ -12682,6 +12685,8 @@ cc_rev02_value_unary:
     ld a,(cc_rev02_tok_kind)
     cp CC_REV02_T_NUM
     jp z,cc_rev02_value_number
+    cp CC_REV02_T_FLOAT
+    jp z,cc_rev02_value_float
     cp CC_REV02_T_CHAR
     jp z,cc_rev02_value_char
     cp CC_REV02_T_STRING
@@ -13026,6 +13031,26 @@ cc_rev02_value_char:
 
 cc_rev02_value_string:
     call cc_rev02_add_string_literal
+    ret c
+    ld (cc_rev02_temp_symbol),a
+    ld a,$21
+    call cc_rev02_emit8
+    ret c
+    ld hl,(cc_rev02_text_len)
+    push hl
+    ld hl,0
+    call cc_rev02_emit16
+    pop hl
+    ret c
+    ld a,(cc_rev02_temp_symbol)
+    call cc_rev02_add_reloc
+    ret c
+    jp cc_rev02_next_token
+
+; Floating expression values are represented by their caller-owned five-byte
+; storage address, exactly as required by C48_REGCALL.
+cc_rev02_value_float:
+    call cc_rev02_add_float_literal
     ret c
     ld (cc_rev02_temp_symbol),a
     ld a,$21
@@ -13700,7 +13725,35 @@ cc_rev02_lex_skip:
     jp nc,cc_rev02_lex_ident_start
     call cc_rev02_is_digit
     jp nc,cc_rev02_lex_num_start
+    cp '.'
+    jp z,cc_rev02_lex_dot
     jp cc_rev02_lex_punct_start
+
+; A leading dot starts a floating literal only when followed by a digit.
+; Otherwise it remains ordinary punctuation.
+cc_rev02_lex_dot:
+    call cc_rev02_next_char
+    ret c
+    or a
+    jr z,cc_rev02_lex_dot_punct
+    push af
+    call cc_rev02_is_digit
+    jr nc,cc_rev02_lex_dot_number
+    pop af
+    call cc_rev02_unget_char
+    ret c
+cc_rev02_lex_dot_punct:
+    ld a,'.'
+    jp cc_rev02_lex_punct_start
+cc_rev02_lex_dot_number:
+    pop af
+    call cc_rev02_unget_char
+    ret c
+    ld a,'.'
+    call cc_rev02_token_put
+    ret c
+    jp cc_rev02_lex_num_loop
+
 cc_rev02_lex_punct_start:
     ld (cc_rev02_punct_first),a
     call cc_rev02_token_put
@@ -14003,12 +14056,45 @@ cc_rev02_lex_num_loop:
     ret c
     or a
     jr z,cc_rev02_lex_num_done
+    cp '.'
+    jr z,cc_rev02_lex_num_take_direct
+    cp '+'
+    jr z,cc_rev02_lex_num_exp_sign
+    cp '-'
+    jr z,cc_rev02_lex_num_exp_sign
     push af
     call cc_rev02_is_alnum_us
     jr nc,cc_rev02_lex_num_take
     pop af
     call cc_rev02_unget_char
+    ret c
     jr cc_rev02_lex_num_done
+cc_rev02_lex_num_exp_sign:
+    ld c,a
+    ld a,(cc_rev02_tok_len)
+    or a
+    jr z,cc_rev02_lex_num_stop_c
+    dec a
+    ld e,a
+    ld d,0
+    ld hl,cc_rev02_token
+    add hl,de
+    ld a,(hl)
+    cp 'e'
+    jr z,cc_rev02_lex_num_take_c
+    cp 'E'
+    jr z,cc_rev02_lex_num_take_c
+cc_rev02_lex_num_stop_c:
+    ld a,c
+    call cc_rev02_unget_char
+    ret c
+    jr cc_rev02_lex_num_done
+cc_rev02_lex_num_take_c:
+    ld a,c
+cc_rev02_lex_num_take_direct:
+    call cc_rev02_token_put
+    ret c
+    jr cc_rev02_lex_num_loop
 cc_rev02_lex_num_take:
     pop af
     call cc_rev02_token_put
@@ -14016,7 +14102,36 @@ cc_rev02_lex_num_take:
     jr cc_rev02_lex_num_loop
 cc_rev02_lex_num_done:
     call cc_rev02_token_zero
+    ; Preserve hexadecimal integers even when their digits contain E/e/F/f.
+    ld a,(cc_rev02_token)
+    cp '0'
+    jr nz,cc_rev02_lex_num_classify
+    ld a,(cc_rev02_token+1)
+    cp 'x'
+    jr z,cc_rev02_lex_num_integer
+    cp 'X'
+    jr z,cc_rev02_lex_num_integer
+cc_rev02_lex_num_classify:
+    ld a,(cc_rev02_tok_len)
+    ld b,a
+    ld hl,cc_rev02_token
+cc_rev02_lex_num_classify_loop:
+    ld a,(hl)
+    cp '.'
+    jr z,cc_rev02_lex_num_float
+    cp 'e'
+    jr z,cc_rev02_lex_num_float
+    cp 'E'
+    jr z,cc_rev02_lex_num_float
+    inc hl
+    djnz cc_rev02_lex_num_classify_loop
+cc_rev02_lex_num_integer:
     ld a,CC_REV02_T_NUM
+    ld (cc_rev02_tok_kind),a
+    xor a
+    ret
+cc_rev02_lex_num_float:
+    ld a,CC_REV02_T_FLOAT
     ld (cc_rev02_tok_kind),a
     xor a
     ret
@@ -14941,6 +15056,8 @@ cc_rev02_call_arg_loop:
     ld a,(cc_rev02_tok_kind)
     cp CC_REV02_T_STRING
     jr z,cc_rev02_call_arg_string
+    cp CC_REV02_T_FLOAT
+    jr z,cc_rev02_call_arg_float
     cp CC_REV02_T_ID
     jr z,cc_rev02_call_arg_runtime
     cp CC_REV02_T_PUNCT
@@ -14965,6 +15082,25 @@ cc_rev02_call_arg_string:
     ret c
     ld (cc_rev02_temp_symbol),a
     ld a,$21                 ; generated LD HL,string-address
+    call cc_rev02_emit8
+    ret c
+    ld hl,(cc_rev02_text_len)
+    push hl
+    ld hl,0
+    call cc_rev02_emit16
+    pop hl
+    ret c
+    ld a,(cc_rev02_temp_symbol)
+    call cc_rev02_add_reloc
+    ret c
+    call cc_rev02_next_token
+    ret c
+    jr cc_rev02_call_arg_push
+cc_rev02_call_arg_float:
+    call cc_rev02_add_float_literal
+    ret c
+    ld (cc_rev02_temp_symbol),a
+    ld a,$21                 ; generated LD HL,five-byte literal address
     call cc_rev02_emit8
     ret c
     ld hl,(cc_rev02_text_len)
@@ -15551,6 +15687,92 @@ cc_rev02_add_string_literal:
     inc (hl)
     ret
 
+; Convert one floating token through the ordinary target SYS_FP_FROM_TEXT
+; contract, append the exact five-byte value to the literal pool, and return
+; A=internal TEXT symbol.  An optional source f/F suffix is lexical only and is
+; not passed to the syscall's frozen decimal grammar.
+cc_rev02_add_float_literal:
+    ld a,(cc_rev02_float_count)
+    cp 16
+    jp nc,cc_rev02_nospc
+    ld (cc_rev02_temp_index),a
+    ld hl,(cc_rev02_literal_len)
+    ld de,5
+    add hl,de
+    ld de,CC_REV02_LITERAL_CAP+1
+    or a
+    sbc hl,de
+    jp nc,cc_rev02_nospc
+    ld hl,(cc_rev02_literal_len)
+    push hl
+    ld de,cc_rev02_literals
+    add hl,de
+    ex de,hl
+    ld a,(cc_rev02_tok_len)
+    ld c,a
+    ld b,0
+    ld hl,cc_rev02_token
+    add hl,bc
+    dec hl
+    ld a,(hl)
+    cp 'f'
+    jr z,cc_rev02_float_strip_suffix
+    cp 'F'
+    jr nz,cc_rev02_float_length_ready
+cc_rev02_float_strip_suffix:
+    dec c
+cc_rev02_float_length_ready:
+    ld hl,cc_rev02_token
+    ld a,SYS_FP_FROM_TEXT
+    call SYSCALL_GATEWAY
+    jr nc,cc_rev02_float_converted
+    pop hl
+    scf
+    ret
+cc_rev02_float_converted:
+    pop de
+    ld hl,(cc_rev02_literal_len)
+    ld bc,5
+    add hl,bc
+    ld (cc_rev02_literal_len),hl
+    call cc_rev02_make_float_name
+    ld hl,cc_rev02_function_name
+    ld a,1
+    call cc_rev02_symbol_add
+    ret c
+    ld hl,cc_rev02_float_count
+    inc (hl)
+    ret
+
+; Build compiler-internal __fX name in cc_rev02_function_name.
+cc_rev02_make_float_name:
+    ld hl,cc_rev02_function_name
+    ld (hl),'_'
+    inc hl
+    ld (hl),'_'
+    inc hl
+    ld (hl),'f'
+    inc hl
+    ld a,(cc_rev02_temp_index)
+    cp 10
+    jr c,cc_rev02_float_digit
+    add a,'a'-10
+    jr cc_rev02_float_name_char
+cc_rev02_float_digit:
+    add a,'0'
+cc_rev02_float_name_char:
+    ld (hl),a
+    inc hl
+    xor a
+    ld (hl),a
+    inc hl
+    ld b,11
+cc_rev02_float_name_zero:
+    ld (hl),a
+    inc hl
+    djnz cc_rev02_float_name_zero
+    ret
+
 ; Build compiler-internal _sX name in cc_rev02_function_name.
 cc_rev02_make_string_name:
     ld hl,cc_rev02_function_name
@@ -15604,7 +15826,10 @@ cc_rev02_finalize_sym_loop:
     inc hl
     ld a,(hl)
     cp 's'
+    jr z,cc_rev02_finalize_sym_literal
+    cp 'f'
     jr nz,cc_rev02_finalize_sym_next
+cc_rev02_finalize_sym_literal:
     ld de,14
     add hl,de
     ld e,(hl)

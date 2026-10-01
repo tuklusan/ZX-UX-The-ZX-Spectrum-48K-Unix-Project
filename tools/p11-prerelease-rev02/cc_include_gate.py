@@ -60,6 +60,7 @@ def main() -> None:
     block = cc.split("MACRO EMIT_REV02_CC_PRODUCT_CLI", 1)[1].split("ENDM", 1)[0]
     for needle in (
         "cc_rev02_pp_directive:", "cc_rev02_pp_name:", "SYS_STAT", "SYS_OPEN", "SYS_READ", "SYS_CLOSE",
+        "CC_REV02_T_FLOAT", "cc_rev02_add_float_literal:", "SYS_FP_FROM_TEXT",
         "CC_REV02_INCLUDE_CAP   EQU 64", "cc_rev02_includebuf", "cc_rev02_parent_read_left",
         "CC_REV02_MACRO_CAP     EQU 16", "CC_REV02_MACRO_REPL_CAP EQU 32",
         "cc_rev02_pp_define_word_start:", "cc_rev02_macro_try:", "cc_rev02_pp_system_c48:", "cc_rev02_pp_kw_c48",
@@ -103,6 +104,7 @@ shl_symbol: db 0
 shr_symbol: db 0
 cmp_symbol: db 0
 divzero_seen: db 0
+fp_count: db 0
 patch_left: db 0
 patch_sym: db 0
 patch_reloc_off: dw 0
@@ -260,6 +262,22 @@ pointer_post_source_end:
 pointer_array_source:
     db 'char *v[2]={{"AB","CD"}};int main(void){{return v[1][0]+v[0][1];}}',10
 pointer_array_source_end:
+float_literal_source:
+    db 'int probe(float a,float b,float c,float d){{return 7;}}'
+    db 'int main(void){{return probe(0.25,4.0F,2.5e-1,.5);}}',10
+float_literal_source_end:
+fp_oracle_table:
+    db 4,'0','.','2','5',0,0,0,0,$11,$12,$13,$14,$15
+    db 3,'4','.','0',0,0,0,0,0,$21,$22,$23,$24,$25
+    db 6,'2','.','5','e','-','1',0,0,$31,$32,$33,$34,$35
+    db 2,'.','5',0,0,0,0,0,0,$41,$42,$43,$44,$45
+fp_expected_bytes:
+    db $11,$12,$13,$14,$15,$21,$22,$23,$24,$25
+    db $31,$32,$33,$34,$35,$41,$42,$43,$44,$45
+diag_f0:
+    db '__f0',0
+diag_f3:
+    db '__f3',0
 diag_s0:
     db '__s0',0
 diag_p:
@@ -276,6 +294,7 @@ fixture_reset:
     ld (close_count),a
     ld (stat_count),a
     ld (divzero_seen),a
+    ld (fp_count),a
     ld a,ROOT_HANDLE
     ld (cc_rev02_source_handle),a
     ret
@@ -1455,6 +1474,72 @@ test_pointer_array_codegen:
     xor a
     ret
 
+test_float_literal_codegen:
+    ld a,44
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ret c
+    ld a,(fp_count)
+    cp 4
+    jp nz,test_fail
+    ld hl,(cc_rev02_literal_len)
+    ld a,h
+    or a
+    jp nz,test_fail
+    ld a,l
+    cp 20
+    jp nz,test_fail
+    ld hl,cc_rev02_literals
+    ld de,fp_expected_bytes
+    ld b,20
+test_float_literal_bytes:
+    ld a,(de)
+    cp (hl)
+    jp nz,test_fail
+    inc de
+    inc hl
+    djnz test_float_literal_bytes
+    ld hl,diag_f0
+    call cc_rev02_symbol_find
+    jp c,test_fail
+    call cc_rev02_symbol_ptr_for_index
+    ld de,16
+    add hl,de
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld hl,cc_rev02_text
+    add hl,de
+    ld a,(hl)
+    cp $11
+    jp nz,test_fail
+    ld hl,diag_f3
+    call cc_rev02_symbol_find
+    jp c,test_fail
+    call cc_rev02_symbol_ptr_for_index
+    ld de,16
+    add hl,de
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld hl,cc_rev02_text
+    add hl,de
+    ld a,(hl)
+    cp $41
+    jp nz,test_fail
+    call test_patch_logic_relocs
+    ret c
+    call call_compiled_main
+    ld a,h
+    or a
+    jp nz,test_fail
+    ld a,l
+    cp 7
+    jp nz,test_fail
+    xor a
+    ret
+
 test_define_multi:
     ld a,7
     ld (mode),a
@@ -1690,9 +1775,71 @@ gateway_start:
     jp z,gate_close
     cp SYS_EXIT
     jp z,gate_exit
+    cp SYS_FP_FROM_TEXT
+    jp z,gate_fp_from_text
     ld a,E_NOTSUP
     scf
     ret
+
+gate_fp_from_text:
+    push bc
+    push de
+    ld a,(fp_count)
+    cp 4
+    jp nc,gate_fp_bad_stack
+    ld ix,fp_oracle_table
+    or a
+    jr z,gate_fp_record_ready
+    ld b,a
+    ld de,14
+gate_fp_record_seek:
+    add ix,de
+    djnz gate_fp_record_seek
+gate_fp_record_ready:
+    pop de
+    pop bc
+    ld a,b
+    or a
+    jp nz,gate_bad
+    ld a,(ix+0)
+    cp c
+    jp nz,gate_bad
+    ld b,c
+    push ix
+    inc ix
+gate_fp_text_loop:
+    ld a,(ix+0)
+    cp (hl)
+    jr nz,gate_fp_text_bad
+    inc ix
+    inc hl
+    djnz gate_fp_text_loop
+    pop ix
+    ld a,(ix+9)
+    ld (de),a
+    inc de
+    ld a,(ix+10)
+    ld (de),a
+    inc de
+    ld a,(ix+11)
+    ld (de),a
+    inc de
+    ld a,(ix+12)
+    ld (de),a
+    inc de
+    ld a,(ix+13)
+    ld (de),a
+    ld hl,fp_count
+    inc (hl)
+    xor a
+    ret
+gate_fp_text_bad:
+    pop ix
+    jp gate_bad
+gate_fp_bad_stack:
+    pop de
+    pop bc
+    jp gate_bad
 
 gate_stat:
     ld a,(stat_count)
@@ -1898,6 +2045,8 @@ gate_read_root_first:
     jp z,gate_read_pointer_post
     cp 43
     jp z,gate_read_pointer_array
+    cp 44
+    jp z,gate_read_float_literal
     ld hl,root_source
     ld bc,CC_REV02_READ_CAP
     ldir
@@ -2090,6 +2239,12 @@ gate_read_pointer_array:
     ld hl,pointer_array_source_end-pointer_array_source
     ld (fixture_source_left),hl
     jp gate_read_fixture_chunk
+gate_read_float_literal:
+    ld hl,float_literal_source
+    ld (fixture_source_ptr),hl
+    ld hl,float_literal_source_end-float_literal_source
+    ld (fixture_source_left),hl
+    jp gate_read_fixture_chunk
 
 ; Direct source fixtures obey the compiler's bounded read contract exactly.
 ; DE is the caller destination. Each read returns at most CC_REV02_READ_CAP.
@@ -2237,7 +2392,7 @@ gateway_end:
     run([sj, "--nologo", f"--sym={sym.as_posix()}", asm.as_posix()], out)
     req(main_bin.is_file() and gate_bin.is_file(), "fixture binaries missing")
     syms = symbols(sym)
-    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_builtin_c48", "test_local_scalar_codegen", "test_dynamic_call_abi", "test_runtime_muldiv_codegen", "test_runtime_bitwise_codegen", "test_runtime_shift_codegen", "test_runtime_compare_a", "test_runtime_compare_b", "test_runtime_logic_a", "test_runtime_logic_b", "test_postfix_local_codegen", "test_if_else_codegen", "test_while_codegen", "test_for_codegen", "test_break_continue_codegen", "test_nested_break_codegen", "test_break_outside_reject", "test_continue_outside_reject", "test_recursive_params_codegen", "test_global_scalar_codegen", "test_global_array_compile", "test_global_array_bss", "test_global_array_symbols", "test_global_array_patch", "test_global_array_codegen", "test_global_init_codegen", "test_local_array_codegen", "test_pointer_basic_codegen", "test_local_pointer_assign_codegen", "test_local_pointer_metadata", "test_local_pointer_literal", "test_local_pointer_value_codegen", "test_local_pointer_deref_codegen", "test_local_pointer_codegen", "test_character_literal_codegen", "test_integer_cast_codegen", "test_pointer_post_codegen", "test_pointer_array_codegen", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
+    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_builtin_c48", "test_local_scalar_codegen", "test_dynamic_call_abi", "test_runtime_muldiv_codegen", "test_runtime_bitwise_codegen", "test_runtime_shift_codegen", "test_runtime_compare_a", "test_runtime_compare_b", "test_runtime_logic_a", "test_runtime_logic_b", "test_postfix_local_codegen", "test_if_else_codegen", "test_while_codegen", "test_for_codegen", "test_break_continue_codegen", "test_nested_break_codegen", "test_break_outside_reject", "test_continue_outside_reject", "test_recursive_params_codegen", "test_global_scalar_codegen", "test_global_array_compile", "test_global_array_bss", "test_global_array_symbols", "test_global_array_patch", "test_global_array_codegen", "test_global_init_codegen", "test_local_array_codegen", "test_pointer_basic_codegen", "test_local_pointer_assign_codegen", "test_local_pointer_metadata", "test_local_pointer_literal", "test_local_pointer_value_codegen", "test_local_pointer_deref_codegen", "test_local_pointer_codegen", "test_character_literal_codegen", "test_integer_cast_codegen", "test_pointer_post_codegen", "test_pointer_array_codegen", "test_float_literal_codegen", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
     for name in names:
         req(name in syms, "fixture symbol missing: " + name)
 
@@ -2302,6 +2457,7 @@ gateway_end:
             "generic_integer_casts": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_pointer_postfix_scaling": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_pointer_array_string_initializers": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "generic_float_literals_via_sys_fp_from_text": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_if_else_control_flow": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_nested_while_control_flow": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_nested_for_control_flow": "PASS" if not ns.assemble_only else "ASSEMBLED",
