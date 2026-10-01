@@ -306,18 +306,12 @@ test_define_multi:
     ld a,(open_count)
     or a
     jp nz,test_fail
-    ld hl,(cc_rev02_text_len)
-    ld de,4
+    call cc_rev02_text
+    ld a,h
     or a
-    sbc hl,de
     jp nz,test_fail
-    ld hl,cc_rev02_text+1
-    ld a,(hl)
+    ld a,l
     cp 7
-    jp nz,test_fail
-    inc hl
-    ld a,(hl)
-    or a
     jp nz,test_fail
     xor a
     ret
@@ -397,26 +391,12 @@ test_define_include_text:
     call fixture_reset
     call cc_rev02_compile_stream
     ret c
-    ld hl,(cc_rev02_text_len)
-    ld de,4
+    call cc_rev02_text
+    ld a,h
     or a
-    sbc hl,de
     jp nz,test_fail
-    ld hl,cc_rev02_text
-    ld a,(hl)
-    cp $21
-    jp nz,test_fail
-    inc hl
-    ld a,(hl)
+    ld a,l
     cp 7
-    jp nz,test_fail
-    inc hl
-    ld a,(hl)
-    or a
-    jp nz,test_fail
-    inc hl
-    ld a,(hl)
-    cp $C9
     jp nz,test_fail
     xor a
     ret
@@ -436,26 +416,12 @@ test_include_ok:
     ld a,(stat_count)
     cp 1
     jp nz,test_fail
-    ld hl,(cc_rev02_text_len)
-    ld de,4
+    call cc_rev02_text
+    ld a,h
     or a
-    sbc hl,de
     jp nz,test_fail
-    ld hl,cc_rev02_text
-    ld a,(hl)
-    cp $21
-    jp nz,test_fail
-    inc hl
-    ld a,(hl)
+    ld a,l
     cp 7
-    jp nz,test_fail
-    inc hl
-    ld a,(hl)
-    or a
-    jp nz,test_fail
-    inc hl
-    ld a,(hl)
-    cp $C9
     jp nz,test_fail
     ld hl,(cc_obj1_output_size)
     ld a,h
