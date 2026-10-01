@@ -10177,6 +10177,7 @@ cc_rev02_cmp_jr: db 0
 cc_rev02_current_function_symbol: db 0
 cc_rev02_current_function_offset: dw 0
 cc_rev02_patch_offset: dw 0
+cc_rev02_known_target: dw 0
 cc_rev02_step_kind: db 0
 cc_rev02_line_start:   db 0
 cc_rev02_include_depth: db 0
@@ -10221,6 +10222,7 @@ cc_rev02_kw_void:      db 'void',0
 cc_rev02_kw_return:    db 'return',0
 cc_rev02_kw_if:        db 'if',0
 cc_rev02_kw_else:      db 'else',0
+cc_rev02_kw_while:     db 'while',0
 cc_rev02_kw_main:      db 'main',0
 cc_rev02_pp_kw_define: db 'define',0
 
@@ -10452,6 +10454,10 @@ cc_rev02_statement_id:
     ld de,cc_rev02_kw_if
     call cc_rev02_streq
     jp z,cc_rev02_body_if
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_while
+    call cc_rev02_streq
+    jp z,cc_rev02_body_while
 
     ; An ordinary identifier statement is either a function call or assignment.
     ld hl,cc_rev02_token
@@ -10636,6 +10642,38 @@ cc_rev02_body_if:
     pop hl
     jp cc_rev02_patch_function_target
 cc_rev02_body_if_no_else:
+    pop hl
+    jp cc_rev02_patch_function_target
+
+cc_rev02_body_while:
+    call cc_rev02_next_token
+    ret c
+    ld a,'('
+    call cc_rev02_expect_punct
+    ret c
+    ld hl,(cc_rev02_text_len)
+    push hl
+    call cc_rev02_parse_value_expr
+    jp c,cc_rev02_drop_hl_err
+    ld a,')'
+    call cc_rev02_expect_punct
+    jp c,cc_rev02_drop_hl_err
+    ld a,1
+    ld (cc_rev02_exec_seen),a
+    call cc_rev02_emit_test_hl
+    jp c,cc_rev02_drop_hl_err
+    ld b,$CA
+    call cc_rev02_emit_forward_function_jp
+    jp c,cc_rev02_drop_hl_err
+    push hl
+    call cc_rev02_parse_statement
+    jp c,cc_rev02_drop_2hl_err
+    pop hl
+    pop de
+    push hl
+    ld b,$C3
+    call cc_rev02_emit_function_jp_to
+    jp c,cc_rev02_drop_hl_err
     pop hl
     jp cc_rev02_patch_function_target
 
@@ -11527,6 +11565,10 @@ cc_rev02_unary_group:
     pop hl
     ret
 cc_rev02_drop_hl_err:
+    pop hl
+    ret
+cc_rev02_drop_2hl_err:
+    pop hl
     pop hl
     ret
 
@@ -12827,6 +12869,26 @@ cc_rev02_emit_forward_function_jp:
 cc_rev02_patch_function_target:
     ld (cc_rev02_patch_offset),hl
     ld hl,(cc_rev02_text_len)
+    ld de,(cc_rev02_current_function_offset)
+    or a
+    sbc hl,de
+    jp c,cc_rev02_format
+    ex de,hl
+    ld hl,cc_rev02_text
+    ld bc,(cc_rev02_patch_offset)
+    add hl,bc
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    xor a
+    ret
+
+cc_rev02_emit_function_jp_to:
+    ld (cc_rev02_known_target),de
+    call cc_rev02_emit_forward_function_jp
+    ret c
+    ld (cc_rev02_patch_offset),hl
+    ld hl,(cc_rev02_known_target)
     ld de,(cc_rev02_current_function_offset)
     or a
     sbc hl,de
