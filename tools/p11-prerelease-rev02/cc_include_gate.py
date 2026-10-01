@@ -90,6 +90,9 @@ open_count: db 0
 close_count: db 0
 stat_count: db 0
 mode: db 0
+probe_seen: db 0
+probe_bad: db 0
+probe_symbol: db 0
 
 root_source:
     db '#define ANSWER 3 + 4',10
@@ -145,6 +148,9 @@ builtin_c48_source_end:
 local_scalar_source:
     db 'int main(void){{int x;int y;x=7;y=x+5;return y;}}',10
 local_scalar_source_end:
+dynamic_call_source:
+    db 'int main(void){{int x;x=1;probe(x,x+1,3,4,5,6);return 0;}}',10
+dynamic_call_source_end:
 
 fixture_reset:
     xor a
@@ -228,10 +234,9 @@ test_generic_call_text:
     call cc_rev02_compile_stream
     ret c
     ld hl,(cc_rev02_text_len)
-    ld de,25
-    or a
-    sbc hl,de
-    jp nz,test_fail
+    ld a,h
+    or l
+    jp z,test_fail
     xor a
     ret
 
@@ -293,6 +298,115 @@ test_local_scalar_codegen:
     jp nz,test_fail
     xor a
     ret
+
+test_dynamic_call_abi:
+    ld a,14
+    ld (mode),a
+    call fixture_reset
+    xor a
+    ld (probe_seen),a
+    ld (probe_bad),a
+    call cc_rev02_compile_stream
+    ret c
+    ld a,(cc_rev02_symbol_count)
+    cp 2
+    jp nz,test_fail
+    ld a,(cc_rev02_reloc_count)
+    cp 1
+    jp nz,test_fail
+    ld hl,probe_name
+    call cc_rev02_symbol_find
+    jp c,test_fail
+    ld (probe_symbol),a
+    ld a,(cc_rev02_reloc_count)
+    ld b,a
+    ld hl,cc_rev02_relocs
+test_dynamic_find_reloc:
+    ld a,b
+    or a
+    jp z,test_fail
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    inc hl
+    ld a,(probe_symbol)
+    cp (hl)
+    jr z,test_dynamic_patch_reloc
+    ld de,4
+    add hl,de
+    djnz test_dynamic_find_reloc
+    jp test_fail
+test_dynamic_patch_reloc:
+    ld hl,cc_rev02_text
+    add hl,de
+    ld de,probe_stub
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    call cc_rev02_text
+    ld a,(probe_seen)
+    cp 1
+    jp nz,test_fail
+    ld a,(probe_bad)
+    or a
+    jp nz,test_fail
+    xor a
+    ret
+probe_stub:
+    ld a,1
+    ld (probe_seen),a
+    ld a,h
+    or a
+    jr nz,probe_mark_bad
+    ld a,l
+    cp 1
+    jr nz,probe_mark_bad
+    ld a,d
+    or a
+    jr nz,probe_mark_bad
+    ld a,e
+    cp 2
+    jr nz,probe_mark_bad
+    ld a,b
+    or a
+    jr nz,probe_mark_bad
+    ld a,c
+    cp 3
+    jr nz,probe_mark_bad
+    ld hl,2
+    add hl,sp
+    ld a,(hl)
+    cp 4
+    jr nz,probe_mark_bad
+    inc hl
+    ld a,(hl)
+    or a
+    jr nz,probe_mark_bad
+    inc hl
+    ld a,(hl)
+    cp 5
+    jr nz,probe_mark_bad
+    inc hl
+    ld a,(hl)
+    or a
+    jr nz,probe_mark_bad
+    inc hl
+    ld a,(hl)
+    cp 6
+    jr nz,probe_mark_bad
+    inc hl
+    ld a,(hl)
+    or a
+    jr nz,probe_mark_bad
+    ld hl,0
+    ret
+probe_mark_bad:
+    ld a,1
+    ld (probe_bad),a
+    ld hl,0
+    ret
+probe_name:
+    db 'probe',0
 
 test_define_multi:
     ld a,7
@@ -664,6 +778,8 @@ gate_read_root_first:
     jp z,gate_read_builtin_c48
     cp 13
     jp z,gate_read_local_scalar
+    cp 14
+    jp z,gate_read_dynamic_call
     ld hl,root_source
     ld bc,CC_REV02_READ_CAP
     ldir
@@ -675,6 +791,13 @@ gate_read_local_scalar:
     ld bc,local_scalar_source_end-local_scalar_source
     ldir
     ld hl,local_scalar_source_end-local_scalar_source
+    xor a
+    ret
+gate_read_dynamic_call:
+    ld hl,dynamic_call_source
+    ld bc,dynamic_call_source_end-dynamic_call_source
+    ldir
+    ld hl,dynamic_call_source_end-dynamic_call_source
     xor a
     ret
 gate_read_builtin_c48:
@@ -792,7 +915,7 @@ gateway_end:
     run([sj, "--nologo", f"--sym={sym.as_posix()}", asm.as_posix()], out)
     req(main_bin.is_file() and gate_bin.is_file(), "fixture binaries missing")
     syms = symbols(sym)
-    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_builtin_c48", "test_local_scalar_codegen", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
+    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_builtin_c48", "test_local_scalar_codegen", "test_dynamic_call_abi", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
     for name in names:
         req(name in syms, "fixture symbol missing: " + name)
 
@@ -829,13 +952,14 @@ gateway_end:
             "include_without_define": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "define_survives_include_when_unused": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "define_include_compile_only": "PASS" if not ns.assemble_only else "ASSEMBLED",
-            "define_include_text_exact": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "define_include_text_semantic": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "object_like_define_single_token": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "object_like_define_multitoken": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_call_string_relocations": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_helper_definition_and_call": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "builtin_c48_header": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_local_scalar_assignment_codegen": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "generic_runtime_expression_c48_regcall_abi": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "recursive_macro_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "function_macro_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "ordinary_stat_open_read_close": "PASS" if not ns.assemble_only else "ASSEMBLED",

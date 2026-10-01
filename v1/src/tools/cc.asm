@@ -11957,7 +11957,12 @@ cc_rev02_local_ptr_done:
     pop bc
     ret
 
-; Parse arguments after the opening parenthesis has already been consumed.
+; Parse call arguments after the opening parenthesis has already been consumed.
+; Local-identifier arguments use the runtime-value expression path.  Other
+; scalar spellings retain the already admitted constant-expression parser, so
+; multiplicative/bitwise constant arguments do not regress while runtime
+; expression closure grows.  Each generated value is parked as one temporary
+; stack word; cc_rev02_emit_call then marshals those words into C48_REGCALL.
 cc_rev02_parse_call_args:
     xor a
     ld (cc_rev02_call_arg_count),a
@@ -11971,37 +11976,42 @@ cc_rev02_call_arg_loop:
     ld a,(cc_rev02_call_arg_count)
     cp CC_REV02_ARG_CAP
     jp nc,cc_rev02_notsup
-    ld (cc_rev02_temp_index),a
     ld a,(cc_rev02_tok_kind)
     cp CC_REV02_T_STRING
     jr z,cc_rev02_call_arg_string
+    cp CC_REV02_T_ID
+    jr z,cc_rev02_call_arg_runtime
     call cc_rev02_parse_const_expr
     ret c
-    push hl
-    ld a,(cc_rev02_temp_index)
-    call cc_rev02_store_arg_value
-    pop hl
-    xor a
-    call cc_rev02_store_arg_symbol
-    jr cc_rev02_call_arg_after
+    call cc_rev02_emit_ld_hl
+    ret c
+    jr cc_rev02_call_arg_push
+cc_rev02_call_arg_runtime:
+    call cc_rev02_parse_value_expr
+    ret c
+    jr cc_rev02_call_arg_push
 cc_rev02_call_arg_string:
     call cc_rev02_add_string_literal
     ret c
     ld (cc_rev02_temp_symbol),a
-    ld a,(cc_rev02_call_arg_count)
-    ld (cc_rev02_temp_index),a
+    ld a,$21                 ; generated LD HL,string-address
+    call cc_rev02_emit8
+    ret c
+    ld hl,(cc_rev02_text_len)
+    push hl
     ld hl,0
-    call cc_rev02_store_arg_value
+    call cc_rev02_emit16
+    pop hl
+    ret c
     ld a,(cc_rev02_temp_symbol)
-    inc a
-    ld b,a
-    ld a,(cc_rev02_call_arg_count)
-    ld (cc_rev02_temp_index),a
-    ld a,b
-    call cc_rev02_store_arg_symbol
+    call cc_rev02_add_reloc
+    ret c
     call cc_rev02_next_token
     ret c
-cc_rev02_call_arg_after:
+cc_rev02_call_arg_push:
+    ld a,$E5                 ; generated PUSH HL parks this argument value
+    call cc_rev02_emit8
+    ret c
     ld hl,cc_rev02_call_arg_count
     inc (hl)
     ld a,(cc_rev02_tok_kind)
@@ -12049,53 +12059,100 @@ cc_rev02_store_arg_symbol:
     ld (hl),a
     ret
 
-; Emit one ordinary C48 register/stack call and attach generic ABS16 relocations.
+; Emit one ordinary C48_REGCALL.  Argument expressions were evaluated
+; left-to-right and parked as temporary words.  The generated marshaller walks
+; that stable absolute stack window, duplicates args N..4 right-to-left for the
+; ABI stack area, then loads arg3->BC, arg2->DE and arg1->HL.  After the call it
+; removes both the ABI stack words and all temporary expression words without
+; touching the HL return value.
 cc_rev02_emit_call:
     ld hl,cc_rev02_call_name
     call cc_rev02_symbol_get_undef
     ret c
     ld (cc_rev02_call_symbol),a
     ld a,(cc_rev02_call_arg_count)
-    cp 4
-    jr c,cc_rev02_emit_call_regs
-    dec a
-    ld (cc_rev02_temp_index),a
-cc_rev02_emit_call_stack_loop:
-    ld a,(cc_rev02_temp_index)
-    call cc_rev02_emit_arg_hl
-    ret c
-    ld a,$E5
+    or a
+    jr z,cc_rev02_emit_call_opcode
+
+cc_rev02_emit_call_marshal:
+    ld a,$21                 ; generated LD HL,0
     call cc_rev02_emit8
     ret c
-    ld a,(cc_rev02_temp_index)
-    cp 3
-    jr z,cc_rev02_emit_call_regs
-    dec a
-    ld (cc_rev02_temp_index),a
-    jr cc_rev02_emit_call_stack_loop
+    ld hl,0
+    call cc_rev02_emit16
+    ret c
+    ld a,$39                 ; generated ADD HL,SP -> absolute temp-window ptr
+    call cc_rev02_emit8
+    ret c
+    ld a,(cc_rev02_call_arg_count)
+    cp 4
+    jr c,cc_rev02_emit_call_regs
+    sub 3
+    ld b,a
+cc_rev02_emit_call_stack_loop:
+    ld a,$5E                 ; LD E,(HL)
+    call cc_rev02_emit8
+    ret c
+    ld a,$23                 ; INC HL
+    call cc_rev02_emit8
+    ret c
+    ld a,$56                 ; LD D,(HL)
+    call cc_rev02_emit8
+    ret c
+    ld a,$23                 ; INC HL
+    call cc_rev02_emit8
+    ret c
+    ld a,$D5                 ; PUSH DE, args N..4 right-to-left
+    call cc_rev02_emit8
+    ret c
+    djnz cc_rev02_emit_call_stack_loop
 cc_rev02_emit_call_regs:
     ld a,(cc_rev02_call_arg_count)
     cp 3
-    jr c,cc_rev02_emit_call_de
-    ld a,2
-    ld b,$01
-    call cc_rev02_emit_arg_reg
+    jr c,cc_rev02_emit_call_reg_de
+    ld a,$4E                 ; LD C,(HL) = arg3 low
+    call cc_rev02_emit8
     ret c
-cc_rev02_emit_call_de:
+    ld a,$23
+    call cc_rev02_emit8
+    ret c
+    ld a,$46                 ; LD B,(HL) = arg3 high
+    call cc_rev02_emit8
+    ret c
+    ld a,$23
+    call cc_rev02_emit8
+    ret c
+cc_rev02_emit_call_reg_de:
     ld a,(cc_rev02_call_arg_count)
     cp 2
-    jr c,cc_rev02_emit_call_hl
-    ld a,1
-    ld b,$11
-    call cc_rev02_emit_arg_reg
+    jr c,cc_rev02_emit_call_reg_hl
+    ld a,$5E                 ; LD E,(HL) = arg2 low
+    call cc_rev02_emit8
     ret c
-cc_rev02_emit_call_hl:
+    ld a,$23
+    call cc_rev02_emit8
+    ret c
+    ld a,$56                 ; LD D,(HL) = arg2 high
+    call cc_rev02_emit8
+    ret c
+    ld a,$23
+    call cc_rev02_emit8
+    ret c
+cc_rev02_emit_call_reg_hl:
     ld a,(cc_rev02_call_arg_count)
     or a
     jr z,cc_rev02_emit_call_opcode
-    xor a
-    ld b,$21
-    call cc_rev02_emit_arg_reg
+    ld a,$7E                 ; LD A,(HL) = arg1 low
+    call cc_rev02_emit8
+    ret c
+    ld a,$23                 ; INC HL
+    call cc_rev02_emit8
+    ret c
+    ld a,$66                 ; LD H,(HL) = arg1 high
+    call cc_rev02_emit8
+    ret c
+    ld a,$6F                 ; LD L,A
+    call cc_rev02_emit8
     ret c
 cc_rev02_emit_call_opcode:
     ld a,$CD
@@ -12103,9 +12160,7 @@ cc_rev02_emit_call_opcode:
     ret c
     ld hl,(cc_rev02_text_len)
     push hl
-    xor a
-    ld l,a
-    ld h,a
+    ld hl,0
     call cc_rev02_emit16
     pop hl
     ret c
@@ -12113,21 +12168,22 @@ cc_rev02_emit_call_opcode:
     call cc_rev02_add_reloc
     ret c
     ld a,(cc_rev02_call_arg_count)
+    ld b,a
     cp 4
-    jr nc,cc_rev02_emit_call_cleanup_setup
-    xor a
-    ret
-cc_rev02_emit_call_cleanup_setup:
+    jr c,cc_rev02_emit_call_cleanup
     sub 3
+    add a,b
     ld b,a
 cc_rev02_emit_call_cleanup:
     ld a,b
     or a
-    ret z
-    ld a,$F1
+    jr z,cc_rev02_emit_call_done
+    ld a,$F1                 ; POP AF; discard temp/ABI stack words
     call cc_rev02_emit8
     ret c
     djnz cc_rev02_emit_call_cleanup
+cc_rev02_emit_call_done:
+    xor a
     ret
 
 ; A=index, B=LD rr,nn opcode.
