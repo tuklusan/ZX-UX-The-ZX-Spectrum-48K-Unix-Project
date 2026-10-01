@@ -786,6 +786,66 @@ test_postfix_local_codegen:
     xor a
     ret
 
+test_if_errno_format:
+    ld a,23
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    jr nc,test_if_errno_format_ok
+    cp E_FORMAT
+    jp z,test_fail
+test_if_errno_format_ok:
+    xor a
+    ret
+
+test_if_errno_notsup:
+    ld a,23
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    jr nc,test_if_errno_notsup_ok
+    cp E_NOTSUP
+    jp z,test_fail
+test_if_errno_notsup_ok:
+    xor a
+    ret
+
+test_if_errno_nospc:
+    ld a,23
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    jr nc,test_if_errno_nospc_ok
+    cp E_NOSPC
+    jp z,test_fail
+test_if_errno_nospc_ok:
+    xor a
+    ret
+
+test_if_errno_toolong:
+    ld a,23
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    jr nc,test_if_errno_toolong_ok
+    cp E_TOOLONG
+    jp z,test_fail
+test_if_errno_toolong_ok:
+    xor a
+    ret
+
+test_if_errno_exist:
+    ld a,23
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    jr nc,test_if_errno_exist_ok
+    cp E_EXIST
+    jp z,test_fail
+test_if_errno_exist_ok:
+    xor a
+    ret
+
 test_if_else_compile:
     ld a,23
     ld (mode),a
@@ -1431,7 +1491,7 @@ gateway_end:
     run([sj, "--nologo", f"--sym={sym.as_posix()}", asm.as_posix()], out)
     req(main_bin.is_file() and gate_bin.is_file(), "fixture binaries missing")
     syms = symbols(sym)
-    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_builtin_c48", "test_local_scalar_codegen", "test_dynamic_call_abi", "test_runtime_muldiv_codegen", "test_runtime_bitwise_codegen", "test_runtime_shift_codegen", "test_runtime_compare_a", "test_runtime_compare_b", "test_runtime_logic_a", "test_runtime_logic_b", "test_postfix_local_codegen", "test_if_else_compile", "test_if_else_counts", "test_if_else_patch", "test_if_else_runtime", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
+    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_builtin_c48", "test_local_scalar_codegen", "test_dynamic_call_abi", "test_runtime_muldiv_codegen", "test_runtime_bitwise_codegen", "test_runtime_shift_codegen", "test_runtime_compare_a", "test_runtime_compare_b", "test_runtime_logic_a", "test_runtime_logic_b", "test_postfix_local_codegen", "test_if_errno_format", "test_if_errno_notsup", "test_if_errno_nospc", "test_if_errno_toolong", "test_if_errno_exist", "test_if_else_compile", "test_if_else_counts", "test_if_else_patch", "test_if_else_runtime", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
     for name in names:
         req(name in syms, "fixture symbol missing: " + name)
 
