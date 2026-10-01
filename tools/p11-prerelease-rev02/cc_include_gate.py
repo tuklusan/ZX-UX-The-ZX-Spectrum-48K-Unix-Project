@@ -889,7 +889,7 @@ test_patch_logic_text:
     ld de,cc_rev02_text
     add hl,de
     ex de,hl
-    jr test_patch_logic_write
+    jp test_patch_logic_write
 
 test_patch_logic_bss:
     ld hl,cc_rev02_text
@@ -905,7 +905,7 @@ test_patch_logic_bss:
     ld de,cc_rev02_text
     add hl,de
     ex de,hl
-    jr test_patch_logic_write
+    jp test_patch_logic_write
 
 test_patch_logic_undef:
     ld hl,cc_rev02_rt_cmp_s16
@@ -916,7 +916,7 @@ test_patch_logic_undef:
     cp c
     jr nz,test_patch_logic_undef_cmp_u
     ld de,c48_cmp_s16
-    jr test_patch_logic_write
+    jp test_patch_logic_write
 test_patch_logic_undef_cmp_u:
     ld hl,cc_rev02_rt_cmp_u16
     call cc_rev02_symbol_find
@@ -926,7 +926,7 @@ test_patch_logic_undef_cmp_u:
     cp c
     jr nz,test_patch_logic_undef_div_s
     ld de,c48_cmp_u16
-    jr test_patch_logic_write
+    jp test_patch_logic_write
 test_patch_logic_undef_div_s:
     ld hl,cc_rev02_rt_s16_divmod
     call cc_rev02_symbol_find
@@ -936,7 +936,7 @@ test_patch_logic_undef_div_s:
     cp c
     jr nz,test_patch_logic_undef_div_u
     ld de,c48_s16_divmod
-    jr test_patch_logic_write
+    jp test_patch_logic_write
 test_patch_logic_undef_div_u:
     ld hl,cc_rev02_rt_u16_divmod
     call cc_rev02_symbol_find
@@ -946,7 +946,7 @@ test_patch_logic_undef_div_u:
     cp c
     jr nz,test_patch_logic_undef_shr_u
     ld de,c48_u16_divmod
-    jr test_patch_logic_write
+    jp test_patch_logic_write
 test_patch_logic_undef_shr_u:
     ld hl,cc_rev02_rt_u16_shr
     call cc_rev02_symbol_find
@@ -956,7 +956,7 @@ test_patch_logic_undef_shr_u:
     cp c
     jr nz,test_patch_logic_undef_mul
     ld de,c48_u16_shr
-    jr test_patch_logic_write
+    jp test_patch_logic_write
 test_patch_logic_undef_mul:
     ld hl,cc_rev02_rt_s16_mul
     call cc_rev02_symbol_find
