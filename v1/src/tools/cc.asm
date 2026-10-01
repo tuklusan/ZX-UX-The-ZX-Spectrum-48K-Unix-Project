@@ -12072,7 +12072,7 @@ cc_rev02_emit_call:
     ld (cc_rev02_call_symbol),a
     ld a,(cc_rev02_call_arg_count)
     or a
-    jr z,cc_rev02_emit_call_opcode
+    jp z,cc_rev02_emit_call_opcode
 
 cc_rev02_emit_call_marshal:
     ld a,$21                 ; generated LD HL,0
