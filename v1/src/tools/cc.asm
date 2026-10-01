@@ -15227,12 +15227,14 @@ cc_rev02_finalize_sym_loop:
     ld hl,(cc_rev02_main_offset)
     add hl,de
     ex de,hl
+    push de                  ; preserve finalized TEXT value across pointer lookup
     ld a,(cc_rev02_temp_index)
     call cc_rev02_symbol_ptr_for_index
     push bc
     ld bc,16
     add hl,bc
     pop bc
+    pop de
     ld (hl),e
     inc hl
     ld (hl),d
