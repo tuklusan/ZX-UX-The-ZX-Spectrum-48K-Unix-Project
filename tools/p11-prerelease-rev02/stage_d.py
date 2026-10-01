@@ -55,7 +55,7 @@ def main():
 
     citations={
       "C001":["REV18 §2.2 machine-native implementation","REV18 §32 required /bin/sh"],
-      "C002":["REV18 §2.2 machine-native implementation","REV18 §32 required /bin/cc","REV18 §41.9 compiler","REV18 §25.1 C48 sizeof surface","REV18 §25.2 exact sizeof/data-model contract","REV09 P11.34 sizeof/alignment/array-stride suite","historical REV17 §25.2 frozen data-model baseline"],
+      "C002":["REV18 §2.2 machine-native implementation","REV18 §32 required /bin/cc","REV18 §41.9 compiler","REV18 §25.1 exact C48 sizeof/operator/indexing surface","REV18 §25.2 exact sizeof/data-model contract","REV09 P11.07 exact expression/operator set","REV09 P11.08 integer wrap semantics","REV09 P11.34 sizeof/alignment/array-stride suite","historical REV17 §25 frozen C48 baseline"],
       "C003":["REV18 §2.2 machine-native implementation","REV18 §32 required /bin/as","REV18 carried-forward R17 native-as rebuild contract"],
       "C004":["REV18 §2.2 machine-native implementation","REV18 §32 required /bin/ld","REV18 §41.9 standard runtime resolution"],
       "C005":["REV18 §32 executable namespace","REV18 §42 edit/compile/link/run workflow","REV09 carried-forward post-R17 native-tool path"],
@@ -79,7 +79,7 @@ def main():
     }
     changed={
       "C001":["v1/src/shell/sh.asm","tools/p11-prerelease-rev02/product_tools.py"],
-      "C002":["v1/src/tools/cc.asm","tools/p11-prerelease-rev02/product_tools.py"],
+      "C002":["v1/src/tools/cc.asm","tools/p11-prerelease-rev02/product_tools.py","tools/p11-prerelease-rev02/cc_include_gate.py"],
       "C003":["tools/as.asm","tools/as_text.asm","tools/p11-prerelease-rev02/product_tools.py"],
       "C004":["tools/ld.asm","tools/p11-prerelease-rev02/product_tools.py"],
       "C005":["tools/p11-prerelease-rev02/product_tools.py",".github/workflows/p11-prerelease-rev02-product-tools.yml"],
@@ -116,7 +116,8 @@ def main():
             "historical immutable-scope check","ordinary shell PATH/process route",
             "product MEX1/OBJ1 validation","anti-source-specialization scan",
             "no P11PR helper in product closure","48K memory/resource gate"] +
-            (["disjoint non-SDK generic sizeof type/expression fixture"] if gid in ("C002","C009") else []),
+            (["disjoint non-SDK generic sizeof type/expression fixture",
+              "disjoint non-SDK indexed postfix ++/-- expression fixture"] if gid in ("C002","C009") else []),
           "authority_gap":authority_gap,"sdk_defect":False,"proof_harness_only":False,
           "lane_status":"AUTHORIZED-PROSPECTIVE-CORRECTION",
         })

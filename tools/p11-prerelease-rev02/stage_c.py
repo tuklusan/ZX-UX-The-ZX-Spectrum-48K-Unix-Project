@@ -53,6 +53,19 @@ def main():
       "expected":"ordinary production cc compiles sizeof(int) as constant 2 with unsigned-int result type",
       "authority":["REV18 §25.1","REV18 §25.2","REV09 P11.34","historical REV17 §25.2"],
     }
+    indexed_postfix_probe=b"int main(void){int a[2];int x;a[0]=3;x=a[0]++;return x*10+a[0];}\n"
+    indexed_postfix_ready=("cc_rev02_value_index_post_step:" in cc)
+    indexed_postfix_detail={
+      "id":"C002-INDEXED-POSTFIX",
+      "input":"int main(void){int a[2];int x;a[0]=3;x=a[0]++;return x*10+a[0];}",
+      "input_sha256":hashlib.sha256(indexed_postfix_probe).hexdigest(),
+      "tool_source_sha256":sha(root/"v1/src/tools/cc.asm"),
+      "status":"RESOLVED" if indexed_postfix_ready else "REPRODUCED",
+      "observed":("generic indexed postfix expression lowering is present" if indexed_postfix_ready else
+                  "production runtime-value parser rejects local/global indexed postfix ++/-- expressions with E_NOTSUP after loading the indexed value"),
+      "expected":"ordinary production cc preserves the old indexed value as the postfix expression result while updating the addressed 8/16-bit array element exactly once",
+      "authority":["REV18 §25.1 exact ++/-- and indexing operator surface","REV09 P11.07 expression precedence/operator set","REV09 P11.08 integer wrap semantics","historical REV17 §25.1 frozen C48 operator baseline"],
+    }
     ass=(root/"tools/as.asm").read_text()
     ld=(root/"tools/ld.asm").read_text()
     runtime=(root/"v1/src/libc48/runtime_archive.asm").read_text()
@@ -148,8 +161,8 @@ def main():
     gaps=[
       {"id":"C002","failure":"ordinary /bin/cc semantic compiler route incomplete",
        "observed":"REV02 ordinary cc now consumes arbitrary source through bounded SYS_READ, resolves one-level quoted local OBJ_C/OBJ_TXT includes through ordinary STAT/OPEN/READ/CLOSE with a distinct bounded include window, expands the frozen bounded source-generic object-like #define constant surface, parses a generic integer constant-function subset, emits real OBJ1, and transactionally publishes it; full frozen C48 remains incomplete",
-       "detail_reproductions":[sizeof_detail],
-       "planned_paths":["v1/src/tools/cc.asm","tools/p11-prerelease-rev02/product_tools.py"],"blocks":["cc","OBJ1"]},
+       "detail_reproductions":[sizeof_detail,indexed_postfix_detail],
+       "planned_paths":["v1/src/tools/cc.asm","tools/p11-prerelease-rev02/product_tools.py","tools/p11-prerelease-rev02/cc_include_gate.py"],"blocks":["cc","OBJ1"]},
     ]
     if not as_full:
         gaps.append(
