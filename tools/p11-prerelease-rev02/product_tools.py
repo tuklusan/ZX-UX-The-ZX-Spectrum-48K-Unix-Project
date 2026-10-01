@@ -222,7 +222,8 @@ def main():
     req(all(marker in cc_source for marker in (
         "cc_rev02_parse_simple_body:","cc_rev02_parse_call_args:",
         "cc_rev02_symbol_get_undef:","cc_rev02_add_reloc:",
-        "cc_rev02_lex_string:","CC_REV02_SYMBOL_CAP     EQU 32")),
+        "cc_rev02_lex_string:","cc_rev02_pp_system_c48:","cc_rev02_pp_kw_c48",
+        "CC_REV02_SYMBOL_CAP     EQU 32")),
         "ordinary cc generic prototype/call/string OBJ1 closure missing")
     req(all(marker not in cc_source.split("MACRO EMIT_REV02_CC_PRODUCT_CLI",1)[1].split("ENDM",1)[0]
             for marker in ("cc_p11pr_","CC_P11PR","source_crc","source_sha","identity_table")),

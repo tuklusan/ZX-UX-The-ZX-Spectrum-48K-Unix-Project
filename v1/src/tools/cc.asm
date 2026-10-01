@@ -10179,6 +10179,7 @@ cc_rev02_pp_new_handle: db HANDLE_FREE
 cc_rev02_pp_name:      defs 16,0
 cc_rev02_pp_name_len:  db 0
 cc_rev02_pp_repl_len:  db 0
+cc_rev02_pp_system:    db 0
 cc_rev02_macro_count:  db 0
 cc_rev02_macro_ptr:    dw 0
 cc_rev02_macro_left:   db 0
@@ -11117,6 +11118,7 @@ cc_rev02_pp_directive:
     jp nz,cc_rev02_notsup
     xor a
     ld (cc_rev02_line_start),a
+    ld (cc_rev02_pp_system),a
 
     ; Parse exact lower-case directive word "include" after horizontal space.
 cc_rev02_pp_lead_space:
@@ -11158,8 +11160,12 @@ cc_rev02_pp_after_word_space:
     cp 9
     jr z,cc_rev02_pp_after_word_space
     cp '"'
-    jp nz,cc_rev02_notsup
+    jr z,cc_rev02_pp_quote_start
+    cp '<'
+    jp z,cc_rev02_pp_system_c48
+    jp cc_rev02_notsup
 
+cc_rev02_pp_quote_start:
     xor a
     ld (cc_rev02_pp_len),a
 cc_rev02_pp_quote_loop:
@@ -11212,6 +11218,27 @@ cc_rev02_pp_check_dotdot:
     cp '.'
     jp z,cc_rev02_invalid
 
+cc_rev02_pp_system_c48:
+    ld hl,cc_rev02_pp_kw_c48
+cc_rev02_pp_system_loop:
+    call cc_rev02_next_char
+    ret c
+    ld b,a
+    ld a,(hl)
+    or a
+    jr z,cc_rev02_pp_system_done
+    cp b
+    jp nz,cc_rev02_notsup
+    inc hl
+    jr cc_rev02_pp_system_loop
+cc_rev02_pp_system_done:
+    ld a,b
+    cp '>'
+    jp nz,cc_rev02_notsup
+    ld a,1
+    ld (cc_rev02_pp_system),a
+    jr cc_rev02_pp_trailer
+
 cc_rev02_pp_trailer:
     ; Only horizontal whitespace may follow the closing quote on its line.
     call cc_rev02_next_char
@@ -11236,6 +11263,12 @@ cc_rev02_pp_trailer_newline:
     ld a,1
     ld (cc_rev02_line_start),a
 cc_rev02_pp_trailer_done:
+    ld a,(cc_rev02_pp_system)
+    or a
+    jr z,cc_rev02_pp_local_header
+    xor a
+    ret
+cc_rev02_pp_local_header:
     ; Validate typed local header through ordinary namespace semantics.
     ld hl,cc_rev02_pp_name
     ld (cc_rev02_pp_stat_req),hl
@@ -11511,6 +11544,7 @@ cc_rev02_pp_char_ok:
     ret
 
 cc_rev02_pp_kw_include: db 'include',0
+cc_rev02_pp_kw_c48: db 'c48.h',0
 cc_rev02_pp_char: db 0
 
 cc_rev02_emit_return_hl:

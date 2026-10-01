@@ -62,7 +62,7 @@ def main() -> None:
         "cc_rev02_pp_directive:", "cc_rev02_pp_name:", "SYS_STAT", "SYS_OPEN", "SYS_READ", "SYS_CLOSE",
         "CC_REV02_INCLUDE_CAP   EQU 64", "cc_rev02_includebuf", "cc_rev02_parent_read_left",
         "CC_REV02_MACRO_CAP     EQU 16", "CC_REV02_MACRO_REPL_CAP EQU 32",
-        "cc_rev02_pp_define_word_start:", "cc_rev02_macro_try:",
+        "cc_rev02_pp_define_word_start:", "cc_rev02_macro_try:", "cc_rev02_pp_system_c48:", "cc_rev02_pp_kw_c48",
     ):
         req(needle in block, "quoted-include product closure missing: " + needle)
     for forbidden in ("cc_p11pr_", "CC_P11PR", "source_crc", "source_sum", "source_sha", "identity_table"):
@@ -138,6 +138,10 @@ wrong_name_source_end:
 helper_source:
     db 'int helper(void){{return 9;}} int main(void){{helper();return 0;}}',10
 helper_source_end:
+builtin_c48_source:
+    db '#include <c48.h>',10
+    db 'int main(void){{cls();return 0;}}',10
+builtin_c48_source_end:
 
 fixture_reset:
     xor a
@@ -238,6 +242,30 @@ test_generic_call_obj:
     ld a,h
     or l
     jp z,test_fail
+    xor a
+    ret
+
+test_builtin_c48:
+    ld a,12
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ret c
+    ld a,(stat_count)
+    or a
+    jp nz,test_fail
+    ld a,(open_count)
+    or a
+    jp nz,test_fail
+    ld a,(close_count)
+    or a
+    jp nz,test_fail
+    ld a,(cc_rev02_symbol_count)
+    cp 2
+    jp nz,test_fail
+    ld a,(cc_rev02_reloc_count)
+    cp 1
+    jp nz,test_fail
     xor a
     ret
 
@@ -641,10 +669,19 @@ gate_read_root_first:
     jp z,gate_read_generic_call_string
     cp 11
     jp z,gate_read_helper
+    cp 12
+    jp z,gate_read_builtin_c48
     ld hl,root_source
     ld bc,CC_REV02_READ_CAP
     ldir
     ld hl,CC_REV02_READ_CAP
+    xor a
+    ret
+gate_read_builtin_c48:
+    ld hl,builtin_c48_source
+    ld bc,builtin_c48_source_end-builtin_c48_source
+    ldir
+    ld hl,builtin_c48_source_end-builtin_c48_source
     xor a
     ret
 gate_read_helper:
@@ -755,7 +792,7 @@ gateway_end:
     run([sj, "--nologo", f"--sym={sym.as_posix()}", asm.as_posix()], out)
     req(main_bin.is_file() and gate_bin.is_file(), "fixture binaries missing")
     syms = symbols(sym)
-    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
+    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_builtin_c48", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
     for name in names:
         req(name in syms, "fixture symbol missing: " + name)
 
@@ -797,6 +834,7 @@ gateway_end:
             "object_like_define_multitoken": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_call_string_relocations": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_helper_definition_and_call": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "builtin_c48_header": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "recursive_macro_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "function_macro_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "ordinary_stat_open_read_close": "PASS" if not ns.assemble_only else "ASSEMBLED",
