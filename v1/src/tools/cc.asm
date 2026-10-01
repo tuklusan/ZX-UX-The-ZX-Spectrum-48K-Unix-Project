@@ -10137,7 +10137,12 @@ CC_REV02_PARAM_ENTRY    EQU 18
 CC_REV02_GLOBAL_META_BYTES EQU CC_REV02_SYMBOL_CAP*6
 CC_REV02_SYMBOL_BYTES   EQU CC_REV02_SYMBOL_CAP*CC_OBJ1_SYMBOL_SIZE
 CC_REV02_RELOC_BYTES    EQU CC_REV02_RELOC_CAP*CC_OBJ1_RELOC_SIZE
-CC_REV02_BSS_BYTES      EQU CC_REV02_READ_CAP+CC_REV02_TOKEN_CAP+CC_REV02_TEXT_CAP+CC_REV02_OBJ_CAP+CC_REV02_INCLUDE_CAP+CC_REV02_MACRO_CAP*CC_REV02_MACRO_ENTRY+CC_REV02_PP_REPL_CAP+CC_REV02_SYMBOL_BYTES+CC_REV02_RELOC_BYTES+CC_REV02_LITERAL_CAP+CC_REV02_LOCAL_CAP*CC_REV02_LOCAL_ENTRY+CC_REV02_LOOP_CAP*3+CC_REV02_BREAK_CAP*2+CC_REV02_PARAM_CAP*CC_REV02_PARAM_ENTRY+CC_REV02_GLOBAL_META_BYTES
+; Parsing/preprocessor scratch is dead before OBJ1 serialization begins. Overlay
+; that bounded phase-local workspace with the output buffer instead of charging
+; both lifetimes against the 48K process residency budget.
+CC_REV02_PARSE_SCRATCH_BYTES EQU CC_REV02_READ_CAP+CC_REV02_TOKEN_CAP+CC_REV02_INCLUDE_CAP+CC_REV02_MACRO_CAP*CC_REV02_MACRO_ENTRY+CC_REV02_PP_REPL_CAP
+    ASSERT CC_REV02_PARSE_SCRATCH_BYTES <= CC_REV02_OBJ_CAP
+CC_REV02_BSS_BYTES      EQU CC_REV02_OBJ_CAP+CC_REV02_TEXT_CAP+CC_REV02_SYMBOL_BYTES+CC_REV02_RELOC_BYTES+CC_REV02_LITERAL_CAP+CC_REV02_LOCAL_CAP*CC_REV02_LOCAL_ENTRY+CC_REV02_LOOP_CAP*3+CC_REV02_BREAK_CAP*2+CC_REV02_PARAM_CAP*CC_REV02_PARAM_ENTRY+CC_REV02_GLOBAL_META_BYTES
 CC_REV02_T_EOF          EQU 0
 CC_REV02_T_ID           EQU 1
 CC_REV02_T_NUM          EQU 2
@@ -10146,16 +10151,18 @@ CC_REV02_T_STRING       EQU 4
 CC_REV02_T_CHAR         EQU 5
 CC_REV02_T_FLOAT        EQU 6
 
-; Large transient source/token/TEXT/OBJ1 work buffers live in process BSS so the
-; compiler image itself remains small.  They are ordinary process-owned RAM.
+; Large transient work buffers live in process BSS. Source/token/include/macro
+; scratch exists only while parsing; OBJ1 output exists only after parsing and
+; literal finalization, so those lifetimes deliberately share one bounded arena.
+cc_rev02_objbuf        EQU cc_product_bss
 cc_rev02_readbuf       EQU cc_product_bss
 cc_rev02_token         EQU cc_rev02_readbuf+CC_REV02_READ_CAP
-cc_rev02_text          EQU cc_rev02_token+CC_REV02_TOKEN_CAP
-cc_rev02_objbuf        EQU cc_rev02_text+CC_REV02_TEXT_CAP
-cc_rev02_includebuf    EQU cc_rev02_objbuf+CC_REV02_OBJ_CAP
+cc_rev02_includebuf    EQU cc_rev02_token+CC_REV02_TOKEN_CAP
 cc_rev02_macro_table   EQU cc_rev02_includebuf+CC_REV02_INCLUDE_CAP
 cc_rev02_pp_repl       EQU cc_rev02_macro_table+CC_REV02_MACRO_CAP*CC_REV02_MACRO_ENTRY
-cc_rev02_symbols       EQU cc_rev02_pp_repl+CC_REV02_PP_REPL_CAP
+    ASSERT cc_rev02_pp_repl+CC_REV02_PP_REPL_CAP <= cc_rev02_objbuf+CC_REV02_OBJ_CAP
+cc_rev02_text          EQU cc_rev02_objbuf+CC_REV02_OBJ_CAP
+cc_rev02_symbols       EQU cc_rev02_text+CC_REV02_TEXT_CAP
 cc_rev02_relocs        EQU cc_rev02_symbols+CC_REV02_SYMBOL_BYTES
 cc_rev02_literals      EQU cc_rev02_relocs+CC_REV02_RELOC_BYTES
 cc_rev02_locals        EQU cc_rev02_literals+CC_REV02_LITERAL_CAP
