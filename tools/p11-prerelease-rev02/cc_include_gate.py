@@ -752,6 +752,16 @@ test_patch_logic_bss:
     jr test_patch_logic_write
 
 test_patch_logic_undef:
+    ld hl,cc_rev02_rt_cmp_s16
+    call cc_rev02_symbol_find
+    jr c,test_patch_logic_undef_div
+    ld c,a
+    ld a,(patch_sym)
+    cp c
+    jr nz,test_patch_logic_undef_div
+    ld de,c48_cmp_s16
+    jr test_patch_logic_write
+test_patch_logic_undef_div:
     ld hl,cc_rev02_rt_s16_divmod
     call cc_rev02_symbol_find
     jp c,test_fail
@@ -1052,8 +1062,9 @@ test_global_array_symbols:
     call fixture_reset
     call cc_rev02_compile_stream
     ret c
+    ; a, c, main, and the ordinary comparison helper used by i<4.
     ld a,(cc_rev02_symbol_count)
-    cp 3
+    cp 4
     jp nz,test_fail
     xor a
     ret
@@ -1081,7 +1092,7 @@ test_global_array_codegen:
     cp 11
     jp nz,test_fail
     ld a,(cc_rev02_symbol_count)
-    cp 3
+    cp 4
     jp nz,test_fail
     call test_patch_logic_relocs
     ret c
