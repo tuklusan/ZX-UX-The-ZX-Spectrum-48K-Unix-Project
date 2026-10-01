@@ -10174,8 +10174,9 @@ cc_rev02_main_offset:  dw 0
 cc_rev02_op:           db 0
 cc_rev02_punct_first: db 0
 cc_rev02_cmp_jr: db 0
-cc_rev02_label_count: db 0
-cc_rev02_label_name: defs 16,0
+cc_rev02_current_function_symbol: db 0
+cc_rev02_current_function_offset: dw 0
+cc_rev02_patch_offset: dw 0
 cc_rev02_line_start:   db 0
 cc_rev02_include_depth: db 0
 cc_rev02_parent_handle: db HANDLE_FREE
@@ -10251,7 +10252,6 @@ cc_rev02_compile_stream:
     ld (cc_rev02_literal_len),a
     ld (cc_rev02_literal_len+1),a
     ld (cc_rev02_string_count),a
-    ld (cc_rev02_label_count),a
     ld a,HANDLE_FREE
     ld (cc_rev02_parent_handle),a
     call cc_rev02_next_token
@@ -10364,11 +10364,13 @@ cc_rev02_external_param_close:
     ; TEXT definitions and may be called through normal ABS16 relocations.
     ld hl,(cc_rev02_text_len)
     ld (cc_rev02_value),hl
+    ld (cc_rev02_current_function_offset),hl
     ld hl,cc_rev02_function_name
     ld de,(cc_rev02_value)
     ld a,1
     call cc_rev02_symbol_define
     ret c
+    ld (cc_rev02_current_function_symbol),a
     ld hl,cc_rev02_function_name
     ld de,cc_rev02_kw_main
     call cc_rev02_streq
@@ -10548,30 +10550,26 @@ cc_rev02_value_lor_loop:
     ld e,'|'
     call cc_rev02_tok_is_op2
     ret nz
-    call cc_rev02_label_new
-    ret c
-    push af
     call cc_rev02_emit_test_hl
-    jp c,cc_rev02_drop_af_err
-    pop af
-    push af
+    ret c
     ld b,$C2                 ; JP NZ,true
-    call cc_rev02_emit_jp_label
-    jp c,cc_rev02_drop_af_err
+    call cc_rev02_emit_forward_function_jp
+    ret c
+    push hl
     call cc_rev02_next_token
-    jp c,cc_rev02_drop_af_err
+    jp c,cc_rev02_drop_hl_err
     call cc_rev02_value_land
-    jp c,cc_rev02_drop_af_err
+    jp c,cc_rev02_drop_hl_err
     call cc_rev02_emit_boolize
-    jp c,cc_rev02_drop_af_err
+    jp c,cc_rev02_drop_hl_err
     ld a,$18                 ; JR +3 skips LD HL,1
     call cc_rev02_emit8
-    jp c,cc_rev02_drop_af_err
+    jp c,cc_rev02_drop_hl_err
     ld a,3
     call cc_rev02_emit8
-    jp c,cc_rev02_drop_af_err
-    pop af
-    call cc_rev02_label_define
+    jp c,cc_rev02_drop_hl_err
+    pop hl
+    call cc_rev02_patch_function_target
     ret c
     ld hl,1
     call cc_rev02_emit_ld_hl
@@ -10586,30 +10584,26 @@ cc_rev02_value_land_loop:
     ld e,'&'
     call cc_rev02_tok_is_op2
     ret nz
-    call cc_rev02_label_new
-    ret c
-    push af
     call cc_rev02_emit_test_hl
-    jp c,cc_rev02_drop_af_err
-    pop af
-    push af
+    ret c
     ld b,$CA                 ; JP Z,false
-    call cc_rev02_emit_jp_label
-    jp c,cc_rev02_drop_af_err
+    call cc_rev02_emit_forward_function_jp
+    ret c
+    push hl
     call cc_rev02_next_token
-    jp c,cc_rev02_drop_af_err
+    jp c,cc_rev02_drop_hl_err
     call cc_rev02_value_bor
-    jp c,cc_rev02_drop_af_err
+    jp c,cc_rev02_drop_hl_err
     call cc_rev02_emit_boolize
-    jp c,cc_rev02_drop_af_err
+    jp c,cc_rev02_drop_hl_err
     ld a,$18                 ; JR +3 skips LD HL,0
     call cc_rev02_emit8
-    jp c,cc_rev02_drop_af_err
+    jp c,cc_rev02_drop_hl_err
     ld a,3
     call cc_rev02_emit8
-    jp c,cc_rev02_drop_af_err
-    pop af
-    call cc_rev02_label_define
+    jp c,cc_rev02_drop_hl_err
+    pop hl
+    call cc_rev02_patch_function_target
     ret c
     ld hl,0
     call cc_rev02_emit_ld_hl
@@ -12653,89 +12647,44 @@ cc_rev02_store_arg_symbol:
     ld (hl),a
     ret
 
-; Internal control labels use the implementation-reserved __Lxx namespace.
-; A freshly allocated label is an ordinary undefined OBJ1 symbol until its TEXT
-; position is defined.  Linkage remains ordinary ABS16; no host patch is part of
-; the product path.
-cc_rev02_label_new:
-    ld a,(cc_rev02_label_count)
-    cp $FF
-    jp z,cc_rev02_nospc
-    ld c,a
-    ld hl,cc_rev02_label_name
-    ld (hl),'_'
-    inc hl
-    ld (hl),'_'
-    inc hl
-    ld (hl),'L'
-    inc hl
-    ld a,c
-    rrca
-    rrca
-    rrca
-    rrca
-    and $0F
-    call cc_rev02_hex_name_digit
-    ld (hl),a
-    inc hl
-    ld a,c
-    and $0F
-    call cc_rev02_hex_name_digit
-    ld (hl),a
-    inc hl
-    xor a
-    ld (hl),a
-    inc hl
-    ld b,10
-cc_rev02_label_name_zero:
-    ld (hl),a
-    inc hl
-    djnz cc_rev02_label_name_zero
-    ld a,(cc_rev02_label_count)
-    inc a
-    ld (cc_rev02_label_count),a
-    ld hl,cc_rev02_label_name
-    jp cc_rev02_symbol_get_undef
-
-cc_rev02_hex_name_digit:
-    cp 10
-    jr c,cc_rev02_hex_name_num
-    add a,'A'-10
-    ret
-cc_rev02_hex_name_num:
-    add a,'0'
-    ret
-
-; A=symbol index. Define it at the current TEXT offset.
-cc_rev02_label_define:
-    ld (cc_rev02_temp_index),a
-    call cc_rev02_symbol_ptr_for_index
-    ld de,16
-    add hl,de
-    ld de,(cc_rev02_text_len)
-    ld (hl),e
-    inc hl
-    ld (hl),d
-    inc hl
-    ld a,1
-    ld (hl),a
-    xor a
-    ret
-
-; A=symbol index, B=JP opcode. Emit opcode + relocatable ABS16 operand.
-cc_rev02_emit_jp_label:
-    ld (cc_rev02_temp_symbol),a
+; Structured forward branches relocate against the current function symbol.
+; The instruction word itself is the ordinary OBJ1 addend, so internal targets
+; consume relocation records but no extra symbol-table entries.
+; B=JP opcode. Success HL=operand TEXT offset for later target patching.
+cc_rev02_emit_forward_function_jp:
     ld a,b
     call cc_rev02_emit8
     ret c
     ld hl,(cc_rev02_text_len)
+    ld (cc_rev02_patch_offset),hl
     push hl
     ld hl,0
     call cc_rev02_emit16
     pop hl
     ret c
-    ld a,(cc_rev02_temp_symbol)
-    jp cc_rev02_add_reloc
+    push hl
+    ld a,(cc_rev02_current_function_symbol)
+    call cc_rev02_add_reloc
+    pop hl
+    ret
+
+; HL=operand TEXT offset. Patch its addend to current target - function base.
+cc_rev02_patch_function_target:
+    ld (cc_rev02_patch_offset),hl
+    ld hl,(cc_rev02_text_len)
+    ld de,(cc_rev02_current_function_offset)
+    or a
+    sbc hl,de
+    jp c,cc_rev02_format
+    ex de,hl
+    ld hl,cc_rev02_text
+    ld bc,(cc_rev02_patch_offset)
+    add hl,bc
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    xor a
+    ret
 
 cc_rev02_emit_test_hl:
     ld a,$7C                 ; LD A,H
@@ -12776,11 +12725,7 @@ cc_rev02_emit_logical_not:
     ld a,$2C
     jp cc_rev02_emit8
 
-cc_rev02_drop_af_err:
-    pop af
-    scf
-    ret
-
+; HL=NUL-terminated undefined helper name. Emit CALL nn and attach one
 ; HL=NUL-terminated undefined helper name. Emit CALL nn and attach one
 ; ordinary ABS16 relocation. This is generic runtime-symbol resolution, not a
 ; source-name or source-identity dispatch path.

@@ -101,6 +101,10 @@ shl_symbol: db 0
 shr_symbol: db 0
 cmp_symbol: db 0
 divzero_seen: db 0
+patch_left: db 0
+patch_sym: db 0
+patch_reloc_off: dw 0
+patch_symbol_val: dw 0
 
 root_source:
     db '#define ANSWER 3 + 4',10
@@ -646,73 +650,76 @@ test_runtime_compare_b:
 
 test_patch_logic_relocs:
     ld a,(cc_rev02_reloc_count)
-    ld b,a
+    ld (patch_left),a
     ld ix,cc_rev02_relocs
 test_patch_logic_loop:
-    ld a,b
+    ld a,(patch_left)
     or a
     ret z
     ld e,(ix+0)
     ld d,(ix+1)
+    ld (patch_reloc_off),de
     ld a,(ix+2)
-    ld c,a
-    push bc
-    push de
-    ld a,c
+    ld (patch_sym),a
     call cc_rev02_symbol_ptr_for_index
     ld de,16
     add hl,de
     ld e,(hl)
     inc hl
     ld d,(hl)
+    ld (patch_symbol_val),de
     inc hl
     ld a,(hl)
     or a
     jr z,test_patch_logic_undef
-    push ix
+
+    ; Defined TEXT symbol: linked target = text base + symbol value + addend.
     ld hl,cc_rev02_text
+    ld de,(patch_reloc_off)
+    add hl,de
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld hl,(patch_symbol_val)
+    add hl,de
+    ld de,cc_rev02_text
     add hl,de
     ex de,hl
-    pop ix
     jr test_patch_logic_write
+
 test_patch_logic_undef:
-    pop de
-    push de
-    ld a,c
     ld hl,cc_rev02_rt_s16_divmod
     call cc_rev02_symbol_find
-    jr c,test_patch_logic_bad
+    jp c,test_fail
+    ld c,a
+    ld a,(patch_sym)
     cp c
-    jr nz,test_patch_logic_bad
+    jp nz,test_fail
     ld de,c48_s16_divmod
+
 test_patch_logic_write:
-    pop bc
-    push bc
     ld hl,cc_rev02_text
+    ld bc,(patch_reloc_off)
     add hl,bc
     ld (hl),e
     inc hl
     ld (hl),d
-    pop bc
-    pop bc
     ld de,CC_OBJ1_RELOC_SIZE
     add ix,de
-    djnz test_patch_logic_loop
-    xor a
-    ret
-test_patch_logic_bad:
-    pop de
-    pop bc
-    ld a,E_FORMAT
-    scf
-    ret
+    ld hl,patch_left
+    dec (hl)
+    jp test_patch_logic_loop
 
+test_runtime_logic_a:
 test_runtime_logic_a:
     ld a,20
     ld (mode),a
     call fixture_reset
     call cc_rev02_compile_stream
     ret c
+    ld a,(cc_rev02_symbol_count)
+    cp 2
+    jp nz,test_fail
     call test_patch_logic_relocs
     ret c
     call cc_rev02_text
@@ -734,6 +741,9 @@ test_runtime_logic_b:
     call fixture_reset
     call cc_rev02_compile_stream
     ret c
+    ld a,(cc_rev02_symbol_count)
+    cp 2
+    jp nz,test_fail
     call test_patch_logic_relocs
     ret c
     call cc_rev02_text
