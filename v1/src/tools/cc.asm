@@ -10268,7 +10268,7 @@ cc_rev02_value_size:   db 0
 cc_rev02_value_array:  db 0
 cc_rev02_value_extent: dw 0
 cc_rev02_sizeof_type_size: db 0
-cc_rev02_sizeof_type_void: db 0
+cc_rev02_sizeof_type_void_flag: db 0
 
 cc_rev02_kw_int:       db 'int',0
 cc_rev02_kw_char:      db 'char',0
@@ -12974,7 +12974,7 @@ cc_rev02_value_add_plus:
     call cc_rev02_emit8
     ret c
     call cc_rev02_value_set_word_shape
-    jr cc_rev02_value_add_loop
+    jp cc_rev02_value_add_loop
 
 ; Multiplicative runtime-value layer for ordinary signed int expressions.
 ; lhs is parked while rhs is evaluated; the frozen libc48 helpers own exact
@@ -12985,7 +12985,7 @@ cc_rev02_value_mul:
 cc_rev02_value_mul_loop:
     ld a,'*'
     call cc_rev02_tok_is_punct
-    jr z,cc_rev02_value_mul_times
+    jp z,cc_rev02_value_mul_times
     ld a,'/'
     call cc_rev02_tok_is_punct
     jr z,cc_rev02_value_mul_div
@@ -13648,14 +13648,14 @@ cc_rev02_sizeof_group_expr:
     call cc_rev02_expect_punct
     pop hl
     ret c
-    jr cc_rev02_sizeof_result
+    jp cc_rev02_sizeof_result
 cc_rev02_sizeof_unary_expr:
     call cc_rev02_sizeof_parse_unary_runtime
     ret c
     ld a,h
     or l
     jp z,cc_rev02_format
-    jr cc_rev02_sizeof_result
+    jp cc_rev02_sizeof_result
 cc_rev02_sizeof_type_char:
     ld a,1
     jr cc_rev02_sizeof_type_scalar
@@ -13667,7 +13667,7 @@ cc_rev02_sizeof_type_float:
 cc_rev02_sizeof_type_scalar:
     ld (cc_rev02_sizeof_type_size),a
     xor a
-    ld (cc_rev02_sizeof_type_void),a
+    ld (cc_rev02_sizeof_type_void_flag),a
     call cc_rev02_next_token
     ret c
     jr cc_rev02_sizeof_type_stars
@@ -13675,7 +13675,7 @@ cc_rev02_sizeof_type_void:
     xor a
     ld (cc_rev02_sizeof_type_size),a
     inc a
-    ld (cc_rev02_sizeof_type_void),a
+    ld (cc_rev02_sizeof_type_void_flag),a
     call cc_rev02_next_token
     ret c
     jr cc_rev02_sizeof_type_stars
@@ -13705,7 +13705,7 @@ cc_rev02_sizeof_type_unsigned_char:
 cc_rev02_sizeof_type_unsigned_set:
     ld (cc_rev02_sizeof_type_size),a
     xor a
-    ld (cc_rev02_sizeof_type_void),a
+    ld (cc_rev02_sizeof_type_void_flag),a
     call cc_rev02_next_token
     ret c
 cc_rev02_sizeof_type_stars:
@@ -13715,12 +13715,12 @@ cc_rev02_sizeof_type_stars:
     ld a,2
     ld (cc_rev02_sizeof_type_size),a
     xor a
-    ld (cc_rev02_sizeof_type_void),a
+    ld (cc_rev02_sizeof_type_void_flag),a
     call cc_rev02_next_token
     ret c
     jr cc_rev02_sizeof_type_stars
 cc_rev02_sizeof_type_done:
-    ld a,(cc_rev02_sizeof_type_void)
+    ld a,(cc_rev02_sizeof_type_void_flag)
     or a
     jp nz,cc_rev02_format
     ld a,')'
