@@ -10223,6 +10223,7 @@ cc_rev02_kw_return:    db 'return',0
 cc_rev02_kw_if:        db 'if',0
 cc_rev02_kw_else:      db 'else',0
 cc_rev02_kw_while:     db 'while',0
+cc_rev02_kw_for:       db 'for',0
 cc_rev02_kw_main:      db 'main',0
 cc_rev02_pp_kw_define: db 'define',0
 
@@ -10458,22 +10459,19 @@ cc_rev02_statement_id:
     ld de,cc_rev02_kw_while
     call cc_rev02_streq
     jp z,cc_rev02_body_while
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_for
+    call cc_rev02_streq
+    jp z,cc_rev02_body_for
 
-    ; An ordinary identifier statement is either a function call or assignment.
+    ; Ordinary identifier statements and for-header clauses share one generic
+    ; mutation/call parser.
     ld hl,cc_rev02_token
     ld de,cc_rev02_call_name
     call cc_rev02_copy_name16
     call cc_rev02_next_token
     ret c
-    ld a,'('
-    call cc_rev02_tok_is_punct
-    jr nz,cc_rev02_body_assignment_check
-    ld a,'('
-    call cc_rev02_expect_punct
-    ret c
-    call cc_rev02_parse_call_args
-    ret c
-    call cc_rev02_emit_call
+    call cc_rev02_parse_named_clause
     ret c
     ld a,';'
     call cc_rev02_expect_punct
@@ -10483,15 +10481,28 @@ cc_rev02_statement_id:
     xor a
     ret
 
-cc_rev02_body_assignment_check:
+; cc_rev02_call_name is the already-consumed identifier. The current token is
+; its operator or opening parenthesis. Success leaves the following delimiter.
+cc_rev02_parse_named_clause:
+    ld a,'('
+    call cc_rev02_tok_is_punct
+    jr nz,cc_rev02_named_assignment_check
+    ld a,'('
+    call cc_rev02_expect_punct
+    ret c
+    call cc_rev02_parse_call_args
+    ret c
+    jp cc_rev02_emit_call
+
+cc_rev02_named_assignment_check:
     ld d,'+'
     ld e,'+'
     call cc_rev02_tok_is_op2
-    jr z,cc_rev02_body_post_inc
+    jr z,cc_rev02_named_post_inc
     ld d,'-'
     ld e,'-'
     call cc_rev02_tok_is_op2
-    jr z,cc_rev02_body_post_dec
+    jr z,cc_rev02_named_post_dec
     ld a,'='
     call cc_rev02_tok_is_punct
     jp nz,cc_rev02_notsup
@@ -10504,22 +10515,14 @@ cc_rev02_body_assignment_check:
     call cc_rev02_parse_value_expr
     ret c
     ld a,(cc_rev02_lhs_disp)
-    call cc_rev02_emit_local_store
-    ret c
-    ld a,';'
-    call cc_rev02_expect_punct
-    ret c
-    ld a,1
-    ld (cc_rev02_exec_seen),a
-    xor a
-    ret
+    jp cc_rev02_emit_local_store
 
-cc_rev02_body_post_inc:
+cc_rev02_named_post_inc:
     xor a
-    jr cc_rev02_body_post_step
-cc_rev02_body_post_dec:
+    jr cc_rev02_named_post_step
+cc_rev02_named_post_dec:
     ld a,1
-cc_rev02_body_post_step:
+cc_rev02_named_post_step:
     ld (cc_rev02_step_kind),a
     ld hl,cc_rev02_call_name
     call cc_rev02_local_find
@@ -10534,15 +10537,7 @@ cc_rev02_body_post_step:
     ld a,c
     call cc_rev02_emit_local_step
     ret c
-    call cc_rev02_next_token
-    ret c
-    ld a,';'
-    call cc_rev02_expect_punct
-    ret c
-    ld a,1
-    ld (cc_rev02_exec_seen),a
-    xor a
-    ret
+    jp cc_rev02_next_token
 
 cc_rev02_body_local_int:
     ld a,(cc_rev02_exec_seen)
@@ -10676,6 +10671,134 @@ cc_rev02_body_while:
     jp c,cc_rev02_drop_hl_err
     pop hl
     jp cc_rev02_patch_function_target
+
+cc_rev02_body_for:
+    call cc_rev02_next_token
+    ret c
+    ld a,'('
+    call cc_rev02_expect_punct
+    ret c
+
+    ; Optional initializer.
+    ld a,';'
+    call cc_rev02_tok_is_punct
+    jr z,cc_rev02_for_init_done
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_ID
+    jp nz,cc_rev02_notsup
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_call_name
+    call cc_rev02_copy_name16
+    call cc_rev02_next_token
+    ret c
+    call cc_rev02_parse_named_clause
+    ret c
+cc_rev02_for_init_done:
+    ld a,';'
+    call cc_rev02_expect_punct
+    ret c
+
+    ; Condition code begins here. A missing condition is the C true case.
+    ld hl,(cc_rev02_text_len)
+    push hl                  ; condition TEXT offset
+    ld a,';'
+    call cc_rev02_tok_is_punct
+    jr z,cc_rev02_for_condition_empty
+    call cc_rev02_parse_value_expr
+    jp c,cc_rev02_drop_hl_err
+    call cc_rev02_emit_test_hl
+    jp c,cc_rev02_drop_hl_err
+    ld b,$CA
+    call cc_rev02_emit_forward_function_jp
+    jp c,cc_rev02_drop_hl_err
+    push hl                  ; end-target operand offset
+    jr cc_rev02_for_condition_ready
+cc_rev02_for_condition_empty:
+    ld hl,$FFFF
+    push hl                  ; no false-condition branch
+cc_rev02_for_condition_ready:
+    ld a,';'
+    call cc_rev02_expect_punct
+    jp c,cc_rev02_drop_2hl_err
+
+    ; Source order places the step before the body. A body trampoline preserves
+    ; normal C runtime order without buffering source or creating label symbols.
+    ld b,$C3
+    call cc_rev02_emit_forward_function_jp
+    jp c,cc_rev02_drop_2hl_err
+    push hl                  ; body-target operand offset
+    ld hl,(cc_rev02_text_len)
+    push hl                  ; step TEXT offset
+
+    ld a,')'
+    call cc_rev02_tok_is_punct
+    jr z,cc_rev02_for_step_done
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_ID
+    jp nz,cc_rev02_for_drop_4_notsup
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_call_name
+    call cc_rev02_copy_name16
+    call cc_rev02_next_token
+    jp c,cc_rev02_drop_4hl_err
+    call cc_rev02_parse_named_clause
+    jp c,cc_rev02_drop_4hl_err
+cc_rev02_for_step_done:
+    ld a,')'
+    call cc_rev02_expect_punct
+    jp c,cc_rev02_drop_4hl_err
+
+    ; Stack: condition, end-patch/$FFFF, body-patch, step. Reorder long enough
+    ; to emit the step->condition jump, then retain end+step across body parsing.
+    pop de                   ; step
+    pop hl                   ; body patch
+    pop bc                   ; end patch
+    pop ix                   ; condition
+    push bc                  ; retained end patch
+    push de                  ; retained step target
+    push hl                  ; body patch for immediate patching
+    push ix
+    pop de                   ; condition target
+    ld b,$C3
+    call cc_rev02_emit_function_jp_to
+    jp c,cc_rev02_drop_3hl_err
+    pop hl                   ; body patch
+    call cc_rev02_patch_function_target
+    jp c,cc_rev02_drop_2hl_err
+
+    ld a,1
+    ld (cc_rev02_exec_seen),a
+    call cc_rev02_parse_statement
+    jp c,cc_rev02_drop_2hl_err
+    pop de                   ; step target
+    ld b,$C3
+    call cc_rev02_emit_function_jp_to
+    jp c,cc_rev02_drop_hl_err
+    pop hl                   ; end patch or $FFFF
+    ld a,h
+    cp $FF
+    jr nz,cc_rev02_for_patch_end
+    ld a,l
+    cp $FF
+    jr z,cc_rev02_for_done
+cc_rev02_for_patch_end:
+    jp cc_rev02_patch_function_target
+cc_rev02_for_done:
+    xor a
+    ret
+
+cc_rev02_for_drop_4_notsup:
+    ld a,E_NOTSUP
+    scf
+cc_rev02_drop_4hl_err:
+    pop hl
+cc_rev02_drop_3hl_err:
+    pop hl
+cc_rev02_drop_2hl_err:
+    pop hl
+cc_rev02_drop_hl_err:
+    pop hl
+    ret
 
 cc_rev02_body_empty:
     jp cc_rev02_next_token
@@ -11564,14 +11687,6 @@ cc_rev02_unary_group:
     call cc_rev02_expect_punct
     pop hl
     ret
-cc_rev02_drop_hl_err:
-    pop hl
-    ret
-cc_rev02_drop_2hl_err:
-    pop hl
-    pop hl
-    ret
-
 cc_rev02_umul16:
     ld bc,0
     ld a,16
