@@ -355,7 +355,7 @@ sizeof_source:
     db 'return sizeof(char)+sizeof(unsigned char)+sizeof(short)+sizeof(unsigned short)+',10
     db 'sizeof(int)+sizeof(unsigned int)+sizeof(float)+sizeof(void*)+sizeof ga+sizeof gf+sizeof a+',10
     db 'sizeof c+sizeof p+sizeof *p+sizeof(a[1])+sizeof("abc")+sizeof(',39,'A',39,')+sizeof(1)+',10
-    db 'sizeof(1.0)+sizeof(c++)+sizeof(c+1)+10*(sizeof(int)>-1)+c;}}',10
+    db 'sizeof(0.25)+sizeof(c++)+sizeof(c+1)+10*(sizeof(int)>-1)+c;}}',10
 sizeof_source_end:
 sizeof_void_source:
     db 'int main(void){{return sizeof(void);}}',10
@@ -373,7 +373,7 @@ sizeof_object_source:
     db 'return sizeof c+sizeof p+sizeof *p+sizeof(a[1])+sizeof(c++)+sizeof(c+1);}}',10
 sizeof_object_source_end:
 sizeof_literal_source:
-    db 'int main(void){{return sizeof("abc")+sizeof(',39,'A',39,')+sizeof(1)+sizeof(1.0);}}',10
+    db 'int main(void){{return sizeof("abc")+sizeof(',39,'A',39,')+sizeof(1)+sizeof(0.25);}}',10
 sizeof_literal_source_end:
 sizeof_string_source:
     db 'int main(void){{return sizeof("abc");}}',10
@@ -385,7 +385,7 @@ sizeof_integer_source:
     db 'int main(void){{return sizeof(1);}}',10
 sizeof_integer_source_end:
 sizeof_float_source:
-    db 'int main(void){{return sizeof(1.0);}}',10
+    db 'int main(void){{return sizeof(0.25);}}',10
 sizeof_float_source_end:
 sizeof_unsigned_source:
     db 'int main(void){{return 10*(sizeof(int)>-1);}}',10
@@ -3109,7 +3109,7 @@ gateway_end:
         "main argc/argv fixture must cross the 64-byte direct-source read boundary")
     req(len(b"int main(void){int x;int y;x=0;y=0;do{x++;if(x==2)continue;y=y+x;if(x==4)break;}while(x<6);return x*10+y;}\n") > 64,
         "do/while fixture must cross the 64-byte direct-source read boundary")
-    req(len(b"int ga[sizeof(int)+1];char gc;float gf[2];int main(void){char c;int a[sizeof(int)+2];int *p;c=7;p=&a[0];return sizeof(char)+sizeof(unsigned char)+sizeof(short)+sizeof(unsigned short)+sizeof(int)+sizeof(unsigned int)+sizeof(float)+sizeof(void*)+sizeof ga+sizeof gf+sizeof a+sizeof c+sizeof p+sizeof *p+sizeof(a[1])+sizeof(\"abc\")+sizeof('A')+sizeof(1)+sizeof(1.0)+sizeof(c++)+sizeof(c+1)+10*(sizeof(int)>-1)+c;}\n") > 64,
+    req(len(b"int ga[sizeof(int)+1];char gc;float gf[2];int main(void){char c;int a[sizeof(int)+2];int *p;c=7;p=&a[0];return sizeof(char)+sizeof(unsigned char)+sizeof(short)+sizeof(unsigned short)+sizeof(int)+sizeof(unsigned int)+sizeof(float)+sizeof(void*)+sizeof ga+sizeof gf+sizeof a+sizeof c+sizeof p+sizeof *p+sizeof(a[1])+sizeof(\"abc\")+sizeof('A')+sizeof(1)+sizeof(0.25)+sizeof(c++)+sizeof(c+1)+10*(sizeof(int)>-1)+c;}\n") > 64,
         "sizeof fixture must cross the 64-byte direct-source read boundary")
     req(len(b"int main(void){int a[4];char c[3];int i;i=0;for(i=0;i<4;i++)a[i]=i+1;c[0]=2;c[1]=3;c[2]=4;a[2]++;return a[0]+a[1]+a[2]+a[3]+c[0]+c[1]+c[2];}\n") > 64,
         "local-array fixture must cross the 64-byte direct-source read boundary")
