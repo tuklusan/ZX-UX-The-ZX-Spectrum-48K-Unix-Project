@@ -10111,11 +10111,10 @@ cc_rev02_compile_failed:
 
 
 ; REV02 compact generic native-C checkpoint.  The source-generic driver accepts
-; ordinary prototypes across the frozen scalar/pointer spelling surface and compiles
-; main() through ordinary call statements with up to six constant/string arguments,
-; deterministic ABS16 symbol relocations, and integer constant-expression returns.
-; Later Stage-E checkpoints extend the same parser to declarations, lvalues,
-; non-main definitions, control flow and the remaining frozen C48 surface.
+; ordinary prototypes and definitions across the frozen scalar/pointer spelling
+; surface, including bounded multi-register/stack C48_REGCALL argument lists.
+; The bounded tables are workspace limits only; code generation remains generic
+; and source identity never participates in parsing or lowering.
 CC_REV02_READ_CAP       EQU 64
 CC_REV02_TOKEN_CAP      EQU 64
 CC_REV02_TEXT_CAP       EQU 512
@@ -10128,8 +10127,8 @@ CC_REV02_PP_REPL_CAP    EQU 33
 CC_REV02_SYMBOL_CAP     EQU 32
 CC_REV02_RELOC_CAP      EQU 64
 CC_REV02_LITERAL_CAP    EQU 256
-CC_REV02_ARG_CAP        EQU 6
-CC_REV02_LOCAL_CAP      EQU 16
+CC_REV02_ARG_CAP        EQU 16
+CC_REV02_LOCAL_CAP      EQU 32
 CC_REV02_LOCAL_ENTRY    EQU 22
 CC_REV02_LOOP_CAP       EQU 16
 CC_REV02_BREAK_CAP      EQU CC_REV02_RELOC_CAP
