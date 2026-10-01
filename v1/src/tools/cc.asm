@@ -10135,7 +10135,7 @@ CC_REV02_LOOP_CAP       EQU 16
 CC_REV02_BREAK_CAP      EQU CC_REV02_RELOC_CAP
 CC_REV02_PARAM_CAP      EQU CC_REV02_ARG_CAP
 CC_REV02_PARAM_ENTRY    EQU 18
-CC_REV02_GLOBAL_META_BYTES EQU CC_REV02_SYMBOL_CAP*4
+CC_REV02_GLOBAL_META_BYTES EQU CC_REV02_SYMBOL_CAP*6
 CC_REV02_SYMBOL_BYTES   EQU CC_REV02_SYMBOL_CAP*CC_OBJ1_SYMBOL_SIZE
 CC_REV02_RELOC_BYTES    EQU CC_REV02_RELOC_CAP*CC_OBJ1_RELOC_SIZE
 CC_REV02_BSS_BYTES      EQU CC_REV02_READ_CAP+CC_REV02_TOKEN_CAP+CC_REV02_TEXT_CAP+CC_REV02_OBJ_CAP+CC_REV02_INCLUDE_CAP+CC_REV02_MACRO_CAP*CC_REV02_MACRO_ENTRY+CC_REV02_PP_REPL_CAP+CC_REV02_SYMBOL_BYTES+CC_REV02_RELOC_BYTES+CC_REV02_LITERAL_CAP+CC_REV02_LOCAL_CAP*CC_REV02_LOCAL_ENTRY+CC_REV02_LOOP_CAP*3+CC_REV02_BREAK_CAP*2+CC_REV02_PARAM_CAP*CC_REV02_PARAM_ENTRY+CC_REV02_GLOBAL_META_BYTES
@@ -10166,6 +10166,8 @@ cc_rev02_params        EQU cc_rev02_break_patches+CC_REV02_BREAK_CAP*2
 cc_rev02_global_sizes  EQU cc_rev02_params+CC_REV02_PARAM_CAP*CC_REV02_PARAM_ENTRY
 cc_rev02_global_kinds  EQU cc_rev02_global_sizes+CC_REV02_SYMBOL_CAP
 cc_rev02_global_counts EQU cc_rev02_global_kinds+CC_REV02_SYMBOL_CAP
+cc_rev02_global_pointees EQU cc_rev02_global_counts+CC_REV02_SYMBOL_CAP*2
+cc_rev02_global_ptrdepths EQU cc_rev02_global_pointees+CC_REV02_SYMBOL_CAP
 cc_rev02_read_ptr:     dw 0
 cc_rev02_read_left:    dw 0
 cc_rev02_have_push:    db 0
@@ -10207,6 +10209,8 @@ cc_rev02_global_count: dw 1
 cc_rev02_global_init_count: dw 0
 cc_rev02_global_bytes: dw 0
 cc_rev02_global_symbol: db 0
+cc_rev02_global_pointee: db 0
+cc_rev02_global_ptr_depth: db 0
 cc_rev02_step_kind: db 0
 cc_rev02_line_start:   db 0
 cc_rev02_include_depth: db 0
@@ -10364,6 +10368,8 @@ cc_rev02_parse_external:
     ld (cc_rev02_function_name),a
     ld (cc_rev02_global_size),a
     ld (cc_rev02_global_kind),a
+    ld (cc_rev02_global_pointee),a
+    ld (cc_rev02_global_ptr_depth),a
     inc a
     ld (cc_rev02_global_count),a
     xor a
@@ -10460,6 +10466,20 @@ cc_rev02_external_array:
     jp cc_rev02_external_scan
 
 cc_rev02_external_pointer:
+    ld a,(cc_rev02_global_ptr_depth)
+    cp 8
+    jp nc,cc_rev02_nospc
+    inc a
+    ld (cc_rev02_global_ptr_depth),a
+    cp 1
+    jr nz,cc_rev02_external_pointer_nested
+    ld a,(cc_rev02_global_size)
+    ld (cc_rev02_global_pointee),a
+    jr cc_rev02_external_pointer_size
+cc_rev02_external_pointer_nested:
+    ld a,2                  ; pointer-to-pointer indexes one pointer object
+    ld (cc_rev02_global_pointee),a
+cc_rev02_external_pointer_size:
     ld a,2
     ld (cc_rev02_global_size),a
     call cc_rev02_next_token
@@ -10502,10 +10522,21 @@ cc_rev02_external_init_width_ok:
     or a
     jp nz,cc_rev02_external_init_array
 
+    ld a,(cc_rev02_global_ptr_depth)
+    or a
+    jr z,cc_rev02_external_init_scalar_const
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_STRING
+    jr nz,cc_rev02_external_init_scalar_const
+    call cc_rev02_emit_string_initializer
+    ret c
+    jr cc_rev02_external_init_scalar_done
+cc_rev02_external_init_scalar_const:
     call cc_rev02_parse_const_expr
     ret c
     call cc_rev02_emit_global_const
     ret c
+cc_rev02_external_init_scalar_done:
     ld a,';'
     call cc_rev02_tok_is_punct
     jp nz,cc_rev02_format
@@ -10529,10 +10560,21 @@ cc_rev02_external_init_array_loop:
     sbc hl,de
     jp nc,cc_rev02_format
 
+    ld a,(cc_rev02_global_ptr_depth)
+    or a
+    jr z,cc_rev02_external_init_array_const
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_STRING
+    jr nz,cc_rev02_external_init_array_const
+    call cc_rev02_emit_string_initializer
+    ret c
+    jr cc_rev02_external_init_array_value_done
+cc_rev02_external_init_array_const:
     call cc_rev02_parse_const_expr
     ret c
     call cc_rev02_emit_global_const
     ret c
+cc_rev02_external_init_array_value_done:
     ld hl,(cc_rev02_global_init_count)
     inc hl
     ld (cc_rev02_global_init_count),hl
@@ -10582,6 +10624,26 @@ cc_rev02_emit_global_const8:
     ld a,l
     jp cc_rev02_emit8
 
+; Current token is a string used to initialize a pointer object. Emit a generic
+; ABS16 relocation to the pooled string and consume the source token.
+cc_rev02_emit_string_initializer:
+    ld a,(cc_rev02_global_size)
+    cp 2
+    jp nz,cc_rev02_format
+    call cc_rev02_add_string_literal
+    ret c
+    ld (cc_rev02_temp_symbol),a
+    ld hl,(cc_rev02_text_len)
+    push hl
+    ld hl,0
+    call cc_rev02_emit16
+    pop hl
+    ret c
+    ld a,(cc_rev02_temp_symbol)
+    call cc_rev02_add_reloc
+    ret c
+    jp cc_rev02_next_token
+
 ; Record C48 object metadata for either TEXT/data initialized storage or BSS.
 cc_rev02_global_record_meta:
     ld a,(cc_rev02_global_symbol)
@@ -10598,6 +10660,14 @@ cc_rev02_global_record_meta:
     ld (hl),e
     inc hl
     ld (hl),d
+    ld a,(cc_rev02_global_symbol)
+    call cc_rev02_global_pointee_ptr
+    ld a,(cc_rev02_global_pointee)
+    ld (hl),a
+    ld a,(cc_rev02_global_symbol)
+    call cc_rev02_global_ptrdepth_ptr
+    ld a,(cc_rev02_global_ptr_depth)
+    ld (hl),a
     xor a
     ret
 
@@ -10862,6 +10932,20 @@ cc_rev02_global_count_ptr:
     sla e
     rl d
     ld hl,cc_rev02_global_counts
+    add hl,de
+    ret
+
+cc_rev02_global_pointee_ptr:
+    ld e,a
+    ld d,0
+    ld hl,cc_rev02_global_pointees
+    add hl,de
+    ret
+
+cc_rev02_global_ptrdepth_ptr:
+    ld e,a
+    ld d,0
+    ld hl,cc_rev02_global_ptrdepths
     add hl,de
     ret
 
@@ -12631,7 +12715,9 @@ cc_rev02_value_local_pointer:
     call cc_rev02_tok_is_punct
     jr z,cc_rev02_value_local_index
     ld a,(cc_rev02_local_disp)
-    jp cc_rev02_emit_local_load_selected
+    call cc_rev02_emit_local_load_selected
+    ret c
+    jp cc_rev02_value_local_postcheck
 cc_rev02_value_local_index:
     call cc_rev02_emit_local_index_address
     ret c
@@ -12651,6 +12737,7 @@ cc_rev02_value_local_scalar:
     ld a,(cc_rev02_local_disp)
     call cc_rev02_emit_local_load_selected
     ret c
+cc_rev02_value_local_postcheck:
     ld d,'+'
     ld e,'+'
     call cc_rev02_tok_is_op2
@@ -12691,7 +12778,7 @@ cc_rev02_value_global:
     call cc_rev02_global_kind_ptr
     ld a,(hl)
     or a
-    jr z,cc_rev02_value_global_scalar
+    jp z,cc_rev02_value_global_scalar
     ld a,'['
     call cc_rev02_tok_is_punct
     jr z,cc_rev02_value_global_index
@@ -12702,6 +12789,9 @@ cc_rev02_value_global_index:
     ret c
     call cc_rev02_emit_index_load
     ret c
+    ld a,'['
+    call cc_rev02_tok_is_punct
+    jp z,cc_rev02_value_global_pointer_index
     ; Indexed postfix steps preserve the old expression value.
     ld d,'+'
     ld e,'+'
@@ -12713,6 +12803,49 @@ cc_rev02_value_global_index:
     ret nz
     ld a,1
     jr cc_rev02_value_global_index_step
+cc_rev02_value_global_pointer_index:
+    ld a,(cc_rev02_global_symbol)
+    call cc_rev02_global_ptrdepth_ptr
+    ld a,(hl)
+    or a
+    jp z,cc_rev02_format
+    ld a,(cc_rev02_global_symbol)
+    call cc_rev02_global_pointee_ptr
+    ld a,(hl)
+    or a
+    jp z,cc_rev02_notsup
+    push af                  ; preserve pointed-to element width
+    ld a,$E5                 ; preserve loaded pointer base
+    call cc_rev02_emit8
+    jp c,cc_rev02_index_drop_saved_width_err
+    call cc_rev02_next_token
+    jp c,cc_rev02_index_drop_saved_width_err
+    call cc_rev02_parse_value_expr
+    jp c,cc_rev02_index_drop_saved_width_err
+    ld a,']'
+    call cc_rev02_expect_punct
+    jp c,cc_rev02_index_drop_saved_width_err
+    pop af
+    ld (cc_rev02_index_size),a
+    cp 1
+    jr z,cc_rev02_value_global_pointer_index_scaled
+    cp 2
+    jp nz,cc_rev02_notsup
+    ld a,$29                 ; scale 16-bit pointed-to element index
+    call cc_rev02_emit8
+    ret c
+cc_rev02_value_global_pointer_index_scaled:
+    ld a,$EB
+    call cc_rev02_emit8
+    ret c
+    ld a,$E1
+    call cc_rev02_emit8
+    ret c
+    ld a,$19
+    call cc_rev02_emit8
+    ret c
+    jp cc_rev02_emit_index_load
+
 cc_rev02_value_global_index_inc:
     xor a
 cc_rev02_value_global_index_step:
@@ -12800,7 +12933,7 @@ cc_rev02_value_unary_deref:
     jp nz,cc_rev02_notsup
     ld hl,cc_rev02_token
     call cc_rev02_local_find
-    jr c,cc_rev02_value_deref_global
+    jp c,cc_rev02_value_deref_global
     ld (cc_rev02_local_disp),a
     ld a,(cc_rev02_local_symbol)
     call cc_rev02_local_kind_ptr
@@ -12828,6 +12961,37 @@ cc_rev02_value_deref_local_pointer:
     ld (cc_rev02_index_size),a
     ld a,(cc_rev02_local_disp)
     call cc_rev02_emit_local_load_selected
+    ret c
+    call cc_rev02_next_token
+    ret c
+    ld d,'+'
+    ld e,'+'
+    call cc_rev02_tok_is_op2
+    jr z,cc_rev02_value_deref_pointer_post_inc
+    ld d,'-'
+    ld e,'-'
+    call cc_rev02_tok_is_op2
+    jr z,cc_rev02_value_deref_pointer_post_dec
+    jp cc_rev02_emit_index_load
+cc_rev02_value_deref_pointer_post_inc:
+    xor a
+    jr cc_rev02_value_deref_pointer_post_step
+cc_rev02_value_deref_pointer_post_dec:
+    ld a,1
+cc_rev02_value_deref_pointer_post_step:
+    ld (cc_rev02_step_kind),a
+    ld a,$E5                 ; preserve old pointer for the dereference
+    call cc_rev02_emit8
+    ret c
+    ld a,(cc_rev02_local_disp)
+    ld c,a
+    ld a,(cc_rev02_step_kind)
+    ld b,a
+    ld a,c
+    call cc_rev02_emit_local_step_selected
+    ret c
+    ld a,$E1                 ; restore old pointer
+    call cc_rev02_emit8
     ret c
     call cc_rev02_next_token
     ret c
@@ -12939,10 +13103,73 @@ cc_rev02_value_unary_not:
     jp cc_rev02_emit8
 cc_rev02_value_group:
     call cc_rev02_next_token
+    ret c
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_ID
+    jp nz,cc_rev02_value_group_expr
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_char
+    call cc_rev02_streq
+    jp z,cc_rev02_value_cast_char
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_short
+    call cc_rev02_streq
+    jp z,cc_rev02_value_cast_word
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_int
+    call cc_rev02_streq
+    jp z,cc_rev02_value_cast_word
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_unsigned
+    call cc_rev02_streq
+    jp z,cc_rev02_value_cast_unsigned
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_float
+    call cc_rev02_streq
+    jp z,cc_rev02_notsup
+cc_rev02_value_group_expr:
     call cc_rev02_parse_value_expr
     ret c
     ld a,')'
     jp cc_rev02_expect_punct
+cc_rev02_value_cast_unsigned:
+    call cc_rev02_next_token
+    ret c
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_ID
+    jp nz,cc_rev02_format
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_char
+    call cc_rev02_streq
+    jp z,cc_rev02_value_cast_char
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_short
+    call cc_rev02_streq
+    jp z,cc_rev02_value_cast_word
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_int
+    call cc_rev02_streq
+    jp nz,cc_rev02_format
+cc_rev02_value_cast_word:
+    call cc_rev02_next_token
+    ret c
+    ld a,')'
+    call cc_rev02_expect_punct
+    ret c
+    jp cc_rev02_value_unary
+cc_rev02_value_cast_char:
+    call cc_rev02_next_token
+    ret c
+    ld a,')'
+    call cc_rev02_expect_punct
+    ret c
+    call cc_rev02_value_unary
+    ret c
+    ld a,$26                 ; generated LD H,0 narrows/zero-extends C48 char
+    call cc_rev02_emit8
+    ret c
+    xor a
+    jp cc_rev02_emit8
 
 cc_rev02_parse_const_expr:
     jp cc_rev02_parse_bor
@@ -13148,12 +13375,72 @@ cc_rev02_unary_not:
     ret
 cc_rev02_unary_group:
     call cc_rev02_next_token
+    ret c
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_ID
+    jp nz,cc_rev02_unary_group_expr
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_char
+    call cc_rev02_streq
+    jp z,cc_rev02_const_cast_char
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_short
+    call cc_rev02_streq
+    jp z,cc_rev02_const_cast_word
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_int
+    call cc_rev02_streq
+    jp z,cc_rev02_const_cast_word
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_unsigned
+    call cc_rev02_streq
+    jp z,cc_rev02_const_cast_unsigned
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_float
+    call cc_rev02_streq
+    jp z,cc_rev02_notsup
+cc_rev02_unary_group_expr:
     call cc_rev02_parse_const_expr
     ret c
     push hl
     ld a,')'
     call cc_rev02_expect_punct
     pop hl
+    ret
+cc_rev02_const_cast_unsigned:
+    call cc_rev02_next_token
+    ret c
+    ld a,(cc_rev02_tok_kind)
+    cp CC_REV02_T_ID
+    jp nz,cc_rev02_format
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_char
+    call cc_rev02_streq
+    jp z,cc_rev02_const_cast_char
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_short
+    call cc_rev02_streq
+    jp z,cc_rev02_const_cast_word
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_kw_int
+    call cc_rev02_streq
+    jp nz,cc_rev02_format
+cc_rev02_const_cast_word:
+    call cc_rev02_next_token
+    ret c
+    ld a,')'
+    call cc_rev02_expect_punct
+    ret c
+    jp cc_rev02_parse_unary
+cc_rev02_const_cast_char:
+    call cc_rev02_next_token
+    ret c
+    ld a,')'
+    call cc_rev02_expect_punct
+    ret c
+    call cc_rev02_parse_unary
+    ret c
+    ld h,0                   ; C48 plain/unsigned char is zero-extended
     ret
 cc_rev02_umul16:
     ld bc,0
@@ -14431,13 +14718,32 @@ cc_rev02_emit_local_step_selected:
     ld (cc_rev02_local_disp),a
     ld a,b
     ld (cc_rev02_step_kind),a
+    ld a,(cc_rev02_local_symbol)
+    call cc_rev02_local_kind_ptr
+    ld a,(hl)
+    cp 2
+    jr nz,cc_rev02_emit_local_step_scalar
+    ld a,(cc_rev02_local_symbol)
+    call cc_rev02_local_pointee_ptr
+    ld a,(hl)
     or a
-    ld a,$23
+    jp z,cc_rev02_notsup
+    cp 6
+    jp nc,cc_rev02_notsup
+    ld b,a                   ; pointer step count = sizeof(pointee)
+    jr cc_rev02_emit_local_step_selected_loop
+cc_rev02_emit_local_step_scalar:
+    ld b,1
+cc_rev02_emit_local_step_selected_loop:
+    ld a,(cc_rev02_step_kind)
+    or a
+    ld a,$23                 ; INC HL
     jr z,cc_rev02_emit_local_step_selected_opcode
-    ld a,$2B
+    ld a,$2B                 ; DEC HL
 cc_rev02_emit_local_step_selected_opcode:
     call cc_rev02_emit8
     ret c
+    djnz cc_rev02_emit_local_step_selected_loop
     ld a,(cc_rev02_local_disp)
     jp cc_rev02_emit_local_store_selected
 
