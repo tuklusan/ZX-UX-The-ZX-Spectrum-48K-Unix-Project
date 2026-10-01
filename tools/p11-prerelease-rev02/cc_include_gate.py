@@ -211,6 +211,11 @@ break_outside_source_end:
 continue_outside_source:
     db 'int main(void){{continue;return 0;}}',10
 continue_outside_source_end:
+recursive_params_source:
+    db 'int dive(int n,int a,int b,int c,int d){{if(!n){{if(a-4)return 1/0;if(b-8)return 1/0;'
+    db 'if(c-12)return 1/0;if(d-16)return 1/0;return 0;}}dive(n-1,a+1,b+2,c+3,d+4);return 0;}}'
+    db 'int main(void){{dive(3,1,2,3,4);return 0;}}',10
+recursive_params_source_end:
 fixture_reset:
     xor a
     ld (root_done),a
@@ -940,6 +945,27 @@ test_continue_outside_reject:
     xor a
     ret
 
+test_recursive_params_codegen:
+    ld a,30
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ret c
+    ld a,(cc_rev02_symbol_count)
+    cp 3
+    jp nz,test_fail
+    call test_patch_logic_relocs
+    ret c
+    call cc_rev02_text
+    ld a,(divzero_seen)
+    or a
+    jp nz,test_fail
+    ld a,h
+    or l
+    jp nz,test_fail
+    xor a
+    ret
+
 test_define_multi:
     ld a,7
     ld (mode),a
@@ -1355,6 +1381,8 @@ gate_read_root_first:
     jp z,gate_read_break_outside
     cp 29
     jp z,gate_read_continue_outside
+    cp 30
+    jp z,gate_read_recursive_params
     ld hl,root_source
     ld bc,CC_REV02_READ_CAP
     ldir
@@ -1461,6 +1489,12 @@ gate_read_continue_outside:
     ld hl,continue_outside_source
     ld (fixture_source_ptr),hl
     ld hl,continue_outside_source_end-continue_outside_source
+    ld (fixture_source_left),hl
+    jp gate_read_fixture_chunk
+gate_read_recursive_params:
+    ld hl,recursive_params_source
+    ld (fixture_source_ptr),hl
+    ld hl,recursive_params_source_end-recursive_params_source
     ld (fixture_source_left),hl
     jp gate_read_fixture_chunk
 
@@ -1610,7 +1644,7 @@ gateway_end:
     run([sj, "--nologo", f"--sym={sym.as_posix()}", asm.as_posix()], out)
     req(main_bin.is_file() and gate_bin.is_file(), "fixture binaries missing")
     syms = symbols(sym)
-    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_builtin_c48", "test_local_scalar_codegen", "test_dynamic_call_abi", "test_runtime_muldiv_codegen", "test_runtime_bitwise_codegen", "test_runtime_shift_codegen", "test_runtime_compare_a", "test_runtime_compare_b", "test_runtime_logic_a", "test_runtime_logic_b", "test_postfix_local_codegen", "test_if_else_codegen", "test_while_codegen", "test_for_codegen", "test_break_continue_codegen", "test_nested_break_codegen", "test_break_outside_reject", "test_continue_outside_reject", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
+    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_builtin_c48", "test_local_scalar_codegen", "test_dynamic_call_abi", "test_runtime_muldiv_codegen", "test_runtime_bitwise_codegen", "test_runtime_shift_codegen", "test_runtime_compare_a", "test_runtime_compare_b", "test_runtime_logic_a", "test_runtime_logic_b", "test_postfix_local_codegen", "test_if_else_codegen", "test_while_codegen", "test_for_codegen", "test_break_continue_codegen", "test_nested_break_codegen", "test_break_outside_reject", "test_continue_outside_reject", "test_recursive_params_codegen", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
     for name in names:
         req(name in syms, "fixture symbol missing: " + name)
 
@@ -1673,6 +1707,7 @@ gateway_end:
             "generic_break_continue_control_flow": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_nested_break_scope": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "break_continue_outside_loop_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "generic_regcall_parameter_spill_recursion": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_direct_source_multiread": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "recursive_macro_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "function_macro_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",

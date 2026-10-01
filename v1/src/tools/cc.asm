@@ -10133,9 +10133,11 @@ CC_REV02_LOCAL_CAP      EQU 16
 CC_REV02_LOCAL_ENTRY    EQU 17
 CC_REV02_LOOP_CAP       EQU 16
 CC_REV02_BREAK_CAP      EQU CC_REV02_RELOC_CAP
+CC_REV02_PARAM_CAP      EQU CC_REV02_ARG_CAP
+CC_REV02_PARAM_ENTRY    EQU 16
 CC_REV02_SYMBOL_BYTES   EQU CC_REV02_SYMBOL_CAP*CC_OBJ1_SYMBOL_SIZE
 CC_REV02_RELOC_BYTES    EQU CC_REV02_RELOC_CAP*CC_OBJ1_RELOC_SIZE
-CC_REV02_BSS_BYTES      EQU CC_REV02_READ_CAP+CC_REV02_TOKEN_CAP+CC_REV02_TEXT_CAP+CC_REV02_OBJ_CAP+CC_REV02_INCLUDE_CAP+CC_REV02_MACRO_CAP*CC_REV02_MACRO_ENTRY+CC_REV02_PP_REPL_CAP+CC_REV02_SYMBOL_BYTES+CC_REV02_RELOC_BYTES+CC_REV02_LITERAL_CAP+CC_REV02_LOCAL_CAP*CC_REV02_LOCAL_ENTRY+CC_REV02_LOOP_CAP*3+CC_REV02_BREAK_CAP*2
+CC_REV02_BSS_BYTES      EQU CC_REV02_READ_CAP+CC_REV02_TOKEN_CAP+CC_REV02_TEXT_CAP+CC_REV02_OBJ_CAP+CC_REV02_INCLUDE_CAP+CC_REV02_MACRO_CAP*CC_REV02_MACRO_ENTRY+CC_REV02_PP_REPL_CAP+CC_REV02_SYMBOL_BYTES+CC_REV02_RELOC_BYTES+CC_REV02_LITERAL_CAP+CC_REV02_LOCAL_CAP*CC_REV02_LOCAL_ENTRY+CC_REV02_LOOP_CAP*3+CC_REV02_BREAK_CAP*2+CC_REV02_PARAM_CAP*CC_REV02_PARAM_ENTRY
 CC_REV02_T_EOF          EQU 0
 CC_REV02_T_ID           EQU 1
 CC_REV02_T_NUM          EQU 2
@@ -10158,6 +10160,7 @@ cc_rev02_locals        EQU cc_rev02_literals+CC_REV02_LITERAL_CAP
 cc_rev02_loop_continue EQU cc_rev02_locals+CC_REV02_LOCAL_CAP*CC_REV02_LOCAL_ENTRY
 cc_rev02_loop_break_base EQU cc_rev02_loop_continue+CC_REV02_LOOP_CAP*2
 cc_rev02_break_patches EQU cc_rev02_loop_break_base+CC_REV02_LOOP_CAP
+cc_rev02_params        EQU cc_rev02_break_patches+CC_REV02_BREAK_CAP*2
 cc_rev02_read_ptr:     dw 0
 cc_rev02_read_left:    dw 0
 cc_rev02_have_push:    db 0
@@ -10186,6 +10189,10 @@ cc_rev02_known_target: dw 0
 cc_rev02_loop_depth: db 0
 cc_rev02_break_count: db 0
 cc_rev02_break_floor: db 0
+cc_rev02_param_count: db 0
+cc_rev02_param_ids: db 0
+cc_rev02_param_index: db 0
+cc_rev02_param_candidate: defs 16,0
 cc_rev02_step_kind: db 0
 cc_rev02_line_start:   db 0
 cc_rev02_include_depth: db 0
@@ -10270,6 +10277,7 @@ cc_rev02_compile_stream:
     ld (cc_rev02_string_count),a
     ld (cc_rev02_loop_depth),a
     ld (cc_rev02_break_count),a
+    ld (cc_rev02_param_count),a
     ld a,HANDLE_FREE
     ld (cc_rev02_parent_handle),a
     call cc_rev02_next_token
@@ -10345,6 +10353,10 @@ cc_rev02_external_punct:
     ret c
     jr cc_rev02_external_scan
 cc_rev02_external_params:
+    xor a
+    ld (cc_rev02_param_count),a
+    ld (cc_rev02_param_ids),a
+    ld (cc_rev02_param_candidate),a
     ld a,1
     ld (cc_rev02_paren_depth),a
 cc_rev02_external_param_loop:
@@ -10353,20 +10365,74 @@ cc_rev02_external_param_loop:
     ld a,(cc_rev02_tok_kind)
     or a
     jp z,cc_rev02_format
+    cp CC_REV02_T_ID
+    jr z,cc_rev02_external_param_id
     cp CC_REV02_T_PUNCT
-    jr nz,cc_rev02_external_param_loop
+    jp nz,cc_rev02_format
     ld a,(cc_rev02_token)
     cp '('
-    jr nz,cc_rev02_external_param_close
+    jr z,cc_rev02_external_param_open
+    cp ')'
+    jr z,cc_rev02_external_param_close
+    cp ','
+    jr z,cc_rev02_external_param_comma
+    jr cc_rev02_external_param_loop
+
+cc_rev02_external_param_id:
+    ld a,(cc_rev02_paren_depth)
+    cp 1
+    jr nz,cc_rev02_external_param_loop
+    ld hl,cc_rev02_token
+    ld de,cc_rev02_param_candidate
+    call cc_rev02_copy_name16
+    ld hl,cc_rev02_param_ids
+    inc (hl)
+    jr cc_rev02_external_param_loop
+
+cc_rev02_external_param_open:
     ld hl,cc_rev02_paren_depth
     inc (hl)
     jr cc_rev02_external_param_loop
-cc_rev02_external_param_close:
-    cp ')'
+
+cc_rev02_external_param_comma:
+    ld a,(cc_rev02_paren_depth)
+    cp 1
     jr nz,cc_rev02_external_param_loop
+    ld a,(cc_rev02_param_ids)
+    or a
+    jp z,cc_rev02_format
+    call cc_rev02_param_store_candidate
+    ret c
+    xor a
+    ld (cc_rev02_param_ids),a
+    ld (cc_rev02_param_candidate),a
+    jr cc_rev02_external_param_loop
+
+cc_rev02_external_param_close:
+    ld a,(cc_rev02_paren_depth)
+    cp 1
+    jr z,cc_rev02_external_param_outer_close
     ld hl,cc_rev02_paren_depth
     dec (hl)
-    jr nz,cc_rev02_external_param_loop
+    jr cc_rev02_external_param_loop
+
+cc_rev02_external_param_outer_close:
+    ld a,(cc_rev02_param_ids)
+    or a
+    jr z,cc_rev02_external_params_done
+    cp 1
+    jr nz,cc_rev02_external_param_store_last
+    ld a,(cc_rev02_param_count)
+    or a
+    jr nz,cc_rev02_external_param_store_last
+    ld hl,cc_rev02_param_candidate
+    ld de,cc_rev02_kw_void
+    call cc_rev02_streq
+    jr z,cc_rev02_external_params_done
+cc_rev02_external_param_store_last:
+    call cc_rev02_param_store_candidate
+    ret c
+cc_rev02_external_params_done:
     call cc_rev02_next_token
     ret c
     ld a,(cc_rev02_tok_kind)
@@ -10406,6 +10472,8 @@ cc_rev02_external_nonmain:
     ld (cc_rev02_local_count),a
     ld (cc_rev02_frame_active),a
     ld (cc_rev02_exec_seen),a
+    call cc_rev02_emit_param_prologue
+    ret c
     call cc_rev02_next_token
     ret c
     call cc_rev02_parse_simple_body
@@ -10420,6 +10488,99 @@ cc_rev02_external_nonmain:
     jp cc_rev02_emit_return_hl
 cc_rev02_external_decl_done:
     call cc_rev02_next_token
+    ret
+
+; Store the final identifier of one parameter declaration. Definitions later
+; spill each incoming C48_REGCALL slot into an ordinary IX-relative local slot.
+cc_rev02_param_store_candidate:
+    ld a,(cc_rev02_param_count)
+    cp CC_REV02_PARAM_CAP
+    jp nc,cc_rev02_notsup
+    ld (cc_rev02_param_index),a
+    call cc_rev02_param_ptr_for_index
+    ex de,hl
+    ld hl,cc_rev02_param_candidate
+    call cc_rev02_copy_name16
+    ld hl,cc_rev02_param_count
+    inc (hl)
+    xor a
+    ret
+
+cc_rev02_param_ptr_for_index:
+    ld e,a
+    ld d,0
+    ld hl,cc_rev02_params
+    ld bc,CC_REV02_PARAM_ENTRY
+cc_rev02_param_ptr_seek:
+    ld a,e
+    or d
+    ret z
+    add hl,bc
+    dec de
+    jr cc_rev02_param_ptr_seek
+
+; Spill raw 16-bit C48_REGCALL slots into frame locals. Pointer slots therefore
+; preserve their addresses; 8-bit arguments have already been ABI zero-extended.
+cc_rev02_emit_param_prologue:
+    ld a,(cc_rev02_param_count)
+    or a
+    ret z
+    call cc_rev02_frame_ensure
+    ret c
+    xor a
+    ld (cc_rev02_param_index),a
+cc_rev02_emit_param_loop:
+    ld a,(cc_rev02_param_index)
+    ld b,a
+    ld a,(cc_rev02_param_count)
+    cp b
+    jr z,cc_rev02_emit_param_done
+    ld a,b
+    call cc_rev02_param_ptr_for_index
+    call cc_rev02_local_add
+    ret c
+    ld (cc_rev02_lhs_disp),a
+    ld a,$F5                 ; reserve one aligned 16-bit spill slot
+    call cc_rev02_emit8
+    ret c
+
+    ld a,(cc_rev02_param_index)
+    or a
+    jr z,cc_rev02_emit_param_store
+    cp 1
+    jr z,cc_rev02_emit_param_from_de
+    cp 2
+    jr z,cc_rev02_emit_param_from_bc
+
+    ; arg4+ begins at IX+4 (saved IX at +0, return PC at +2).
+    sub 3
+    add a,a
+    add a,4
+    call cc_rev02_emit_local_load
+    ret c
+    jr cc_rev02_emit_param_store
+
+cc_rev02_emit_param_from_de:
+    ld a,$EB                 ; EX DE,HL
+    call cc_rev02_emit8
+    ret c
+    jr cc_rev02_emit_param_store
+cc_rev02_emit_param_from_bc:
+    ld a,$60                 ; LD H,B
+    call cc_rev02_emit8
+    ret c
+    ld a,$69                 ; LD L,C
+    call cc_rev02_emit8
+    ret c
+cc_rev02_emit_param_store:
+    ld a,(cc_rev02_lhs_disp)
+    call cc_rev02_emit_local_store
+    ret c
+    ld hl,cc_rev02_param_index
+    inc (hl)
+    jr cc_rev02_emit_param_loop
+cc_rev02_emit_param_done:
+    xor a
     ret
 
 ; Generic executable-body closure grows monotonically from source semantics.
