@@ -199,7 +199,8 @@ for_source:
     db 'int main(void){{int x;int y;for(x=3;x;x--){{for(y=2;y;y--){{}}}}return x+y;}}',10
 for_source_end:
 break_continue_source:
-    db 'int main(void){{int i;int s;i=0;s=0;while(8-i){{i++;if(i-2);else continue;if(i-6);else break;s=s+i;}}for(i=0;5-i;i++){{if(i-1);else continue;s=s+1;}}return s;}}',10
+    db 'int main(void){{int i;int s;i=0;s=0;while(8-i){{i++;if(i-2);else continue;'
+    db 'if(i-6);else break;s=s+i;}}for(i=0;5-i;i++){{if(i-1);else continue;s=s+1;}}return s;}}',10
 break_continue_source_end:
 nested_break_source:
     db 'int main(void){{int x;int y;int s;x=2;s=0;while(x){{y=3;while(y){{y--;if(y-1);else break;s=s+1;}}x--;}}return s;}}',10
