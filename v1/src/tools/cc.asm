@@ -11490,7 +11490,7 @@ cc_rev02_body_local_type:
     ret c
     call cc_rev02_next_token
     ret c
-    jr cc_rev02_body_local_have_name
+    jr cc_rev02_body_local_after_type
 
 cc_rev02_body_local_unsigned:
     ld a,(cc_rev02_exec_seen)
@@ -11513,7 +11513,7 @@ cc_rev02_body_local_unsigned:
     ld (cc_rev02_local_size),a
     call cc_rev02_next_token
     ret c
-    jr cc_rev02_body_local_have_name
+    jr cc_rev02_body_local_after_type
 cc_rev02_body_local_unsigned_int:
     ld hl,cc_rev02_token
     ld de,cc_rev02_kw_int
@@ -11522,10 +11522,32 @@ cc_rev02_body_local_unsigned_int:
     ld hl,cc_rev02_token
     ld de,cc_rev02_kw_short
     call cc_rev02_streq
-    jr nz,cc_rev02_body_local_have_name
+    jr nz,cc_rev02_body_local_after_type
 cc_rev02_body_local_unsigned_consume:
     call cc_rev02_next_token
     ret c
+
+cc_rev02_body_local_after_type:
+    xor a
+    ld (cc_rev02_local_kind),a
+    ld (cc_rev02_local_pointee),a
+    ld a,'*'
+    call cc_rev02_tok_is_punct
+    jr nz,cc_rev02_body_local_have_name
+    ld a,(cc_rev02_local_size)
+    ld (cc_rev02_local_pointee),a
+    ld a,2
+    ld (cc_rev02_local_size),a
+    ld (cc_rev02_local_kind),a
+cc_rev02_body_local_pointer_star:
+    call cc_rev02_next_token
+    ret c
+    ld a,'*'
+    call cc_rev02_tok_is_punct
+    jr nz,cc_rev02_body_local_have_name
+    ld a,2
+    ld (cc_rev02_local_pointee),a
+    jr cc_rev02_body_local_pointer_star
 
 cc_rev02_body_local_have_name:
     ld a,(cc_rev02_tok_kind)
@@ -11534,10 +11556,7 @@ cc_rev02_body_local_have_name:
     ld hl,cc_rev02_token
     ld de,cc_rev02_call_name
     call cc_rev02_copy_name16
-    xor a
-    ld (cc_rev02_local_kind),a
-    ld (cc_rev02_local_pointee),a
-    inc a
+    ld a,1
     ld (cc_rev02_local_extent),a
     xor a
     ld (cc_rev02_local_extent+1),a
@@ -12578,6 +12597,8 @@ cc_rev02_value_unary:
     ld a,(cc_rev02_tok_kind)
     cp CC_REV02_T_NUM
     jp z,cc_rev02_value_number
+    cp CC_REV02_T_STRING
+    jp z,cc_rev02_value_string
     cp CC_REV02_T_ID
     jp nz,cc_rev02_format
     ld hl,cc_rev02_token
@@ -12605,7 +12626,7 @@ cc_rev02_value_local_array:
 cc_rev02_value_local_pointer:
     ld a,'['
     call cc_rev02_tok_is_punct
-    jp z,cc_rev02_notsup
+    jr z,cc_rev02_value_local_index
     ld a,(cc_rev02_local_disp)
     jp cc_rev02_emit_local_load_selected
 cc_rev02_value_local_index:
@@ -12827,6 +12848,24 @@ cc_rev02_value_deref_global:
     call cc_rev02_next_token
     ret c
     jp cc_rev02_emit_index_load
+
+cc_rev02_value_string:
+    call cc_rev02_add_string_literal
+    ret c
+    ld (cc_rev02_temp_symbol),a
+    ld a,$21
+    call cc_rev02_emit8
+    ret c
+    ld hl,(cc_rev02_text_len)
+    push hl
+    ld hl,0
+    call cc_rev02_emit16
+    pop hl
+    ret c
+    ld a,(cc_rev02_temp_symbol)
+    call cc_rev02_add_reloc
+    ret c
+    jp cc_rev02_next_token
 
 cc_rev02_value_number:
     call cc_rev02_number_value
@@ -14248,19 +14287,32 @@ cc_rev02_emit_local_address_disp:
     ld a,$19                 ; ADD HL,DE
     jp cc_rev02_emit8
 
-; Current token is '[' and cc_rev02_local_symbol names a local array.
+; Current token is '[' and cc_rev02_local_symbol names a local array or pointer.
 cc_rev02_emit_local_index_address:
     ld a,(cc_rev02_local_symbol)
     call cc_rev02_local_kind_ptr
     ld a,(hl)
     cp 1
+    jr z,cc_rev02_local_index_array
+    cp 2
     jp nz,cc_rev02_format
+    ld a,(cc_rev02_local_symbol)
+    call cc_rev02_local_pointee_ptr
+    ld a,(hl)
+    or a
+    jp z,cc_rev02_notsup
+    push af
+    ld a,(cc_rev02_local_disp)
+    call cc_rev02_emit_local_load_selected
+    jr cc_rev02_local_index_base_ready
+cc_rev02_local_index_array:
     ld a,(cc_rev02_local_symbol)
     call cc_rev02_local_size_ptr
     ld a,(hl)
-    push af                  ; compiler stack: preserve outer element width
+    push af
     ld a,(cc_rev02_local_disp)
     call cc_rev02_emit_local_address
+cc_rev02_local_index_base_ready:
     jp c,cc_rev02_index_drop_saved_width_err
     ld a,$E5                 ; generated PUSH HL preserves base
     call cc_rev02_emit8
