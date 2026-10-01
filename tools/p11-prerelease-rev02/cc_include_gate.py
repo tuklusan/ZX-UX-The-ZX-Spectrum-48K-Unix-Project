@@ -2907,7 +2907,15 @@ gateway_end:
         driver = root / "v1/tools-host/test-driver"
         sys.path.insert(0, str(driver))
         import phase1  # type: ignore
-        from fuse_harness import FAIL_PC, PASS_PC, run_sna  # type: ignore
+        import fuse_harness  # type: ignore
+        # This fixture now legitimately extends beyond the generic harness's
+        # historical B000/B001 sentinels. Keep proof code/sentinels/stack/BSS
+        # disjoint without changing the shared historical harness defaults.
+        PASS_PC = 0xB900
+        FAIL_PC = 0xB901
+        fuse_harness.PASS_PC = PASS_PC
+        fuse_harness.FAIL_PC = FAIL_PC
+        run_sna = fuse_harness.run_sna
         main_bytes = main_bin.read_bytes()
         gate_bytes = gate_bin.read_bytes()
 
@@ -2989,7 +2997,7 @@ gateway_end:
             "nested_include_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "portable_basename_enforced_before_lookup": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "wrong_object_type_rejected_before_open": "PASS" if not ns.assemble_only else "ASSEMBLED",
-            "proof_fixture_code_entry_stack_bss_gateway_disjoint": "PASS",
+            "proof_fixture_code_entry_sentinels_stack_bss_gateway_disjoint": "PASS",
             "source_identity_dispatch_absent": "PASS",
         },
     }
