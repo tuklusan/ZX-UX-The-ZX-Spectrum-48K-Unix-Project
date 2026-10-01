@@ -10174,6 +10174,8 @@ cc_rev02_main_offset:  dw 0
 cc_rev02_op:           db 0
 cc_rev02_punct_first: db 0
 cc_rev02_cmp_jr: db 0
+cc_rev02_label_count: db 0
+cc_rev02_label_name: defs 16,0
 cc_rev02_line_start:   db 0
 cc_rev02_include_depth: db 0
 cc_rev02_parent_handle: db HANDLE_FREE
@@ -10249,6 +10251,7 @@ cc_rev02_compile_stream:
     ld (cc_rev02_literal_len),a
     ld (cc_rev02_literal_len+1),a
     ld (cc_rev02_string_count),a
+    ld (cc_rev02_label_count),a
     ld a,HANDLE_FREE
     ld (cc_rev02_parent_handle),a
     call cc_rev02_next_token
@@ -10533,7 +10536,85 @@ cc_rev02_body_done:
 ; Runtime-value expression subset. Every successful parse leaves generated HL
 ; holding the value. This is distinct from the constant-only argument parser.
 cc_rev02_parse_value_expr:
-    jp cc_rev02_value_bor
+    jp cc_rev02_value_lor
+
+; Logical OR/AND use ordinary TEXT labels and ABS16 relocations so
+; short-circuit semantics do not depend on an 8-bit branch-range accident.
+cc_rev02_value_lor:
+    call cc_rev02_value_land
+    ret c
+cc_rev02_value_lor_loop:
+    ld d,'|'
+    ld e,'|'
+    call cc_rev02_tok_is_op2
+    ret nz
+    call cc_rev02_label_new
+    ret c
+    push af
+    call cc_rev02_emit_test_hl
+    jp c,cc_rev02_drop_af_err
+    pop af
+    push af
+    ld b,$C2                 ; JP NZ,true
+    call cc_rev02_emit_jp_label
+    jp c,cc_rev02_drop_af_err
+    call cc_rev02_next_token
+    jp c,cc_rev02_drop_af_err
+    call cc_rev02_value_land
+    jp c,cc_rev02_drop_af_err
+    call cc_rev02_emit_boolize
+    jp c,cc_rev02_drop_af_err
+    ld a,$18                 ; JR +3 skips LD HL,1
+    call cc_rev02_emit8
+    jp c,cc_rev02_drop_af_err
+    ld a,3
+    call cc_rev02_emit8
+    jp c,cc_rev02_drop_af_err
+    pop af
+    call cc_rev02_label_define
+    ret c
+    ld hl,1
+    call cc_rev02_emit_ld_hl
+    ret c
+    jp cc_rev02_value_lor_loop
+
+cc_rev02_value_land:
+    call cc_rev02_value_bor
+    ret c
+cc_rev02_value_land_loop:
+    ld d,'&'
+    ld e,'&'
+    call cc_rev02_tok_is_op2
+    ret nz
+    call cc_rev02_label_new
+    ret c
+    push af
+    call cc_rev02_emit_test_hl
+    jp c,cc_rev02_drop_af_err
+    pop af
+    push af
+    ld b,$CA                 ; JP Z,false
+    call cc_rev02_emit_jp_label
+    jp c,cc_rev02_drop_af_err
+    call cc_rev02_next_token
+    jp c,cc_rev02_drop_af_err
+    call cc_rev02_value_bor
+    jp c,cc_rev02_drop_af_err
+    call cc_rev02_emit_boolize
+    jp c,cc_rev02_drop_af_err
+    ld a,$18                 ; JR +3 skips LD HL,0
+    call cc_rev02_emit8
+    jp c,cc_rev02_drop_af_err
+    ld a,3
+    call cc_rev02_emit8
+    jp c,cc_rev02_drop_af_err
+    pop af
+    call cc_rev02_label_define
+    ret c
+    ld hl,0
+    call cc_rev02_emit_ld_hl
+    ret c
+    jp cc_rev02_value_land_loop
 
 cc_rev02_value_bor:
     call cc_rev02_value_bxor
@@ -11018,6 +11099,9 @@ cc_rev02_value_mul_times:
     jp cc_rev02_value_mul_loop
 
 cc_rev02_value_unary:
+    ld a,'!'
+    call cc_rev02_tok_is_punct
+    jr z,cc_rev02_value_unary_lnot
     ld a,'+'
     call cc_rev02_tok_is_punct
     jr z,cc_rev02_value_unary_plus
@@ -11051,6 +11135,12 @@ cc_rev02_value_number:
     pop hl
     ret c
     jp cc_rev02_emit_ld_hl
+cc_rev02_value_unary_lnot:
+    call cc_rev02_next_token
+    ret c
+    call cc_rev02_value_unary
+    ret c
+    jp cc_rev02_emit_logical_not
 cc_rev02_value_unary_plus:
     call cc_rev02_next_token
     jp cc_rev02_value_unary
@@ -12561,6 +12651,134 @@ cc_rev02_store_arg_symbol:
     add hl,de
     ld a,b
     ld (hl),a
+    ret
+
+; Internal control labels use the implementation-reserved __Lxx namespace.
+; A freshly allocated label is an ordinary undefined OBJ1 symbol until its TEXT
+; position is defined.  Linkage remains ordinary ABS16; no host patch is part of
+; the product path.
+cc_rev02_label_new:
+    ld a,(cc_rev02_label_count)
+    cp $FF
+    jp z,cc_rev02_nospc
+    ld c,a
+    ld hl,cc_rev02_label_name
+    ld (hl),'_'
+    inc hl
+    ld (hl),'_'
+    inc hl
+    ld (hl),'L'
+    inc hl
+    ld a,c
+    rrca
+    rrca
+    rrca
+    rrca
+    and $0F
+    call cc_rev02_hex_name_digit
+    ld (hl),a
+    inc hl
+    ld a,c
+    and $0F
+    call cc_rev02_hex_name_digit
+    ld (hl),a
+    inc hl
+    xor a
+    ld (hl),a
+    inc hl
+    ld b,10
+cc_rev02_label_name_zero:
+    ld (hl),a
+    inc hl
+    djnz cc_rev02_label_name_zero
+    ld a,(cc_rev02_label_count)
+    inc a
+    ld (cc_rev02_label_count),a
+    ld hl,cc_rev02_label_name
+    jp cc_rev02_symbol_get_undef
+
+cc_rev02_hex_name_digit:
+    cp 10
+    jr c,cc_rev02_hex_name_num
+    add a,'A'-10
+    ret
+cc_rev02_hex_name_num:
+    add a,'0'
+    ret
+
+; A=symbol index. Define it at the current TEXT offset.
+cc_rev02_label_define:
+    ld (cc_rev02_temp_index),a
+    call cc_rev02_symbol_ptr_for_index
+    ld de,16
+    add hl,de
+    ld de,(cc_rev02_text_len)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    inc hl
+    ld a,1
+    ld (hl),a
+    xor a
+    ret
+
+; A=symbol index, B=JP opcode. Emit opcode + relocatable ABS16 operand.
+cc_rev02_emit_jp_label:
+    ld (cc_rev02_temp_symbol),a
+    ld a,b
+    call cc_rev02_emit8
+    ret c
+    ld hl,(cc_rev02_text_len)
+    push hl
+    ld hl,0
+    call cc_rev02_emit16
+    pop hl
+    ret c
+    ld a,(cc_rev02_temp_symbol)
+    jp cc_rev02_add_reloc
+
+cc_rev02_emit_test_hl:
+    ld a,$7C                 ; LD A,H
+    call cc_rev02_emit8
+    ret c
+    ld a,$B5                 ; OR L
+    jp cc_rev02_emit8
+
+; Generated HL := !!HL.
+cc_rev02_emit_boolize:
+    call cc_rev02_emit_test_hl
+    ret c
+    ld hl,0
+    call cc_rev02_emit_ld_hl
+    ret c
+    ld a,$28                 ; JR Z,+1
+    call cc_rev02_emit8
+    ret c
+    ld a,1
+    call cc_rev02_emit8
+    ret c
+    ld a,$2C                 ; INC L
+    jp cc_rev02_emit8
+
+; Generated HL := !HL.
+cc_rev02_emit_logical_not:
+    call cc_rev02_emit_test_hl
+    ret c
+    ld hl,0
+    call cc_rev02_emit_ld_hl
+    ret c
+    ld a,$20                 ; JR NZ,+1
+    call cc_rev02_emit8
+    ret c
+    ld a,1
+    call cc_rev02_emit8
+    ret c
+    ld a,$2C
+    jp cc_rev02_emit8
+
+cc_rev02_drop_af_err:
+    pop af
+    scf
     ret
 
 ; HL=NUL-terminated undefined helper name. Emit CALL nn and attach one

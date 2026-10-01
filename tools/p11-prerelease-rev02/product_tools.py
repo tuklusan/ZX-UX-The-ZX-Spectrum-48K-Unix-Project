@@ -223,7 +223,7 @@ def main():
         "cc_rev02_parse_simple_body:","cc_rev02_parse_call_args:",
         "cc_rev02_symbol_get_undef:","cc_rev02_add_reloc:",
         "cc_rev02_lex_string:","cc_rev02_pp_system_c48:","cc_rev02_pp_kw_c48",
-        "cc_rev02_local_add:","cc_rev02_emit_local_load:","cc_rev02_parse_value_expr:","cc_rev02_value_bor:","cc_rev02_value_bxor:","cc_rev02_value_band:","cc_rev02_value_eq:","cc_rev02_value_rel:","cc_rev02_value_shift:","cc_rev02_value_mul:","cc_rev02_emit_named_call:","cc_rev02_emit_call_marshal:",
+        "cc_rev02_local_add:","cc_rev02_emit_local_load:","cc_rev02_parse_value_expr:","cc_rev02_value_lor:","cc_rev02_value_land:","cc_rev02_value_bor:","cc_rev02_value_bxor:","cc_rev02_value_band:","cc_rev02_value_eq:","cc_rev02_value_rel:","cc_rev02_value_shift:","cc_rev02_value_mul:","cc_rev02_emit_named_call:","cc_rev02_emit_call_marshal:",
         "CC_REV02_SYMBOL_CAP     EQU 32")),
         "ordinary cc generic prototype/call/string OBJ1 closure missing")
     req(all(marker not in cc_source.split("MACRO EMIT_REV02_CC_PRODUCT_CLI",1)[1].split("ENDM",1)[0]
@@ -322,7 +322,7 @@ def main():
         "image_sha256":sha(cc_image),"image_bytes":cc_image.stat().st_size,"bss_bytes":cc_bss,"resident_bytes_including_stack":cc_resident,"relocation_count":len(cc_relocs),
         "mex1_sha256":sha(out/"cc.mex1"),"m48o_tap_sha256":sha(out/"cc.m48o.tap"),
         "entry":"EMIT_REV02_CC_PRODUCT_CLI",
-        "semantic_status":"GENERIC-STREAMING-NATIVE-C-CHECKPOINT; ONE-LEVEL-QUOTED-LOCAL-INCLUDE; BUILTIN-C48-HEADER; FROZEN-BOUNDED-OBJECT-LIKE-DEFINES; GENERIC-PROTOTYPES/CALLS/STRINGS/ABS16-RELOCS; INT-LOCALS/ASSIGNMENT/RVALUE/ADDITIVE-CODEGEN; RUNTIME-EXPRESSION-C48_REGCALL-ARGS-1-TO-6; RUNTIME-INT-MUL-DIV-MOD; RUNTIME-INT-BITWISE; RUNTIME-INT-SHIFTS; RUNTIME-SIGNED-COMPARISONS; INTEGER-CONSTANT-EXPRESSIONS; FULL-C48-PENDING"},
+        "semantic_status":"GENERIC-STREAMING-NATIVE-C-CHECKPOINT; ONE-LEVEL-QUOTED-LOCAL-INCLUDE; BUILTIN-C48-HEADER; FROZEN-BOUNDED-OBJECT-LIKE-DEFINES; GENERIC-PROTOTYPES/CALLS/STRINGS/ABS16-RELOCS; INT-LOCALS/ASSIGNMENT/RVALUE/ADDITIVE-CODEGEN; RUNTIME-EXPRESSION-C48_REGCALL-ARGS-1-TO-6; RUNTIME-INT-MUL-DIV-MOD; RUNTIME-INT-BITWISE; RUNTIME-INT-SHIFTS; RUNTIME-SIGNED-COMPARISONS; RUNTIME-LOGICAL-SHORT-CIRCUIT; INTEGER-CONSTANT-EXPRESSIONS; FULL-C48-PENDING"},
       "as":{
         "source":"tools/as.asm","source_sha256":sha(assrc),"support_source":"tools/as_text.asm","support_source_sha256":sha(astextsrc),
         "image_sha256":sha(as_image),"image_bytes":as_image.stat().st_size,"bss_bytes":as_bss,"resident_bytes_including_stack":as_resident,"relocation_count":len(as_relocs),

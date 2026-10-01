@@ -100,6 +100,7 @@ div_symbol: db 0
 shl_symbol: db 0
 shr_symbol: db 0
 cmp_symbol: db 0
+divzero_seen: db 0
 
 root_source:
     db '#define ANSWER 3 + 4',10
@@ -173,6 +174,12 @@ runtime_cmp_a_source_end:
 runtime_cmp_b_source:
     db 'int main(void){{int x;x=-3;return (x<=2)+(x>2)+(x==2);}}',10
 runtime_cmp_b_source_end:
+runtime_logic_a_source:
+    db 'int main(void){{int x;x=0;return !x+(x&&(1/0));}}',10
+runtime_logic_a_source_end:
+runtime_logic_b_source:
+    db 'int main(void){{int x;x=1;return !x+(x||(1/0));}}',10
+runtime_logic_b_source_end:
 
 fixture_reset:
     xor a
@@ -181,6 +188,7 @@ fixture_reset:
     ld (open_count),a
     ld (close_count),a
     ld (stat_count),a
+    ld (divzero_seen),a
     ld a,ROOT_HANDLE
     ld (cc_rev02_source_handle),a
     ret
@@ -636,6 +644,111 @@ test_runtime_compare_b:
     xor a
     ret
 
+test_patch_logic_relocs:
+    ld a,(cc_rev02_reloc_count)
+    ld b,a
+    ld ix,cc_rev02_relocs
+test_patch_logic_loop:
+    ld a,b
+    or a
+    ret z
+    ld e,(ix+0)
+    ld d,(ix+1)
+    ld a,(ix+2)
+    ld c,a
+    push bc
+    push de
+    ld a,c
+    call cc_rev02_symbol_ptr_for_index
+    ld de,16
+    add hl,de
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    inc hl
+    ld a,(hl)
+    or a
+    jr z,test_patch_logic_undef
+    push ix
+    ld hl,cc_rev02_text
+    add hl,de
+    ex de,hl
+    pop ix
+    jr test_patch_logic_write
+test_patch_logic_undef:
+    pop de
+    push de
+    ld a,c
+    ld hl,cc_rev02_rt_s16_divmod
+    call cc_rev02_symbol_find
+    jr c,test_patch_logic_bad
+    cp c
+    jr nz,test_patch_logic_bad
+    ld de,c48_s16_divmod
+test_patch_logic_write:
+    pop bc
+    push bc
+    ld hl,cc_rev02_text
+    add hl,bc
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    pop bc
+    pop bc
+    ld de,CC_OBJ1_RELOC_SIZE
+    add ix,de
+    djnz test_patch_logic_loop
+    xor a
+    ret
+test_patch_logic_bad:
+    pop de
+    pop bc
+    ld a,E_FORMAT
+    scf
+    ret
+
+test_runtime_logic_a:
+    ld a,20
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ret c
+    call test_patch_logic_relocs
+    ret c
+    call cc_rev02_text
+    ld a,(divzero_seen)
+    or a
+    jp nz,test_fail
+    ld a,h
+    or a
+    jp nz,test_fail
+    ld a,l
+    cp 1
+    jp nz,test_fail
+    xor a
+    ret
+
+test_runtime_logic_b:
+    ld a,21
+    ld (mode),a
+    call fixture_reset
+    call cc_rev02_compile_stream
+    ret c
+    call test_patch_logic_relocs
+    ret c
+    call cc_rev02_text
+    ld a,(divzero_seen)
+    or a
+    jp nz,test_fail
+    ld a,h
+    or a
+    jp nz,test_fail
+    ld a,l
+    cp 1
+    jp nz,test_fail
+    xor a
+    ret
+
 test_define_multi:
     ld a,7
     ld (mode),a
@@ -869,6 +982,8 @@ gateway_start:
     jp z,gate_open
     cp SYS_CLOSE
     jp z,gate_close
+    cp SYS_EXIT
+    jp z,gate_exit
     ld a,E_NOTSUP
     scf
     ret
@@ -927,6 +1042,12 @@ gate_close:
     ld a,(close_count)
     inc a
     ld (close_count),a
+    xor a
+    ret
+
+gate_exit:
+    ld a,1
+    ld (divzero_seen),a
     xor a
     ret
 
@@ -1018,6 +1139,10 @@ gate_read_root_first:
     jp z,gate_read_runtime_cmp_a
     cp 19
     jp z,gate_read_runtime_cmp_b
+    cp 20
+    jp z,gate_read_runtime_logic_a
+    cp 21
+    jp z,gate_read_runtime_logic_b
     ld hl,root_source
     ld bc,CC_REV02_READ_CAP
     ldir
@@ -1071,6 +1196,20 @@ gate_read_runtime_cmp_b:
     ld bc,runtime_cmp_b_source_end-runtime_cmp_b_source
     ldir
     ld hl,runtime_cmp_b_source_end-runtime_cmp_b_source
+    xor a
+    ret
+gate_read_runtime_logic_a:
+    ld hl,runtime_logic_a_source
+    ld bc,runtime_logic_a_source_end-runtime_logic_a_source
+    ldir
+    ld hl,runtime_logic_a_source_end-runtime_logic_a_source
+    xor a
+    ret
+gate_read_runtime_logic_b:
+    ld hl,runtime_logic_b_source
+    ld bc,runtime_logic_b_source_end-runtime_logic_b_source
+    ldir
+    ld hl,runtime_logic_b_source_end-runtime_logic_b_source
     xor a
     ret
 gate_read_builtin_c48:
@@ -1188,7 +1327,7 @@ gateway_end:
     run([sj, "--nologo", f"--sym={sym.as_posix()}", asm.as_posix()], out)
     req(main_bin.is_file() and gate_bin.is_file(), "fixture binaries missing")
     syms = symbols(sym)
-    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_builtin_c48", "test_local_scalar_codegen", "test_dynamic_call_abi", "test_runtime_muldiv_codegen", "test_runtime_bitwise_codegen", "test_runtime_shift_codegen", "test_runtime_compare_a", "test_runtime_compare_b", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
+    names = ("test_define_single", "test_generic_call_compile", "test_generic_call_symbols", "test_generic_call_relocs", "test_generic_call_text", "test_generic_call_obj", "test_builtin_c48", "test_local_scalar_codegen", "test_dynamic_call_abi", "test_runtime_muldiv_codegen", "test_runtime_bitwise_codegen", "test_runtime_shift_codegen", "test_runtime_compare_a", "test_runtime_compare_b", "test_runtime_logic_a", "test_runtime_logic_b", "test_define_multi", "test_include_plain", "test_define_include_unused", "test_define_include_compile_only", "test_define_include_text", "test_include_ok", "test_generic_helper_definition", "test_recursive_macro_reject", "test_function_macro_reject", "test_nested_reject", "test_bad_name_reject", "test_wrong_type_reject")
     for name in names:
         req(name in syms, "fixture symbol missing: " + name)
 
@@ -1237,6 +1376,7 @@ gateway_end:
             "generic_runtime_int_bitwise": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_runtime_int_shifts": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "generic_runtime_signed_comparisons": "PASS" if not ns.assemble_only else "ASSEMBLED",
+            "generic_runtime_logical_short_circuit": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "recursive_macro_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "function_macro_rejected": "PASS" if not ns.assemble_only else "ASSEMBLED",
             "ordinary_stat_open_read_close": "PASS" if not ns.assemble_only else "ASSEMBLED",
