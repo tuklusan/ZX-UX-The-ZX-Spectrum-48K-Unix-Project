@@ -10413,7 +10413,7 @@ cc_rev02_external_punct:
     cp ';'
     jp z,cc_rev02_external_global_done
     cp '('
-    jr z,cc_rev02_external_params
+    jp z,cc_rev02_external_params
     cp '*'
     jr z,cc_rev02_external_pointer
     cp '['
@@ -11040,11 +11040,11 @@ cc_rev02_named_assignment_check:
     ld d,'+'
     ld e,'+'
     call cc_rev02_tok_is_op2
-    jr z,cc_rev02_named_post_inc
+    jp z,cc_rev02_named_post_inc
     ld d,'-'
     ld e,'-'
     call cc_rev02_tok_is_op2
-    jr z,cc_rev02_named_post_dec
+    jp z,cc_rev02_named_post_dec
     ld a,'='
     call cc_rev02_tok_is_punct
     jp nz,cc_rev02_notsup
