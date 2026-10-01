@@ -10714,7 +10714,7 @@ cc_rev02_for_init_done:
     push hl                  ; end-target operand offset
     jr cc_rev02_for_condition_ready
 cc_rev02_for_condition_empty:
-    ld hl,$FFFF
+    ld hl,-1
     push hl                  ; no false-condition branch
 cc_rev02_for_condition_ready:
     ld a,';'
