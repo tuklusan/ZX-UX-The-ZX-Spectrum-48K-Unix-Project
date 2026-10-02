@@ -1235,39 +1235,26 @@ zx48_p701_gfx_dispatch:
     ld e,(hl)
     inc hl
     ld d,(hl)
-    ex de,hl
-    jp (hl)
+    ; Return-dispatch preserves the caller's return while entering every
+    ; graphics service with the common HL argument already loaded.
+    push de
+    ld hl,(syscall_arg_hl)
+    ret
 
-zx48_p701_gfx_plot:
-    ld hl,(syscall_arg_hl)
-    jp zx48_gfx_plot
 zx48_p701_gfx_draw:
-    ld hl,(syscall_arg_hl)
     ld bc,4
     call zx48_user_range_validate
     ret c
-    ld hl,(syscall_arg_hl)
     jp zx48_gfx_draw
 zx48_p701_gfx_circle:
-    ld hl,(syscall_arg_hl)
     ld bc,3
     call zx48_user_range_validate
     ret c
-    ld hl,(syscall_arg_hl)
     jp zx48_gfx_circle
-zx48_p701_gfx_attr:
-    ld hl,(syscall_arg_hl)
-    jp zx48_gfx_attr
-zx48_p701_gfx_border:
-    ld hl,(syscall_arg_hl)
-    jp zx48_gfx_border
-zx48_p701_gfx_point:
-    ld hl,(syscall_arg_hl)
-    jp zx48_gfx_point
 
 zx48_p701_gfx_table:
-    dw zx48_p701_gfx_plot,zx48_p701_gfx_draw,zx48_p701_gfx_circle
-    dw zx48_p701_gfx_attr,zx48_p701_gfx_border,zx48_p701_gfx_point
+    dw zx48_gfx_plot,zx48_p701_gfx_draw,zx48_p701_gfx_circle
+    dw zx48_gfx_attr,zx48_gfx_border,zx48_gfx_point
 zx48_p701_gfx_notsup:
     ld a,E_NOTSUP
     scf
