@@ -195,14 +195,8 @@ zx48_process_prepare_pid1:
     xor a
     ld (ix+PROC_PARENT),a
     ld (ix+PROC_CWD),DIR_ROOT
-    push ix
-    pop de
-    ld hl,PROC_NAME
-    add hl,de
-    ex de,hl
-    ld hl,process_name_sh
-    ld bc,10
-    ldir
+    ld (ix+PROC_NAME),'s'
+    ld (ix+PROC_NAME+1),'h'
     xor a
     ret
 zx48_process_busy:
@@ -433,13 +427,18 @@ zx48_process_wait_reap:
     ret
 
 process_fixed_state_start:
-process_name_sh: db 's','h',0,0,0,0,0,0,0,0
-process_info_ptr: dw 0
-process_temp_pid: db 0
-process_temp_status: db 0
-process_wait_target: db 0
-process_wait_has_child: db 0
-current_pid: db 0
+; Small mutable process-control scratch sits directly after allocator state in
+; the fixed emergency reserve. The process descriptor table itself remains in
+; the ordinary resident pool as required by the frozen scheduler design.
+PROCESS_STATE_BASE       EQU MEMORY_STATE_END
+process_info_ptr         EQU PROCESS_STATE_BASE+0
+process_temp_pid         EQU PROCESS_STATE_BASE+2
+process_temp_status      EQU PROCESS_STATE_BASE+3
+process_wait_target      EQU PROCESS_STATE_BASE+4
+process_wait_has_child   EQU PROCESS_STATE_BASE+5
+current_pid              EQU PROCESS_STATE_BASE+6
+PROCESS_STATE_END        EQU PROCESS_STATE_BASE+7
+    ASSERT PROCESS_STATE_END <= EMERGENCY_START+$7F
 process_table: defs MAX_PROCESSES*PROC_DESC_SIZE,0
 process_fixed_state_end:
     ENDM
