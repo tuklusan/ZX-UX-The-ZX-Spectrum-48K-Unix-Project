@@ -1222,9 +1222,9 @@ zx48_p709_beep_notsup:
     MACRO EMIT_P701_GRAPHICS_SYSCALL_ROUTINES
 zx48_p701_gfx_dispatch:
     cp SYS_GFX_PLOT
-    jp c,zx48_p701_gfx_notsup
+    jr c,zx48_p701_gfx_notsup
     cp SYS_GFX_POINT+1
-    jp nc,zx48_p701_gfx_notsup
+    jr nc,zx48_p701_gfx_notsup
     sub SYS_GFX_PLOT
     add a,a
     ld e,a
@@ -1306,10 +1306,10 @@ zx48_p714_sys_udg_define:
     ld bc,(syscall_arg_bc)
     ld a,b
     or a
-    jp nz,zx48_p714_udg_invalid
+    jr nz,zx48_p714_udg_invalid
     ld a,c
     cp UDG_SLOT_COUNT
-    jp nc,zx48_p714_udg_invalid
+    jr nc,zx48_p714_udg_invalid
     ld hl,(syscall_arg_hl)
     ld bc,UDG_SLOT_BYTES
     call zx48_user_range_validate
@@ -1321,10 +1321,10 @@ zx48_p714_sys_udg_get:
     ld bc,(syscall_arg_bc)
     ld a,b
     or a
-    jp nz,zx48_p714_udg_invalid
+    jr nz,zx48_p714_udg_invalid
     ld a,c
     cp UDG_SLOT_COUNT
-    jp nc,zx48_p714_udg_invalid
+    jr nc,zx48_p714_udg_invalid
     ld hl,(syscall_arg_hl)
     ld bc,UDG_SLOT_BYTES
     call zx48_user_range_validate
@@ -1336,10 +1336,10 @@ zx48_p714_sys_udg_clear:
     ld hl,(syscall_arg_hl)
     ld a,h
     or a
-    jp nz,zx48_p714_udg_invalid
+    jr nz,zx48_p714_udg_invalid
     ld a,l
     cp UDG_SLOT_COUNT
-    jp nc,zx48_p714_udg_invalid
+    jr nc,zx48_p714_udg_invalid
     ld hl,(syscall_arg_hl)
     jp zx48_udg_clear
 
@@ -1358,15 +1358,15 @@ zx48_p715_sys_udg_draw:
     ret c
     ld a,(hl)
     cp UDG_SLOT_COUNT
-    jp nc,zx48_p715_udg_invalid
+    jr nc,zx48_p715_udg_invalid
     inc hl
     ld a,(hl)
     cp 24
-    jp nc,zx48_p715_udg_invalid
+    jr nc,zx48_p715_udg_invalid
     inc hl
     ld a,(hl)
     cp 32
-    jp nc,zx48_p715_udg_invalid
+    jr nc,zx48_p715_udg_invalid
     ld hl,(syscall_arg_hl)
     jp zx48_udg_draw
 zx48_p715_udg_invalid:
