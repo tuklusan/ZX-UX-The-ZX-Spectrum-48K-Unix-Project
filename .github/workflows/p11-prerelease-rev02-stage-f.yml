@@ -1,0 +1,108 @@
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Proprietary rights reserved except as expressly licensed herein.
+#
+# ZX-UX Sinclair ZX Spectrum Unix
+# This file is governed by the SANYALnet Labs Non-Commercial License in the
+# root LICENSE file. Non-Commercial use is permitted; Commercial Use and use
+# for AI/ML model training are prohibited unless separately authorized.
+#
+# Attribution is required: "Based on original work by Supratim Sanyal of
+# SANYALnet Labs." See LICENSE for full terms, warranty disclaimer, termination,
+# patent, trademark, and governing-law provisions.
+name: Phase-11 pre-release REV02 Stage F
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/p11-prerelease-rev02-stage-f.yml'
+      - 'tools/p11-prerelease-rev02/**'
+      - 'tools/as.asm'
+      - 'tools/as_text.asm'
+      - 'tools/ld.asm'
+      - 'v1/src/tools/cc.asm'
+      - 'v1/src/libc48/**'
+      - 'v1/src/shell/**'
+      - 'v1/src/kernel/**'
+      - 'v1/tests/compiler/sdk-reference/pre-release-1.0.2/**'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zxux-p11-prerelease-rev02-stage-f
+  cancel-in-progress: false
+
+jobs:
+  stage-f:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: {fetch-depth: 0}
+      - name: Policy and license gates
+        run: |
+          set -euo pipefail
+          ./tools/check_project_policy.py
+          ./tools/check_license_headers.sh
+      - name: Set up certified ZX-UX runtime
+        uses: ./.github/actions/setup-zxux-runtime
+      - name: Build exact candidate product tools
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rev02-stage-f/product
+          tools/runtime/python/bin/python tools/p11-prerelease-rev02/product_tools.py \
+            --root . --output /tmp/rev02-stage-f/product
+      - name: Re-prove generic compiler semantics
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rev02-stage-f/cc
+          tools/runtime/python/bin/python tools/p11-prerelease-rev02/cc_include_gate.py \
+            --root . --output /tmp/rev02-stage-f/cc
+      - name: Current-head generic AS LD and transaction negatives
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rev02-stage-f/proofs /tmp/rev02-stage-f/evidence
+          gate () {
+            step="$1"
+            tools/runtime/python/bin/python v1/tools-host/test-driver/run.py test \
+              --step "$step" --evidence-dir "/tmp/rev02-stage-f/evidence/$step"
+            touch "/tmp/rev02-stage-f/proofs/$step.pass"
+          }
+          gate P10.05
+          gate P10.09
+          gate P10.19
+          gate P10.20
+          gate P10.21
+          gate P10.25
+          gate P10.26
+          gate P10.33
+          gate P10.35
+          gate P11.29
+      - name: Gate F held-out and anti-specialization proof
+        run: |
+          set -euo pipefail
+          args=()
+          for marker in /tmp/rev02-stage-f/proofs/*.pass; do
+            args+=(--proof-marker "$marker")
+          done
+          tools/runtime/python/bin/python tools/p11-prerelease-rev02/stage_f.py \
+            --root . \
+            --output /tmp/rev02-stage-f/final \
+            --product-dir /tmp/rev02-stage-f/product \
+            --cc-report /tmp/rev02-stage-f/cc/CC-INCLUDE-GATE.json \
+            --source-head "$(git rev-parse HEAD)" \
+            "${args[@]}"
+          cat /tmp/rev02-stage-f/final/STAGE-F.json
+      - name: Upload Stage-F checkpoint
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: zxux-p11-prerelease-rev02-stage-f-${{ github.sha }}
+          path: |
+            /tmp/rev02-stage-f/final/STAGE-F.json
+            /tmp/rev02-stage-f/product/PRODUCT-TOOLS-PREFLIGHT.json
+            /tmp/rev02-stage-f/cc/CC-INCLUDE-GATE.json
+            /tmp/rev02-stage-f/evidence/
+          retention-days: 90
+          if-no-files-found: error
