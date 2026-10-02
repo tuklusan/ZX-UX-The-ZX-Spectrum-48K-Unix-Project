@@ -19,6 +19,11 @@ on:
       - 'tools/p11-prerelease-rev02/cc_include_gate.py'
       - 'tools/p11-prerelease-rev02/product_tools.py'
       - 'v1/src/tools/cc.asm'
+      - 'v1/src/shell/sh.asm'
+      - 'tools/as.asm'
+      - 'tools/as_text.asm'
+      - 'tools/ld.asm'
+      - 'v1/src/libc48/runtime_archive.asm'
   workflow_dispatch: {}
 
 permissions:
