@@ -29,7 +29,6 @@ zx48_gfx_plot:
     jp nc,zx48_gfx_bad
     call zx48_cursor_hide
     call zx48_gfx_pixel_addr
-    ld a,(gfx_mask)
     ld b,a
     ld a,(gfx_attr_state+5)       ; OVER
     or a
@@ -89,7 +88,6 @@ zx48_gfx_point:
     cp 192
     jp nc,zx48_gfx_bad
     call zx48_gfx_pixel_addr
-    ld a,(gfx_mask)
     and (hl)
     jr z,zx48_gfx_point_zero
     ld hl,1
@@ -102,7 +100,7 @@ zx48_gfx_point_zero:
     or a
     ret
 
-; H=x,L=y -> bitmap HL, mask in gfx_mask.
+; H=x,L=y -> bitmap HL, mask in A. DE retains the public x/y pair.
 zx48_gfx_pixel_addr:
     ld a,h
     ld c,a
@@ -115,21 +113,12 @@ zx48_gfx_pixel_addr:
     pop de
     ld a,d
     and 7
-    ld c,a
+    ld b,a
     ld a,$80
+    ret z
 zx48_gfx_mask_loop:
-    ld b,c
-    ld c,a
-    ld a,b
-    or a
-    ld a,c
-    jr z,zx48_gfx_mask_done
-    srl a
-    dec b
-    ld c,b
-    jr zx48_gfx_mask_loop
-zx48_gfx_mask_done:
-    ld (gfx_mask),a
+    rrca
+    djnz zx48_gfx_mask_loop
     ret
 
 ; HL -> x1,y1,x2,y2. Bresenham with 16-bit signed error scratch.
@@ -600,25 +589,24 @@ zx48_gfx_bad:
 ; remaining zero-initialized graphics scratch lives in the fixed emergency reserve.
 gfx_attr_state: db 7,0,0,0,0,0
 GRAPHICS_STATE_BASE       EQU EMERGENCY_START+$67
-gfx_mask                  EQU GRAPHICS_STATE_BASE+0
-gfx_selector              EQU GRAPHICS_STATE_BASE+1
-gfx_value                 EQU GRAPHICS_STATE_BASE+2
-gfx_x                     EQU GRAPHICS_STATE_BASE+3
-gfx_y                     EQU GRAPHICS_STATE_BASE+4
-gfx_x2                    EQU GRAPHICS_STATE_BASE+5
-gfx_y2                    EQU GRAPHICS_STATE_BASE+6
-gfx_dx                    EQU GRAPHICS_STATE_BASE+7
-gfx_dy                    EQU GRAPHICS_STATE_BASE+8
-gfx_sx                    EQU GRAPHICS_STATE_BASE+9
-gfx_sy                    EQU GRAPHICS_STATE_BASE+10
-gfx_err                   EQU GRAPHICS_STATE_BASE+11
-gfx_e2                    EQU GRAPHICS_STATE_BASE+13
-gfx_cx                    EQU GRAPHICS_STATE_BASE+15
-gfx_cy                    EQU GRAPHICS_STATE_BASE+16
-gfx_r                     EQU GRAPHICS_STATE_BASE+17
-gfx_circle_x              EQU GRAPHICS_STATE_BASE+18
-gfx_circle_y              EQU GRAPHICS_STATE_BASE+19
-gfx_circle_d              EQU GRAPHICS_STATE_BASE+20
-GRAPHICS_STATE_END        EQU GRAPHICS_STATE_BASE+22
+gfx_selector              EQU GRAPHICS_STATE_BASE+0
+gfx_value                 EQU GRAPHICS_STATE_BASE+1
+gfx_x                     EQU GRAPHICS_STATE_BASE+2
+gfx_y                     EQU GRAPHICS_STATE_BASE+3
+gfx_x2                    EQU GRAPHICS_STATE_BASE+4
+gfx_y2                    EQU GRAPHICS_STATE_BASE+5
+gfx_dx                    EQU GRAPHICS_STATE_BASE+6
+gfx_dy                    EQU GRAPHICS_STATE_BASE+7
+gfx_sx                    EQU GRAPHICS_STATE_BASE+8
+gfx_sy                    EQU GRAPHICS_STATE_BASE+9
+gfx_err                   EQU GRAPHICS_STATE_BASE+10
+gfx_e2                    EQU GRAPHICS_STATE_BASE+12
+gfx_cx                    EQU GRAPHICS_STATE_BASE+14
+gfx_cy                    EQU GRAPHICS_STATE_BASE+15
+gfx_r                     EQU GRAPHICS_STATE_BASE+16
+gfx_circle_x              EQU GRAPHICS_STATE_BASE+17
+gfx_circle_y              EQU GRAPHICS_STATE_BASE+18
+gfx_circle_d              EQU GRAPHICS_STATE_BASE+19
+GRAPHICS_STATE_END        EQU GRAPHICS_STATE_BASE+21
     ASSERT GRAPHICS_STATE_END <= EMERGENCY_START+$7F
     ENDM
