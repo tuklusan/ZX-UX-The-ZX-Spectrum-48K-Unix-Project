@@ -5170,3 +5170,354 @@ p514_committed: db 0
 p514_error: db 0
 p514_mex_header: defs MEX_HEADER_SIZE,0
     ENDM
+
+; REV02 production compaction. Historical phase fixtures keep EMIT_PROCESS_ROUTINES;
+; the resident kernel retains the same eight-process contract with less scratch
+; traffic in reserve/info/wait paths.
+    MACRO EMIT_REV02_PROCESS_ROUTINES
+zx48_process_init:
+    xor a
+    ld hl,process_table
+    ld de,process_table+1
+    ld bc,MAX_PROCESSES*PROC_DESC_SIZE-1
+    ld (hl),a
+    ldir
+    ld ix,process_table
+    ld c,0
+    ld b,MAX_PROCESSES
+zx48_r2_process_init_loop:
+    ld (ix+PROC_PID),c
+    ld (ix+PROC_PARENT),HANDLE_FREE
+    push bc
+    push ix
+    pop hl
+    ld de,PROC_HANDLES
+    add hl,de
+    ld b,MAX_HANDLES_PER_PROCESS
+    ld a,HANDLE_FREE
+zx48_r2_process_init_handles:
+    ld (hl),a
+    inc hl
+    djnz zx48_r2_process_init_handles
+    pop bc
+    ld de,PROC_DESC_SIZE
+    add ix,de
+    inc c
+    djnz zx48_r2_process_init_loop
+    ld ix,process_table
+    ld (ix+PROC_STATE),PROC_RUNNING
+    xor a
+    ld (current_pid),a
+    ret
+
+zx48_process_ptr:
+    cp MAX_PROCESSES
+    jr nc,zx48_process_noent
+    ld c,a
+    ld ix,process_table
+    or a
+    ret z
+    ld b,a
+    ld de,PROC_DESC_SIZE
+zx48_r2_process_ptr_loop:
+    add ix,de
+    djnz zx48_r2_process_ptr_loop
+    xor a
+    ret
+zx48_process_lookup:
+    call zx48_process_ptr
+    ret c
+    ld a,(ix+PROC_STATE)
+    or a
+    jr z,zx48_process_noent
+    xor a
+    ret
+zx48_process_live_lookup:
+    call zx48_process_lookup
+    ret c
+    ld a,(ix+PROC_STATE)
+    cp PROC_ZOMBIE
+    jr z,zx48_process_noent
+    xor a
+    ret
+zx48_process_noent:
+    ld a,E_NOENT
+    scf
+    ret
+
+    EMIT_PROCESS_CAPACITY_ROUTINE
+
+zx48_process_reserve_slot:
+    call zx48_process_find_free_slot
+    ret c
+    push af
+    push ix
+    pop hl
+    xor a
+    ld (hl),a
+    ld d,h
+    ld e,l
+    inc de
+    ld bc,PROC_DESC_SIZE-1
+    ldir
+    pop af
+    ld (ix+PROC_PID),a
+    push af
+    ld a,(current_pid)
+    ld (ix+PROC_PARENT),a
+    push ix
+    pop hl
+    ld de,PROC_HANDLES
+    add hl,de
+    ld b,MAX_HANDLES_PER_PROCESS
+    ld a,HANDLE_FREE
+zx48_r2_process_reserve_handles:
+    ld (hl),a
+    inc hl
+    djnz zx48_r2_process_reserve_handles
+    pop af
+    or a
+    ret
+
+zx48_process_prepare_pid1:
+    ld a,1
+    call zx48_process_ptr
+    ret c
+    ld a,(ix+PROC_STATE)
+    or a
+    jr nz,zx48_process_busy
+    xor a
+    ld (ix+PROC_PARENT),a
+    ld (ix+PROC_CWD),DIR_ROOT
+    ld (ix+PROC_NAME),'s'
+    ld (ix+PROC_NAME+1),'h'
+    ld (ix+PROC_STATE),PROC_READY
+    ret
+zx48_process_busy:
+    ld a,E_BUSY
+    scf
+    ret
+
+zx48_process_count:
+    ld ix,process_table+PROC_DESC_SIZE
+    ld b,MAX_PROCESSES-1
+    ld c,0
+zx48_r2_process_count_loop:
+    ld a,(ix+PROC_STATE)
+    or a
+    jr z,zx48_r2_process_count_next
+    inc c
+zx48_r2_process_count_next:
+    ld de,PROC_DESC_SIZE
+    add ix,de
+    djnz zx48_r2_process_count_loop
+    ld a,c
+    or a
+    ret
+
+zx48_process_info:
+    call zx48_process_lookup
+    ret c
+    ld a,(ix+PROC_PID)
+    ld (hl),a
+    inc hl
+    ld a,(ix+PROC_PARENT)
+    ld (hl),a
+    inc hl
+    ld a,(ix+PROC_STATE)
+    ld (hl),a
+    inc hl
+    ld a,(ix+PROC_FLAGS)
+    and PROC_FLAG_CANCEL
+    ld (hl),a
+    inc hl
+    push hl
+    push ix
+    pop hl
+    ld de,PROC_NAME
+    add hl,de
+    ex de,hl
+    pop hl
+    ld bc,10
+    ldir
+    ld a,(ix+PROC_OWNED_BYTES)
+    ld (hl),a
+    inc hl
+    ld a,(ix+PROC_OWNED_BYTES+1)
+    ld (hl),a
+    xor a
+    ret
+
+zx48_process_exit:
+    ld b,a
+    ld a,(current_pid)
+    cp 1
+    jr z,zx48_process_exit_pid1
+    or a
+    jr z,zx48_process_exit_panic
+    push bc
+    call zx48_process_lookup
+    pop bc
+    jr c,zx48_process_exit_panic
+    ld a,b
+    ld (ix+PROC_EXIT_STATUS),a
+    ld (ix+PROC_STATE),PROC_ZOMBIE
+    call zx48_handles_close_all_current
+    call zx48_process_wake_parent
+    call zx48_process_restore_tty_owner
+    jp zx48_schedule
+zx48_process_exit_panic:
+    ld a,PANIC_SCHEDULER
+    jp zx48_panic
+
+zx48_process_exit_pid1:
+    di
+zx48_process_exit_pid1_halt:
+    halt
+    jr zx48_process_exit_pid1_halt
+
+zx48_process_restore_tty_owner:
+    ld a,(current_pid)
+    ld b,a
+    ld a,(tty_input_owner)
+    cp b
+    ret nz
+    ld a,1
+    call zx48_process_live_lookup
+    jr c,zx48_r2_process_tty_owner_zero
+    ld a,1
+    jr zx48_r2_process_tty_owner_set
+zx48_r2_process_tty_owner_zero:
+    xor a
+zx48_r2_process_tty_owner_set:
+    ld (tty_input_owner),a
+    ret
+
+zx48_process_wake_parent:
+    ld a,(current_pid)
+    call zx48_process_lookup
+    ret c
+    ld a,(ix+PROC_PARENT)
+    cp HANDLE_FREE
+    ret z
+    call zx48_process_lookup
+    ret c
+    ld a,(ix+PROC_STATE)
+    cp PROC_WAIT_CHILD
+    ret nz
+    ld (ix+PROC_STATE),PROC_READY
+    ret
+
+zx48_process_kill:
+    cp 2
+    jr c,zx48_process_perm
+    call zx48_process_live_lookup
+    ret c
+    ld a,(current_pid)
+    cp 1
+    jr z,zx48_process_kill_ok
+    ld b,a
+    ld a,(ix+PROC_PARENT)
+    cp b
+    jr nz,zx48_process_perm
+zx48_process_kill_ok:
+    ld a,(ix+PROC_PRIVATE_FLAGS)
+    and PROC_PRIVATE_STARTED
+    IFDEF ZX48_P2_18_KILL_ENABLED
+    jp z,zx48_process_kill_never_started
+    ELSE
+    jr nz,zx48_process_kill_started
+    ld (ix+PROC_EXIT_STATUS),130
+    ld (ix+PROC_STATE),PROC_ZOMBIE
+    xor a
+    ret
+    ENDIF
+zx48_process_kill_started:
+    set 0,(ix+PROC_FLAGS)
+    xor a
+    ld (ix+PROC_WAIT_OBJECT),a
+    ld (ix+PROC_STATE),PROC_READY
+zx48_process_kill_okret:
+    xor a
+    ret
+zx48_process_perm:
+    ld a,E_PERM
+    scf
+    ret
+
+zx48_process_wait:
+    ld (process_wait_target),a
+zx48_process_wait_again:
+    xor a
+    ld (process_wait_has_child),a
+    ld ix,process_table+2*PROC_DESC_SIZE
+    ld b,MAX_PROCESSES-2
+zx48_process_wait_each:
+    ld a,(ix+PROC_PARENT)
+    ld c,a
+    ld a,(current_pid)
+    cp c
+    jr nz,zx48_process_wait_next
+    ld a,(process_wait_target)
+    cp $ff
+    jr z,zx48_process_wait_state
+    ld c,a
+    ld a,(ix+PROC_PID)
+    cp c
+    jr nz,zx48_process_wait_next
+zx48_process_wait_state:
+    ld a,1
+    ld (process_wait_has_child),a
+    ld a,(ix+PROC_STATE)
+    cp PROC_ZOMBIE
+    jr z,zx48_process_wait_reap
+zx48_process_wait_next:
+    push bc
+    ld bc,PROC_DESC_SIZE
+    add ix,bc
+    pop bc
+    djnz zx48_process_wait_each
+    ld a,(process_wait_has_child)
+    or a
+    jr z,zx48_process_wait_none
+    ld a,(current_pid)
+    call zx48_process_lookup
+    ld (ix+PROC_STATE),PROC_WAIT_CHILD
+    jp zx48_schedule
+zx48_process_wait_none:
+    ld a,E_CHILD
+    scf
+    ret
+zx48_process_wait_reap:
+    ld a,(ix+PROC_EXIT_STATUS)
+    ld (de),a
+    ld a,(ix+PROC_PID)
+    ld l,a
+    ld h,0
+    push hl
+    push ix
+    pop hl
+    xor a
+    ld (hl),a
+    ld d,h
+    ld e,l
+    inc de
+    ld bc,PROC_DESC_SIZE-1
+    ldir
+    pop hl
+    xor a
+    ret
+
+process_fixed_state_start:
+PROCESS_STATE_BASE       EQU EMERGENCY_START+$45
+process_info_ptr         EQU PROCESS_STATE_BASE+0
+process_temp_pid         EQU PROCESS_STATE_BASE+2
+process_temp_status      EQU PROCESS_STATE_BASE+3
+process_wait_target      EQU PROCESS_STATE_BASE+4
+process_wait_has_child   EQU PROCESS_STATE_BASE+5
+current_pid              EQU PROCESS_STATE_BASE+6
+PROCESS_STATE_END        EQU PROCESS_STATE_BASE+7
+    ASSERT PROCESS_STATE_END <= EMERGENCY_START+$7F
+process_table: defs MAX_PROCESSES*PROC_DESC_SIZE,0
+process_fixed_state_end:
+    ENDM

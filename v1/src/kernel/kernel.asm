@@ -59,7 +59,7 @@ kernel_mod_errors:
 kernel_mod_memory:
     EMIT_MEMORY_ROUTINES
 kernel_mod_process:
-    EMIT_PROCESS_ROUTINES
+    EMIT_REV02_PROCESS_ROUTINES
 kernel_mod_handles:
     EMIT_HANDLE_ROUTINES
 kernel_mod_pipe:
