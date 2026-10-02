@@ -64,7 +64,8 @@ ROM_CALC_STACK            EQU $5D80
 P11_ROM_OP_BASE           EQU ROM_CALC_STACK+$80
 P11_ROM_OP_MAX_END        EQU P11_ROM_OP_BASE+298
 P11_ROM_TXN_BASE          EQU $5FC0
-P11_ROM_TXN_END           EQU P11_ROM_TXN_BASE+15
+P11_ROM_TXN_SNAPSHOT_SIZE EQU ROM_MEM+2-ROM_IY_ANCHOR
+P11_ROM_TXN_END           EQU P11_ROM_TXN_BASE+P11_ROM_TXN_SNAPSHOT_SIZE+2
     ASSERT P11_ROM_OP_MAX_END <= P11_ROM_TXN_BASE
     ASSERT P11_ROM_TXN_END <= ROM_COMPAT_END+1
 
@@ -336,39 +337,24 @@ rom_calc_saved_errnr: db 0
     MACRO EMIT_P11_ROM_CALC_TXN_ROUTINES
     IFNDEF ZX48_P11_ROM_CALC_TXN_EMITTED
     DEFINE ZX48_P11_ROM_CALC_TXN_EMITTED
-p11_rom_saved_sp           EQU P11_ROM_TXN_BASE+0
-p11_rom_saved_err_sp       EQU P11_ROM_TXN_BASE+2
-p11_rom_saved_stkbot       EQU P11_ROM_TXN_BASE+4
-p11_rom_saved_stkend       EQU P11_ROM_TXN_BASE+6
-p11_rom_saved_mem          EQU P11_ROM_TXN_BASE+8
-p11_rom_saved_chadd        EQU P11_ROM_TXN_BASE+10
-p11_rom_saved_flags        EQU P11_ROM_TXN_BASE+12
-p11_rom_saved_errnr        EQU P11_ROM_TXN_BASE+13
-p11_rom_saved_breg         EQU P11_ROM_TXN_BASE+14
+; Snapshot the exact contiguous ROM system-variable range touched by the
+; calculator/text gateways. The previous field-by-field save/restore covered
+; only members of this same range; copying the full range is equivalent and
+; also preserves intervening ROM workspace bytes.
+p11_rom_snapshot           EQU P11_ROM_TXN_BASE
+p11_rom_saved_sp           EQU P11_ROM_TXN_BASE+P11_ROM_TXN_SNAPSHOT_SIZE
 
 ; HL=caller SP before CALL. Carry set/E_BUSY if another serialized ROM gateway owns
-; the compatibility workspace; otherwise save exact ROM state and prepare the stack.
+; the compatibility workspace; otherwise preserve ROM state and prepare the stack.
 zx48_p11_rom_txn_begin:
     ld a,(altreg_busy)
     or a
     jr nz,zx48_p11_rom_txn_busy
     ld (p11_rom_saved_sp),hl
-    ld hl,(ROM_ERR_SP)
-    ld (p11_rom_saved_err_sp),hl
-    ld hl,(ROM_STKBOT)
-    ld (p11_rom_saved_stkbot),hl
-    ld hl,(ROM_STKEND)
-    ld (p11_rom_saved_stkend),hl
-    ld hl,(ROM_MEM)
-    ld (p11_rom_saved_mem),hl
-    ld hl,(ROM_CH_ADD)
-    ld (p11_rom_saved_chadd),hl
-    ld a,(ROM_FLAGS)
-    ld (p11_rom_saved_flags),a
-    ld a,(ROM_IY_ANCHOR)
-    ld (p11_rom_saved_errnr),a
-    ld a,(ROM_BREG)
-    ld (p11_rom_saved_breg),a
+    ld hl,ROM_IY_ANCHOR
+    ld de,p11_rom_snapshot
+    ld bc,P11_ROM_TXN_SNAPSHOT_SIZE
+    ldir
     ld a,1
     ld (altreg_busy),a
     ld hl,ROM_CALC_STACK
@@ -387,22 +373,10 @@ zx48_p11_rom_txn_busy:
     ret
 
 zx48_p11_rom_txn_cleanup:
-    ld hl,(p11_rom_saved_err_sp)
-    ld (ROM_ERR_SP),hl
-    ld hl,(p11_rom_saved_stkbot)
-    ld (ROM_STKBOT),hl
-    ld hl,(p11_rom_saved_stkend)
-    ld (ROM_STKEND),hl
-    ld hl,(p11_rom_saved_mem)
-    ld (ROM_MEM),hl
-    ld hl,(p11_rom_saved_chadd)
-    ld (ROM_CH_ADD),hl
-    ld a,(p11_rom_saved_flags)
-    ld (ROM_FLAGS),a
-    ld a,(p11_rom_saved_breg)
-    ld (ROM_BREG),a
-    ld a,(p11_rom_saved_errnr)
-    ld (ROM_IY_ANCHOR),a
+    ld hl,p11_rom_snapshot
+    ld de,ROM_IY_ANCHOR
+    ld bc,P11_ROM_TXN_SNAPSHOT_SIZE
+    ldir
     xor a
     ld (altreg_busy),a
     ld iy,ROM_IY_ANCHOR
