@@ -570,14 +570,15 @@ zx48_sys_proc_info:
     ex de,hl
     ld bc,16
     call zx48_user_range_validate
-    pop af
+    pop bc
     ret c
+    ld a,b
     call zx48_process_info
     ret c
     xor a
     ret
 zx48_sys_proc_info_invalid:
-    pop af
+    pop bc
     jp zx48_sys_invalid
 zx48_sys_ticks:
     ld hl,(syscall_arg_hl)
