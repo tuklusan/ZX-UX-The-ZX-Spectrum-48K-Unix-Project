@@ -36,7 +36,7 @@ zx48_alloc:
     ld (memory_policy),a
     ld a,b
     or c
-    jr z,zx48_alloc_zero
+    jp z,zx48_alloc_zero
     bit 0,c
     jr z,zx48_alloc_rounded
     inc bc
@@ -124,14 +124,15 @@ zx48_alloc_next:
     ld de,4
     add ix,de
     pop bc
-    djnz zx48_alloc_loop
+    dec b
+    jp nz,zx48_alloc_loop
     ld a,(memory_policy)
     and $7f
     cp ALLOC_COLD_PREFERRED
     jr nz,zx48_alloc_fail
     xor a
     ld (memory_policy),a
-    jr zx48_alloc_retry
+    jp zx48_alloc_retry
 zx48_alloc_fail:
     ld a,E_NOMEM
     scf
@@ -258,7 +259,7 @@ zx48_free_advance:
     ld hl,(memory_info_ptr)
     ld a,h
     or l
-    jr z,zx48_free_nospc
+    jp z,zx48_free_nospc
     jr zx48_free_extend_prev
 
 zx48_free_at_empty:
@@ -279,10 +280,10 @@ zx48_free_gap_before:
     ld hl,(MEMORY_EXTENT_END-2)
     ld a,h
     or l
-    jr nz,zx48_free_nospc
+    jp nz,zx48_free_nospc
     ld a,b
     dec a
-    jr z,zx48_free_nospc
+    jp z,zx48_free_nospc
     add a,a
     add a,a
     ld c,a
