@@ -796,7 +796,7 @@ zx48_pipe_write_retry:
     ret c
     ld a,(ix+PIPE_READERS_O)
     or a
-    jr z,zx48_pipe_broken
+    jp z,zx48_pipe_broken
     ld l,(ix+PIPE_CAPACITY_O)
     ld h,(ix+PIPE_CAPACITY_O+1)
     ld e,(ix+PIPE_COUNT_O)
@@ -885,7 +885,7 @@ zx48_pipe_block:
     ld d,a
     ld a,(current_pid)
     or a
-    jr z,zx48_pipe_noent
+    jp z,zx48_pipe_noent
     push bc
     push de
     call zx48_process_lookup
@@ -935,7 +935,7 @@ zx48_pipe_endpoint_closed:
     cp OD_KIND_PIPE_READ
     jr z,zx48_r2_pipe_close_reader
     cp OD_KIND_PIPE_WRITE
-    jr nz,zx48_pipe_noent
+    jp nz,zx48_pipe_noent
     xor a
     ld (ix+PIPE_WRITERS_O),a
     ld a,(pipe_active_slot)
