@@ -123,7 +123,6 @@ def _source_contract_from(syscall_raw: str, scheduler_raw: str) -> bool:
                 "ld bc,4",
                 "call zx48_user_range_validate",
                 "ret c",
-                "ld hl,(syscall_arg_hl)",
                 "call zx48_sleep_current",
             ),
         )
