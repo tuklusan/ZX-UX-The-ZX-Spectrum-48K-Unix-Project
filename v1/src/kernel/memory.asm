@@ -31,100 +31,107 @@ zx48_memory_init:
     ld (memory_pinned_bytes),hl
     ret
 
-; A=policy, BC=request -> HL=base.
+; A=policy, BC=request -> HL=base. Extents remain packed and address-sorted.
 zx48_alloc:
     ld (memory_policy),a
     ld a,b
     or c
-    jp z,zx48_alloc_zero
+    jr z,zx48_alloc_zero
     bit 0,c
-    jr z,zx48_alloc_even
+    jr z,zx48_alloc_rounded
     inc bc
-zx48_alloc_even:
+zx48_alloc_rounded:
     ld (memory_request),bc
 zx48_alloc_retry:
     ld ix,memory_free_extents
     ld b,FREE_EXTENT_COUNT
 zx48_alloc_loop:
     push bc
-    ld l,(ix+0)
-    ld h,(ix+1)
-    ld e,(ix+2)
-    ld d,(ix+3)
-    ld a,d
-    or e
+    ld e,(ix+0)
+    ld d,(ix+1)
+    ld l,(ix+2)
+    ld h,(ix+3)
+    ld a,h
+    or l
     jr z,zx48_alloc_next
     ld bc,(memory_request)
-    push hl
-    ld h,d
-    ld l,e
     or a
     sbc hl,bc
-    pop hl
     jr c,zx48_alloc_next
     ld a,(memory_policy)
     and $7f
     cp ALLOC_FAST_REQUIRED
-    jr z,zx48_alloc_take_high
+    jr z,zx48_alloc_fast
     cp ALLOC_COLD_PREFERRED
-    jr nz,zx48_alloc_take_low
+    jr nz,zx48_alloc_low
     push hl
+    ld h,d
+    ld l,e
     add hl,bc
     ld de,FAST_START
     or a
     sbc hl,de
     pop hl
-    jr c,zx48_alloc_take_low
-    jr z,zx48_alloc_take_low
+    jr c,zx48_alloc_cold_ok
+    jr z,zx48_alloc_cold_ok
     jr zx48_alloc_next
-zx48_alloc_take_low:
-    push hl
+zx48_alloc_cold_ok:
+    ld e,(ix+0)
+    ld d,(ix+1)
+zx48_alloc_low:
+    push de
+    ex de,hl
     add hl,bc
     ld (ix+0),l
     ld (ix+1),h
-    ld l,(ix+2)
-    ld h,(ix+3)
-    or a
-    sbc hl,bc
-    ld (ix+2),l
-    ld (ix+3),h
+    ld (ix+2),e
+    ld (ix+3),d
     pop hl
     pop bc
-    jp zx48_alloc_done
-zx48_alloc_take_high:
+    ld a,d
+    or e
+    jr nz,zx48_alloc_done
+    push hl
+    call zx48_extent_delete_ix
+    pop hl
+    jr zx48_alloc_done
+
+zx48_alloc_fast:
     push hl
     add hl,de
-    or a
-    sbc hl,bc
-    ld (memory_candidate),hl
     ld de,FAST_START
     or a
     sbc hl,de
-    pop hl
-    jr c,zx48_alloc_next
-    ld de,(memory_candidate)
-    push de
+    jr c,zx48_alloc_fast_no
+    add hl,de
     ex de,hl
-    or a
-    sbc hl,de
+    pop hl
     ld (ix+2),l
     ld (ix+3),h
+    push de
     pop hl
     pop bc
-    jp zx48_alloc_done
+    ld a,(ix+2)
+    or (ix+3)
+    jr nz,zx48_alloc_done
+    push hl
+    call zx48_extent_delete_ix
+    pop hl
+    jr zx48_alloc_done
+zx48_alloc_fast_no:
+    pop hl
 zx48_alloc_next:
     ld de,4
     add ix,de
     pop bc
-    dec b
-    jp nz,zx48_alloc_loop
+    djnz zx48_alloc_loop
     ld a,(memory_policy)
     and $7f
     cp ALLOC_COLD_PREFERRED
     jr nz,zx48_alloc_fail
     xor a
     ld (memory_policy),a
-    jp zx48_alloc_retry
+    jr zx48_alloc_retry
 zx48_alloc_fail:
     ld a,E_NOMEM
     scf
@@ -140,8 +147,41 @@ zx48_alloc_done:
     xor a
     ret
 
-; HL=base, BC=rounded length. Free extents stay address ordered; reject
-; overlaps/double free before any mutation.
+; B=number of records from IX through table end. Delete IX and pack the table.
+zx48_extent_delete_ix:
+    ld a,b
+    dec a
+    jr z,zx48_extent_delete_clear_here
+    add a,a
+    add a,a
+    ld c,a
+    ld b,0
+    push ix
+    pop de
+    push de
+    pop hl
+    inc hl
+    inc hl
+    inc hl
+    inc hl
+    ldir
+    jr zx48_extent_delete_clear
+zx48_extent_delete_clear_here:
+    push ix
+    pop de
+zx48_extent_delete_clear:
+    xor a
+    ld (de),a
+    inc de
+    ld (de),a
+    inc de
+    ld (de),a
+    inc de
+    ld (de),a
+    ret
+
+; HL=base, BC=rounded length. Sorted neighbors are sufficient to reject overlap
+; and to coalesce every valid free without mutating before validation completes.
 zx48_free:
     ld a,b
     or c
@@ -163,12 +203,13 @@ zx48_free:
     or a
     sbc hl,de
     jr c,zx48_free_end_ok
-    jp nz,zx48_free_bad
+    jr z,zx48_free_end_ok
+    jp zx48_free_bad
 zx48_free_end_ok:
     add hl,de
-    ld (memory_candidate),hl
+    ld (memory_fast_total),hl
     ld hl,0
-    ld (memory_info_ptr),hl       ; exact previous-adjacent extent, or zero
+    ld (memory_info_ptr),hl
     ld ix,memory_free_extents
     ld b,FREE_EXTENT_COUNT
 
@@ -176,17 +217,25 @@ zx48_free_scan:
     ld a,(ix+2)
     or (ix+3)
     jr z,zx48_free_at_empty
+    ld l,(ix+0)
+    ld h,(ix+1)
+    ld de,(memory_free_start)
+    or a
+    sbc hl,de
+    jr c,zx48_free_current_before
+    jp z,zx48_free_bad
 
-    ; If new_end <= current_start, ordering proves there can be no later overlap.
-    ld hl,(memory_candidate)
+    ; Current starts after the freed range. Validate the gap/right adjacency.
+    ld hl,(memory_fast_total)
     ld e,(ix+0)
     ld d,(ix+1)
     or a
     sbc hl,de
-    jr c,zx48_free_before_current
-    jp z,zx48_free_next_adjacent
+    jr c,zx48_free_gap_before
+    jr z,zx48_free_right_adjacent
+    jp zx48_free_bad
 
-    ; current_start < new_end: current_end must be <= new_start.
+zx48_free_current_before:
     ld l,(ix+0)
     ld h,(ix+1)
     ld e,(ix+2)
@@ -195,95 +244,68 @@ zx48_free_scan:
     ld de,(memory_free_start)
     or a
     sbc hl,de
-    jp nc,zx48_free_current_ge_start
-
+    jr c,zx48_free_advance
+    jp nz,zx48_free_bad
+    push ix
+    pop hl
+    ld (memory_info_ptr),hl
 zx48_free_advance:
     ld de,4
     add ix,de
     djnz zx48_free_scan
-    ; Full table. Only an exact append to the final live extent can succeed.
+
+    ; Full table: only an exact append to the final extent can succeed.
     ld hl,(memory_info_ptr)
     ld a,h
     or l
-    jp z,zx48_free_nospc
-    jp zx48_free_extend_prev
-
-zx48_free_current_ge_start:
-    jr z,zx48_free_note_prev
-    jp zx48_free_bad              ; current_end > new_start: overlap/double free
-zx48_free_note_prev:
-    push ix                       ; current_end == new_start: remember append target
-    pop hl
-    ld (memory_info_ptr),hl
-    jr zx48_free_advance
+    jr z,zx48_free_nospc
+    jr zx48_free_extend_prev
 
 zx48_free_at_empty:
     ld hl,(memory_info_ptr)
     ld a,h
     or l
-    jp nz,zx48_free_extend_prev
-    ld hl,(memory_free_start)
-    ld bc,(memory_free_length)
-    ld (ix+0),l
-    ld (ix+1),h
-    ld (ix+2),c
-    ld (ix+3),b
-    jp zx48_free_commit
+    jr nz,zx48_free_extend_prev
+    jr zx48_free_write_ix
 
-zx48_free_before_current:
+zx48_free_gap_before:
     ld hl,(memory_info_ptr)
     ld a,h
     or l
-    jp nz,zx48_free_extend_prev
-    ; Insert before IX. Find the first empty record and shift the sorted tail
-    ; right by one record. If none exists, fail without mutation.
-    push ix
-    pop hl
-    ld (memory_request),hl
-    ld c,b
-zx48_free_find_empty:
-    ld a,(ix+2)
-    or (ix+3)
-    jr z,zx48_free_insert_found
-    ld de,4
-    add ix,de
-    dec c
-    jr nz,zx48_free_find_empty
-    jp zx48_free_nospc
-zx48_free_insert_found:
-    push ix
-    pop hl
-    ld de,(memory_request)
-    or a
-    sbc hl,de
-    ld b,h
-    ld c,l
-    push ix
-    pop hl
-    dec hl
-    push ix
-    pop de
-    inc de
-    inc de
-    inc de
+    jr nz,zx48_free_extend_prev
+
+    ; Insert before IX. Packed-table invariant means the final slot alone
+    ; decides capacity; shift the whole remaining tail one record to the right.
+    ld hl,(MEMORY_EXTENT_END-2)
+    ld a,h
+    or l
+    jr nz,zx48_free_nospc
+    ld a,b
+    dec a
+    jr z,zx48_free_nospc
+    add a,a
+    add a,a
+    ld c,a
+    ld b,0
+    ld hl,MEMORY_EXTENT_END-5
+    ld de,MEMORY_EXTENT_END-1
     lddr
-    ld hl,(memory_request)
-    push hl
-    pop ix
+zx48_free_write_ix:
     ld hl,(memory_free_start)
-    ld bc,(memory_free_length)
     ld (ix+0),l
     ld (ix+1),h
-    ld (ix+2),c
-    ld (ix+3),b
-    jp zx48_free_commit
+    ld hl,(memory_free_length)
+    ld (ix+2),l
+    ld (ix+3),h
+    jr zx48_free_commit
 
-zx48_free_next_adjacent:
+zx48_free_right_adjacent:
     ld hl,(memory_info_ptr)
     ld a,h
     or l
     jr nz,zx48_free_merge_both
-    ; Prepend into current extent.
+
+    ; Prepend the new range into the right neighbor.
     ld hl,(memory_free_start)
     ld (ix+0),l
     ld (ix+1),h
@@ -293,7 +315,7 @@ zx48_free_next_adjacent:
     add hl,de
     ld (ix+2),l
     ld (ix+3),h
-    jp zx48_free_commit
+    jr zx48_free_commit
 
 zx48_free_extend_prev:
     push hl
@@ -304,15 +326,14 @@ zx48_free_extend_prev:
     add hl,de
     ld (ix+2),l
     ld (ix+3),h
-    jp zx48_free_commit
+    jr zx48_free_commit
 
 zx48_extent_merge_restart:
 zx48_free_merge_both:
-    ; Previous extent touches new_start and IX touches new_end. Grow previous
-    ; over both and remove IX while keeping all live records packed/sorted.
+    ; IX is the right neighbor; B is the remaining-record count.
     push ix
     pop hl
-    ld (memory_request),hl
+    ld (memory_candidate),hl
     ld hl,(memory_info_ptr)
     push hl
     pop ix
@@ -320,7 +341,7 @@ zx48_free_merge_both:
     ld h,(ix+3)
     ld de,(memory_free_length)
     add hl,de
-    ld de,(memory_request)
+    ld de,(memory_candidate)
     push de
     pop ix
     ld e,(ix+2)
@@ -331,42 +352,10 @@ zx48_free_merge_both:
     pop ix
     ld (ix+2),l
     ld (ix+3),h
-    ld hl,(memory_request)
+    ld hl,(memory_candidate)
     push hl
     pop ix
-
-    ; Delete current record by shifting the remaining table left, then zero the
-    ; final slot. B still counts current plus all records after it.
-    ld a,b
-    dec a
-    jr z,zx48_free_delete_zero
-    add a,a
-    add a,a
-    ld c,a
-    ld b,0
-    push ix
-    pop hl
-    push hl
-    pop de
-    inc de
-    inc de
-    inc de
-    inc de
-    ex de,hl                      ; HL=source current+4, DE=destination current
-    ldir
-    jr zx48_free_delete_clear
-zx48_free_delete_zero:
-    push ix
-    pop de
-zx48_free_delete_clear:
-    xor a
-    ld (de),a
-    inc de
-    ld (de),a
-    inc de
-    ld (de),a
-    inc de
-    ld (de),a
+    call zx48_extent_delete_ix
 
 zx48_free_commit:
     ld hl,(memory_live_allocations)
@@ -393,66 +382,66 @@ zx48_memory_pin_bytes:
     ld (memory_pinned_bytes),hl
     ret
 
-; HL -> MINFO1. Computes exact totals/largest by clipping each free extent.
+; HL -> MINFO1. Extents are packed/sorted, so the first zero-length entry ends
+; the scan. Class totals/largest values are clipped exactly at FAST_START.
 zx48_mem_info:
     ld (memory_info_ptr),hl
-    ld hl,0
-    ld (memory_fast_total),hl
-    ld (memory_fast_largest),hl
-    ld (memory_cold_total),hl
-    ld (memory_cold_largest),hl
+    xor a
+    ld hl,memory_fast_total
+    ld de,memory_fast_total+1
+    ld bc,7
+    ld (hl),a
+    ldir
     ld ix,memory_free_extents
     ld b,FREE_EXTENT_COUNT
 zx48_mem_scan:
     push bc
-    ld l,(ix+0)
-    ld h,(ix+1)
-    ld c,(ix+2)
-    ld b,(ix+3)
-    ld a,b
-    or c
-    jr z,zx48_mem_next
+    ld l,(ix+2)
+    ld h,(ix+3)
     ld a,h
+    or l
+    jr z,zx48_mem_scan_done
+    ld a,(ix+1)
     cp FAST_START/256
     jr nc,zx48_mem_fast_whole
+
+    ; Start is cold. If end crosses 8000, split one extent between classes.
     push hl
-    add hl,bc
+    ld e,(ix+0)
+    ld d,(ix+1)
+    add hl,de
     ld de,FAST_START
     or a
     sbc hl,de
-    pop hl
-    jr c,zx48_mem_cold_whole
-    jr z,zx48_mem_cold_whole
-    ; crossing extent: cold=8000-start, fast=end-8000.
-    push bc
-    ld de,FAST_START
-    ex de,hl
+    jr c,zx48_mem_cold_pop
+    jr z,zx48_mem_cold_pop
+    push hl
+    ld hl,FAST_START
+    ld e,(ix+0)
+    ld d,(ix+1)
     or a
     sbc hl,de
     call zx48_mem_add_cold
-    pop bc
-    ld l,(ix+0)
-    ld h,(ix+1)
-    add hl,bc
-    ld de,FAST_START
-    or a
-    sbc hl,de
+    pop hl
     call zx48_mem_add_fast
+    pop hl
     jr zx48_mem_next
-zx48_mem_cold_whole:
-    ld h,b
-    ld l,c
+zx48_mem_cold_pop:
+    pop hl
     call zx48_mem_add_cold
     jr zx48_mem_next
 zx48_mem_fast_whole:
-    ld h,b
-    ld l,c
     call zx48_mem_add_fast
 zx48_mem_next:
     ld de,4
     add ix,de
     pop bc
     djnz zx48_mem_scan
+    jr zx48_mem_publish
+zx48_mem_scan_done:
+    pop bc
+
+zx48_mem_publish:
     ld hl,(memory_info_ptr)
     ld de,(memory_fast_total)
     call zx48_mem_put
@@ -479,6 +468,7 @@ zx48_mem_next:
     xor a
     ld (hl),a
     ret
+
 zx48_mem_put:
     ld (hl),e
     inc hl
