@@ -318,10 +318,91 @@ rom_calc_saved_errnr: db 0
     ENDM
 
 
+; P11 calculator/text gateways serialize the same ROM workspace. Emit one shared
+; save/restore transaction even when several public gateway macros are packed together.
+; Each gateway remains independently assemblable for its historical qualification fixture.
+    MACRO EMIT_P11_ROM_CALC_TXN_ROUTINES
+    IFNDEF ZX48_P11_ROM_CALC_TXN_EMITTED
+ZX48_P11_ROM_CALC_TXN_EMITTED EQU 1
+p11_rom_saved_sp:           dw 0
+p11_rom_saved_err_sp:       dw 0
+p11_rom_saved_stkbot:       dw 0
+p11_rom_saved_stkend:       dw 0
+p11_rom_saved_mem:          dw 0
+p11_rom_saved_chadd:        dw 0
+p11_rom_saved_flags:        db 0
+p11_rom_saved_errnr:        db 0
+p11_rom_saved_breg:         db 0
+
+; HL=caller SP before CALL. Carry set/E_BUSY if another serialized ROM gateway owns
+; the compatibility workspace; otherwise save exact ROM state and prepare the stack.
+zx48_p11_rom_txn_begin:
+    ld a,(altreg_busy)
+    or a
+    jr nz,zx48_p11_rom_txn_busy
+    ld (p11_rom_saved_sp),hl
+    ld hl,(ROM_ERR_SP)
+    ld (p11_rom_saved_err_sp),hl
+    ld hl,(ROM_STKBOT)
+    ld (p11_rom_saved_stkbot),hl
+    ld hl,(ROM_STKEND)
+    ld (p11_rom_saved_stkend),hl
+    ld hl,(ROM_MEM)
+    ld (p11_rom_saved_mem),hl
+    ld hl,(ROM_CH_ADD)
+    ld (p11_rom_saved_chadd),hl
+    ld a,(ROM_FLAGS)
+    ld (p11_rom_saved_flags),a
+    ld a,(ROM_IY_ANCHOR)
+    ld (p11_rom_saved_errnr),a
+    ld a,(ROM_BREG)
+    ld (p11_rom_saved_breg),a
+    ld a,1
+    ld (altreg_busy),a
+    ld hl,ROM_CALC_STACK
+    ld (ROM_STKBOT),hl
+    ld (ROM_STKEND),hl
+    ld hl,ROM_MEMBOT
+    ld (ROM_MEM),hl
+    ld a,$FF
+    ld (ROM_IY_ANCHOR),a
+    xor a
+    ret
+
+zx48_p11_rom_txn_busy:
+    ld a,E_BUSY
+    scf
+    ret
+
+zx48_p11_rom_txn_cleanup:
+    ld hl,(p11_rom_saved_err_sp)
+    ld (ROM_ERR_SP),hl
+    ld hl,(p11_rom_saved_stkbot)
+    ld (ROM_STKBOT),hl
+    ld hl,(p11_rom_saved_stkend)
+    ld (ROM_STKEND),hl
+    ld hl,(p11_rom_saved_mem)
+    ld (ROM_MEM),hl
+    ld hl,(p11_rom_saved_chadd)
+    ld (ROM_CH_ADD),hl
+    ld a,(p11_rom_saved_flags)
+    ld (ROM_FLAGS),a
+    ld a,(p11_rom_saved_breg)
+    ld (ROM_BREG),a
+    ld a,(p11_rom_saved_errnr)
+    ld (ROM_IY_ANCHOR),a
+    xor a
+    ld (altreg_busy),a
+    ld iy,ROM_IY_ANCHOR
+    ret
+    ENDIF
+    ENDM
+
 ; P11.17 isolated SYS_FP_EXEC calculator engine. The public syscall layer owns
 ; FPOP1 validation; this routine owns calculator serialization, protected ROM
 ; state, controlled operand copies, error recovery, and exact result copying.
     MACRO EMIT_P1117_ROM_FP_EXEC_ROUTINES
+    EMIT_P11_ROM_CALC_TXN_ROUTINES
 P1117_ROM_ADD            EQU $0F
 P1117_ROM_SUB            EQU $03
 P1117_ROM_MUL            EQU $04
@@ -345,15 +426,6 @@ p1117_fp_lhs_ptr:        dw 0
 p1117_fp_rhs_ptr:        dw 0
 p1117_fp_out_ptr:        dw 0
 p1117_fp_result:         defs 5,0
-p1117_fp_saved_sp:       dw 0
-p1117_fp_saved_err_sp:   dw 0
-p1117_fp_saved_stkbot:   dw 0
-p1117_fp_saved_stkend:   dw 0
-p1117_fp_saved_mem:      dw 0
-p1117_fp_saved_chadd:    dw 0
-p1117_fp_saved_flags:    db 0
-p1117_fp_saved_errnr:    db 0
-p1117_fp_saved_breg:     db 0
 
 p1117_fp_rom_table:
     db P1117_ROM_ADD,P1117_ROM_SUB,P1117_ROM_MUL,P1117_ROM_DIV
@@ -369,39 +441,10 @@ zx48_p1117_rom_fp_exec:
     ld (p1117_fp_lhs_ptr),hl
     ld (p1117_fp_rhs_ptr),de
     ld (p1117_fp_out_ptr),bc
-    ld a,(altreg_busy)
-    or a
-    jp nz,p1117_fp_rom_busy
-
     ld hl,0
     add hl,sp
-    ld (p1117_fp_saved_sp),hl
-    ld hl,(ROM_ERR_SP)
-    ld (p1117_fp_saved_err_sp),hl
-    ld hl,(ROM_STKBOT)
-    ld (p1117_fp_saved_stkbot),hl
-    ld hl,(ROM_STKEND)
-    ld (p1117_fp_saved_stkend),hl
-    ld hl,(ROM_MEM)
-    ld (p1117_fp_saved_mem),hl
-    ld hl,(ROM_CH_ADD)
-    ld (p1117_fp_saved_chadd),hl
-    ld a,(ROM_FLAGS)
-    ld (p1117_fp_saved_flags),a
-    ld a,(ROM_IY_ANCHOR)
-    ld (p1117_fp_saved_errnr),a
-    ld a,(ROM_BREG)
-    ld (p1117_fp_saved_breg),a
-
-    ld a,1
-    ld (altreg_busy),a
-    ld hl,ROM_CALC_STACK
-    ld (ROM_STKBOT),hl
-    ld (ROM_STKEND),hl
-    ld hl,ROM_MEMBOT
-    ld (ROM_MEM),hl
-    ld a,$FF
-    ld (ROM_IY_ANCHOR),a
+    call zx48_p11_rom_txn_begin
+    jp c,p1117_fp_rom_busy
 
     ld hl,(p1117_fp_lhs_ptr)
     ld de,ROM_CALC_STACK
@@ -456,7 +499,7 @@ p1117_fp_rom_operands_ready:
     ret
 
 p1117_fp_rom_error:
-    ld hl,(p1117_fp_saved_sp)
+    ld hl,(p11_rom_saved_sp)
     ld sp,hl
     call p1117_fp_rom_cleanup
     ld a,E_INVAL
@@ -464,30 +507,9 @@ p1117_fp_rom_error:
     ret
 
 p1117_fp_rom_cleanup:
-    ld hl,(p1117_fp_saved_err_sp)
-    ld (ROM_ERR_SP),hl
-    ld hl,(p1117_fp_saved_stkbot)
-    ld (ROM_STKBOT),hl
-    ld hl,(p1117_fp_saved_stkend)
-    ld (ROM_STKEND),hl
-    ld hl,(p1117_fp_saved_mem)
-    ld (ROM_MEM),hl
-    ld hl,(p1117_fp_saved_chadd)
-    ld (ROM_CH_ADD),hl
-    ld a,(p1117_fp_saved_flags)
-    ld (ROM_FLAGS),a
-    ld a,(p1117_fp_saved_breg)
-    ld (ROM_BREG),a
-    ld a,(p1117_fp_saved_errnr)
-    ld (ROM_IY_ANCHOR),a
-    xor a
-    ld (altreg_busy),a
-    ld iy,ROM_IY_ANCHOR
-    ret
+    jp zx48_p11_rom_txn_cleanup
 
 p1117_fp_rom_busy:
-    ld a,E_BUSY
-    scf
     ret
     ENDM
 
@@ -858,6 +880,7 @@ p1118_rom_cast_invalid:
 ; The two caller operands are copied into protected calculator workspace before
 ; the one-byte caller result is touched, preserving documented alias safety.
     MACRO EMIT_P1119_ROM_FP_CMP_ROUTINES
+    EMIT_P11_ROM_CALC_TXN_ROUTINES
 P1119_ROM_LT             EQU $0D
 P1119_ROM_EQ             EQU $0E
 
@@ -865,54 +888,16 @@ p1119_rom_lhs_ptr:       dw 0
 p1119_rom_rhs_ptr:       dw 0
 p1119_rom_out_ptr:       dw 0
 p1119_rom_result:        db 0
-p1119_rom_saved_sp:      dw 0
-p1119_rom_saved_err_sp:  dw 0
-p1119_rom_saved_stkbot:  dw 0
-p1119_rom_saved_stkend:  dw 0
-p1119_rom_saved_mem:     dw 0
-p1119_rom_saved_chadd:   dw 0
-p1119_rom_saved_flags:   db 0
-p1119_rom_saved_errnr:   db 0
-p1119_rom_saved_breg:    db 0
 
 ; HL=lhs five-byte pointer, DE=rhs five-byte pointer, BC=writable i8 result.
 zx48_p1119_rom_fp_cmp:
     ld (p1119_rom_lhs_ptr),hl
     ld (p1119_rom_rhs_ptr),de
     ld (p1119_rom_out_ptr),bc
-    ld a,(altreg_busy)
-    or a
-    jp nz,p1119_rom_busy
-
     ld hl,0
     add hl,sp
-    ld (p1119_rom_saved_sp),hl
-    ld hl,(ROM_ERR_SP)
-    ld (p1119_rom_saved_err_sp),hl
-    ld hl,(ROM_STKBOT)
-    ld (p1119_rom_saved_stkbot),hl
-    ld hl,(ROM_STKEND)
-    ld (p1119_rom_saved_stkend),hl
-    ld hl,(ROM_MEM)
-    ld (p1119_rom_saved_mem),hl
-    ld hl,(ROM_CH_ADD)
-    ld (p1119_rom_saved_chadd),hl
-    ld a,(ROM_FLAGS)
-    ld (p1119_rom_saved_flags),a
-    ld a,(ROM_IY_ANCHOR)
-    ld (p1119_rom_saved_errnr),a
-    ld a,(ROM_BREG)
-    ld (p1119_rom_saved_breg),a
-
-    ld a,1
-    ld (altreg_busy),a
-    ld hl,ROM_CALC_STACK
-    ld (ROM_STKBOT),hl
-    ld (ROM_STKEND),hl
-    ld hl,ROM_MEMBOT
-    ld (ROM_MEM),hl
-    ld a,$FF
-    ld (ROM_IY_ANCHOR),a
+    call zx48_p11_rom_txn_begin
+    jp c,p1119_rom_busy
 
     ld hl,p1119_rom_error
     push hl
@@ -991,7 +976,7 @@ p1119_rom_bool_loop:
     ret
 
 p1119_rom_error:
-    ld hl,(p1119_rom_saved_sp)
+    ld hl,(p11_rom_saved_sp)
     ld sp,hl
     call p1119_rom_cleanup
     ld a,E_INVAL
@@ -999,30 +984,9 @@ p1119_rom_error:
     ret
 
 p1119_rom_cleanup:
-    ld hl,(p1119_rom_saved_err_sp)
-    ld (ROM_ERR_SP),hl
-    ld hl,(p1119_rom_saved_stkbot)
-    ld (ROM_STKBOT),hl
-    ld hl,(p1119_rom_saved_stkend)
-    ld (ROM_STKEND),hl
-    ld hl,(p1119_rom_saved_mem)
-    ld (ROM_MEM),hl
-    ld hl,(p1119_rom_saved_chadd)
-    ld (ROM_CH_ADD),hl
-    ld a,(p1119_rom_saved_flags)
-    ld (ROM_FLAGS),a
-    ld a,(p1119_rom_saved_breg)
-    ld (ROM_BREG),a
-    ld a,(p1119_rom_saved_errnr)
-    ld (ROM_IY_ANCHOR),a
-    xor a
-    ld (altreg_busy),a
-    ld iy,ROM_IY_ANCHOR
-    ret
+    jp zx48_p11_rom_txn_cleanup
 
 p1119_rom_busy:
-    ld a,E_BUSY
-    scf
     ret
     ENDM
 
@@ -1031,6 +995,7 @@ p1119_rom_busy:
 ; calculator workspace, redirects RST 10 through a private capture channel, and
 ; commits caller bytes only after ROM success and a complete capacity check.
     MACRO EMIT_P1146_ROM_FP_TO_TEXT_ROUTINES
+    EMIT_P11_ROM_CALC_TXN_ROUTINES
 P1146_TEXT_MAX            EQU 14
 P1146_TEXT_SCRATCH        EQU 16
 P1146_MEM35               EQU $5CA1
@@ -1039,16 +1004,7 @@ P1146_MEM35_SIZE          EQU 15
 p1146_text_in_ptr:        dw 0
 p1146_text_out_ptr:       dw 0
 p1146_text_capacity:      dw 0
-p1146_text_saved_sp:      dw 0
-p1146_text_saved_err_sp:  dw 0
-p1146_text_saved_stkbot:  dw 0
-p1146_text_saved_stkend:  dw 0
-p1146_text_saved_mem:     dw 0
-p1146_text_saved_chadd:   dw 0
 p1146_text_saved_curchl:  dw 0
-p1146_text_saved_flags:   db 0
-p1146_text_saved_errnr:   db 0
-p1146_text_saved_breg:    db 0
 p1146_text_saved_mem35:   defs P1146_MEM35_SIZE,0
 p1146_text_scratch:       defs P1146_TEXT_SCRATCH,0
 p1146_text_count:         db 0
@@ -1100,46 +1056,19 @@ zx48_p1146_rom_fp_to_text:
     ld (p1146_text_in_ptr),hl
     ld (p1146_text_out_ptr),de
     ld (p1146_text_capacity),bc
-    ld a,(altreg_busy)
-    or a
-    jp nz,p1146_text_busy
-
     ld hl,0
     add hl,sp
-    ld (p1146_text_saved_sp),hl
-    ld hl,(ROM_ERR_SP)
-    ld (p1146_text_saved_err_sp),hl
-    ld hl,(ROM_STKBOT)
-    ld (p1146_text_saved_stkbot),hl
-    ld hl,(ROM_STKEND)
-    ld (p1146_text_saved_stkend),hl
-    ld hl,(ROM_MEM)
-    ld (p1146_text_saved_mem),hl
-    ld hl,(ROM_CH_ADD)
-    ld (p1146_text_saved_chadd),hl
+    call zx48_p11_rom_txn_begin
+    jp c,p1146_text_busy
     ld hl,(ROM_CURCHL)
     ld (p1146_text_saved_curchl),hl
-    ld a,(ROM_FLAGS)
-    ld (p1146_text_saved_flags),a
-    ld a,(ROM_IY_ANCHOR)
-    ld (p1146_text_saved_errnr),a
-    ld a,(ROM_BREG)
-    ld (p1146_text_saved_breg),a
     ld hl,P1146_MEM35
     ld de,p1146_text_saved_mem35
     ld bc,P1146_MEM35_SIZE
     ldir
-
-    ld a,1
-    ld (altreg_busy),a
     xor a
     ld (p1146_text_count),a
     ld (p1146_text_overflow),a
-    ld hl,ROM_CALC_STACK
-    ld (ROM_STKBOT),hl
-    ld (ROM_STKEND),hl
-    ld hl,ROM_MEMBOT
-    ld (ROM_MEM),hl
     ld hl,p1146_text_channel
     ld (ROM_CURCHL),hl
     ld a,$FF
@@ -1201,7 +1130,7 @@ p1146_text_nospc:
     ret
 
 p1146_text_error:
-    ld hl,(p1146_text_saved_sp)
+    ld hl,(p11_rom_saved_sp)
     ld sp,hl
     call p1146_text_cleanup
     ld a,E_INVAL
@@ -1213,32 +1142,11 @@ p1146_text_cleanup:
     ld de,P1146_MEM35
     ld bc,P1146_MEM35_SIZE
     ldir
-    ld hl,(p1146_text_saved_err_sp)
-    ld (ROM_ERR_SP),hl
-    ld hl,(p1146_text_saved_stkbot)
-    ld (ROM_STKBOT),hl
-    ld hl,(p1146_text_saved_stkend)
-    ld (ROM_STKEND),hl
-    ld hl,(p1146_text_saved_mem)
-    ld (ROM_MEM),hl
-    ld hl,(p1146_text_saved_chadd)
-    ld (ROM_CH_ADD),hl
     ld hl,(p1146_text_saved_curchl)
     ld (ROM_CURCHL),hl
-    ld a,(p1146_text_saved_flags)
-    ld (ROM_FLAGS),a
-    ld a,(p1146_text_saved_breg)
-    ld (ROM_BREG),a
-    ld a,(p1146_text_saved_errnr)
-    ld (ROM_IY_ANCHOR),a
-    xor a
-    ld (altreg_busy),a
-    ld iy,ROM_IY_ANCHOR
-    ret
+    jp zx48_p11_rom_txn_cleanup
 
 p1146_text_busy:
-    ld a,E_BUSY
-    scf
     ret
     ENDM
 
@@ -1247,6 +1155,7 @@ p1146_text_busy:
 ; Only the unsigned decimal token is copied into private kernel storage; the ROM
 ; decimal parser never sees BASIC statements, tokens, or caller memory beyond BC.
     MACRO EMIT_P1147_ROM_FP_FROM_TEXT_ROUTINES
+    EMIT_P11_ROM_CALC_TXN_ROUTINES
 P1147_TEXT_MAX            EQU 255
 P1147_TEXT_SCRATCH        EQU 256
 P1147_MEM_WORK            EQU $5C92
@@ -1256,15 +1165,6 @@ p1147_text_in_ptr:        dw 0
 p1147_text_out_ptr:       dw 0
 p1147_text_length:        dw 0
 p1147_text_sign:          db 0
-p1147_text_saved_sp:      dw 0
-p1147_text_saved_err_sp:  dw 0
-p1147_text_saved_stkbot:  dw 0
-p1147_text_saved_stkend:  dw 0
-p1147_text_saved_mem:     dw 0
-p1147_text_saved_chadd:   dw 0
-p1147_text_saved_flags:   db 0
-p1147_text_saved_errnr:   db 0
-p1147_text_saved_breg:    db 0
 p1147_text_calc_mem:      defs P1147_MEM_WORK_SIZE,0
 p1147_text_scratch:       defs P1147_TEXT_SCRATCH,0
 p1147_text_result:        defs 5,0
@@ -1276,9 +1176,10 @@ zx48_p1147_rom_fp_from_text:
     ld (p1147_text_in_ptr),hl
     ld (p1147_text_out_ptr),de
     ld (p1147_text_length),bc
-    ld a,(altreg_busy)
-    or a
-    jp nz,p1147_text_busy
+    ld hl,0
+    add hl,sp
+    call zx48_p11_rom_txn_begin
+    jp c,p1147_text_busy
 
     ; Freeze caller bytes before any ROM entry so output may alias input safely.
     ld hl,(p1147_text_in_ptr)
@@ -1290,30 +1191,6 @@ zx48_p1147_rom_fp_from_text:
     ld a,':'
     ld (de),a
 
-    ld hl,0
-    add hl,sp
-    ld (p1147_text_saved_sp),hl
-    ld hl,(ROM_ERR_SP)
-    ld (p1147_text_saved_err_sp),hl
-    ld hl,(ROM_STKBOT)
-    ld (p1147_text_saved_stkbot),hl
-    ld hl,(ROM_STKEND)
-    ld (p1147_text_saved_stkend),hl
-    ld hl,(ROM_MEM)
-    ld (p1147_text_saved_mem),hl
-    ld hl,(ROM_CH_ADD)
-    ld (p1147_text_saved_chadd),hl
-    ld a,(ROM_FLAGS)
-    ld (p1147_text_saved_flags),a
-    ld a,(ROM_IY_ANCHOR)
-    ld (p1147_text_saved_errnr),a
-    ld a,(ROM_BREG)
-    ld (p1147_text_saved_breg),a
-    ld a,1
-    ld (altreg_busy),a
-    ld hl,ROM_CALC_STACK
-    ld (ROM_STKBOT),hl
-    ld (ROM_STKEND),hl
     ld hl,p1147_text_calc_mem
     ld (ROM_MEM),hl
     ld hl,p1147_text_scratch
@@ -1355,7 +1232,7 @@ p1147_text_sign_done:
     ret
 
 p1147_text_error:
-    ld hl,(p1147_text_saved_sp)
+    ld hl,(p11_rom_saved_sp)
     ld sp,hl
     call p1147_text_cleanup
     ld a,E_INVAL
@@ -1363,29 +1240,8 @@ p1147_text_error:
     ret
 
 p1147_text_cleanup:
-    ld hl,(p1147_text_saved_err_sp)
-    ld (ROM_ERR_SP),hl
-    ld hl,(p1147_text_saved_stkbot)
-    ld (ROM_STKBOT),hl
-    ld hl,(p1147_text_saved_stkend)
-    ld (ROM_STKEND),hl
-    ld hl,(p1147_text_saved_mem)
-    ld (ROM_MEM),hl
-    ld hl,(p1147_text_saved_chadd)
-    ld (ROM_CH_ADD),hl
-    ld a,(p1147_text_saved_flags)
-    ld (ROM_FLAGS),a
-    ld a,(p1147_text_saved_breg)
-    ld (ROM_BREG),a
-    ld a,(p1147_text_saved_errnr)
-    ld (ROM_IY_ANCHOR),a
-    xor a
-    ld (altreg_busy),a
-    ld iy,ROM_IY_ANCHOR
-    ret
+    jp zx48_p11_rom_txn_cleanup
 
 p1147_text_busy:
-    ld a,E_BUSY
-    scf
     ret
     ENDM
