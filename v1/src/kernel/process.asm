@@ -430,7 +430,7 @@ process_fixed_state_start:
 ; Small mutable process-control scratch sits directly after allocator state in
 ; the fixed emergency reserve. The process descriptor table itself remains in
 ; the ordinary resident pool as required by the frozen scheduler design.
-PROCESS_STATE_BASE       EQU MEMORY_STATE_END
+PROCESS_STATE_BASE       EQU EMERGENCY_START+$45
 process_info_ptr         EQU PROCESS_STATE_BASE+0
 process_temp_pid         EQU PROCESS_STATE_BASE+2
 process_temp_status      EQU PROCESS_STATE_BASE+3
