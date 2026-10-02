@@ -594,17 +594,17 @@ ROMINFO_FLAG_NONREENT    EQU 8
 ROMINFO_RECORD_SIZE      EQU 24
 
     MACRO ROMINFO_REC nameText,nameLen,addressValue,classValue,categoryValue,flagsValue
-    db nameText
-    defs 16-nameLen,0
+    ; Compact private descriptor: packed category/class, low flag byte, address,
+    ; then the NUL-terminated public name. ROMOUT1 is expanded on lookup.
+    db categoryValue*4+classValue,flagsValue
     dw addressValue
-    db classValue,categoryValue
-    dw flagsValue
-    dw 0
+    db nameText,0
     ENDM
 
     MACRO EMIT_P711_ROM_INFO_ROUTINES
 ; A=category 0..6, B=index, DE=writable 24-byte output. The syscall layer has
 ; validated the complete request and destination before this lookup executes.
+; Resident metadata is packed privately and expanded to exact ROMOUT1 bytes.
 zx48_rom_info_lookup:
     cp 7
     jp nc,zx48_rom_info_invalid
@@ -612,43 +612,97 @@ zx48_rom_info_lookup:
     ld a,b
     ld (rom_info_query_index),a
     ld (rom_info_out_ptr),de
-    xor a
-    ld (rom_info_match_index),a
     ld hl,rom_info_table
 zx48_rom_info_scan:
     ld a,(hl)
     or a
     jr z,zx48_rom_info_past_end
+    ld c,a
     ld a,(rom_info_query_category)
     or a
     jr z,zx48_rom_info_candidate
-    push hl
-    ld de,19
-    add hl,de
-    ld a,(hl)
+    ld a,c
+    srl a
+    srl a
     ld c,a
-    pop hl
     ld a,(rom_info_query_category)
     cp c
     jr nz,zx48_rom_info_next
 zx48_rom_info_candidate:
-    ld a,(rom_info_match_index)
-    ld c,a
     ld a,(rom_info_query_index)
-    cp c
+    or a
     jr z,zx48_rom_info_publish
-    ld a,(rom_info_match_index)
-    inc a
-    ld (rom_info_match_index),a
+    dec a
+    ld (rom_info_query_index),a
 zx48_rom_info_next:
-    ld de,ROMINFO_RECORD_SIZE
+    ld de,4
     add hl,de
+zx48_rom_info_skip_name:
+    ld a,(hl)
+    inc hl
+    or a
+    jr nz,zx48_rom_info_skip_name
     jr zx48_rom_info_scan
 
 zx48_rom_info_publish:
-    ld de,(rom_info_out_ptr)
-    ld bc,ROMINFO_RECORD_SIZE
+    ; Start from an exact all-zero ROMOUT1, then overlay name and metadata.
+    push hl
+    ld hl,(rom_info_out_ptr)
+    xor a
+    ld (hl),a
+    ld d,h
+    ld e,l
+    inc de
+    ld bc,ROMINFO_RECORD_SIZE-1
     ldir
+    pop hl
+
+    ; Preserve packed metadata/address while copying the NUL-terminated name.
+    ld a,(hl)
+    push af
+    inc hl
+    ld a,(hl)
+    push af
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    inc hl
+    push de
+    ld de,(rom_info_out_ptr)
+zx48_rom_info_copy_name:
+    ld a,(hl)
+    or a
+    jr z,zx48_rom_info_publish_meta
+    ld (de),a
+    inc hl
+    inc de
+    jr zx48_rom_info_copy_name
+
+zx48_rom_info_publish_meta:
+    pop bc
+    ld hl,(rom_info_out_ptr)
+    ld de,16
+    add hl,de
+    ld (hl),c
+    inc hl
+    ld (hl),b
+    inc hl
+    pop af
+    ld e,a
+    pop af
+    ld d,a
+    and 3
+    ld (hl),a
+    inc hl
+    ld a,d
+    srl a
+    srl a
+    ld (hl),a
+    inc hl
+    ld a,e
+    ld (hl),a
+    ; Flags high byte and reserved u16 remain zero from the initial clear.
     ld hl,1
     xor a
     ret
@@ -665,9 +719,9 @@ zx48_rom_info_invalid:
 
 rom_info_query_category: db 0
 rom_info_query_index: db 0
-rom_info_match_index: db 0
 rom_info_out_ptr: dw 0
 
+; Private compact descriptors expand to exact public ROMOUT1:
 ; name[16], address, class, category, contract_flags, reserved=0.
 ; Flags: bit0 MAY_ERROR_RESTART, bit1 ALTREG_SENSITIVE,
 ; bit2 DISABLES_INTERRUPTS, bit3 NONREENTRANT.
