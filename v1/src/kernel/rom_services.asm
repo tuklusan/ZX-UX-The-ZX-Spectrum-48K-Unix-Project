@@ -526,31 +526,21 @@ p1117_fp_rom_busy:
     ENDM
 
     MACRO EMIT_P709_ROM_BEEP_ROUTINES
+    EMIT_P11_ROM_CALC_TXN_ROUTINES
 ; P7.09 isolated BASIC-compatible BEEP gateway.
-; HL -> five-byte duration, DE -> five-byte pitch. The two exact values are
-; copied into a private calculator stack in protected ROM-compatibility RAM.
-; ERR_SP is redirected to a kernel-owned recovery item so any Sinclair report
-; becomes E_INVAL rather than escaping into BASIC.
+; HL -> five-byte duration, DE -> five-byte pitch. Reuse the common serialized
+; ROM transaction, then keep the historical dedicated BEEP calculator stack.
 zx48_rom_beep_values:
     ld (rom_beep_duration_ptr),hl
     ld (rom_beep_pitch_ptr),de
-    ld hl,(ROM_ERR_SP)
-    ld (rom_beep_saved_err_sp),hl
-    ld hl,(ROM_STKBOT)
-    ld (rom_beep_saved_stkbot),hl
-    ld hl,(ROM_STKEND)
-    ld (rom_beep_saved_stkend),hl
-    ld hl,(ROM_MEM)
-    ld (rom_beep_saved_mem),hl
     ld hl,0
     add hl,sp
-    ld (rom_beep_saved_sp),hl
+    call zx48_p11_rom_txn_begin
+    ret c
 
     ld hl,ROM_BEEP_STACK
     ld (ROM_STKBOT),hl
     ld (ROM_STKEND),hl
-    ld hl,ROM_MEMBOT
-    ld (ROM_MEM),hl
 
     ld hl,(rom_beep_duration_ptr)
     ld de,ROM_BEEP_STACK
@@ -578,7 +568,7 @@ zx48_rom_beep_values:
     ret
 
 zx48_rom_beep_error:
-    ld hl,(rom_beep_saved_sp)
+    ld hl,(p11_rom_saved_sp)
     ld sp,hl
     call zx48_rom_beep_cleanup
     ld a,E_INVAL
@@ -586,28 +576,12 @@ zx48_rom_beep_error:
     ret
 
 zx48_rom_beep_cleanup:
-    ld hl,(rom_beep_saved_err_sp)
-    ld (ROM_ERR_SP),hl
-    ld hl,(rom_beep_saved_stkbot)
-    ld (ROM_STKBOT),hl
-    ld hl,(rom_beep_saved_stkend)
-    ld (ROM_STKEND),hl
-    ld hl,(rom_beep_saved_mem)
-    ld (ROM_MEM),hl
-    xor a
-    ld (altreg_busy),a
+    call zx48_p11_rom_txn_cleanup
     ld a,(ula_shadow)
-    call zx48_ula_commit
-    ld iy,ROM_IY_ANCHOR
-    ret
+    jp zx48_ula_commit
 
 rom_beep_duration_ptr    EQU P11_ROM_OP_BASE+0
 rom_beep_pitch_ptr       EQU P11_ROM_OP_BASE+2
-rom_beep_saved_err_sp    EQU P11_ROM_OP_BASE+4
-rom_beep_saved_stkbot    EQU P11_ROM_OP_BASE+6
-rom_beep_saved_stkend    EQU P11_ROM_OP_BASE+8
-rom_beep_saved_mem       EQU P11_ROM_OP_BASE+10
-rom_beep_saved_sp        EQU P11_ROM_OP_BASE+12
 
     ENDM
 
