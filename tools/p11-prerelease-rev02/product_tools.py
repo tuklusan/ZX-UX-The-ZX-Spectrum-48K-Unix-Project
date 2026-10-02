@@ -217,7 +217,8 @@ def main():
     shsrc=root/"v1/src/shell/sh.asm"; sh=shsrc.read_text()
     ccsrc=root/"v1/src/tools/cc.asm"; assrc=root/"tools/as.asm"; astextsrc=root/"tools/as_text.asm"; ldsrc=root/"tools/ld.asm"
     as_source=assrc.read_text(); as_support=astextsrc.read_text()
-    req("EMIT_P601_SH_IMAGE" in sh and "sh_idle:" in sh,"shell entry fixture changed")
+    req("EMIT_P601_SH_IMAGE" in sh and "sh_idle:" in sh,"historical shell entry fixture changed")
+    req(all(marker in sh for marker in ("EMIT_REV02_SH_PRODUCT","sh_rev02_entry:","sh_rev02_build_arg1:","sh_p614_lookup_external","SYS_SPAWN","SYS_WAIT")),"ordinary product shell integration missing")
     cc_source=ccsrc.read_text()
     req(all(marker in cc_source for marker in (
         "cc_rev02_parse_simple_body:","cc_rev02_param_store_candidate:","cc_rev02_emit_param_prologue:","cc_rev02_global_find:","cc_rev02_external_initializer:","cc_rev02_emit_global_const:","cc_rev02_global_record_meta:","cc_rev02_emit_global_load:","cc_rev02_emit_global_store:","cc_rev02_emit_global_index_address:","cc_rev02_emit_index_load:","cc_rev02_emit_index_store:","cc_rev02_parse_call_args:",
@@ -244,9 +245,13 @@ def main():
     asm,image,sh_relocs,sh_bss=build_relocatable(
         sj,out,"sh",
         f'    INCLUDE "{(root/"v1/include/zx48ux.inc").as_posix()}"\n    INCLUDE "{(root/"v1/src/shell/sh.asm").as_posix()}"\n',
-        '    EMIT_P601_SH_IMAGE\n')
-    req(image.is_file() and 4 <= image.stat().st_size <= 64,"shell preflight image")
-    mex=mex1(image.read_bytes(),bss=sh_bss,relocations=sh_relocs); (out/"sh.mex1").write_bytes(mex)
+        '    EMIT_REV02_SH_PRODUCT\n',
+        '    defs SH_REV02_BSS_BYTES,0\n')
+    req(image.is_file() and 256 <= image.stat().st_size <= 4096,"shell product image size")
+    req(512 <= sh_bss <= 2048,"shell product BSS size")
+    sh_resident=image.stat().st_size+sh_bss+512
+    req(sh_resident <= 8192,"shell product image+BSS+stack feasibility")
+    mex=mex1(image.read_bytes(),stack=512,bss=sh_bss,relocations=sh_relocs); (out/"sh.mex1").write_bytes(mex)
     inspect=root/"v1/tools-host/inspect-mex/inspect.py"
     run([sys.executable,inspect,out/"sh.mex1","--base","0x6000"],root)
     mt=load_maketap(root)
@@ -315,8 +320,8 @@ def main():
       "schema":1,"kind":"rev02-product-tools-preflight","status":"PASS",
       "shell":{
         "source":"v1/src/shell/sh.asm","source_sha256":sha(shsrc),
-        "image_sha256":sha(image),"relocation_count":len(sh_relocs),"mex1_sha256":sha(out/"sh.mex1"),"m48o_tap_sha256":sha(out/"sh.m48o.tap"),
-        "entry":"EMIT_P601_SH_IMAGE","semantic_status":"PACKAGING-ONLY-IDLE-ENTRY-NOT-GATE-G-READY"},
+        "image_sha256":sha(image),"image_bytes":image.stat().st_size,"bss_bytes":sh_bss,"resident_bytes_including_stack":sh_resident,"relocation_count":len(sh_relocs),"mex1_sha256":sha(out/"sh.mex1"),"m48o_tap_sha256":sha(out/"sh.m48o.tap"),
+        "entry":"EMIT_REV02_SH_PRODUCT","semantic_status":"GENERIC-LOGIN-ISSUE-SESSION-ENV-PATH-ARG1-SPAWN-WAIT-BACKGROUND-COMMAND-LOOP"},
       "cc":{
         "source":"v1/src/tools/cc.asm","source_sha256":sha(ccsrc),
         "image_sha256":sha(cc_image),"image_bytes":cc_image.stat().st_size,"bss_bytes":cc_bss,"resident_bytes_including_stack":cc_resident,"relocation_count":len(cc_relocs),
@@ -340,7 +345,7 @@ def main():
         "entry":"EMIT_REV02_LD_PRODUCT_CLI",
         "semantic_status":"GENERIC-CRT0-USER-FULL-C48-RUNTIME-NORMAL-LINK-WITH-1024-BYTE-HEAP-PLUS-REV18-ABS"},
       "assertions":{
-        "deterministic_shell_mex1":"PASS","deterministic_m48o":"PASS","mex1_inspection":"PASS",
+        "deterministic_shell_mex1":"PASS","deterministic_m48o":"PASS","mex1_inspection":"PASS","generic_shell_command_loop":"PASS",
         "deterministic_cc_mex1":"PASS","deterministic_cc_m48o":"PASS","cc_mex1_inspection":"PASS","generic_cc_prototype_call_string_checkpoint":"PASS","generic_cc_sizeof_checkpoint":"PASS",
         "deterministic_as_mex1":"PASS","deterministic_as_m48o":"PASS","as_mex1_inspection":"PASS","generic_as_full_p10_source_driver":"PASS",
         "deterministic_ld_mex1":"PASS","deterministic_ld_m48o":"PASS","ld_mex1_inspection":"PASS",

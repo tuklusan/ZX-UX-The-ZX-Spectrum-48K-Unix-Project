@@ -4959,3 +4959,527 @@ p820_write_ptr: dw 0
 p820_write_left: dw 0
 p820_written: dw 0
     ENDM
+
+
+; REV02 post-Phase-11 recovery: compact ordinary product shell.
+; Historical P6 step macros above remain frozen and independently qualified.
+; This product entry connects the already-frozen login, tokenizer, PATH and
+; process contracts through the public syscall gateway.  It is deliberately
+; source/program agnostic: every external command takes the same path.
+    MACRO EMIT_REV02_SH_PRODUCT
+SH_REV02_ISSUE_O          EQU 0
+SH_REV02_LINE_O           EQU SH_REV02_ISSUE_O+P602_ISSUE_LENGTH
+SH_REV02_TOKENS_O         EQU SH_REV02_LINE_O+248
+SH_REV02_ENV_O            EQU SH_REV02_TOKENS_O+248
+SH_REV02_ARG1_O           EQU SH_REV02_ENV_O+256
+SH_REV02_PATH_O           EQU SH_REV02_ARG1_O+256
+SH_REV02_HOME_O           EQU SH_REV02_PATH_O+32
+SH_REV02_PROC1_O          EQU SH_REV02_HOME_O+15
+SH_REV02_WAIT1_O          EQU SH_REV02_PROC1_O+16
+SH_REV02_STATUS_O         EQU SH_REV02_WAIT1_O+4
+SH_REV02_KEY_O            EQU SH_REV02_STATUS_O+1
+SH_REV02_LINE_LEN_O       EQU SH_REV02_KEY_O+1
+SH_REV02_LINE_OVER_O      EQU SH_REV02_LINE_LEN_O+1
+SH_REV02_TOKEN_COUNT_O    EQU SH_REV02_LINE_OVER_O+1
+SH_REV02_TOKEN_LEN_O      EQU SH_REV02_TOKEN_COUNT_O+1
+SH_REV02_FIRST_LEN_O      EQU SH_REV02_TOKEN_LEN_O+1
+SH_REV02_PATH_LEN_O       EQU SH_REV02_FIRST_LEN_O+1
+SH_REV02_REMAIN_O         EQU SH_REV02_PATH_LEN_O+1
+SH_REV02_BACKGROUND_O     EQU SH_REV02_REMAIN_O+1
+SH_REV02_ISSUE_HANDLE_O   EQU SH_REV02_BACKGROUND_O+1
+SH_REV02_LAST_PTR_O       EQU SH_REV02_ISSUE_HANDLE_O+1
+SH_REV02_ARG_LEN_O        EQU SH_REV02_LAST_PTR_O+2
+SH_REV02_BSS_BYTES        EQU SH_REV02_ARG_LEN_O+2
+
+SH_REV02_ISSUE            EQU sh_product_bss+SH_REV02_ISSUE_O
+SH_REV02_LINE             EQU sh_product_bss+SH_REV02_LINE_O
+SH_REV02_TOKENS           EQU sh_product_bss+SH_REV02_TOKENS_O
+SH_REV02_ENV              EQU sh_product_bss+SH_REV02_ENV_O
+SH_REV02_ARG1             EQU sh_product_bss+SH_REV02_ARG1_O
+SH_REV02_PATH             EQU sh_product_bss+SH_REV02_PATH_O
+SH_REV02_HOME             EQU sh_product_bss+SH_REV02_HOME_O
+SH_REV02_PROC1            EQU sh_product_bss+SH_REV02_PROC1_O
+SH_REV02_WAIT1            EQU sh_product_bss+SH_REV02_WAIT1_O
+SH_REV02_STATUS           EQU sh_product_bss+SH_REV02_STATUS_O
+SH_REV02_KEY              EQU sh_product_bss+SH_REV02_KEY_O
+SH_REV02_LINE_LEN         EQU sh_product_bss+SH_REV02_LINE_LEN_O
+SH_REV02_LINE_OVER        EQU sh_product_bss+SH_REV02_LINE_OVER_O
+SH_REV02_TOKEN_COUNT      EQU sh_product_bss+SH_REV02_TOKEN_COUNT_O
+SH_REV02_TOKEN_LEN        EQU sh_product_bss+SH_REV02_TOKEN_LEN_O
+SH_REV02_FIRST_LEN        EQU sh_product_bss+SH_REV02_FIRST_LEN_O
+SH_REV02_PATH_LEN         EQU sh_product_bss+SH_REV02_PATH_LEN_O
+SH_REV02_REMAIN           EQU sh_product_bss+SH_REV02_REMAIN_O
+SH_REV02_BACKGROUND       EQU sh_product_bss+SH_REV02_BACKGROUND_O
+SH_REV02_ISSUE_HANDLE     EQU sh_product_bss+SH_REV02_ISSUE_HANDLE_O
+SH_REV02_LAST_PTR         EQU sh_product_bss+SH_REV02_LAST_PTR_O
+SH_REV02_ARG_LEN          EQU sh_product_bss+SH_REV02_ARG_LEN_O
+
+sh_rev02_entry:
+    jp sh_rev02_start
+
+    EMIT_P602_ISSUE_ROUTINES
+    EMIT_P603_LOGIN_ROUTINES
+    EMIT_P604_HOME_ROUTINES
+    EMIT_P605_ENV_ROUTINES
+    EMIT_P608_TOKENIZER_ROUTINES
+    EMIT_P614_PATH_ROUTINES
+
+sh_rev02_start:
+    xor a
+    ld (SH_REV02_STATUS),a
+    call sh_rev02_read_issue
+    jp c,sh_rev02_fatal
+    ld hl,SH_REV02_ISSUE
+    ld bc,P602_ISSUE_LENGTH
+    ld ix,sh_rev02_login_prompt
+    call sh_p602_display_issue
+    jp c,sh_rev02_fatal
+
+sh_rev02_login_read:
+    call sh_rev02_read_line
+    jp c,sh_rev02_login_reprompt
+    ld hl,SH_REV02_LINE
+    ld a,(SH_REV02_LINE_LEN)
+    ld c,a
+    ld b,0
+    ld ix,sh_rev02_login_prompt
+    call sh_p603_validate_or_reprompt
+    jr c,sh_rev02_login_read
+
+    ld hl,SH_REV02_LINE
+    ld a,(SH_REV02_LINE_LEN)
+    ld c,a
+    ld b,0
+    ld de,SH_REV02_HOME
+    call sh_p604_session_home
+    jp c,sh_rev02_fatal
+
+    ld hl,SH_REV02_LINE
+    ld a,(SH_REV02_LINE_LEN)
+    ld c,a
+    ld b,0
+    ld de,SH_REV02_ENV
+    call sh_p605_init_env
+    jp c,sh_rev02_fatal
+    jr sh_rev02_prompt
+
+sh_rev02_login_reprompt:
+    ld hl,sh_rev02_login_prompt
+    ld bc,P602_LOGIN_LENGTH
+    ld a,SYS_CON_WRITE
+    call SYSCALL_GATEWAY
+    jp c,sh_rev02_fatal
+    jr sh_rev02_login_read
+
+sh_rev02_prompt:
+    ld hl,sh_rev02_prompt_text
+    ld bc,2
+    ld a,SYS_CON_WRITE
+    call SYSCALL_GATEWAY
+    jp c,sh_rev02_fatal
+    call sh_rev02_read_line
+    jp c,sh_rev02_command_error
+    ld a,(SH_REV02_LINE_LEN)
+    or a
+    jr z,sh_rev02_prompt
+
+    ld hl,SH_REV02_LINE
+    ld ix,SH_REV02_TOKENS
+    call sh_p608_tokenize
+    jp c,sh_rev02_command_error
+    ld a,b
+    or a
+    jr z,sh_rev02_prompt
+    ld (SH_REV02_TOKEN_COUNT),a
+    ld a,c
+    ld (SH_REV02_TOKEN_LEN),a
+
+    call sh_rev02_trim_background
+    jp c,sh_rev02_command_error
+    ld a,(SH_REV02_TOKEN_COUNT)
+    cp 17
+    jr nc,sh_rev02_invalid
+
+    ld hl,SH_REV02_TOKENS
+    ld ix,sh_rev02_path_value
+    ld de,SH_REV02_PATH
+    call sh_p614_lookup_external
+    jp c,sh_rev02_command_error
+
+    call sh_rev02_build_arg1
+    jp c,sh_rev02_command_error
+    call sh_rev02_build_proc1
+
+    ld hl,SH_REV02_PROC1
+    ld a,SYS_SPAWN
+    call SYSCALL_GATEWAY
+    jp c,sh_rev02_command_error
+    ld a,(SH_REV02_BACKGROUND)
+    or a
+    jr nz,sh_rev02_background_started
+
+    ld (SH_REV02_WAIT1),hl
+    ld hl,SH_REV02_STATUS
+    ld (SH_REV02_WAIT1+2),hl
+    ld hl,SH_REV02_WAIT1
+    ld a,SYS_WAIT
+    call SYSCALL_GATEWAY
+    jp c,sh_rev02_command_error
+    jr sh_rev02_prompt
+
+sh_rev02_background_started:
+    xor a
+    ld (SH_REV02_STATUS),a
+    jr sh_rev02_prompt
+
+sh_rev02_invalid:
+    ld a,E_INVAL
+sh_rev02_command_error:
+    ld (SH_REV02_STATUS),a
+    jr sh_rev02_prompt
+
+; Read the canonical /etc/issue namespace object.  The product shell never
+; embeds a private replacement for the release resource.
+sh_rev02_read_issue:
+    ld hl,sh_rev02_issue_path
+    ld b,0
+    ld c,O_READ
+    ld a,SYS_OPEN
+    call SYSCALL_GATEWAY
+    ret c
+    ld a,l
+    ld (SH_REV02_ISSUE_HANDLE),a
+
+    ld e,a
+    ld d,0
+    ld hl,SH_REV02_ISSUE
+    ld bc,P602_ISSUE_LENGTH
+    ld a,SYS_READ
+    call SYSCALL_GATEWAY
+    jr c,sh_rev02_issue_read_fail
+    push hl
+    ld a,(SH_REV02_ISSUE_HANDLE)
+    ld l,a
+    ld h,0
+    ld a,SYS_CLOSE
+    call SYSCALL_GATEWAY
+    jr c,sh_rev02_issue_close_fail
+    pop hl
+    ld de,P602_ISSUE_LENGTH
+    or a
+    sbc hl,de
+    jr nz,sh_rev02_issue_format
+    xor a
+    ret
+sh_rev02_issue_read_fail:
+    ld (SH_REV02_STATUS),a
+    ld a,(SH_REV02_ISSUE_HANDLE)
+    ld l,a
+    ld h,0
+    ld a,SYS_CLOSE
+    call SYSCALL_GATEWAY
+    ld a,(SH_REV02_STATUS)
+    scf
+    ret
+sh_rev02_issue_close_fail:
+    pop de
+    scf
+    ret
+sh_rev02_issue_format:
+    ld a,E_FORMAT
+    scf
+    ret
+
+; Bounded tty line input with transactional length semantics.  Excess bytes are
+; drained through the terminating LF/CR so the next prompt begins cleanly.
+sh_rev02_read_line:
+    xor a
+    ld (SH_REV02_LINE_LEN),a
+    ld (SH_REV02_LINE_OVER),a
+sh_rev02_line_next:
+    ld de,0
+    ld hl,SH_REV02_KEY
+    ld bc,1
+    ld a,SYS_READ
+    call SYSCALL_GATEWAY
+    ret c
+    ld a,h
+    or a
+    jr nz,sh_rev02_line_io
+    ld a,l
+    cp 1
+    jr nz,sh_rev02_line_io
+    ld a,(SH_REV02_KEY)
+    cp $0d
+    jr z,sh_rev02_line_done
+    cp $0a
+    jr z,sh_rev02_line_done
+    cp $08
+    jr z,sh_rev02_line_backspace
+    cp $7f
+    jr z,sh_rev02_line_backspace
+    cp $09
+    jr z,sh_rev02_line_store
+    cp $20
+    jr c,sh_rev02_line_invalid
+    cp $7f
+    jr nc,sh_rev02_line_invalid
+sh_rev02_line_store:
+    ld a,(SH_REV02_LINE_OVER)
+    or a
+    jr nz,sh_rev02_line_next
+    ld a,(SH_REV02_LINE_LEN)
+    cp 247
+    jr nc,sh_rev02_line_mark_over
+    ld e,a
+    ld d,0
+    ld hl,SH_REV02_LINE
+    add hl,de
+    ld a,(SH_REV02_KEY)
+    ld (hl),a
+    ld a,(SH_REV02_LINE_LEN)
+    inc a
+    ld (SH_REV02_LINE_LEN),a
+    jr sh_rev02_line_next
+sh_rev02_line_mark_over:
+    ld a,1
+    ld (SH_REV02_LINE_OVER),a
+    jr sh_rev02_line_next
+sh_rev02_line_backspace:
+    ld a,(SH_REV02_LINE_OVER)
+    or a
+    jr nz,sh_rev02_line_next
+    ld a,(SH_REV02_LINE_LEN)
+    or a
+    jr z,sh_rev02_line_next
+    dec a
+    ld (SH_REV02_LINE_LEN),a
+    jr sh_rev02_line_next
+sh_rev02_line_done:
+    ld a,(SH_REV02_LINE_OVER)
+    or a
+    jr nz,sh_rev02_line_toolong
+    ld a,(SH_REV02_LINE_LEN)
+    ld e,a
+    ld d,0
+    ld hl,SH_REV02_LINE
+    add hl,de
+    xor a
+    ld (hl),a
+    ld a,(SH_REV02_LINE_LEN)
+    ld c,a
+    ld b,0
+    xor a
+    ret
+sh_rev02_line_io:
+    ld a,E_IO
+    scf
+    ret
+sh_rev02_line_toolong:
+    ld a,E_TOOLONG
+    scf
+    ret
+sh_rev02_line_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+
+; A final standalone '&' is ordinary shell background syntax.  It is removed
+; from the child ARG1 rather than becoming an application argument.
+sh_rev02_trim_background:
+    xor a
+    ld (SH_REV02_BACKGROUND),a
+    ld a,(SH_REV02_TOKEN_COUNT)
+    or a
+    jr z,sh_rev02_trim_invalid
+    ld b,a
+    ld hl,SH_REV02_TOKENS
+sh_rev02_trim_token:
+    ld (SH_REV02_LAST_PTR),hl
+sh_rev02_trim_scan:
+    ld a,(hl)
+    inc hl
+    or a
+    jr nz,sh_rev02_trim_scan
+    djnz sh_rev02_trim_token
+    ld hl,(SH_REV02_LAST_PTR)
+    ld a,(hl)
+    cp '&'
+    jr nz,sh_rev02_trim_ok
+    inc hl
+    ld a,(hl)
+    or a
+    jr nz,sh_rev02_trim_ok
+    ld a,(SH_REV02_TOKEN_COUNT)
+    dec a
+    jr z,sh_rev02_trim_invalid
+    ld (SH_REV02_TOKEN_COUNT),a
+    ld a,(SH_REV02_TOKEN_LEN)
+    cp 2
+    jr c,sh_rev02_trim_invalid
+    sub 2
+    ld (SH_REV02_TOKEN_LEN),a
+    ld a,1
+    ld (SH_REV02_BACKGROUND),a
+sh_rev02_trim_ok:
+    xor a
+    ret
+sh_rev02_trim_invalid:
+    ld a,E_INVAL
+    scf
+    ret
+
+; Build canonical ARG1 from the resolved execution path plus the remaining
+; dequoted tokens.  The resolved path is argv[0], as required by SYS_SPAWN.
+sh_rev02_build_arg1:
+    ld hl,SH_REV02_TOKENS
+    ld c,0
+sh_rev02_first_scan:
+    inc c
+    ld a,(hl)
+    inc hl
+    or a
+    jr nz,sh_rev02_first_scan
+    ld a,c
+    ld (SH_REV02_FIRST_LEN),a
+
+    ld hl,SH_REV02_PATH
+    ld c,0
+sh_rev02_path_scan:
+    inc c
+    ld a,(hl)
+    inc hl
+    or a
+    jr nz,sh_rev02_path_scan
+    ld a,c
+    ld (SH_REV02_PATH_LEN),a
+
+    ld a,(SH_REV02_TOKEN_LEN)
+    ld b,a
+    ld a,(SH_REV02_FIRST_LEN)
+    cp b
+    jr c,sh_rev02_have_remaining
+    jr z,sh_rev02_no_remaining
+    jr sh_rev02_arg_format
+sh_rev02_have_remaining:
+    ld a,b
+    ld b,0
+    ld c,a
+    ld a,(SH_REV02_FIRST_LEN)
+    ld e,a
+    ld d,0
+    ld h,b
+    ld l,c
+    or a
+    sbc hl,de
+    ld a,l
+    ld (SH_REV02_REMAIN),a
+    jr sh_rev02_total
+sh_rev02_no_remaining:
+    xor a
+    ld (SH_REV02_REMAIN),a
+
+sh_rev02_total:
+    ld a,(SH_REV02_PATH_LEN)
+    ld l,a
+    ld h,0
+    ld a,(SH_REV02_REMAIN)
+    ld e,a
+    ld d,0
+    add hl,de
+    ld de,8
+    add hl,de
+    ld a,h
+    or a
+    jr z,sh_rev02_total_ok
+    cp 1
+    jr nz,sh_rev02_arg_toolong
+    ld a,l
+    or a
+    jr nz,sh_rev02_arg_toolong
+sh_rev02_total_ok:
+    ld (SH_REV02_ARG_LEN),hl
+
+    ld hl,SH_REV02_ARG1
+    ld (hl),'A'
+    inc hl
+    ld (hl),'R'
+    inc hl
+    ld (hl),'G'
+    inc hl
+    ld (hl),'1'
+    inc hl
+    ld a,(SH_REV02_TOKEN_COUNT)
+    ld (hl),a
+    inc hl
+    xor a
+    ld (hl),a
+    inc hl
+    ld de,(SH_REV02_ARG_LEN)
+    ld (hl),e
+    inc hl
+    ld (hl),d
+
+    ld hl,SH_REV02_PATH
+    ld de,SH_REV02_ARG1+8
+    ld a,(SH_REV02_PATH_LEN)
+    ld c,a
+    ld b,0
+    ldir
+
+    ld hl,SH_REV02_TOKENS
+    ld a,(SH_REV02_FIRST_LEN)
+    ld c,a
+    ld b,0
+    add hl,bc
+    ld a,(SH_REV02_REMAIN)
+    ld c,a
+    ld b,0
+    ldir
+    xor a
+    ret
+sh_rev02_arg_toolong:
+    ld a,E_TOOLONG
+    scf
+    ret
+sh_rev02_arg_format:
+    ld a,E_FORMAT
+    scf
+    ret
+
+sh_rev02_build_proc1:
+    ld hl,SH_REV02_PATH
+    ld (SH_REV02_PROC1+0),hl
+    ld hl,SH_REV02_ARG1
+    ld (SH_REV02_PROC1+2),hl
+    ld hl,(SH_REV02_ARG_LEN)
+    ld (SH_REV02_PROC1+4),hl
+    ld hl,SH_REV02_ENV
+    ld (SH_REV02_PROC1+6),hl
+    ld hl,(SH_REV02_ENV+6)
+    ld (SH_REV02_PROC1+8),hl
+    xor a
+    ld (SH_REV02_PROC1+10),a
+    inc a
+    ld (SH_REV02_PROC1+11),a
+    inc a
+    ld (SH_REV02_PROC1+12),a
+    xor a
+    ld (SH_REV02_PROC1+13),a
+    ld (SH_REV02_PROC1+14),a
+    ld (SH_REV02_PROC1+15),a
+    ret
+
+sh_rev02_fatal:
+    ld l,a
+    ld h,0
+    ld a,SYS_EXIT
+    call SYSCALL_GATEWAY
+sh_rev02_fatal_hold:
+    jr sh_rev02_fatal_hold
+
+sh_rev02_issue_path: db '/','e','t','c','/','i','s','s','u','e',0
+sh_rev02_path_value: db '/','b','i','n',':','.',0
+sh_rev02_login_prompt: db 'l','o','g','i','n',':',' '
+sh_rev02_prompt_text: db '$',' '
+    ENDM
