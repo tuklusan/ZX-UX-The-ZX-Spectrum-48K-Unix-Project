@@ -1204,7 +1204,6 @@ zx48_p709_beep:
     call zx48_user_range_validate
     ret c
     ld hl,(syscall_arg_de)
-    ld bc,5
     call zx48_user_range_validate
     ret c
     ld hl,(syscall_arg_hl)
@@ -1459,13 +1458,11 @@ p1117_fp_sys_validate_ranges:
     cp FPOP_OP_ABS
     jp nc,p1117_fp_sys_validate_out
     ld hl,(p1117_fp_req_rhs)
-    ld bc,5
     call zx48_user_range_validate
     ret c
 
 p1117_fp_sys_validate_out:
     ld hl,(p1117_fp_req_out)
-    ld bc,5
     call zx48_user_range_validate
     ret c
 
@@ -1609,7 +1606,6 @@ zx48_p1119_sys_fp_cmp:
     ld a,h
     or l
     jp z,p1119_cmp_invalid
-    ld bc,5
     call zx48_user_range_validate
     ret c
 
