@@ -1,0 +1,116 @@
+{
+  "license_header": [
+    "Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.",
+    "Proprietary rights reserved except as expressly licensed herein.",
+    "ZX-UX Sinclair ZX Spectrum Unix",
+    "This file is governed by the SANYALnet Labs Non-Commercial License in the root LICENSE file.",
+    "Non-Commercial use is permitted; Commercial Use and use for AI/ML model training are prohibited unless separately authorized.",
+    "Attribution is required: Based on original work by Supratim Sanyal of SANYALnet Labs.",
+    "See LICENSE for full terms, warranty disclaimer, termination, patent, trademark, and governing-law provisions."
+  ],
+  "schema": 1,
+  "kind": "rev02-stage-f-checkpoint",
+  "status": "PASS",
+  "gate_f_source_head": "fa8f86b3f62fc648af738c515d02803738e85457",
+  "gate_f_workflow_run_id": 36949885267,
+  "gate_f_artifact_id": 11202859504,
+  "gate_f_artifact_name": "zxux-p11-prerelease-rev02-stage-f-fa8f86b3f62fc648af738c515d02803738e85457",
+  "gate_f_artifact_digest": "sha256:e13f514d11325d5aaadabd7c7abf4aaa56131219831f3aa4c19a89f28f1c658b",
+  "exact_head_regression_run_id": 36949885211,
+  "exact_head_regression": "PASS",
+  "gate_f": {
+    "assertions": {
+      "as_alternate_basenames": "PASS",
+      "as_non_kernel_parser_encoder_writer_mutations": "PASS",
+      "cc_as_ld_transactional_failures": "PASS",
+      "gate_f_hash_freeze": "PASS",
+      "generic_as": "PASS",
+      "generic_cc": "PASS",
+      "generic_ld": "PASS",
+      "ld_input_symbol_relocation_mutations": "PASS",
+      "no_canned_application_or_kernel_output": "PASS",
+      "no_source_identity_dispatch": "PASS"
+    },
+    "current_head_shared_proofs": [
+      "P10.05.pass",
+      "P10.09.pass",
+      "P10.19.pass",
+      "P10.20.pass",
+      "P10.21.pass",
+      "P10.25.pass",
+      "P10.26.pass",
+      "P10.33.pass",
+      "P10.35.pass",
+      "P11.29.pass"
+    ],
+    "frozen_hashes": {
+      "as_image_sha256": "a35a424f2b05cf49bc6a522f47290c80a0417abb752a500d4abad8f01da348f6",
+      "as_mex1_sha256": "352a10490201045bab33ff3117f1971b4dfbffd38823415a1ac86f744b21d0b4",
+      "as_source_sha256": "4ed7b288cf14a27f22ac4746cfc9bc78201d57e1921198eaeee817070fd6ed1d",
+      "as_support_source_sha256": "40f925367b5742a549f1ec2e93d107426e54ab3bb0f872262ac45b66c994abb0",
+      "cc_image_sha256": "1246579f1362a3880ba4f8ed856e2ebc00a60c0214d287c1c65e885697c3fc09",
+      "cc_mex1_sha256": "deb6ee1eb79294fbe47c68abc228566a3270454298f8b01186af6e55589927ba",
+      "cc_source_sha256": "28440a22f19591ee536703342843c9af34402e41b609771af4ade7ee1eee64ef",
+      "crt0_source_sha256": "182375ec57e2af8d5f4eccbb2adb97212753ea16733fc3952f1a402388fee621",
+      "kernel_process_source_sha256": "f744a370b86e2deb59aaf34939ea8a73c12ebd018b6b0f066ea537a823e39964",
+      "ld_image_sha256": "1681bc261eef4ab1c330c7a2062ec87c50b849243ca3eac036cb03df94caf48e",
+      "ld_mex1_sha256": "152f428a077ab509259183e92a6be7c1b6af22ed6e7eb13f45e63ea877ec7928",
+      "ld_source_sha256": "f61d2371e4d052011bef4fc9f43184f501c323d4786c47902641dbe00f8126f1",
+      "runtime_archive_source_sha256": "db4d697488e7163a81bf1588e97ba78e4b67b86ba0e2129beac6647f85f38c98",
+      "runtime_obj1_sha256": "38bbd06f4a36cb51983a10bef6e7b4642f1fb9ba4082debd645d8bf1e12bd635",
+      "shell_image_sha256": "e961a1c2f11d0d37a13be1f80711bcd668509945435d9a08ffc96f34dc78d6d5",
+      "shell_mex1_sha256": "7fd2ae5195ead7bf978df86d530469540b283de3990c48aa4679f29202d89674",
+      "shell_source_sha256": "385e6f012463ecc7951c3cc11aac9d90748b6be43c29f31dfd118be316f35eea"
+    },
+    "held_out_cc": {
+      "assertions": {
+        "disjoint_same_feature_mix_different_bytes": "PASS",
+        "legal_constant_mutation": "PASS",
+        "output_space_negative": "PASS",
+        "selected_header_token_mutation_changes_behavior": "PASS",
+        "syntax_negative": "PASS",
+        "unsupported_language_negative": "PASS",
+        "whitespace_comment_variant": "PASS"
+      },
+      "expected": {
+        "base": 34,
+        "header_a": 5,
+        "header_b": 33,
+        "mut": 35,
+        "other": 22,
+        "ws": 34
+      },
+      "source_sha256": {
+        "base": "6cd59191c1a35540c46733761f498f455af45104a1f117bd91352b12b62768b5",
+        "h1": "ae722bb3156ba06a3128f4c6aed82037fdc5b1687590698e199945679147738c",
+        "h2": "67ef104e66403c615729081c06e6cce132aba7936254dc5f3c3595cd55f73977",
+        "header_root": "3f0a4c1a935eafa868dc4c467b5e7bfb25931adf89729aa8892b84c28bf76f7c",
+        "mut": "0a24963b1be6daca3593bcf922d3605bffe2269be1f9f0f455b56b77d34c7879",
+        "other": "673d6096922be95734a1ef65c7c43feeb5452ed2ae10cfb61ad7f2df52b19e45",
+        "overflow": "3ca82407072e47363cd53d91f702c8f8500fe24b44e9732b095e6c9c2d6b19da",
+        "syntax": "9ef51784a932e2a37919a981481a23e6a348dab64341d16ce52e19d074b77d6e",
+        "unsupported": "e1151a1e0d64ee4218ee29f49db364372df6eac7bc21a1dae8a977d103a6b4a5",
+        "ws": "1bcc9bc3fc0202475cacf0137d40da768775f25fff01e93d184982e0b55c6882"
+      },
+      "status": "PASS"
+    },
+    "held_out_seed_sha256": "22826cc475e7cbff0f9bada1cea6dd132b67bb08de5e4412b0204ec1881bd587",
+    "kind": "rev02-stage-f-generality-anti-specialization",
+    "product_preflight_sha256": "fe7df907757fbffeb0e9949946c792e43abe9dcda5080c0772b5b9e2bb4cba9f",
+    "schema": 1,
+    "source_head": "fa8f86b3f62fc648af738c515d02803738e85457",
+    "stage_e_cc_report_sha256": "24ab89321431070d6f44250b7fb0787202d0d307ce136c2fb5cbb06f3736d410",
+    "static": {
+      "pinned_c_sources": 30,
+      "pinned_source_taps": 30,
+      "product_entry_reachability": "PASS",
+      "sdk_names_digests_length_crc_tables_absent": "PASS",
+      "shell_loader_runtime_sdk_identity_absent": "PASS",
+      "source_identity_markers_absent": "PASS",
+      "status": "PASS"
+    },
+    "status": "PASS"
+  },
+  "phase11_complete": "263a203da3d54a398e8ac011284ae4195b1279c0",
+  "phase12_state": 0
+}
