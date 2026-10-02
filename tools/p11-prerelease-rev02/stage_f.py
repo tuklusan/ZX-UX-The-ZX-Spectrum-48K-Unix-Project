@@ -361,7 +361,7 @@ cfg_read:
     jr z,cfg_root
     cp 2
     jr z,cfg_header
-    jr cfg_bad
+    jp cfg_bad
 cfg_root:
     ex de,hl
     ld (cfg_dest),de
