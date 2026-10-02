@@ -149,61 +149,37 @@ zx48_gfx_draw:
     inc hl
     ld a,(hl)
     ld (gfx_y2),a
-    ; dx=abs(x2-x), sx=+/-1
+    ; Derive both absolute deltas and signed unit steps through one compact path.
+    ld a,(gfx_x)
+    ld c,a
     ld a,(gfx_x2)
-    ld b,a
-    ld a,(gfx_x)
-    cp b
-    jr c,zx48_gfx_dx_pos
-    jr z,zx48_gfx_dx_zero
-    sub b
+    call zx48_gfx_delta
     ld (gfx_dx),a
-    ld a,$ff
-    ld (gfx_sx),a
-    jr zx48_gfx_dy
-zx48_gfx_dx_pos:
     ld a,b
+    ld (gfx_sx),a
+    ld a,(gfx_y)
     ld c,a
-    ld a,(gfx_x)
-    ld b,a
-    ld a,c
-    sub b
-    ld (gfx_dx),a
-    ld a,1
-    ld (gfx_sx),a
-    jr zx48_gfx_dy
-zx48_gfx_dx_zero:
-    xor a
-    ld (gfx_dx),a
-    ld (gfx_sx),a
-zx48_gfx_dy:
     ld a,(gfx_y2)
-    ld b,a
-    ld a,(gfx_y)
-    cp b
-    jr c,zx48_gfx_dy_pos
-    jr z,zx48_gfx_dy_zero
-    sub b
+    call zx48_gfx_delta
     ld (gfx_dy),a
-    ld a,$ff
-    ld (gfx_sy),a
-    jr zx48_gfx_line_start
-zx48_gfx_dy_pos:
     ld a,b
-    ld c,a
-    ld a,(gfx_y)
+    ld (gfx_sy),a
+    jr zx48_gfx_line_start
+
+; C=current coordinate, A=target. Return A=absolute delta and B=-1/0/+1.
+zx48_gfx_delta:
+    sub c
+    jr z,zx48_gfx_delta_zero
+    jr c,zx48_gfx_delta_negative
+    ld b,1
+    ret
+zx48_gfx_delta_negative:
+    neg
+    ld b,$ff
+    ret
+zx48_gfx_delta_zero:
     ld b,a
-    ld a,c
-    sub b
-    ld (gfx_dy),a
-    ld a,1
-    ld (gfx_sy),a
-    jr zx48_gfx_line_start
-zx48_gfx_dy_zero:
-    xor a
-    ld (gfx_dy),a
-    ld (gfx_sy),a
-    jr zx48_gfx_line_start
+    ret
 zx48_gfx_draw_bad:
     pop hl
     jp zx48_gfx_bad
