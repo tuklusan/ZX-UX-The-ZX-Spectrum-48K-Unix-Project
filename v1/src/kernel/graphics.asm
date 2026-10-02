@@ -62,22 +62,15 @@ zx48_gfx_plot_store:
     or a
     ret
 
-; DE retains the public x/y pair from zx48_gfx_pixel_addr.
-; Return HL = hardware attribute cell for that exact pixel.
+; HL is the current bitmap byte. Preserve its low byte: that is already
+; ((y>>3)&7)*32 + x/8. Convert bitmap H bits 4:3 back to y/64, then add ATTR_START.
 zx48_gfx_attr_address_from_de:
-    ld a,e
-    and $f8
-    ld l,a
-    ld h,0
-    add hl,hl
-    add hl,hl
-    ld a,d
-    srl a
-    srl a
-    srl a
-    ld c,a
-    ld b,0
-    add hl,bc
+    ld a,h
+    and $18
+    rrca
+    rrca
+    rrca
+    ld h,a
     ld bc,ATTR_START
     add hl,bc
     ret
@@ -108,9 +101,8 @@ zx48_gfx_pixel_addr:
     srl c
     srl c
     ld b,l
-    push hl
+    ld d,a
     call zx48_bitmap_address
-    pop de
     ld a,d
     and 7
     ld b,a
