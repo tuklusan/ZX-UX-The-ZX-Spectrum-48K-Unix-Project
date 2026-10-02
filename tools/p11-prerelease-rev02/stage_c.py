@@ -78,6 +78,8 @@ def main():
     req("MACRO EMIT_P614_PATH_ROUTINES" in shell and "SYS_STAT" in shell and "OBJ_BIN" in shell,
         "ordinary shell PATH resolver missing")
     req("EMIT_P601_SH_IMAGE" in shell and "sh_idle:" in shell,"historical shell entry fixture missing")
+    sh_product_ready=("EMIT_REV02_SH_PRODUCT" in shell and "sh_rev02_entry:" in shell and
+                      "sh_rev02_build_proc1:" in shell and "SYS_SPAWN" in shell and "SYS_WAIT" in shell)
     req("jp zx48_idle_loop" in boot and "zx48_p601_pid1_bootstrap" not in boot,
         "boot root-blocker assumption changed")
     for inc in ("objects.asm","tape.asm","zxpack.asm","graphics.asm","sound.asm"):
@@ -150,7 +152,7 @@ def main():
           "planned_source":p["target_source"],
           "tape_load":{"status":"NOT_REACHED","reason":"production kernel lacks current object/tape + PID1 developer-session route"},
           "header_resolution":{"status":"NOT_REACHED","reason":"same root blockers"},
-          "cc":{"command":"cc "+p["target_source"],"status":"NOT_REACHED","errno":"E_NOENT","reason":"ordinary /bin/cc product binary/CLI absent"},
+          "cc":{"command":"cc "+p["target_source"],"status":"NOT_REACHED","errno":"E_NOENT","reason":"ordinary /bin/cc product is built but not yet delivered/resident in a real developer session"},
           "obj1":{"produced":False},"ld":{"status":"NOT_REACHED"},"process":{"status":"NOT_REACHED"},
           "screen_runtime_observation":"NOT_REACHED",
           "namespace_before":{"planned_obj":"ABSENT","planned_executable":"ABSENT"},
@@ -179,12 +181,6 @@ def main():
       {"id":"C007","failure":"production kernel omits normal object/tape/zxpack namespace and spawn closure",
        "observed":"kernel.asm does not include objects.asm, tape.asm, or zxpack.asm and does not emit the later object/tape/spawn transaction facilities",
        "planned_paths":["v1/src/kernel/kernel.asm"],"blocks":["M48O load","/bin lookup","SYS_SPAWN","quoted header reads"]},
-      {"id":"C008","failure":"production shell entry is idle-only and has no integrated command loop",
-       "observed":"EMIT_P601_SH_IMAGE enters sh_idle and only SYS_YIELDs; later parser/PATH/pipeline routines are fixture macros not connected to product entry",
-       "planned_paths":["v1/src/shell/sh.asm","tools/p11-prerelease-rev02/product_tools.py"],"blocks":["shell-visible cc/as/ld"]},
-      {"id":"C009","failure":"no generic production cc CLI/compiler route",
-       "observed":"ordinary generic cc now owns a source-semantic streaming compile/OBJ1 transaction with one-level quoted local include streaming and the frozen 16-entry/32-byte object-like #define constant surface for an initial C48 subset without source identity dispatch; built-in <c48.h> and the full frozen C48 parser/code-generator are not yet integrated",
-       "planned_paths":["v1/src/tools/cc.asm","tools/p11-prerelease-rev02/product_tools.py"],"blocks":["generic C48","anti-specialization","30 lifecycle"]},
     ]
     if not as_full:
         gaps.append(
@@ -273,6 +269,14 @@ def main():
            "planned_paths":["v1/src/kernel/kernel.asm","v1/src/kernel/syscall.asm","v1/src/boot/entry.asm","v1/src/kernel/interrupt.asm","v1/src/kernel/im2.asm","v1/src/kernel/rom_services.asm","v1/src/kernel/errors.asm","v1/src/kernel/memory.asm","v1/src/kernel/process.asm","v1/src/kernel/handles.asm","v1/src/kernel/pipe.asm","v1/src/kernel/scheduler.asm","v1/src/kernel/z80_primitives.asm","v1/src/kernel/ula_io.asm","v1/src/kernel/tty32.asm","v1/src/kernel/tty64.asm","v1/src/kernel/cursor.asm","v1/src/kernel/console.asm","v1/src/kernel/keyboard.asm","v1/src/kernel/udg.asm","v1/src/kernel/graphics.asm","v1/src/kernel/sound.asm","v1/src/kernel/objects.asm","v1/src/kernel/tape.asm","v1/src/kernel/zxpack.asm"],
            "blocks":["resident frozen public API closure","graphics/sound/UDG/ROM/FP integration","later object/tape/spawn closure"]})
 
+    if not sh_product_ready:
+        gaps.append(
+          {"id":"C008","failure":"production shell entry is idle-only and has no integrated command loop",
+           "observed":"ordinary product shell entry is not connected to tokenizer/PATH/SYS_SPAWN/SYS_WAIT",
+           "planned_paths":["v1/src/shell/sh.asm","tools/p11-prerelease-rev02/product_tools.py"],"blocks":["shell-visible cc/as/ld"]})
+
+    gaps.sort(key=lambda g:g["id"])
+
     for g in gaps: g["class_pending"]="Stage-D"
 
     report={
@@ -304,8 +308,10 @@ def main():
         "fixed_ld_public_cli_product_gap_"+("resolved" if abs_ld_ready else "recorded"):"PASS",
         "no_p11pr_compiler_invoked":"PASS",
         "no_internal_cc_or_ld_invoked":"PASS",
-        "ordinary_product_path_reproduced_as_unavailable":"PASS",
+        "ordinary_product_session_reproduced_as_unavailable":"PASS",
         "shell_product_packaging_gap_resolved":"PASS",
+        "shell_integrated_command_loop_resolved":"PASS" if sh_product_ready else "FAIL",
+        "generic_cc_product_route_resolved":"PASS",
         "legacy_publisher_not_used":"PASS",
         "stage_c_requires_rerun_after_product_correction":"PASS"
       }}
