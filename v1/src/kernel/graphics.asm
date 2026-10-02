@@ -417,58 +417,40 @@ zx48_gfx_circle_axis_yp_done:
     jp zx48_gfx_plot
 
 ; B=absolute x offset, C=absolute y offset; both nonzero.
+; Resolve each y once, then share the clipped +/-x publication path.
 zx48_gfx_circle_pair:
     push bc
-    ld a,(gfx_cx)
-    add a,b
-    jr c,zx48_gfx_circle_pp_done
-    ld h,a
     ld a,(gfx_cy)
     add a,c
-    jr c,zx48_gfx_circle_pp_done
+    jr c,zx48_gfx_circle_pair_plus_done
     cp 192
-    jr nc,zx48_gfx_circle_pp_done
+    jr nc,zx48_gfx_circle_pair_plus_done
     ld l,a
-    call zx48_gfx_plot
-zx48_gfx_circle_pp_done:
+    call zx48_gfx_circle_x_pair
+zx48_gfx_circle_pair_plus_done:
     pop bc
-
-    push bc
-    ld a,(gfx_cx)
-    sub b
-    jr c,zx48_gfx_circle_mp_done
-    ld h,a
-    ld a,(gfx_cy)
-    add a,c
-    jr c,zx48_gfx_circle_mp_done
-    cp 192
-    jr nc,zx48_gfx_circle_mp_done
-    ld l,a
-    call zx48_gfx_plot
-zx48_gfx_circle_mp_done:
-    pop bc
-
-    push bc
-    ld a,(gfx_cx)
-    add a,b
-    jr c,zx48_gfx_circle_pm_done
-    ld h,a
-    ld a,(gfx_cy)
-    sub c
-    jr c,zx48_gfx_circle_pm_done
-    ld l,a
-    call zx48_gfx_plot
-zx48_gfx_circle_pm_done:
-    pop bc
-
-    ld a,(gfx_cx)
-    sub b
-    ret c
-    ld h,a
     ld a,(gfx_cy)
     sub c
     ret c
     ld l,a
+    jp zx48_gfx_circle_x_pair
+
+; B=absolute x offset, L=validated y.
+zx48_gfx_circle_x_pair:
+    push bc
+    push hl
+    ld a,(gfx_cx)
+    add a,b
+    jr c,zx48_gfx_circle_xp_done
+    ld h,a
+    call zx48_gfx_plot
+zx48_gfx_circle_xp_done:
+    pop hl
+    pop bc
+    ld a,(gfx_cx)
+    sub b
+    ret c
+    ld h,a
     jp zx48_gfx_plot
 
 ; P7.07 shared console/graphics state: H=selector,L=value.
