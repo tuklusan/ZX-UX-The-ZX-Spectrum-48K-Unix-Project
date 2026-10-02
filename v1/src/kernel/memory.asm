@@ -240,30 +240,28 @@ zx48_free_before_current:
     push ix
     pop hl
     ld (memory_request),hl
-    push ix
-    pop iy
     ld c,b
 zx48_free_find_empty:
-    ld a,(iy+2)
-    or (iy+3)
+    ld a,(ix+2)
+    or (ix+3)
     jr z,zx48_free_insert_found
     ld de,4
-    add iy,de
+    add ix,de
     dec c
     jr nz,zx48_free_find_empty
     jp zx48_free_nospc
 zx48_free_insert_found:
-    push iy
+    push ix
     pop hl
     ld de,(memory_request)
     or a
     sbc hl,de
     ld b,h
     ld c,l
-    push iy
+    push ix
     pop hl
     dec hl
-    push iy
+    push ix
     pop de
     inc de
     inc de
@@ -312,17 +310,30 @@ zx48_extent_merge_restart:
 zx48_free_merge_both:
     ; Previous extent touches new_start and IX touches new_end. Grow previous
     ; over both and remove IX while keeping all live records packed/sorted.
+    push ix
+    pop hl
+    ld (memory_request),hl
+    ld hl,(memory_info_ptr)
     push hl
-    pop iy
-    ld l,(iy+2)
-    ld h,(iy+3)
+    pop ix
+    ld l,(ix+2)
+    ld h,(ix+3)
     ld de,(memory_free_length)
     add hl,de
+    ld de,(memory_request)
+    push de
+    pop ix
     ld e,(ix+2)
     ld d,(ix+3)
     add hl,de
-    ld (iy+2),l
-    ld (iy+3),h
+    ld de,(memory_info_ptr)
+    push de
+    pop ix
+    ld (ix+2),l
+    ld (ix+3),h
+    ld hl,(memory_request)
+    push hl
+    pop ix
 
     ; Delete current record by shifting the remaining table left, then zero the
     ; final slot. B still counts current plus all records after it.
