@@ -120,7 +120,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
     tty32 = (root / "v1/src/kernel/tty32.asm").read_text(encoding="utf-8").lower()
     console = (root / "v1/src/kernel/console.asm").read_text(encoding="utf-8").lower()
     architecture = " ".join((root / "docs/01-ZX-UX-ARCHITECTURE-REV12.md").read_text(encoding="utf-8").lower().split())
-    bitmap = tty32[tty32.index("zx48_tty_scroll_bitmap:"):tty32.index("tty32_glyph:")]
+    bitmap = tty32[tty32.index("zx48_tty_scroll_bitmap:"):tty32.index("tty32_state_base")]
     clear = tty32[tty32.index("zx48_tty_clear_last_bitmap_row:"):tty32.index("zx48_tty_scroll_bitmap:")]
     scroll = console[console.index("zx48_console_scroll:"):console.index("zx48_tty_ioctl:")]
     wrap = console[console.index("zx48_console_wrap_now:"):console.index("zx48_console_write:")]
