@@ -283,6 +283,12 @@ zx48_r2_schedule_next:
 zx48_r2_schedule_choose:
     pop bc
     ld a,c
+    jr zx48_r2_schedule_restore
+
+; Historical P2.19 jumps directly here after publishing scheduler_candidate and
+; IX. Keep that diagnostic contract while the production scan itself stays in C.
+zx48_schedule_restore:
+    ld a,(scheduler_candidate)
 zx48_r2_schedule_restore:
     ld (current_pid),a
     ld (ix+PROC_STATE),PROC_RUNNING
