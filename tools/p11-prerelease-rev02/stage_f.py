@@ -200,7 +200,13 @@ def build_cc_challenge(root: Path, out: Path, seed: bytes):
     }
     expected = {"base": a+b-1, "ws": a+b-1, "other": c+d-1, "mut": a+b,
                 "header_a": k1, "header_b": k2}
-    emit = lambda n: f"cf_{n}: db {db(sources[n])}\ncf_{n}_end:\n"
+    def emit(n: str) -> str:
+        data = sources[n]
+        lines = [f"cf_{n}:"]
+        for off in range(0, len(data), 24):
+            lines.append("    db " + db(data[off:off + 24]))
+        lines.append(f"cf_{n}_end:")
+        return "\n".join(lines) + "\n"
     asm = out / "stage-f-cc.asm"
     main_bin = out / "stage-f-cc.bin"
     gate_bin = out / "stage-f-cc-gateway.bin"
