@@ -373,10 +373,19 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
     syscall_start = syscall.index("zx48_sys_kill:\n")
     syscall_end = syscall.index("zx48_sys_close:\n", syscall_start)
     syscall_kill = syscall[syscall_start:syscall_end]
+    u8_start = syscall.index("zx48_sys_u8_arg:\n")
+    u8_end = syscall.index("zx48_sys_put16:\n", u8_start)
+    u8_arg = syscall[u8_start:u8_end]
     return [
         {
             "name": "sys-kill-register-contract-rejects-nonzero-h-and-passes-l-target",
-            "passed": all(token in syscall_kill for token in ("ld hl,(syscall_arg_hl)", "ld a,h", "jp nz,zx48_sys_invalid", "ld a,l", "call zx48_process_kill")),
+            "passed": (
+                all(token in syscall_kill for token in ("ld hl,(syscall_arg_hl)", "ld a,h", "jp nz,zx48_sys_invalid", "ld a,l", "call zx48_process_kill"))
+                or (
+                    all(token in u8_arg for token in ("ld hl,(syscall_arg_hl)", "ld a,h", "or a", "jp nz,zx48_sys_invalid", "ld a,l", "ret"))
+                    and all(token in syscall_kill for token in ("call zx48_sys_u8_arg", "call zx48_process_kill"))
+                )
+            ),
         },
         {
             "name": "pid0-pid1-zombie-and-nonexistent-targets-remain-rejected",

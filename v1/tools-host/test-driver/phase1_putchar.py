@@ -169,6 +169,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
     include = _strip((root / "v1/include/zx48ux.inc").read_text(encoding="utf-8"))
 
     sys_putchar = _block(syscall, "zx48_sys_con_putchar:", "zx48_sys_con_write:")
+    u8_arg = _block(syscall, "zx48_sys_u8_arg:", "zx48_sys_put16:")
     control = _block(console, "zx48_console_control_begin:", "zx48_console_printable:")
     printable = _block(console, "zx48_console_printable:", "zx48_console_wrap_now:")
     wrap = _block(console, "zx48_console_wrap_now:", "zx48_console_write:")
@@ -176,17 +177,40 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
     begin = _block(cursor, "zx48_screen_begin:", "zx48_cursor_show:")
     end = _block(cursor, "zx48_cursor_show:", "zx48_cursor_service:")
 
-    syscall_exact = _ordered(
-        sys_putchar,
-        (
-            "ld hl,(syscall_arg_hl)",
-            "ld a,h",
-            "or a",
-            "jp nz,zx48_sys_invalid",
-            "ld a,l",
-            "call zx48_console_putchar",
-            "ret c",
-        ),
+    syscall_exact = (
+        _ordered(
+            sys_putchar,
+            (
+                "ld hl,(syscall_arg_hl)",
+                "ld a,h",
+                "or a",
+                "jp nz,zx48_sys_invalid",
+                "ld a,l",
+                "call zx48_console_putchar",
+                "ret c",
+            ),
+        )
+        or (
+            _ordered(
+                u8_arg,
+                (
+                    "ld hl,(syscall_arg_hl)",
+                    "ld a,h",
+                    "or a",
+                    "jp nz,zx48_sys_invalid",
+                    "ld a,l",
+                    "ret",
+                ),
+            )
+            and _ordered(
+                sys_putchar,
+                (
+                    "call zx48_sys_u8_arg",
+                    "call zx48_console_putchar",
+                    "ret c",
+                ),
+            )
+        )
     )
     printable_exact = _ordered(
         printable,

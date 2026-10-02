@@ -140,47 +140,94 @@ def _time_set_ok(syscall: str) -> bool:
     block = _block(syscall, "zx48_time_set_handler:", "emit_user_range_validation_routine")
     precommit = _block(block, "zx48_time_set_handler:", "zx48_sys_time_valid:")
     commit = block[block.find("zx48_sys_time_valid:"):] if "zx48_sys_time_valid:" in block else ""
+
+    legacy_precommit = _ordered(precommit, (
+        "ld a,(current_pid)",
+        "cp 1",
+        "jp nz,zx48_sys_perm",
+        "ld hl,(syscall_arg_hl)",
+        "ld bc,4",
+        "call zx48_user_range_validate",
+        "ret c",
+        "ld (syscall_tick_lo),de",
+        "ld (syscall_tick_hi),de",
+        "ld hl,(syscall_tick_hi)",
+        "ld de,$f486",
+        "sbc hl,de",
+        "jr c,zx48_sys_time_valid",
+        "jr nz,zx48_sys_invalid",
+        "ld hl,(syscall_tick_lo)",
+        "ld de,$5700",
+        "sbc hl,de",
+        "jr nc,zx48_sys_invalid",
+    ))
+    compact_precommit = _ordered(precommit, (
+        "ld a,(current_pid)",
+        "cp 1",
+        "jp nz,zx48_sys_perm",
+        "ld hl,(syscall_arg_hl)",
+        "ld bc,4",
+        "call zx48_user_range_validate",
+        "ret c",
+        "ld e,(hl)",
+        "inc hl",
+        "ld d,(hl)",
+        "inc hl",
+        "ld c,(hl)",
+        "inc hl",
+        "ld b,(hl)",
+        "ld a,b",
+        "cp $f4",
+        "jr c,zx48_sys_time_valid",
+        "jr nz,zx48_sys_invalid",
+        "ld a,c",
+        "cp $86",
+        "jr c,zx48_sys_time_valid",
+        "jr nz,zx48_sys_invalid",
+        "ld a,d",
+        "cp $57",
+        "jr nc,zx48_sys_invalid",
+    ))
+
+    legacy_commit = _ordered(commit, (
+        "zx48_sys_time_valid:",
+        "di",
+        "ld de,(syscall_tick_lo)",
+        "ld (wall_seconds),de",
+        "ld de,(syscall_tick_hi)",
+        "ld (wall_seconds+2),de",
+        "ld hl,(wall_revision)",
+        "inc hl",
+        "ld (wall_revision),hl",
+        "xor a",
+        "ld (wall_subsecond),a",
+        "inc a",
+        "ld (wall_valid),a",
+        "ei",
+        "jp zx48_sys_zero_result",
+    ))
+    compact_commit = _ordered(commit, (
+        "zx48_sys_time_valid:",
+        "di",
+        "ld (wall_seconds),de",
+        "ld (wall_seconds+2),bc",
+        "ld hl,(wall_revision)",
+        "inc hl",
+        "ld (wall_revision),hl",
+        "xor a",
+        "ld (wall_subsecond),a",
+        "inc a",
+        "ld (wall_valid),a",
+        "ei",
+        "jp zx48_sys_zero_result",
+    ))
+
     return (
-        _ordered(precommit, (
-            "ld a,(current_pid)",
-            "cp 1",
-            "jp nz,zx48_sys_perm",
-            "ld hl,(syscall_arg_hl)",
-            "ld bc,4",
-            "call zx48_user_range_validate",
-            "ret c",
-            "ld (syscall_tick_lo),de",
-            "ld (syscall_tick_hi),de",
-            "ld hl,(syscall_tick_hi)",
-            "ld de,$f486",
-            "sbc hl,de",
-            "jr c,zx48_sys_time_valid",
-            "jr nz,zx48_sys_invalid",
-            "ld hl,(syscall_tick_lo)",
-            "ld de,$5700",
-            "sbc hl,de",
-            "jr nc,zx48_sys_invalid",
-        ))
-        and not any(token in precommit for token in ("ld (wall_seconds)", "ld (wall_revision)", "ld (wall_subsecond)", "ld (wall_valid)"))
-        and _ordered(commit, (
-            "zx48_sys_time_valid:",
-            "di",
-            "ld de,(syscall_tick_lo)",
-            "ld (wall_seconds),de",
-            "ld de,(syscall_tick_hi)",
-            "ld (wall_seconds+2),de",
-            "ld hl,(wall_revision)",
-            "inc hl",
-            "ld (wall_revision),hl",
-            "xor a",
-            "ld (wall_subsecond),a",
-            "inc a",
-            "ld (wall_valid),a",
-            "ei",
-            "jp zx48_sys_zero_result",
-        ))
-        and not any(token in block for token in ("rom_frames", "timezone"))
-    )
+        (legacy_precommit and legacy_commit) or (compact_precommit and compact_commit)
+    ) and not any(
+        token in precommit
+        for token in ("ld (wall_seconds)", "ld (wall_revision)", "ld (wall_subsecond)", "ld (wall_valid)")
+    ) and not any(token in block for token in ("rom_frames", "timezone"))
 
 
 def _contracts(root: Path) -> list[dict[str, object]]:
@@ -209,7 +256,14 @@ def _contracts(root: Path) -> list[dict[str, object]]:
         {"name": "abi-doc-revision-and-subsecond", "passed": "increments revision modulo 65536 even when the seconds value is unchanged" in abi and "resets the private subsecond frame counter to zero" in abi},
         {"name": "reject-missing-revision-increment", "passed": not _time_set_ok(syscall.replace("    inc hl\n    ld (wall_revision),hl", "    ld (wall_revision),hl", 1))},
         {"name": "reject-nonatomic-prevalidation-write", "passed": not _time_set_ok(syscall.replace("zx48_time_set_handler:\n    ld a,(current_pid)", "zx48_time_set_handler:\n    ld (wall_valid),a\n    ld a,(current_pid)", 1))},
-        {"name": "reject-wrong-2100-boundary", "passed": not _time_set_ok(syscall.replace("ld de,$5700", "ld de,$5701", 1))},
+        {
+            "name": "reject-wrong-2100-boundary",
+            "passed": not _time_set_ok(
+                syscall.replace("ld de,$5700", "ld de,$5701", 1)
+                if "ld de,$5700" in syscall
+                else syscall.replace("cp $57", "cp $58", 1)
+            ),
+        },
     ]
     return assertions
 

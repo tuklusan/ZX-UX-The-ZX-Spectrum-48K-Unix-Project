@@ -91,12 +91,19 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
     syscall = _strip((root / "v1/src/kernel/syscall.asm").read_text(encoding="utf-8"))
     process = _strip((root / "v1/src/kernel/process.asm").read_text(encoding="utf-8"))
     sys_exit = _block(syscall, "zx48_sys_exit:", "zx48_sys_yield:")
+    u8_arg = _block(syscall, "zx48_sys_u8_arg:", "zx48_sys_put16:")
     exit_body = _block(process, "zx48_process_exit:", "zx48_process_exit_panic:")
     panic = _block(process, "zx48_process_exit_panic:", "zx48_process_restore_tty_owner:")
     return [
         {
             "name": "sys-exit-accepts-only-h-zero-and-l-status",
-            "passed": all(token in sys_exit for token in ("ld hl,(syscall_arg_hl)", "ld a,h", "or a", "jp nz,zx48_sys_invalid", "ld a,l", "jp zx48_process_exit")),
+            "passed": (
+                all(token in sys_exit for token in ("ld hl,(syscall_arg_hl)", "ld a,h", "or a", "jp nz,zx48_sys_invalid", "ld a,l", "jp zx48_process_exit"))
+                or (
+                    all(token in u8_arg for token in ("ld hl,(syscall_arg_hl)", "ld a,h", "or a", "jp nz,zx48_sys_invalid", "ld a,l", "ret"))
+                    and all(token in sys_exit for token in ("call zx48_sys_u8_arg", "jp zx48_process_exit"))
+                )
+            ),
         },
         {
             "name": "exit-becomes-zombie-closes-handles-wakes-parent-restores-tty-and-schedules",
