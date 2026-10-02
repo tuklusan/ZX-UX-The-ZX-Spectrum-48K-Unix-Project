@@ -323,7 +323,7 @@ rom_calc_saved_errnr: db 0
 ; Each gateway remains independently assemblable for its historical qualification fixture.
     MACRO EMIT_P11_ROM_CALC_TXN_ROUTINES
     IFNDEF ZX48_P11_ROM_CALC_TXN_EMITTED
-ZX48_P11_ROM_CALC_TXN_EMITTED EQU 1
+    DEFINE ZX48_P11_ROM_CALC_TXN_EMITTED
 p11_rom_saved_sp:           dw 0
 p11_rom_saved_err_sp:       dw 0
 p11_rom_saved_stkbot:       dw 0
