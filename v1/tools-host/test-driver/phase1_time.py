@@ -149,7 +149,6 @@ def _time_set_ok(syscall: str) -> bool:
             "ld bc,4",
             "call zx48_user_range_validate",
             "ret c",
-            "ld hl,(syscall_arg_hl)",
             "ld (syscall_tick_lo),de",
             "ld (syscall_tick_hi),de",
             "ld hl,(syscall_tick_hi)",

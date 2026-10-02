@@ -130,8 +130,6 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
         (
             "call zx48_user_range_validate",
             "ret c",
-            "ld hl,(syscall_arg_hl)",
-            "ld bc,(syscall_arg_bc)",
             "call zx48_console_write",
             "ret c",
             "xor a",
