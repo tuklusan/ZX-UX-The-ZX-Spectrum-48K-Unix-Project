@@ -93,7 +93,7 @@ def _kernel_sources(root: Path) -> dict[str, str]:
 
 
 def _prepare_contract_ok(ula: str) -> bool:
-    prepare = _block(ula, "zx48_ula_rom_prepare:", "ula_shadow:")
+    prepare = _block(ula, "zx48_ula_rom_prepare:", "ula_state_base")
     return (
         prepare.startswith("zx48_ula_rom_prepare:\n    push af")
         and "pop af\n    ret" in prepare
@@ -152,7 +152,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
     sources = _kernel_sources(root)
     owners, out_count = _direct_ula_outs_from_sources(sources)
 
-    prepare = _block(ula, "zx48_ula_rom_prepare:", "ula_shadow:")
+    prepare = _block(ula, "zx48_ula_rom_prepare:", "ula_state_base")
     commit = _block(ula, "zx48_ula_commit:", "; inputs a=border")
     border = _block(ula, "zx48_ula_set_border:", "; inputs a=bit mask")
     sound_update = _block(ula, "zx48_ula_update_sound:", "; prepare a rom")
