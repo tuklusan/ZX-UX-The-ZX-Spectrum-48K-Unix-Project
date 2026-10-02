@@ -62,7 +62,7 @@ def sna(entry: int, fixture: bytes, gateway: bytes, stack: int = 0xBFC0) -> byte
     struct.pack_into("<H", ram, stack - 0x4000, entry)
     h = bytearray(27)
     h[0] = 0xFE
-    h[19] = 0x04
+    h[19] = 0  # no fixture ISR; match Stage-E's immediate DI
     struct.pack_into("<H", h, 23, stack)
     h[25] = 1
     return bytes(h) + bytes(ram)
@@ -508,6 +508,7 @@ def challenge_gate(root: Path, out: Path, seed: bytes) -> dict:
         for name in ("cf_test_base", "cf_test_ws", "cf_test_other", "cf_test_mut",
                      "cf_test_header_a", "cf_test_header_b", "cf_test_syntax",
                      "cf_test_unsupported", "cf_test_overflow"):
+            print("REV02 STAGE F HELDOUT " + name, flush=True)
             p = Path(td) / (name + ".sna")
             p.write_bytes(sna(s[name], fixture, gateway))
             fuse(root, p, s["cf_pass"], s["cf_fail"])
