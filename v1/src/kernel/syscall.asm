@@ -1267,7 +1267,6 @@ zx48_p711_rom_info:
     ld bc,4
     call zx48_user_range_validate
     ret c
-    ld hl,(syscall_arg_hl)
     ld a,(hl)
     ld (p711_rom_index),a
     inc hl
@@ -1316,7 +1315,6 @@ zx48_p714_sys_udg_define:
     call zx48_user_range_validate
     ret c
     ld bc,(syscall_arg_bc)
-    ld hl,(syscall_arg_hl)
     jp zx48_udg_define
 
 zx48_p714_sys_udg_get:
@@ -1332,7 +1330,6 @@ zx48_p714_sys_udg_get:
     call zx48_user_range_validate
     ret c
     ld bc,(syscall_arg_bc)
-    ld hl,(syscall_arg_hl)
     jp zx48_udg_get
 
 zx48_p714_sys_udg_clear:
@@ -1359,7 +1356,6 @@ zx48_p715_sys_udg_draw:
     ld bc,3
     call zx48_user_range_validate
     ret c
-    ld hl,(syscall_arg_hl)
     ld a,(hl)
     cp UDG_SLOT_COUNT
     jp nc,zx48_p715_udg_invalid
@@ -1389,12 +1385,10 @@ p1117_fp_req_out       EQU P11_SYSCALL_TRANSIENT_BASE+7
 
 zx48_p1117_sys_fp_exec:
     ld hl,(syscall_arg_hl)
-    ld (p1117_fp_req_ptr),hl
     ld bc,FPOP1_SIZE
     call zx48_user_range_validate
     ret c
 
-    ld hl,(p1117_fp_req_ptr)
     ld a,(hl)
     ld (p1117_fp_req_op),a
     or a
@@ -1488,11 +1482,9 @@ p1118_cast_out          EQU P11_SYSCALL_TRANSIENT_BASE+7
 
 zx48_p1118_sys_int_to_fp:
     ld hl,(syscall_arg_hl)
-    ld (p1118_cast_req_ptr),hl
     ld bc,ITOF1_SIZE
     call zx48_user_range_validate
     ret c
-    ld hl,(p1118_cast_req_ptr)
     ld e,(hl)
     inc hl
     ld d,(hl)
@@ -1522,11 +1514,9 @@ zx48_p1118_sys_int_to_fp:
 
 zx48_p1118_sys_fp_to_int:
     ld hl,(syscall_arg_hl)
-    ld (p1118_cast_req_ptr),hl
     ld bc,FTOI1_SIZE
     call zx48_user_range_validate
     ret c
-    ld hl,(p1118_cast_req_ptr)
     ld e,(hl)
     inc hl
     ld d,(hl)
@@ -1573,12 +1563,10 @@ p1119_cmp_out           EQU P11_SYSCALL_TRANSIENT_BASE+6
 
 zx48_p1119_sys_fp_cmp:
     ld hl,(syscall_arg_hl)
-    ld (p1119_cmp_req_ptr),hl
     ld bc,FCMP1_SIZE
     call zx48_user_range_validate
     ret c
 
-    ld hl,(p1119_cmp_req_ptr)
     ld e,(hl)
     inc hl
     ld d,(hl)
