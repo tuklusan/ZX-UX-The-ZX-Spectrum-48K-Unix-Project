@@ -25,9 +25,10 @@ syscall_saved_ix          EQU SYSCALL_STATE_BASE+2
 syscall_arg_hl            EQU SYSCALL_STATE_BASE+4
 syscall_arg_de            EQU SYSCALL_STATE_BASE+6
 syscall_arg_bc            EQU SYSCALL_STATE_BASE+8
-syscall_tick_lo           EQU SYSCALL_STATE_BASE+10
-syscall_tick_hi           EQU SYSCALL_STATE_BASE+12
-SYSCALL_STATE_END         EQU SYSCALL_STATE_BASE+14
+syscall_temp              EQU SYSCALL_STATE_BASE+10
+syscall_tick_lo           EQU SYSCALL_STATE_BASE+11
+syscall_tick_hi           EQU SYSCALL_STATE_BASE+13
+SYSCALL_STATE_END         EQU SYSCALL_STATE_BASE+15
 
 ; Mutually exclusive later public-syscall parsers share one fixed transient slot
 ; at the unused top of the fast-data reserve. No parser state survives the tail
@@ -558,11 +559,11 @@ zx48_sys_proc_info:
     call zx48_user_range_validate
     ret c
     ld a,(hl)
-    push af
+    ld (syscall_temp),a
     inc hl
     ld a,(hl)
     or a
-    jp nz,zx48_sys_proc_info_invalid
+    jp nz,zx48_sys_invalid
     inc hl
     ld e,(hl)
     inc hl
@@ -570,16 +571,12 @@ zx48_sys_proc_info:
     ex de,hl
     ld bc,16
     call zx48_user_range_validate
-    pop bc
     ret c
-    ld a,b
+    ld a,(syscall_temp)
     call zx48_process_info
     ret c
     xor a
     ret
-zx48_sys_proc_info_invalid:
-    pop bc
-    jp zx48_sys_invalid
 zx48_sys_ticks:
     ld hl,(syscall_arg_hl)
     ld bc,4
