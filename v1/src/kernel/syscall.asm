@@ -25,10 +25,7 @@ syscall_saved_ix          EQU SYSCALL_STATE_BASE+2
 syscall_arg_hl            EQU SYSCALL_STATE_BASE+4
 syscall_arg_de            EQU SYSCALL_STATE_BASE+6
 syscall_arg_bc            EQU SYSCALL_STATE_BASE+8
-syscall_temp              EQU SYSCALL_STATE_BASE+10
-syscall_tick_lo           EQU SYSCALL_STATE_BASE+11
-syscall_tick_hi           EQU SYSCALL_STATE_BASE+13
-SYSCALL_STATE_END         EQU SYSCALL_STATE_BASE+15
+SYSCALL_STATE_END         EQU SYSCALL_STATE_BASE+10
 
 ; Mutually exclusive later public-syscall parsers share one fixed transient slot
 ; at the unused top of the fast-data reserve. No parser state survives the tail
@@ -252,11 +249,7 @@ zx48_sys_version:
     xor a
     ret
 zx48_sys_exit:
-    ld hl,(syscall_arg_hl)
-    ld a,h
-    or a
-    jp nz,zx48_sys_invalid
-    ld a,l
+    call zx48_sys_u8_arg
     jp zx48_process_exit
 zx48_sys_yield:
     jp zx48_schedule_finish_syscall
@@ -331,21 +324,13 @@ zx48_sys_wait_legacy_any:
     ret
 
 zx48_sys_kill:
-    ld hl,(syscall_arg_hl)
-    ld a,h
-    or a
-    jp nz,zx48_sys_invalid
-    ld a,l
+    call zx48_sys_u8_arg
     call zx48_process_kill
     ret c
     jp zx48_sys_zero_result
 
 zx48_sys_close:
-    ld hl,(syscall_arg_hl)
-    ld a,h
-    or a
-    jp nz,zx48_sys_invalid
-    ld a,l
+    call zx48_sys_u8_arg
     call zx48_handle_close
     ret c
     jp zx48_sys_zero_result
@@ -525,11 +510,7 @@ zx48_sys_con_getkey:
     xor a
     ret
 zx48_sys_con_putchar:
-    ld hl,(syscall_arg_hl)
-    ld a,h
-    or a
-    jp nz,zx48_sys_invalid
-    ld a,l
+    call zx48_sys_u8_arg
     call zx48_console_putchar
     ret c
     ld hl,1
@@ -575,11 +556,11 @@ zx48_sys_proc_info:
     call zx48_user_range_validate
     ret c
     ld a,(hl)
-    ld (syscall_temp),a
+    push af
     inc hl
     ld a,(hl)
     or a
-    jp nz,zx48_sys_invalid
+    jp nz,zx48_sys_proc_info_invalid
     inc hl
     ld e,(hl)
     inc hl
@@ -587,12 +568,15 @@ zx48_sys_proc_info:
     ex de,hl
     ld bc,16
     call zx48_user_range_validate
+    pop af
     ret c
-    ld a,(syscall_temp)
     call zx48_process_info
     ret c
     xor a
     ret
+zx48_sys_proc_info_invalid:
+    pop af
+    jp zx48_sys_invalid
 zx48_sys_ticks:
     ld hl,(syscall_arg_hl)
     ld bc,4
@@ -600,14 +584,11 @@ zx48_sys_ticks:
     ret c
     di
     ld de,(kernel_ticks)
-    ld (syscall_tick_lo),de
-    ld de,(kernel_ticks+2)
-    ld (syscall_tick_hi),de
+    ld bc,(kernel_ticks+2)
     ei
-    ld hl,(syscall_arg_hl)
-    ld de,(syscall_tick_lo)
     call zx48_sys_put16
-    ld de,(syscall_tick_hi)
+    ld d,b
+    ld e,c
     call zx48_sys_put16
     ld hl,(syscall_arg_hl)
     xor a
@@ -642,29 +623,25 @@ zx48_time_set_handler:
     ld e,(hl)
     inc hl
     ld d,(hl)
-    ld (syscall_tick_lo),de
     inc hl
-    ld e,(hl)
+    ld c,(hl)
     inc hl
-    ld d,(hl)
-    ld (syscall_tick_hi),de
-    ld hl,(syscall_tick_hi)
-    ld de,$F486
-    or a
-    sbc hl,de
+    ld b,(hl)
+    ld a,b
+    cp $F4
     jr c,zx48_sys_time_valid
     jr nz,zx48_sys_invalid
-    ld hl,(syscall_tick_lo)
-    ld de,$5700
-    or a
-    sbc hl,de
+    ld a,c
+    cp $86
+    jr c,zx48_sys_time_valid
+    jr nz,zx48_sys_invalid
+    ld a,d
+    cp $57
     jr nc,zx48_sys_invalid
 zx48_sys_time_valid:
     di
-    ld de,(syscall_tick_lo)
     ld (wall_seconds),de
-    ld de,(syscall_tick_hi)
-    ld (wall_seconds+2),de
+    ld (wall_seconds+2),bc
     ld hl,(wall_revision)
     inc hl
     ld (wall_revision),hl
@@ -676,6 +653,14 @@ zx48_sys_time_valid:
     jp zx48_sys_zero_result
 
     EMIT_USER_RANGE_VALIDATION_ROUTINE
+
+zx48_sys_u8_arg:
+    ld hl,(syscall_arg_hl)
+    ld a,h
+    or a
+    jp nz,zx48_sys_invalid
+    ld a,l
+    ret
 
 zx48_sys_put16:
     ld (hl),e
