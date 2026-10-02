@@ -529,9 +529,13 @@ memory_fast_total        EQU MEMORY_STATE_BASE+15
 memory_fast_largest      EQU MEMORY_STATE_BASE+17
 memory_cold_total        EQU MEMORY_STATE_BASE+19
 memory_cold_largest      EQU MEMORY_STATE_BASE+21
-memory_free_extents      EQU MEMORY_STATE_BASE+23
-MEMORY_STATE_END         EQU memory_free_extents+FREE_EXTENT_COUNT*4
-    ASSERT MEMORY_STATE_END <= EMERGENCY_END+1
+MEMORY_STATE_END         EQU MEMORY_STATE_BASE+23
+; Keep the historical unowned emergency canary at $FF80 untouched. The bounded
+; extent table occupies the following fixed emergency-reserve slice.
+memory_free_extents      EQU EMERGENCY_START+$80
+MEMORY_EXTENT_END        EQU memory_free_extents+FREE_EXTENT_COUNT*4
+    ASSERT MEMORY_STATE_END <= EMERGENCY_START+$7F
+    ASSERT MEMORY_EXTENT_END <= EMERGENCY_END+1
     ENDM
 
 ;
