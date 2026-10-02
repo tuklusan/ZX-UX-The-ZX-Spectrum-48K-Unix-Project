@@ -63,7 +63,7 @@ kernel_mod_process:
 kernel_mod_handles:
     EMIT_HANDLE_ROUTINES
 kernel_mod_pipe:
-    EMIT_PIPE_ROUTINES
+    EMIT_REV02_PIPE_ROUTINES
 kernel_mod_scheduler:
     EMIT_SCHEDULER_ROUTINES
 kernel_mod_primitives:

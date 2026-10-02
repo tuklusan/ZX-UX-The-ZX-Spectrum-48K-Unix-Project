@@ -552,3 +552,459 @@ zx48_pipe_noent:
     ret
 
     ENDM
+
+
+; REV02 production compaction. Historical phase fixtures keep EMIT_PIPE_ROUTINES;
+; the resident kernel emits this byte-smaller equivalent path.
+    MACRO EMIT_REV02_PIPE_ROUTINES
+zx48_pipe_init:
+    xor a
+    ld hl,pipe_table
+    ld de,pipe_table+1
+    ld bc,PIPE_COUNT*PIPE_RECORD_SIZE-1
+    ld (hl),a
+    ldir
+    ret
+
+; A=slot -> IX record.
+zx48_pipe_ptr:
+    cp PIPE_COUNT
+    jp nc,zx48_pipe_noent
+    ld l,a
+    ld h,0
+    add hl,hl
+    ld e,l
+    ld d,h
+    add hl,hl
+    add hl,hl
+    add hl,de
+    ld de,pipe_table
+    add hl,de
+    push hl
+    pop ix
+    xor a
+    ret
+
+; Return C=free pipe slot after proving two handles and two ODs are available.
+zx48_pipe_preflight:
+    ld a,(current_pid)
+    call zx48_process_lookup
+    ret c
+    push ix
+    pop hl
+    ld de,PROC_HANDLES
+    add hl,de
+    ld b,MAX_HANDLES_PER_PROCESS
+    ld c,2
+zx48_r2_pipe_hscan:
+    ld a,(hl)
+    cp HANDLE_FREE
+    jr nz,zx48_r2_pipe_hnext
+    dec c
+    jr z,zx48_r2_pipe_odscan_start
+zx48_r2_pipe_hnext:
+    inc hl
+    djnz zx48_r2_pipe_hscan
+    jr zx48_pipe_nospc
+zx48_r2_pipe_odscan_start:
+    ld ix,open_description_table
+    ld b,OPEN_DESCRIPTION_COUNT
+    ld c,2
+    ld de,OD_COMPACT_SIZE
+zx48_r2_pipe_odscan:
+    ld a,(ix+OD_KIND_O)
+    or a
+    jr nz,zx48_r2_pipe_odnext
+    dec c
+    jr z,zx48_r2_pipe_slot_start
+zx48_r2_pipe_odnext:
+    add ix,de
+    djnz zx48_r2_pipe_odscan
+    jr zx48_pipe_nospc
+zx48_r2_pipe_slot_start:
+    ld ix,pipe_table
+    ld b,PIPE_COUNT
+    ld c,0
+zx48_r2_pipe_slot:
+    ld a,(ix+PIPE_READERS_O)
+    or (ix+PIPE_WRITERS_O)
+    jr nz,zx48_r2_pipe_slot_next
+    ld a,(ix+PIPE_PTR_O)
+    or (ix+PIPE_PTR_O+1)
+    ret z
+zx48_r2_pipe_slot_next:
+    ld de,PIPE_RECORD_SIZE
+    add ix,de
+    inc c
+    djnz zx48_r2_pipe_slot
+zx48_pipe_nospc:
+    ld a,E_NOSPC
+    scf
+    ret
+
+; HL points to two writable u8 handle result slots.
+zx48_pipe_create:
+    ld (pipe_result_ptr),hl
+    call zx48_pipe_preflight
+    ret c
+    ld a,c
+    ld (pipe_active_slot),a
+    ld bc,PIPE_BUFFER_SIZE
+    ld a,ALLOC_FAST_REQUIRED
+    call zx48_alloc
+    jr nc,zx48_r2_pipe_allocated
+    ld bc,PIPE_FALLBACK_SIZE
+    ld a,ALLOC_FAST_REQUIRED
+    call zx48_alloc
+    ret c
+zx48_r2_pipe_allocated:
+    ld bc,(memory_request)
+    push hl
+    push bc
+    ld a,(pipe_active_slot)
+    call zx48_pipe_ptr
+    pop bc
+    pop hl
+    ld (ix+PIPE_PTR_O),l
+    ld (ix+PIPE_PTR_O+1),h
+    xor a
+    ld (ix+PIPE_RPOS_O),a
+    ld (ix+PIPE_WPOS_O),a
+    ld (ix+PIPE_COUNT_O),a
+    ld (ix+PIPE_COUNT_O+1),a
+    ld (ix+PIPE_CAPACITY_O),c
+    ld (ix+PIPE_CAPACITY_O+1),b
+    inc a
+    ld (ix+PIPE_READERS_O),a
+    ld (ix+PIPE_WRITERS_O),a
+
+    ld b,OD_KIND_PIPE_READ
+    ld c,O_READ
+    ld a,(pipe_active_slot)
+    ld d,a
+    call zx48_od_create
+    jp c,zx48_pipe_free_panic
+    ld (pipe_read_od),a
+    ld b,OD_KIND_PIPE_WRITE
+    ld c,O_WRITE
+    ld a,(pipe_active_slot)
+    ld d,a
+    call zx48_od_create
+    jp c,zx48_pipe_free_panic
+    ld (pipe_write_od),a
+
+    ld a,(pipe_read_od)
+    ld c,a
+    ld a,HANDLE_FREE
+    call zx48_handle_install
+    jp c,zx48_pipe_free_panic
+    ld (pipe_read_handle),a
+    ld a,(pipe_write_od)
+    ld c,a
+    ld a,HANDLE_FREE
+    call zx48_handle_install
+    jp c,zx48_pipe_free_panic
+    ld (pipe_write_handle),a
+
+    ld hl,(pipe_result_ptr)
+    ld a,(pipe_read_handle)
+    ld (hl),a
+    inc hl
+    ld a,(pipe_write_handle)
+    ld (hl),a
+    ld hl,0
+    xor a
+    ret
+
+; A=pipe slot, HL=destination, BC=request. Positive short reads are allowed.
+zx48_pipe_read:
+    ld (pipe_active_slot),a
+    ld (pipe_io_ptr),hl
+    ld (pipe_io_request),bc
+    ld hl,0
+    ld a,b
+    or c
+    ret z
+zx48_pipe_read_retry:
+    ld a,(pipe_active_slot)
+    call zx48_pipe_ptr
+    ret c
+    ld a,(ix+PIPE_COUNT_O)
+    or (ix+PIPE_COUNT_O+1)
+    jr nz,zx48_pipe_read_copy
+    ld a,(ix+PIPE_WRITERS_O)
+    or a
+    ret z
+    ld a,(pipe_active_slot)
+    ld c,a
+    call zx48_pipe_block_read
+    ret c
+    jr zx48_pipe_read_retry
+zx48_pipe_read_copy:
+    ld c,(ix+PIPE_COUNT_O)
+    ld b,(ix+PIPE_COUNT_O+1)
+    ld hl,(pipe_io_request)
+    or a
+    sbc hl,bc
+    jr nc,zx48_r2_pipe_read_nreq
+    ld bc,(pipe_io_request)
+zx48_r2_pipe_read_nreq:
+    ld a,(ix+PIPE_RPOS_O)
+    call zx48_pipe_chunk_limit
+    ld l,(ix+PIPE_PTR_O)
+    ld h,(ix+PIPE_PTR_O+1)
+    ld e,(ix+PIPE_RPOS_O)
+    ld d,0
+    add hl,de
+    ld de,(pipe_io_ptr)
+    push bc
+    call zx48_memcpy
+    pop bc
+    ld a,(ix+PIPE_RPOS_O)
+    add a,c
+    bit 0,(ix+PIPE_CAPACITY_O+1)
+    jr nz,zx48_r2_pipe_read_pos
+    and $7f
+zx48_r2_pipe_read_pos:
+    ld (ix+PIPE_RPOS_O),a
+    ld l,(ix+PIPE_COUNT_O)
+    ld h,(ix+PIPE_COUNT_O+1)
+    or a
+    sbc hl,bc
+    ld (ix+PIPE_COUNT_O),l
+    ld (ix+PIPE_COUNT_O+1),h
+    push bc
+    ld a,(pipe_active_slot)
+    ld c,a
+    call zx48_pipe_wake_writers
+    pop hl
+    xor a
+    ret
+
+; A=pipe slot, HL=source, BC=request. Positive short writes are allowed.
+zx48_pipe_write:
+    ld (pipe_active_slot),a
+    ld (pipe_io_ptr),hl
+    ld (pipe_io_request),bc
+    ld hl,0
+    ld a,b
+    or c
+    ret z
+zx48_pipe_write_retry:
+    ld a,(pipe_active_slot)
+    call zx48_pipe_ptr
+    ret c
+    ld a,(ix+PIPE_READERS_O)
+    or a
+    jr z,zx48_pipe_broken
+    ld l,(ix+PIPE_CAPACITY_O)
+    ld h,(ix+PIPE_CAPACITY_O+1)
+    ld e,(ix+PIPE_COUNT_O)
+    ld d,(ix+PIPE_COUNT_O+1)
+    or a
+    sbc hl,de
+    ret c
+    jr nz,zx48_pipe_write_copy
+    ld a,(pipe_active_slot)
+    ld c,a
+    call zx48_pipe_block_write
+    ret c
+    jr zx48_pipe_write_retry
+zx48_pipe_write_copy:
+    ld bc,(pipe_io_request)
+    or a
+    sbc hl,bc
+    jr nc,zx48_r2_pipe_write_nreq
+    add hl,bc
+    ld b,h
+    ld c,l
+zx48_r2_pipe_write_nreq:
+    ld a,(ix+PIPE_WPOS_O)
+    call zx48_pipe_chunk_limit
+    ld hl,(pipe_io_ptr)
+    push hl
+    ld l,(ix+PIPE_PTR_O)
+    ld h,(ix+PIPE_PTR_O+1)
+    ld e,(ix+PIPE_WPOS_O)
+    ld d,0
+    add hl,de
+    ex de,hl
+    pop hl
+    push bc
+    call zx48_memcpy
+    pop bc
+    ld a,(ix+PIPE_WPOS_O)
+    add a,c
+    bit 0,(ix+PIPE_CAPACITY_O+1)
+    jr nz,zx48_r2_pipe_write_pos
+    and $7f
+zx48_r2_pipe_write_pos:
+    ld (ix+PIPE_WPOS_O),a
+    ld l,(ix+PIPE_COUNT_O)
+    ld h,(ix+PIPE_COUNT_O+1)
+    add hl,bc
+    ld (ix+PIPE_COUNT_O),l
+    ld (ix+PIPE_COUNT_O+1),h
+    push bc
+    ld a,(pipe_active_slot)
+    ld c,a
+    call zx48_pipe_wake_readers
+    pop hl
+    xor a
+    ret
+
+; A=ring position, BC=candidate. Return BC limited to bytes before ring wrap.
+zx48_pipe_chunk_limit:
+    push bc
+    ld l,(ix+PIPE_CAPACITY_O)
+    ld h,(ix+PIPE_CAPACITY_O+1)
+    ld c,a
+    ld b,0
+    or a
+    sbc hl,bc
+    pop bc
+    push hl
+    or a
+    sbc hl,bc
+    pop hl
+    ret nc
+    ld b,h
+    ld c,l
+    ret
+
+zx48_pipe_broken:
+    ld a,E_PIPE
+    scf
+    ret
+zx48_pipe_block_read:
+    ld a,PROC_WAIT_PIPE_READ
+    jr zx48_pipe_block
+zx48_pipe_block_write:
+    ld a,PROC_WAIT_PIPE_WRITE
+zx48_pipe_block:
+    ld d,a
+    ld a,(current_pid)
+    or a
+    jr z,zx48_pipe_noent
+    push bc
+    push de
+    call zx48_process_lookup
+    pop de
+    pop bc
+    ret c
+    inc c
+    ld (ix+PROC_WAIT_OBJECT),c
+    ld (ix+PROC_STATE),d
+    jp zx48_schedule
+
+zx48_pipe_wake_readers:
+    ld a,PROC_WAIT_PIPE_READ
+    jr zx48_pipe_wake
+zx48_pipe_wake_writers:
+    ld a,PROC_WAIT_PIPE_WRITE
+zx48_pipe_wake:
+    ld (pipe_wait_state),a
+    inc c
+    ld ix,process_table+PROC_DESC_SIZE
+    ld b,MAX_PROCESSES-1
+zx48_pipe_wake_loop:
+    ld a,(ix+PROC_WAIT_OBJECT)
+    cp c
+    jr nz,zx48_r2_pipe_wake_next
+    ld a,(ix+PROC_STATE)
+    ld d,a
+    ld a,(pipe_wait_state)
+    cp d
+    jr nz,zx48_r2_pipe_wake_next
+    xor a
+    ld (ix+PROC_WAIT_OBJECT),a
+    ld (ix+PROC_STATE),PROC_READY
+zx48_r2_pipe_wake_next:
+    ld de,PROC_DESC_SIZE
+    add ix,de
+    djnz zx48_pipe_wake_loop
+    ret
+
+zx48_pipe_endpoint_closed:
+    ld (pipe_endpoint_kind),a
+    ld a,c
+    ld (pipe_active_slot),a
+    call zx48_pipe_ptr
+    ret c
+    ld a,(pipe_endpoint_kind)
+    cp OD_KIND_PIPE_READ
+    jr z,zx48_r2_pipe_close_reader
+    cp OD_KIND_PIPE_WRITE
+    jr nz,zx48_pipe_noent
+    xor a
+    ld (ix+PIPE_WRITERS_O),a
+    ld a,(pipe_active_slot)
+    ld c,a
+    call zx48_pipe_wake_readers
+    jr zx48_r2_pipe_close_try
+zx48_r2_pipe_close_reader:
+    xor a
+    ld (ix+PIPE_READERS_O),a
+    ld a,(pipe_active_slot)
+    ld c,a
+    call zx48_pipe_wake_writers
+zx48_r2_pipe_close_try:
+    ld a,(pipe_active_slot)
+    call zx48_pipe_try_free
+    xor a
+    ret
+
+zx48_pipe_try_free:
+    ld (pipe_active_slot),a
+    call zx48_pipe_ptr
+    ret c
+    ld a,(ix+PIPE_READERS_O)
+    or (ix+PIPE_WRITERS_O)
+    ret nz
+    ld a,(pipe_active_slot)
+    inc a
+    ld c,a
+    push ix
+    ld ix,process_table+PROC_DESC_SIZE
+    ld b,MAX_PROCESSES-1
+zx48_r2_pipe_waiter_scan:
+    ld a,(ix+PROC_WAIT_OBJECT)
+    cp c
+    jr z,zx48_r2_pipe_waiter_exists
+    ld de,PROC_DESC_SIZE
+    add ix,de
+    djnz zx48_r2_pipe_waiter_scan
+    pop ix
+    ld l,(ix+PIPE_PTR_O)
+    ld h,(ix+PIPE_PTR_O+1)
+    ld c,(ix+PIPE_CAPACITY_O)
+    ld b,(ix+PIPE_CAPACITY_O+1)
+    ld a,h
+    or l
+    jr z,zx48_r2_pipe_free_clear
+    push ix
+    call zx48_free
+    pop ix
+    jr c,zx48_pipe_free_panic
+zx48_r2_pipe_free_clear:
+    xor a
+    ld (ix+PIPE_PTR_O),a
+    ld (ix+PIPE_PTR_O+1),a
+    ld (ix+PIPE_RPOS_O),a
+    ld (ix+PIPE_WPOS_O),a
+    ld (ix+PIPE_COUNT_O),a
+    ld (ix+PIPE_COUNT_O+1),a
+    ld (ix+PIPE_CAPACITY_O),a
+    ld (ix+PIPE_CAPACITY_O+1),a
+    ret
+zx48_r2_pipe_waiter_exists:
+    pop ix
+    ret
+zx48_pipe_free_panic:
+    ld a,PANIC_ALLOCATOR
+    jp zx48_panic
+zx48_pipe_noent:
+    ld a,E_NOENT
+    scf
+    ret
+    ENDM
