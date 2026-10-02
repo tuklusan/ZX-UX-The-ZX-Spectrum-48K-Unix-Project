@@ -66,7 +66,7 @@ P11_ROM_OP_MAX_END        EQU P11_ROM_OP_BASE+298
 P11_ROM_TXN_BASE          EQU $5FC0
 P11_ROM_TXN_END           EQU P11_ROM_TXN_BASE+15
     ASSERT P11_ROM_OP_MAX_END <= P11_ROM_TXN_BASE
-    ASSERT P11_ROM_TXN_END <= $6000
+    ASSERT P11_ROM_TXN_END <= ROM_COMPAT_END+1
 
     MACRO EMIT_ROM_SERVICE_ROUTINES
 ; Every raw ROM return samples/checks the dedicated kernel stack while preserving
