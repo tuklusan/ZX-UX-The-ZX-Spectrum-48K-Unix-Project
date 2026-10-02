@@ -11,12 +11,12 @@
   "schema": 1,
   "kind": "rev02-stage-f-checkpoint",
   "status": "PASS",
-  "gate_f_source_head": "fa8f86b3f62fc648af738c515d02803738e85457",
-  "gate_f_workflow_run_id": 36949885267,
-  "gate_f_artifact_id": 11202859504,
-  "gate_f_artifact_name": "zxux-p11-prerelease-rev02-stage-f-fa8f86b3f62fc648af738c515d02803738e85457",
-  "gate_f_artifact_digest": "sha256:e13f514d11325d5aaadabd7c7abf4aaa56131219831f3aa4c19a89f28f1c658b",
-  "exact_head_regression_run_id": 36949885211,
+  "gate_f_source_head": "0e6d04a64990bf8bcd03bb493579710847e9a8a8",
+  "gate_f_workflow_run_id": 36954810183,
+  "gate_f_artifact_id": 11205384822,
+  "gate_f_artifact_name": "zxux-p11-prerelease-rev02-stage-f-0e6d04a64990bf8bcd03bb493579710847e9a8a8",
+  "gate_f_artifact_digest": "sha256:70c19d7cbfad570c3e9b2bc7cb904428de520b1beb58a0fb578b5b3883c1b168",
+  "exact_head_regression_run_id": 36954810168,
   "exact_head_regression": "PASS",
   "gate_f": {
     "assertions": {
@@ -58,9 +58,9 @@
       "ld_source_sha256": "f61d2371e4d052011bef4fc9f43184f501c323d4786c47902641dbe00f8126f1",
       "runtime_archive_source_sha256": "db4d697488e7163a81bf1588e97ba78e4b67b86ba0e2129beac6647f85f38c98",
       "runtime_obj1_sha256": "38bbd06f4a36cb51983a10bef6e7b4642f1fb9ba4082debd645d8bf1e12bd635",
-      "shell_image_sha256": "e961a1c2f11d0d37a13be1f80711bcd668509945435d9a08ffc96f34dc78d6d5",
-      "shell_mex1_sha256": "7fd2ae5195ead7bf978df86d530469540b283de3990c48aa4679f29202d89674",
-      "shell_source_sha256": "385e6f012463ecc7951c3cc11aac9d90748b6be43c29f31dfd118be316f35eea"
+      "shell_image_sha256": "502a37645509039ead3ba08f6ef4413724a05379667e765bd351fac239fc25b9",
+      "shell_mex1_sha256": "f2e58d9806f4f0a5f57052d99c8de18d417ea2fad43bae8866f6ae8c1369d4d7",
+      "shell_source_sha256": "7d0476aed27c5b3c57e886e09e6525c45cefe1917523d2e78301b29133900fd6"
     },
     "held_out_cc": {
       "assertions": {
@@ -73,32 +73,32 @@
         "whitespace_comment_variant": "PASS"
       },
       "expected": {
-        "base": 34,
-        "header_a": 5,
-        "header_b": 33,
-        "mut": 35,
-        "other": 22,
-        "ws": 34
+        "base": 20,
+        "header_a": 2,
+        "header_b": 23,
+        "mut": 21,
+        "other": 14,
+        "ws": 20
       },
       "source_sha256": {
-        "base": "6cd59191c1a35540c46733761f498f455af45104a1f117bd91352b12b62768b5",
-        "h1": "ae722bb3156ba06a3128f4c6aed82037fdc5b1687590698e199945679147738c",
-        "h2": "67ef104e66403c615729081c06e6cce132aba7936254dc5f3c3595cd55f73977",
+        "base": "5c9d220fdac399f1b70c0372f65cbe90cbd74bbc6a42d2081ff741cad09d2c18",
+        "h1": "8e44727a9f77c05ac833f456fe5473048cdfc9139cab00b8993ba8260b5ddd74",
+        "h2": "88a896d489bd4b7056dc6b02028bb80abb560f4e972976f915111b3aed9268eb",
         "header_root": "3f0a4c1a935eafa868dc4c467b5e7bfb25931adf89729aa8892b84c28bf76f7c",
-        "mut": "0a24963b1be6daca3593bcf922d3605bffe2269be1f9f0f455b56b77d34c7879",
-        "other": "673d6096922be95734a1ef65c7c43feeb5452ed2ae10cfb61ad7f2df52b19e45",
+        "mut": "5d566d01dfa8152f51737ddd223832332a37114e75bc5f85a59d217b4419e5b7",
+        "other": "0a132ff7207469333ad654a66e29f1ecdb46547bf792765c1b174cae98e8bcbb",
         "overflow": "3ca82407072e47363cd53d91f702c8f8500fe24b44e9732b095e6c9c2d6b19da",
         "syntax": "9ef51784a932e2a37919a981481a23e6a348dab64341d16ce52e19d074b77d6e",
         "unsupported": "e1151a1e0d64ee4218ee29f49db364372df6eac7bc21a1dae8a977d103a6b4a5",
-        "ws": "1bcc9bc3fc0202475cacf0137d40da768775f25fff01e93d184982e0b55c6882"
+        "ws": "6f52f312cccc6ceabcdb75c8ee56e14aa5a63557c8ed55f2019aabd215117554"
       },
       "status": "PASS"
     },
-    "held_out_seed_sha256": "22826cc475e7cbff0f9bada1cea6dd132b67bb08de5e4412b0204ec1881bd587",
+    "held_out_seed_sha256": "cd4e5317ab22d1ebf46fdd1f21e145094b5ebbd853be444d0ed34006c6732ec0",
     "kind": "rev02-stage-f-generality-anti-specialization",
-    "product_preflight_sha256": "fe7df907757fbffeb0e9949946c792e43abe9dcda5080c0772b5b9e2bb4cba9f",
+    "product_preflight_sha256": "c0d408548191fc9a16703847cacdddd177afe86856a9dc9cdd676ee32f28ecc6",
     "schema": 1,
-    "source_head": "fa8f86b3f62fc648af738c515d02803738e85457",
+    "source_head": "0e6d04a64990bf8bcd03bb493579710847e9a8a8",
     "stage_e_cc_report_sha256": "24ab89321431070d6f44250b7fb0787202d0d307ce136c2fb5cbb06f3736d410",
     "static": {
       "pinned_c_sources": 30,
