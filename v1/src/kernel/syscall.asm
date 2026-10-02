@@ -30,6 +30,13 @@ syscall_tick_lo           EQU SYSCALL_STATE_BASE+11
 syscall_tick_hi           EQU SYSCALL_STATE_BASE+13
 SYSCALL_STATE_END         EQU SYSCALL_STATE_BASE+15
 
+; Mutually exclusive later public-syscall parsers share one fixed transient slot
+; at the unused top of the fast-data reserve. No parser state survives the tail
+; jump into its service gateway.
+P11_SYSCALL_TRANSIENT_BASE EQU FAST_RESERVE_END-$10
+P11_SYSCALL_TRANSIENT_END  EQU P11_SYSCALL_TRANSIENT_BASE+13
+    ASSERT P11_SYSCALL_TRANSIENT_END <= syscall_frame_sp-2
+
 ; P2.09 exact pointer-based spawn preflight record.
 PROC1_PATH_PTR             EQU 0
 PROC1_ARG1_PTR             EQU 2
@@ -1303,9 +1310,9 @@ zx48_p711_rom_invalid:
     ld a,E_INVAL
     scf
     ret
-p711_rom_index: db 0
-p711_rom_category: db 0
-p711_rom_out: dw 0
+p711_rom_index           EQU P11_SYSCALL_TRANSIENT_BASE+0
+p711_rom_category        EQU P11_SYSCALL_TRANSIENT_BASE+1
+p711_rom_out             EQU P11_SYSCALL_TRANSIENT_BASE+2
     ENDM
 
 ; P7.14 exact SYS_UDG_DEFINE/GET/CLEAR staged syscall surfaces.
@@ -1388,11 +1395,11 @@ zx48_p715_udg_invalid:
 
 ; P11.17 exact staged SYS_FP_EXEC FPOP1 ABI.
     MACRO EMIT_P1117_FP_EXEC_SYSCALL_ROUTINES
-p1117_fp_req_ptr:        dw 0
-p1117_fp_req_op:         db 0
-p1117_fp_req_lhs:        dw 0
-p1117_fp_req_rhs:        dw 0
-p1117_fp_req_out:        dw 0
+p1117_fp_req_ptr       EQU P11_SYSCALL_TRANSIENT_BASE+0
+p1117_fp_req_op        EQU P11_SYSCALL_TRANSIENT_BASE+2
+p1117_fp_req_lhs       EQU P11_SYSCALL_TRANSIENT_BASE+3
+p1117_fp_req_rhs       EQU P11_SYSCALL_TRANSIENT_BASE+5
+p1117_fp_req_out       EQU P11_SYSCALL_TRANSIENT_BASE+7
 
 zx48_p1117_sys_fp_exec:
     ld hl,(syscall_arg_hl)
@@ -1489,11 +1496,11 @@ p1117_fp_sys_invalid:
 
 ; P11.18 exact staged SYS_INT_TO_FP / SYS_FP_TO_INT ABI.
     MACRO EMIT_P1118_FP_CAST_SYSCALL_ROUTINES
-p1118_cast_req_ptr:       dw 0
-p1118_cast_value:         dw 0
-p1118_cast_signed:        db 0
-p1118_cast_in:            dw 0
-p1118_cast_out:           dw 0
+p1118_cast_req_ptr      EQU P11_SYSCALL_TRANSIENT_BASE+0
+p1118_cast_value        EQU P11_SYSCALL_TRANSIENT_BASE+2
+p1118_cast_signed       EQU P11_SYSCALL_TRANSIENT_BASE+4
+p1118_cast_in           EQU P11_SYSCALL_TRANSIENT_BASE+5
+p1118_cast_out          EQU P11_SYSCALL_TRANSIENT_BASE+7
 
 zx48_p1118_sys_int_to_fp:
     ld hl,(syscall_arg_hl)
@@ -1575,10 +1582,10 @@ p1118_cast_invalid:
 
 ; P11.19 exact staged SYS_FP_CMP FCMP1 ABI.
     MACRO EMIT_P1119_FP_CMP_SYSCALL_ROUTINES
-p1119_cmp_req_ptr:        dw 0
-p1119_cmp_lhs:            dw 0
-p1119_cmp_rhs:            dw 0
-p1119_cmp_out:            dw 0
+p1119_cmp_req_ptr       EQU P11_SYSCALL_TRANSIENT_BASE+0
+p1119_cmp_lhs           EQU P11_SYSCALL_TRANSIENT_BASE+2
+p1119_cmp_rhs           EQU P11_SYSCALL_TRANSIENT_BASE+4
+p1119_cmp_out           EQU P11_SYSCALL_TRANSIENT_BASE+6
 
 zx48_p1119_sys_fp_cmp:
     ld hl,(syscall_arg_hl)
@@ -1640,9 +1647,9 @@ p1119_cmp_invalid:
 
 ; P11.46 exact staged SYS_FP_TO_TEXT ABI.
     MACRO EMIT_P1146_FP_TO_TEXT_SYSCALL_ROUTINES
-p1146_sys_text_in:        dw 0
-p1146_sys_text_out:       dw 0
-p1146_sys_text_capacity:  dw 0
+p1146_sys_text_in       EQU P11_SYSCALL_TRANSIENT_BASE+0
+p1146_sys_text_out      EQU P11_SYSCALL_TRANSIENT_BASE+2
+p1146_sys_text_capacity EQU P11_SYSCALL_TRANSIENT_BASE+4
 
 zx48_p1146_sys_fp_to_text:
     ld hl,(syscall_arg_hl)
@@ -1685,14 +1692,14 @@ p1146_sys_text_nospc:
 ; Grammar is validated byte-for-byte before any ROM entry:
 ; [+-]? ( DIGITS ('.' DIGITS*)? | '.' DIGITS+ ) ([eE][+-]?DIGITS+)?
     MACRO EMIT_P1147_FP_FROM_TEXT_SYSCALL_ROUTINES
-p1147_sys_src:            dw 0
-p1147_sys_out:            dw 0
-p1147_sys_length:         dw 0
-p1147_sys_rom_src:        dw 0
-p1147_sys_rom_length:     dw 0
-p1147_sys_sign:           db 0
-p1147_sys_seen_digit:     db 0
-p1147_sys_seen_dot:       db 0
+p1147_sys_src         EQU P11_SYSCALL_TRANSIENT_BASE+0
+p1147_sys_out         EQU P11_SYSCALL_TRANSIENT_BASE+2
+p1147_sys_length      EQU P11_SYSCALL_TRANSIENT_BASE+4
+p1147_sys_rom_src     EQU P11_SYSCALL_TRANSIENT_BASE+6
+p1147_sys_rom_length  EQU P11_SYSCALL_TRANSIENT_BASE+8
+p1147_sys_sign        EQU P11_SYSCALL_TRANSIENT_BASE+10
+p1147_sys_seen_digit  EQU P11_SYSCALL_TRANSIENT_BASE+11
+p1147_sys_seen_dot    EQU P11_SYSCALL_TRANSIENT_BASE+12
 
 zx48_p1147_sys_fp_from_text:
     ld hl,(syscall_arg_hl)
