@@ -198,10 +198,14 @@ zx48_idle_loop:
     call zx48_scheduler_wake_scan
     jp zx48_schedule
 
-scheduler_current: db 0
-scheduler_candidate: db 0
-scheduler_sleep_lo: dw 0
-scheduler_sleep_hi: dw 0
+; Zero-initialized scheduler scratch is fixed emergency-reserve state.
+SCHEDULER_STATE_BASE      EQU EMERGENCY_START+$4C
+scheduler_current         EQU SCHEDULER_STATE_BASE+0
+scheduler_candidate       EQU SCHEDULER_STATE_BASE+1
+scheduler_sleep_lo        EQU SCHEDULER_STATE_BASE+2
+scheduler_sleep_hi        EQU SCHEDULER_STATE_BASE+4
+SCHEDULER_STATE_END       EQU SCHEDULER_STATE_BASE+6
+    ASSERT SCHEDULER_STATE_END <= EMERGENCY_START+$7F
     ENDM
 
 ;

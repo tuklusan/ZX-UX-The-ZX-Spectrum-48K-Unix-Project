@@ -177,11 +177,16 @@ zx48_tty64_bad:
     scf
     ret
 
-tty64_resource_ptr: dw 0
-tty64_source_ptr: dw 0
-tty64_font_ptr: dw 0
-tty64_glyph: dw 0
-tty64_scan: db 0
-tty64_char: db 0
+; Zero-initialized tty64 scratch is fixed emergency-reserve state. The
+; nonzero default attribute remains an ordinary initialized byte.
+TTY64_STATE_BASE          EQU EMERGENCY_START+$58
+tty64_resource_ptr        EQU TTY64_STATE_BASE+0
+tty64_source_ptr          EQU TTY64_STATE_BASE+2
+tty64_font_ptr            EQU TTY64_STATE_BASE+4
+tty64_glyph               EQU TTY64_STATE_BASE+6
+tty64_scan                EQU TTY64_STATE_BASE+8
+tty64_char                EQU TTY64_STATE_BASE+9
+TTY64_STATE_END           EQU TTY64_STATE_BASE+10
+    ASSERT TTY64_STATE_END <= EMERGENCY_START+$7F
 tty_current_attr: db 7
     ENDM

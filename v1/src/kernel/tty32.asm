@@ -152,8 +152,12 @@ zx48_tty_scroll_next_row:
     ld (tty_scroll_row),a
     jr zx48_tty_scroll_row_loop
 
-tty32_glyph: dw 0
-tty_scroll_row: db 0
-tty_scroll_scan: db 0
-tty_scroll_src: dw 0
+; Zero-initialized tty32 scratch is fixed emergency-reserve state.
+TTY32_STATE_BASE          EQU EMERGENCY_START+$52
+tty32_glyph               EQU TTY32_STATE_BASE+0
+tty_scroll_row            EQU TTY32_STATE_BASE+2
+tty_scroll_scan           EQU TTY32_STATE_BASE+3
+tty_scroll_src            EQU TTY32_STATE_BASE+4
+TTY32_STATE_END           EQU TTY32_STATE_BASE+6
+    ASSERT TTY32_STATE_END <= EMERGENCY_START+$7F
     ENDM

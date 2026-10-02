@@ -725,9 +725,13 @@ zx48_rom_info_invalid:
     scf
     ret
 
-rom_info_query_category: db 0
-rom_info_query_index: db 0
-rom_info_out_ptr: dw 0
+; ROM-info lookup scratch starts immediately after the allocator extent table.
+ROM_INFO_STATE_BASE       EQU EMERGENCY_START+$C0
+rom_info_query_category   EQU ROM_INFO_STATE_BASE+0
+rom_info_query_index      EQU ROM_INFO_STATE_BASE+1
+rom_info_out_ptr          EQU ROM_INFO_STATE_BASE+2
+ROM_INFO_STATE_END        EQU ROM_INFO_STATE_BASE+4
+    ASSERT ROM_INFO_STATE_END <= EMERGENCY_END+1
 
 ; Private compact descriptors expand to exact public ROMOUT1:
 ; name[16], address, class, category, contract_flags, reserved=0.

@@ -64,6 +64,9 @@ zx48_ula_rom_prepare:
     pop af
     ret
 
-ula_shadow:
-    db 0
+; Zero-initialized ULA shadow is fixed emergency-reserve state.
+ULA_STATE_BASE            EQU EMERGENCY_START+$66
+ula_shadow                EQU ULA_STATE_BASE
+ULA_STATE_END             EQU ULA_STATE_BASE+1
+    ASSERT ULA_STATE_END <= EMERGENCY_START+$7F
     ENDM

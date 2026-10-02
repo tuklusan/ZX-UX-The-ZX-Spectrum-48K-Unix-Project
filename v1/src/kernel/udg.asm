@@ -166,6 +166,10 @@ zx48_udg_bad:
     scf
     ret
 
-udg_bank_ptr: dw 0
-udg_io_ptr: dw 0
+; Zero-initialized UDG pointer scratch is fixed emergency-reserve state.
+UDG_STATE_BASE            EQU EMERGENCY_START+$62
+udg_bank_ptr              EQU UDG_STATE_BASE+0
+udg_io_ptr                EQU UDG_STATE_BASE+2
+UDG_STATE_END             EQU UDG_STATE_BASE+4
+    ASSERT UDG_STATE_END <= EMERGENCY_START+$7F
     ENDM

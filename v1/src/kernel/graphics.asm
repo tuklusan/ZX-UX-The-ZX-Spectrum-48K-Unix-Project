@@ -596,24 +596,29 @@ zx48_gfx_bad:
     scf
     ret
 
-gfx_mask: db 0
+; Preserve the nonzero attribute defaults in ordinary initialized data. All
+; remaining zero-initialized graphics scratch lives in the fixed emergency reserve.
 gfx_attr_state: db 7,0,0,0,0,0
-gfx_selector: db 0
-gfx_value: db 0
-gfx_x: db 0
-gfx_y: db 0
-gfx_x2: db 0
-gfx_y2: db 0
-gfx_dx: db 0
-gfx_dy: db 0
-gfx_sx: db 0
-gfx_sy: db 0
-gfx_err: dw 0
-gfx_e2: dw 0
-gfx_cx: db 0
-gfx_cy: db 0
-gfx_r: db 0
-gfx_circle_x: db 0
-gfx_circle_y: db 0
-gfx_circle_d: dw 0
+GRAPHICS_STATE_BASE       EQU EMERGENCY_START+$67
+gfx_mask                  EQU GRAPHICS_STATE_BASE+0
+gfx_selector              EQU GRAPHICS_STATE_BASE+1
+gfx_value                 EQU GRAPHICS_STATE_BASE+2
+gfx_x                     EQU GRAPHICS_STATE_BASE+3
+gfx_y                     EQU GRAPHICS_STATE_BASE+4
+gfx_x2                    EQU GRAPHICS_STATE_BASE+5
+gfx_y2                    EQU GRAPHICS_STATE_BASE+6
+gfx_dx                    EQU GRAPHICS_STATE_BASE+7
+gfx_dy                    EQU GRAPHICS_STATE_BASE+8
+gfx_sx                    EQU GRAPHICS_STATE_BASE+9
+gfx_sy                    EQU GRAPHICS_STATE_BASE+10
+gfx_err                   EQU GRAPHICS_STATE_BASE+11
+gfx_e2                    EQU GRAPHICS_STATE_BASE+13
+gfx_cx                    EQU GRAPHICS_STATE_BASE+15
+gfx_cy                    EQU GRAPHICS_STATE_BASE+16
+gfx_r                     EQU GRAPHICS_STATE_BASE+17
+gfx_circle_x              EQU GRAPHICS_STATE_BASE+18
+gfx_circle_y              EQU GRAPHICS_STATE_BASE+19
+gfx_circle_d              EQU GRAPHICS_STATE_BASE+20
+GRAPHICS_STATE_END        EQU GRAPHICS_STATE_BASE+22
+    ASSERT GRAPHICS_STATE_END <= EMERGENCY_START+$7F
     ENDM
