@@ -13145,26 +13145,42 @@ cc_rev02_value_local_pointer:
     ret c
     jp cc_rev02_value_local_postcheck
 cc_rev02_value_local_index:
-    call cc_rev02_emit_local_index_address
-    ret c
-    call cc_rev02_emit_index_load
-    ret c
+    ; Preserve the indexed object's metadata across the index expression, which
+    ; may itself resolve another local and overwrite cc_rev02_local_symbol.
     ld a,(cc_rev02_local_symbol)
+    push af
     call cc_rev02_local_pointee_ptr
     ld a,(hl)
+    push af
+    call cc_rev02_emit_local_index_address
+    jr c,cc_rev02_value_local_index_drop_meta_err
+    pop af
+    ld b,a
+    pop af
+    ld (cc_rev02_local_symbol),a
+    ld a,b
     call cc_rev02_value_set_meta_unsigned
     ld a,(cc_rev02_index_size)
     ld (cc_rev02_value_size),a
     ld d,'+'
     ld e,'+'
     call cc_rev02_tok_is_op2
-    jr z,cc_rev02_value_local_index_step
+    jr z,cc_rev02_value_local_index_inc
     ld d,'-'
     ld e,'-'
     call cc_rev02_tok_is_op2
-    ret nz
-cc_rev02_value_local_index_step:
-    jp cc_rev02_notsup
+    jr z,cc_rev02_value_local_index_dec
+    jp cc_rev02_emit_index_load
+cc_rev02_value_local_index_inc:
+    xor a
+    jp cc_rev02_value_index_post_step
+cc_rev02_value_local_index_dec:
+    ld a,1
+    jp cc_rev02_value_index_post_step
+cc_rev02_value_local_index_drop_meta_err:
+    pop bc
+    pop bc
+    ret
 cc_rev02_value_local_scalar:
     ld a,(cc_rev02_local_disp)
     call cc_rev02_emit_local_load_selected
@@ -13254,20 +13270,29 @@ cc_rev02_value_call_drop_err:
     ret
 
 cc_rev02_value_global_index:
-    call cc_rev02_emit_global_index_address
-    ret c
-    call cc_rev02_emit_index_load
-    ret c
+    ; Preserve the base symbol and element metadata across the index expression.
     ld a,(cc_rev02_global_symbol)
+    push af
     call cc_rev02_global_pointee_ptr
     ld a,(hl)
+    push af
+    call cc_rev02_emit_global_index_address
+    jr c,cc_rev02_value_global_index_drop_meta_err
+    pop af
+    ld b,a
+    pop af
+    ld (cc_rev02_global_symbol),a
+    ld a,b
     call cc_rev02_value_set_meta_unsigned
     ld a,(cc_rev02_index_size)
     ld (cc_rev02_value_size),a
     ld a,'['
     call cc_rev02_tok_is_punct
-    jp z,cc_rev02_value_global_pointer_index
-    ; Indexed postfix steps preserve the old expression value.
+    jr nz,cc_rev02_value_global_index_postcheck
+    call cc_rev02_emit_index_load
+    ret c
+    jp cc_rev02_value_global_pointer_index
+cc_rev02_value_global_index_postcheck:
     ld d,'+'
     ld e,'+'
     call cc_rev02_tok_is_op2
@@ -13275,9 +13300,12 @@ cc_rev02_value_global_index:
     ld d,'-'
     ld e,'-'
     call cc_rev02_tok_is_op2
-    ret nz
-    ld a,1
-    jr cc_rev02_value_global_index_step
+    jr z,cc_rev02_value_global_index_dec
+    jp cc_rev02_emit_index_load
+cc_rev02_value_global_index_drop_meta_err:
+    pop bc
+    pop bc
+    ret
 cc_rev02_value_global_pointer_index:
     ld a,(cc_rev02_global_symbol)
     call cc_rev02_global_ptrdepth_ptr
@@ -13323,11 +13351,44 @@ cc_rev02_value_global_pointer_index_scaled:
 
 cc_rev02_value_global_index_inc:
     xor a
-cc_rev02_value_global_index_step:
+    jr cc_rev02_value_index_post_step
+cc_rev02_value_global_index_dec:
+    ld a,1
+
+; Indexed postfix ++/-- preserves the old expression value while updating the
+; addressed 8/16-bit element exactly once. Runtime HL enters as the lvalue
+; address; the address and old value are stacked separately so the index
+; expression is never recomputed.
+cc_rev02_value_index_post_step:
     ld (cc_rev02_step_kind),a
-    ; Recompute the indexed lvalue would duplicate side effects, so expression
-    ; postfix on array elements remains outside this checkpoint.
-    jp cc_rev02_notsup
+    ld a,$E5                 ; PUSH HL: preserve element address
+    call cc_rev02_emit8
+    ret c
+    call cc_rev02_emit_index_load
+    ret c
+    ld a,$E5                 ; PUSH HL: preserve old postfix result
+    call cc_rev02_emit8
+    ret c
+    ld a,(cc_rev02_step_kind)
+    or a
+    ld a,$23                 ; INC HL
+    jr z,cc_rev02_value_index_post_opcode
+    ld a,$2B                 ; DEC HL
+cc_rev02_value_index_post_opcode:
+    call cc_rev02_emit8
+    ret c
+    ld a,$C1                 ; POP BC: old expression value
+    call cc_rev02_emit8
+    ret c
+    call cc_rev02_emit_index_store
+    ret c
+    ld a,$60                 ; LD H,B
+    call cc_rev02_emit8
+    ret c
+    ld a,$69                 ; LD L,C
+    call cc_rev02_emit8
+    ret c
+    jp cc_rev02_next_token
 cc_rev02_value_global_scalar:
     ld a,(cc_rev02_global_symbol)
     call cc_rev02_emit_global_load
