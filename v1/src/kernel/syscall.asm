@@ -204,7 +204,7 @@ zx48_p626_break_restore_selector:
     jr c,zx48_sys_dispatch_proc
     cp SYS_OPEN
     jp c,zx48_sys_notsup
-    cp SYS_UNPACK+1
+    cp SYS_SEEK+1
     jr c,zx48_sys_dispatch_handle
     cp SYS_PIPE
     jp c,zx48_sys_notsup
@@ -316,14 +316,8 @@ zx48_sys_wait_target_ok:
     call zx48_user_range_validate
     pop de
     ret c
-    ld hl,(syscall_arg_hl)
-    inc hl
-    inc hl
-    ld e,(hl)
-    inc hl
-    ld d,(hl)
-    ld hl,(syscall_arg_hl)
-    ld a,(hl)
+    ld a,e
+    ex de,hl
     IFDEF ZX48_P2_15_WAIT_ENABLED
     cp $ff
     jr z,zx48_sys_wait_legacy_any
@@ -594,13 +588,6 @@ zx48_sys_proc_info:
     ld bc,16
     call zx48_user_range_validate
     ret c
-    ld hl,(syscall_arg_hl)
-    inc hl
-    inc hl
-    ld e,(hl)
-    inc hl
-    ld d,(hl)
-    ex de,hl
     ld a,(syscall_temp)
     call zx48_process_info
     ret c
@@ -719,10 +706,7 @@ zx48_sys_process_table:
     dw zx48_sys_getpid,zx48_sys_spawn_stub,zx48_sys_exec_stub,zx48_sys_wait
     dw zx48_sys_kill
 zx48_sys_handle_table:
-    dw zx48_sys_open_stub,zx48_sys_close,zx48_sys_read,zx48_sys_write
-    dw zx48_sys_seek,zx48_sys_handle_stub,zx48_sys_handle_stub,zx48_sys_handle_stub
-    dw zx48_sys_handle_stub,zx48_sys_handle_stub,zx48_sys_handle_stub,zx48_sys_handle_stub
-    dw zx48_sys_handle_stub
+    dw zx48_sys_open_stub,zx48_sys_close,zx48_sys_read,zx48_sys_write,zx48_sys_seek
 zx48_sys_pipe_table:
     dw zx48_sys_pipe,zx48_sys_dup,zx48_sys_ioctl
 zx48_sys_console_table:
