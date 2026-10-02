@@ -25,7 +25,9 @@ syscall_saved_ix          EQU SYSCALL_STATE_BASE+2
 syscall_arg_hl            EQU SYSCALL_STATE_BASE+4
 syscall_arg_de            EQU SYSCALL_STATE_BASE+6
 syscall_arg_bc            EQU SYSCALL_STATE_BASE+8
-SYSCALL_STATE_END         EQU SYSCALL_STATE_BASE+10
+syscall_tick_lo           EQU SYSCALL_STATE_BASE+10
+syscall_tick_hi           EQU SYSCALL_STATE_BASE+12
+SYSCALL_STATE_END         EQU SYSCALL_STATE_BASE+14
 
 ; Mutually exclusive later public-syscall parsers share one fixed transient slot
 ; at the unused top of the fast-data reserve. No parser state survives the tail
@@ -584,11 +586,14 @@ zx48_sys_ticks:
     ret c
     di
     ld de,(kernel_ticks)
-    ld bc,(kernel_ticks+2)
+    ld (syscall_tick_lo),de
+    ld de,(kernel_ticks+2)
+    ld (syscall_tick_hi),de
     ei
+    ld hl,(syscall_arg_hl)
+    ld de,(syscall_tick_lo)
     call zx48_sys_put16
-    ld d,b
-    ld e,c
+    ld de,(syscall_tick_hi)
     call zx48_sys_put16
     ld hl,(syscall_arg_hl)
     xor a
