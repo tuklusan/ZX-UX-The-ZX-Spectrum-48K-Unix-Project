@@ -406,8 +406,6 @@ zx48_sys_read_tty:
     ret
 zx48_sys_read_pipe:
     ld a,(ix+OD_ID_O)
-    ld hl,(syscall_arg_hl)
-    ld bc,(syscall_arg_bc)
     call zx48_pipe_read
     ret
 
@@ -425,20 +423,17 @@ zx48_sys_write:
     jr z,zx48_sys_write_pipe
     jp zx48_sys_notsup
 zx48_sys_write_null:
-    ld hl,(syscall_arg_bc)
+    ld h,b
+    ld l,c
     xor a
     ret
 zx48_sys_write_tty:
-    ld hl,(syscall_arg_hl)
-    ld bc,(syscall_arg_bc)
     call zx48_console_write
     ret c
     xor a
     ret
 zx48_sys_write_pipe:
     ld a,(ix+OD_ID_O)
-    ld hl,(syscall_arg_hl)
-    ld bc,(syscall_arg_bc)
     call zx48_pipe_write
     ret
 zx48_sys_zero_result:
