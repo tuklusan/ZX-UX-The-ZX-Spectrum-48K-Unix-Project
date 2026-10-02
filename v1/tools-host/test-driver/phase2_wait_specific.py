@@ -93,7 +93,7 @@ def _source_contract(root: Path, *, target: bool) -> list[dict[str, object]]:
     scheduler = (root / "v1/src/kernel/scheduler.asm").read_text(encoding="utf-8")
 
     sys_wait = _section(syscall, "zx48_sys_wait:\n", "zx48_sys_kill:\n", description="SYS_WAIT handler")
-    legacy_wait = _section(process, "zx48_process_wait:\n", "process_name_sh:", description="legacy process WAIT helper")
+    legacy_wait = _section(process, "zx48_process_wait:\n", "process_fixed_state_start:", description="legacy process WAIT helper")
     links = _macro(process, "EMIT_PARENT_CHILD_ROUTINES")
     zombie = _macro(process, "EMIT_ZOMBIE_TRANSITION_ROUTINES")
     scheduler_body = _macro(scheduler, "EMIT_SCHEDULER_ROUTINES")
