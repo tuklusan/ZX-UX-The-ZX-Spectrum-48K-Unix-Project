@@ -78,6 +78,7 @@ zx48_alloc_loop:
 zx48_alloc_cold_ok:
     ld e,(ix+0)
     ld d,(ix+1)
+zx48_alloc_take_low:
 zx48_alloc_low:
     push de
     ex de,hl
