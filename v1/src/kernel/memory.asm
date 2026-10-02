@@ -140,7 +140,8 @@ zx48_alloc_done:
     xor a
     ret
 
-; HL=base, BC=rounded length. Reject overlaps/double free before mutation.
+; HL=base, BC=rounded length. Free extents stay address ordered; reject
+; overlaps/double free before any mutation.
 zx48_free:
     ld a,b
     or c
@@ -167,33 +168,25 @@ zx48_free_end_ok:
     add hl,de
     ld (memory_candidate),hl
     ld hl,0
-    ld (memory_info_ptr),hl
-    ld (memory_request),hl
+    ld (memory_info_ptr),hl       ; exact previous-adjacent extent, or zero
     ld ix,memory_free_extents
     ld b,FREE_EXTENT_COUNT
+
 zx48_free_scan:
     ld a,(ix+2)
     or (ix+3)
-    jr nz,zx48_free_live
-    ld hl,(memory_request)
-    ld a,h
-    or l
-    jr nz,zx48_free_next
-    push ix
-    pop hl
-    ld (memory_request),hl
-    jr zx48_free_next
-zx48_free_live:
-    ; new_end compared with existing_start.
+    jr z,zx48_free_at_empty
+
+    ; If new_end <= current_start, ordering proves there can be no later overlap.
     ld hl,(memory_candidate)
     ld e,(ix+0)
     ld d,(ix+1)
     or a
     sbc hl,de
-    jp z,zx48_free_prepend
-    jr c,zx48_free_next
-    ; existing_end compared with new_start. An append is remembered until the
-    ; full table has proved that no later live extent overlaps this free.
+    jr c,zx48_free_before_current
+    jp z,zx48_free_next_adjacent
+
+    ; current_start < new_end: current_end must be <= new_start.
     ld l,(ix+0)
     ld h,(ix+1)
     ld e,(ix+2)
@@ -202,26 +195,81 @@ zx48_free_live:
     ld de,(memory_free_start)
     or a
     sbc hl,de
-    jr z,zx48_free_note_append
-    jr c,zx48_free_next
-    jp zx48_free_bad
-zx48_free_note_append:
-    push ix
-    pop hl
-    ld (memory_info_ptr),hl
-    jr zx48_free_next
-zx48_free_next:
+    jp nc,zx48_free_current_ge_start
+
+zx48_free_advance:
     ld de,4
     add ix,de
     djnz zx48_free_scan
+    ; Full table. Only an exact append to the final live extent can succeed.
     ld hl,(memory_info_ptr)
     ld a,h
     or l
-    jr nz,zx48_free_append_saved
-    ld hl,(memory_request)
+    jp z,zx48_free_nospc
+    jp zx48_free_extend_prev
+
+zx48_free_current_ge_start:
+    jr z,zx48_free_note_prev
+    jp zx48_free_bad              ; current_end > new_start: overlap/double free
+zx48_free_note_prev:
+    push ix                       ; current_end == new_start: remember append target
+    pop hl
+    ld (memory_info_ptr),hl
+    jr zx48_free_advance
+
+zx48_free_at_empty:
+    ld hl,(memory_info_ptr)
     ld a,h
     or l
-    jp z,zx48_free_nospc
+    jp nz,zx48_free_extend_prev
+    ld hl,(memory_free_start)
+    ld bc,(memory_free_length)
+    ld (ix+0),l
+    ld (ix+1),h
+    ld (ix+2),c
+    ld (ix+3),b
+    jp zx48_free_commit
+
+zx48_free_before_current:
+    ld hl,(memory_info_ptr)
+    ld a,h
+    or l
+    jp nz,zx48_free_extend_prev
+    ; Insert before IX. Find the first empty record and shift the sorted tail
+    ; right by one record. If none exists, fail without mutation.
+    push ix
+    pop hl
+    ld (memory_request),hl
+    push ix
+    pop iy
+    ld c,b
+zx48_free_find_empty:
+    ld a,(iy+2)
+    or (iy+3)
+    jr z,zx48_free_insert_found
+    ld de,4
+    add iy,de
+    dec c
+    jr nz,zx48_free_find_empty
+    jp zx48_free_nospc
+zx48_free_insert_found:
+    push iy
+    pop hl
+    ld de,(memory_request)
+    or a
+    sbc hl,de
+    ld b,h
+    ld c,l
+    push iy
+    pop hl
+    dec hl
+    push iy
+    pop de
+    inc de
+    inc de
+    inc de
+    lddr
+    ld hl,(memory_request)
     push hl
     pop ix
     ld hl,(memory_free_start)
@@ -230,12 +278,14 @@ zx48_free_next:
     ld (ix+1),h
     ld (ix+2),c
     ld (ix+3),b
-    jp zx48_free_normalize
-zx48_free_append_saved:
-    push hl
-    pop ix
-    jr zx48_free_append
-zx48_free_prepend:
+    jp zx48_free_commit
+
+zx48_free_next_adjacent:
+    ld hl,(memory_info_ptr)
+    ld a,h
+    or l
+    jr nz,zx48_free_merge_both
+    ; Prepend into current extent.
     ld hl,(memory_free_start)
     ld (ix+0),l
     ld (ix+1),h
@@ -245,55 +295,68 @@ zx48_free_prepend:
     add hl,de
     ld (ix+2),l
     ld (ix+3),h
-    jr zx48_free_normalize
-zx48_free_append:
+    jp zx48_free_commit
+
+zx48_free_extend_prev:
+    push hl
+    pop ix
     ld hl,(memory_free_length)
     ld e,(ix+2)
     ld d,(ix+3)
     add hl,de
     ld (ix+2),l
     ld (ix+3),h
-zx48_free_normalize:
-    call zx48_extent_sort
+    jp zx48_free_commit
+
 zx48_extent_merge_restart:
-    ld ix,memory_free_extents
-    ld c,FREE_EXTENT_COUNT-1
-zx48_extent_merge_loop:
-    ld a,(ix+2)
-    or (ix+3)
-    jr z,zx48_free_commit
-    ld a,(ix+6)
-    or (ix+7)
-    jr z,zx48_free_commit
-    ld l,(ix+0)
-    ld h,(ix+1)
+zx48_free_merge_both:
+    ; Previous extent touches new_start and IX touches new_end. Grow previous
+    ; over both and remove IX while keeping all live records packed/sorted.
+    push hl
+    pop iy
+    ld l,(iy+2)
+    ld h,(iy+3)
+    ld de,(memory_free_length)
+    add hl,de
     ld e,(ix+2)
     ld d,(ix+3)
     add hl,de
-    ld e,(ix+4)
-    ld d,(ix+5)
-    or a
-    sbc hl,de
-    jr nz,zx48_extent_merge_next
-    ld l,(ix+2)
-    ld h,(ix+3)
-    ld e,(ix+6)
-    ld d,(ix+7)
-    add hl,de
-    ld (ix+2),l
-    ld (ix+3),h
+    ld (iy+2),l
+    ld (iy+3),h
+
+    ; Delete current record by shifting the remaining table left, then zero the
+    ; final slot. B still counts current plus all records after it.
+    ld a,b
+    dec a
+    jr z,zx48_free_delete_zero
+    add a,a
+    add a,a
+    ld c,a
+    ld b,0
+    push ix
+    pop hl
+    push hl
+    pop de
+    inc de
+    inc de
+    inc de
+    inc de
+    ex de,hl                      ; HL=source current+4, DE=destination current
+    ldir
+    jr zx48_free_delete_clear
+zx48_free_delete_zero:
+    push ix
+    pop de
+zx48_free_delete_clear:
     xor a
-    ld (ix+4),a
-    ld (ix+5),a
-    ld (ix+6),a
-    ld (ix+7),a
-    call zx48_extent_sort
-    jr zx48_extent_merge_restart
-zx48_extent_merge_next:
-    ld de,4
-    add ix,de
-    dec c
-    jr nz,zx48_extent_merge_loop
+    ld (de),a
+    inc de
+    ld (de),a
+    inc de
+    ld (de),a
+    inc de
+    ld (de),a
+
 zx48_free_commit:
     ld hl,(memory_live_allocations)
     ld a,h
@@ -311,57 +374,6 @@ zx48_free_nospc:
 zx48_free_bad:
     ld a,E_INVAL
     scf
-    ret
-
-; Stable bounded sort: active records by ascending start, zero-length records last.
-zx48_extent_sort:
-    ld b,FREE_EXTENT_COUNT-1
-zx48_extent_sort_pass:
-    ld ix,memory_free_extents
-    ld c,FREE_EXTENT_COUNT-1
-zx48_extent_sort_pair:
-    ld a,(ix+2)
-    or (ix+3)
-    jr nz,zx48_extent_sort_current_live
-    ld a,(ix+6)
-    or (ix+7)
-    jr z,zx48_extent_sort_next
-    jr zx48_extent_swap
-zx48_extent_sort_current_live:
-    ld a,(ix+6)
-    or (ix+7)
-    jr z,zx48_extent_sort_next
-    ld l,(ix+0)
-    ld h,(ix+1)
-    ld e,(ix+4)
-    ld d,(ix+5)
-    or a
-    sbc hl,de
-    jr c,zx48_extent_sort_next
-    jr z,zx48_extent_sort_next
-zx48_extent_swap:
-    ld a,(ix+0)
-    ld e,(ix+4)
-    ld (ix+0),e
-    ld (ix+4),a
-    ld a,(ix+1)
-    ld e,(ix+5)
-    ld (ix+1),e
-    ld (ix+5),a
-    ld a,(ix+2)
-    ld e,(ix+6)
-    ld (ix+2),e
-    ld (ix+6),a
-    ld a,(ix+3)
-    ld e,(ix+7)
-    ld (ix+3),e
-    ld (ix+7),a
-zx48_extent_sort_next:
-    ld de,4
-    add ix,de
-    dec c
-    jr nz,zx48_extent_sort_pair
-    djnz zx48_extent_sort_pass
     ret
 
 zx48_memory_pin_bytes:
@@ -491,19 +503,24 @@ zx48_mem_add_fast:
     ld (memory_fast_largest),hl
     ret
 
-memory_request: dw 0
-memory_policy: db 0
-memory_candidate: dw 0
-memory_free_start: dw 0
-memory_free_length: dw 0
-memory_live_allocations: dw 0
-memory_pinned_bytes: dw 0
-memory_info_ptr: dw 0
-memory_fast_total: dw 0
-memory_fast_largest: dw 0
-memory_cold_total: dw 0
-memory_cold_largest: dw 0
-memory_free_extents: defs FREE_EXTENT_COUNT*4,0
+; Allocator runtime state lives in the fixed emergency-data reserve rather than
+; consuming the frozen ordinary kernel code/data pool.
+MEMORY_STATE_BASE        EQU SYSCALL_STATE_END
+memory_request           EQU MEMORY_STATE_BASE+0
+memory_policy            EQU MEMORY_STATE_BASE+2
+memory_candidate         EQU MEMORY_STATE_BASE+3
+memory_free_start        EQU MEMORY_STATE_BASE+5
+memory_free_length       EQU MEMORY_STATE_BASE+7
+memory_live_allocations  EQU MEMORY_STATE_BASE+9
+memory_pinned_bytes      EQU MEMORY_STATE_BASE+11
+memory_info_ptr          EQU MEMORY_STATE_BASE+13
+memory_fast_total        EQU MEMORY_STATE_BASE+15
+memory_fast_largest      EQU MEMORY_STATE_BASE+17
+memory_cold_total        EQU MEMORY_STATE_BASE+19
+memory_cold_largest      EQU MEMORY_STATE_BASE+21
+memory_free_extents      EQU MEMORY_STATE_BASE+23
+MEMORY_STATE_END         EQU memory_free_extents+FREE_EXTENT_COUNT*4
+    ASSERT MEMORY_STATE_END <= EMERGENCY_END+1
     ENDM
 
 ;
