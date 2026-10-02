@@ -219,3 +219,187 @@ zx48_p425_idle_maintenance:
     or a
     ret
     ENDM
+
+; REV02 production compaction. Historical phase fixtures keep the original
+; scheduler macro; the resident kernel keeps the same cooperative state machine
+; while holding the scan candidate in C instead of resident scratch.
+    MACRO EMIT_REV02_SCHEDULER_ROUTINES
+zx48_schedule_finish_syscall:
+    ld hl,(syscall_frame_sp)
+    ld de,SYSCALL_FRAME_PC_O
+    add hl,de
+    ld de,zx48_syscall_resume_ok
+    ld (hl),e
+    inc hl
+    ld (hl),d
+
+zx48_schedule:
+    ld a,(current_pid)
+    or a
+    jr z,zx48_r2_schedule_from_idle
+    call zx48_process_ptr
+    ld a,(ix+PROC_STATE)
+    cp PROC_ZOMBIE
+    jr z,zx48_r2_schedule_begin
+    ld hl,(syscall_frame_sp)
+    ld (ix+PROC_SAVED_SP),l
+    ld (ix+PROC_SAVED_SP+1),h
+    cp PROC_RUNNING
+    jr nz,zx48_r2_schedule_begin
+    ld (ix+PROC_STATE),PROC_READY
+    jr zx48_r2_schedule_begin
+zx48_r2_schedule_from_idle:
+    call zx48_process_ptr
+    ld (ix+PROC_STATE),PROC_READY
+zx48_r2_schedule_begin:
+    call zx48_keyboard_wake_input
+    ld a,(current_pid)
+    inc a
+    and 7
+    ld c,a
+    ld b,MAX_PROCESSES
+zx48_r2_schedule_scan:
+    push bc
+    ld a,c
+    or a
+    jr z,zx48_r2_schedule_next
+    call zx48_process_ptr
+    ld a,(ix+PROC_STATE)
+    cp PROC_SLEEPING
+    call z,zx48_scheduler_maybe_wake
+    ld a,(ix+PROC_STATE)
+    cp PROC_READY
+    jr z,zx48_r2_schedule_choose
+zx48_r2_schedule_next:
+    pop bc
+    inc c
+    ld a,c
+    and 7
+    ld c,a
+    djnz zx48_r2_schedule_scan
+    xor a
+    call zx48_process_ptr
+    jr zx48_r2_schedule_restore
+zx48_r2_schedule_choose:
+    pop bc
+    ld a,c
+zx48_r2_schedule_restore:
+    ld (current_pid),a
+    ld (ix+PROC_STATE),PROC_RUNNING
+    or a
+    jr z,zx48_r2_schedule_idle_restore
+    ld a,(ix+PROC_FLAGS)
+    and PROC_FLAG_CANCEL
+    jr z,zx48_r2_schedule_not_cancelled
+    ld l,(ix+PROC_SAVED_SP)
+    ld h,(ix+PROC_SAVED_SP+1)
+    ld de,SYSCALL_FRAME_PC_O
+    add hl,de
+    ld de,zx48_syscall_resume_intr
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    res 0,(ix+PROC_FLAGS)
+zx48_r2_schedule_not_cancelled:
+    call zx48_kernel_stack_sample
+    call zx48_kernel_stack_check
+    set 7,(ix+PROC_PRIVATE_FLAGS)
+    ld l,(ix+PROC_SAVED_SP)
+    ld h,(ix+PROC_SAVED_SP+1)
+    ld sp,hl
+    pop ix
+    pop hl
+    pop de
+    pop bc
+    pop af
+    ld iy,ROM_IY_ANCHOR
+    ret
+zx48_r2_schedule_idle_restore:
+    ld sp,BOOT_STACK_TOP
+    ld iy,ROM_IY_ANCHOR
+    jp zx48_idle_loop
+
+zx48_scheduler_maybe_wake:
+    ld hl,(kernel_ticks)
+    ld e,(ix+PROC_WAKE_TICK)
+    ld d,(ix+PROC_WAKE_TICK+1)
+    or a
+    sbc hl,de
+    ld hl,(kernel_ticks+2)
+    ld e,(ix+PROC_WAKE_TICK+2)
+    ld d,(ix+PROC_WAKE_TICK+3)
+    sbc hl,de
+    bit 7,h
+    ret nz
+    ld (ix+PROC_STATE),PROC_READY
+    ret
+
+zx48_sleep_current:
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    inc hl
+    ld c,(hl)
+    inc hl
+    ld b,(hl)
+    bit 7,b
+    jr nz,zx48_sleep_bad
+    ld a,b
+    or c
+    or d
+    or e
+    jr z,zx48_sleep_zero
+    ld (scheduler_sleep_lo),de
+    ld (scheduler_sleep_hi),bc
+    ld a,(current_pid)
+    call zx48_process_lookup
+    ret c
+    ld hl,(kernel_ticks)
+    ld de,(scheduler_sleep_lo)
+    add hl,de
+    push af
+    ld (ix+PROC_WAKE_TICK),l
+    ld (ix+PROC_WAKE_TICK+1),h
+    ld hl,(kernel_ticks+2)
+    ld de,(scheduler_sleep_hi)
+    pop af
+    adc hl,de
+    ld (ix+PROC_WAKE_TICK+2),l
+    ld (ix+PROC_WAKE_TICK+3),h
+    ld (ix+PROC_STATE),PROC_SLEEPING
+    xor a
+    jp zx48_schedule_finish_syscall
+zx48_sleep_zero:
+    xor a
+    ret
+zx48_sleep_bad:
+    ld a,E_INVAL
+    scf
+    ret
+
+zx48_scheduler_wake_scan:
+    ld ix,process_table+PROC_DESC_SIZE
+    ld b,MAX_PROCESSES-1
+zx48_r2_wake_scan_loop:
+    ld a,(ix+PROC_STATE)
+    cp PROC_SLEEPING
+    call z,zx48_scheduler_maybe_wake
+    ld de,PROC_DESC_SIZE
+    add ix,de
+    djnz zx48_r2_wake_scan_loop
+    ret
+
+zx48_idle_loop:
+    ei
+    halt
+    call zx48_scheduler_wake_scan
+    jp zx48_schedule
+
+SCHEDULER_STATE_BASE      EQU EMERGENCY_START+$4C
+scheduler_current         EQU SCHEDULER_STATE_BASE+0
+scheduler_candidate       EQU SCHEDULER_STATE_BASE+1
+scheduler_sleep_lo        EQU SCHEDULER_STATE_BASE+2
+scheduler_sleep_hi        EQU SCHEDULER_STATE_BASE+4
+SCHEDULER_STATE_END       EQU SCHEDULER_STATE_BASE+6
+    ASSERT SCHEDULER_STATE_END <= EMERGENCY_START+$7F
+    ENDM

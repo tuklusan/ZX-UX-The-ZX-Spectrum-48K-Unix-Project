@@ -65,7 +65,7 @@ kernel_mod_handles:
 kernel_mod_pipe:
     EMIT_REV02_PIPE_ROUTINES
 kernel_mod_scheduler:
-    EMIT_SCHEDULER_ROUTINES
+    EMIT_REV02_SCHEDULER_ROUTINES
 kernel_mod_primitives:
     EMIT_Z80_PRIMITIVES
 kernel_mod_ula:
