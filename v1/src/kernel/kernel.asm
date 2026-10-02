@@ -73,7 +73,7 @@ kernel_mod_ula:
 kernel_mod_tty32:
     EMIT_TTY32_ROUTINES
 kernel_mod_tty64:
-    EMIT_TTY64_ROUTINES
+    EMIT_REV02_TTY64_ROUTINES
 kernel_mod_cursor:
     EMIT_CURSOR_ROUTINES
 kernel_mod_console:
