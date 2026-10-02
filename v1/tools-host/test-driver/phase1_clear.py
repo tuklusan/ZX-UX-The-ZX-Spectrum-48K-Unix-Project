@@ -135,7 +135,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
         {"name": "clear-syscall-returns-zero-through-canonical-result-path", "passed": _ordered(sys_clear, ("call zx48_console_clear", "jp zx48_sys_zero_result"))},
         {"name": "clear-brackets-one-console-mutation-and-homes", "passed": clear_exact},
         {"name": "clear-target-is-exact-bitmap-and-attribute-display", "passed": "bitmap_start" in clear and "bitmap_end" in clear and "attr_end-attr_start" in clear and "$5b00" not in clear},
-        {"name": "clear-does-not-touch-ula-owner", "passed": "ula_shadow" not in clear and "out (ula_port)" not in clear and "ula_shadow:" in ula},
+        {"name": "clear-does-not-touch-ula-owner", "passed": "ula_shadow" not in clear and "out (ula_port)" not in clear and any(line.split() == ["ula_shadow", "equ", "ula_state_base"] for line in ula.splitlines())},
         {"name": "nested-screen-begin-is-depth-counted", "passed": all(token in begin for token in ("inc (hl)", "jr z,zx48_cursor_depth_panic", "call zx48_cursor_xor"))},
         {"name": "nested-screen-end-defers-reconcile-until-depth-zero", "passed": _ordered(end, ("or a", "jr z,zx48_cursor_depth_panic", "dec (hl)", "jr nz,zx48_cursor_ok", "jr zx48_cursor_service_core"))},
     ]
