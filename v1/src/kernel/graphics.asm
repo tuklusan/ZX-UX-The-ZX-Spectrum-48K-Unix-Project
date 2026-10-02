@@ -370,29 +370,13 @@ zx48_gfx_circle_diag:
     jp zx48_gfx_circle_pair
 
 zx48_gfx_circle_axis:
-    ; Four unique axis points for y=0.
+    ; Four unique axis points for y=0. Reuse the general clipped x pair.
     ld a,(gfx_circle_x)
     ld b,a
     push bc
-    ld a,(gfx_cx)
-    add a,b
-    jr c,zx48_gfx_circle_axis_xp_done
-    ld h,a
     ld a,(gfx_cy)
     ld l,a
-    call zx48_gfx_plot
-zx48_gfx_circle_axis_xp_done:
-    pop bc
-
-    push bc
-    ld a,(gfx_cx)
-    sub b
-    jr c,zx48_gfx_circle_axis_xm_done
-    ld h,a
-    ld a,(gfx_cy)
-    ld l,a
-    call zx48_gfx_plot
-zx48_gfx_circle_axis_xm_done:
+    call zx48_gfx_circle_x_pair
     pop bc
 
     push bc
