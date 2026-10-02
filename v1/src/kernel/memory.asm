@@ -73,8 +73,7 @@ zx48_alloc_loop:
     sbc hl,de
     pop hl
     jr c,zx48_alloc_cold_ok
-    jr z,zx48_alloc_cold_ok
-    jr zx48_alloc_next
+    jr nz,zx48_alloc_next
 zx48_alloc_cold_ok:
     ld e,(ix+0)
     ld d,(ix+1)
@@ -205,8 +204,7 @@ zx48_free:
     or a
     sbc hl,de
     jr c,zx48_free_end_ok
-    jr z,zx48_free_end_ok
-    jp zx48_free_bad
+    jp nz,zx48_free_bad
 zx48_free_end_ok:
     add hl,de
     ld (memory_fast_total),hl
