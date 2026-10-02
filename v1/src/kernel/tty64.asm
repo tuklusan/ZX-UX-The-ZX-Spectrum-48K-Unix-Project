@@ -240,92 +240,77 @@ zx48_tty64_draw_char:
     jp c,zx48_tty64_bad
     cp $80
     jp nc,zx48_tty64_bad
-    ld c,a
-    ld hl,(tty64_font_ptr)
-    ld a,h
-    or l
-    jp z,zx48_tty64_bad
-    ld a,c
     sub $20
-    ld e,a
-    ld d,0
-    sla e
-    rl d
-    sla e
-    rl d
-    add hl,de
-    ld (tty64_glyph),hl
-    xor a
-    ld (tty64_scan),a
-zx48_r2_tty64_scan_loop:
-    ld a,(tty64_scan)
-    cp 8
-    jr nc,zx48_r2_tty64_attr
-    ld e,a
-    srl e
-    ld d,0
-    ld hl,(tty64_glyph)
-    add hl,de
-    ld a,(hl)
-    ld d,a
-    ld a,(tty64_scan)
-    and 1
+    ld l,a
+    ld h,0
+    add hl,hl
+    add hl,hl
+    ld de,(tty64_font_ptr)
     ld a,d
+    or e
+    jp z,zx48_tty64_bad
+    add hl,de
+    ex de,hl
+    ld a,(tty_row)
+    add a,a
+    add a,a
+    add a,a
+    ld b,a
+    ld a,(tty_col)
+    srl a
+    ld c,a
+
+; DE walks the packed four-byte glyph. B is the physical scan line and remains
+; a multiple of eight at entry/exit, so the low three bits are the loop counter.
+zx48_r2_tty64_scan_loop:
+    ld a,(de)
+    bit 0,b
     jr nz,zx48_r2_tty64_nibble
     rrca
     rrca
     rrca
     rrca
+    jr zx48_r2_tty64_have_nibble
 zx48_r2_tty64_nibble:
+    inc de
+zx48_r2_tty64_have_nibble:
     and $0f
+    push de
     ld d,a
-    ld a,(tty_row)
-    add a,a
-    add a,a
-    add a,a
-    ld b,a
-    ld a,(tty64_scan)
-    add a,b
-    ld b,a
-    ld a,(tty_col)
-    srl a
-    ld c,a
     call zx48_bitmap_address
     ld a,(tty_col)
     and 1
-    ld a,(hl)
     jr nz,zx48_r2_tty64_right
-    and $0f
-    ld e,a
     ld a,d
     rlca
     rlca
     rlca
     rlca
-    or e
-    ld (hl),a
-    jr zx48_r2_tty64_next
-zx48_r2_tty64_right:
+    xor (hl)
     and $f0
-    or d
+    xor (hl)
+    jr zx48_r2_tty64_store
+zx48_r2_tty64_right:
+    ld a,d
+    xor (hl)
+    and $0f
+    xor (hl)
+zx48_r2_tty64_store:
     ld (hl),a
+    pop de
+    inc b
 zx48_r2_tty64_next:
-    ld a,(tty64_scan)
-    inc a
-    ld (tty64_scan),a
-    jr zx48_r2_tty64_scan_loop
+    ld a,b
+    and 7
+    jr nz,zx48_r2_tty64_scan_loop
 zx48_r2_tty64_attr:
-    ld a,(tty_row)
+    ld a,b
+    sub 8
     ld l,a
     ld h,0
     add hl,hl
     add hl,hl
-    add hl,hl
-    add hl,hl
-    add hl,hl
-    ld a,(tty_col)
-    srl a
-    ld e,a
+    ld e,c
     ld d,0
     add hl,de
     ld de,ATTR_START
