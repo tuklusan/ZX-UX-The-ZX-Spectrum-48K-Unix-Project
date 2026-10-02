@@ -484,56 +484,41 @@ zx48_gfx_attr:
     ld a,h
     cp 6
     jp nc,zx48_gfx_bad
-    ld (gfx_selector),a
-    ld a,l
-    ld (gfx_value),a
-    ld a,(gfx_selector)
+    ld e,a
     cp 2
-    jr nc,zx48_gfx_attr_bool
-    ld a,(gfx_value)
-    cp 8
+    ld a,l
+    jr c,zx48_gfx_attr_color
+    cp 2
     jp nc,zx48_gfx_bad
     jr zx48_gfx_attr_store
-zx48_gfx_attr_bool:
-    ld a,(gfx_value)
-    cp 2
+zx48_gfx_attr_color:
+    cp 8
     jp nc,zx48_gfx_bad
 zx48_gfx_attr_store:
-    ld a,(gfx_selector)
-    ld e,a
     ld d,0
     ld hl,gfx_attr_state
     add hl,de
-    ld a,(gfx_value)
     ld (hl),a
-    ld a,(gfx_attr_state)
-    and 7
-    ld b,a
+
+    ; Repack validated private state directly into the Spectrum attribute byte.
     ld a,(gfx_attr_state+1)
-    and 7
     rlca
     rlca
     rlca
+    ld b,a
+    ld a,(gfx_attr_state)
     or b
     ld b,a
     ld a,(gfx_attr_state+2)
-    or a
-    jr z,zx48_gfx_attr_no_bright
-    ld a,b
-    or $40
+    rrca
+    rrca
+    or b
     ld b,a
-zx48_gfx_attr_no_bright:
     ld a,(gfx_attr_state+3)
-    or a
-    jr z,zx48_gfx_attr_no_flash
-    ld a,b
-    or $80
-    ld b,a
-zx48_gfx_attr_no_flash:
-    ld a,b
+    rrca
+    or b
     ld (tty_current_attr),a
     xor a
-    or a
     ret
 
 ; P7.08: H=0,L=color; only the central ULA shadow may publish the border.
