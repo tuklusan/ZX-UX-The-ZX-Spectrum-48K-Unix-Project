@@ -516,7 +516,7 @@ zx48_mem_add_fast:
 
 ; Allocator runtime state lives in the fixed emergency-data reserve rather than
 ; consuming the frozen ordinary kernel code/data pool.
-MEMORY_STATE_BASE        EQU SYSCALL_STATE_END
+MEMORY_STATE_BASE        EQU EMERGENCY_START+$2E
 memory_request           EQU MEMORY_STATE_BASE+0
 memory_policy            EQU MEMORY_STATE_BASE+2
 memory_candidate         EQU MEMORY_STATE_BASE+3
