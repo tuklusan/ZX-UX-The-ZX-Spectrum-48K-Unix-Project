@@ -5336,10 +5336,10 @@ zx48_process_info:
     pop hl
     ld de,PROC_NAME
     add hl,de
-    ex de,hl
-    pop hl
+    pop de
     ld bc,10
     ldir
+    ex de,hl
     ld a,(ix+PROC_OWNED_BYTES)
     ld (hl),a
     inc hl
