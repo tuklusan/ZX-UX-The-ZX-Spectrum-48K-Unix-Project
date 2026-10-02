@@ -265,7 +265,6 @@ zx48_sys_sleep:
     ld bc,4
     call zx48_user_range_validate
     ret c
-    ld hl,(syscall_arg_hl)
     call zx48_sleep_current
     ret c
     jp zx48_sys_zero_result
@@ -287,7 +286,6 @@ zx48_sys_wait:
     ld bc,4
     call zx48_user_range_validate
     ret c
-    ld hl,(syscall_arg_hl)
     ld e,(hl)
     inc hl
     ld d,(hl)
@@ -465,7 +463,6 @@ zx48_sys_pipe:
     ld bc,2
     call zx48_user_range_validate
     ret c
-    ld hl,(syscall_arg_hl)
     jp zx48_pipe_create
 
 ; HL -> DUP1 {source,destination}.
@@ -474,7 +471,6 @@ zx48_sys_dup:
     ld bc,2
     call zx48_user_range_validate
     ret c
-    ld hl,(syscall_arg_hl)
     ld b,(hl)
     inc hl
     ld c,(hl)
@@ -500,7 +496,6 @@ zx48_sys_ioctl:
     ld bc,4
     call zx48_user_range_validate
     ret c
-    ld hl,(syscall_arg_hl)
     ld a,(hl)
     call zx48_handle_lookup
     ret c
@@ -559,8 +554,6 @@ zx48_sys_con_write:
     ld hl,(syscall_arg_hl)
     call zx48_user_range_validate
     ret c
-    ld hl,(syscall_arg_hl)
-    ld bc,(syscall_arg_bc)
     call zx48_console_write
     ret c
     xor a
@@ -583,7 +576,6 @@ zx48_sys_mem_info:
     ld bc,MINFO1_SIZE
     call zx48_user_range_validate
     ret c
-    ld hl,(syscall_arg_hl)
     call zx48_mem_info
     ld hl,(syscall_arg_hl)
     xor a
@@ -593,7 +585,6 @@ zx48_sys_proc_info:
     ld bc,4
     call zx48_user_range_validate
     ret c
-    ld hl,(syscall_arg_hl)
     ld a,(hl)
     ld (syscall_temp),a
     inc hl
@@ -666,7 +657,6 @@ zx48_time_set_handler:
     ld bc,4
     call zx48_user_range_validate
     ret c
-    ld hl,(syscall_arg_hl)
     ld e,(hl)
     inc hl
     ld d,(hl)
