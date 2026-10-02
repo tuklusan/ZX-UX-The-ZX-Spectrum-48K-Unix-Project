@@ -59,7 +59,6 @@ zx48_gfx_plot_store:
     ld (hl),a
     call zx48_cursor_show
     xor a
-    or a
     ret
 
 ; HL is the current bitmap byte. Preserve its low byte: that is already
@@ -82,15 +81,11 @@ zx48_gfx_point:
     jp nc,zx48_gfx_bad
     call zx48_gfx_pixel_addr
     and (hl)
-    jr z,zx48_gfx_point_zero
-    ld hl,1
-    xor a
-    or a
-    ret
-zx48_gfx_point_zero:
     ld hl,0
+    jr z,zx48_gfx_point_done
+    inc l
+zx48_gfx_point_done:
     xor a
-    or a
     ret
 
 ; H=x,L=y -> bitmap HL, mask in A. DE retains the public x/y pair.
@@ -204,7 +199,6 @@ zx48_gfx_line_loop:
     cp b
     jr nz,zx48_gfx_line_step
     xor a
-    or a
     ret
 zx48_gfx_line_step:
     ld hl,(gfx_err)
@@ -345,7 +339,6 @@ zx48_gfx_circle_nonnegative:
 
 zx48_gfx_circle_done:
     xor a
-    or a
     ret
 
 ; Plot each unique midpoint-circle point at most once. This matters for OVER:
@@ -531,7 +524,6 @@ zx48_gfx_border:
     jp nc,zx48_gfx_bad
     call zx48_ula_set_border
     xor a
-    or a
     ret
 zx48_gfx_bad:
     ld a,E_INVAL
