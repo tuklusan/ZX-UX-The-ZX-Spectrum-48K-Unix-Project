@@ -56,6 +56,18 @@ ROM_SCANNING              EQU $24FB
 ROM_DEC_TO_FP             EQU $2C9B
 ROM_CALC_STACK            EQU $5D80
 
+; Shared bounded ROM-compatibility workspace for transient calculator/text
+; transactions. The ROM disassembly contains no fixed 0x5E00/0x5F00 accesses;
+; approved math/text paths reach these bytes only through the protected
+; STKBOT/STKEND/MEM/CH_ADD contracts. Keep a full 128-byte calculator-stack
+; window above ROM_CALC_STACK, then overlay mutually exclusive operation scratch.
+P11_ROM_OP_BASE           EQU ROM_CALC_STACK+$80
+P11_ROM_OP_MAX_END        EQU P11_ROM_OP_BASE+298
+P11_ROM_TXN_BASE          EQU $5FC0
+P11_ROM_TXN_END           EQU P11_ROM_TXN_BASE+15
+    ASSERT P11_ROM_OP_MAX_END <= P11_ROM_TXN_BASE
+    ASSERT P11_ROM_TXN_END <= $6000
+
     MACRO EMIT_ROM_SERVICE_ROUTINES
 ; Every raw ROM return samples/checks the dedicated kernel stack while preserving
 ; the ROM routine's complete AF/BC/DE/HL result contract, then canonicalizes IY.
@@ -324,15 +336,15 @@ rom_calc_saved_errnr: db 0
     MACRO EMIT_P11_ROM_CALC_TXN_ROUTINES
     IFNDEF ZX48_P11_ROM_CALC_TXN_EMITTED
     DEFINE ZX48_P11_ROM_CALC_TXN_EMITTED
-p11_rom_saved_sp:           dw 0
-p11_rom_saved_err_sp:       dw 0
-p11_rom_saved_stkbot:       dw 0
-p11_rom_saved_stkend:       dw 0
-p11_rom_saved_mem:          dw 0
-p11_rom_saved_chadd:        dw 0
-p11_rom_saved_flags:        db 0
-p11_rom_saved_errnr:        db 0
-p11_rom_saved_breg:         db 0
+p11_rom_saved_sp           EQU P11_ROM_TXN_BASE+0
+p11_rom_saved_err_sp       EQU P11_ROM_TXN_BASE+2
+p11_rom_saved_stkbot       EQU P11_ROM_TXN_BASE+4
+p11_rom_saved_stkend       EQU P11_ROM_TXN_BASE+6
+p11_rom_saved_mem          EQU P11_ROM_TXN_BASE+8
+p11_rom_saved_chadd        EQU P11_ROM_TXN_BASE+10
+p11_rom_saved_flags        EQU P11_ROM_TXN_BASE+12
+p11_rom_saved_errnr        EQU P11_ROM_TXN_BASE+13
+p11_rom_saved_breg         EQU P11_ROM_TXN_BASE+14
 
 ; HL=caller SP before CALL. Carry set/E_BUSY if another serialized ROM gateway owns
 ; the compatibility workspace; otherwise save exact ROM state and prepare the stack.
@@ -421,11 +433,11 @@ P1117_ROM_ACS            EQU $23
 P1117_ROM_ATN            EQU $24
 P1117_ROM_SQR            EQU $28
 
-p1117_fp_op:             db 0
-p1117_fp_lhs_ptr:        dw 0
-p1117_fp_rhs_ptr:        dw 0
-p1117_fp_out_ptr:        dw 0
-p1117_fp_result:         defs 5,0
+p1117_fp_op              EQU P11_ROM_OP_BASE+0
+p1117_fp_lhs_ptr         EQU P11_ROM_OP_BASE+1
+p1117_fp_rhs_ptr         EQU P11_ROM_OP_BASE+3
+p1117_fp_out_ptr         EQU P11_ROM_OP_BASE+5
+p1117_fp_result          EQU P11_ROM_OP_BASE+7
 
 p1117_fp_rom_table:
     db P1117_ROM_ADD,P1117_ROM_SUB,P1117_ROM_MUL,P1117_ROM_DIV
@@ -589,13 +601,13 @@ zx48_rom_beep_cleanup:
     ld iy,ROM_IY_ANCHOR
     ret
 
-rom_beep_duration_ptr: dw 0
-rom_beep_pitch_ptr: dw 0
-rom_beep_saved_err_sp: dw 0
-rom_beep_saved_stkbot: dw 0
-rom_beep_saved_stkend: dw 0
-rom_beep_saved_mem: dw 0
-rom_beep_saved_sp: dw 0
+rom_beep_duration_ptr    EQU P11_ROM_OP_BASE+0
+rom_beep_pitch_ptr       EQU P11_ROM_OP_BASE+2
+rom_beep_saved_err_sp    EQU P11_ROM_OP_BASE+4
+rom_beep_saved_stkbot    EQU P11_ROM_OP_BASE+6
+rom_beep_saved_stkend    EQU P11_ROM_OP_BASE+8
+rom_beep_saved_mem       EQU P11_ROM_OP_BASE+10
+rom_beep_saved_sp        EQU P11_ROM_OP_BASE+12
 
     ENDM
 
@@ -785,11 +797,11 @@ rom_info_table:
 ; Inputs are copied to private bytes before any caller destination is written,
 ; so the documented request/input/output aliasing contract is atomic.
     MACRO EMIT_P1118_ROM_FP_CAST_ROUTINES
-p1118_rom_value:          dw 0
-p1118_rom_signed:         db 0
-p1118_rom_out_ptr:        dw 0
-p1118_rom_in_ptr:         dw 0
-p1118_rom_float:          defs 5,0
+p1118_rom_value          EQU P11_ROM_OP_BASE+0
+p1118_rom_signed         EQU P11_ROM_OP_BASE+2
+p1118_rom_out_ptr        EQU P11_ROM_OP_BASE+3
+p1118_rom_in_ptr         EQU P11_ROM_OP_BASE+5
+p1118_rom_float          EQU P11_ROM_OP_BASE+7
 
 ; HL=u16 source, A=0 unsigned/1 signed, DE=writable five-byte destination.
 zx48_p1118_rom_int_to_fp:
@@ -884,10 +896,10 @@ p1118_rom_cast_invalid:
 P1119_ROM_LT             EQU $0D
 P1119_ROM_EQ             EQU $0E
 
-p1119_rom_lhs_ptr:       dw 0
-p1119_rom_rhs_ptr:       dw 0
-p1119_rom_out_ptr:       dw 0
-p1119_rom_result:        db 0
+p1119_rom_lhs_ptr       EQU P11_ROM_OP_BASE+0
+p1119_rom_rhs_ptr       EQU P11_ROM_OP_BASE+2
+p1119_rom_out_ptr       EQU P11_ROM_OP_BASE+4
+p1119_rom_result        EQU P11_ROM_OP_BASE+6
 
 ; HL=lhs five-byte pointer, DE=rhs five-byte pointer, BC=writable i8 result.
 zx48_p1119_rom_fp_cmp:
@@ -1001,15 +1013,15 @@ P1146_TEXT_SCRATCH        EQU 16
 P1146_MEM35               EQU $5CA1
 P1146_MEM35_SIZE          EQU 15
 
-p1146_text_in_ptr:        dw 0
-p1146_text_out_ptr:       dw 0
-p1146_text_capacity:      dw 0
-p1146_text_saved_curchl:  dw 0
-p1146_text_saved_mem35:   defs P1146_MEM35_SIZE,0
-p1146_text_scratch:       defs P1146_TEXT_SCRATCH,0
-p1146_text_count:         db 0
-p1146_text_overflow:      db 0
-p1146_text_char:          db 0
+p1146_text_in_ptr        EQU P11_ROM_OP_BASE+0
+p1146_text_out_ptr       EQU P11_ROM_OP_BASE+2
+p1146_text_capacity      EQU P11_ROM_OP_BASE+4
+p1146_text_saved_curchl  EQU P11_ROM_OP_BASE+6
+p1146_text_saved_mem35   EQU P11_ROM_OP_BASE+8
+p1146_text_scratch       EQU P11_ROM_OP_BASE+23
+p1146_text_count         EQU P11_ROM_OP_BASE+39
+p1146_text_overflow      EQU P11_ROM_OP_BASE+40
+p1146_text_char          EQU P11_ROM_OP_BASE+41
 
 p1146_text_channel:
     dw p1146_text_capture
@@ -1158,16 +1170,15 @@ p1146_text_busy:
     EMIT_P11_ROM_CALC_TXN_ROUTINES
 P1147_TEXT_MAX            EQU 255
 P1147_TEXT_SCRATCH        EQU 256
-P1147_MEM_WORK            EQU $5C92
 P1147_MEM_WORK_SIZE       EQU 30
 
-p1147_text_in_ptr:        dw 0
-p1147_text_out_ptr:       dw 0
-p1147_text_length:        dw 0
-p1147_text_sign:          db 0
-p1147_text_calc_mem:      defs P1147_MEM_WORK_SIZE,0
-p1147_text_scratch:       defs P1147_TEXT_SCRATCH,0
-p1147_text_result:        defs 5,0
+p1147_text_in_ptr        EQU P11_ROM_OP_BASE+0
+p1147_text_out_ptr       EQU P11_ROM_OP_BASE+2
+p1147_text_length        EQU P11_ROM_OP_BASE+4
+p1147_text_sign          EQU P11_ROM_OP_BASE+6
+p1147_text_calc_mem      EQU P11_ROM_OP_BASE+7
+p1147_text_scratch       EQU P11_ROM_OP_BASE+37
+p1147_text_result        EQU P11_ROM_OP_BASE+293
 
 ; A=0 positive / 1 negative, HL=unsigned decimal token, BC=exact token length,
 ; DE=writable five-byte destination. Grammar/ranges are already validated.
