@@ -71,7 +71,7 @@ kernel_mod_primitives:
 kernel_mod_ula:
     EMIT_ULA_ROUTINES
 kernel_mod_tty32:
-    EMIT_TTY32_ROUTINES
+    EMIT_REV02_TTY32_ROUTINES
 kernel_mod_tty64:
     EMIT_REV02_TTY64_ROUTINES
 kernel_mod_cursor:
