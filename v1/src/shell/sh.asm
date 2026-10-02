@@ -5130,13 +5130,13 @@ sh_rev02_prompt:
 sh_rev02_background_started:
     xor a
     ld (SH_REV02_STATUS),a
-    jr sh_rev02_prompt
+    jp sh_rev02_prompt
 
 sh_rev02_invalid:
     ld a,E_INVAL
 sh_rev02_command_error:
     ld (SH_REV02_STATUS),a
-    jr sh_rev02_prompt
+    jp sh_rev02_prompt
 
 ; Read the canonical /etc/issue namespace object.  The product shell never
 ; embeds a private replacement for the release resource.
