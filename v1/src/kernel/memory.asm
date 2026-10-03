@@ -828,9 +828,7 @@ zx48_free_nospc:
     scf
     ret
 zx48_free_bad:
-    ld a,E_INVAL
-    scf
-    ret
+    jp zx48_sys_invalid
 
 zx48_memory_pin_bytes:
     ld hl,(memory_pinned_bytes)

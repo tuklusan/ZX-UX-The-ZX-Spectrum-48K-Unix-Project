@@ -320,9 +320,7 @@ zx48_r2_tty64_attr:
     xor a
     ret
 zx48_tty64_bad:
-    ld a,E_INVAL
-    scf
-    ret
+    jp zx48_sys_invalid
 
 TTY64_STATE_BASE          EQU EMERGENCY_START+$58
 tty64_resource_ptr        EQU TTY64_STATE_BASE+0

@@ -227,9 +227,7 @@ zx48_r2_tty32_draw:
     xor a
     ret
 zx48_tty32_bad:
-    ld a,E_INVAL
-    scf
-    ret
+    jp zx48_sys_invalid
 
 ; Scroll every bitmap scanline y=8..191 to y-8 through the canonical address
 ; mapper. This is the same 184-line copy as the historical row/scan loops.

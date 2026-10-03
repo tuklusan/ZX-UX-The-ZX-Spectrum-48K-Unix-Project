@@ -5399,9 +5399,7 @@ zx48_process_kill_okret:
     xor a
     ret
 zx48_process_perm:
-    ld a,E_PERM
-    scf
-    ret
+    jp zx48_sys_perm
 
 zx48_process_wait:
     ld (process_info_ptr),de

@@ -667,9 +667,7 @@ zx48_sys_u8_arg:
     ld a,l
     ret
 zx48_sys_u8_invalid:
-    ld a,E_INVAL
-    scf
-    ret
+    jp zx48_sys_invalid
 
 zx48_sys_put16:
     ld (hl),e
@@ -691,10 +689,6 @@ zx48_sys_notsup:
 zx48_sys_error:
     scf
     ret
-zx48_sys_ok:
-    xor a
-    ret
-
 zx48_sys_process_table:
     dw zx48_sys_version,zx48_sys_exit,zx48_sys_yield,zx48_sys_sleep
     dw zx48_sys_getpid,zx48_sys_spawn_stub,zx48_sys_exec_stub,zx48_sys_wait

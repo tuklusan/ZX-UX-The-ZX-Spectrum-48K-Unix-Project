@@ -371,9 +371,7 @@ zx48_sleep_zero:
     xor a
     ret
 zx48_sleep_bad:
-    ld a,E_INVAL
-    scf
-    ret
+    jp zx48_sys_invalid
 
 zx48_idle_loop:
     ei
