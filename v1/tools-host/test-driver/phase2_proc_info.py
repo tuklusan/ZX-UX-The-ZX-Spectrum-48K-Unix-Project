@@ -189,10 +189,11 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
 
 def _proc_info_vector(root: Path, labels: dict[str, int], kernel_bytes: bytes) -> None:
     require(len(NAME10) == 10, "P2.21 name vector is not exactly ten bytes")
-    child = labels["process_table"] + 2 * PROC_DESC_SIZE
+    child = labels["process_pid2"]
     code = bytearray(b"\xF3" + phase1._ld_sp(TEST_STACK))
     code += _call(labels["zx48_kernel_stack_init"])
     code += _call(labels["zx48_process_init"])
+    code += _set_byte(child, 2)
     code += _set_byte(child + PROC_PARENT, 1)
     code += _set_byte(child + PROC_STATE, PROC_READY)
     code += _set_byte(child + PROC_FLAGS, 0xFF)
@@ -266,8 +267,15 @@ def dispatch(root: Path, action: str, step: str, *, sha256_file: Callable[[Path]
     kernel_command, kernel, listing = phase1._assemble_kernel(root, run_command, require_project_tool)
     labels = phase1._labels(
         listing,
-        ("zx48_kernel_stack_init", "zx48_process_init", "zx48_sys_proc_info", "syscall_arg_hl", "process_table", "E_NOENT", "E_INVAL"),
+        ("zx48_kernel_stack_init", "zx48_process_init", "zx48_sys_proc_info", "syscall_arg_hl", "E_NOENT", "E_INVAL"),
     )
+    process = (root / "v1/src/kernel/process.asm").read_text(encoding="utf-8")
+    include = (root / "v1/include/zx48ux.inc").read_text(encoding="utf-8")
+    require("REV02_PROCESS_LOW_BASE        EQU ROM_PRINTER_BUFFER_START" in process,
+            "production low process-table base missing")
+    require("ROM_PRINTER_BUFFER_START EQU $5B00" in include,
+            "authorized printer-buffer process-table base missing")
+    labels["process_pid2"] = 0x5B00 + 2 * PROC_DESC_SIZE
     commands: list[Any] = [kernel_command]
     proc1_binary: Path | None = None
     if action == "test":
