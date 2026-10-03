@@ -63,8 +63,9 @@ ROM_CALC_STACK            EQU $5D80
 ; window above ROM_CALC_STACK, then overlay mutually exclusive operation scratch.
 P11_ROM_OP_BASE           EQU ROM_CALC_STACK+$80
 P11_ROM_OP_MAX_END        EQU P11_ROM_OP_BASE+298
-P11_ROM_TXN_BASE          EQU $5FC0
-P11_ROM_TXN_SNAPSHOT_SIZE EQU ROM_MEM+2-ROM_IY_ANCHOR
+P11_ROM_TXN_BASE          EQU $5F40
+P11_ROM_TXN_SNAPSHOT_END  EQU $5CB0
+P11_ROM_TXN_SNAPSHOT_SIZE EQU P11_ROM_TXN_SNAPSHOT_END-ROM_IY_ANCHOR
 P11_ROM_TXN_END           EQU P11_ROM_TXN_BASE+P11_ROM_TXN_SNAPSHOT_SIZE+2
     ASSERT P11_ROM_OP_MAX_END <= P11_ROM_TXN_BASE
     ASSERT P11_ROM_TXN_END <= ROM_COMPAT_END+1
@@ -497,31 +498,30 @@ p1117_fp_rom_operands_ready:
     MACRO EMIT_P709_ROM_BEEP_ROUTINES
     EMIT_P11_ROM_CALC_TXN_ROUTINES
 ; P7.09 isolated BASIC-compatible BEEP gateway.
-; HL -> five-byte duration, DE -> five-byte pitch. Reuse the common serialized
-; ROM transaction, then keep the historical dedicated BEEP calculator stack.
+; HL -> five-byte duration, DE -> five-byte pitch.
 zx48_rom_beep_values:
-    ld (rom_beep_duration_ptr),hl
-    ld (rom_beep_pitch_ptr),de
-    ld hl,0
+    push de
+    push hl
+    ld hl,4
     add hl,sp
     call zx48_p11_rom_txn_begin
-    ret c
-
-    ld hl,ROM_BEEP_STACK
-    ld (ROM_STKBOT),hl
-    ld (ROM_STKEND),hl
-
-    ld hl,(rom_beep_duration_ptr)
+    jr nc,zx48_rom_beep_txn_ready
+    pop hl
+    pop de
+    ret
+zx48_rom_beep_txn_ready:
+    pop hl
+    pop de
+    push de
     ld de,ROM_BEEP_STACK
     ld bc,5
     ldir
-    ld hl,(rom_beep_pitch_ptr)
+    pop hl
     ld de,ROM_BEEP_STACK+5
     ld bc,5
     ldir
     ld hl,ROM_BEEP_STACK+10
     ld (ROM_STKEND),hl
-
     ld hl,zx48_rom_beep_error
     push hl
     ld (ROM_ERR_SP),sp
@@ -532,7 +532,6 @@ zx48_rom_beep_values:
     call zx48_rom_beep_cleanup
     xor a
     ret
-
 zx48_rom_beep_error:
     ld hl,(p11_rom_saved_sp)
     ld sp,hl
@@ -540,15 +539,10 @@ zx48_rom_beep_error:
     ld a,E_INVAL
     scf
     ret
-
 zx48_rom_beep_cleanup:
     call zx48_p11_rom_txn_cleanup
     ld a,(ula_shadow)
     jp zx48_ula_commit
-
-rom_beep_duration_ptr    EQU P11_ROM_OP_BASE+0
-rom_beep_pitch_ptr       EQU P11_ROM_OP_BASE+2
-
     ENDM
 
 ; P7.11 canonical read-only ROM service metadata.
@@ -723,13 +717,10 @@ rom_info_table:
 ; Inputs are copied to private bytes before any caller destination is written,
 ; so the documented request/input/output aliasing contract is atomic.
     MACRO EMIT_P1118_ROM_FP_CAST_ROUTINES
-p1118_rom_signed         EQU P11_ROM_OP_BASE+2
-p1118_rom_out_ptr        EQU P11_ROM_OP_BASE+3
-p1118_rom_float          EQU P11_ROM_OP_BASE+7
-
+p1118_rom_float          EQU P11_ROM_OP_BASE+0
 ; HL=u16 source, A=0 unsigned/1 signed, DE=writable five-byte destination.
 zx48_p1118_rom_int_to_fp:
-    ld (p1118_rom_out_ptr),de
+    push de
     ex de,hl
     ld c,0
     or a
@@ -747,26 +738,25 @@ zx48_p1118_rom_int_to_fp:
 p1118_rom_itof_store:
     ld hl,p1118_rom_float
     call ROM_INT_STORE
+    pop de
     ld hl,p1118_rom_float
-    ld de,(p1118_rom_out_ptr)
     ld bc,5
     ldir
     xor a
     ld h,a
     ld l,a
     ret
-
 ; HL=five-byte source, A=0 unsigned/1 signed, DE=writable u16 destination.
-; ROM_TRUNCATE is the Sinclair integer-toward-zero conversion primitive.
 zx48_p1118_rom_fp_to_int:
-    ld (p1118_rom_signed),a
-    ld (p1118_rom_out_ptr),de
+    push af
+    push de
     ld de,p1118_rom_float
     ld bc,5
     ldir
     ld hl,p1118_rom_float
     call ROM_TRUNCATE
-
+    pop de
+    pop bc
     ld a,(p1118_rom_float)
     or a
     jr nz,p1118_rom_cast_invalid
@@ -778,32 +768,28 @@ zx48_p1118_rom_fp_to_int:
     jr z,p1118_rom_ftoi_positive
     cp $FF
     jr nz,p1118_rom_cast_invalid
-    ld a,(p1118_rom_signed)
+    ld a,b
     or a
     jr z,p1118_rom_cast_invalid
     ld a,(p1118_rom_float+3)
     bit 7,a
     jr z,p1118_rom_cast_invalid
     jr p1118_rom_ftoi_publish
-
 p1118_rom_ftoi_positive:
-    ld a,(p1118_rom_signed)
+    ld a,b
     or a
     jr z,p1118_rom_ftoi_publish
     ld a,(p1118_rom_float+3)
     bit 7,a
     jr nz,p1118_rom_cast_invalid
-
 p1118_rom_ftoi_publish:
     ld hl,p1118_rom_float+2
-    ld de,(p1118_rom_out_ptr)
     ld bc,2
     ldir
     xor a
     ld h,a
     ld l,a
     ret
-
 p1118_rom_cast_invalid:
     ld a,E_INVAL
     scf
@@ -817,26 +803,28 @@ p1118_rom_cast_invalid:
     EMIT_P11_ROM_CALC_TXN_ROUTINES
 P1119_ROM_LT             EQU $0D
 P1119_ROM_EQ             EQU $0E
-
-p1119_rom_lhs_ptr       EQU P11_ROM_OP_BASE+0
-p1119_rom_rhs_ptr       EQU P11_ROM_OP_BASE+2
-p1119_rom_out_ptr       EQU P11_ROM_OP_BASE+4
-
+p1119_rom_operands       EQU P11_ROM_OP_BASE+0
 ; HL=lhs five-byte pointer, DE=rhs five-byte pointer, BC=writable i8 result.
 zx48_p1119_rom_fp_cmp:
-    ld (p1119_rom_lhs_ptr),hl
-    ld (p1119_rom_rhs_ptr),de
-    ld (p1119_rom_out_ptr),bc
+    exx
     ld hl,0
     add hl,sp
     call zx48_p11_rom_txn_begin
     ret c
-
+    exx
+    push bc
+    push de
+    ld de,p1119_rom_operands
+    ld bc,5
+    ldir
+    pop hl
+    ld de,p1119_rom_operands+5
+    ld bc,5
+    ldir
     ld hl,zx48_p11_rom_invalid_error
     push hl
     ld (ROM_ERR_SP),sp
     ld iy,ROM_IY_ANCHOR
-
     call p1119_rom_load_operands
     ld b,P1119_ROM_EQ
     call ROM_CALCULATE
@@ -846,7 +834,6 @@ zx48_p1119_rom_fp_cmp:
     jr z,p1119_rom_not_equal
     xor a
     jr p1119_rom_success
-
 p1119_rom_not_equal:
     call p1119_rom_load_operands
     ld b,P1119_ROM_LT
@@ -857,37 +844,25 @@ p1119_rom_not_equal:
     ld a,$FF
     jr nz,p1119_rom_success
     ld a,1
-
 p1119_rom_success:
     pop hl
     push af
     call zx48_p11_rom_txn_cleanup
     pop af
-    ld hl,(p1119_rom_out_ptr)
+    pop hl
     ld (hl),a
     xor a
     ld h,a
     ld l,a
     ret
-
-; Reset the private calculator stack and copy both inputs before each operation.
 p1119_rom_load_operands:
-    ld hl,ROM_CALC_STACK
-    ld (ROM_STKBOT),hl
-    ld (ROM_STKEND),hl
-    ld hl,(p1119_rom_lhs_ptr)
+    ld hl,p1119_rom_operands
     ld de,ROM_CALC_STACK
-    ld bc,5
-    ldir
-    ld hl,(p1119_rom_rhs_ptr)
-    ld de,ROM_CALC_STACK+5
-    ld bc,5
+    ld bc,10
     ldir
     ld hl,ROM_CALC_STACK+10
     ld (ROM_STKEND),hl
     ret
-
-; Return A=0 for calculator false, A=1 for calculator true.
 p1119_rom_bool:
     ld hl,(ROM_STKEND)
     ld de,$FFFB
@@ -901,8 +876,6 @@ p1119_rom_bool_loop:
     ret z
     ld a,1
     ret
-
-
     ENDM
 
 ; P11.46 isolated ROM-backed floating text formatter. The caller owns all
@@ -916,8 +889,7 @@ P1146_TEXT_SCRATCH        EQU 16
 P1146_MEM35               EQU $5CA1
 P1146_MEM35_SIZE          EQU 15
 
-p1146_text_saved_mem35   EQU P11_ROM_OP_BASE+8
-p1146_text_scratch       EQU P11_ROM_OP_BASE+23
+p1146_text_scratch       EQU P11_ROM_OP_BASE+8
 p1146_text_count         EQU P11_ROM_OP_BASE+39
 p1146_text_overflow      EQU P11_ROM_OP_BASE+40
 
@@ -980,10 +952,6 @@ p1146_text_txn_ready:
     pop bc
     push bc
     push de
-    ld hl,P1146_MEM35
-    ld de,p1146_text_saved_mem35
-    ld bc,P1146_MEM35_SIZE
-    ldir
     xor a
     ld (p1146_text_count),a
     ld (p1146_text_overflow),a
@@ -1057,10 +1025,6 @@ p1146_text_error:
     ret
 
 p1146_text_cleanup:
-    ld hl,p1146_text_saved_mem35
-    ld de,P1146_MEM35
-    ld bc,P1146_MEM35_SIZE
-    ldir
     jp zx48_p11_rom_txn_cleanup
 
     ENDM
