@@ -86,6 +86,27 @@ def assemble(root:Path,name:str,text:str,start:int=KERNEL_START)->dict:
                 "module_spans":module_spans})
     return row
 
+def measure_historical_fixture(root:Path,step:str)->dict:
+    evidence=root/"v1/build"/("rev02-capacity-"+step.replace(".","-"))
+    evidence.mkdir(parents=True,exist_ok=True)
+    runner=root/"v1/tools-host/test-driver/run.py"
+    p=subprocess.run([sys.executable,str(runner),"build","--step",step,"--evidence-dir",str(evidence)],
+                     cwd=root,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    row={"step":step,"command_exit":p.returncode,"stdout":p.stdout[-4000:],"stderr":p.stderr[-4000:]}
+    record=evidence/f"{step}.build.json"
+    if p.returncode!=0 or not record.is_file():
+        row["status"]="FAIL"
+        return row
+    data=json.loads(record.read_text(encoding="utf-8"))
+    bins=[]
+    for rel in sorted(data.get("hashes",{})):
+        if rel.startswith("v1/build/") and rel.endswith(".bin"):
+            fp=root/rel
+            if fp.is_file():
+                bins.append({"path":rel,"bytes":fp.stat().st_size})
+    row.update({"status":"PASS","bins":bins,"max_bin_bytes":max((x["bytes"] for x in bins),default=0)})
+    return row
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--root",type=Path,required=True)
@@ -120,6 +141,10 @@ def main():
     req("### REV02 C022 low-RAM kernel ownership" in rom_doc,
         "REV02 low-RAM ownership documentation missing")
     baseline=assemble(root,"kernel-baseline",kernel)
+
+    fixture_steps=("P2.12","P4.15","P4.19","P4.22","P4.23","P4.26","P4.27","P4.28",
+                   "P4.31","P4.32","P5.08","P5.09","P5.10","P5.11","P5.14","P5.17")
+    fixture_measurements=[measure_historical_fixture(root,step) for step in fixture_steps]
 
     include_anchor='    INCLUDE "udg.asm"\n'
     req(kernel.count(include_anchor)==1,"UDG include anchor")
@@ -302,6 +327,7 @@ kernel_mod_rev02_final_integration_reserve:
     report={"schema":1,"kind":"rev02-kernel-closure-probe","status":"PASS" if baseline["status"]=="PASS" and public_api["status"]=="PASS" else "FAIL",
             "kernel_pool_bytes":KERNEL_POOL_BYTES,
             "baseline":baseline,"public_api_lower_bound":public_api,"complete_closure_envelope":complete_closure,
+            "historical_fixture_measurements":fixture_measurements,
             "measurement_origin":measure_origin,"complete_closure_measurement_origin":closure_origin,
             "measurement_method":"size-only relocation preserves relative gateway placement; graphics macro is sourced once through syscall.asm; production kernel remains at $E000",
             "low_ram_reclamation":{
