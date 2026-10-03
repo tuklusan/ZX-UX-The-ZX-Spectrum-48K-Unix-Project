@@ -156,6 +156,7 @@ def main():
     process=(root/"v1/src/kernel/process.asm").read_text(encoding="utf-8")
     objects_source=(root/"v1/src/kernel/objects.asm").read_text(encoding="utf-8")
     zxpack_source=(root/"v1/src/kernel/zxpack.asm").read_text(encoding="utf-8")
+    tape_source=(root/"v1/src/kernel/tape.asm").read_text(encoding="utf-8")
     pipe=(root/"v1/src/kernel/pipe.asm").read_text(encoding="utf-8")
     rom_doc=(root/"v1/docs/rom-services.md").read_text(encoding="utf-8")
     low_ram_needles=(
@@ -476,9 +477,89 @@ kernel_mod_rev02_final_integration_reserve:
     integrated=integrated.replace(emit_anchor,emit_anchor+integrated_extra)
     integrated_projection=assemble(root,"kernel-integrated-object-zxpack-projection",integrated,start=closure_origin)
 
+    # Full integration sizing candidate: use the normalized whole object/zxpack
+    # owners plus the whole tape owner and only the distinct spawn/exec families.
+    # This deliberately avoids the historical per-step object/zxpack duplication
+    # in complete_closure_envelope while retaining all mandatory resident surfaces.
+    integrated_full=kernel.replace(include_anchor,include_anchor+'    INCLUDE "objects.asm"\n    INCLUDE "zxpack.asm"\n    INCLUDE "tape.asm"\n    INCLUDE "sound.asm"\n')
+    integrated_full=integrated_full.replace('    INCLUDE "../../include/zx48ux.inc"\n','    INCLUDE "../../include/zx48ux.inc"\n    INCLUDE "../../include/mex1.inc"\n    INCLUDE "../../include/tapeobj.inc"\n',1)
+    integrated_full=integrated_full.replace(origin_anchor,f"    ORG ${closure_origin:04X}\n",1)
+    integrated_full=integrated_full.replace("    ASSERT $ = BOOT_GATEWAY\n",f"    ASSERT $ = ${closure_origin+3:04X}\n",1)
+    integrated_full=integrated_full.replace("    ASSERT $ = BOOT_GATEWAY+3\n",f"    ASSERT $ = ${closure_origin+6:04X}\n",1)
+    tape_body=macro_body(tape_source,"EMIT_TAPE_ROUTINES")
+    tape_body=tape_body.replace("    ld b,(p511_type)\n","    ld a,(p511_type)\n    ld b,a\n")
+    integrated_full_extra=extra+"""kernel_mod_rev02_integrated_objects:
+"""+macro_body(objects_source,"EMIT_OBJECT_ROUTINES")+"""kernel_mod_rev02_integrated_zxpack:
+"""+macro_body(zxpack_source,"EMIT_ZXPACK_ROUTINES")+"""kernel_mod_rev02_integrated_tape:
+"""+tape_body+"""kernel_mod_rev02_tape_prompt_adapters:
+zx48_shell_tape_prompt_write:
+    xor a
+    ret
+zx48_shell_tape_prompt_wait:
+    xor a
+    ret
+kernel_mod_rev02_integrated_spawn:
+    EMIT_MEX1_RELOCATION_ROUTINES
+    EMIT_MEX1_IMAGE_LOAD_ROUTINES
+    EMIT_MEX1_STACK_ROUTINES
+    EMIT_ARG1_ROUTINES
+    EMIT_ENV1_ROUTINES
+    EMIT_INITIAL_CONTEXT_ROUTINES
+    EMIT_SPAWN_PREFLIGHT_ROUTINES
+    EMIT_SPAWN_TRANSACTION_ROUTINES
+    EMIT_EXEC_TRANSACTION_ROUTINES
+    EMIT_P427_PACKED_SPAWN_ROUTINES
+    EMIT_P514_DIRECT_TAPE_MEX1_ROUTINES
+kernel_mod_rev02_integrated_object_syscalls:
+    EMIT_P405_SYS_OPEN_ROUTINES
+    EMIT_P411_SYS_STAT_ROUTINES
+    EMIT_P428_ZXPACK_INFO_SYSCALL_ROUTINES
+    EMIT_P431_CHDIR_SYSCALL_ROUTINES
+    EMIT_P432_GETCWD_SYSCALL_ROUTINES
+kernel_mod_rev02_integrated_extensions:
+    EMIT_P406_EXCLUSIVITY_ROUTINES
+    EMIT_P417_PACKED_OD_ROUTINES
+    EMIT_P426_COMPACT_ALLOC_ROUTINES
+    EMIT_P425_IDLE_MAINTENANCE_ROUTINES
+kernel_mod_rev02_integrated_spawn_adapters:
+zx48_spawn_resolve_ram_object:
+    call zx48_path_resolve
+    ret c
+    ld a,c
+    cp PATH_KIND_BASE
+    jr nz,.spawn_path_bad
+    ld a,(path_dir)
+    ld hl,path_name
+    jp zx48_object_lookup
+.spawn_path_bad:
+    ld a,E_NOENT
+    scf
+    ret
+zx48_p514_resolve_tape_name:
+    call zx48_path_resolve
+    ret c
+    ld a,c
+    cp PATH_KIND_BASE
+    jr nz,.tape_path_bad
+    ld hl,path_name
+    xor a
+    ret
+.tape_path_bad:
+    ld a,E_NOENT
+    scf
+    ret
+zx48_p514_commit_ready:
+    xor a
+    ret
+kernel_mod_rev02_integrated_full_reserve:
+    defs 512,0
+"""
+    integrated_full=integrated_full.replace(emit_anchor,emit_anchor+integrated_full_extra)
+    integrated_full_projection=assemble(root,"kernel-integrated-full-closure-projection",integrated_full,start=closure_origin)
+
     report={"schema":1,"kind":"rev02-kernel-closure-probe","status":"PASS" if baseline["status"]=="PASS" and public_api["status"]=="PASS" else "FAIL",
             "kernel_pool_bytes":KERNEL_POOL_BYTES,
-            "baseline":baseline,"public_api_lower_bound":public_api,"complete_closure_envelope":complete_closure,"integrated_object_zxpack_projection":integrated_projection,
+            "baseline":baseline,"public_api_lower_bound":public_api,"complete_closure_envelope":complete_closure,"integrated_object_zxpack_projection":integrated_projection,"integrated_full_closure_projection":integrated_full_projection,
             "historical_fixture_measurements":fixture_measurements,
             "measurement_origin":measure_origin,"complete_closure_measurement_origin":closure_origin,
             "measurement_method":"size-only relocation preserves relative gateway placement; graphics macro is sourced once through syscall.asm; production kernel remains at $E000",
@@ -496,5 +577,5 @@ kernel_mod_rev02_final_integration_reserve:
         print(public_api.get("stderr",""),file=sys.stderr)
         print(public_api.get("stdout",""),file=sys.stderr)
         raise SystemExit("ERROR: public API lower-bound probe must assemble")
-    print("REV02 KERNEL CLOSURE PROBE PASS",json.dumps({"baseline":baseline.get("ordinary_bytes"),"public_api":public_api.get("ordinary_bytes"),"complete_closure":complete_closure.get("ordinary_bytes"),"complete_closure_approx":complete_closure.get("approximate_bytes"),"complete_closure_status":complete_closure.get("status"),"integrated_object_zxpack":integrated_projection.get("ordinary_bytes"),"integrated_object_zxpack_approx":integrated_projection.get("approximate_bytes"),"integrated_object_zxpack_status":integrated_projection.get("status"),"pool":KERNEL_POOL_BYTES}))
+    print("REV02 KERNEL CLOSURE PROBE PASS",json.dumps({"baseline":baseline.get("ordinary_bytes"),"public_api":public_api.get("ordinary_bytes"),"complete_closure":complete_closure.get("ordinary_bytes"),"complete_closure_approx":complete_closure.get("approximate_bytes"),"complete_closure_status":complete_closure.get("status"),"integrated_object_zxpack":integrated_projection.get("ordinary_bytes"),"integrated_object_zxpack_approx":integrated_projection.get("approximate_bytes"),"integrated_object_zxpack_status":integrated_projection.get("status"),"integrated_full":integrated_full_projection.get("ordinary_bytes"),"integrated_full_approx":integrated_full_projection.get("approximate_bytes"),"integrated_full_status":integrated_full_projection.get("status"),"pool":KERNEL_POOL_BYTES}))
 if __name__=="__main__": main()
