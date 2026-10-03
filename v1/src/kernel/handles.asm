@@ -146,11 +146,18 @@ zx48_od_retain:
     ld a,(ix+OD_KIND_O)
     or a
     jp z,zx48_handle_noent
+    IFDEF ZX48_REV02_COLD_IMAGE_INIT
+    ld a,(ix+OD_REFS_O)
+    inc a
+    jp z,zx48_handle_busy
+    ld (ix+OD_REFS_O),a
+    ELSE
     ld a,(ix+OD_REFS_O)
     cp $ff
     jp z,zx48_handle_busy
     inc a
     ld (ix+OD_REFS_O),a
+    ENDIF
     ld a,c
     or a
     ret
@@ -162,10 +169,15 @@ zx48_od_release:
     ld a,(ix+OD_KIND_O)
     or a
     jp z,zx48_handle_noent
+    IFDEF ZX48_REV02_COLD_IMAGE_INIT
+    dec (ix+OD_REFS_O)
+    ret nz
+    ELSE
     ld a,(ix+OD_REFS_O)
     dec a
     ld (ix+OD_REFS_O),a
     ret nz
+    ENDIF
     ld l,(ix+OD_AUX_O)
     ld h,(ix+OD_AUX_O+1)
     ld a,h
