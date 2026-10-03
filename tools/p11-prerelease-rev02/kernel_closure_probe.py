@@ -335,7 +335,42 @@ kernel_mod_size_tape_direct_stream:
 kernel_mod_size_tape_abort:
     EMIT_P517_TAPE_ABORT_ROUTINES
 kernel_mod_size_tape_public:
-    EMIT_TAPE_ROUTINES
+zx48_tape_save_block:
+    call zx48_rom_sa_bytes
+    ret nc
+    ld a,E_IO
+    scf
+    ret
+zx48_tape_load_block:
+    call zx48_rom_ld_bytes
+    jr nc,zx48_tape_load_error
+    or a
+    ret
+zx48_tape_load_error:
+    ld a,E_IO
+    scf
+    ret
+zx48_tape_save_path:
+    call zx48_path_resolve
+    ret c
+    ld a,c
+    cp PATH_KIND_BASE
+    jr nz,zx48_tape_bad
+    ld a,(path_dir)
+    ld hl,path_name
+    call zx48_object_lookup
+    ret c
+    jp zx48_p508_save_record
+zx48_tape_load_path:
+    jp zx48_p509_load_path
+zx48_tape_verify_path:
+    jp zx48_p510_verify_path
+zx48_tape_scan_next:
+    jp zx48_p511_scan_next
+zx48_tape_bad:
+    ld a,E_INVAL
+    scf
+    ret
 kernel_mod_rev02_tape_recovery:
     EMIT_P517_TAPE_RECOVERY_ROUTINES
 kernel_mod_rev02_spawn:
