@@ -65,6 +65,13 @@ zx48_od_ptr:
     add hl,de
     push hl
     pop ix
+    IFDEF ZX48_REV02_COLD_IMAGE_INIT
+    ld c,a
+    ld a,(ix+OD_KIND_O)
+    or a
+    jp z,zx48_handle_noent
+    ld a,c
+    ENDIF
     or a
     ret
 
@@ -143,9 +150,11 @@ zx48_od_retain:
     ld c,a
     call zx48_od_ptr
     ret c
+    IFNDEF ZX48_REV02_COLD_IMAGE_INIT
     ld a,(ix+OD_KIND_O)
     or a
     jp z,zx48_handle_noent
+    ENDIF
     IFDEF ZX48_REV02_COLD_IMAGE_INIT
     ld a,(ix+OD_REFS_O)
     inc a
@@ -166,9 +175,11 @@ zx48_od_retain:
 zx48_od_release:
     call zx48_od_ptr
     ret c
+    IFNDEF ZX48_REV02_COLD_IMAGE_INIT
     ld a,(ix+OD_KIND_O)
     or a
     jp z,zx48_handle_noent
+    ENDIF
     IFDEF ZX48_REV02_COLD_IMAGE_INIT
     dec (ix+OD_REFS_O)
     ret nz
@@ -263,10 +274,10 @@ zx48_handle_lookup:
     ld c,a
     call zx48_od_ptr
     ret c
-    ENDIF
     ld a,(ix+OD_KIND_O)
     or a
     jp z,zx48_handle_noent
+    ENDIF
     xor a
     ret
 
