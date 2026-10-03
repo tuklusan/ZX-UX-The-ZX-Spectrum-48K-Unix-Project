@@ -5186,18 +5186,7 @@ zx48_process_init:
 zx48_r2_process_init_loop:
     ld (ix+PROC_PID),c
     ld (ix+PROC_PARENT),HANDLE_FREE
-    push bc
-    push ix
-    pop hl
-    ld de,PROC_HANDLES
-    add hl,de
-    ld b,MAX_HANDLES_PER_PROCESS
-    ld a,HANDLE_FREE
-zx48_r2_process_init_handles:
-    ld (hl),a
-    inc hl
-    djnz zx48_r2_process_init_handles
-    pop bc
+    call zx48_r2_process_fill_handles
     ld de,PROC_DESC_SIZE
     add ix,de
     inc c
@@ -5249,6 +5238,19 @@ zx48_process_reserve_slot:
     call zx48_process_find_free_slot
     ret c
     push af
+    call zx48_r2_process_clear_ix
+    pop af
+    ld (ix+PROC_PID),a
+    push af
+    ld a,(current_pid)
+    ld (ix+PROC_PARENT),a
+    call zx48_r2_process_fill_handles
+    pop af
+    or a
+    ret
+
+; Shared compact descriptor helpers.
+zx48_r2_process_clear_ix:
     push ix
     pop hl
     xor a
@@ -5258,23 +5260,21 @@ zx48_process_reserve_slot:
     inc de
     ld bc,PROC_DESC_SIZE-1
     ldir
-    pop af
-    ld (ix+PROC_PID),a
-    push af
-    ld a,(current_pid)
-    ld (ix+PROC_PARENT),a
+    ret
+
+zx48_r2_process_fill_handles:
+    push bc
     push ix
     pop hl
     ld de,PROC_HANDLES
     add hl,de
     ld b,MAX_HANDLES_PER_PROCESS
     ld a,HANDLE_FREE
-zx48_r2_process_reserve_handles:
+zx48_r2_process_fill_handles_loop:
     ld (hl),a
     inc hl
-    djnz zx48_r2_process_reserve_handles
-    pop af
-    or a
+    djnz zx48_r2_process_fill_handles_loop
+    pop bc
     ret
 
 zx48_process_prepare_pid1:
@@ -5493,15 +5493,7 @@ zx48_process_wait_reap:
     ld l,a
     ld h,0
     push hl
-    push ix
-    pop hl
-    xor a
-    ld (hl),a
-    ld d,h
-    ld e,l
-    inc de
-    ld bc,PROC_DESC_SIZE-1
-    ldir
+    call zx48_r2_process_clear_ix
     pop hl
     xor a
     ret
