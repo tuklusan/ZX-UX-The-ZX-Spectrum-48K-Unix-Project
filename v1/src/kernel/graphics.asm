@@ -108,22 +108,22 @@ zx48_gfx_mask_loop:
     djnz zx48_gfx_mask_loop
     ret
 
-; HL -> x1,y1,x2,y2. Exact Bresenham raster with one-byte major-axis
-; remainder state. For each major step, carry from remainder-minor decides the
-; optional minor step; initial floor((major-1)/2) preserves the frozen golden
-; tie-breaking for every dx=0..255,dy=0..191 without 16-bit error scratch.
+; HL -> x1,y1,x2,y2. Bresenham with 16-bit signed error scratch.
+; P7.04 keeps the verified ROM 24BA contract documented but uses the native
+; replacement because that lower ROM path ultimately reaches PLOT-SUB and the
+; BASIC y<=175/origin contract cannot satisfy the ZX-UX 0..191 coordinate ABI.
 zx48_gfx_draw:
     ; Validate both endpoints before any graphics scratch or display mutation.
     push hl
     inc hl
     ld a,(hl)
     cp 192
-    jp nc,zx48_gfx_draw_bad
+    jr nc,zx48_gfx_draw_bad
     inc hl
     inc hl
     ld a,(hl)
     cp 192
-    jp nc,zx48_gfx_draw_bad
+    jr nc,zx48_gfx_draw_bad
     pop hl
     ld a,(hl)
     ld (gfx_x),a
@@ -136,7 +136,7 @@ zx48_gfx_draw:
     inc hl
     ld a,(hl)
     ld (gfx_y2),a
-
+    ; Derive both absolute deltas and signed unit steps through one compact path.
     ld a,(gfx_x)
     ld c,a
     ld a,(gfx_x2)
@@ -151,95 +151,7 @@ zx48_gfx_draw:
     ld (gfx_dy),a
     ld a,b
     ld (gfx_sy),a
-
-    ld a,(gfx_dx)
-    ld b,a
-    ld a,(gfx_dy)
-    cp b
-    jr nc,zx48_gfx_line_y_major
-
-zx48_gfx_line_x_major:
-    ld a,(gfx_dx)
-    dec a
-    srl a
-    ld (gfx_err),a
-zx48_gfx_line_x_loop:
-    call zx48_gfx_plot_current
-    ld a,(gfx_x2)
-    ld b,a
-    ld a,(gfx_x)
-    cp b
-    jr z,zx48_gfx_line_done
-
-    ld a,(gfx_dy)
-    ld b,a
-    ld a,(gfx_err)
-    sub b
-    ld (gfx_err),a
-    jr nc,zx48_gfx_line_x_step
-    ld b,a
-    ld a,(gfx_dx)
-    add a,b
-    ld (gfx_err),a
-    ld a,(gfx_sy)
-    ld b,a
-    ld a,(gfx_y)
-    add a,b
-    ld (gfx_y),a
-zx48_gfx_line_x_step:
-    ld a,(gfx_sx)
-    ld b,a
-    ld a,(gfx_x)
-    add a,b
-    ld (gfx_x),a
-    jr zx48_gfx_line_x_loop
-
-zx48_gfx_line_y_major:
-    ld a,(gfx_dy)
-    dec a
-    srl a
-    ld (gfx_err),a
-zx48_gfx_line_y_loop:
-    call zx48_gfx_plot_current
-    ld a,(gfx_y2)
-    ld b,a
-    ld a,(gfx_y)
-    cp b
-    jr z,zx48_gfx_line_done
-
-    ld a,(gfx_dx)
-    ld b,a
-    ld a,(gfx_err)
-    sub b
-    ld (gfx_err),a
-    jr nc,zx48_gfx_line_y_step
-    ld b,a
-    ld a,(gfx_dy)
-    add a,b
-    ld (gfx_err),a
-    ld a,(gfx_sx)
-    ld b,a
-    ld a,(gfx_x)
-    add a,b
-    ld (gfx_x),a
-zx48_gfx_line_y_step:
-    ld a,(gfx_sy)
-    ld b,a
-    ld a,(gfx_y)
-    add a,b
-    ld (gfx_y),a
-    jr zx48_gfx_line_y_loop
-
-zx48_gfx_plot_current:
-    ld a,(gfx_x)
-    ld h,a
-    ld a,(gfx_y)
-    ld l,a
-    jp zx48_gfx_plot
-
-zx48_gfx_line_done:
-    xor a
-    ret
+    jr zx48_gfx_line_start
 
 ; C=current coordinate, A=target. Return A=absolute delta and B=-1/0/+1.
 zx48_gfx_delta:
@@ -258,6 +170,84 @@ zx48_gfx_delta_zero:
 zx48_gfx_draw_bad:
     pop hl
     jp zx48_gfx_bad
+zx48_gfx_line_start:
+    ; signed err = dx-dy in 16 bits.
+    ld a,(gfx_dx)
+    ld l,a
+    ld h,0
+    ld a,(gfx_dy)
+    ld e,a
+    ld d,0
+    or a
+    sbc hl,de
+    ld (gfx_err),hl
+zx48_gfx_line_loop:
+    ld a,(gfx_x)
+    ld h,a
+    ld a,(gfx_y)
+    ld l,a
+    call zx48_gfx_plot
+    ret c
+    ld a,(gfx_x)
+    ld b,a
+    ld a,(gfx_x2)
+    cp b
+    jr nz,zx48_gfx_line_step
+    ld a,(gfx_y)
+    ld b,a
+    ld a,(gfx_y2)
+    cp b
+    jr nz,zx48_gfx_line_step
+    xor a
+    ret
+zx48_gfx_line_step:
+    ld hl,(gfx_err)
+    add hl,hl                    ; e2=2*err
+    ld (gfx_e2),hl
+    ; if e2 > -dy then err-=dy, x+=sx
+    ld a,(gfx_dy)
+    neg
+    ld e,a
+    ld d,$ff
+    ld hl,(gfx_e2)
+    or a
+    sbc hl,de
+    bit 7,h
+    jr nz,zx48_gfx_line_skip_x
+    ld hl,(gfx_err)
+    ld a,(gfx_dy)
+    ld e,a
+    ld d,0
+    or a
+    sbc hl,de
+    ld (gfx_err),hl
+    ld a,(gfx_sx)
+    ld b,a
+    ld a,(gfx_x)
+    add a,b
+    ld (gfx_x),a
+zx48_gfx_line_skip_x:
+    ; if e2 < dx then err+=dx,y+=sy
+    ld hl,(gfx_e2)
+    ld a,(gfx_dx)
+    ld e,a
+    ld d,0
+    or a
+    sbc hl,de
+    bit 7,h
+    jr z,zx48_gfx_line_loop
+    ld hl,(gfx_err)
+    ld a,(gfx_dx)
+    ld e,a
+    ld d,0
+    add hl,de
+    ld (gfx_err),hl
+    ld a,(gfx_sy)
+    ld b,a
+    ld a,(gfx_y)
+    add a,b
+    ld (gfx_y),a
+    jr zx48_gfx_line_loop
 
 ; HL -> x,y,radius. Native integer midpoint circle with exact clipping.
 ; P7.05 records the Class-B ROM-assisted option but uses the Section-14.9
