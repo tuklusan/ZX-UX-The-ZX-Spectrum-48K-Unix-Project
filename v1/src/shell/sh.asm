@@ -4968,15 +4968,18 @@ p820_written: dw 0
 ; source/program agnostic: every external command takes the same path.
     MACRO EMIT_REV02_SH_PRODUCT
 SH_REV02_ISSUE_O          EQU 0
-SH_REV02_LINE_O           EQU SH_REV02_ISSUE_O+P602_ISSUE_LENGTH
-SH_REV02_TOKENS_O         EQU SH_REV02_LINE_O+248
+; Startup /etc/issue is dead before line input. The command line is also dead
+; after tokenization and becomes the 256-byte ARG1 build buffer. HOME and the
+; spawn/wait control records similarly reuse token storage after their phases.
+SH_REV02_LINE_O           EQU SH_REV02_ISSUE_O
+SH_REV02_TOKENS_O         EQU SH_REV02_LINE_O+256
 SH_REV02_ENV_O            EQU SH_REV02_TOKENS_O+248
-SH_REV02_ARG1_O           EQU SH_REV02_ENV_O+256
-SH_REV02_PATH_O           EQU SH_REV02_ARG1_O+256
-SH_REV02_HOME_O           EQU SH_REV02_PATH_O+32
-SH_REV02_PROC1_O          EQU SH_REV02_HOME_O+15
-SH_REV02_WAIT1_O          EQU SH_REV02_PROC1_O+16
-SH_REV02_STATUS_O         EQU SH_REV02_WAIT1_O+4
+SH_REV02_ARG1_O           EQU SH_REV02_LINE_O
+SH_REV02_PATH_O           EQU SH_REV02_ENV_O+256
+SH_REV02_HOME_O           EQU SH_REV02_TOKENS_O
+SH_REV02_PROC1_O          EQU SH_REV02_TOKENS_O
+SH_REV02_WAIT1_O          EQU SH_REV02_TOKENS_O
+SH_REV02_STATUS_O         EQU SH_REV02_PATH_O+32
 SH_REV02_KEY_O            EQU SH_REV02_STATUS_O+1
 SH_REV02_LINE_LEN_O       EQU SH_REV02_KEY_O+1
 SH_REV02_LINE_OVER_O      EQU SH_REV02_LINE_LEN_O+1
