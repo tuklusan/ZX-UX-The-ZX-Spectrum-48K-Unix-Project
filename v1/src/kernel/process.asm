@@ -5218,9 +5218,7 @@ zx48_process_noent:
 zx48_process_reserve_slot:
     call zx48_process_find_free_slot
     ret c
-    push af
     call zx48_r2_process_clear_ix
-    pop af
     ld (ix+PROC_PID),a
     push af
     ld a,(current_pid)
@@ -5234,8 +5232,7 @@ zx48_process_reserve_slot:
 zx48_r2_process_clear_ix:
     push ix
     pop hl
-    xor a
-    ld (hl),a
+    ld (hl),0
     ld d,h
     ld e,l
     inc de
@@ -5249,17 +5246,14 @@ zx48_r2_process_fill_handles:
     ld de,PROC_HANDLES
     add hl,de
     ld b,MAX_HANDLES_PER_PROCESS
-    ld a,HANDLE_FREE
 zx48_r2_process_fill_handles_loop:
-    ld (hl),a
+    ld (hl),HANDLE_FREE
     inc hl
     djnz zx48_r2_process_fill_handles_loop
     ret
 
 zx48_process_prepare_pid1:
-    ld a,1
-    call zx48_process_ptr
-    ret c
+    ld ix,process_table+PROC_DESC_SIZE
     ld a,(ix+PROC_STATE)
     or a
     jr nz,zx48_process_busy
@@ -5276,17 +5270,17 @@ zx48_process_busy:
     ret
 
 zx48_process_count:
-    ld ix,process_table+PROC_DESC_SIZE
+    ld hl,process_table+PROC_DESC_SIZE+PROC_STATE
+    ld de,PROC_DESC_SIZE
     ld b,MAX_PROCESSES-1
     ld c,0
 zx48_r2_process_count_loop:
-    ld a,(ix+PROC_STATE)
+    ld a,(hl)
     or a
     jr z,zx48_r2_process_count_next
     inc c
 zx48_r2_process_count_next:
-    ld de,PROC_DESC_SIZE
-    add ix,de
+    add hl,de
     djnz zx48_r2_process_count_loop
     ld a,c
     or a
@@ -5310,12 +5304,9 @@ zx48_process_info:
     add hl,bc
     ld bc,10
     ldir
-    ex de,hl
-    ld a,(ix+PROC_OWNED_BYTES)
-    ld (hl),a
     inc hl
-    ld a,(ix+PROC_OWNED_BYTES+1)
-    ld (hl),a
+    ld bc,2
+    ldir
     xor a
     ret
 
@@ -5355,12 +5346,9 @@ zx48_process_restore_tty_owner:
     ret nz
     ld a,1
     call zx48_process_live_lookup
-    jr c,zx48_r2_process_tty_owner_zero
-    ld a,1
-    jr zx48_r2_process_tty_owner_set
-zx48_r2_process_tty_owner_zero:
-    xor a
-zx48_r2_process_tty_owner_set:
+    ccf
+    ld a,0
+    adc a,a
     ld (tty_input_owner),a
     ret
 
@@ -5417,38 +5405,31 @@ zx48_process_perm:
     ret
 
 zx48_process_wait:
-    ld (process_wait_target),a
+    ld (process_info_ptr),de
+    ld l,a
 zx48_process_wait_again:
-    xor a
-    ld (process_wait_has_child),a
+    ld h,0
     ld ix,process_table+2*PROC_DESC_SIZE
     ld b,MAX_PROCESSES-2
+    ld de,PROC_DESC_SIZE
 zx48_process_wait_each:
-    ld a,(ix+PROC_PARENT)
-    ld c,a
     ld a,(current_pid)
-    cp c
+    cp (ix+PROC_PARENT)
     jr nz,zx48_process_wait_next
-    ld a,(process_wait_target)
+    ld a,l
     cp $ff
     jr z,zx48_process_wait_state
-    ld c,a
-    ld a,(ix+PROC_PID)
-    cp c
+    cp (ix+PROC_PID)
     jr nz,zx48_process_wait_next
 zx48_process_wait_state:
-    ld a,1
-    ld (process_wait_has_child),a
+    inc h
     ld a,(ix+PROC_STATE)
     cp PROC_ZOMBIE
     jr z,zx48_process_wait_reap
 zx48_process_wait_next:
-    push bc
-    ld bc,PROC_DESC_SIZE
-    add ix,bc
-    pop bc
+    add ix,de
     djnz zx48_process_wait_each
-    ld a,(process_wait_has_child)
+    ld a,h
     or a
     jr z,zx48_process_wait_none
     ld a,(current_pid)
@@ -5461,13 +5442,12 @@ zx48_process_wait_none:
     ret
 zx48_process_wait_reap:
     ld a,(ix+PROC_EXIT_STATUS)
+    ld de,(process_info_ptr)
     ld (de),a
     ld a,(ix+PROC_PID)
+    call zx48_r2_process_clear_ix
     ld l,a
     ld h,0
-    push hl
-    call zx48_r2_process_clear_ix
-    pop hl
     xor a
     ret
 
