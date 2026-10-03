@@ -201,10 +201,11 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
                     "ld a,l",
                     "ret",
                     "zx48_sys_u8_invalid:",
-                    "ld a,e_inval",
-                    "scf",
-                    "ret",
                 ),
+            )
+            and (
+                all(token in u8_arg for token in ("ld a,e_inval", "scf", "ret"))
+                or "jp zx48_sys_invalid" in u8_arg
             )
             and _ordered(
                 sys_putchar,
