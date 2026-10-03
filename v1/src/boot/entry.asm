@@ -38,7 +38,10 @@ zx48_boot_main_impl:
     ld sp,BOOT_STACK_TOP
     ld iy,ROM_IY_ANCHOR
     IFDEF ZX48_REV02_COLD_IMAGE_INIT
-    ; Exact-image cold state already covers these fixed resident subsystems.
+    ; Exact-image cold state covers fixed high-RAM state. Low reclaimed RAM is
+    ; outside the loaded 8 KiB image and must be initialized after BASIC handoff.
+    call zx48_process_init
+    call zx48_pipe_init
     ELSE
     call zx48_kernel_stack_init
     call zx48_memory_init

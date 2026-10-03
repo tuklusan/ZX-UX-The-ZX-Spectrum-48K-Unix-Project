@@ -52,7 +52,10 @@ REV02_PROCESS_LOW_BYTES       EQU REV02_PROCESS_LOW_COUNT*PROC_DESC_SIZE
 REV02_PROCESS_HIGH_COUNT      EQU 2
 REV02_PROCESS_EMERGENCY_PID    EQU 7
 REV02_PROCESS_EMERGENCY_BASE   EQU EMERGENCY_START+$C0
+REV02_PROCESS_PTR_TABLE        EQU ROM_PRINTER_BUFFER_END-15
+REV02_PROCESS_PTR_TEMPLATE     EQU KERNEL_STACK_START+$10
     ASSERT REV02_PROCESS_LOW_BYTES <= ROM_PRINTER_BUFFER_END-ROM_PRINTER_BUFFER_START+1
+    ASSERT REV02_PROCESS_PTR_TABLE = REV02_PROCESS_LOW_BASE+REV02_PROCESS_LOW_BYTES
     ASSERT REV02_PROCESS_LOW_COUNT+REV02_PROCESS_HIGH_COUNT+1 = MAX_PROCESSES
     ASSERT REV02_PROCESS_EMERGENCY_BASE+PROC_DESC_SIZE <= EMERGENCY_END+1
 
@@ -5200,6 +5203,13 @@ p514_mex_header: defs MEX_HEADER_SIZE,0
 ; traffic in reserve/info/wait paths.
     MACRO EMIT_REV02_PROCESS_ROUTINES
 zx48_process_init:
+    ; Seed the eight-address descriptor map into the remaining 16 printer bytes.
+    ; The source lives transiently in the cold kernel-stack image and may be
+    ; overwritten by normal stack growth after this first boot-time copy.
+    ld hl,REV02_PROCESS_PTR_TEMPLATE
+    ld de,REV02_PROCESS_PTR_TABLE
+    ld bc,16
+    ldir
     ; PID0..PID4 live in the verified 0x5B00 printer buffer rather than the
     ; ordinary kernel pool. Initialize that RAM explicitly after BASIC handoff.
     xor a
@@ -5232,31 +5242,20 @@ zx48_process_init:
 zx48_process_ptr:
     cp MAX_PROCESSES
     jr nc,zx48_process_noent
-    push bc
+    push hl
     push de
-    cp REV02_PROCESS_EMERGENCY_PID
-    jr z,zx48_r2_process_ptr_emergency
-    cp REV02_PROCESS_LOW_COUNT
-    jr nc,zx48_r2_process_ptr_high
-    ld ix,REV02_PROCESS_LOW_BASE
-    jr zx48_r2_process_ptr_offset
-zx48_r2_process_ptr_emergency:
-    ld ix,REV02_PROCESS_EMERGENCY_BASE
-    jr zx48_r2_process_ptr_done
-zx48_r2_process_ptr_high:
-    sub REV02_PROCESS_LOW_COUNT
-    ld ix,process_table_high
-zx48_r2_process_ptr_offset:
-    or a
-    jr z,zx48_r2_process_ptr_done
-    ld b,a
-    ld de,PROC_DESC_SIZE
-zx48_r2_process_ptr_loop:
-    add ix,de
-    djnz zx48_r2_process_ptr_loop
-zx48_r2_process_ptr_done:
+    add a,a
+    ld e,a
+    ld d,0
+    ld hl,REV02_PROCESS_PTR_TABLE
+    add hl,de
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    push de
+    pop ix
     pop de
-    pop bc
+    pop hl
     xor a
     ret
 zx48_process_lookup:

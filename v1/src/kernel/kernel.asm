@@ -90,9 +90,20 @@ kernel_ordinary_pool_end:
 
     ASSERT $ = KERNEL_STACK_START
 kernel_stack_storage:
-    ; The exact image carries the release stack guard; the remainder starts 0.
+    ; The exact image carries the release stack guard. The next 16 bytes are a
+    ; one-shot descriptor-address template copied to 0x5BF0 by process init
+    ; before normal kernel-stack growth may overwrite them.
     DEFS KSTACK_GUARD_SIZE,KSTACK_GUARD_BYTE
-    DEFS KERNEL_STACK_END-KERNEL_STACK_START+1-KSTACK_GUARD_SIZE,0
+    ASSERT $ = REV02_PROCESS_PTR_TEMPLATE
+    dw REV02_PROCESS_LOW_BASE
+    dw REV02_PROCESS_LOW_BASE+PROC_DESC_SIZE
+    dw REV02_PROCESS_LOW_BASE+2*PROC_DESC_SIZE
+    dw REV02_PROCESS_LOW_BASE+3*PROC_DESC_SIZE
+    dw REV02_PROCESS_LOW_BASE+4*PROC_DESC_SIZE
+    dw process_table_high
+    dw process_table_high+PROC_DESC_SIZE
+    dw REV02_PROCESS_EMERGENCY_BASE
+    DEFS KERNEL_STACK_END+1-$,0
 
     ASSERT $ = FAST_RESERVE_START
 kernel_fast_reserve:
