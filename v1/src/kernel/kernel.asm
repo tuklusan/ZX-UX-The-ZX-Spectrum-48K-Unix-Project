@@ -127,6 +127,13 @@ kernel_emergency_reserve:
     DEFS memory_free_extents-$,0
     dw ARENA_START,ARENA_SIZE
     DEFS (FREE_EXTENT_COUNT-1)*4,0
+    ; PID7 uses otherwise-unclaimed emergency-reserve bytes. Its exact cold
+    ; descriptor mirrors the linked PID5/PID6 defaults without ordinary-pool data.
+    DEFS REV02_PROCESS_EMERGENCY_BASE-$,0
+    db REV02_PROCESS_EMERGENCY_PID,HANDLE_FREE,PROC_FREE,0
+    DEFS PROC_HANDLES-4,0
+    DEFS MAX_HANDLES_PER_PROCESS,HANDLE_FREE
+    DEFS PROC_DESC_SIZE-(PROC_HANDLES+MAX_HANDLES_PER_PROCESS),0
     DEFS EMERGENCY_END+1-$,0
 kernel_image_end:
 
