@@ -5174,27 +5174,8 @@ p514_mex_header: defs MEX_HEADER_SIZE,0
 ; traffic in reserve/info/wait paths.
     MACRO EMIT_REV02_PROCESS_ROUTINES
 zx48_process_init:
-    xor a
-    ld hl,process_table
-    ld de,process_table+1
-    ld bc,MAX_PROCESSES*PROC_DESC_SIZE-1
-    ld (hl),a
-    ldir
-    ld ix,process_table
-    ld c,0
-    ld b,MAX_PROCESSES
-zx48_r2_process_init_loop:
-    ld (ix+PROC_PID),c
-    ld (ix+PROC_PARENT),HANDLE_FREE
-    call zx48_r2_process_fill_handles
-    ld de,PROC_DESC_SIZE
-    add ix,de
-    inc c
-    djnz zx48_r2_process_init_loop
-    ld ix,process_table
-    ld (ix+PROC_STATE),PROC_RUNNING
-    xor a
-    ld (current_pid),a
+    ; The production kernel image is loaded as exact initialized bytes.  The
+    ; descriptor table below therefore already is the cold-boot state.
     ret
 
 zx48_process_ptr:
@@ -5508,6 +5489,41 @@ process_wait_has_child   EQU PROCESS_STATE_BASE+5
 current_pid              EQU PROCESS_STATE_BASE+6
 PROCESS_STATE_END        EQU PROCESS_STATE_BASE+7
     ASSERT PROCESS_STATE_END <= EMERGENCY_START+$7F
-process_table: defs MAX_PROCESSES*PROC_DESC_SIZE,0
+; Cold-boot descriptor bytes are linked directly into the exact 8 KiB kernel
+; image.  This removes a redundant runtime clear/fill pass without changing the
+; frozen descriptor layout or any historical emitter.
+process_table:
+    db 0,HANDLE_FREE,PROC_RUNNING,0
+    defs PROC_HANDLES-4,0
+    defs MAX_HANDLES_PER_PROCESS,HANDLE_FREE
+    defs PROC_DESC_SIZE-(PROC_HANDLES+MAX_HANDLES_PER_PROCESS),0
+    db 1,HANDLE_FREE,PROC_FREE,0
+    defs PROC_HANDLES-4,0
+    defs MAX_HANDLES_PER_PROCESS,HANDLE_FREE
+    defs PROC_DESC_SIZE-(PROC_HANDLES+MAX_HANDLES_PER_PROCESS),0
+    db 2,HANDLE_FREE,PROC_FREE,0
+    defs PROC_HANDLES-4,0
+    defs MAX_HANDLES_PER_PROCESS,HANDLE_FREE
+    defs PROC_DESC_SIZE-(PROC_HANDLES+MAX_HANDLES_PER_PROCESS),0
+    db 3,HANDLE_FREE,PROC_FREE,0
+    defs PROC_HANDLES-4,0
+    defs MAX_HANDLES_PER_PROCESS,HANDLE_FREE
+    defs PROC_DESC_SIZE-(PROC_HANDLES+MAX_HANDLES_PER_PROCESS),0
+    db 4,HANDLE_FREE,PROC_FREE,0
+    defs PROC_HANDLES-4,0
+    defs MAX_HANDLES_PER_PROCESS,HANDLE_FREE
+    defs PROC_DESC_SIZE-(PROC_HANDLES+MAX_HANDLES_PER_PROCESS),0
+    db 5,HANDLE_FREE,PROC_FREE,0
+    defs PROC_HANDLES-4,0
+    defs MAX_HANDLES_PER_PROCESS,HANDLE_FREE
+    defs PROC_DESC_SIZE-(PROC_HANDLES+MAX_HANDLES_PER_PROCESS),0
+    db 6,HANDLE_FREE,PROC_FREE,0
+    defs PROC_HANDLES-4,0
+    defs MAX_HANDLES_PER_PROCESS,HANDLE_FREE
+    defs PROC_DESC_SIZE-(PROC_HANDLES+MAX_HANDLES_PER_PROCESS),0
+    db 7,HANDLE_FREE,PROC_FREE,0
+    defs PROC_HANDLES-4,0
+    defs MAX_HANDLES_PER_PROCESS,HANDLE_FREE
+    defs PROC_DESC_SIZE-(PROC_HANDLES+MAX_HANDLES_PER_PROCESS),0
 process_fixed_state_end:
     ENDM
