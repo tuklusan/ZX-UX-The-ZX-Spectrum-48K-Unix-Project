@@ -54,7 +54,7 @@ kernel_mod_interrupt:
 kernel_mod_im2:
     EMIT_IM2_ROUTINES
 kernel_mod_rom:
-    EMIT_ROM_SERVICE_ROUTINES
+    EMIT_REV02_ROM_SERVICE_ROUTINES
 kernel_mod_errors:
     EMIT_ERROR_ROUTINES
 kernel_mod_memory:

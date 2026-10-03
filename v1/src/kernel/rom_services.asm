@@ -135,6 +135,52 @@ zx48_rom_ula_done:
     jr zx48_rom_checked_return_af_saved
     ENDM
 
+; REV02 production ROM wrapper set. Historical qualification retains the full
+; EMIT_ROM_SERVICE_ROUTINES surface above; the resident product keeps only
+; wrappers reachable from ordinary keyboard/tape paths. Graphics is native and
+; BEEP/FP use their dedicated validated ROM gateways below.
+    MACRO EMIT_REV02_ROM_SERVICE_ROUTINES
+zx48_rom_checked_return:
+    push af
+zx48_rom_checked_return_af_saved:
+    push bc
+    push de
+    push hl
+    call zx48_kernel_stack_sample
+    call zx48_kernel_stack_check
+    pop hl
+    pop de
+    pop bc
+    pop af
+zx48_rom_restore_iy:
+    ld iy,ROM_IY_ANCHOR
+    ret
+zx48_rom_key_scan:
+    call ROM_KEY_SCAN
+    jr zx48_rom_checked_return
+zx48_rom_k_test:
+    call ROM_K_TEST
+    jr zx48_rom_checked_return
+zx48_rom_key_decode:
+    call ROM_KEY_DECODE
+    jr zx48_rom_checked_return
+
+zx48_rom_sa_bytes:
+    call zx48_ula_rom_prepare
+    call ROM_SA_BYTES
+    jr zx48_rom_ula_done
+zx48_rom_ld_bytes:
+    call zx48_ula_rom_prepare
+    call ROM_LD_BYTES
+zx48_rom_ula_done:
+    push af
+    xor a
+    ld (altreg_busy),a
+    ld a,(ula_shadow)
+    call zx48_ula_commit
+    jr zx48_rom_checked_return_af_saved
+    ENDM
+
 ; P7.09 staged ROM BEEP gateway. Kept out of the resident Phase-6 ROM macro
 ; until the Phase-7 integration/packing boundary owns the final kernel layout.
 
