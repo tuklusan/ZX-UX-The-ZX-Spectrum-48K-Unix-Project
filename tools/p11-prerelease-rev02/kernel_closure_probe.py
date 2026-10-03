@@ -221,7 +221,8 @@ kernel_mod_rev02_sys_fp_from_text:
     closure=closure.replace("    ASSERT $ = BOOT_GATEWAY+3\n",f"    ASSERT $ = ${closure_origin+6:04X}\n",1)
     req(closure.count(emit_anchor)==1,"closure UDG emit anchor")
     closure_extra=extra+"""kernel_mod_rev02_object_core:
-    EMIT_OBJECT_ROUTINES
+    EMIT_NAMESPACE_ROUTINES
+    EMIT_OBJECT_TYPE_ROUTINES
 kernel_mod_rev02_object_open:
     EMIT_OBJECT_OPEN_ROUTINES
     EMIT_OBJECT_EXCLUSIVITY_ROUTINES
@@ -245,7 +246,6 @@ kernel_mod_rev02_handle_extensions:
     EMIT_P406_EXCLUSIVITY_ROUTINES
     EMIT_P417_PACKED_OD_ROUTINES
 kernel_mod_rev02_zxpack:
-    EMIT_ZXPACK_ROUTINES
     EMIT_P416_ZXP1_DECODER
     EMIT_P417_PACKED_READER_STATE_ROUTINES
     EMIT_P418_PACKED_SEEK_ROUTINES
@@ -270,7 +270,6 @@ kernel_mod_rev02_tape:
 kernel_mod_rev02_tape_recovery:
     EMIT_P517_TAPE_RECOVERY_ROUTINES
 kernel_mod_rev02_spawn:
-    EMIT_PROCESS_CAPACITY_ROUTINE
     EMIT_MEX1_RELOCATION_ROUTINES
     EMIT_MEX1_IMAGE_LOAD_ROUTINES
     EMIT_MEX1_STACK_ROUTINES
