@@ -57,7 +57,16 @@ def assemble(root:Path,name:str,text:str,start:int=KERNEL_START)->dict:
     row={"command_exit":p.returncode,"stdout":p.stdout[-16000:],"stderr":p.stderr[-16000:],
          "diagnostics_clean":not any(x in diagnostics for x in ("Label has different value in pass 3","truncated to 16bit"))}
     if p.returncode!=0:
-        row.update({"status":"ASSEMBLY-FAIL","ordinary_bytes":None,"pool_bytes":KERNEL_POOL_BYTES,"slack_bytes":None})
+        approximate_bytes=None
+        if sym.is_file():
+            try:
+                approximate_end=parse_symbol(sym,"kernel_ordinary_used_end")
+                if approximate_end > start:
+                    approximate_bytes=approximate_end-start
+            except RuntimeError:
+                approximate_bytes=None
+        row.update({"status":"ASSEMBLY-FAIL","ordinary_bytes":None,"approximate_bytes":approximate_bytes,
+                    "pool_bytes":KERNEL_POOL_BYTES,"slack_bytes":None})
         return row
     if not row["diagnostics_clean"]:
         row.update({"status":"ASSEMBLY-UNSTABLE","ordinary_bytes":None,"pool_bytes":KERNEL_POOL_BYTES,"slack_bytes":None})
@@ -309,5 +318,5 @@ kernel_mod_rev02_final_integration_reserve:
         print(public_api.get("stderr",""),file=sys.stderr)
         print(public_api.get("stdout",""),file=sys.stderr)
         raise SystemExit("ERROR: public API lower-bound probe must assemble")
-    print("REV02 KERNEL CLOSURE PROBE PASS",json.dumps({"baseline":baseline.get("ordinary_bytes"),"public_api":public_api.get("ordinary_bytes"),"complete_closure":complete_closure.get("ordinary_bytes"),"complete_closure_status":complete_closure.get("status"),"pool":KERNEL_POOL_BYTES}))
+    print("REV02 KERNEL CLOSURE PROBE PASS",json.dumps({"baseline":baseline.get("ordinary_bytes"),"public_api":public_api.get("ordinary_bytes"),"complete_closure":complete_closure.get("ordinary_bytes"),"complete_closure_approx":complete_closure.get("approximate_bytes"),"complete_closure_status":complete_closure.get("status"),"pool":KERNEL_POOL_BYTES}))
 if __name__=="__main__": main()
