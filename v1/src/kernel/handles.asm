@@ -168,6 +168,19 @@ zx48_od_release_pipe:
 zx48_handle_slot_ptr:
     cp MAX_HANDLES_PER_PROCESS
     jp nc,zx48_handle_noent
+    IFDEF ZX48_REV02_COLD_IMAGE_INIT
+    ld c,a
+    ld a,(current_pid)
+    call zx48_process_lookup
+    ret c
+    push ix
+    pop hl
+    ld de,PROC_HANDLES
+    add hl,de
+    ld e,c
+    ld d,0
+    add hl,de
+    ELSE
     ld e,a
     ld d,0
     push de
@@ -180,6 +193,7 @@ zx48_handle_slot_ptr:
     ld bc,PROC_HANDLES
     add hl,bc
     add hl,de
+    ENDIF
     xor a
     ret
 
