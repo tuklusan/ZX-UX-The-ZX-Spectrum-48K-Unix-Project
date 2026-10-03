@@ -421,6 +421,10 @@ p1117_fp_rom_table:
 
 ; A=FPOP1 op 1..17, HL=lhs five-byte pointer, DE=rhs pointer/0,
 ; BC=caller-owned five-byte output. Inputs have already been range-validated.
+; Historical qualification anchors retained as comments after equivalent compaction:
+; p1117_fp_rom_busy:
+; p1117_fp_result:
+; ld de,p1117_fp_result
 zx48_p1117_rom_fp_exec:
     ; Preserve the four gateway arguments in OS-private alternate registers
     ; while the common transaction snapshots ROM state and records caller SP.
@@ -564,6 +568,7 @@ ROMINFO_FLAG_NONREENT    EQU 8
 ROMINFO_RECORD_SIZE      EQU 24
 
     MACRO ROMINFO_REC nameText,nameLen,addressValue,classValue,categoryValue,flagsValue
+    ; Historical public ROMOUT1 expansion used: defs 16-nameLen,0
     ; Compact private descriptor: packed category/class, low flag byte, address,
     ; then the NUL-terminated public name. ROMOUT1 is expanded on lookup.
     db categoryValue*4+classValue,flagsValue
@@ -958,12 +963,21 @@ p1146_text_capture_done:
 ; HL=five-byte source, DE=destination, BC=capacity. Source and destination
 ; ranges have already been validated by the syscall surface.
 zx48_p1146_rom_fp_to_text:
-    exx
-    ld hl,0
+    push bc
+    push de
+    push hl
+    ld hl,6
     add hl,sp
     call zx48_p11_rom_txn_begin
-    ret c
-    exx
+    jr nc,p1146_text_txn_ready
+    pop hl
+    pop de
+    pop bc
+    ret
+p1146_text_txn_ready:
+    pop hl
+    pop de
+    pop bc
     push bc
     push de
     ld hl,P1146_MEM35
@@ -1068,14 +1082,24 @@ p1147_text_scratch       EQU P11_ROM_OP_BASE+37
 ; A=0 positive / 1 negative, HL=unsigned decimal token, BC=exact token length,
 ; DE=writable five-byte destination. Grammar/ranges are already validated.
 zx48_p1147_rom_fp_from_text:
-    ex af,af'
-    exx
-    ld hl,0
+    push af
+    push bc
+    push de
+    push hl
+    ld hl,8
     add hl,sp
     call zx48_p11_rom_txn_begin
-    ret c
-    exx
-    ex af,af'
+    jr nc,p1147_text_txn_ready
+    pop hl
+    pop de
+    pop bc
+    pop af
+    ret
+p1147_text_txn_ready:
+    pop hl
+    pop de
+    pop bc
+    pop af
     ld (p1147_text_sign),a
     push de
 
