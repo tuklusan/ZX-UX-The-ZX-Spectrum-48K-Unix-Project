@@ -25,10 +25,7 @@ syscall_saved_ix          EQU SYSCALL_STATE_BASE+2
 syscall_arg_hl            EQU SYSCALL_STATE_BASE+4
 syscall_arg_de            EQU SYSCALL_STATE_BASE+6
 syscall_arg_bc            EQU SYSCALL_STATE_BASE+8
-syscall_temp              EQU SYSCALL_STATE_BASE+10
-syscall_tick_lo           EQU SYSCALL_STATE_BASE+11
-syscall_tick_hi           EQU SYSCALL_STATE_BASE+13
-SYSCALL_STATE_END         EQU SYSCALL_STATE_BASE+15
+SYSCALL_STATE_END         EQU SYSCALL_STATE_BASE+10
 
 ; Mutually exclusive later public-syscall parsers share one fixed transient slot
 ; at the unused top of the fast-data reserve. No parser state survives the tail
@@ -560,8 +557,6 @@ zx48_sys_proc_info:
     ld bc,4
     call zx48_user_range_validate
     ret c
-    ld a,(hl)
-    ld (syscall_temp),a
     inc hl
     ld a,(hl)
     or a
@@ -574,7 +569,8 @@ zx48_sys_proc_info:
     ld bc,16
     call zx48_user_range_validate
     ret c
-    ld a,(syscall_temp)
+    ld hl,(syscall_arg_hl)
+    ld a,(hl)
     call zx48_process_info
     ret c
     xor a
@@ -585,16 +581,11 @@ zx48_sys_ticks:
     call zx48_user_range_validate
     ret c
     di
-    ld de,(kernel_ticks)
-    ld (syscall_tick_lo),de
-    ld de,(kernel_ticks+2)
-    ld (syscall_tick_hi),de
+    ld de,(syscall_arg_hl)
+    ld hl,kernel_ticks
+    ld bc,4
+    ldir
     ei
-    ld hl,(syscall_arg_hl)
-    ld de,(syscall_tick_lo)
-    call zx48_sys_put16
-    ld de,(syscall_tick_hi)
-    call zx48_sys_put16
     ld hl,(syscall_arg_hl)
     xor a
     ret
@@ -671,12 +662,6 @@ zx48_sys_u8_invalid:
     scf
     ret
 
-zx48_sys_put16:
-    ld (hl),e
-    inc hl
-    ld (hl),d
-    inc hl
-    ret
 zx48_sys_again:
     ld a,E_AGAIN
     jr zx48_sys_error
@@ -1394,27 +1379,29 @@ p1117_fp_sys_invalid:
 
 ; P11.18 exact staged SYS_INT_TO_FP / SYS_FP_TO_INT ABI.
     MACRO EMIT_P1118_FP_CAST_SYSCALL_ROUTINES
-zx48_p1118_sys_int_to_fp:
+zx48_p1118_prepare:
     ld hl,(syscall_arg_hl)
     ld bc,ITOF1_SIZE
     call zx48_user_range_validate
     ret c
     push hl
     pop ix
-
     ld a,(ix+ITOF1_SIGNED_O)
     cp 2
     jr nc,p1118_cast_invalid
     ld a,(ix+ITOF1_RESERVED_O)
     or a
     jr nz,p1118_cast_invalid
+    ret
 
+zx48_p1118_sys_int_to_fp:
+    call zx48_p1118_prepare
+    ret c
     ld l,(ix+ITOF1_OUT_O)
     ld h,(ix+ITOF1_OUT_O+1)
     ld bc,5
     call zx48_user_range_validate
     ret c
-
     ld l,(ix+ITOF1_VALUE_O)
     ld h,(ix+ITOF1_VALUE_O+1)
     ld a,(ix+ITOF1_SIGNED_O)
@@ -1423,20 +1410,8 @@ zx48_p1118_sys_int_to_fp:
     jp zx48_p1118_rom_int_to_fp
 
 zx48_p1118_sys_fp_to_int:
-    ld hl,(syscall_arg_hl)
-    ld bc,FTOI1_SIZE
-    call zx48_user_range_validate
+    call zx48_p1118_prepare
     ret c
-    push hl
-    pop ix
-
-    ld a,(ix+FTOI1_SIGNED_O)
-    cp 2
-    jr nc,p1118_cast_invalid
-    ld a,(ix+FTOI1_RESERVED_O)
-    or a
-    jr nz,p1118_cast_invalid
-
     ld l,(ix+FTOI1_IN_O)
     ld h,(ix+FTOI1_IN_O+1)
     ld bc,5
@@ -1447,7 +1422,6 @@ zx48_p1118_sys_fp_to_int:
     ld bc,2
     call zx48_user_range_validate
     ret c
-
     ld l,(ix+FTOI1_IN_O)
     ld h,(ix+FTOI1_IN_O+1)
     ld a,(ix+FTOI1_SIGNED_O)
@@ -1534,12 +1508,11 @@ p1146_sys_text_nospc:
 zx48_p1147_sys_fp_from_text:
     ld bc,(syscall_arg_bc)
     ld a,b
-    or c
-    jp z,p1147_sys_invalid
-    ; The private ROM token buffer is deliberately bounded to one byte of length.
-    ld a,b
     or a
     jp nz,p1147_sys_invalid
+    ld a,c
+    or a
+    jp z,p1147_sys_invalid
 
     ld hl,(syscall_arg_hl)
     call zx48_user_range_validate
@@ -1549,26 +1522,21 @@ zx48_p1147_sys_fp_from_text:
     call zx48_user_range_validate
     ret c
 
-    ld de,0
     ld hl,(syscall_arg_hl)
     ld bc,(syscall_arg_bc)
+    ld d,0
 
     ld a,(hl)
     cp '+'
     jr z,p1147_sys_skip_sign
     cp '-'
-    jr nz,p1147_sys_unsigned_ready
+    jr nz,p1147_sys_mantissa
 p1147_sys_skip_sign:
     inc hl
-    dec bc
-    ld a,b
-    or c
+    dec c
     jp z,p1147_sys_invalid
-p1147_sys_unsigned_ready:
+
 p1147_sys_mantissa:
-    ld a,b
-    or c
-    jr z,p1147_sys_mantissa_end
     ld a,(hl)
     cp 'e'
     jr z,p1147_sys_exponent
@@ -1576,38 +1544,33 @@ p1147_sys_mantissa:
     jr z,p1147_sys_exponent
     cp '.'
     jr z,p1147_sys_dot
-    cp '0'
-    jp c,p1147_sys_invalid
-    cp '9'+1
+    sub '0'
+    cp 10
     jp nc,p1147_sys_invalid
-    ld d,1
+    set 0,d
     inc hl
-    dec bc
-    jr p1147_sys_mantissa
+    dec c
+    jr nz,p1147_sys_mantissa
+    bit 0,d
+    jp z,p1147_sys_invalid
+    jr p1147_sys_publish
 
 p1147_sys_dot:
-    ld a,e
-    or a
+    bit 1,d
     jp nz,p1147_sys_invalid
-    inc e
+    set 1,d
     inc hl
-    dec bc
-    jr p1147_sys_mantissa
-
-p1147_sys_mantissa_end:
-    ld a,d
-    or a
+    dec c
+    jr nz,p1147_sys_mantissa
+    bit 0,d
     jp z,p1147_sys_invalid
     jr p1147_sys_publish
 
 p1147_sys_exponent:
-    ld a,d
-    or a
+    bit 0,d
     jp z,p1147_sys_invalid
     inc hl
-    dec bc
-    ld a,b
-    or c
+    dec c
     jp z,p1147_sys_invalid
     ld a,(hl)
     cp '+'
@@ -1616,26 +1579,20 @@ p1147_sys_exponent:
     jr nz,p1147_sys_exp_digits
 p1147_sys_exp_sign:
     inc hl
-    dec bc
-    ld a,b
-    or c
+    dec c
     jp z,p1147_sys_invalid
 
 p1147_sys_exp_digits:
     ld a,(hl)
-    cp '0'
-    jp c,p1147_sys_invalid
-    cp '9'+1
+    sub '0'
+    cp 10
     jp nc,p1147_sys_invalid
     inc hl
-    dec bc
-    ld a,b
-    or c
+    dec c
     jr nz,p1147_sys_exp_digits
 
 p1147_sys_publish:
-    ; Re-read only the already-validated first source byte to derive ROM sign
-    ; and the unsigned token span without persistent parser-pointer scratch.
+    ; Re-read the validated source to derive sign and unsigned token span.
     ld hl,(syscall_arg_hl)
     ld bc,(syscall_arg_bc)
     ld a,(hl)
