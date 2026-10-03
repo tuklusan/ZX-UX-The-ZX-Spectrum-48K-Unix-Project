@@ -5172,10 +5172,50 @@ p514_mex_header: defs MEX_HEADER_SIZE,0
 ; REV02 production compaction. Historical phase fixtures keep EMIT_PROCESS_ROUTINES;
 ; the resident kernel retains the same eight-process contract with less scratch
 ; traffic in reserve/info/wait paths.
+; Production process descriptors live in verified ROM-compatibility workspace.
+; System variables end at 0x5CB5; the controlled calculator operation window
+; begins at 0x5E36 in the REV02 production layout.
+REV02_PROCESS_TABLE       EQU $5CB6
+REV02_PROCESS_TABLE_END   EQU REV02_PROCESS_TABLE+MAX_PROCESSES*PROC_DESC_SIZE
+    ASSERT REV02_PROCESS_TABLE_END = $5E36
+
     MACRO EMIT_REV02_PROCESS_ROUTINES
+process_table              EQU REV02_PROCESS_TABLE
+
 zx48_process_init:
-    ; The production kernel image is loaded as exact initialized bytes.  The
-    ; descriptor table below therefore already is the cold-boot state.
+    ; Build one exact FREE descriptor, replicate it across the bounded table,
+    ; assign stable PIDs, then publish PID0 as RUNNING.
+    xor a
+    ld hl,process_table
+    ld de,process_table+1
+    ld bc,PROC_DESC_SIZE-1
+    ld (hl),a
+    ldir
+    ld a,HANDLE_FREE
+    ld (process_table+PROC_PARENT),a
+    ld hl,process_table+PROC_HANDLES
+    ld b,MAX_HANDLES_PER_PROCESS
+zx48_r2_process_init_handles:
+    ld (hl),a
+    inc hl
+    djnz zx48_r2_process_init_handles
+    ld hl,process_table
+    ld de,process_table+PROC_DESC_SIZE
+    ld bc,(MAX_PROCESSES-1)*PROC_DESC_SIZE
+    ldir
+    ld ix,process_table
+    ld c,0
+    ld b,MAX_PROCESSES
+zx48_r2_process_init_pids:
+    ld (ix+PROC_PID),c
+    ld de,PROC_DESC_SIZE
+    add ix,de
+    inc c
+    djnz zx48_r2_process_init_pids
+    ld ix,process_table
+    ld (ix+PROC_STATE),PROC_RUNNING
+    xor a
+    ld (current_pid),a
     ret
 
 zx48_process_ptr:
@@ -5457,41 +5497,7 @@ process_wait_has_child   EQU PROCESS_STATE_BASE+5
 current_pid              EQU PROCESS_STATE_BASE+6
 PROCESS_STATE_END        EQU PROCESS_STATE_BASE+7
     ASSERT PROCESS_STATE_END <= EMERGENCY_START+$7F
-; Cold-boot descriptor bytes are linked directly into the exact 8 KiB kernel
-; image.  This removes a redundant runtime clear/fill pass without changing the
-; frozen descriptor layout or any historical emitter.
-process_table:
-    db 0,HANDLE_FREE,PROC_RUNNING,0
-    defs PROC_HANDLES-4,0
-    defs MAX_HANDLES_PER_PROCESS,HANDLE_FREE
-    defs PROC_DESC_SIZE-(PROC_HANDLES+MAX_HANDLES_PER_PROCESS),0
-    db 1,HANDLE_FREE,PROC_FREE,0
-    defs PROC_HANDLES-4,0
-    defs MAX_HANDLES_PER_PROCESS,HANDLE_FREE
-    defs PROC_DESC_SIZE-(PROC_HANDLES+MAX_HANDLES_PER_PROCESS),0
-    db 2,HANDLE_FREE,PROC_FREE,0
-    defs PROC_HANDLES-4,0
-    defs MAX_HANDLES_PER_PROCESS,HANDLE_FREE
-    defs PROC_DESC_SIZE-(PROC_HANDLES+MAX_HANDLES_PER_PROCESS),0
-    db 3,HANDLE_FREE,PROC_FREE,0
-    defs PROC_HANDLES-4,0
-    defs MAX_HANDLES_PER_PROCESS,HANDLE_FREE
-    defs PROC_DESC_SIZE-(PROC_HANDLES+MAX_HANDLES_PER_PROCESS),0
-    db 4,HANDLE_FREE,PROC_FREE,0
-    defs PROC_HANDLES-4,0
-    defs MAX_HANDLES_PER_PROCESS,HANDLE_FREE
-    defs PROC_DESC_SIZE-(PROC_HANDLES+MAX_HANDLES_PER_PROCESS),0
-    db 5,HANDLE_FREE,PROC_FREE,0
-    defs PROC_HANDLES-4,0
-    defs MAX_HANDLES_PER_PROCESS,HANDLE_FREE
-    defs PROC_DESC_SIZE-(PROC_HANDLES+MAX_HANDLES_PER_PROCESS),0
-    db 6,HANDLE_FREE,PROC_FREE,0
-    defs PROC_HANDLES-4,0
-    defs MAX_HANDLES_PER_PROCESS,HANDLE_FREE
-    defs PROC_DESC_SIZE-(PROC_HANDLES+MAX_HANDLES_PER_PROCESS),0
-    db 7,HANDLE_FREE,PROC_FREE,0
-    defs PROC_HANDLES-4,0
-    defs MAX_HANDLES_PER_PROCESS,HANDLE_FREE
-    defs PROC_DESC_SIZE-(PROC_HANDLES+MAX_HANDLES_PER_PROCESS),0
+; The production descriptor bytes live outside the 8 KiB kernel image in
+; reserved ROM-compatibility workspace and are initialized by zx48_process_init.
 process_fixed_state_end:
     ENDM

@@ -48,22 +48,33 @@ ROM_STKEND                EQU $5C65
 ROM_BREG                  EQU $5C67
 ROM_MEM                   EQU $5C68
 ROM_MEMBOT                EQU $5C92
-ROM_BEEP_STACK            EQU $5D00
 ROM_FLAGS                 EQU $5C3B
 ROM_CH_ADD                EQU $5C5D
 ROM_CURCHL                EQU $5C51
 ROM_SCANNING              EQU $24FB
 ROM_DEC_TO_FP             EQU $2C9B
+
+; REV02 production reuses only verified ROM-compatibility bytes. The printer
+; buffer is safe because version 1 exposes no printer/Interface-1 service, while
+; calculator entry is always serialized through the controlled ZX-UX workspace.
+; Historical qualification retains the original addresses when the production
+; cold-image define is absent.
+    IFDEF ZX48_REV02_COLD_IMAGE_INIT
+ROM_CALC_STACK            EQU $5B00
+ROM_BEEP_STACK            EQU ROM_CALC_STACK
+P11_ROM_OP_BASE           EQU $5E36
+P11_ROM_TXN_BASE          EQU $5F80
+    ELSE
+ROM_BEEP_STACK            EQU $5D00
 ROM_CALC_STACK            EQU $5D80
+P11_ROM_OP_BASE           EQU ROM_CALC_STACK+$80
+P11_ROM_TXN_BASE          EQU $5F40
+    ENDIF
 
 ; Shared bounded ROM-compatibility workspace for transient calculator/text
-; transactions. The ROM disassembly contains no fixed 0x5E00/0x5F00 accesses;
-; approved math/text paths reach these bytes only through the protected
-; STKBOT/STKEND/MEM/CH_ADD contracts. Keep a full 128-byte calculator-stack
-; window above ROM_CALC_STACK, then overlay mutually exclusive operation scratch.
-P11_ROM_OP_BASE           EQU ROM_CALC_STACK+$80
+; transactions. Production leaves 0x5CB6-0x5E35 to the process table, then uses
+; 0x5E36 upward only through protected STKBOT/STKEND/MEM/CH_ADD contracts.
 P11_ROM_OP_MAX_END        EQU P11_ROM_OP_BASE+298
-P11_ROM_TXN_BASE          EQU $5F40
 P11_ROM_TXN_SNAPSHOT_END  EQU $5CB0
 P11_ROM_TXN_SNAPSHOT_SIZE EQU P11_ROM_TXN_SNAPSHOT_END-ROM_IY_ANCHOR
 P11_ROM_TXN_END           EQU P11_ROM_TXN_BASE+P11_ROM_TXN_SNAPSHOT_SIZE+2
