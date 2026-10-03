@@ -238,64 +238,127 @@ kernel_mod_rev02_sys_fp_from_text:
     req(closure.count(emit_anchor)==1,"closure UDG emit anchor")
     closure_extra=extra+"""kernel_mod_rev02_object_core:
     EMIT_NAMESPACE_ROUTINES
+kernel_mod_size_object_type:
     EMIT_OBJECT_TYPE_ROUTINES
 kernel_mod_rev02_object_open:
     EMIT_OBJECT_OPEN_ROUTINES
+kernel_mod_size_object_exclusivity:
     EMIT_OBJECT_EXCLUSIVITY_ROUTINES
 kernel_mod_rev02_object_io:
     EMIT_P407_RAW_IO_ROUTINES
+kernel_mod_size_object_raw_write:
     EMIT_P408_RAW_WRITE_ROUTINES
+kernel_mod_size_object_append:
     EMIT_P409_APPEND_ROUTINES
 kernel_mod_rev02_object_meta:
     EMIT_P411_STAT_OBJECT_ROUTINES
+kernel_mod_size_object_list:
     EMIT_P412_LIST_ROUTINES
+kernel_mod_size_object_remove:
     EMIT_P413_REMOVE_ROUTINES
+kernel_mod_size_object_rename:
     EMIT_P414_RENAME_ROUTINES
+kernel_mod_size_object_rename_replace:
     EMIT_P415_RENAME_REPLACEMENT_ROUTINES
+kernel_mod_size_object_writable_open:
     EMIT_P419_WRITABLE_OPEN_ROUTINES
+kernel_mod_size_object_pack:
     EMIT_P422_SYS_PACK_OBJECT_ROUTINES
+kernel_mod_size_object_unpack:
     EMIT_P423_SYS_UNPACK_OBJECT_ROUTINES
+kernel_mod_size_object_candidate:
     EMIT_P424_OBJECT_CANDIDATE_ROUTINES
+kernel_mod_size_object_chdir:
     EMIT_P431_CHDIR_OBJECT_ROUTINES
+kernel_mod_size_object_getcwd:
     EMIT_P432_GETCWD_OBJECT_ROUTINES
 kernel_mod_rev02_handle_extensions:
     EMIT_P406_EXCLUSIVITY_ROUTINES
+kernel_mod_size_handle_packed_od:
     EMIT_P417_PACKED_OD_ROUTINES
 kernel_mod_rev02_zxpack:
     EMIT_P416_ZXP1_DECODER
+kernel_mod_size_zxpack_reader_state:
     EMIT_P417_PACKED_READER_STATE_ROUTINES
+kernel_mod_size_zxpack_seek:
     EMIT_P418_PACKED_SEEK_ROUTINES
+kernel_mod_size_zxpack_write:
     EMIT_P419_PACKED_WRITE_ROUTINES
+kernel_mod_size_zxpack_encoder:
     EMIT_P420_TARGET_ENCODER_ROUTINES
+kernel_mod_size_zxpack_decision:
     EMIT_P421_PACK_DECISION_ROUTINES
+kernel_mod_size_zxpack_pack_codec:
     EMIT_P422_SYS_PACK_CODEC_ROUTINES
+kernel_mod_size_zxpack_unpack_codec:
     EMIT_P423_SYS_UNPACK_CODEC_ROUTINES
+kernel_mod_size_zxpack_candidate:
     EMIT_P424_PACK_CANDIDATE_ROUTINES
+kernel_mod_size_zxpack_idle:
     EMIT_P425_IDLE_PACK_ROUTINES
+kernel_mod_size_zxpack_compaction:
     EMIT_P426_COMPACTION_ROUTINES
+kernel_mod_size_zxpack_spawn_stream:
     EMIT_P427_PACKED_SPAWN_STREAM_ROUTINES
+kernel_mod_size_zxpack_info:
     EMIT_P428_ZXPACK_INFO_ROUTINES
+kernel_mod_size_zxpack_packed_validator:
     EMIT_P505_PACKED_VALIDATOR_ROUTINES
+kernel_mod_size_zxpack_read_adapter:
     EMIT_P1143_PACKED_READ_ADAPTER
 kernel_mod_rev02_memory_extensions:
     EMIT_P426_COMPACT_ALLOC_ROUTINES
 kernel_mod_rev02_scheduler_extensions:
     EMIT_P425_IDLE_MAINTENANCE_ROUTINES
 kernel_mod_rev02_tape:
+    EMIT_P502_CRC16_ROUTINES
+kernel_mod_size_tape_framing:
+    EMIT_P503_FRAMING_ROUTINES
+kernel_mod_size_tape_raw_loader:
+    EMIT_P504_RAW_LOADER_ROUTINES
+kernel_mod_size_tape_packed_loader:
+    EMIT_P505_PACKED_LOADER_ROUTINES
+kernel_mod_size_tape_raw_save:
+    EMIT_P507_RAW_SAVE_ROUTINES
+kernel_mod_size_tape_stream_save:
+    EMIT_P508_STREAM_SAVE_ROUTINES
+kernel_mod_size_tape_explicit_load:
+    EMIT_P509_EXPLICIT_LOAD_ROUTINES
+kernel_mod_size_tape_verify:
+    EMIT_P510_VERIFY_ROUTINES
+kernel_mod_size_tape_scan:
+    EMIT_P511_SCAN_ROUTINES
+kernel_mod_size_tape_prompt:
+    EMIT_P513_TAPE_PROMPT_ROUTINES
+kernel_mod_size_tape_direct_stream:
+    EMIT_P514_DIRECT_TAPE_STREAM_ROUTINES
+kernel_mod_size_tape_abort:
+    EMIT_P517_TAPE_ABORT_ROUTINES
+kernel_mod_size_tape_public:
     EMIT_TAPE_ROUTINES
 kernel_mod_rev02_tape_recovery:
     EMIT_P517_TAPE_RECOVERY_ROUTINES
 kernel_mod_rev02_spawn:
     EMIT_MEX1_RELOCATION_ROUTINES
+kernel_mod_size_spawn_image_load:
     EMIT_MEX1_IMAGE_LOAD_ROUTINES
+kernel_mod_size_spawn_stack:
     EMIT_MEX1_STACK_ROUTINES
+kernel_mod_size_spawn_arg1:
     EMIT_ARG1_ROUTINES
+kernel_mod_size_spawn_env1:
     EMIT_ENV1_ROUTINES
+kernel_mod_size_spawn_context:
     EMIT_INITIAL_CONTEXT_ROUTINES
+kernel_mod_size_spawn_preflight:
     EMIT_SPAWN_PREFLIGHT_ROUTINES
+kernel_mod_size_spawn_transaction:
     EMIT_SPAWN_TRANSACTION_ROUTINES
+kernel_mod_size_exec_transaction:
     EMIT_EXEC_TRANSACTION_ROUTINES
+kernel_mod_size_spawn_packed:
     EMIT_P427_PACKED_SPAWN_ROUTINES
+kernel_mod_size_spawn_tape:
     EMIT_P514_DIRECT_TAPE_MEX1_ROUTINES
 kernel_mod_rev02_object_syscalls:
     EMIT_P405_SYS_OPEN_ROUTINES
