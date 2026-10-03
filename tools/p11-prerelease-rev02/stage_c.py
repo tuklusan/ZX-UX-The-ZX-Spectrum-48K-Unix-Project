@@ -128,6 +128,9 @@ def main():
           "source":s["source"],"source_sha256":sha(p),
           "ordinary_product_binary_sha256":product_report[report_names[name]]["mex1_sha256"],
           "ordinary_product_m48o_tap_sha256":product_report[report_names[name]]["m48o_tap_sha256"],
+          "image_bytes":product_report[report_names[name]].get("image_bytes"),
+          "bss_bytes":product_report[report_names[name]].get("bss_bytes"),
+          "resident_bytes_including_stack":product_report[report_names[name]].get("resident_bytes_including_stack",product_report[report_names[name]].get("resident_bytes")),
           "installable_product_image_in_source":has_product_image,
           "deterministic_installable_product_available":True,
         }
