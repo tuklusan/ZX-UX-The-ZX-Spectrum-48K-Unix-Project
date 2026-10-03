@@ -173,3 +173,129 @@ udg_io_ptr                EQU UDG_STATE_BASE+2
 UDG_STATE_END             EQU UDG_STATE_BASE+4
     ASSERT UDG_STATE_END <= EMERGENCY_START+$7F
     ENDM
+
+
+; REV02 production compaction. Public UDG calls validate slot/range/row/column
+; before entering these core routines; historical direct-core fixtures retain
+; EMIT_UDG_ROUTINES above unchanged.
+    MACRO EMIT_REV02_UDG_ROUTINES
+zx48_udg_init:
+    ld bc,UDG_BANK_SIZE
+    ld a,ALLOC_COLD_PREFERRED
+    call zx48_alloc
+    ret c
+    ld (udg_bank_ptr),hl
+    push hl
+    xor a
+    ld (hl),a
+    ld d,h
+    ld e,l
+    inc de
+    ld bc,UDG_BANK_SIZE-1
+    ldir
+    pop hl
+    ld (ROM_UDG),hl
+    ld bc,UDG_BANK_SIZE
+    call zx48_memory_pin_bytes
+    xor a
+    ret
+
+; C=validated slot -> HL glyph.
+zx48_udg_slot_ptr:
+    ld a,c
+    add a,a
+    add a,a
+    add a,a
+    ld e,a
+    ld d,0
+    ld hl,(udg_bank_ptr)
+    add hl,de
+    xor a
+    ret
+
+; Public syscall layer has already validated B=0, slot, and the eight-byte range.
+zx48_udg_define:
+    ld (udg_io_ptr),hl
+    call zx48_udg_slot_ptr
+    ex de,hl
+    ld hl,(udg_io_ptr)
+    ld bc,UDG_SLOT_BYTES
+    jp zx48_memcpy
+
+zx48_udg_get:
+    ld (udg_io_ptr),hl
+    call zx48_udg_slot_ptr
+    ld de,(udg_io_ptr)
+    ld bc,UDG_SLOT_BYTES
+    jp zx48_memcpy
+
+; Public syscall layer has already validated H=0 and slot.
+zx48_udg_clear:
+    ld c,l
+    call zx48_udg_slot_ptr
+    ld b,UDG_SLOT_BYTES
+    xor a
+zx48_r2_udg_clear_loop:
+    ld (hl),a
+    inc hl
+    djnz zx48_r2_udg_clear_loop
+    ret
+
+; HL -> validated {slot,row,column}. Only the public validated syscall reaches
+; this production core.
+zx48_udg_draw:
+    ld c,(hl)
+    inc hl
+    ld b,(hl)
+    inc hl
+    ld a,(hl)
+
+    push af
+    push bc
+    call zx48_udg_slot_ptr
+    ex de,hl
+    push de
+    call zx48_cursor_hide
+    pop de
+    pop bc
+    pop af
+    ld c,a
+    ld a,b
+    add a,a
+    add a,a
+    add a,a
+    ld b,a
+zx48_r2_udg_draw_loop:
+    call zx48_bitmap_address
+    ld a,(de)
+    ld (hl),a
+    inc de
+    inc b
+    ld a,b
+    and 7
+    jr nz,zx48_r2_udg_draw_loop
+
+    ld a,b
+    sub 8
+    ld b,a
+    and $c0
+    rlca
+    rlca
+    add a,$58
+    ld h,a
+    ld a,b
+    and $38
+    rlca
+    rlca
+    or c
+    ld l,a
+    ld a,(tty_current_attr)
+    ld (hl),a
+    jp zx48_cursor_show
+
+UDG_STATE_BASE            EQU EMERGENCY_START+$62
+udg_bank_ptr              EQU UDG_STATE_BASE+0
+udg_io_ptr                EQU UDG_STATE_BASE+2
+UDG_STATE_END             EQU UDG_STATE_BASE+4
+    ASSERT UDG_STATE_END <= EMERGENCY_START+$7F
+    ENDM
