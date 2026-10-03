@@ -1,0 +1,40 @@
+name: One-time BEFORE-2K-KERNEL-EXPANSION tag
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/one-time-before-2k-kernel-expansion-tag.yml
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create and verify tag
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: BEFORE-2K-KERNEL-EXPANSION
+          TARGET: 49d2eeca1588735e57087f2ba5fe884c1df67ad8
+        run: |
+          set -euo pipefail
+          api="https://api.github.com/repos/${GITHUB_REPOSITORY}/git/refs/tags/${TAG}"
+          auth=(-H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28")
+          status="$(curl -sS -o /tmp/tag-ref.json -w '%{http_code}' "${auth[@]}" "${api}")"
+          if [[ "${status}" == "200" ]]; then
+            existing="$(python3 -c 'import json; print(json.load(open("/tmp/tag-ref.json"))["object"]["sha"])')"
+            [[ "${existing}" == "${TARGET}" ]]
+          elif [[ "${status}" == "404" ]]; then
+            payload="$(printf '{"ref":"refs/tags/%s","sha":"%s"}' "${TAG}" "${TARGET}")"
+            curl -fsS -X POST "${auth[@]}"               "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/refs"               -d "${payload}" >/tmp/tag-create.json
+          else
+            cat /tmp/tag-ref.json
+            exit 1
+          fi
+          curl -fsS "${auth[@]}" "${api}" >/tmp/tag-verify.json
+          verified="$(python3 -c 'import json; print(json.load(open("/tmp/tag-verify.json"))["object"]["sha"])')"
+          [[ "${verified}" == "${TARGET}" ]]
