@@ -70,6 +70,33 @@ zx48_od_ptr:
 
 ; B=kind,C=access,D=identity -> A=index, IX record, refs=1.
 zx48_od_create:
+    IFDEF ZX48_REV02_COLD_IMAGE_INIT
+    ; Preserve the requested kind/access/identity in the alternate register
+    ; bank while the bounded OD scan uses BC/DE as its compact cursor.
+    exx
+    ld ix,open_description_table
+    ld c,0
+    ld b,OPEN_DESCRIPTION_COUNT
+zx48_r2_od_create_scan:
+    ld a,(ix+OD_KIND_O)
+    or a
+    jr z,zx48_r2_od_create_found
+    ld de,OD_COMPACT_SIZE
+    add ix,de
+    inc c
+    djnz zx48_r2_od_create_scan
+    exx
+    jr zx48_handle_nospc
+zx48_r2_od_create_found:
+    ld a,c
+    exx
+    ld (ix+OD_KIND_O),b
+    ld (ix+OD_ACCESS_O),c
+    ld (ix+OD_ID_O),d
+    ld (ix+OD_REFS_O),1
+    or a
+    ret
+    ELSE
     push bc
     push de
     ld ix,open_description_table
@@ -85,10 +112,7 @@ zx48_od_create_scan:
     djnz zx48_od_create_scan
     pop de
     pop bc
-zx48_handle_nospc:
-    ld a,E_NOSPC
-    scf
-    ret
+    jr zx48_handle_nospc
 zx48_od_create_found:
     ld a,c
     ld (handle_od),a
@@ -101,6 +125,12 @@ zx48_od_create_found:
     ld (ix+OD_REFS_O),a
     ld a,(handle_od)
     or a
+    ret
+    ENDIF
+
+zx48_handle_nospc:
+    ld a,E_NOSPC
+    scf
     ret
 
 ; A=OD index. Adds one shared reference.
@@ -188,6 +218,13 @@ zx48_handle_lookup:
     call zx48_handle_slot_ptr
     ret c
     ld a,(hl)
+    IFDEF ZX48_REV02_COLD_IMAGE_INIT
+    ; zx48_od_ptr already rejects both HANDLE_FREE (FF) and every other
+    ; out-of-range byte, so one bounded check serves both contracts.
+    ld c,a
+    call zx48_od_ptr
+    ret c
+    ELSE
     cp HANDLE_FREE
     jp z,zx48_handle_noent
     cp OPEN_DESCRIPTION_COUNT
@@ -195,6 +232,7 @@ zx48_handle_lookup:
     ld c,a
     call zx48_od_ptr
     ret c
+    ENDIF
     ld a,(ix+OD_KIND_O)
     or a
     jp z,zx48_handle_noent
@@ -261,6 +299,49 @@ zx48_handle_close:
 
 ; B=source handle,C=destination or FF. Returns A=destination.
 zx48_handle_dup:
+    IFDEF ZX48_REV02_COLD_IMAGE_INIT
+    ; Keep source/destination in the alternate BC while lookup owns the primary
+    ; bank. The retained OD index is stack-local across installation rollback.
+    ld a,b
+    exx
+    call zx48_handle_lookup
+    jr c,zx48_r2_handle_dup_lookup_error
+    ld a,c
+    exx
+    push af
+    ld a,c
+    cp HANDLE_FREE
+    jr z,zx48_r2_handle_dup_retain
+    cp b
+    jr nz,zx48_r2_handle_dup_retain
+    pop de
+    or a
+    ret
+zx48_r2_handle_dup_retain:
+    pop af
+    push bc
+    call zx48_od_retain
+    pop bc
+    ret c
+    ld e,c
+    push af
+    ld c,a
+    ld a,e
+    call zx48_handle_install
+    jr nc,zx48_r2_handle_dup_installed
+    ex af,af'
+    pop af
+    call zx48_od_release
+    ex af,af'
+    scf
+    ret
+zx48_r2_handle_dup_installed:
+    pop de
+    ret
+zx48_r2_handle_dup_lookup_error:
+    exx
+    ret
+    ELSE
     ld a,c
     ld (handle_dup_destination),a
     ld a,b
@@ -292,6 +373,7 @@ zx48_handle_dup_retain:
     pop af
     scf
     ret
+    ENDIF
 
 ; Close every live handle of current process.
 zx48_handles_close_all_current:
