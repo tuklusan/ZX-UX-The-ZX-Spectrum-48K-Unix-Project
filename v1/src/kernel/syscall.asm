@@ -1629,11 +1629,6 @@ p1146_sys_text_nospc:
 p1147_sys_src         EQU P11_SYSCALL_TRANSIENT_BASE+0
 p1147_sys_out         EQU P11_SYSCALL_TRANSIENT_BASE+2
 p1147_sys_length      EQU P11_SYSCALL_TRANSIENT_BASE+4
-p1147_sys_rom_src     EQU P11_SYSCALL_TRANSIENT_BASE+6
-p1147_sys_rom_length  EQU P11_SYSCALL_TRANSIENT_BASE+8
-p1147_sys_sign        EQU P11_SYSCALL_TRANSIENT_BASE+10
-p1147_sys_seen_digit  EQU P11_SYSCALL_TRANSIENT_BASE+11
-p1147_sys_seen_dot    EQU P11_SYSCALL_TRANSIENT_BASE+12
 
 zx48_p1147_sys_fp_from_text:
     ld hl,(syscall_arg_hl)
@@ -1660,10 +1655,7 @@ zx48_p1147_sys_fp_from_text:
     call zx48_user_range_validate
     ret c
 
-    xor a
-    ld (p1147_sys_sign),a
-    ld (p1147_sys_seen_digit),a
-    ld (p1147_sys_seen_dot),a
+    ld de,0
     ld hl,(p1147_sys_src)
     ld bc,(p1147_sys_length)
 
@@ -1672,8 +1664,6 @@ zx48_p1147_sys_fp_from_text:
     jr z,p1147_sys_skip_sign
     cp '-'
     jr nz,p1147_sys_unsigned_ready
-    ld a,1
-    ld (p1147_sys_sign),a
 p1147_sys_skip_sign:
     inc hl
     dec bc
@@ -1681,9 +1671,6 @@ p1147_sys_skip_sign:
     or c
     jp z,p1147_sys_invalid
 p1147_sys_unsigned_ready:
-    ld (p1147_sys_rom_src),hl
-    ld (p1147_sys_rom_length),bc
-
 p1147_sys_mantissa:
     ld a,b
     or c
@@ -1699,30 +1686,28 @@ p1147_sys_mantissa:
     jp c,p1147_sys_invalid
     cp '9'+1
     jp nc,p1147_sys_invalid
-    ld a,1
-    ld (p1147_sys_seen_digit),a
+    ld d,1
     inc hl
     dec bc
     jr p1147_sys_mantissa
 
 p1147_sys_dot:
-    ld a,(p1147_sys_seen_dot)
+    ld a,e
     or a
     jp nz,p1147_sys_invalid
-    ld a,1
-    ld (p1147_sys_seen_dot),a
+    inc e
     inc hl
     dec bc
     jr p1147_sys_mantissa
 
 p1147_sys_mantissa_end:
-    ld a,(p1147_sys_seen_digit)
+    ld a,d
     or a
     jp z,p1147_sys_invalid
     jr p1147_sys_publish
 
 p1147_sys_exponent:
-    ld a,(p1147_sys_seen_digit)
+    ld a,d
     or a
     jp z,p1147_sys_invalid
     inc hl
@@ -1755,9 +1740,27 @@ p1147_sys_exp_digits:
     jr nz,p1147_sys_exp_digits
 
 p1147_sys_publish:
-    ld a,(p1147_sys_sign)
-    ld hl,(p1147_sys_rom_src)
-    ld bc,(p1147_sys_rom_length)
+    ; Re-read only the already-validated first source byte to derive ROM sign
+    ; and the unsigned token span without persistent parser-pointer scratch.
+    ld hl,(syscall_arg_hl)
+    ld bc,(syscall_arg_bc)
+    ld a,(hl)
+    cp '-'
+    jr z,p1147_sys_publish_negative
+    cp '+'
+    jr z,p1147_sys_publish_positive
+    xor a
+    jr p1147_sys_publish_ready
+p1147_sys_publish_positive:
+    inc hl
+    dec bc
+    xor a
+    jr p1147_sys_publish_ready
+p1147_sys_publish_negative:
+    inc hl
+    dec bc
+    ld a,1
+p1147_sys_publish_ready:
     ld de,(p1147_sys_out)
     jp zx48_p1147_rom_fp_from_text
 
