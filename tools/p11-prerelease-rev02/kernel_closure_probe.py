@@ -490,8 +490,68 @@ kernel_mod_rev02_final_integration_reserve:
     tape_body=tape_body.replace("    ld b,(p511_type)\n","    ld a,(p511_type)\n    ld b,a\n")
     integrated_full_extra=extra+"""kernel_mod_rev02_integrated_objects:
 """+macro_body(objects_source,"EMIT_OBJECT_ROUTINES")+"""kernel_mod_rev02_integrated_zxpack:
-"""+macro_body(zxpack_source,"EMIT_ZXPACK_ROUTINES")+"""kernel_mod_rev02_integrated_tape:
-"""+tape_body+"""kernel_mod_rev02_tape_prompt_adapters:
+"""+macro_body(zxpack_source,"EMIT_ZXPACK_ROUTINES")+"""kernel_mod_rev02_hybrid_object_type:
+    EMIT_OBJECT_TYPE_ROUTINES
+kernel_mod_rev02_hybrid_object_open:
+    EMIT_OBJECT_OPEN_ROUTINES
+kernel_mod_rev02_hybrid_object_stat:
+    EMIT_P411_STAT_OBJECT_ROUTINES
+kernel_mod_rev02_hybrid_object_chdir:
+    EMIT_P431_CHDIR_OBJECT_ROUTINES
+kernel_mod_rev02_hybrid_object_getcwd:
+    EMIT_P432_GETCWD_OBJECT_ROUTINES
+kernel_mod_rev02_hybrid_reader_state:
+    EMIT_P417_PACKED_READER_STATE_ROUTINES
+kernel_mod_rev02_hybrid_decoder:
+    EMIT_P416_ZXP1_DECODER
+kernel_mod_rev02_hybrid_seek:
+    EMIT_P418_PACKED_SEEK_ROUTINES
+kernel_mod_rev02_hybrid_encoder:
+    EMIT_P420_TARGET_ENCODER_ROUTINES
+kernel_mod_rev02_hybrid_candidate:
+    EMIT_P424_PACK_CANDIDATE_ROUTINES
+kernel_mod_rev02_hybrid_idle:
+    EMIT_P425_IDLE_PACK_ROUTINES
+kernel_mod_rev02_hybrid_compaction:
+    EMIT_P426_COMPACTION_ROUTINES
+kernel_mod_rev02_hybrid_spawn_stream:
+    EMIT_P427_PACKED_SPAWN_STREAM_ROUTINES
+kernel_mod_rev02_hybrid_info:
+    EMIT_P428_ZXPACK_INFO_ROUTINES
+kernel_mod_rev02_hybrid_packed_validator:
+    EMIT_P505_PACKED_VALIDATOR_ROUTINES
+kernel_mod_rev02_hybrid_memory:
+    EMIT_P426_COMPACT_ALLOC_ROUTINES
+kernel_mod_rev02_hybrid_scheduler:
+    EMIT_P425_IDLE_MAINTENANCE_ROUTINES
+kernel_mod_rev02_hybrid_tape_crc:
+    EMIT_P502_CRC16_ROUTINES
+kernel_mod_rev02_hybrid_tape_framing:
+    EMIT_P503_FRAMING_ROUTINES
+kernel_mod_rev02_hybrid_tape_raw_load:
+    EMIT_P504_RAW_LOADER_ROUTINES
+kernel_mod_rev02_hybrid_tape_packed_load:
+    EMIT_P505_PACKED_LOADER_ROUTINES
+kernel_mod_rev02_hybrid_tape_raw_save:
+    EMIT_P507_RAW_SAVE_ROUTINES
+kernel_mod_rev02_hybrid_tape_stream_save:
+    EMIT_P508_STREAM_SAVE_ROUTINES
+kernel_mod_rev02_hybrid_tape_explicit_load:
+    EMIT_P509_EXPLICIT_LOAD_ROUTINES
+kernel_mod_rev02_hybrid_tape_verify:
+    EMIT_P510_VERIFY_ROUTINES
+kernel_mod_rev02_hybrid_tape_scan:
+    EMIT_P511_SCAN_ROUTINES
+kernel_mod_rev02_hybrid_tape_prompt:
+    EMIT_P513_TAPE_PROMPT_ROUTINES
+kernel_mod_rev02_hybrid_tape_stream:
+    EMIT_P514_DIRECT_TAPE_STREAM_ROUTINES
+kernel_mod_rev02_hybrid_tape_abort:
+    EMIT_P517_TAPE_ABORT_ROUTINES
+kernel_mod_rev02_hybrid_tape_public:
+"""+tape_body+"""kernel_mod_rev02_hybrid_tape_recovery:
+    EMIT_P517_TAPE_RECOVERY_ROUTINES
+kernel_mod_rev02_tape_prompt_adapters:
 zx48_shell_tape_prompt_write:
     xor a
     ret
@@ -519,8 +579,6 @@ kernel_mod_rev02_integrated_object_syscalls:
 kernel_mod_rev02_integrated_extensions:
     EMIT_P406_EXCLUSIVITY_ROUTINES
     EMIT_P417_PACKED_OD_ROUTINES
-    EMIT_P426_COMPACT_ALLOC_ROUTINES
-    EMIT_P425_IDLE_MAINTENANCE_ROUTINES
 kernel_mod_rev02_integrated_spawn_adapters:
 zx48_spawn_resolve_ram_object:
     call zx48_path_resolve
