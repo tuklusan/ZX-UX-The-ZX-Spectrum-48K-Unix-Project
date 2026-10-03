@@ -381,22 +381,11 @@ zx48_sleep_bad:
     scf
     ret
 
-zx48_scheduler_wake_scan:
-    ld ix,process_table+PROC_DESC_SIZE
-    ld b,MAX_PROCESSES-1
-zx48_r2_wake_scan_loop:
-    ld a,(ix+PROC_STATE)
-    cp PROC_SLEEPING
-    call z,zx48_scheduler_maybe_wake
-    ld de,PROC_DESC_SIZE
-    add ix,de
-    djnz zx48_r2_wake_scan_loop
-    ret
-
 zx48_idle_loop:
     ei
     halt
-    call zx48_scheduler_wake_scan
+    ; The normal scheduler scan already visits every user PID and performs the
+    ; same due-sleeper wake check before READY selection.
     jp zx48_schedule
 
 SCHEDULER_STATE_BASE      EQU EMERGENCY_START+$4C
