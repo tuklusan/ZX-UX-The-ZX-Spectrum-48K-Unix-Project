@@ -87,7 +87,7 @@ def assemble(root:Path,name:str,text:str,start:int=KERNEL_START)->dict:
     return row
 
 def measure_historical_fixture(root:Path,step:str)->dict:
-    evidence=root/"v1/build"/("rev02-capacity-"+step.replace(".","-"))
+    evidence=Path("/tmp")/("rev02-capacity-"+step.replace(".","-"))
     evidence.mkdir(parents=True,exist_ok=True)
     runner=root/"v1/tools-host/test-driver/run.py"
     p=subprocess.run([sys.executable,str(runner),"build","--step",step,"--evidence-dir",str(evidence)],
