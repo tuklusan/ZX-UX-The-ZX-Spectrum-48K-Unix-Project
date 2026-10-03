@@ -39,6 +39,10 @@ HANDLE_FAST_END            EQU open_description_table+OPEN_DESCRIPTION_COUNT*OD_
 
     MACRO EMIT_HANDLE_ROUTINES
 zx48_handles_init:
+    IFDEF ZX48_REV02_COLD_IMAGE_INIT
+    ; Production FAST reserve bytes are already zero in the exact loaded image.
+    ret
+    ELSE
     xor a
     ld hl,open_description_table
     ld de,open_description_table+1
@@ -46,6 +50,7 @@ zx48_handles_init:
     ld (hl),a
     ldir
     ret
+    ENDIF
 
 ; A=index -> IX record. A is preserved on success.
 zx48_od_ptr:

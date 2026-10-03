@@ -20,9 +20,14 @@ KEYBOARD_STATE_END       EQU KEYBOARD_STATE_BASE+2
 
     MACRO EMIT_KEYBOARD_ROUTINES
 zx48_keyboard_init:
+    IFDEF ZX48_REV02_COLD_IMAGE_INIT
+    ; Owner and BREAK state are cold-linked zero in the emergency reserve.
+    ret
+    ELSE
     ld hl,0
     ld (tty_input_owner),hl
     ret
+    ENDIF
 
 ; Decode one supported foreground key without using the BASIC line editor.
 ; KEY-SCAN/K-TEST supply exact shift/main codes; K-DECODE is used in L mode.

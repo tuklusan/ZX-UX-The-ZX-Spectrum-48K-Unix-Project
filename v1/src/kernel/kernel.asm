@@ -37,6 +37,7 @@
     ORG KERNEL_START
 kernel_image_start:
 kernel_ordinary_pool_start:
+ZX48_REV02_COLD_IMAGE_INIT EQU 1
 kernel_mod_gateways:
     EMIT_SYSCALL_GATEWAY
     ASSERT $ = BOOT_GATEWAY
@@ -105,7 +106,14 @@ kernel_im2_table:
 
     ASSERT $ = EMERGENCY_START
 kernel_emergency_reserve:
-    DEFS EMERGENCY_END-EMERGENCY_START+1,0
+    ; The production kernel is loaded as an exact 8 KiB image. Seed the one
+    ; nonzero allocator cold-state record here; all other emergency state is 0.
+    ASSERT memory_free_extents >= EMERGENCY_START
+    ASSERT memory_free_extents+FREE_EXTENT_COUNT*4 <= EMERGENCY_END+1
+    DEFS memory_free_extents-EMERGENCY_START,0
+    dw ARENA_START,ARENA_SIZE
+    DEFS (FREE_EXTENT_COUNT-1)*4,0
+    DEFS EMERGENCY_END+1-$,0
 kernel_image_end:
 
     ASSERT kernel_ordinary_pool_end-kernel_ordinary_pool_start = KERNEL_CODE_END-KERNEL_CODE_START+1

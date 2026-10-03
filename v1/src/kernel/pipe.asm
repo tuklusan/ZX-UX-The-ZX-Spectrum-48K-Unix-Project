@@ -558,12 +558,8 @@ zx48_pipe_noent:
 ; the resident kernel emits this byte-smaller equivalent path.
     MACRO EMIT_REV02_PIPE_ROUTINES
 zx48_pipe_init:
-    xor a
-    ld hl,pipe_table
-    ld de,pipe_table+1
-    ld bc,PIPE_COUNT*PIPE_RECORD_SIZE-1
-    ld (hl),a
-    ldir
+    ; The exact production kernel image already zeroes the fixed FAST pipe
+    ; state/table before boot enters the resident kernel.
     ret
 
 ; A=slot -> IX record.

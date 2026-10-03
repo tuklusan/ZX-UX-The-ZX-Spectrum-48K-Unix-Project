@@ -529,19 +529,8 @@ MEMORY_EXTENT_END        EQU memory_free_extents+FREE_EXTENT_COUNT*4
 ; unordered extent representation to avoid table-shift code in the 6912-byte pool.
     MACRO EMIT_REV02_MEMORY_ROUTINES
 zx48_memory_init:
-    xor a
-    ld hl,memory_free_extents
-    ld de,memory_free_extents+1
-    ld bc,FREE_EXTENT_COUNT*4-1
-    ld (hl),a
-    ldir
-    ld hl,ARENA_START
-    ld (memory_free_extents),hl
-    ld hl,ARENA_SIZE
-    ld (memory_free_extents+2),hl
-    ld hl,0
-    ld (memory_live_allocations),hl
-    ld (memory_pinned_bytes),hl
+    ; The exact production kernel image cold-links the one initial free extent
+    ; and zeroes all remaining allocator state in the fixed emergency reserve.
     ret
 
 ; A=policy, BC=request -> HL=base. Zero-length table slots are reusable.
