@@ -160,6 +160,16 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
     save = _block(rom, "zx48_rom_sa_bytes:", "zx48_rom_ld_bytes:")
     load = _block(rom, "zx48_rom_ld_bytes:", "zx48_rom_ula_done:")
     done = _block(rom, "zx48_rom_ula_done:", "    endm")
+    production = _block(
+        rom,
+        "    macro emit_rev02_rom_service_routines",
+        "; p7.09 staged rom beep gateway",
+    )
+    beep_gateway = _block(
+        rom,
+        "    macro emit_p709_rom_beep_routines",
+        "; p7.11 canonical read-only rom service metadata.",
+    )
 
     wrapper_ok = _wrapper_prepare_contract_ok(rom)
     return [
@@ -174,6 +184,23 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
         {"name": "rom-prepare-publishes-altreg-busy", "passed": "ld a,1\n    ld (altreg_busy),a" in prepare},
         {"name": "rom-prepare-mirrors-only-border", "passed": _prepare_contract_ok(ula)},
         {"name": "beeper-and-tape-prepare-before-rom", "passed": wrapper_ok},
+        {
+            "name": "production-rom-set-omits-dead-low-level-beeper",
+            "passed": "zx48_rom_beeper:" not in production,
+        },
+        {
+            "name": "production-beep-gateway-prepares-and-reconciles-ula",
+            "passed": all(
+                token in beep_gateway
+                for token in (
+                    "call zx48_ula_rom_prepare",
+                    "call rom_beep_command",
+                    "call zx48_p11_rom_txn_cleanup",
+                    "ld a,(ula_shadow)",
+                    "jp zx48_ula_commit",
+                )
+            ),
+        },
         {"name": "rom-return-reemits-authoritative-shadow", "passed": _return_reconcile_contract_ok(rom)},
         {"name": "rom-return-clears-altreg-busy", "passed": "xor a\n    ld (altreg_busy),a" in done},
         {"name": "rom-result-contract-still-checked", "passed": "zx48_rom_checked_return_af_saved:" in rom and "call zx48_kernel_stack_check" in rom and "zx48_rom_restore_iy:" in rom},
@@ -336,7 +363,6 @@ def dispatch(
         "zx48_ula_commit",
         "ula_shadow",
         "altreg_busy",
-        "zx48_rom_beeper",
         "zx48_rom_sa_bytes",
         "zx48_rom_ld_bytes",
         "kernel_ordinary_used_end",
@@ -356,14 +382,12 @@ def dispatch(
 
     if action == "test":
         _ula_state_fixture(root, labels, kernel)
-        _wrapper_fixture(root, labels, kernel, wrapper_name="zx48_rom_beeper", rom_target=ROM_BEEPER, input_a=0xA5)
         _wrapper_fixture(root, labels, kernel, wrapper_name="zx48_rom_sa_bytes", rom_target=ROM_SA_BYTES, input_a=0xFF)
         _wrapper_fixture(root, labels, kernel, wrapper_name="zx48_rom_ld_bytes", rom_target=ROM_LD_BYTES, input_a=0xFF)
         assertions.extend(
             (
                 {"name": "runtime-border-sound-interleave-preserved", "passed": True},
                 {"name": "runtime-bordcr-nonborder-bits-preserved", "passed": True},
-                {"name": "runtime-beeper-wrapper-shadow-reconciled", "passed": True},
                 {"name": "runtime-save-wrapper-shadow-reconciled", "passed": True},
                 {"name": "runtime-load-wrapper-shadow-reconciled", "passed": True},
                 {"name": "runtime-rom-af-and-primary-results-preserved", "passed": True},
