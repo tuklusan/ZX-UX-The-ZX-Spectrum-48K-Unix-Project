@@ -115,6 +115,35 @@ def _source_contract_from(syscall_raw: str, scheduler_raw: str) -> bool:
     sys_sleep = _block(syscall, "zx48_sys_sleep:", "zx48_sys_getpid:")
     sleep = _block(scheduler, "zx48_sleep_current:", "zx48_scheduler_wake_scan:")
     wake = _block(scheduler, "zx48_scheduler_maybe_wake:", "zx48_sleep_current:")
+    duration_path = (
+        _ordered(
+            sleep,
+            (
+                "ld (scheduler_sleep_lo),de",
+                "ld (scheduler_sleep_hi),bc",
+                "ld hl,(kernel_ticks)",
+                "ld de,(scheduler_sleep_lo)",
+                "add hl,de",
+                "ld hl,(kernel_ticks+2)",
+                "ld de,(scheduler_sleep_hi)",
+                "adc hl,de",
+            ),
+        )
+        or _ordered(
+            sleep,
+            (
+                "push bc",
+                "push de",
+                "call zx48_process_lookup",
+                "pop de",
+                "pop bc",
+                "ld hl,(kernel_ticks)",
+                "add hl,de",
+                "ld hl,(kernel_ticks+2)",
+                "adc hl,bc",
+            ),
+        )
+    )
     return (
         _ordered(
             sys_sleep,
@@ -136,12 +165,15 @@ def _source_contract_from(syscall_raw: str, scheduler_raw: str) -> bool:
                 "or d",
                 "or e",
                 "jr z,zx48_sleep_zero",
-                "ld hl,(kernel_ticks)",
-                "add hl,de",
+            ),
+        )
+        and duration_path
+        and _ordered(
+            sleep,
+            (
                 "ld (ix+proc_wake_tick),l",
                 "ld (ix+proc_wake_tick+1),h",
                 "ld hl,(kernel_ticks+2)",
-                "adc hl,de",
                 "ld (ix+proc_wake_tick+2),l",
                 "ld (ix+proc_wake_tick+3),h",
                 "ld (ix+proc_state),proc_sleeping",
@@ -161,7 +193,6 @@ def _source_contract_from(syscall_raw: str, scheduler_raw: str) -> bool:
             ),
         )
     )
-
 
 def _source_contract(root: Path) -> list[dict[str, object]]:
     syscall = (root / "v1/src/kernel/syscall.asm").read_text(encoding="utf-8")

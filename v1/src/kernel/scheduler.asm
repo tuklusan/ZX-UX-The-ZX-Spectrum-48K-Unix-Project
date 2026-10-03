@@ -355,21 +355,19 @@ zx48_sleep_current:
     or d
     or e
     jr z,zx48_sleep_zero
-    ld (scheduler_sleep_lo),de
-    ld (scheduler_sleep_hi),bc
+    push bc
+    push de
     ld a,(current_pid)
     call zx48_process_lookup
+    pop de
+    pop bc
     ret c
     ld hl,(kernel_ticks)
-    ld de,(scheduler_sleep_lo)
     add hl,de
-    push af
     ld (ix+PROC_WAKE_TICK),l
     ld (ix+PROC_WAKE_TICK+1),h
     ld hl,(kernel_ticks+2)
-    ld de,(scheduler_sleep_hi)
-    pop af
-    adc hl,de
+    adc hl,bc
     ld (ix+PROC_WAKE_TICK+2),l
     ld (ix+PROC_WAKE_TICK+3),h
     ld (ix+PROC_STATE),PROC_SLEEPING
