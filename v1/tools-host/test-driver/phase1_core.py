@@ -345,7 +345,9 @@ def _p106(root: Path, labels: dict[str, int], kernel: bytes) -> None:
     descriptors = _process_descriptor_addresses(root, labels)
     code = bytearray(b"\xF3" + _ld_sp(USER_STACK) + _call(labels["zx48_process_init"]))
     for pid, base in enumerate(descriptors):
-        initialized = pid in (0, 1) or pid >= 5
+        # Cold-linked PID7 retains its descriptor defaults. PID2..PID6 are
+        # boot-cleared FREE slots and reserve_slot establishes PID/parent/handles.
+        initialized = pid in (0, 1, 7)
         code += _ld_a_mem(base) + _check_a(pid if initialized else 0)
         code += _ld_a_mem(base + 1) + _check_a(0xFF if initialized else 0)
         code += _ld_a_mem(base + 2) + _check_a(2 if pid == 0 else 0)
