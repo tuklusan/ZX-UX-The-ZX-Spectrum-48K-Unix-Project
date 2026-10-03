@@ -117,8 +117,8 @@ def static_gate(root: Path, product_dir: Path) -> dict:
         "as_rev02_assemble_stream", "as_p1019_names", "as_p1020_publish")),
         "as product reachability drift")
     req(all(x in blocks["ld"] for x in (
-        "ld_p1021_load_file", "ld_p1026_apply", "ld_p1027_default_entry",
-        "ld_p1032_write", "ld_p1033_publish")),
+        "ld_p1021_load_file", "ld_p1026_apply", "ld_rev02_resolve_external",
+        "ld_rev02_start_name", "ld_p1032_write", "ld_p1033_publish")),
         "ld product reachability drift")
 
     pin = root / "v1/tests/compiler/sdk-reference/pre-release-1.0.2"
