@@ -667,14 +667,9 @@ zx48_r2_pipe_allocated:
     pop hl
     ld (ix+PIPE_PTR_O),l
     ld (ix+PIPE_PTR_O+1),h
-    xor a
-    ld (ix+PIPE_RPOS_O),a
-    ld (ix+PIPE_WPOS_O),a
-    ld (ix+PIPE_COUNT_O),a
-    ld (ix+PIPE_COUNT_O+1),a
     ld (ix+PIPE_CAPACITY_O),c
     ld (ix+PIPE_CAPACITY_O+1),b
-    inc a
+    ld a,1
     ld (ix+PIPE_READERS_O),a
     ld (ix+PIPE_WRITERS_O),a
 
@@ -855,19 +850,16 @@ zx48_r2_pipe_write_pos:
 
 ; A=ring position, BC=candidate. Return BC limited to bytes before ring wrap.
 zx48_pipe_chunk_limit:
-    push bc
     ld l,(ix+PIPE_CAPACITY_O)
     ld h,(ix+PIPE_CAPACITY_O+1)
-    ld c,a
-    ld b,0
+    ld e,a
+    ld d,0
+    or a
+    sbc hl,de
     or a
     sbc hl,bc
-    pop bc
-    push hl
-    or a
-    sbc hl,bc
-    pop hl
     ret nc
+    add hl,bc
     ld b,h
     ld c,l
     ret
@@ -882,19 +874,16 @@ zx48_pipe_block_read:
 zx48_pipe_block_write:
     ld a,PROC_WAIT_PIPE_WRITE
 zx48_pipe_block:
-    ld d,a
+    ld h,a
+    ld l,c
     ld a,(current_pid)
     or a
     jp z,zx48_pipe_noent
-    push bc
-    push de
     call zx48_process_lookup
-    pop de
-    pop bc
     ret c
-    inc c
-    ld (ix+PROC_WAIT_OBJECT),c
-    ld (ix+PROC_STATE),d
+    inc l
+    ld (ix+PROC_WAIT_OBJECT),l
+    ld (ix+PROC_STATE),h
     jp zx48_schedule
 
 zx48_pipe_wake_readers:
@@ -903,7 +892,7 @@ zx48_pipe_wake_readers:
 zx48_pipe_wake_writers:
     ld a,PROC_WAIT_PIPE_WRITE
 zx48_pipe_wake:
-    ld (pipe_wait_state),a
+    ld h,a
     inc c
     ld ix,process_table+PROC_DESC_SIZE
     ld b,MAX_PROCESSES-1
@@ -912,9 +901,7 @@ zx48_pipe_wake_loop:
     cp c
     jr nz,zx48_r2_pipe_wake_next
     ld a,(ix+PROC_STATE)
-    ld d,a
-    ld a,(pipe_wait_state)
-    cp d
+    cp h
     jr nz,zx48_r2_pipe_wake_next
     xor a
     ld (ix+PROC_WAIT_OBJECT),a
@@ -926,42 +913,41 @@ zx48_r2_pipe_wake_next:
     ret
 
 zx48_pipe_endpoint_closed:
-    ld (pipe_endpoint_kind),a
+    ld b,a
     ld a,c
-    ld (pipe_active_slot),a
     call zx48_pipe_ptr
     ret c
-    ld a,(pipe_endpoint_kind)
+    ld a,b
     cp OD_KIND_PIPE_READ
     jr z,zx48_r2_pipe_close_reader
     cp OD_KIND_PIPE_WRITE
     jp nz,zx48_pipe_noent
     xor a
     ld (ix+PIPE_WRITERS_O),a
-    ld a,(pipe_active_slot)
-    ld c,a
+    push bc
     call zx48_pipe_wake_readers
+    pop bc
     jr zx48_r2_pipe_close_try
 zx48_r2_pipe_close_reader:
     xor a
     ld (ix+PIPE_READERS_O),a
-    ld a,(pipe_active_slot)
-    ld c,a
+    push bc
     call zx48_pipe_wake_writers
+    pop bc
 zx48_r2_pipe_close_try:
-    ld a,(pipe_active_slot)
+    ld a,c
     call zx48_pipe_try_free
     xor a
     ret
 
 zx48_pipe_try_free:
-    ld (pipe_active_slot),a
+    ld c,a
     call zx48_pipe_ptr
     ret c
     ld a,(ix+PIPE_READERS_O)
     or (ix+PIPE_WRITERS_O)
     ret nz
-    ld a,(pipe_active_slot)
+    ld a,c
     inc a
     ld c,a
     push ix
@@ -987,15 +973,15 @@ zx48_r2_pipe_waiter_scan:
     pop ix
     jr c,zx48_pipe_free_panic
 zx48_r2_pipe_free_clear:
+    push ix
+    pop hl
     xor a
-    ld (ix+PIPE_PTR_O),a
-    ld (ix+PIPE_PTR_O+1),a
-    ld (ix+PIPE_RPOS_O),a
-    ld (ix+PIPE_WPOS_O),a
-    ld (ix+PIPE_COUNT_O),a
-    ld (ix+PIPE_COUNT_O+1),a
-    ld (ix+PIPE_CAPACITY_O),a
-    ld (ix+PIPE_CAPACITY_O+1),a
+    ld (hl),a
+    ld d,h
+    ld e,l
+    inc de
+    ld bc,7
+    ldir
     ret
 zx48_r2_pipe_waiter_exists:
     pop ix
