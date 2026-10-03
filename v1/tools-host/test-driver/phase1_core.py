@@ -188,8 +188,9 @@ def _static_contract(root: Path, step: str) -> list[dict[str, object]]:
             {"name": "production-process-table-is-split", "passed": (
                 re.search(r"(?m)^\s*REV02_PROCESS_LOW_COUNT\s+EQU\s+5\s*$", process) is not None
                 and re.search(r"(?m)^\s*REV02_PROCESS_LOW_BASE\s+EQU\s+ROM_PRINTER_BUFFER_START\s*$", process) is not None
-                and "ld ix,REV02_PROCESS_LOW_BASE" in process
-                and "ld ix,process_table_high" in process
+                and re.search(r"(?m)^\s*REV02_PROCESS_PTR_TABLE\s+EQU\s+ROM_PRINTER_BUFFER_END-15\s*$", process) is not None
+                and "ld hl,REV02_PROCESS_PTR_TABLE" in process
+                and "ld hl,REV02_PROCESS_PTR_TEMPLATE" in process
                 and "process_table_high:" in process
                 and re.search(r"(?m)^\s*REV02_PROCESS_EMERGENCY_PID\s+EQU\s+7\s*$", process) is not None
                 and re.search(r"(?m)^\s*REV02_PROCESS_EMERGENCY_BASE\s+EQU\s+EMERGENCY_START\+\$C0\s*$", process) is not None
