@@ -197,8 +197,12 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
                     "ld hl,(syscall_arg_hl)",
                     "ld a,h",
                     "or a",
-                    "jp nz,zx48_sys_invalid",
+                    "jr nz,zx48_sys_u8_invalid",
                     "ld a,l",
+                    "ret",
+                    "zx48_sys_u8_invalid:",
+                    "ld a,e_inval",
+                    "scf",
                     "ret",
                 ),
             )
@@ -206,6 +210,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
                 sys_putchar,
                 (
                     "call zx48_sys_u8_arg",
+                    "ret c",
                     "call zx48_console_putchar",
                     "ret c",
                 ),

@@ -253,6 +253,7 @@ zx48_sys_version:
     ret
 zx48_sys_exit:
     call zx48_sys_u8_arg
+    ret c
     jp zx48_process_exit
 zx48_sys_yield:
     jp zx48_schedule_finish_syscall
@@ -328,12 +329,14 @@ zx48_sys_wait_legacy_any:
 
 zx48_sys_kill:
     call zx48_sys_u8_arg
+    ret c
     call zx48_process_kill
     ret c
     jp zx48_sys_zero_result
 
 zx48_sys_close:
     call zx48_sys_u8_arg
+    ret c
     call zx48_handle_close
     ret c
     jp zx48_sys_zero_result
@@ -514,6 +517,7 @@ zx48_sys_con_getkey:
     ret
 zx48_sys_con_putchar:
     call zx48_sys_u8_arg
+    ret c
     call zx48_console_putchar
     ret c
     ld hl,1
@@ -661,8 +665,12 @@ zx48_sys_u8_arg:
     ld hl,(syscall_arg_hl)
     ld a,h
     or a
-    jp nz,zx48_sys_invalid
+    jr nz,zx48_sys_u8_invalid
     ld a,l
+    ret
+zx48_sys_u8_invalid:
+    ld a,E_INVAL
+    scf
     ret
 
 zx48_sys_put16:
