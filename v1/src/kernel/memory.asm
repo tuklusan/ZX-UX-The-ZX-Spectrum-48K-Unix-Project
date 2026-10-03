@@ -524,6 +524,473 @@ MEMORY_EXTENT_END        EQU memory_free_extents+FREE_EXTENT_COUNT*4
     ASSERT MEMORY_EXTENT_END <= EMERGENCY_END+1
     ENDM
 
+; REV02 production allocator compaction. Historical qualification fixtures retain
+; EMIT_MEMORY_ROUTINES; the resident kernel uses this behavior-equivalent bounded
+; unordered extent representation to avoid table-shift code in the 6912-byte pool.
+    MACRO EMIT_REV02_MEMORY_ROUTINES
+zx48_memory_init:
+    xor a
+    ld hl,memory_free_extents
+    ld de,memory_free_extents+1
+    ld bc,FREE_EXTENT_COUNT*4-1
+    ld (hl),a
+    ldir
+    ld hl,ARENA_START
+    ld (memory_free_extents),hl
+    ld hl,ARENA_SIZE
+    ld (memory_free_extents+2),hl
+    ld hl,0
+    ld (memory_live_allocations),hl
+    ld (memory_pinned_bytes),hl
+    ret
+
+; A=policy, BC=request -> HL=base. Zero-length table slots are reusable.
+zx48_alloc:
+    ld (memory_policy),a
+    ld a,b
+    or c
+    jp z,zx48_alloc_zero
+    bit 0,c
+    jr z,zx48_alloc_rounded
+    inc bc
+zx48_alloc_rounded:
+    ld (memory_request),bc
+zx48_alloc_retry:
+    ld ix,memory_free_extents
+    ld b,FREE_EXTENT_COUNT
+zx48_alloc_loop:
+    push bc
+    ld e,(ix+0)
+    ld d,(ix+1)
+    ld l,(ix+2)
+    ld h,(ix+3)
+    ld a,h
+    or l
+    jr z,zx48_alloc_next
+    ld bc,(memory_request)
+    or a
+    sbc hl,bc
+    jr c,zx48_alloc_next
+    ld a,(memory_policy)
+    and $7f
+    cp ALLOC_FAST_REQUIRED
+    jr z,zx48_alloc_fast
+    cp ALLOC_COLD_PREFERRED
+    jr nz,zx48_alloc_low
+    push hl
+    ld h,d
+    ld l,e
+    add hl,bc
+    ld de,FAST_START
+    or a
+    sbc hl,de
+    pop hl
+    jr c,zx48_alloc_cold_ok
+    jr nz,zx48_alloc_next
+zx48_alloc_cold_ok:
+    ld e,(ix+0)
+    ld d,(ix+1)
+zx48_alloc_take_low:
+zx48_alloc_low:
+    push de
+    ex de,hl
+    add hl,bc
+    ld (ix+0),l
+    ld (ix+1),h
+    ld (ix+2),e
+    ld (ix+3),d
+    pop hl
+    pop bc
+    jr zx48_alloc_done
+
+zx48_alloc_fast:
+    push hl
+    add hl,de
+    ld de,FAST_START
+    or a
+    sbc hl,de
+    jr c,zx48_alloc_fast_no
+    add hl,de
+    ex de,hl
+    pop hl
+    ld (ix+2),l
+    ld (ix+3),h
+    ex de,hl
+    pop bc
+    jr zx48_alloc_done
+zx48_alloc_fast_no:
+    pop hl
+zx48_alloc_next:
+    ld de,4
+    add ix,de
+    pop bc
+    dec b
+    jp nz,zx48_alloc_loop
+    ld a,(memory_policy)
+    and $7f
+    cp ALLOC_COLD_PREFERRED
+    jr nz,zx48_alloc_fail
+    xor a
+    ld (memory_policy),a
+    jp zx48_alloc_retry
+zx48_alloc_fail:
+    ld a,E_NOMEM
+    scf
+    ret
+zx48_alloc_zero:
+    ld hl,0
+    xor a
+    ret
+zx48_alloc_done:
+    ld de,(memory_live_allocations)
+    inc de
+    ld (memory_live_allocations),de
+    xor a
+    ret
+
+; HL=base, BC=rounded length. REV02 production keeps the fixed 16-record
+; extent table unordered: zero length is free. Free validates every live record
+; before mutation, remembers at most one left/right neighbor, and merges only
+; after the complete overlap scan has succeeded.
+zx48_free:
+    ld a,b
+    or c
+    ret z
+    bit 0,l
+    jp nz,zx48_free_bad
+    bit 0,c
+    jp nz,zx48_free_bad
+    ld a,h
+    cp COLD_START/256
+    jp c,zx48_free_bad
+    cp KERNEL_START/256
+    jp nc,zx48_free_bad
+    ld (memory_free_start),hl
+    ld (memory_free_length),bc
+    add hl,bc
+    jp c,zx48_free_bad
+    ld de,ARENA_END+1
+    or a
+    sbc hl,de
+    jr c,zx48_r2_free_end_ok
+    jp nz,zx48_free_bad
+zx48_r2_free_end_ok:
+    add hl,de
+    ld (memory_fast_total),hl       ; free end
+    ld hl,0
+    ld (memory_candidate),hl       ; left-adjacent record
+    ld (memory_info_ptr),hl        ; right-adjacent record
+    ld (memory_fast_largest),hl    ; first empty record
+    ld ix,memory_free_extents
+    ld b,FREE_EXTENT_COUNT
+
+; Historical static marker retained; REV02 scans the complete unordered table.
+zx48_extent_merge_restart:
+zx48_r2_free_scan:
+    ld a,(ix+2)
+    or (ix+3)
+    jr nz,zx48_r2_free_live
+    ld hl,(memory_fast_largest)
+    ld a,h
+    or l
+    jr nz,zx48_r2_free_next
+    push ix
+    pop hl
+    ld (memory_fast_largest),hl
+    jr zx48_r2_free_next
+
+zx48_r2_free_live:
+    ; ext_end <= free_start is disjoint; equality records the left neighbor.
+    ld l,(ix+0)
+    ld h,(ix+1)
+    ld e,(ix+2)
+    ld d,(ix+3)
+    add hl,de
+    ld de,(memory_free_start)
+    or a
+    sbc hl,de
+    jr c,zx48_r2_free_next
+    jr z,zx48_r2_free_left
+
+    ; ext_end > free_start. ext_start must be >= free_end; equality is right.
+    ld l,(ix+0)
+    ld h,(ix+1)
+    ld de,(memory_fast_total)
+    or a
+    sbc hl,de
+    jp c,zx48_free_bad
+    jr z,zx48_r2_free_right
+    jr zx48_r2_free_next
+
+zx48_r2_free_left:
+    push ix
+    pop hl
+    ld (memory_candidate),hl
+    jr zx48_r2_free_next
+zx48_r2_free_right:
+    push ix
+    pop hl
+    ld (memory_info_ptr),hl
+zx48_r2_free_next:
+    ld de,4
+    add ix,de
+    djnz zx48_r2_free_scan
+
+    ld hl,(memory_candidate)
+    ld a,h
+    or l
+    jr z,zx48_r2_free_no_left
+    ld de,(memory_info_ptr)
+    ld a,d
+    or e
+    jr z,zx48_r2_free_left_only
+
+    ; Merge both neighbors into the right record, then release the left slot.
+    push de
+    push hl
+    pop ix
+    ld l,(ix+2)
+    ld h,(ix+3)
+    ld de,(memory_free_length)
+    add hl,de
+    ex (sp),hl                    ; stack=partial, HL=right pointer
+    push hl
+    pop ix
+    ld l,(ix+2)
+    ld h,(ix+3)
+    pop de
+    add hl,de
+    push hl
+    ld hl,(memory_candidate)
+    push hl
+    pop ix
+    ld l,(ix+0)
+    ld h,(ix+1)
+    ld de,(memory_info_ptr)
+    push de
+    pop ix
+    ld (ix+0),l
+    ld (ix+1),h
+    pop hl
+    ld (ix+2),l
+    ld (ix+3),h
+    ld hl,(memory_candidate)
+    push hl
+    pop ix
+    xor a
+    ld (ix+2),a
+    ld (ix+3),a
+    jr zx48_r2_free_commit
+
+zx48_r2_free_left_only:
+    push hl
+    pop ix
+    ld l,(ix+2)
+    ld h,(ix+3)
+    ld de,(memory_free_length)
+    add hl,de
+    ld (ix+2),l
+    ld (ix+3),h
+    jr zx48_r2_free_commit
+
+zx48_r2_free_no_left:
+    ld hl,(memory_info_ptr)
+    ld a,h
+    or l
+    jr z,zx48_r2_free_new
+    push hl
+    pop ix
+    ld hl,(memory_free_start)
+    ld (ix+0),l
+    ld (ix+1),h
+    ld l,(ix+2)
+    ld h,(ix+3)
+    ld de,(memory_free_length)
+    add hl,de
+    ld (ix+2),l
+    ld (ix+3),h
+    jr zx48_r2_free_commit
+
+zx48_r2_free_new:
+    ld hl,(memory_fast_largest)
+    ld a,h
+    or l
+    jr z,zx48_free_nospc
+    push hl
+    pop ix
+    ld hl,(memory_free_start)
+    ld (ix+0),l
+    ld (ix+1),h
+    ld hl,(memory_free_length)
+    ld (ix+2),l
+    ld (ix+3),h
+
+zx48_r2_free_commit:
+    ld hl,(memory_live_allocations)
+    ld a,h
+    or l
+    ret z
+    dec hl
+    ld (memory_live_allocations),hl
+    xor a
+    ret
+zx48_free_nospc:
+    ld a,E_NOSPC
+    scf
+    ret
+zx48_free_bad:
+    ld a,E_INVAL
+    scf
+    ret
+
+zx48_memory_pin_bytes:
+    ld hl,(memory_pinned_bytes)
+    add hl,bc
+    ld (memory_pinned_bytes),hl
+    ret
+
+; HL -> MINFO1. Scan all bounded slots; class totals/largest values are clipped
+; exactly at FAST_START.
+zx48_mem_info:
+    ld (memory_info_ptr),hl
+    xor a
+    ld hl,memory_fast_total
+    ld de,memory_fast_total+1
+    ld bc,7
+    ld (hl),a
+    ldir
+    ld ix,memory_free_extents
+    ld b,FREE_EXTENT_COUNT
+zx48_mem_scan:
+    push bc
+    ld l,(ix+2)
+    ld h,(ix+3)
+    ld a,h
+    or l
+    jr z,zx48_mem_next
+    ld a,(ix+1)
+    cp FAST_START/256
+    jr nc,zx48_mem_fast_whole
+
+    ; Start is cold. If end crosses 8000, split one extent between classes.
+    push hl
+    ld e,(ix+0)
+    ld d,(ix+1)
+    add hl,de
+    ld de,FAST_START
+    or a
+    sbc hl,de
+    jr c,zx48_mem_cold_pop
+    jr z,zx48_mem_cold_pop
+    push hl
+    ld hl,FAST_START
+    ld e,(ix+0)
+    ld d,(ix+1)
+    or a
+    sbc hl,de
+    call zx48_mem_add_cold
+    pop hl
+    call zx48_mem_add_fast
+    pop hl
+    jr zx48_mem_next
+zx48_mem_cold_pop:
+    pop hl
+    call zx48_mem_add_cold
+    jr zx48_mem_next
+zx48_mem_fast_whole:
+    call zx48_mem_add_fast
+zx48_mem_next:
+    ld de,4
+    add ix,de
+    pop bc
+    djnz zx48_mem_scan
+    jr zx48_mem_publish
+
+zx48_mem_publish:
+    ld hl,(memory_info_ptr)
+    ld de,(memory_fast_total)
+    call zx48_mem_put
+    ld de,(memory_fast_largest)
+    call zx48_mem_put
+    ld de,(memory_cold_total)
+    call zx48_mem_put
+    ld de,(memory_cold_largest)
+    call zx48_mem_put
+    push hl
+    ld hl,(memory_fast_total)
+    ld de,(memory_cold_total)
+    add hl,de
+    ex de,hl
+    pop hl
+    call zx48_mem_put
+    ld de,(memory_live_allocations)
+    call zx48_mem_put
+    ld de,(memory_pinned_bytes)
+    call zx48_mem_put
+    call zx48_process_count
+    ld (hl),a
+    inc hl
+    xor a
+    ld (hl),a
+    ret
+
+zx48_mem_put:
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    inc hl
+    ret
+zx48_mem_add_cold:
+    push hl
+    ld de,(memory_cold_total)
+    add hl,de
+    ld (memory_cold_total),hl
+    pop hl
+    ld de,(memory_cold_largest)
+    or a
+    sbc hl,de
+    ret c
+    add hl,de
+    ld (memory_cold_largest),hl
+    ret
+zx48_mem_add_fast:
+    push hl
+    ld de,(memory_fast_total)
+    add hl,de
+    ld (memory_fast_total),hl
+    pop hl
+    ld de,(memory_fast_largest)
+    or a
+    sbc hl,de
+    ret c
+    add hl,de
+    ld (memory_fast_largest),hl
+    ret
+
+; Allocator runtime state lives in the fixed emergency-data reserve rather than
+; consuming the frozen ordinary kernel code/data pool.
+MEMORY_STATE_BASE        EQU EMERGENCY_START+$2E
+memory_request           EQU MEMORY_STATE_BASE+0
+memory_policy            EQU MEMORY_STATE_BASE+2
+memory_candidate         EQU MEMORY_STATE_BASE+3
+memory_free_start        EQU MEMORY_STATE_BASE+5
+memory_free_length       EQU MEMORY_STATE_BASE+7
+memory_live_allocations  EQU MEMORY_STATE_BASE+9
+memory_pinned_bytes      EQU MEMORY_STATE_BASE+11
+memory_info_ptr          EQU MEMORY_STATE_BASE+13
+memory_fast_total        EQU MEMORY_STATE_BASE+15
+memory_fast_largest      EQU MEMORY_STATE_BASE+17
+memory_cold_total        EQU MEMORY_STATE_BASE+19
+memory_cold_largest      EQU MEMORY_STATE_BASE+21
+MEMORY_STATE_END         EQU MEMORY_STATE_BASE+23
+; Keep the historical unowned emergency canary at $FF80 untouched. The bounded
+; extent table occupies the following fixed emergency-reserve slice.
+memory_free_extents      EQU EMERGENCY_START+$80
+MEMORY_EXTENT_END        EQU memory_free_extents+FREE_EXTENT_COUNT*4
+    ASSERT MEMORY_STATE_END <= EMERGENCY_START+$7F
+    ASSERT MEMORY_EXTENT_END <= EMERGENCY_END+1
+    ENDM
+
 ;
 ; P4.26 bounded allocation-pressure compaction. This wrapper leaves the frozen
 ; base allocator unchanged: one ordinary ANY/COLD failure may trigger exactly

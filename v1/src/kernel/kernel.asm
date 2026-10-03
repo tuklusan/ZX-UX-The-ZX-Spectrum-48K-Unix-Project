@@ -57,7 +57,7 @@ kernel_mod_rom:
 kernel_mod_errors:
     EMIT_ERROR_ROUTINES
 kernel_mod_memory:
-    EMIT_MEMORY_ROUTINES
+    EMIT_REV02_MEMORY_ROUTINES
 kernel_mod_process:
     EMIT_REV02_PROCESS_ROUTINES
 kernel_mod_handles:
