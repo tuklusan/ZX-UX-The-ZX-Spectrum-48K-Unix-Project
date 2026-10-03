@@ -37,19 +37,30 @@ zx48_boot_main_impl:
     di
     ld sp,BOOT_STACK_TOP
     ld iy,ROM_IY_ANCHOR
+    IFDEF ZX48_REV02_COLD_IMAGE_INIT
+    ; Exact-image cold state already covers these fixed resident subsystems.
+    ELSE
     call zx48_kernel_stack_init
     call zx48_memory_init
     call zx48_process_init
     call zx48_handles_init
     call zx48_pipe_init
+    ENDIF
     call zx48_ula_init
+    IFDEF ZX48_REV02_COLD_IMAGE_INIT
+    ELSE
     call zx48_console_init
     call zx48_keyboard_init
+    ENDIF
     call zx48_udg_init
     jp nc,zx48_boot_udg_ok
     ld a,PANIC_ALLOCATOR
     jp zx48_panic
 zx48_boot_udg_ok:
+    IFDEF ZX48_REV02_COLD_IMAGE_INIT
+    call zx48_rev02_wall_boot_init
+    ELSE
     call zx48_wall_boot_init
+    ENDIF
     jp zx48_idle_loop
     ENDM

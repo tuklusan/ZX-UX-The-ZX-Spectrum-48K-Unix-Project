@@ -28,11 +28,6 @@ INTERRUPT_STATE_END       EQU INTERRUPT_STATE_BASE+15
 ; P8.39 TIME1 boot revision contract: valid cold boot starts at revision 0.\n; Successful cold boot enters with interrupts disabled. Seed exact TIME1 state,
 ; leave independent SYS_TICKS untouched, then tail into canonical IM2 setup.
 zx48_wall_boot_init:
-    IFDEF ZX48_REV02_COLD_IMAGE_INIT
-    ; Exact cold image already contains the frozen TIME1 epoch/revision state.
-    di
-    jp zx48_im2_init
-    ELSE
     di
     ld hl,$0680
     ld (wall_seconds),hl
@@ -43,7 +38,12 @@ zx48_wall_boot_init:
     ld hl,$0100
     ld (wall_subsecond),hl
     jp zx48_im2_init
-    ENDIF
+
+; REV02 production cold-image path. Historical P1.26 owns the exact routine
+; above; production can skip stores because those same bytes are linked in.
+zx48_rev02_wall_boot_init:
+    di
+    jp zx48_im2_init
 
 zx48_interrupt:
     push af
