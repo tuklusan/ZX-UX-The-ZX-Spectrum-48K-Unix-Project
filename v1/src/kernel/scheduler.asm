@@ -352,12 +352,10 @@ zx48_sleep_current:
     or d
     or e
     jr z,zx48_sleep_zero
-    push bc
     push de
     ld a,(current_pid)
     call zx48_process_lookup
     pop de
-    pop bc
     ret c
     ld hl,(kernel_ticks)
     add hl,de
