@@ -5181,15 +5181,14 @@ zx48_process_init:
 zx48_process_ptr:
     cp MAX_PROCESSES
     jr nc,zx48_process_noent
-    ld c,a
     ld ix,process_table
     or a
     ret z
-    ld b,a
     ld de,PROC_DESC_SIZE
 zx48_r2_process_ptr_loop:
     add ix,de
-    djnz zx48_r2_process_ptr_loop
+    dec a
+    jr nz,zx48_r2_process_ptr_loop
     xor a
     ret
 zx48_process_lookup:
@@ -5319,9 +5318,7 @@ zx48_process_exit:
     jr z,zx48_process_exit_pid1
     or a
     jr z,zx48_process_exit_panic
-    push bc
     call zx48_process_lookup
-    pop bc
     jr c,zx48_process_exit_panic
     ld a,b
     ld (ix+PROC_EXIT_STATUS),a

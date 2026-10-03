@@ -259,7 +259,6 @@ zx48_r2_schedule_begin:
     ld c,a
     ld b,MAX_PROCESSES
 zx48_r2_schedule_scan:
-    push bc
     ld a,c
     or a
     jr z,zx48_r2_schedule_next
@@ -271,7 +270,6 @@ zx48_r2_schedule_scan:
     cp PROC_READY
     jr z,zx48_r2_schedule_choose
 zx48_r2_schedule_next:
-    pop bc
     inc c
     ld a,c
     and 7
@@ -281,7 +279,6 @@ zx48_r2_schedule_next:
     call zx48_process_ptr
     jr zx48_r2_schedule_restore
 zx48_r2_schedule_choose:
-    pop bc
     ld a,c
     jr zx48_r2_schedule_restore
 

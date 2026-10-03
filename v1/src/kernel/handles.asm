@@ -216,10 +216,8 @@ zx48_handle_install:
     ld a,c
     cp OPEN_DESCRIPTION_COUNT
     jp nc,zx48_handle_noent
-    push bc
     ld a,(current_pid)
     call zx48_process_lookup
-    pop bc
     ret c
     push ix
     pop hl
