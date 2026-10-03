@@ -840,12 +840,13 @@ zx48_memory_pin_bytes:
 ; exactly at FAST_START.
 zx48_mem_info:
     ld (memory_info_ptr),hl
-    xor a
     ld hl,memory_fast_total
-    ld de,memory_fast_total+1
-    ld bc,7
+    ld b,8
+    xor a
+zx48_r2_mem_info_clear:
     ld (hl),a
-    ldir
+    inc hl
+    djnz zx48_r2_mem_info_clear
     ld ix,memory_free_extents
     ld b,FREE_EXTENT_COUNT
 zx48_mem_scan:

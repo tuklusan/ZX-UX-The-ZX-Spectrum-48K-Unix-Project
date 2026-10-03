@@ -185,16 +185,15 @@ zx48_udg_init:
     call zx48_alloc
     ret c
     ld (udg_bank_ptr),hl
-    push hl
-    xor a
-    ld (hl),a
+    ld (ROM_UDG),hl
     ld d,h
     ld e,l
+    ld b,0
+    xor a
+zx48_r2_udg_zero_loop:
+    ld (de),a
     inc de
-    ld bc,UDG_BANK_SIZE-1
-    ldir
-    pop hl
-    ld (ROM_UDG),hl
+    djnz zx48_r2_udg_zero_loop
     ld bc,UDG_BANK_SIZE
     call zx48_memory_pin_bytes
     xor a

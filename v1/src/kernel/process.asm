@@ -5231,12 +5231,11 @@ zx48_process_reserve_slot:
 zx48_r2_process_clear_ix:
     push ix
     pop hl
+    ld b,PROC_DESC_SIZE
+zx48_r2_process_clear_loop:
     ld (hl),0
-    ld d,h
-    ld e,l
-    inc de
-    ld bc,PROC_DESC_SIZE-1
-    ldir
+    inc hl
+    djnz zx48_r2_process_clear_loop
     ret
 
 zx48_r2_process_fill_handles:

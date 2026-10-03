@@ -970,13 +970,12 @@ zx48_r2_pipe_waiter_scan:
 zx48_r2_pipe_free_clear:
     push ix
     pop hl
+    ld b,8
     xor a
+zx48_r2_pipe_free_clear_loop:
     ld (hl),a
-    ld d,h
-    ld e,l
-    inc de
-    ld bc,7
-    ldir
+    inc hl
+    djnz zx48_r2_pipe_free_clear_loop
     ret
 zx48_r2_pipe_waiter_exists:
     pop ix
