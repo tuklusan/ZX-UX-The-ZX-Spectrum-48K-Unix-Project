@@ -191,6 +191,7 @@ def _static_contract(root: Path, step: str) -> list[dict[str, object]]:
                 and "ld ix,REV02_PROCESS_LOW_BASE" in process
                 and "ld ix,process_table_high" in process
                 and "process_table_high:" in process
+                and re.search(r"(?m)^\s*current_pid\s+EQU\s+ROM_IF1_WORK_START\s*$", process) is not None
             )},
         ]
     elif step == "P1.07":
@@ -233,13 +234,15 @@ def _static_contract(root: Path, step: str) -> list[dict[str, object]]:
     return assertions
 
 
-def _common_labels(listing: Path) -> dict[str, int]:
-    return _labels(listing, (
+def _common_labels(root: Path, listing: Path) -> dict[str, int]:
+    labels = _labels(listing, (
         "zx48_kernel_stack_init", "zx48_memory_init", "zx48_alloc", "zx48_free", "zx48_memory_pin_bytes", "zx48_mem_info",
         "memory_free_extents", "memory_live_allocations", "memory_pinned_bytes",
-        "zx48_process_init", "zx48_process_prepare_pid1", "process_table_high", "current_pid",
+        "zx48_process_init", "zx48_process_prepare_pid1", "process_table_high",
         "zx48_schedule", "zx48_idle_loop", "kernel_ticks", "syscall_frame_sp", "kernel_ordinary_used_end",
     ))
+    labels["current_pid"] = _equ(root / "v1/include/zx48ux.inc", "ROM_IF1_WORK_START")
+    return labels
 
 
 def _process_descriptor_addresses(root: Path, labels: dict[str, int]) -> tuple[int, ...]:
@@ -442,7 +445,7 @@ def dispatch(
     require(not failed, f"static {step} contract failures: {failed}")
 
     result, kernel_path, listing = _assemble_kernel(root, run_command, require_project_tool)
-    labels = _common_labels(listing)
+    labels = _common_labels(root, listing)
     kernel = kernel_path.read_bytes()
     require(len(kernel) == 0x2000, "kernel image must remain exactly 8192 bytes")
 
