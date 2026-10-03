@@ -184,7 +184,14 @@ def _static_contract(root: Path, step: str) -> list[dict[str, object]]:
         assertions += [
             {"name": "descriptor-required-fields-present", "passed": all(name in offsets for name in ("PROC_PID", "PROC_PARENT", "PROC_STATE", "PROC_FLAGS", "PROC_IMAGE_BASE", "PROC_IMAGE_SIZE", "PROC_STACK_LOW", "PROC_STACK_HIGH", "PROC_SAVED_SP", "PROC_EXIT_STATUS", "PROC_WAIT_OBJECT", "PROC_HANDLES", "PROC_WAKE_TICK", "PROC_CWD", "PROC_NAME", "PROC_OWNED_BYTES", "PROC_PRIVATE_FLAGS"))},
             {"name": "private-started-is-not-public-proc-info", "passed": "and PROC_FLAG_CANCEL" in process and "PROC_PRIVATE_STARTED" not in process[process.index("zx48_process_info:"):process.index("zx48_process_exit:")]},
-            {"name": "process-table-is-exactly-eight-descriptors", "passed": "process_table: defs MAX_PROCESSES*PROC_DESC_SIZE,0" in process},
+            {"name": "historical-process-fixture-remains-contiguous", "passed": "process_table: defs MAX_PROCESSES*PROC_DESC_SIZE,0" in process},
+            {"name": "production-process-table-is-split", "passed": (
+                re.search(r"(?m)^\s*REV02_PROCESS_LOW_COUNT\s+EQU\s+5\s*$", process) is not None
+                and re.search(r"(?m)^\s*REV02_PROCESS_LOW_BASE\s+EQU\s+ROM_PRINTER_BUFFER_START\s*$", process) is not None
+                and "ld ix,REV02_PROCESS_LOW_BASE" in process
+                and "ld ix,process_table_high" in process
+                and "process_table_high:" in process
+            )},
         ]
     elif step == "P1.07":
         assertions += [
@@ -230,13 +237,30 @@ def _common_labels(listing: Path) -> dict[str, int]:
     return _labels(listing, (
         "zx48_kernel_stack_init", "zx48_memory_init", "zx48_alloc", "zx48_free", "zx48_memory_pin_bytes", "zx48_mem_info",
         "memory_free_extents", "memory_live_allocations", "memory_pinned_bytes",
-        "zx48_process_init", "zx48_process_prepare_pid1", "process_table", "current_pid",
+        "zx48_process_init", "zx48_process_prepare_pid1", "process_table_high", "current_pid",
         "zx48_schedule", "zx48_idle_loop", "kernel_ticks", "syscall_frame_sp", "kernel_ordinary_used_end",
     ))
 
 
+def _process_descriptor_addresses(root: Path, labels: dict[str, int]) -> tuple[int, ...]:
+    include = root / "v1/include/zx48ux.inc"
+    process = root / "v1/src/kernel/process.asm"
+    count = _equ(include, "MAX_PROCESSES")
+    size = _equ(include, "PROC_DESC_SIZE")
+    low_base = _equ(include, "ROM_PRINTER_BUFFER_START")
+    low_end = _equ(include, "ROM_PRINTER_BUFFER_END")
+    low_count = _equ(process, "REV02_PROCESS_LOW_COUNT")
+    require(0 < low_count < count, "invalid split process-table count")
+    require(low_base + low_count * size <= low_end + 1, "low process descriptors exceed printer buffer")
+    high_base = labels["process_table_high"]
+    return tuple(
+        low_base + pid * size if pid < low_count else high_base + (pid - low_count) * size
+        for pid in range(count)
+    )
+
+
 def _p101(root: Path, labels: dict[str, int], kernel: bytes) -> None:
-    canaries = ((0x4000, 0xA5), (0x5B00, 0x5A), (0x6000, 0x3C), (0xFF80, 0xC3))
+    canaries = ((0x4000, 0xA5), (0x5C78, 0x5A), (0x6000, 0x3C), (0xFF80, 0xC3))
     code = bytearray(b"\xF3" + _ld_sp(USER_STACK))
     for address, value in canaries:
         code += _ld_a(value) + _ld_mem_a(address)
@@ -297,17 +321,17 @@ def _p105(root: Path, labels: dict[str, int], kernel: bytes) -> None:
 
 
 def _p106(root: Path, labels: dict[str, int], kernel: bytes) -> None:
-    table = labels["process_table"]
+    descriptors = _process_descriptor_addresses(root, labels)
     code = bytearray(b"\xF3" + _ld_sp(USER_STACK) + _call(labels["zx48_process_init"]))
-    for pid in range(8):
-        base = table + pid * 48
-        code += _ld_a_mem(base) + _check_a(pid)
-        code += _ld_a_mem(base + 1) + _check_a(0xFF)
+    for pid, base in enumerate(descriptors):
+        initialized = pid in (0, 1) or pid >= 5
+        code += _ld_a_mem(base) + _check_a(pid if initialized else 0)
+        code += _ld_a_mem(base + 1) + _check_a(0xFF if initialized else 0)
         code += _ld_a_mem(base + 2) + _check_a(2 if pid == 0 else 0)
         for handle in range(8):
-            code += _ld_a_mem(base + 16 + handle) + _check_a(0xFF)
+            code += _ld_a_mem(base + 16 + handle) + _check_a(0xFF if initialized else 0)
     code += _call(labels["zx48_process_prepare_pid1"]) + _jp_c(FAIL_PC)
-    base = table + 48
+    base = descriptors[1]
     code += _ld_a_mem(base + 2) + _check_a(1) + _ld_a_mem(base + 1) + _check_a(0) + _ld_a_mem(base + 28) + _check_a(0)
     code += _ld_a_mem(base + 29) + _check_a(ord("s")) + _ld_a_mem(base + 30) + _check_a(ord("h"))
     code += _ld_a_mem(base + 46) + _check_a(0) + _jp(PASS_PC)
@@ -334,11 +358,11 @@ def _frame(pc: int) -> bytes:
 
 
 def _p107(root: Path, labels: dict[str, int], kernel: bytes) -> None:
-    table = labels["process_table"]
+    descriptors = _process_descriptor_addresses(root, labels)
     verifier = _context_verifier(labels["current_pid"], 1)
     extras = ((FRAME1, _frame(VERIFY_PC)), (VERIFY_PC, verifier))
     code = bytearray(b"\xF3" + _ld_sp(USER_STACK) + _call(labels["zx48_kernel_stack_init"]) + _call(labels["zx48_process_init"]) + _call(labels["zx48_process_prepare_pid1"]))
-    code += _ld_hl(FRAME1) + _ld_mem_hl(table + 48 + 12) + _jp(labels["zx48_schedule"])
+    code += _ld_hl(FRAME1) + _ld_mem_hl(descriptors[1] + 12) + _jp(labels["zx48_schedule"])
     run_sna(root, bytes(code), patch=_kernel_patch(kernel, extras))
 
 
@@ -375,11 +399,11 @@ def _p111(root: Path, labels: dict[str, int], kernel: bytes) -> None:
 
 
 def _p112(root: Path, labels: dict[str, int], kernel: bytes) -> None:
-    table = labels["process_table"]
-    p2 = table + 2 * 48
+    descriptors = _process_descriptor_addresses(root, labels)
+    p0, p1, p2 = descriptors[0], descriptors[1], descriptors[2]
     verifier = bytearray()
     verifier += _ld_a_mem(labels["current_pid"]) + _check_a(2)
-    verifier += _ld_a_mem(table + 2) + _check_a(1)
+    verifier += _ld_a_mem(p0 + 2) + _check_a(1)
     verifier += _ld_a_mem(p2 + 2) + _check_a(2)
     verifier += _ld_a_mem(p2 + 46) + b"\xE6\x80" + _check_a(0x80) + _jp(PASS_PC)
     extras = ((FRAME2, _frame(VERIFY_PC)), (VERIFY_PC, bytes(verifier)))
@@ -392,10 +416,10 @@ def _p112(root: Path, labels: dict[str, int], kernel: bytes) -> None:
     run_sna(root, bytes(code), patch=_kernel_patch(kernel, extras))
 
     # No user READY peer: the current RUNNING task is made READY and selected again.
-    verifier2 = _ld_a_mem(labels["current_pid"]) + _check_a(1) + _ld_a_mem(table + 48 + 2) + _check_a(2) + _jp(PASS_PC)
+    verifier2 = _ld_a_mem(labels["current_pid"]) + _check_a(1) + _ld_a_mem(p1 + 2) + _check_a(2) + _jp(PASS_PC)
     extras2 = ((FRAME1, _frame(VERIFY_PC)), (VERIFY_PC, verifier2))
     code2 = bytearray(b"\xF3" + _ld_sp(USER_STACK) + _call(labels["zx48_kernel_stack_init"]) + _call(labels["zx48_process_init"]) + _call(labels["zx48_process_prepare_pid1"]))
-    code2 += _ld_a(1) + _ld_mem_a(labels["current_pid"]) + _ld_a(2) + _ld_mem_a(table + 48 + 2)
+    code2 += _ld_a(1) + _ld_mem_a(labels["current_pid"]) + _ld_a(2) + _ld_mem_a(p1 + 2)
     code2 += _ld_hl(FRAME1) + _ld_mem_hl(labels["syscall_frame_sp"]) + _jp(labels["zx48_schedule"])
     run_sna(root, bytes(code2), patch=_kernel_patch(kernel, extras2))
 
