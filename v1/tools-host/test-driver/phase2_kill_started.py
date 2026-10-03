@@ -183,9 +183,8 @@ def _fixture_patch(kernel_bytes: bytes, frame_return: int, continuation: bytes):
 
 
 def _setup_child(code: bytearray, labels: dict[str, int], state: int) -> int:
-    process_table = labels["process_table"]
-    child = process_table + 2 * PROC_DESC_SIZE
-    pid1 = process_table + PROC_DESC_SIZE
+    child = labels["process_pid2"]
+    pid1 = labels["process_pid1"]
 
     code += b"\xF3" + _ld_sp(TEST_STACK)
     code += _call(labels["zx48_kernel_stack_init"])
@@ -289,12 +288,21 @@ def dispatch(
             "zx48_process_kill",
             "zx48_process_ptr",
             "zx48_schedule_restore",
-            "process_table",
-            "current_pid",
             "scheduler_candidate",
             "E_INTR",
         ),
     )
+    process = (root / "v1/src/kernel/process.asm").read_text(encoding="utf-8")
+    include = (root / "v1/include/zx48ux.inc").read_text(encoding="utf-8")
+    require("REV02_PROCESS_LOW_BASE        EQU ROM_PRINTER_BUFFER_START" in process,
+            "production low process-table base missing")
+    require("current_pid              EQU ROM_IF1_WORK_START" in process,
+            "production current_pid low-RAM placement missing")
+    require("ROM_PRINTER_BUFFER_START EQU $5B00" in include and "ROM_IF1_WORK_START       EQU $5CB6" in include,
+            "authorized low-RAM process addresses missing")
+    labels["process_pid1"] = 0x5B00 + PROC_DESC_SIZE
+    labels["process_pid2"] = 0x5B00 + 2 * PROC_DESC_SIZE
+    labels["current_pid"] = 0x5CB6
     kernel_bytes = kernel.read_bytes()
 
     if action == "test":
