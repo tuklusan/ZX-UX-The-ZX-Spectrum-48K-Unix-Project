@@ -102,7 +102,7 @@ def main():
     for old,new in gateway_asserts:
         req(candidate.count(old)==1,"kernel gateway assertion anchor")
         candidate=candidate.replace(old,new,1)
-    emit_anchor="kernel_mod_udg:\n    EMIT_UDG_ROUTINES\n"
+    emit_anchor="kernel_mod_udg:\n    EMIT_REV02_UDG_ROUTINES\n"
     req(candidate.count(emit_anchor)==1,"UDG emit anchor")
     extra="""kernel_mod_rev02_graphics:
     EMIT_GRAPHICS_ROUTINES
