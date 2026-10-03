@@ -763,6 +763,155 @@ rom_info_table:
     db 0
     ENDM
 
+; REV02 production ROM-info packing. Historical P7.11 keeps the exact macro
+; above. The resident form stores name length+flags in one byte, packs class
+; into the two unused high bits of the ROM address, and uses category markers.
+    MACRO ROMINFO_R2_REC nameText,nameLen,addressValue,classValue,flagsValue
+    db flagsValue*16+nameLen
+    dw addressValue+classValue*$4000
+    db nameText
+    ENDM
+
+    MACRO EMIT_REV02_P711_ROM_INFO_ROUTINES
+zx48_rom_info_lookup:
+    cp 7
+    jp nc,zx48_sys_invalid
+    ld c,a
+    push de
+    pop ix
+    ld d,0
+    ld hl,rom_info_r2_table
+zx48_r2_rom_info_scan:
+    ld a,(hl)
+    inc hl
+    or a
+    jr z,zx48_r2_rom_info_past_end
+    ld e,a
+    and $0f
+    jr z,zx48_r2_rom_info_group
+    ld a,c
+    or a
+    jr z,zx48_r2_rom_info_candidate
+    cp d
+    jr nz,zx48_r2_rom_info_skip
+zx48_r2_rom_info_candidate:
+    ld a,b
+    or a
+    jr z,zx48_r2_rom_info_publish
+    dec b
+zx48_r2_rom_info_skip:
+    ld a,e
+    and $0f
+    add a,2
+    push bc
+    ld b,a
+zx48_r2_rom_info_skip_loop:
+    inc hl
+    djnz zx48_r2_rom_info_skip_loop
+    pop bc
+    jr zx48_r2_rom_info_scan
+
+zx48_r2_rom_info_group:
+    ld a,e
+    rrca
+    rrca
+    rrca
+    rrca
+    ld d,a
+    jr zx48_r2_rom_info_scan
+
+zx48_r2_rom_info_publish:
+    push hl
+    push de
+    push ix
+    pop hl
+    ld b,ROMINFO_RECORD_SIZE
+    xor a
+zx48_r2_rom_info_clear:
+    ld (hl),a
+    inc hl
+    djnz zx48_r2_rom_info_clear
+    pop de
+    pop hl
+
+    ld a,(hl)
+    ld (ix+16),a
+    inc hl
+    ld a,(hl)
+    ld c,a
+    and $3f
+    ld (ix+17),a
+    ld a,c
+    rlca
+    rlca
+    and 3
+    ld (ix+18),a
+    inc hl
+    ld a,d
+    ld (ix+19),a
+    ld a,e
+    rrca
+    rrca
+    rrca
+    rrca
+    and $0f
+    ld (ix+20),a
+
+    ld a,e
+    and $0f
+    ld c,a
+    ld b,0
+    push ix
+    pop de
+    ldir
+    ld hl,1
+    xor a
+    ret
+
+zx48_r2_rom_info_past_end:
+    ld h,a
+    ld l,a
+    ret
+
+rom_info_r2_table:
+    db ROMINFO_CAT_KEYBOARD*16
+    ROMINFO_R2_REC "KEY-SCAN",8,ROM_KEY_SCAN,ROMINFO_CLASS_A,0
+    ROMINFO_R2_REC "KEYBOARD",8,ROM_KEYBOARD,ROMINFO_CLASS_A,ROMINFO_FLAG_ALTREG+ROMINFO_FLAG_NONREENT
+    ROMINFO_R2_REC "KEY-DECODE",10,ROM_KEY_DECODE,ROMINFO_CLASS_A,ROMINFO_FLAG_ALTREG+ROMINFO_FLAG_NONREENT
+    db ROMINFO_CAT_CONSOLE*16
+    ROMINFO_R2_REC "PRINT-A",7,ROM_PRINT_A,ROMINFO_CLASS_A,ROMINFO_FLAG_ERROR+ROMINFO_FLAG_ALTREG+ROMINFO_FLAG_NONREENT
+    db ROMINFO_CAT_TAPE*16
+    ROMINFO_R2_REC "SA-BYTES",8,ROM_SA_BYTES,ROMINFO_CLASS_A,ROMINFO_FLAG_ALTREG+ROMINFO_FLAG_DI+ROMINFO_FLAG_NONREENT
+    ROMINFO_R2_REC "LD-BYTES",8,ROM_LD_BYTES,ROMINFO_CLASS_A,ROMINFO_FLAG_ALTREG+ROMINFO_FLAG_DI+ROMINFO_FLAG_NONREENT
+    db ROMINFO_CAT_GRAPHICS*16
+    ROMINFO_R2_REC "PIXEL-ADD",9,ROM_PIXEL_ADD,ROMINFO_CLASS_A,ROMINFO_FLAG_ALTREG+ROMINFO_FLAG_NONREENT
+    ROMINFO_R2_REC "POINT",5,ROM_POINT,ROMINFO_CLASS_A,ROMINFO_FLAG_ALTREG+ROMINFO_FLAG_NONREENT
+    ROMINFO_R2_REC "PLOT-SUB",8,ROM_PLOT_SUB,ROMINFO_CLASS_A,ROMINFO_FLAG_ERROR+ROMINFO_FLAG_ALTREG+ROMINFO_FLAG_NONREENT
+    ROMINFO_R2_REC "DRAW-CONVERT",12,$24B7,ROMINFO_CLASS_B,ROMINFO_FLAG_ERROR+ROMINFO_FLAG_ALTREG+ROMINFO_FLAG_NONREENT
+    ROMINFO_R2_REC "DRAW-LINE",9,ROM_DRAW_LINE,ROMINFO_CLASS_A,ROMINFO_FLAG_ERROR+ROMINFO_FLAG_ALTREG+ROMINFO_FLAG_NONREENT
+    db ROMINFO_CAT_SOUND*16
+    ROMINFO_R2_REC "BEEPER",6,ROM_BEEPER,ROMINFO_CLASS_A,ROMINFO_FLAG_ALTREG+ROMINFO_FLAG_DI+ROMINFO_FLAG_NONREENT
+    ROMINFO_R2_REC "BEEP-COMMAND",12,ROM_BEEP_COMMAND,ROMINFO_CLASS_B,ROMINFO_FLAG_ERROR+ROMINFO_FLAG_ALTREG+ROMINFO_FLAG_DI+ROMINFO_FLAG_NONREENT
+    db ROMINFO_CAT_MATH*16
+    ROMINFO_R2_REC "FP-CALC",7,ROM_FP_CALC,ROMINFO_CLASS_B,ROMINFO_FLAG_ERROR+ROMINFO_FLAG_ALTREG+ROMINFO_FLAG_NONREENT
+    ROMINFO_R2_REC "FP-TO-BC",8,ROM_FP_TO_BC,ROMINFO_CLASS_B,ROMINFO_FLAG_ERROR+ROMINFO_FLAG_ALTREG+ROMINFO_FLAG_NONREENT
+    ROMINFO_R2_REC "FP-PRINT",8,ROM_FP_PRINT,ROMINFO_CLASS_B,ROMINFO_FLAG_ERROR+ROMINFO_FLAG_ALTREG+ROMINFO_FLAG_NONREENT
+    ROMINFO_R2_REC "CALCULATE",9,ROM_CALCULATE,ROMINFO_CLASS_B,ROMINFO_FLAG_ERROR+ROMINFO_FLAG_ALTREG+ROMINFO_FLAG_NONREENT
+    ROMINFO_R2_REC "INT",3,ROM_INT,ROMINFO_CLASS_B,ROMINFO_FLAG_ERROR+ROMINFO_FLAG_ALTREG+ROMINFO_FLAG_NONREENT
+    ROMINFO_R2_REC "EXP",3,ROM_EXP,ROMINFO_CLASS_B,ROMINFO_FLAG_ERROR+ROMINFO_FLAG_ALTREG+ROMINFO_FLAG_NONREENT
+    ROMINFO_R2_REC "LN",2,ROM_LN,ROMINFO_CLASS_B,ROMINFO_FLAG_ERROR+ROMINFO_FLAG_ALTREG+ROMINFO_FLAG_NONREENT
+    ROMINFO_R2_REC "COS",3,ROM_COS,ROMINFO_CLASS_B,ROMINFO_FLAG_ERROR+ROMINFO_FLAG_ALTREG+ROMINFO_FLAG_NONREENT
+    ROMINFO_R2_REC "SIN",3,ROM_SIN,ROMINFO_CLASS_B,ROMINFO_FLAG_ERROR+ROMINFO_FLAG_ALTREG+ROMINFO_FLAG_NONREENT
+    ROMINFO_R2_REC "TAN",3,ROM_TAN,ROMINFO_CLASS_B,ROMINFO_FLAG_ERROR+ROMINFO_FLAG_ALTREG+ROMINFO_FLAG_NONREENT
+    ROMINFO_R2_REC "ATN",3,ROM_ATN,ROMINFO_CLASS_B,ROMINFO_FLAG_ERROR+ROMINFO_FLAG_ALTREG+ROMINFO_FLAG_NONREENT
+    ROMINFO_R2_REC "ASN",3,ROM_ASN,ROMINFO_CLASS_B,ROMINFO_FLAG_ERROR+ROMINFO_FLAG_ALTREG+ROMINFO_FLAG_NONREENT
+    ROMINFO_R2_REC "ACS",3,ROM_ACS,ROMINFO_CLASS_B,ROMINFO_FLAG_ERROR+ROMINFO_FLAG_ALTREG+ROMINFO_FLAG_NONREENT
+    ROMINFO_R2_REC "SQR",3,ROM_SQR,ROMINFO_CLASS_B,ROMINFO_FLAG_ERROR+ROMINFO_FLAG_ALTREG+ROMINFO_FLAG_NONREENT
+    ROMINFO_R2_REC "POWER",5,ROM_POWER,ROMINFO_CLASS_B,ROMINFO_FLAG_ERROR+ROMINFO_FLAG_ALTREG+ROMINFO_FLAG_NONREENT
+    ROMINFO_R2_REC "USR",3,$34BC,ROMINFO_CLASS_C,ROMINFO_FLAG_ERROR+ROMINFO_FLAG_ALTREG+ROMINFO_FLAG_NONREENT
+    db 0
+    ENDM
+
 ; P11.18 approved ROM integer/floating conversion gateway.
 ; Inputs are copied to private bytes before any caller destination is written,
 ; so the documented request/input/output aliasing contract is atomic.

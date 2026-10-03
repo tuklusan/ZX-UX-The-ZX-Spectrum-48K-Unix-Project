@@ -120,7 +120,7 @@ kernel_mod_rev02_udg_syscalls:
 kernel_mod_rev02_rom_beep:
     EMIT_P709_ROM_BEEP_ROUTINES
 kernel_mod_rev02_rom_info:
-    EMIT_P711_ROM_INFO_ROUTINES
+    EMIT_REV02_P711_ROM_INFO_ROUTINES
 kernel_mod_rev02_rom_fp_exec:
     EMIT_P1117_ROM_FP_EXEC_ROUTINES
 kernel_mod_rev02_rom_fp_cast:

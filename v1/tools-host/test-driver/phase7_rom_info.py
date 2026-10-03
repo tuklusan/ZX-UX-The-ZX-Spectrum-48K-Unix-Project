@@ -81,6 +81,32 @@ def _assemble(root:Path,run_command:Callable[...,Any],require_project_tool:Calla
     require(binary.is_file() and 0<binary.stat().st_size<8192,"P7.11 fixture missing/oversize")
     return r,binary,sym
 
+def _assemble_rev02(root:Path,run_command:Callable[...,Any],require_project_tool:Callable[[Path,str|Path],Path]):
+    asm=require_project_tool(root,"tools/runtime/sjasmplus/bin/sjasmplus")
+    build=root/"v1/build"; build.mkdir(parents=True,exist_ok=True)
+    src=build/"p711-rev02-rom-info.asm"; binary=build/"p711-rev02-rom-info.bin"; sym=build/"p711-rev02-rom-info.sym"
+    src.write_text(
+      "    DEVICE ZXSPECTRUM48\n"
+      "    INCLUDE \"../include/zx48ux.inc\"\n"
+      "    INCLUDE \"../src/kernel/rom_services.asm\"\n"
+      "    INCLUDE \"../src/kernel/syscall.asm\"\n"
+      f"    ORG ${MODULE:04X}\n"
+      "p711_r2_start:\n"
+      "    EMIT_USER_RANGE_VALIDATION_ROUTINE\n"
+      "zx48_sys_invalid:\n"
+      "    ld a,E_INVAL\n"
+      "    scf\n"
+      "    ret\n"
+      "    EMIT_REV02_P711_ROM_INFO_ROUTINES\n"
+      "    EMIT_P711_ROM_INFO_SYSCALL_ROUTINES\n"
+      "p711_r2_end:\n"
+      "    SAVEBIN \"p711-rev02-rom-info.bin\",p711_r2_start,p711_r2_end-p711_r2_start\n",
+      encoding="utf-8",newline="\n")
+    r=run_command([asm,"--nologo","--lst=p711-rev02-rom-info.lst","--sym=p711-rev02-rom-info.sym","p711-rev02-rom-info.asm"],cwd=build,timeout_seconds=30.0)
+    require(not r.timed_out and r.exit_code==0,f"P7.11 REV02 fixture assembly failed: {r.stderr or r.stdout}")
+    require(binary.is_file() and 0<binary.stat().st_size<8192,"P7.11 REV02 fixture missing/oversize")
+    return r,binary,sym
+
 def _patch(module:bytes,req:bytes,arg:bytes=b""):
     def apply(ram:bytearray):
         ram[MODULE-0x4000:MODULE-0x4000+len(module)]=module
@@ -133,8 +159,10 @@ def dispatch(root:Path,action:str,step:str,*,sha256_file,run_command,require_pro
     assertions=_source(root); require(all(x["passed"] for x in assertions),"P7.11 static failure")
     kc,kernel,_=phase1._assemble_kernel(root,run_command,require_project_tool)
     fc,binary,sym=_assemble(root,run_command,require_project_tool)
+    r2c,r2binary,r2sym=_assemble_rev02(root,run_command,require_project_tool)
     names=("zx48_p711_rom_info","syscall_arg_hl","sh_p711_rom_builtin")
     symbols=phase3_open_descriptions._symbols(sym,names)
+    r2symbols=phase3_open_descriptions._symbols(r2sym,("zx48_p711_rom_info","syscall_arg_hl"))
     if action=="test":
         module=binary.read_bytes()
         cases = [
@@ -167,19 +195,41 @@ def dispatch(root:Path,action:str,step:str,*,sha256_file,run_command,require_pro
                 case()
             except Exception as exc:
                 raise P711Error(f"P7.11 runtime vector {name} failed: {exc}") from exc
+        r2module=r2binary.read_bytes()
+        r2cases = [
+          ("keyboard-first", lambda: _info(root,r2symbols,r2module,0,1,("KEY-SCAN",0x028e,1,1,0))),
+          ("keyboard-last", lambda: _info(root,r2symbols,r2module,2,1,("KEY-DECODE",0x0333,1,1,10))),
+          ("console-first", lambda: _info(root,r2symbols,r2module,0,2,("PRINT-A",0x0010,1,2,11))),
+          ("tape-last", lambda: _info(root,r2symbols,r2module,1,3,("LD-BYTES",0x0556,1,3,14))),
+          ("graphics-last", lambda: _info(root,r2symbols,r2module,4,4,("DRAW-LINE",0x24ba,1,4,11))),
+          ("sound-last", lambda: _info(root,r2symbols,r2module,1,5,("BEEP-COMMAND",0x03f8,2,5,15))),
+          ("math-first", lambda: _info(root,r2symbols,r2module,0,6,("FP-CALC",0x0028,2,6,11))),
+          ("math-last", lambda: _info(root,r2symbols,r2module,15,6,("USR",0x34bc,3,6,11))),
+          ("math-past", lambda: _info(root,r2symbols,r2module,16,6,None)),
+          ("all-past", lambda: _info(root,r2symbols,r2module,29,0,None)),
+          ("bad-category", lambda: _bad(root,r2symbols,r2module,bytes((0,7,OUT&255,OUT>>8)))),
+          ("bad-range", lambda: _bad(root,r2symbols,r2module,bytes((0,1,0xfe,0xdf)))),
+        ]
+        for name, case in r2cases:
+            try:
+                case()
+            except Exception as exc:
+                raise P711Error(f"P7.11 REV02 runtime vector {name} failed: {exc}") from exc
         assertions += [
           {"name":"fuse-every-category-first-last-past-end-layout-exact","passed":True},
           {"name":"fuse-classes-a-b-c-and-contract-flags-exact","passed":True},
           {"name":"fuse-invalid-category-and-malformed-output-range-fail-before-publish","passed":True},
           {"name":"fuse-rom-builtin-only-exposes-frozen-safe-categories","passed":True},
+          {"name":"rev02-packed-rom-info-runtime-exact","passed":True},
         ]
     hashes={
       "v1/build/kernel.bin":sha256_file(kernel),
       "v1/build/p711-rom-info.bin":sha256_file(binary),
+      "v1/build/p711-rev02-rom-info.bin":sha256_file(r2binary),
       "v1/src/kernel/rom_services.asm":sha256_file(root/"v1/src/kernel/rom_services.asm"),
       "v1/src/kernel/syscall.asm":sha256_file(root/"v1/src/kernel/syscall.asm"),
       "v1/src/shell/sh.asm":sha256_file(root/"v1/src/shell/sh.asm"),
       "v1/tools-host/test-driver/phase7_rom_info.py":sha256_file(root/"v1/tools-host/test-driver/phase7_rom_info.py"),
       "v1/tools-host/test-driver/run.py":sha256_file(root/"v1/tools-host/test-driver/run.py"),
     }
-    return [kc,fc],hashes,assertions
+    return [kc,fc,r2c],hashes,assertions
