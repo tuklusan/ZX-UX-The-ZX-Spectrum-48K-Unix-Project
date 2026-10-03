@@ -123,7 +123,8 @@ def _frames_contract(interrupt: str) -> bool:
 
 def _udg_contract(udg: str) -> bool:
     lowered = _strip_asm(udg)
-    body = _block(lowered, "zx48_udg_init:", "zx48_udg_slot_ptr:")
+    historical = _block(lowered, "macro emit_udg_routines", "    endm")
+    body = _block(historical, "zx48_udg_init:", "zx48_udg_slot_ptr:")
     return _ordered_tokens(
         body,
         (
@@ -149,11 +150,11 @@ def _udg_contract(udg: str) -> bool:
         ),
     ) and all(
         (
-            "call zx48_free" not in lowered,
-            lowered.count("call zx48_alloc") == 1,
-            len(re.findall(r"(?m)^\s*ld\s+\(udg_bank_ptr\),", lowered)) == 1,
-            lowered.count("ld (rom_udg),hl") == 1,
-            len(re.findall(r"(?m)^\s*ld\s+\(rom_udg\),", lowered)) == 1,
+            "call zx48_free" not in historical,
+            historical.count("call zx48_alloc") == 1,
+            len(re.findall(r"(?m)^\s*ld\s+\(udg_bank_ptr\),", historical)) == 1,
+            historical.count("ld (rom_udg),hl") == 1,
+            len(re.findall(r"(?m)^\s*ld\s+\(rom_udg\),", historical)) == 1,
             "kernel_start" not in body,
         )
     )
