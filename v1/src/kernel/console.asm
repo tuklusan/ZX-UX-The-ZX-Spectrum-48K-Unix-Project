@@ -322,6 +322,10 @@ zx48_tty_set_owner:
     jr nc,zx48_tty_bad
     or a
     jr z,zx48_tty_set_owner_commit
+    IFDEF ZX48_REV02_COLD_IMAGE_INIT
+    ; Production process lookup preserves C instead of publishing the input PID.
+    ld c,a
+    ENDIF
     call zx48_process_live_lookup
     ret c
     ld a,c
