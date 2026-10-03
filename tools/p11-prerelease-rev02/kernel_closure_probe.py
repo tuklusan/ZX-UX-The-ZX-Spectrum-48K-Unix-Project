@@ -159,7 +159,7 @@ def main():
     baseline=assemble(root,"kernel-baseline",kernel)
 
     fixture_steps=("P2.12","P4.15","P4.19","P4.22","P4.23","P4.26","P4.27","P4.28",
-                   "P4.31","P4.32","P5.08","P5.09","P5.10","P5.11","P5.14","P5.17")
+                   "P4.31","P4.32","P5.08","P5.09","P5.10","P5.11","P5.14","P5.17","P11.40")
     fixture_measurements=[measure_historical_fixture(root,step) for step in fixture_steps]
 
     include_anchor='    INCLUDE "udg.asm"\n'
