@@ -25,6 +25,7 @@ syscall_saved_ix          EQU SYSCALL_STATE_BASE+2
 syscall_arg_hl            EQU SYSCALL_STATE_BASE+4
 syscall_arg_de            EQU SYSCALL_STATE_BASE+6
 syscall_arg_bc            EQU SYSCALL_STATE_BASE+8
+syscall_temp              EQU SYSCALL_STATE_BASE+10
 syscall_tick_lo           EQU SYSCALL_STATE_BASE+11
 syscall_tick_hi           EQU SYSCALL_STATE_BASE+13
 SYSCALL_STATE_END         EQU SYSCALL_STATE_BASE+15
@@ -559,6 +560,8 @@ zx48_sys_proc_info:
     ld bc,4
     call zx48_user_range_validate
     ret c
+    ld a,(hl)
+    ld (syscall_temp),a
     inc hl
     ld a,(hl)
     or a
@@ -571,8 +574,7 @@ zx48_sys_proc_info:
     ld bc,16
     call zx48_user_range_validate
     ret c
-    ld hl,(syscall_arg_hl)
-    ld a,(hl)
+    ld a,(syscall_temp)
     call zx48_process_info
     ret c
     xor a
