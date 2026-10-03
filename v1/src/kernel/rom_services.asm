@@ -185,9 +185,7 @@ zx48_rom_decimal_literal:
 
     ld hl,zx48_rom_decimal_error
     push hl
-    ld hl,0
-    add hl,sp
-    ld (ROM_ERR_SP),hl
+    ld (ROM_ERR_SP),sp
     ld iy,ROM_IY_ANCHOR
     ld hl,(rom_decimal_input_ptr)
     ld a,(hl)
@@ -202,7 +200,6 @@ zx48_rom_decimal_literal:
     ldir
     call zx48_rom_calc_cleanup
     xor a
-    or a
     ret
 
 zx48_rom_decimal_error:
@@ -256,9 +253,7 @@ zx48_rom_calc_expr:
 
     ld hl,zx48_rom_calc_error
     push hl
-    ld hl,0
-    add hl,sp
-    ld (ROM_ERR_SP),hl
+    ld (ROM_ERR_SP),sp
     ld iy,ROM_IY_ANCHOR
     call ROM_SCANNING
     pop hl
@@ -274,7 +269,6 @@ zx48_rom_calc_expr:
     ldir
     call zx48_rom_calc_cleanup
     xor a
-    or a
     ret
 
 zx48_rom_calc_type_error:
@@ -430,7 +424,7 @@ zx48_p1117_rom_fp_exec:
     ld hl,0
     add hl,sp
     call zx48_p11_rom_txn_begin
-    jp c,p1117_fp_rom_busy
+    ret c
 
     ld hl,(p1117_fp_lhs_ptr)
     ld de,ROM_CALC_STACK
@@ -460,9 +454,7 @@ p1117_fp_rom_operands_ready:
 
     ld hl,p1117_fp_rom_error
     push hl
-    ld hl,0
-    add hl,sp
-    ld (ROM_ERR_SP),hl
+    ld (ROM_ERR_SP),sp
     ld iy,ROM_IY_ANCHOR
     call ROM_CALCULATE
     db $3B,$38
@@ -474,29 +466,26 @@ p1117_fp_rom_operands_ready:
     sbc hl,bc
     ld de,p1117_fp_result
     ldir
-    call p1117_fp_rom_cleanup
+    call zx48_p11_rom_txn_cleanup
 
     ld hl,p1117_fp_result
     ld de,(p1117_fp_out_ptr)
     ld bc,5
     ldir
-    ld hl,0
     xor a
+    ld h,a
+    ld l,a
     ret
 
 p1117_fp_rom_error:
     ld hl,(p11_rom_saved_sp)
     ld sp,hl
-    call p1117_fp_rom_cleanup
+    call zx48_p11_rom_txn_cleanup
     ld a,E_INVAL
     scf
     ret
 
-p1117_fp_rom_cleanup:
-    jp zx48_p11_rom_txn_cleanup
 
-p1117_fp_rom_busy:
-    ret
     ENDM
 
     MACRO EMIT_P709_ROM_BEEP_ROUTINES
@@ -529,16 +518,13 @@ zx48_rom_beep_values:
 
     ld hl,zx48_rom_beep_error
     push hl
-    ld hl,0
-    add hl,sp
-    ld (ROM_ERR_SP),hl
+    ld (ROM_ERR_SP),sp
     ld iy,ROM_IY_ANCHOR
     call zx48_ula_rom_prepare
     call ROM_BEEP_COMMAND
     pop hl
     call zx48_rom_beep_cleanup
     xor a
-    or a
     ret
 
 zx48_rom_beep_error:
@@ -690,8 +676,9 @@ zx48_rom_info_publish_meta:
     ret
 
 zx48_rom_info_past_end:
-    ld hl,0
     xor a
+    ld h,a
+    ld l,a
     ret
 
 zx48_rom_info_invalid:
@@ -782,8 +769,9 @@ p1118_rom_itof_store:
     ld de,(p1118_rom_out_ptr)
     ld bc,5
     ldir
-    ld hl,0
     xor a
+    ld h,a
+    ld l,a
     ret
 
 ; HL=five-byte source, A=0 unsigned/1 signed, DE=writable u16 destination.
@@ -830,8 +818,9 @@ p1118_rom_ftoi_publish:
     ld de,(p1118_rom_out_ptr)
     ld bc,2
     ldir
-    ld hl,0
     xor a
+    ld h,a
+    ld l,a
     ret
 
 p1118_rom_cast_invalid:
@@ -861,13 +850,11 @@ zx48_p1119_rom_fp_cmp:
     ld hl,0
     add hl,sp
     call zx48_p11_rom_txn_begin
-    jp c,p1119_rom_busy
+    ret c
 
     ld hl,p1119_rom_error
     push hl
-    ld hl,0
-    add hl,sp
-    ld (ROM_ERR_SP),hl
+    ld (ROM_ERR_SP),sp
     ld iy,ROM_IY_ANCHOR
 
     call p1119_rom_load_operands
@@ -899,12 +886,13 @@ p1119_rom_greater:
 
 p1119_rom_success:
     pop hl
-    call p1119_rom_cleanup
+    call zx48_p11_rom_txn_cleanup
     ld a,(p1119_rom_result)
     ld hl,(p1119_rom_out_ptr)
     ld (hl),a
-    ld hl,0
     xor a
+    ld h,a
+    ld l,a
     ret
 
 ; Reset the private calculator stack and copy both inputs before each operation.
@@ -942,16 +930,12 @@ p1119_rom_bool_loop:
 p1119_rom_error:
     ld hl,(p11_rom_saved_sp)
     ld sp,hl
-    call p1119_rom_cleanup
+    call zx48_p11_rom_txn_cleanup
     ld a,E_INVAL
     scf
     ret
 
-p1119_rom_cleanup:
-    jp zx48_p11_rom_txn_cleanup
 
-p1119_rom_busy:
-    ret
     ENDM
 
 ; P11.46 isolated ROM-backed floating text formatter. The caller owns all
@@ -1023,7 +1007,7 @@ zx48_p1146_rom_fp_to_text:
     ld hl,0
     add hl,sp
     call zx48_p11_rom_txn_begin
-    jp c,p1146_text_busy
+    ret c
     ld hl,(ROM_CURCHL)
     ld (p1146_text_saved_curchl),hl
     ld hl,P1146_MEM35
@@ -1047,9 +1031,7 @@ zx48_p1146_rom_fp_to_text:
 
     ld hl,p1146_text_error
     push hl
-    ld hl,0
-    add hl,sp
-    ld (ROM_ERR_SP),hl
+    ld (ROM_ERR_SP),sp
     ld iy,ROM_IY_ANCHOR
     call ROM_FP_PRINT
     pop hl
@@ -1110,8 +1092,6 @@ p1146_text_cleanup:
     ld (ROM_CURCHL),hl
     jp zx48_p11_rom_txn_cleanup
 
-p1146_text_busy:
-    ret
     ENDM
 
 ; P11.47 exact bounded decimal-text to Spectrum five-byte floating gateway.
@@ -1142,7 +1122,7 @@ zx48_p1147_rom_fp_from_text:
     ld hl,0
     add hl,sp
     call zx48_p11_rom_txn_begin
-    jp c,p1147_text_busy
+    ret c
 
     ; Freeze caller bytes before any ROM entry so output may alias input safely.
     ld hl,(p1147_text_in_ptr)
@@ -1163,9 +1143,7 @@ zx48_p1147_rom_fp_from_text:
 
     ld hl,p1147_text_error
     push hl
-    ld hl,0
-    add hl,sp
-    ld (ROM_ERR_SP),hl
+    ld (ROM_ERR_SP),sp
     ld iy,ROM_IY_ANCHOR
     ld hl,p1147_text_scratch
     ld a,(hl)
@@ -1184,27 +1162,24 @@ p1147_text_sign_done:
     sbc hl,bc
     ld de,p1147_text_result
     ldir
-    call p1147_text_cleanup
+    call zx48_p11_rom_txn_cleanup
 
     ld hl,p1147_text_result
     ld de,(p1147_text_out_ptr)
     ld bc,5
     ldir
-    ld hl,0
     xor a
+    ld h,a
+    ld l,a
     ret
 
 p1147_text_error:
     ld hl,(p11_rom_saved_sp)
     ld sp,hl
-    call p1147_text_cleanup
+    call zx48_p11_rom_txn_cleanup
     ld a,E_INVAL
     scf
     ret
 
-p1147_text_cleanup:
-    jp zx48_p11_rom_txn_cleanup
 
-p1147_text_busy:
-    ret
     ENDM
