@@ -108,8 +108,7 @@ zx48_alloc_fast:
     pop hl
     ld (ix+2),l
     ld (ix+3),h
-    push de
-    pop hl
+    ex de,hl
     pop bc
     ld a,(ix+2)
     or (ix+3)
@@ -361,10 +360,9 @@ zx48_free_commit:
     ld hl,(memory_live_allocations)
     ld a,h
     or l
-    jr z,zx48_free_ok
+    ret z
     dec hl
     ld (memory_live_allocations),hl
-zx48_free_ok:
     xor a
     ret
 zx48_free_nospc:
@@ -485,7 +483,6 @@ zx48_mem_add_cold:
     or a
     sbc hl,de
     ret c
-    ret z
     add hl,de
     ld (memory_cold_largest),hl
     ret
@@ -499,7 +496,6 @@ zx48_mem_add_fast:
     or a
     sbc hl,de
     ret c
-    ret z
     add hl,de
     ld (memory_fast_largest),hl
     ret
