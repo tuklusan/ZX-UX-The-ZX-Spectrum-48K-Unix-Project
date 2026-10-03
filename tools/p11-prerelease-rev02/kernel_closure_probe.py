@@ -177,6 +177,7 @@ kernel_mod_rev02_sys_fp_from_text:
     # kernel region from measured code rather than assuming +2 KiB is sufficient.
     closure_includes='    INCLUDE "objects.asm"\n    INCLUDE "tape.asm"\n    INCLUDE "zxpack.asm"\n    INCLUDE "sound.asm"\n'
     closure=kernel.replace(include_anchor,include_anchor+closure_includes)
+    closure=closure.replace('    INCLUDE "../../include/zx48ux.inc"\n','    INCLUDE "../../include/zx48ux.inc"\n    INCLUDE "../../include/mex1.inc"\n    INCLUDE "../../include/tapeobj.inc"\n',1)
     closure_origin=0x6000
     req(closure.count(origin_anchor)==1,"closure kernel origin anchor")
     closure=closure.replace(origin_anchor,f"    ORG ${closure_origin:04X}\n",1)
@@ -253,6 +254,38 @@ kernel_mod_rev02_object_syscalls:
     EMIT_P428_ZXPACK_INFO_SYSCALL_ROUTINES
     EMIT_P431_CHDIR_SYSCALL_ROUTINES
     EMIT_P432_GETCWD_SYSCALL_ROUTINES
+kernel_mod_rev02_spawn_adapters:
+zx48_spawn_resolve_ram_object:
+    call zx48_path_resolve
+    ret c
+    ld a,c
+    cp PATH_KIND_BASE
+    jr nz,.spawn_path_bad
+    ld a,(path_dir)
+    ld hl,path_name
+    jp zx48_object_lookup
+.spawn_path_bad:
+    ld a,E_NOENT
+    scf
+    ret
+zx48_p514_resolve_tape_name:
+    call zx48_path_resolve
+    ret c
+    ld a,c
+    cp PATH_KIND_BASE
+    jr nz,.tape_path_bad
+    ld hl,path_name
+    xor a
+    ret
+.tape_path_bad:
+    ld a,E_NOENT
+    scf
+    ret
+zx48_p514_commit_ready:
+    xor a
+    ret
+kernel_mod_rev02_final_integration_reserve:
+    defs 192,0
 """
     closure=closure.replace(emit_anchor,emit_anchor+closure_extra)
     complete_closure=assemble(root,"kernel-complete-closure-envelope",closure,start=closure_origin)
