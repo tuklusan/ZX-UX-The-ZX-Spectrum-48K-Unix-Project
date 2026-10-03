@@ -118,12 +118,12 @@ zx48_gfx_draw:
     inc hl
     ld a,(hl)
     cp 192
-    jr nc,zx48_gfx_draw_bad
+    jp nc,zx48_gfx_draw_bad
     inc hl
     inc hl
     ld a,(hl)
     cp 192
-    jr nc,zx48_gfx_draw_bad
+    jp nc,zx48_gfx_draw_bad
     pop hl
     ld a,(hl)
     ld (gfx_x),a
