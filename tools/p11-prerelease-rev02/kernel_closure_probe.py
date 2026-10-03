@@ -99,6 +99,9 @@ def main():
         req(needle in include,"REV02 low-RAM constant missing: "+needle)
     req("REV02_PROCESS_LOW_BASE        EQU ROM_PRINTER_BUFFER_START" in process,
         "REV02 printer-buffer process placement missing")
+    req("REV02_PROCESS_SYSVAR5_BASE    EQU ROM_SYSVAR_START" in process and
+        "REV02_PROCESS_SYSVAR6_BASE    EQU $5C80" in process,
+        "REV02 BASIC-system-variable process placement missing")
     req("PROCESS_STATE_BASE       EQU ROM_SYSVAR_KERNEL_TAIL_START" in process and
         "current_pid              EQU ROM_IF1_WORK_START" in process,
         "REV02 system-variable process state placement missing")
@@ -174,7 +177,7 @@ kernel_mod_rev02_sys_fp_from_text:
             "measurement_method":"size-only relocation preserves relative gateway placement; graphics macro is sourced once through syscall.asm; production kernel remains at $E000",
             "low_ram_reclamation":{
               "printer_buffer":{"range":"0x5B00-0x5BFF","bytes":256,"assignment":"PID0..PID4 descriptors at 0x5B00-0x5BEF"},
-              "basic_system_variables":{"range":"0x5C00-0x5CB5","bytes":182,"frames_reserved":"0x5C78-0x5C7A","current_assignment":"0x5CB0-0x5CB5 process scratch"},
+              "basic_system_variables":{"range":"0x5C00-0x5CB5","bytes":182,"frames_reserved":"0x5C78-0x5C7A","udg_reserved":"0x5C7B-0x5C7C","current_assignment":"PID5 0x5C00-0x5C2F; PID6 0x5C80-0x5CAF; process scratch 0x5CB0-0x5CB5"},
               "interface1_microdrive":{"range":"0x5CB6-0x5CC5","bytes":16,"assignment":"current_pid + 15-byte pipe scratch"},
               "kernel_pool_limit_bytes":KERNEL_POOL_BYTES,
               "kernel_pool_expansion_authorized":False,

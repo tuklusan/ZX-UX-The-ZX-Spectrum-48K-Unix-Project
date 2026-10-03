@@ -191,7 +191,11 @@ def _static_contract(root: Path, step: str) -> list[dict[str, object]]:
                 and re.search(r"(?m)^\s*REV02_PROCESS_PTR_TABLE\s+EQU\s+ROM_PRINTER_BUFFER_END-15\s*$", process) is not None
                 and "ld hl,REV02_PROCESS_PTR_TABLE" in process
                 and "ld hl,REV02_PROCESS_PTR_TEMPLATE" in process
-                and "process_table_high:" in process
+                and re.search(r"(?m)^\s*REV02_PROCESS_SYSVAR5_BASE\s+EQU\s+ROM_SYSVAR_START\s*$", process) is not None
+                and re.search(r"(?m)^\s*REV02_PROCESS_SYSVAR6_BASE\s+EQU\s+\$5C80\s*$", process) is not None
+                and "ld ix,REV02_PROCESS_SYSVAR5_BASE" in process
+                and "ld ix,REV02_PROCESS_SYSVAR6_BASE" in process
+                and "process_table_high:" not in process[process.index("    MACRO EMIT_REV02_PROCESS_ROUTINES"):]
                 and re.search(r"(?m)^\s*REV02_PROCESS_EMERGENCY_PID\s+EQU\s+7\s*$", process) is not None
                 and re.search(r"(?m)^\s*REV02_PROCESS_EMERGENCY_BASE\s+EQU\s+EMERGENCY_START\+\$C0\s*$", process) is not None
                 and re.search(r"(?m)^\s*current_pid\s+EQU\s+ROM_IF1_WORK_START\s*$", process) is not None
@@ -241,7 +245,7 @@ def _common_labels(root: Path, listing: Path) -> dict[str, int]:
     labels = _labels(listing, (
         "zx48_kernel_stack_init", "zx48_memory_init", "zx48_alloc", "zx48_free", "zx48_memory_pin_bytes", "zx48_mem_info",
         "memory_free_extents", "memory_live_allocations", "memory_pinned_bytes",
-        "zx48_process_init", "zx48_process_prepare_pid1", "process_table_high",
+        "zx48_process_init", "zx48_process_prepare_pid1",
         "zx48_schedule", "zx48_idle_loop", "kernel_ticks", "syscall_frame_sp", "kernel_ordinary_used_end",
     ))
     labels["current_pid"] = _equ(root / "v1/include/zx48ux.inc", "ROM_IF1_WORK_START")
@@ -258,15 +262,20 @@ def _process_descriptor_addresses(root: Path, labels: dict[str, int]) -> tuple[i
     low_count = _equ(process, "REV02_PROCESS_LOW_COUNT")
     require(0 < low_count < count, "invalid split process-table count")
     require(low_base + low_count * size <= low_end + 1, "low process descriptors exceed printer buffer")
-    high_base = labels["process_table_high"]
+    sysvar5_base = _equ(include, "ROM_SYSVAR_START")
+    sysvar6_base = _equ(process, "REV02_PROCESS_SYSVAR6_BASE")
     emergency_pid = 7
     emergency_base = _equ(include, "EMERGENCY_START") + 0xC0
     return tuple(
         low_base + pid * size
         if pid < low_count
+        else sysvar5_base
+        if pid == 5
+        else sysvar6_base
+        if pid == 6
         else emergency_base
         if pid == emergency_pid
-        else high_base + (pid - low_count) * size
+        else -1
         for pid in range(count)
     )
 

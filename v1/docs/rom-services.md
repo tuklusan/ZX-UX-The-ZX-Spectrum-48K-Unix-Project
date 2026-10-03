@@ -149,15 +149,23 @@ revision. The post-P11/pre-P12 C022 capacity lane assigns the following bytes:
 | range | bytes | REV02 owner/use | rule |
 | --- | ---: | --- | --- |
 | `0x5B00-0x5BFF` | 256 | KERNEL | ZX Printer buffer. Printer support is outside v1. PID0..PID4 descriptors occupy `0x5B00-0x5BEF`; `0x5BF0-0x5BFF` remains kernel-available. |
-| `0x5C00-0x5CB5` | 182 | KERNEL/ROM compatibility | BASIC system-variable RAM is available to ZX-UX after permanent BASIC handoff. `FRAMES` at `0x5C78-0x5C7A` remains live and is never general storage. `UDG` at `0x5C7B-0x5C7C` remains live kernel/graphics state under the frozen contract. Current C022 placement uses only `0x5CB0-0x5CB5` for six process scratch bytes; further assignments require the owning ROM-wrapper contract to preserve any bytes it needs. |
+| `0x5C00-0x5CB5` | 182 | KERNEL/ROM compatibility | BASIC system-variable RAM is available to ZX-UX after permanent BASIC handoff. PID5 occupies `0x5C00-0x5C2F`; PID6 occupies `0x5C80-0x5CAF`; process scratch occupies `0x5CB0-0x5CB5`. `FRAMES` at `0x5C78-0x5C7A` remains live and is never general storage. `UDG` at `0x5C7B-0x5C7C` remains live kernel/graphics state under the frozen contract. |
 | `0x5CB6-0x5CC5` | 16 | KERNEL | Interface-1/Microdrive maps/channels workspace. Interface 1 and Microdrive are outside v1. `0x5CB6` holds `current_pid`; `0x5CB7-0x5CC5` holds the 15-byte transient pipe scratch. |
 
 The generic reclaimable count in the BASIC system-variable block is therefore
 179 bytes after the three live `FRAMES` bytes are excluded. The two live `UDG`
-bytes are still kernel-owned but are not available for unrelated storage. ROM
-wrappers may temporarily use other system-variable bytes only under their documented
-serialized save/restore contract; a persistent kernel assignment must not be silently
-clobbered by an approved ROM call.
+bytes are still kernel-owned but are not available for unrelated storage. The PID5
+block `0x5C00-0x5C2F` is outside the calculator/text transaction range and outside
+the system-variable locations used by the approved direct keyboard/tape helpers.
+The PID6 block `0x5C80-0x5CAF` is deliberately the final 48 bytes of the existing
+`0x5C3A-0x5CAF` calculator/text transaction snapshot: serialized ROM BEEP/FP/text
+calls may use that workspace transiently, but the transaction restores all 48 PID6
+bytes before returning, including error exits. IM2 performs no process scheduling
+or descriptor access while ROM workspace is live. Direct KEY-SCAN/K-TEST do not use
+system variables; K-DECODE's only system-variable dependency is FLAGS2 at `0x5C6A`,
+and SA-BYTES/LD-BYTES use BORDCR at `0x5C48`; neither overlaps either descriptor.
+Any further persistent assignment still requires the owning ROM-wrapper contract to
+preserve the assigned bytes.
 
 The 6912-byte ordinary resident-pool limit remains unchanged. If complete use of
 these verified low-RAM placements plus genuine production-code compaction still
