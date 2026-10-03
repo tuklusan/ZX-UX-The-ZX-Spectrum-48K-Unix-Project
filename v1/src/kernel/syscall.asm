@@ -1335,79 +1335,55 @@ zx48_p715_udg_invalid:
 
 ; P11.17 exact staged SYS_FP_EXEC FPOP1 ABI.
     MACRO EMIT_P1117_FP_EXEC_SYSCALL_ROUTINES
-p1117_fp_req_ptr       EQU P11_SYSCALL_TRANSIENT_BASE+0
-p1117_fp_req_op        EQU P11_SYSCALL_TRANSIENT_BASE+2
-p1117_fp_req_lhs       EQU P11_SYSCALL_TRANSIENT_BASE+3
-p1117_fp_req_rhs       EQU P11_SYSCALL_TRANSIENT_BASE+5
-p1117_fp_req_out       EQU P11_SYSCALL_TRANSIENT_BASE+7
-
 zx48_p1117_sys_fp_exec:
     ld hl,(syscall_arg_hl)
     ld bc,FPOP1_SIZE
     call zx48_user_range_validate
     ret c
+    push hl
+    pop ix
 
-    ld a,(hl)
-    ld (p1117_fp_req_op),a
+    ld a,(ix+FPOP1_OP_O)
     or a
     jr z,p1117_fp_sys_invalid
     cp FPOP_OP_SQR+1
     jr nc,p1117_fp_sys_invalid
-
-    inc hl
-    ld a,(hl)
+    ld a,(ix+FPOP1_RESERVED_O)
     or a
     jr nz,p1117_fp_sys_invalid
 
-    inc hl
-    ld e,(hl)
-    inc hl
-    ld d,(hl)
-    ld (p1117_fp_req_lhs),de
-    inc hl
-    ld e,(hl)
-    inc hl
-    ld d,(hl)
-    ld (p1117_fp_req_rhs),de
-    inc hl
-    ld e,(hl)
-    inc hl
-    ld d,(hl)
-    ld (p1117_fp_req_out),de
-
-    ld a,(p1117_fp_req_op)
-    cp FPOP_OP_ABS
-    jr nc,p1117_fp_sys_unary
-    jr p1117_fp_sys_validate_ranges
-
-p1117_fp_sys_unary:
-    ld hl,(p1117_fp_req_rhs)
-    ld a,h
-    or l
-    jp nz,p1117_fp_sys_invalid
-
-p1117_fp_sys_validate_ranges:
-    ld hl,(p1117_fp_req_lhs)
+    ld l,(ix+FPOP1_LHS_O)
+    ld h,(ix+FPOP1_LHS_O+1)
     ld bc,5
     call zx48_user_range_validate
     ret c
 
-    ld a,(p1117_fp_req_op)
+    ld a,(ix+FPOP1_OP_O)
     cp FPOP_OP_ABS
-    jr nc,p1117_fp_sys_validate_out
-    ld hl,(p1117_fp_req_rhs)
+    jr nc,p1117_fp_sys_unary
+    ld l,(ix+FPOP1_RHS_O)
+    ld h,(ix+FPOP1_RHS_O+1)
+    call zx48_user_range_validate
+    ret c
+    jr p1117_fp_sys_out
+p1117_fp_sys_unary:
+    ld a,(ix+FPOP1_RHS_O)
+    or (ix+FPOP1_RHS_O+1)
+    jr nz,p1117_fp_sys_invalid
+
+p1117_fp_sys_out:
+    ld l,(ix+FPOP1_OUT_O)
+    ld h,(ix+FPOP1_OUT_O+1)
     call zx48_user_range_validate
     ret c
 
-p1117_fp_sys_validate_out:
-    ld hl,(p1117_fp_req_out)
-    call zx48_user_range_validate
-    ret c
-
-    ld a,(p1117_fp_req_op)
-    ld hl,(p1117_fp_req_lhs)
-    ld de,(p1117_fp_req_rhs)
-    ld bc,(p1117_fp_req_out)
+    ld a,(ix+FPOP1_OP_O)
+    ld l,(ix+FPOP1_LHS_O)
+    ld h,(ix+FPOP1_LHS_O+1)
+    ld e,(ix+FPOP1_RHS_O)
+    ld d,(ix+FPOP1_RHS_O+1)
+    ld c,(ix+FPOP1_OUT_O)
+    ld b,(ix+FPOP1_OUT_O+1)
     jp zx48_p1117_rom_fp_exec
 
 p1117_fp_sys_invalid:
@@ -1418,49 +1394,32 @@ p1117_fp_sys_invalid:
 
 ; P11.18 exact staged SYS_INT_TO_FP / SYS_FP_TO_INT ABI.
     MACRO EMIT_P1118_FP_CAST_SYSCALL_ROUTINES
-p1118_cast_req_ptr      EQU P11_SYSCALL_TRANSIENT_BASE+0
-p1118_cast_signed       EQU P11_SYSCALL_TRANSIENT_BASE+4
-p1118_cast_in           EQU P11_SYSCALL_TRANSIENT_BASE+5
-p1118_cast_out          EQU P11_SYSCALL_TRANSIENT_BASE+7
-
 zx48_p1118_sys_int_to_fp:
     ld hl,(syscall_arg_hl)
     ld bc,ITOF1_SIZE
     call zx48_user_range_validate
     ret c
-    inc hl
-    inc hl
-    ld a,(hl)
+    push hl
+    pop ix
+
+    ld a,(ix+ITOF1_SIGNED_O)
     cp 2
     jr nc,p1118_cast_invalid
-    inc hl
-    ld a,(hl)
+    ld a,(ix+ITOF1_RESERVED_O)
     or a
     jr nz,p1118_cast_invalid
-    inc hl
-    ld e,(hl)
-    inc hl
-    ld d,(hl)
-    ex de,hl
+
+    ld l,(ix+ITOF1_OUT_O)
+    ld h,(ix+ITOF1_OUT_O+1)
     ld bc,5
     call zx48_user_range_validate
     ret c
 
-    ; Re-read the already-validated request only after the destination range
-    ; is accepted; no caller byte has been mutated.
-    ld hl,(syscall_arg_hl)
-    ld e,(hl)
-    inc hl
-    ld d,(hl)
-    push de
-    inc hl
-    ld a,(hl)
-    inc hl
-    inc hl
-    ld e,(hl)
-    inc hl
-    ld d,(hl)
-    pop hl
+    ld l,(ix+ITOF1_VALUE_O)
+    ld h,(ix+ITOF1_VALUE_O+1)
+    ld a,(ix+ITOF1_SIGNED_O)
+    ld e,(ix+ITOF1_OUT_O)
+    ld d,(ix+ITOF1_OUT_O+1)
     jp zx48_p1118_rom_int_to_fp
 
 zx48_p1118_sys_fp_to_int:
@@ -1468,35 +1427,32 @@ zx48_p1118_sys_fp_to_int:
     ld bc,FTOI1_SIZE
     call zx48_user_range_validate
     ret c
-    ld e,(hl)
-    inc hl
-    ld d,(hl)
-    ld (p1118_cast_in),de
-    inc hl
-    ld a,(hl)
+    push hl
+    pop ix
+
+    ld a,(ix+FTOI1_SIGNED_O)
     cp 2
     jr nc,p1118_cast_invalid
-    ld (p1118_cast_signed),a
-    inc hl
-    ld a,(hl)
+    ld a,(ix+FTOI1_RESERVED_O)
     or a
     jr nz,p1118_cast_invalid
-    inc hl
-    ld e,(hl)
-    inc hl
-    ld d,(hl)
-    ld (p1118_cast_out),de
-    ld hl,(p1118_cast_in)
+
+    ld l,(ix+FTOI1_IN_O)
+    ld h,(ix+FTOI1_IN_O+1)
     ld bc,5
     call zx48_user_range_validate
     ret c
-    ld hl,(p1118_cast_out)
+    ld l,(ix+FTOI1_OUT_O)
+    ld h,(ix+FTOI1_OUT_O+1)
     ld bc,2
     call zx48_user_range_validate
     ret c
-    ld hl,(p1118_cast_in)
-    ld a,(p1118_cast_signed)
-    ld de,(p1118_cast_out)
+
+    ld l,(ix+FTOI1_IN_O)
+    ld h,(ix+FTOI1_IN_O+1)
+    ld a,(ix+FTOI1_SIGNED_O)
+    ld e,(ix+FTOI1_OUT_O)
+    ld d,(ix+FTOI1_OUT_O+1)
     jp zx48_p1118_rom_fp_to_int
 
 p1118_cast_invalid:
@@ -1507,51 +1463,36 @@ p1118_cast_invalid:
 
 ; P11.19 exact staged SYS_FP_CMP FCMP1 ABI.
     MACRO EMIT_P1119_FP_CMP_SYSCALL_ROUTINES
-p1119_cmp_req_ptr       EQU P11_SYSCALL_TRANSIENT_BASE+0
-p1119_cmp_lhs           EQU P11_SYSCALL_TRANSIENT_BASE+2
-p1119_cmp_rhs           EQU P11_SYSCALL_TRANSIENT_BASE+4
-p1119_cmp_out           EQU P11_SYSCALL_TRANSIENT_BASE+6
-
 zx48_p1119_sys_fp_cmp:
     ld hl,(syscall_arg_hl)
     ld bc,FCMP1_SIZE
     call zx48_user_range_validate
     ret c
+    push hl
+    pop ix
 
-    ld e,(hl)
-    inc hl
-    ld d,(hl)
-    ld (p1119_cmp_lhs),de
-    inc hl
-    ld e,(hl)
-    inc hl
-    ld d,(hl)
-    ld (p1119_cmp_rhs),de
-    inc hl
-    ld e,(hl)
-    inc hl
-    ld d,(hl)
-    ld (p1119_cmp_out),de
-
-    ld hl,(p1119_cmp_lhs)
+    ld l,(ix+FCMP1_LHS_O)
+    ld h,(ix+FCMP1_LHS_O+1)
     ld bc,5
     call zx48_user_range_validate
     ret c
-
-    ld hl,(p1119_cmp_rhs)
+    ld l,(ix+FCMP1_RHS_O)
+    ld h,(ix+FCMP1_RHS_O+1)
     call zx48_user_range_validate
     ret c
-
-    ld hl,(p1119_cmp_out)
+    ld l,(ix+FCMP1_OUT_O)
+    ld h,(ix+FCMP1_OUT_O+1)
     ld bc,1
     call zx48_user_range_validate
     ret c
 
-    ld hl,(p1119_cmp_lhs)
-    ld de,(p1119_cmp_rhs)
-    ld bc,(p1119_cmp_out)
+    ld l,(ix+FCMP1_LHS_O)
+    ld h,(ix+FCMP1_LHS_O+1)
+    ld e,(ix+FCMP1_RHS_O)
+    ld d,(ix+FCMP1_RHS_O+1)
+    ld c,(ix+FCMP1_OUT_O)
+    ld b,(ix+FCMP1_OUT_O+1)
     jp zx48_p1119_rom_fp_cmp
-
     ENDM
 
 ; P11.46 exact staged SYS_FP_TO_TEXT ABI.
