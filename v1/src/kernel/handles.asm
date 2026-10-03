@@ -94,11 +94,6 @@ zx48_od_create_found:
     ld (ix+OD_ID_O),d
     ld a,1
     ld (ix+OD_REFS_O),a
-    xor a
-    ld (ix+OD_OFFSET_O),a
-    ld (ix+OD_OFFSET_O+1),a
-    ld (ix+OD_AUX_O),a
-    ld (ix+OD_AUX_O+1),a
     ld a,(handle_od)
     or a
     ret
@@ -154,10 +149,9 @@ zx48_od_release_clear:
     inc hl
     djnz zx48_od_release_clear
     ld a,d
-    cp OD_KIND_PIPE_READ
-    jr z,zx48_od_release_pipe
-    cp OD_KIND_PIPE_WRITE
-    jr z,zx48_od_release_pipe
+    sub OD_KIND_PIPE_READ
+    cp 2
+    jr c,zx48_od_release_pipe
     xor a
     ret
 zx48_od_release_pipe:
@@ -205,19 +199,20 @@ zx48_handle_lookup:
 ; A=requested handle or FF, C=OD index. Does not change OD refcount.
 ; Returns A=installed handle.
 zx48_handle_install:
-    ld (handle_requested),a
+    ld b,a
     ld a,c
     cp OPEN_DESCRIPTION_COUNT
     jp nc,zx48_handle_noent
-    ld (handle_od),a
+    push bc
     ld a,(current_pid)
     call zx48_process_lookup
+    pop bc
     ret c
     push ix
     pop hl
     ld de,PROC_HANDLES
     add hl,de
-    ld a,(handle_requested)
+    ld a,b
     cp HANDLE_FREE
     jr z,zx48_handle_install_auto
     cp MAX_HANDLES_PER_PROCESS
@@ -228,24 +223,21 @@ zx48_handle_install:
     ld a,(hl)
     cp HANDLE_FREE
     jp nz,zx48_handle_busy
-    ld a,(handle_requested)
+    ld a,b
     jr zx48_handle_install_here
 zx48_handle_install_auto:
     ld b,MAX_HANDLES_PER_PROCESS
     xor a
 zx48_handle_install_scan:
-    ld c,(hl)
-    inc c
+    ld d,(hl)
+    inc d
     jr z,zx48_handle_install_here
     inc hl
     inc a
     djnz zx48_handle_install_scan
     jp zx48_handle_nospc
 zx48_handle_install_here:
-    ld c,a
-    ld a,(handle_od)
-    ld (hl),a
-    ld a,c
+    ld (hl),c
     or a
     ret
 
