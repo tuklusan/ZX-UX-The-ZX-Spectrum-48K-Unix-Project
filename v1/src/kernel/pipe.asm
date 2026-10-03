@@ -566,14 +566,13 @@ zx48_pipe_init:
 zx48_pipe_ptr:
     cp PIPE_COUNT
     jp nc,zx48_pipe_noent
+    add a,a
+    ld e,a
+    add a,a
+    add a,a
+    add a,e
     ld l,a
     ld h,0
-    add hl,hl
-    ld e,l
-    ld d,h
-    add hl,hl
-    add hl,hl
-    add hl,de
     ld de,pipe_table
     add hl,de
     push hl
