@@ -382,7 +382,11 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
             "passed": (
                 all(token in syscall_kill for token in ("ld hl,(syscall_arg_hl)", "ld a,h", "jp nz,zx48_sys_invalid", "ld a,l", "call zx48_process_kill"))
                 or (
-                    all(token in u8_arg for token in ("ld hl,(syscall_arg_hl)", "ld a,h", "or a", "jr nz,zx48_sys_u8_invalid", "ld a,l", "zx48_sys_u8_invalid:", "ld a,E_INVAL", "scf", "ret"))
+                    all(token in u8_arg for token in ("ld hl,(syscall_arg_hl)", "ld a,h", "or a", "jr nz,zx48_sys_u8_invalid", "ld a,l", "zx48_sys_u8_invalid:"))
+                    and (
+                        all(token in u8_arg for token in ("ld a,E_INVAL", "scf", "ret"))
+                        or "jp zx48_sys_invalid" in u8_arg
+                    )
                     and all(token in syscall_kill for token in ("call zx48_sys_u8_arg", "ret c", "call zx48_process_kill"))
                 )
             ),
