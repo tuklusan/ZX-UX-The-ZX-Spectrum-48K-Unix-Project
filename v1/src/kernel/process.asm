@@ -222,10 +222,8 @@ zx48_process_count_next:
     ret
 
 zx48_process_info:
-    ld (process_info_ptr),hl
     call zx48_process_lookup
     ret c
-    ld hl,(process_info_ptr)
     ld a,(ix+PROC_PID)
     ld (hl),a
     inc hl
