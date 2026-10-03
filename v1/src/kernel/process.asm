@@ -5244,7 +5244,6 @@ zx48_r2_process_clear_ix:
     ret
 
 zx48_r2_process_fill_handles:
-    push bc
     push ix
     pop hl
     ld de,PROC_HANDLES
@@ -5255,7 +5254,6 @@ zx48_r2_process_fill_handles_loop:
     ld (hl),a
     inc hl
     djnz zx48_r2_process_fill_handles_loop
-    pop bc
     ret
 
 zx48_process_prepare_pid1:
@@ -5265,11 +5263,6 @@ zx48_process_prepare_pid1:
     ld a,(ix+PROC_STATE)
     or a
     jr nz,zx48_process_busy
-    xor a
-    ld (ix+PROC_PARENT),a
-    ld (ix+PROC_CWD),DIR_ROOT
-    ld (ix+PROC_NAME),'s'
-    ld (ix+PROC_NAME+1),'h'
     ld (ix+PROC_STATE),PROC_READY
     ret
 zx48_process_busy:
@@ -5297,25 +5290,19 @@ zx48_r2_process_count_next:
 zx48_process_info:
     call zx48_process_lookup
     ret c
-    ld a,(ix+PROC_PID)
-    ld (hl),a
-    inc hl
-    ld a,(ix+PROC_PARENT)
-    ld (hl),a
-    inc hl
-    ld a,(ix+PROC_STATE)
-    ld (hl),a
-    inc hl
-    ld a,(ix+PROC_FLAGS)
-    and PROC_FLAG_CANCEL
-    ld (hl),a
-    inc hl
-    push hl
+    ; PID/parent/state are contiguous.  Keep the public flags byte masked, then
+    ; advance the same source/destination pair directly to the ten-byte name.
+    ex de,hl
     push ix
     pop hl
-    ld de,PROC_NAME
-    add hl,de
-    pop de
+    ld bc,PROC_FLAGS
+    ldir
+    ld a,(hl)
+    and PROC_FLAG_CANCEL
+    ld (de),a
+    inc de
+    ld bc,PROC_NAME-PROC_FLAGS
+    add hl,bc
     ld bc,10
     ldir
     ex de,hl
@@ -5497,10 +5484,12 @@ process_table:
     defs PROC_HANDLES-4,0
     defs MAX_HANDLES_PER_PROCESS,HANDLE_FREE
     defs PROC_DESC_SIZE-(PROC_HANDLES+MAX_HANDLES_PER_PROCESS),0
-    db 1,HANDLE_FREE,PROC_FREE,0
+    db 1,0,PROC_FREE,0
     defs PROC_HANDLES-4,0
     defs MAX_HANDLES_PER_PROCESS,HANDLE_FREE
-    defs PROC_DESC_SIZE-(PROC_HANDLES+MAX_HANDLES_PER_PROCESS),0
+    defs PROC_CWD-(PROC_HANDLES+MAX_HANDLES_PER_PROCESS),0
+    db DIR_ROOT,'s','h'
+    defs PROC_DESC_SIZE-(PROC_NAME+2),0
     db 2,HANDLE_FREE,PROC_FREE,0
     defs PROC_HANDLES-4,0
     defs MAX_HANDLES_PER_PROCESS,HANDLE_FREE
