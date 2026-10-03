@@ -109,7 +109,7 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
         {"name": "native-draw-replacement-rationale-recorded", "passed": "lower ROM path ultimately reaches PLOT-SUB" in gfx and "0..191 coordinate ABI" in gfx},
         {"name": "both-y-endpoints-validated-before-scratch-or-display-side-effects", "passed": second_validation < first_store and "zx48_gfx_draw_bad:" in draw},
         {"name": "draw-raster-delegates-every-visible-point-to-qualified-plot", "passed": "call zx48_gfx_plot" in draw},
-        {"name": "draw-uses-sixteen-bit-error-scratch", "passed": "ld (gfx_err),hl" in draw and "ld (gfx_e2),hl" in draw},
+        {"name": "draw-major-axis-remainder-preserves-golden-ties", "passed": all(token in draw for token in ("zx48_gfx_line_x_major:", "zx48_gfx_line_y_major:", "srl a", "sub b", "ld (gfx_err),a"))},
         {"name": "public-draw-pointer-validates-complete-four-byte-record", "passed": "ld bc,4\n    call zx48_user_range_validate" in (root / "v1/src/kernel/syscall.asm").read_text(encoding="utf-8")},
     ]
 
