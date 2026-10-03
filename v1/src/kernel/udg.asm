@@ -214,17 +214,17 @@ zx48_udg_slot_ptr:
 
 ; Public syscall layer has already validated B=0, slot, and the eight-byte range.
 zx48_udg_define:
-    ld (udg_io_ptr),hl
+    push hl
     call zx48_udg_slot_ptr
     ex de,hl
-    ld hl,(udg_io_ptr)
+    pop hl
     ld bc,UDG_SLOT_BYTES
     jp zx48_memcpy
 
 zx48_udg_get:
-    ld (udg_io_ptr),hl
+    push hl
     call zx48_udg_slot_ptr
-    ld de,(udg_io_ptr)
+    pop de
     ld bc,UDG_SLOT_BYTES
     jp zx48_memcpy
 
@@ -243,20 +243,15 @@ zx48_r2_udg_clear_loop:
 ; HL -> validated {slot,row,column}. Only the public validated syscall reaches
 ; this production core.
 zx48_udg_draw:
+    call zx48_cursor_hide
     ld c,(hl)
     inc hl
     ld b,(hl)
     inc hl
     ld a,(hl)
-
     push af
-    push bc
     call zx48_udg_slot_ptr
     ex de,hl
-    push de
-    call zx48_cursor_hide
-    pop de
-    pop bc
     pop af
     ld c,a
     ld a,b
