@@ -481,6 +481,9 @@ zx48_text_line_separator:
     ENDM
 
     MACRO EMIT_OBJECT_ROUTINES
+; REV02 prospective integration normalization: this historical whole-object
+; emitter was never resident in the frozen 8 KiB product. Keep its behavior,
+; but use current compact OD fields, legal absolute stores, and long branches.
 zx48_objects_init:
     xor a
     ld hl,object_table
@@ -504,26 +507,26 @@ zx48_name_validate:
 zx48_name_validate_loop:
     ld a,(hl)
     or a
-    jr z,zx48_name_validate_end
+    jp z,zx48_name_validate_end
     inc b
     ld a,b
     cp 11
-    jr nc,zx48_name_long
+    jp nc,zx48_name_long
     ld a,(hl)
     call zx48_name_char_valid
-    jr c,zx48_name_bad
+    jp c,zx48_name_bad
     inc hl
-    jr zx48_name_validate_loop
+    jp zx48_name_validate_loop
 zx48_name_validate_end:
     ld a,b
     or a
-    jr z,zx48_name_bad
+    jp z,zx48_name_bad
     ld hl,(object_name_ptr)
     cp 1
-    jr nz,zx48_name_ok
+    jp nz,zx48_name_ok
     ld a,(hl)
     cp '.'
-    jr z,zx48_name_bad
+    jp z,zx48_name_bad
 zx48_name_ok:
     ld a,b
     or a
@@ -538,24 +541,24 @@ zx48_name_bad:
     ret
 zx48_name_char_valid:
     cp '0'
-    jr c,zx48_name_punct
+    jp c,zx48_name_punct
     cp '9'+1
-    jr c,zx48_name_char_ok
+    jp c,zx48_name_char_ok
     cp 'A'
-    jr c,zx48_name_punct
+    jp c,zx48_name_punct
     cp 'Z'+1
-    jr c,zx48_name_char_ok
+    jp c,zx48_name_char_ok
     cp 'a'
-    jr c,zx48_name_punct
+    jp c,zx48_name_punct
     cp 'z'+1
-    jr c,zx48_name_char_ok
+    jp c,zx48_name_char_ok
 zx48_name_punct:
     cp '_'
-    jr z,zx48_name_char_ok
+    jp z,zx48_name_char_ok
     cp '-'
-    jr z,zx48_name_char_ok
+    jp z,zx48_name_char_ok
     cp '.'
-    jr z,zx48_name_char_ok
+    jp z,zx48_name_char_ok
     scf
     ret
 zx48_name_char_ok:
@@ -584,7 +587,7 @@ zx48_name_equal_loop:
 ; A=slot -> IX record.
 zx48_object_ptr_slot:
     cp RAM_OBJECT_COUNT
-    jr nc,zx48_object_invalid
+    jp nc,zx48_object_invalid
     ld c,a
     ld ix,object_table
     or a
@@ -608,19 +611,19 @@ zx48_object_lookup:
 zx48_object_lookup_loop:
     ld a,(ix+OBJ_TYPE_ID)
     or a
-    jr z,zx48_object_lookup_next
+    jp z,zx48_object_lookup_next
     ld a,(ix+OBJ_DIR_ID)
     ld d,a
     ld a,(object_lookup_dir)
     cp d
-    jr nz,zx48_object_lookup_next
+    jp nz,zx48_object_lookup_next
     push bc
     push ix
     pop de
     ld hl,(object_lookup_name)
     call zx48_name_equal_record
     pop bc
-    jr z,zx48_object_lookup_found
+    jp z,zx48_object_lookup_found
 zx48_object_lookup_next:
     ld de,OBJ_RECORD_SIZE
     add ix,de
@@ -639,30 +642,30 @@ zx48_object_type_allowed:
     ld c,a
     ld a,b
     cp OBJ_TXT
-    jr c,zx48_object_perm
+    jp c,zx48_object_perm
     cp OBJ_CFG+1
-    jr nc,zx48_object_perm
+    jp nc,zx48_object_perm
     ld a,c
     cp DIR_BIN
-    jr z,zx48_object_type_bin
+    jp z,zx48_object_type_bin
     cp DIR_ETC
-    jr z,zx48_object_type_etc
+    jp z,zx48_object_type_etc
     cp DIR_USERHOME
-    jr z,zx48_object_type_ok
+    jp z,zx48_object_type_ok
     cp DIR_TMP
-    jr z,zx48_object_type_ok
-    jr zx48_object_perm
+    jp z,zx48_object_type_ok
+    jp zx48_object_perm
 zx48_object_type_bin:
     ld a,b
     cp OBJ_BIN
-    jr z,zx48_object_type_ok
-    jr zx48_object_perm
+    jp z,zx48_object_type_ok
+    jp zx48_object_perm
 zx48_object_type_etc:
     ld a,b
     cp OBJ_TXT
-    jr z,zx48_object_type_ok
+    jp z,zx48_object_type_ok
     cp OBJ_CFG
-    jr nz,zx48_object_perm
+    jp nz,zx48_object_perm
 zx48_object_type_ok:
     xor a
     or a
@@ -687,14 +690,14 @@ zx48_object_create:
     ld a,(object_lookup_dir)
     ld hl,(object_lookup_name)
     call zx48_object_lookup
-    jr nc,zx48_object_exists
+    jp nc,zx48_object_exists
     ld ix,object_table
     ld c,0
     ld b,RAM_OBJECT_COUNT
 zx48_object_create_find:
     ld a,(ix+OBJ_TYPE_ID)
     or a
-    jr z,zx48_object_create_found
+    jp z,zx48_object_create_found
     ld de,OBJ_RECORD_SIZE
     add ix,de
     inc c
@@ -703,7 +706,8 @@ zx48_object_create_find:
     scf
     ret
 zx48_object_create_found:
-    ld (object_slot),c
+    ld a,c
+    ld (object_slot),a
     ld hl,(object_lookup_name)
     push ix
     pop de
@@ -714,17 +718,17 @@ zx48_object_name_copy:
     inc de
     inc hl
     or a
-    jr z,zx48_object_name_pad
+    jp z,zx48_object_name_pad
     djnz zx48_object_name_copy
-    jr zx48_object_create_meta
+    jp zx48_object_create_meta
 zx48_object_name_pad:
     xor a
 zx48_object_name_pad_loop:
     dec b
-    jr z,zx48_object_create_meta
+    jp z,zx48_object_create_meta
     ld (de),a
     inc de
-    jr zx48_object_name_pad_loop
+    jp zx48_object_name_pad_loop
 zx48_object_create_meta:
     ld a,(object_lookup_dir)
     ld (ix+OBJ_DIR_ID),a
@@ -758,13 +762,13 @@ zx48_object_read:
     ld h,(ix+OBJ_LOGICAL_LENGTH+1)
     or a
     sbc hl,de
-    jr c,zx48_object_zero
-    jr z,zx48_object_zero
+    jp c,zx48_object_zero
+    jp z,zx48_object_zero
     push hl
     or a
     sbc hl,bc
     pop hl
-    jr nc,zx48_object_read_count
+    jp nc,zx48_object_read_count
     ld b,h
     ld c,l
 zx48_object_read_count:
@@ -775,7 +779,7 @@ zx48_object_read_count:
     push bc
     ld a,b
     or c
-    jr z,zx48_object_read_pop_zero
+    jp z,zx48_object_read_pop_zero
     ldir
     pop hl
     xor a
@@ -801,16 +805,16 @@ zx48_object_write:
     ld h,d
     ld l,e
     add hl,bc
-    jr c,zx48_object_nospc
+    jp c,zx48_object_nospc
     bit 7,h
-    jr nz,zx48_object_nospc
+    jp nz,zx48_object_nospc
     ld (object_new_length),hl
     ld c,(ix+OBJ_LOGICAL_LENGTH)
     ld b,(ix+OBJ_LOGICAL_LENGTH+1)
     or a
     sbc hl,bc
-    jr c,zx48_object_write_inplace
-    jr z,zx48_object_write_inplace
+    jp c,zx48_object_write_inplace
+    jp z,zx48_object_write_inplace
     ld bc,(object_new_length)
     ld a,ALLOC_COLD_PREFERRED
     call zx48_alloc
@@ -820,7 +824,7 @@ zx48_object_write:
     ld b,(ix+OBJ_LOGICAL_LENGTH+1)
     ld a,b
     or c
-    jr z,zx48_object_write_new_data
+    jp z,zx48_object_write_new_data
     push ix
     ld e,(ix+OBJ_ALLOCATION_PTR)
     ld d,(ix+OBJ_ALLOCATION_PTR+1)
@@ -883,18 +887,18 @@ zx48_path_resolve:
     ld (path_source),hl
     ld a,(hl)
     or a
-    jr z,zx48_path_invalid
+    jp z,zx48_path_invalid
     ld hl,(path_source)
     ld a,(hl)
     cp '/'
-    jr z,zx48_path_abs
+    jp z,zx48_path_abs
     ld a,(current_pid)
     call zx48_process_lookup
     ret c
     ld a,(ix+PROC_CWD)
     ld (path_dir),a
     ld hl,(path_source)
-    jr zx48_path_component
+    jp zx48_path_component
 zx48_path_abs:
     xor a
     ld (path_dir),a
@@ -903,26 +907,26 @@ zx48_path_skip:
 zx48_path_component:
     ld a,(hl)
     cp '/'
-    jr z,zx48_path_skip
+    jp z,zx48_path_skip
     or a
-    jr z,zx48_path_dir_done
+    jp z,zx48_path_dir_done
     ld de,path_name
     ld b,0
 zx48_path_copy:
     ld a,(hl)
     or a
-    jr z,zx48_path_component_end
+    jp z,zx48_path_component_end
     cp '/'
-    jr z,zx48_path_component_end
+    jp z,zx48_path_component_end
     inc b
     ld a,b
     cp 11
-    jr nc,zx48_path_long
+    jp nc,zx48_path_long
     ld a,(hl)
     ld (de),a
     inc de
     inc hl
-    jr zx48_path_copy
+    jp zx48_path_copy
 zx48_path_component_end:
     xor a
     ld (de),a
@@ -931,28 +935,28 @@ zx48_path_component_end:
     ld hl,path_name
     ld de,path_dot
     call zx48_cstr_equal
-    jr z,zx48_path_component_next
+    jp z,zx48_path_component_next
     ld hl,path_name
     ld de,path_dotdot
     call zx48_cstr_equal
-    jr z,zx48_path_parent
+    jp z,zx48_path_parent
     call zx48_path_child_dir
-    jr nc,zx48_path_component_next
+    jp nc,zx48_path_component_next
     ; Non-directory component must be final basename.
     ld hl,(path_after)
 zx48_path_final_slash:
     ld a,(hl)
     cp '/'
-    jr nz,zx48_path_final_check
+    jp nz,zx48_path_final_check
     inc hl
-    jr zx48_path_final_slash
+    jp zx48_path_final_slash
 zx48_path_final_check:
     or a
-    jr nz,zx48_path_noent
+    jp nz,zx48_path_noent
     ld hl,(path_after)
     ld a,(hl)
     cp '/'
-    jr z,zx48_path_empty_final
+    jp z,zx48_path_empty_final
     ld hl,path_name
     call zx48_name_validate
     ret c
@@ -961,18 +965,18 @@ zx48_path_final_check:
 zx48_path_parent:
     ld a,(path_dir)
     cp DIR_USERHOME
-    jr z,zx48_path_parent_home
+    jp z,zx48_path_parent_home
     or a
-    jr z,zx48_path_invalid
+    jp z,zx48_path_invalid
     xor a
     ld (path_dir),a
-    jr zx48_path_component_next
+    jp zx48_path_component_next
 zx48_path_parent_home:
     ld a,DIR_HOME
     ld (path_dir),a
 zx48_path_component_next:
     ld hl,(path_after)
-    jr zx48_path_component
+    jp zx48_path_component
 zx48_path_dir_done:
     ld c,PATH_KIND_DIR
     jp zx48_path_finish
@@ -983,19 +987,19 @@ zx48_path_finish:
     ld (path_result_kind),a
     ld a,(path_dir)
     cp DIR_ROOT
-    jr z,zx48_path_len_root
+    jp z,zx48_path_len_root
     cp DIR_HOME
-    jr z,zx48_path_len_home
+    jp z,zx48_path_len_home
     cp DIR_USERHOME
-    jr z,zx48_path_len_userhome
+    jp z,zx48_path_len_userhome
     ld b,4
-    jr zx48_path_len_kind
+    jp zx48_path_len_kind
 zx48_path_len_root:
     ld b,1
-    jr zx48_path_len_kind
+    jp zx48_path_len_kind
 zx48_path_len_home:
     ld b,5
-    jr zx48_path_len_kind
+    jp zx48_path_len_kind
 zx48_path_len_userhome:
     ld a,(session_user_len)
     add a,6
@@ -1003,24 +1007,24 @@ zx48_path_len_userhome:
 zx48_path_len_kind:
     ld a,(path_result_kind)
     cp PATH_KIND_BASE
-    jr nz,zx48_path_len_check
+    jp nz,zx48_path_len_check
     ld a,(path_dir)
     cp DIR_ROOT
-    jr z,zx48_path_len_name
+    jp z,zx48_path_len_name
     inc b
 zx48_path_len_name:
     ld hl,path_name
 zx48_path_len_name_loop:
     ld a,(hl)
     or a
-    jr z,zx48_path_len_check
+    jp z,zx48_path_len_check
     inc b
     inc hl
-    jr zx48_path_len_name_loop
+    jp zx48_path_len_name_loop
 zx48_path_len_check:
     ld a,b
     cp 32
-    jr nc,zx48_path_long
+    jp nc,zx48_path_long
     ld a,(path_dir)
     ld c,(path_result_kind)
     or a
@@ -1042,42 +1046,42 @@ zx48_path_noent:
 zx48_path_child_dir:
     ld a,(path_dir)
     or a
-    jr z,zx48_path_child_root
+    jp z,zx48_path_child_root
     cp DIR_HOME
-    jr z,zx48_path_child_home
+    jp z,zx48_path_child_home
     scf
     ret
 zx48_path_child_root:
     ld hl,path_name
     ld de,path_bin
     call zx48_cstr_equal
-    jr z,zx48_path_set_bin
+    jp z,zx48_path_set_bin
     ld hl,path_name
     ld de,path_dev
     call zx48_cstr_equal
-    jr z,zx48_path_set_dev
+    jp z,zx48_path_set_dev
     ld hl,path_name
     ld de,path_etc
     call zx48_cstr_equal
-    jr z,zx48_path_set_etc
+    jp z,zx48_path_set_etc
     ld hl,path_name
     ld de,path_home
     call zx48_cstr_equal
-    jr z,zx48_path_set_home
+    jp z,zx48_path_set_home
     ld hl,path_name
     ld de,path_tmp
     call zx48_cstr_equal
-    jr z,zx48_path_set_tmp
+    jp z,zx48_path_set_tmp
     scf
     ret
 zx48_path_child_home:
     ld a,(session_user_len)
     or a
-    jr z,zx48_path_child_fail
+    jp z,zx48_path_child_fail
     ld hl,path_name
     ld de,session_user
     call zx48_cstr_equal
-    jr nz,zx48_path_child_fail
+    jp nz,zx48_path_child_fail
     ld a,DIR_USERHOME
     ld (path_dir),a
     xor a
@@ -1088,16 +1092,16 @@ zx48_path_child_fail:
     ret
 zx48_path_set_bin:
     ld a,DIR_BIN
-    jr zx48_path_set
+    jp zx48_path_set
 zx48_path_set_dev:
     ld a,DIR_DEV
-    jr zx48_path_set
+    jp zx48_path_set
 zx48_path_set_etc:
     ld a,DIR_ETC
-    jr zx48_path_set
+    jp zx48_path_set
 zx48_path_set_home:
     ld a,DIR_HOME
-    jr zx48_path_set
+    jp zx48_path_set
 zx48_path_set_tmp:
     ld a,DIR_TMP
 zx48_path_set:
@@ -1113,14 +1117,14 @@ zx48_cstr_equal:
     ret z
     inc de
     inc hl
-    jr zx48_cstr_equal
+    jp zx48_cstr_equal
 
 ; A=len, HL=username bytes. First char lower-case; later lower-case/digit/_/-.
 zx48_namespace_set_user:
     cp 1
-    jr c,zx48_object_invalid
+    jp c,zx48_object_invalid
     cp 9
-    jr nc,zx48_object_invalid
+    jp nc,zx48_object_invalid
     ld (session_user_len),a
     ld b,a
     ld de,session_user
@@ -1130,29 +1134,29 @@ zx48_user_copy:
     ld (de),a
     ld a,c
     or a
-    jr nz,zx48_user_later
+    jp nz,zx48_user_later
     ld a,(hl)
     cp 'a'
-    jr c,zx48_user_bad
+    jp c,zx48_user_bad
     cp 'z'+1
-    jr nc,zx48_user_bad
-    jr zx48_user_store
+    jp nc,zx48_user_bad
+    jp zx48_user_store
 zx48_user_later:
     ld a,(hl)
     cp 'a'
-    jr c,zx48_user_digit
+    jp c,zx48_user_digit
     cp 'z'+1
-    jr c,zx48_user_store
+    jp c,zx48_user_store
 zx48_user_digit:
     cp '0'
-    jr c,zx48_user_punct
+    jp c,zx48_user_punct
     cp '9'+1
-    jr c,zx48_user_store
+    jp c,zx48_user_store
 zx48_user_punct:
     cp '_'
-    jr z,zx48_user_store
+    jp z,zx48_user_store
     cp '-'
-    jr nz,zx48_user_bad
+    jp nz,zx48_user_bad
 zx48_user_store:
     ld a,(hl)
     ld (de),a
@@ -1178,36 +1182,38 @@ zx48_object_invalid:
 
 ; HL=path,C=flags,B=create type -> HL handle.
 zx48_object_open:
-    ld (object_open_flags),c
+    ld a,c
+    ld (object_open_flags),a
     ld a,b
     ld (object_open_type),a
     call zx48_path_resolve
     ret c
     ld a,c
     cp PATH_KIND_BASE
-    jr nz,zx48_object_perm
+    jp nz,zx48_object_perm
     ld a,(path_dir)
     cp DIR_DEV
-    jr z,zx48_open_device
+    jp z,zx48_open_device
     ld hl,path_name
     call zx48_object_lookup
-    jr nc,zx48_open_existing
+    jp nc,zx48_open_existing
     ld a,(object_open_flags)
     and O_CREATE
-    jr z,zx48_path_noent
+    jp z,zx48_path_noent
     ld a,(object_open_type)
     or a
-    jr z,zx48_object_invalid
+    jp z,zx48_object_invalid
     ld b,a
     ld a,(path_dir)
     ld hl,path_name
     call zx48_object_create
     ret c
 zx48_open_existing:
-    ld (object_slot),c
+    ld a,c
+    ld (object_slot),a
     ld a,(object_open_flags)
     and O_EXCL
-    jr nz,zx48_object_exists
+    jp nz,zx48_object_exists
     ld a,OD_KIND_OBJECT
     ld b,(object_open_flags)
     ld c,(object_slot)
@@ -1216,38 +1222,38 @@ zx48_open_existing:
     ld (object_open_od),a
     ld a,(current_pid)
     call zx48_process_lookup
-    jr c,zx48_open_rollback
+    jp c,zx48_open_rollback
     ld a,(object_open_od)
     ld c,HANDLE_FREE
     call zx48_handle_install
     ret nc
 zx48_open_rollback:
     ld a,(object_open_od)
-    call zx48_od_release_id
+    call zx48_od_release
     ld a,E_NOSPC
     scf
     ret
 zx48_open_device:
     ld a,(object_open_type)
     or a
-    jr nz,zx48_object_invalid
+    jp nz,zx48_object_invalid
     ld hl,path_name
     ld de,path_tty
     call zx48_cstr_equal
-    jr z,zx48_open_tty
+    jp z,zx48_open_tty
     ld hl,path_name
     ld de,path_null
     call zx48_cstr_equal
-    jr z,zx48_open_null
+    jp z,zx48_open_null
     ld hl,path_name
     ld de,path_tape
     call zx48_cstr_equal
-    jr nz,zx48_path_noent
+    jp nz,zx48_path_noent
     ld a,OD_KIND_TAPE
-    jr zx48_open_dev_create
+    jp zx48_open_dev_create
 zx48_open_tty:
     ld a,OD_KIND_TTY
-    jr zx48_open_dev_create
+    jp zx48_open_dev_create
 zx48_open_null:
     ld a,OD_KIND_NULL
 zx48_open_dev_create:
@@ -1258,7 +1264,7 @@ zx48_open_dev_create:
     ld (object_open_od),a
     ld a,(current_pid)
     call zx48_process_lookup
-    jr c,zx48_open_rollback
+    jp c,zx48_open_rollback
     ld a,(object_open_od)
     ld c,HANDLE_FREE
     call zx48_handle_install
@@ -1267,17 +1273,17 @@ zx48_open_dev_create:
 ; IX=OD.
 zx48_object_read_od:
     ld (object_od_ptr),ix
-    ld a,(ix+OD_ACCESS)
+    ld a,(ix+OD_ACCESS_O)
     and O_READ
-    jr z,zx48_object_perm
-    ld a,(ix+OD_IDENTITY)
+    jp z,zx48_object_perm
+    ld a,(ix+OD_ID_O)
     call zx48_object_ptr_slot
     ret c
     ld e,(ix+OBJ_LOGICAL_LENGTH) ; temporary overwritten below after OD restore
     ld ix,(object_od_ptr)
-    ld e,(ix+OD_OFFSET)
-    ld d,(ix+OD_OFFSET+1)
-    ld a,(ix+OD_IDENTITY)
+    ld e,(ix+OD_OFFSET_O)
+    ld d,(ix+OD_OFFSET_O+1)
+    ld a,(ix+OD_ID_O)
     push de
     call zx48_object_ptr_slot
     pop de
@@ -1287,21 +1293,21 @@ zx48_object_read_od:
     push hl
     ex de,hl
     ld ix,(object_od_ptr)
-    ld l,(ix+OD_OFFSET)
-    ld h,(ix+OD_OFFSET+1)
+    ld l,(ix+OD_OFFSET_O)
+    ld h,(ix+OD_OFFSET_O+1)
     add hl,de
-    ld (ix+OD_OFFSET),l
-    ld (ix+OD_OFFSET+1),h
+    ld (ix+OD_OFFSET_O),l
+    ld (ix+OD_OFFSET_O+1),h
     pop hl
     ret
 zx48_object_write_od:
     ld (object_od_ptr),ix
-    ld a,(ix+OD_ACCESS)
+    ld a,(ix+OD_ACCESS_O)
     and O_WRITE
-    jr z,zx48_object_perm
-    ld e,(ix+OD_OFFSET)
-    ld d,(ix+OD_OFFSET+1)
-    ld a,(ix+OD_IDENTITY)
+    jp z,zx48_object_perm
+    ld e,(ix+OD_OFFSET_O)
+    ld d,(ix+OD_OFFSET_O+1)
+    ld a,(ix+OD_ID_O)
     push de
     call zx48_object_ptr_slot
     pop de
@@ -1309,10 +1315,10 @@ zx48_object_write_od:
     ld a,(object_od_ptr)
     ; APPEND uses logical EOF regardless of current offset.
     ld ix,(object_od_ptr)
-    ld a,(ix+OD_ACCESS)
+    ld a,(ix+OD_ACCESS_O)
     and O_APPEND
-    jr z,zx48_object_write_have_offset
-    ld a,(ix+OD_IDENTITY)
+    jp z,zx48_object_write_have_offset
+    ld a,(ix+OD_ID_O)
     call zx48_object_ptr_slot
     ld e,(ix+OBJ_LOGICAL_LENGTH)
     ld d,(ix+OBJ_LOGICAL_LENGTH+1)
@@ -1322,16 +1328,16 @@ zx48_object_write_have_offset:
     push hl
     ex de,hl
     ld ix,(object_od_ptr)
-    ld l,(ix+OD_OFFSET)
-    ld h,(ix+OD_OFFSET+1)
+    ld l,(ix+OD_OFFSET_O)
+    ld h,(ix+OD_OFFSET_O+1)
     add hl,de
-    ld (ix+OD_OFFSET),l
-    ld (ix+OD_OFFSET+1),h
+    ld (ix+OD_OFFSET_O),l
+    ld (ix+OD_OFFSET_O+1),h
     pop hl
     ret
 zx48_object_seek_od:
     ld (object_seek),hl
-    ld a,(ix+OD_IDENTITY)
+    ld a,(ix+OD_ID_O)
     call zx48_object_ptr_slot
     ret c
     ld e,(ix+OBJ_LOGICAL_LENGTH)
@@ -1339,16 +1345,16 @@ zx48_object_seek_od:
     ld hl,(object_seek)
     or a
     sbc hl,de
-    jr c,zx48_seek_ok
-    jr z,zx48_seek_ok
+    jp c,zx48_seek_ok
+    jp z,zx48_seek_ok
     ld a,E_INVAL
     scf
     ret
 zx48_seek_ok:
     ld ix,(object_od_ptr)
     ld hl,(object_seek)
-    ld (ix+OD_OFFSET),l
-    ld (ix+OD_OFFSET+1),h
+    ld (ix+OD_OFFSET_O),l
+    ld (ix+OD_OFFSET_O+1),h
     xor a
     or a
     ret
@@ -1365,7 +1371,7 @@ zx48_object_remove:
     ret c
     ld a,c
     cp PATH_KIND_BASE
-    jr nz,zx48_object_perm
+    jp nz,zx48_object_perm
     ld a,(path_dir)
     ld hl,path_name
     call zx48_object_lookup
@@ -1414,7 +1420,7 @@ zx48_object_rename:
     ret c
     ld a,c
     cp PATH_KIND_BASE
-    jr nz,zx48_object_perm
+    jp nz,zx48_object_perm
     ld ix,(rename_record)
     ld b,(ix+OBJ_TYPE_ID)
     ld a,(path_dir)
@@ -1446,10 +1452,10 @@ zx48_object_stat_record:
     ret c
     ld a,c
     cp PATH_KIND_DIR
-    jr z,zx48_stat_dir
+    jp z,zx48_stat_dir
     ld a,(path_dir)
     cp DIR_DEV
-    jr z,zx48_stat_dev
+    jp z,zx48_stat_dev
     ld hl,path_name
     call zx48_object_lookup
     ret c
@@ -1485,7 +1491,7 @@ zx48_object_stat_record:
     ret
 zx48_stat_dir:
     ld a,OBJ_DIR
-    jr zx48_stat_pseudo
+    jp zx48_stat_pseudo
 zx48_stat_dev:
     ld a,OBJ_DEV
 zx48_stat_pseudo:
@@ -1518,10 +1524,10 @@ zx48_object_stat:
     ret c
     ld a,c
     cp PATH_KIND_DIR
-    jr z,zx48_stat_dir
+    jp z,zx48_stat_dir
     ld a,(path_dir)
     cp DIR_DEV
-    jr z,zx48_stat_dev
+    jp z,zx48_stat_dev
     ld hl,path_name
     call zx48_object_lookup
     ret c
@@ -1561,41 +1567,42 @@ zx48_object_stat:
 ; bytewise order when builders insert canonical boot objects).
 zx48_object_list:
     ld (object_list_out),de
-    ld (object_list_index),c
+    ld a,c
+    ld (object_list_index),a
     call zx48_path_resolve
     ret c
     ld a,c
     cp PATH_KIND_DIR
-    jr nz,zx48_object_perm
+    jp nz,zx48_object_perm
     ld a,(path_dir)
     cp DIR_ROOT
-    jr z,zx48_list_root
+    jp z,zx48_list_root
     cp DIR_DEV
-    jr z,zx48_list_dev
+    jp z,zx48_list_dev
     cp DIR_HOME
-    jr z,zx48_list_home
+    jp z,zx48_list_home
     ld ix,object_table
     ld b,RAM_OBJECT_COUNT
     ld c,0
 zx48_list_dynamic:
     ld a,(ix+OBJ_TYPE_ID)
     or a
-    jr z,zx48_list_dynamic_next
+    jp z,zx48_list_dynamic_next
     ld a,(ix+OBJ_DIR_ID)
     ld d,a
     ld a,(path_dir)
     cp d
-    jr nz,zx48_list_dynamic_next
+    jp nz,zx48_list_dynamic_next
     ld a,(object_list_index)
     or a
-    jr z,zx48_list_emit_object
+    jp z,zx48_list_emit_object
     dec a
     ld (object_list_index),a
 zx48_list_dynamic_next:
     ld de,OBJ_RECORD_SIZE
     add ix,de
     djnz zx48_list_dynamic
-    jr zx48_list_end
+    jp zx48_list_end
 zx48_list_emit_object:
     push ix
     pop hl
@@ -1626,16 +1633,16 @@ zx48_list_root:
     ld hl,list_root
     ld b,5
     ld a,OBJ_DIR
-    jr zx48_list_fixed
+    jp zx48_list_fixed
 zx48_list_dev:
     ld hl,list_dev
     ld b,3
     ld a,OBJ_DEV
-    jr zx48_list_fixed
+    jp zx48_list_fixed
 zx48_list_home:
     ld a,(session_user_len)
     or a
-    jr z,zx48_list_end
+    jp z,zx48_list_end
     ld hl,session_user
     ld b,1
     ld a,OBJ_DIR
@@ -1643,15 +1650,15 @@ zx48_list_fixed:
     ld (list_fixed_type),a
     ld a,(object_list_index)
     cp b
-    jr nc,zx48_list_end
+    jp nc,zx48_list_end
     or a
-    jr z,zx48_list_fixed_emit
+    jp z,zx48_list_fixed_emit
     ld c,a
 zx48_list_fixed_seek:
     ld de,11
     add hl,de
     dec c
-    jr nz,zx48_list_fixed_seek
+    jp nz,zx48_list_fixed_seek
 zx48_list_fixed_emit:
     ld de,(object_list_out)
     ld bc,10
@@ -1686,7 +1693,7 @@ zx48_object_chdir:
     ret c
     ld a,c
     cp PATH_KIND_DIR
-    jr nz,zx48_path_noent
+    jp nz,zx48_path_noent
     ld a,(path_dir)
     ld (object_cwd),a
     ld a,(current_pid)
@@ -1715,7 +1722,7 @@ zx48_object_getcwd:
     ld hl,(object_io_count)
     or a
     sbc hl,de
-    jr c,zx48_object_nospc
+    jp c,zx48_object_nospc
     ld hl,cwd_buffer
     ld de,(object_io_ptr)
     ld a,(cwd_length)
@@ -1732,24 +1739,24 @@ zx48_object_getcwd:
 zx48_build_cwd:
     ld hl,cwd_root
     cp DIR_ROOT
-    jr z,zx48_build_copy
+    jp z,zx48_build_copy
     ld hl,cwd_bin
     cp DIR_BIN
-    jr z,zx48_build_copy
+    jp z,zx48_build_copy
     ld hl,cwd_dev
     cp DIR_DEV
-    jr z,zx48_build_copy
+    jp z,zx48_build_copy
     ld hl,cwd_etc
     cp DIR_ETC
-    jr z,zx48_build_copy
+    jp z,zx48_build_copy
     ld hl,cwd_home
     cp DIR_HOME
-    jr z,zx48_build_copy
+    jp z,zx48_build_copy
     ld hl,cwd_tmp
     cp DIR_TMP
-    jr z,zx48_build_copy
+    jp z,zx48_build_copy
     cp DIR_USERHOME
-    jr nz,zx48_object_invalid
+    jp nz,zx48_object_invalid
     ld hl,cwd_home_prefix
     ld de,cwd_buffer
     ld bc,6
@@ -1775,9 +1782,9 @@ zx48_build_copy_loop:
     inc hl
     inc de
     or a
-    jr z,zx48_build_copy_done
+    jp z,zx48_build_copy_done
     inc b
-    jr zx48_build_copy_loop
+    jp zx48_build_copy_loop
 zx48_build_copy_done:
     ld a,b
     ld (cwd_length),a
