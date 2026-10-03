@@ -131,7 +131,10 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
         {"name": "scheduler-return-checks-stack", "passed": "call zx48_kernel_stack_sample\n    call zx48_kernel_stack_check" in scheduler},
         {
             "name": "rev02-pointer-template-starts-after-guard",
-            "passed": "rev02_process_ptr_template     equ kernel_stack_start+$10" in process,
+            "passed": any(
+                line.split() == ["rev02_process_ptr_template", "equ", "kernel_stack_start+$10"]
+                for line in process.splitlines()
+            ),
         },
         {
             "name": "rev02-pointer-template-is-cold-stack-image-only",
