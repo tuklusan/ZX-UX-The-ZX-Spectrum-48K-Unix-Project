@@ -154,8 +154,6 @@ zx48_user_range_validate:
     cp $E0
     jr nc,zx48_user_range_bad
     ld a,d
-    cp $60
-    jr c,zx48_user_range_bad
     cp $E0
     jr nc,zx48_user_range_bad
 zx48_user_range_ok:
