@@ -575,33 +575,29 @@ ROMINFO_RECORD_SIZE      EQU 24
 ; Resident metadata is packed privately and expanded to exact ROMOUT1 bytes.
 zx48_rom_info_lookup:
     cp 7
-    jp nc,zx48_rom_info_invalid
-    ld (rom_info_query_category),a
-    ld a,b
-    ld (rom_info_query_index),a
-    ld (rom_info_out_ptr),de
+    jr nc,zx48_rom_info_invalid
+    ld c,a
+    push de
+    pop ix
     ld hl,rom_info_table
 zx48_rom_info_scan:
     ld a,(hl)
     or a
     jr z,zx48_rom_info_past_end
-    ld c,a
-    ld a,(rom_info_query_category)
+    ld d,a
+    ld a,c
     or a
     jr z,zx48_rom_info_candidate
-    ld a,c
+    ld a,d
     srl a
     srl a
-    ld c,a
-    ld a,(rom_info_query_category)
     cp c
     jr nz,zx48_rom_info_next
 zx48_rom_info_candidate:
-    ld a,(rom_info_query_index)
+    ld a,b
     or a
     jr z,zx48_rom_info_publish
-    dec a
-    ld (rom_info_query_index),a
+    dec b
 zx48_rom_info_next:
     ld de,4
     add hl,de
@@ -613,9 +609,10 @@ zx48_rom_info_skip_name:
     jr zx48_rom_info_scan
 
 zx48_rom_info_publish:
-    ; Start from an exact all-zero ROMOUT1, then overlay name and metadata.
+    ; Clear the exact public result first; all unspecified bytes remain zero.
     push hl
-    ld hl,(rom_info_out_ptr)
+    push ix
+    pop hl
     xor a
     ld (hl),a
     ld d,h
@@ -625,19 +622,21 @@ zx48_rom_info_publish:
     ldir
     pop hl
 
-    ; Preserve packed metadata/address while copying the NUL-terminated name.
+    ; Decode one compact descriptor and publish its NUL-terminated name.
     ld a,(hl)
-    push af
+    ld c,a
     inc hl
     ld a,(hl)
-    push af
+    ld b,a
     inc hl
     ld e,(hl)
     inc hl
     ld d,(hl)
     inc hl
+    push bc
     push de
-    ld de,(rom_info_out_ptr)
+    push ix
+    pop de
 zx48_rom_info_copy_name:
     ld a,(hl)
     or a
@@ -648,29 +647,18 @@ zx48_rom_info_copy_name:
     jr zx48_rom_info_copy_name
 
 zx48_rom_info_publish_meta:
+    pop de
+    ld (ix+16),e
+    ld (ix+17),d
     pop bc
-    ld hl,(rom_info_out_ptr)
-    ld de,16
-    add hl,de
-    ld (hl),c
-    inc hl
-    ld (hl),b
-    inc hl
-    pop af
-    ld e,a
-    pop af
-    ld d,a
+    ld a,c
     and 3
-    ld (hl),a
-    inc hl
-    ld a,d
+    ld (ix+18),a
+    ld a,c
     srl a
     srl a
-    ld (hl),a
-    inc hl
-    ld a,e
-    ld (hl),a
-    ; Flags high byte and reserved u16 remain zero from the initial clear.
+    ld (ix+19),a
+    ld (ix+20),b
     ld hl,1
     xor a
     ret
@@ -685,14 +673,6 @@ zx48_rom_info_invalid:
     ld a,E_INVAL
     scf
     ret
-
-; ROM-info lookup scratch starts immediately after the allocator extent table.
-ROM_INFO_STATE_BASE       EQU EMERGENCY_START+$C0
-rom_info_query_category   EQU ROM_INFO_STATE_BASE+0
-rom_info_query_index      EQU ROM_INFO_STATE_BASE+1
-rom_info_out_ptr          EQU ROM_INFO_STATE_BASE+2
-ROM_INFO_STATE_END        EQU ROM_INFO_STATE_BASE+4
-    ASSERT ROM_INFO_STATE_END <= EMERGENCY_END+1
 
 ; Private compact descriptors expand to exact public ROMOUT1:
 ; name[16], address, class, category, contract_flags, reserved=0.
