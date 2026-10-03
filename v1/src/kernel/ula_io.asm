@@ -17,14 +17,7 @@ ROM_BORDCR               EQU $5C48
 
     MACRO EMIT_ULA_ROUTINES
 zx48_ula_init:
-    IFDEF ZX48_REV02_COLD_IMAGE_INIT
-    ; Shadow is already zero in the exact cold image; publish it once to 0xFE.
     xor a
-    out (ULA_PORT),a
-    ret
-    ELSE
-    xor a
-    ENDIF
 zx48_ula_commit:
     ld (ula_shadow),a
     out (ULA_PORT),a
