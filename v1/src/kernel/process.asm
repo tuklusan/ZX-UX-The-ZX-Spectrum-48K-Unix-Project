@@ -5270,6 +5270,7 @@ zx48_process_busy:
     ret
 
 zx48_process_count:
+    push hl
     ld hl,process_table+PROC_DESC_SIZE+PROC_STATE
     ld de,PROC_DESC_SIZE
     ld b,MAX_PROCESSES-1
@@ -5283,6 +5284,7 @@ zx48_r2_process_count_next:
     add hl,de
     djnz zx48_r2_process_count_loop
     ld a,c
+    pop hl
     or a
     ret
 
