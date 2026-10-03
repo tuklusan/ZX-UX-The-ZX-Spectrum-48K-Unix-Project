@@ -70,6 +70,37 @@ zx48_od_ptr:
 
 ; B=kind,C=access,D=identity -> A=index, IX record, refs=1.
 zx48_od_create:
+    IFDEF ZX48_REV02_COLD_IMAGE_INIT
+    push bc
+    push de
+    ld ix,open_description_table
+    ld l,0
+    ld de,OD_COMPACT_SIZE
+    ld b,OPEN_DESCRIPTION_COUNT
+zx48_r2_od_create_scan:
+    ld a,(ix+OD_KIND_O)
+    or a
+    jr z,zx48_r2_od_create_found
+    add ix,de
+    inc l
+    djnz zx48_r2_od_create_scan
+    pop de
+    pop bc
+zx48_r2_handle_nospc:
+    ld a,E_NOSPC
+    scf
+    ret
+zx48_r2_od_create_found:
+    ld a,l
+    pop de
+    pop bc
+    ld (ix+OD_KIND_O),b
+    ld (ix+OD_ACCESS_O),c
+    ld (ix+OD_ID_O),d
+    inc (ix+OD_REFS_O)
+    or a
+    ret
+    ELSE
     push bc
     push de
     ld ix,open_description_table
@@ -102,6 +133,7 @@ zx48_od_create_found:
     ld a,(handle_od)
     or a
     ret
+    ENDIF
 
 ; A=OD index. Adds one shared reference.
 zx48_od_retain:
