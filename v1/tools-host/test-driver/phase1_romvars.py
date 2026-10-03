@@ -392,7 +392,7 @@ def _udg_runtime(root: Path, labels: dict[str, int], kernel_bytes: bytes) -> Non
     code += _expect_word(labels["memory_live_allocations"], 1)
     code += _expect_word(labels["memory_free_extents"], FIRST_FREE_AFTER_UDG)
     code += _expect_word(labels["memory_free_extents"] + 2, FIRST_FREE_LENGTH_AFTER_UDG)
-    code += _expect_byte(labels["process_table"] + PROC_DESC_SIZE + PROC_STATE, PROC_FREE)
+    code += _expect_byte(labels["process_pid1"] + PROC_STATE, PROC_FREE)
     code += _expect_bytes(UDG_BANK_BASE, tuple(0 for _ in range(UDG_BANK_SIZE)))
     code += _jp(PASS_PC)
     run_sna(root, bytes(code), patch=phase1._kernel_patch(kernel_bytes))
@@ -439,9 +439,15 @@ def dispatch(
             "memory_pinned_bytes",
             "memory_live_allocations",
             "memory_free_extents",
-            "process_table",
         ),
     )
+    process = (root / "v1/src/kernel/process.asm").read_text(encoding="utf-8")
+    include = (root / "v1/include/zx48ux.inc").read_text(encoding="utf-8")
+    require(re.search(r"(?m)^\s*REV02_PROCESS_LOW_BASE\s+EQU\s+ROM_PRINTER_BUFFER_START\s*$", process) is not None,
+            "production low process-table base missing")
+    require(re.search(r"(?m)^\s*ROM_PRINTER_BUFFER_START\s+EQU\s+\$5B00\s*$", include) is not None,
+            "authorized printer-buffer process-table base missing")
+    labels["process_pid1"] = 0x5B00 + PROC_DESC_SIZE
     kernel_bytes = kernel.read_bytes()
 
     if action == "test":
