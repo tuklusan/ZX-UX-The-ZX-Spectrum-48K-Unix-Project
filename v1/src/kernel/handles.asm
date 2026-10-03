@@ -288,6 +288,42 @@ zx48_handle_close:
 
 ; B=source handle,C=destination or FF. Returns A=destination.
 zx48_handle_dup:
+    IFDEF ZX48_REV02_COLD_IMAGE_INIT
+    ; Keep source/destination on the kernel stack. zx48_handle_lookup and
+    ; zx48_od_retain preserve DE, so D/E can carry the original request until
+    ; install; the retained OD is stacked across the potentially clobbering call.
+    push bc
+    ld a,b
+    call zx48_handle_lookup
+    pop de
+    ret c
+    ld a,e
+    cp HANDLE_FREE
+    jr z,zx48_r2_handle_dup_retain
+    cp d
+    jr nz,zx48_r2_handle_dup_retain
+    or a
+    ret
+zx48_r2_handle_dup_retain:
+    ld a,c
+    call zx48_od_retain
+    ret c
+    ld d,a
+    ld c,a
+    ld a,e
+    push de
+    call zx48_handle_install
+    jr c,zx48_r2_handle_dup_rollback
+    pop de
+    ret
+zx48_r2_handle_dup_rollback:
+    pop de
+    push af
+    ld a,d
+    call zx48_od_release
+    pop af
+    ret
+    ELSE
     ld a,c
     ld (handle_dup_destination),a
     ld a,b
@@ -319,6 +355,7 @@ zx48_handle_dup_retain:
     pop af
     scf
     ret
+    ENDIF
 
 ; Close every live handle of current process.
 zx48_handles_close_all_current:
