@@ -216,8 +216,15 @@ zx48_handle_install:
     ld a,c
     cp OPEN_DESCRIPTION_COUNT
     jp nc,zx48_handle_noent
+    IFDEF ZX48_REV02_COLD_IMAGE_INIT
     ld a,(current_pid)
     call zx48_process_lookup
+    ELSE
+    push bc
+    ld a,(current_pid)
+    call zx48_process_lookup
+    pop bc
+    ENDIF
     ret c
     push ix
     pop hl
