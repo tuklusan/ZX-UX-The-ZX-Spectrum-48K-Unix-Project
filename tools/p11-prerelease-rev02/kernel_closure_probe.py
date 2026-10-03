@@ -490,7 +490,9 @@ kernel_mod_rev02_final_integration_reserve:
     tape_body=tape_body.replace("    ld b,(p511_type)\n","    ld a,(p511_type)\n    ld b,a\n")
     integrated_full_extra=extra+"""kernel_mod_rev02_integrated_objects:
 """+macro_body(objects_source,"EMIT_OBJECT_ROUTINES")+"""kernel_mod_rev02_integrated_zxpack:
-"""+macro_body(zxpack_source,"EMIT_ZXPACK_ROUTINES")+"""kernel_mod_rev02_hybrid_object_type:
+"""+macro_body(zxpack_source,"EMIT_ZXPACK_ROUTINES")+"""kernel_mod_rev02_hybrid_aliases:
+ns_dir EQU path_dir
+kernel_mod_rev02_hybrid_object_type:
     EMIT_OBJECT_TYPE_ROUTINES
 kernel_mod_rev02_hybrid_object_open:
     EMIT_OBJECT_OPEN_ROUTINES
@@ -508,6 +510,8 @@ kernel_mod_rev02_hybrid_seek:
     EMIT_P418_PACKED_SEEK_ROUTINES
 kernel_mod_rev02_hybrid_encoder:
     EMIT_P420_TARGET_ENCODER_ROUTINES
+kernel_mod_rev02_hybrid_pack_codec:
+    EMIT_P422_SYS_PACK_CODEC_ROUTINES
 kernel_mod_rev02_hybrid_candidate:
     EMIT_P424_PACK_CANDIDATE_ROUTINES
 kernel_mod_rev02_hybrid_idle:
@@ -524,30 +528,6 @@ kernel_mod_rev02_hybrid_memory:
     EMIT_P426_COMPACT_ALLOC_ROUTINES
 kernel_mod_rev02_hybrid_scheduler:
     EMIT_P425_IDLE_MAINTENANCE_ROUTINES
-kernel_mod_rev02_hybrid_tape_crc:
-    EMIT_P502_CRC16_ROUTINES
-kernel_mod_rev02_hybrid_tape_framing:
-    EMIT_P503_FRAMING_ROUTINES
-kernel_mod_rev02_hybrid_tape_raw_load:
-    EMIT_P504_RAW_LOADER_ROUTINES
-kernel_mod_rev02_hybrid_tape_packed_load:
-    EMIT_P505_PACKED_LOADER_ROUTINES
-kernel_mod_rev02_hybrid_tape_raw_save:
-    EMIT_P507_RAW_SAVE_ROUTINES
-kernel_mod_rev02_hybrid_tape_stream_save:
-    EMIT_P508_STREAM_SAVE_ROUTINES
-kernel_mod_rev02_hybrid_tape_explicit_load:
-    EMIT_P509_EXPLICIT_LOAD_ROUTINES
-kernel_mod_rev02_hybrid_tape_verify:
-    EMIT_P510_VERIFY_ROUTINES
-kernel_mod_rev02_hybrid_tape_scan:
-    EMIT_P511_SCAN_ROUTINES
-kernel_mod_rev02_hybrid_tape_prompt:
-    EMIT_P513_TAPE_PROMPT_ROUTINES
-kernel_mod_rev02_hybrid_tape_stream:
-    EMIT_P514_DIRECT_TAPE_STREAM_ROUTINES
-kernel_mod_rev02_hybrid_tape_abort:
-    EMIT_P517_TAPE_ABORT_ROUTINES
 kernel_mod_rev02_hybrid_tape_public:
 """+tape_body+"""kernel_mod_rev02_hybrid_tape_recovery:
     EMIT_P517_TAPE_RECOVERY_ROUTINES
