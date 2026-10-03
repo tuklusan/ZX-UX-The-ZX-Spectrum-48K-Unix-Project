@@ -65,7 +65,23 @@ def assemble(root:Path,name:str,text:str,start:int=KERNEL_START)->dict:
                     approximate_bytes=approximate_end-start
             except RuntimeError:
                 approximate_bytes=None
+        approximate_module_spans=[]
+        if sym.is_file():
+            try:
+                symbols=parse_symbols(sym)
+                markers=[(n,v) for n,v in symbols.items() if n.startswith("kernel_mod_")]
+                if "kernel_ordinary_used_end" in symbols:
+                    markers.append(("kernel_ordinary_used_end",symbols["kernel_ordinary_used_end"]))
+                markers.sort(key=lambda item:(item[1],item[0]))
+                approximate_module_spans=[
+                    {"name":markers[i][0],"start":markers[i][1],"end":markers[i+1][1],
+                     "bytes":markers[i+1][1]-markers[i][1]}
+                    for i in range(len(markers)-1)
+                ]
+            except RuntimeError:
+                approximate_module_spans=[]
         row.update({"status":"ASSEMBLY-FAIL","ordinary_bytes":None,"approximate_bytes":approximate_bytes,
+                    "approximate_module_spans":approximate_module_spans,
                     "pool_bytes":KERNEL_POOL_BYTES,"slack_bytes":None})
         return row
     if not row["diagnostics_clean"]:
