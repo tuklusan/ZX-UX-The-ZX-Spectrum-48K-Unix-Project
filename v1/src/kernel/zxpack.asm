@@ -14,6 +14,9 @@
 ; frozen LITERAL/RLE/BACKREF grammar and overlap semantics exactly.
 
     MACRO EMIT_ZXPACK_ROUTINES
+; REV02 prospective integration normalization: this historical whole-codec
+; emitter was never resident in the frozen 8 KiB product. Preserve behavior
+; while widening local branches for post-P11 resident integration.
 ; HL=physical stream, BC=physical bytes, DE=output, stack word logical bytes is
 ; supplied through zx_logical by callers. Carry set E_FORMAT on malformed input.
 zx48_zxpack_decode:
@@ -25,7 +28,7 @@ zx48_zxpack_next:
     ld hl,(zx_logical)
     ld a,h
     or l
-    jr z,zx48_zxpack_finish
+    jp z,zx48_zxpack_finish
     ld bc,(zx_phys)
     ld a,b
     or c
@@ -37,10 +40,10 @@ zx48_zxpack_next:
     dec bc
     ld (zx_phys),bc
     cp $40
-    jr c,zx48_zxpack_literal
+    jp c,zx48_zxpack_literal
     cp $80
-    jr c,zx48_zxpack_rle
-    jr zx48_zxpack_backref
+    jp c,zx48_zxpack_rle
+    jp zx48_zxpack_backref
 
 zx48_zxpack_literal:
     inc a
@@ -65,7 +68,7 @@ zx48_zxpack_literal:
     ld (zx_in),hl
     pop de
     call zx48_zxpack_consume_output
-    jr zx48_zxpack_next
+    jp zx48_zxpack_next
 
 zx48_zxpack_rle:
     and $3f
@@ -92,7 +95,7 @@ zx48_zxpack_rle_loop:
     djnz zx48_zxpack_rle_loop
     ld (zx_out),hl
     call zx48_zxpack_consume_output
-    jr zx48_zxpack_next
+    jp zx48_zxpack_next
 
 zx48_zxpack_backref:
     and $7f
@@ -123,7 +126,7 @@ zx48_zxpack_backref:
     or a
     sbc hl,de
     pop hl
-    jr c,zx48_zxpack_back_bad
+    jp c,zx48_zxpack_back_bad
     pop de                         ; DE=current out
     ld b,0
     ld c,(zx_token_count)
@@ -136,13 +139,13 @@ zx48_zxpack_back_loop:
     inc hl
     inc de
     dec c
-    jr nz,zx48_zxpack_back_loop
+    jp nz,zx48_zxpack_back_loop
     ld (zx_out),de
     ld a,(zx_saved_len)
     ld e,a
     ld d,0
     call zx48_zxpack_consume_output
-    jr zx48_zxpack_next
+    jp zx48_zxpack_next
 zx48_zxpack_back_bad:
     pop de
     jp zx48_zxpack_format
@@ -155,7 +158,7 @@ zx48_zxpack_check_output:
     ld hl,(zx_logical)
     or a
     sbc hl,de
-    jr c,zx48_zxpack_format_local
+    jp c,zx48_zxpack_format_local
     xor a
     or a
     ret
@@ -173,7 +176,7 @@ zx48_zxpack_finish:
     ld hl,(zx_phys)
     ld a,h
     or l
-    jr nz,zx48_zxpack_format
+    jp nz,zx48_zxpack_format
     xor a
     or a
     ret
@@ -202,7 +205,7 @@ zx48_zxpack_materialize:
     ld c,(ix+OBJ_STORAGE_LENGTH)
     ld b,(ix+OBJ_STORAGE_LENGTH+1)
     call zx48_zxpack_decode
-    jr c,zx48_zxpack_materialize_fail
+    jp c,zx48_zxpack_materialize_fail
     ld ix,(zx_object_ptr)
     ld l,(ix+OBJ_ALLOCATION_PTR)
     ld h,(ix+OBJ_ALLOCATION_PTR+1)
@@ -259,7 +262,7 @@ zx48_zxpack_try_slot:
     ld (zx_object_ptr),ix
     ld a,(ix+OBJ_FLAGS_BYTE)
     and OBJ_PACKED
-    jr z,zx48_zxpack_try_raw
+    jp z,zx48_zxpack_try_raw
     ld hl,0
     xor a
     or a
@@ -269,11 +272,11 @@ zx48_zxpack_try_raw:
     ld h,(ix+OBJ_LOGICAL_LENGTH+1)
     ld a,h
     or l
-    jr z,zx48_zxpack_nosave
+    jp z,zx48_zxpack_nosave
     ld de,3
     or a
     sbc hl,de
-    jr c,zx48_zxpack_nosave
+    jp c,zx48_zxpack_nosave
     ld ix,(zx_object_ptr)
     ld l,(ix+OBJ_ALLOCATION_PTR)
     ld h,(ix+OBJ_ALLOCATION_PTR+1)
@@ -286,15 +289,15 @@ zx48_zxpack_try_raw:
 zx48_zxpack_uniform_loop:
     ld a,b
     or c
-    jr z,zx48_zxpack_uniform_ok
+    jp z,zx48_zxpack_uniform_ok
     ld a,(hl)
     ld d,a
     ld a,(zx_uniform_byte)
     cp d
-    jr nz,zx48_zxpack_nosave
+    jp nz,zx48_zxpack_nosave
     inc hl
     dec bc
-    jr zx48_zxpack_uniform_loop
+    jp zx48_zxpack_uniform_loop
 zx48_zxpack_uniform_ok:
     ; encoded bytes = 2*ceil(length/66)
     ld ix,(zx_object_ptr)
@@ -307,9 +310,9 @@ zx48_zxpack_div66:
     ld bc,66
     or a
     sbc hl,bc
-    jr c,zx48_zxpack_div_done
+    jp c,zx48_zxpack_div_done
     inc de
-    jr zx48_zxpack_div66
+    jp zx48_zxpack_div66
 zx48_zxpack_div_done:
     sla e
     rl d
@@ -318,8 +321,8 @@ zx48_zxpack_div_done:
     ld h,(ix+OBJ_LOGICAL_LENGTH+1)
     or a
     sbc hl,de
-    jr c,zx48_zxpack_nosave
-    jr z,zx48_zxpack_nosave
+    jp c,zx48_zxpack_nosave
+    jp z,zx48_zxpack_nosave
     ld b,d
     ld c,e
     ld a,ALLOC_COLD_PREFERRED
@@ -333,18 +336,18 @@ zx48_zxpack_div_done:
 zx48_zxpack_emit_run:
     ld a,h
     or l
-    jr z,zx48_zxpack_commit
+    jp z,zx48_zxpack_commit
     ld bc,66
     or a
     sbc hl,bc
-    jr c,zx48_zxpack_emit_tail
+    jp c,zx48_zxpack_emit_tail
     ld a,$7f                    ; RLE length 66
     ld (de),a
     inc de
     ld a,(zx_uniform_byte)
     ld (de),a
     inc de
-    jr zx48_zxpack_emit_run
+    jp zx48_zxpack_emit_run
 zx48_zxpack_emit_tail:
     add hl,bc
     ld a,l
@@ -404,13 +407,13 @@ zx48_zxpack_info_loop:
     push bc
     ld a,(ix+OBJ_TYPE_ID)
     or a
-    jr z,zx48_zxpack_info_next
+    jp z,zx48_zxpack_info_next
     ld l,(ix+OBJ_LOGICAL_LENGTH)
     ld h,(ix+OBJ_LOGICAL_LENGTH+1)
     ld de,(zx_info_scratch)
     add hl,de
     ld (zx_info_scratch),hl
-    jr nc,zx48_zxpack_info_no_carry
+    jp nc,zx48_zxpack_info_no_carry
     ld hl,(zx_info_scratch+2)
     inc hl
     ld (zx_info_scratch+2),hl
@@ -422,10 +425,10 @@ zx48_zxpack_info_no_carry:
     ld (zx_info_scratch+4),hl
     ld a,(ix+OBJ_FLAGS_BYTE)
     and OBJ_PACKED
-    jr z,zx48_zxpack_info_raw
+    jp z,zx48_zxpack_info_raw
     ld hl,zx_info_scratch+10
     inc (hl)
-    jr zx48_zxpack_info_next
+    jp zx48_zxpack_info_next
 zx48_zxpack_info_raw:
     ld hl,zx_info_scratch+11
     inc (hl)
