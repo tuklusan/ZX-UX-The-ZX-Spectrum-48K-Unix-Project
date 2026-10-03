@@ -499,10 +499,16 @@ def dispatch(
             "cursor_blink_divider",
             "cursor_service_parity",
             "break_pending",
-            "current_pid",
             "altreg_busy",
         ),
     )
+    process = (root / "v1/src/kernel/process.asm").read_text(encoding="utf-8")
+    include = (root / "v1/include/zx48ux.inc").read_text(encoding="utf-8")
+    require(re.search(r"(?m)^\s*current_pid\s+EQU\s+ROM_IF1_WORK_START\s*$", process) is not None,
+            "production current_pid low-RAM placement missing")
+    require(re.search(r"(?m)^\s*ROM_IF1_WORK_START\s+EQU\s+\$5CB6\s*$", include) is not None,
+            "authorized current_pid low-RAM address missing")
+    labels["current_pid"] = 0x5CB6
     kernel_bytes = kernel.read_bytes()
 
     if action == "test":
