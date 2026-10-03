@@ -5263,6 +5263,11 @@ zx48_process_prepare_pid1:
     ld a,(ix+PROC_STATE)
     or a
     jr nz,zx48_process_busy
+    xor a
+    ld (ix+PROC_PARENT),a
+    ld (ix+PROC_CWD),DIR_ROOT
+    ld (ix+PROC_NAME),'s'
+    ld (ix+PROC_NAME+1),'h'
     ld (ix+PROC_STATE),PROC_READY
     ret
 zx48_process_busy:
@@ -5484,12 +5489,10 @@ process_table:
     defs PROC_HANDLES-4,0
     defs MAX_HANDLES_PER_PROCESS,HANDLE_FREE
     defs PROC_DESC_SIZE-(PROC_HANDLES+MAX_HANDLES_PER_PROCESS),0
-    db 1,0,PROC_FREE,0
+    db 1,HANDLE_FREE,PROC_FREE,0
     defs PROC_HANDLES-4,0
     defs MAX_HANDLES_PER_PROCESS,HANDLE_FREE
-    defs PROC_CWD-(PROC_HANDLES+MAX_HANDLES_PER_PROCESS),0
-    db DIR_ROOT,'s','h'
-    defs PROC_DESC_SIZE-(PROC_NAME+2),0
+    defs PROC_DESC_SIZE-(PROC_HANDLES+MAX_HANDLES_PER_PROCESS),0
     db 2,HANDLE_FREE,PROC_FREE,0
     defs PROC_HANDLES-4,0
     defs MAX_HANDLES_PER_PROCESS,HANDLE_FREE
