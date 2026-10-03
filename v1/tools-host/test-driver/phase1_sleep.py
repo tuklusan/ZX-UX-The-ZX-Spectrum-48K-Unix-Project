@@ -227,8 +227,11 @@ def _negative_contracts(root: Path) -> list[dict[str, object]]:
 def _kernel_patch(kernel_bytes: bytes, schedule_finish: int):
     patched = bytearray(kernel_bytes)
     offset = schedule_finish - phase1.KERNEL_BASE
-    require(0 <= offset < len(patched), "schedule-finish label outside kernel")
-    patched[offset] = 0xC9
+    require(0 <= offset <= len(patched) - 2, "schedule-finish label outside kernel")
+    # The real scheduler continuation resumes through zx48_syscall_resume_ok,
+    # which returns success with carry clear. Model that observable result while
+    # preventing the unit fixture from entering the non-returning scheduler.
+    patched[offset : offset + 2] = b"\xAF\xC9"
     return phase1._kernel_patch(bytes(patched))
 
 
