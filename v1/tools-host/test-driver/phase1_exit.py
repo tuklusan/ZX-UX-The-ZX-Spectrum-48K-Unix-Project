@@ -139,6 +139,8 @@ def _positive(root: Path, labels: dict[str, int], kernel_bytes: bytes) -> None:
     code += _store_byte(p2, 2)
     code += _store_byte(p2 + PROC_PARENT, 1)
     code += _store_byte(p2 + PROC_STATE, PROC_RUNNING)
+    for handle in range(8):
+        code += _store_byte(p2 + 16 + handle, HANDLE_FREE)
     code += _store_byte(labels["current_pid"], 2)
     code += _store_byte(labels["tty_input_owner"], 2)
     code += b"\x3E\x5A" + _call(labels["zx48_process_exit"])
