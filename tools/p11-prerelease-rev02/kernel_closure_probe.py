@@ -102,6 +102,27 @@ def assemble(root:Path,name:str,text:str,start:int=KERNEL_START)->dict:
                 "module_spans":module_spans})
     return row
 
+def macro_body(source:str,name:str)->str:
+    start="    MACRO "+name+"\n"
+    req(source.count(start)==1,"macro body anchor: "+name)
+    tail=source.split(start,1)[1]
+    req("    ENDM\n" in tail,"macro body terminator: "+name)
+    return tail.split("    ENDM\n",1)[0]
+
+def legacy_compact_body(source:str,name:str)->str:
+    body=macro_body(source,name)
+    # The old whole-module emitters predate the compact OD field names and were
+    # never resident in the REV02 product. Normalize only the measurement copy.
+    body=body.replace("OD_ACCESS)","OD_ACCESS_O)").replace("OD_IDENTITY)","OD_ID_O)").replace("OD_OFFSET)","OD_OFFSET_O)")
+    body=body.replace("OD_OFFSET+1)","OD_OFFSET_O+1)")
+    body=body.replace("call zx48_od_release_id","call zx48_od_release")
+    for target in ("object_slot","object_open_flags","object_list_index"):
+        body=body.replace("    ld ("+target+"),c\n","    ld a,c\n    ld ("+target+"),a\n")
+    # Long-branch normalization is measurement-only and conservatively costs one
+    # extra byte per converted JR while preserving condition semantics.
+    body=re.sub(r"(?m)^(\s*)jr(\s+)",r"\1jp\2",body)
+    return body
+
 def measure_historical_fixture(root:Path,step:str)->dict:
     evidence=Path("/tmp")/("rev02-capacity-"+step.replace(".","-"))
     evidence.mkdir(parents=True,exist_ok=True)
@@ -133,6 +154,8 @@ def main():
     syscall=(root/"v1/src/kernel/syscall.asm").read_text(encoding="utf-8")
     include=(root/"v1/include/zx48ux.inc").read_text(encoding="utf-8")
     process=(root/"v1/src/kernel/process.asm").read_text(encoding="utf-8")
+    objects_source=(root/"v1/src/kernel/objects.asm").read_text(encoding="utf-8")
+    zxpack_source=(root/"v1/src/kernel/zxpack.asm").read_text(encoding="utf-8")
     pipe=(root/"v1/src/kernel/pipe.asm").read_text(encoding="utf-8")
     rom_doc=(root/"v1/docs/rom-services.md").read_text(encoding="utf-8")
     low_ram_needles=(
@@ -437,9 +460,25 @@ kernel_mod_rev02_final_integration_reserve:
     closure=closure.replace(emit_anchor,emit_anchor+closure_extra)
     complete_closure=assemble(root,"kernel-complete-closure-envelope",closure,start=closure_origin)
 
+    # A second sizing projection uses the older integrated object/zxpack owners
+    # as a compaction oracle. They are not production bytes and are normalized
+    # only in this generated probe copy. This quantifies how much of the broad
+    # staged envelope is duplication rather than irreducible resident behavior.
+    integrated=kernel.replace(include_anchor,include_anchor+'    INCLUDE "objects.asm"\n    INCLUDE "zxpack.asm"\n    INCLUDE "sound.asm"\n')
+    integrated=integrated.replace(origin_anchor,f"    ORG ${closure_origin:04X}\n",1)
+    integrated=integrated.replace("    ASSERT $ = BOOT_GATEWAY\n",f"    ASSERT $ = ${closure_origin+3:04X}\n",1)
+    integrated=integrated.replace("    ASSERT $ = BOOT_GATEWAY+3\n",f"    ASSERT $ = ${closure_origin+6:04X}\n",1)
+    integrated_extra=extra+"""kernel_mod_rev02_integrated_objects:
+"""+legacy_compact_body(objects_source,"EMIT_OBJECT_ROUTINES")+"""kernel_mod_rev02_integrated_zxpack:
+"""+legacy_compact_body(zxpack_source,"EMIT_ZXPACK_ROUTINES")+"""kernel_mod_rev02_integrated_projection_reserve:
+    defs 192,0
+"""
+    integrated=integrated.replace(emit_anchor,emit_anchor+integrated_extra)
+    integrated_projection=assemble(root,"kernel-integrated-object-zxpack-projection",integrated,start=closure_origin)
+
     report={"schema":1,"kind":"rev02-kernel-closure-probe","status":"PASS" if baseline["status"]=="PASS" and public_api["status"]=="PASS" else "FAIL",
             "kernel_pool_bytes":KERNEL_POOL_BYTES,
-            "baseline":baseline,"public_api_lower_bound":public_api,"complete_closure_envelope":complete_closure,
+            "baseline":baseline,"public_api_lower_bound":public_api,"complete_closure_envelope":complete_closure,"integrated_object_zxpack_projection":integrated_projection,
             "historical_fixture_measurements":fixture_measurements,
             "measurement_origin":measure_origin,"complete_closure_measurement_origin":closure_origin,
             "measurement_method":"size-only relocation preserves relative gateway placement; graphics macro is sourced once through syscall.asm; production kernel remains at $E000",
@@ -457,5 +496,5 @@ kernel_mod_rev02_final_integration_reserve:
         print(public_api.get("stderr",""),file=sys.stderr)
         print(public_api.get("stdout",""),file=sys.stderr)
         raise SystemExit("ERROR: public API lower-bound probe must assemble")
-    print("REV02 KERNEL CLOSURE PROBE PASS",json.dumps({"baseline":baseline.get("ordinary_bytes"),"public_api":public_api.get("ordinary_bytes"),"complete_closure":complete_closure.get("ordinary_bytes"),"complete_closure_approx":complete_closure.get("approximate_bytes"),"complete_closure_status":complete_closure.get("status"),"pool":KERNEL_POOL_BYTES}))
+    print("REV02 KERNEL CLOSURE PROBE PASS",json.dumps({"baseline":baseline.get("ordinary_bytes"),"public_api":public_api.get("ordinary_bytes"),"complete_closure":complete_closure.get("ordinary_bytes"),"complete_closure_approx":complete_closure.get("approximate_bytes"),"complete_closure_status":complete_closure.get("status"),"integrated_object_zxpack":integrated_projection.get("ordinary_bytes"),"integrated_object_zxpack_approx":integrated_projection.get("approximate_bytes"),"integrated_object_zxpack_status":integrated_projection.get("status"),"pool":KERNEL_POOL_BYTES}))
 if __name__=="__main__": main()
