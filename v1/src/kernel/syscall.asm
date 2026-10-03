@@ -1558,39 +1558,28 @@ p1119_cmp_invalid:
 
 ; P11.46 exact staged SYS_FP_TO_TEXT ABI.
     MACRO EMIT_P1146_FP_TO_TEXT_SYSCALL_ROUTINES
-p1146_sys_text_in       EQU P11_SYSCALL_TRANSIENT_BASE+0
-p1146_sys_text_out      EQU P11_SYSCALL_TRANSIENT_BASE+2
-p1146_sys_text_capacity EQU P11_SYSCALL_TRANSIENT_BASE+4
-
 zx48_p1146_sys_fp_to_text:
-    ld hl,(syscall_arg_hl)
-    ld (p1146_sys_text_in),hl
-    ld de,(syscall_arg_de)
-    ld (p1146_sys_text_out),de
-    ld bc,(syscall_arg_bc)
-    ld (p1146_sys_text_capacity),bc
-
     ; The five-byte value is always dereferenced.
-    ld hl,(p1146_sys_text_in)
+    ld hl,(syscall_arg_hl)
     ld bc,5
     call zx48_user_range_validate
     ret c
 
     ; Zero capacity cannot hold even the terminating NUL. It performs no
     ; destination dereference and therefore follows the common zero-range rule.
-    ld bc,(p1146_sys_text_capacity)
+    ld bc,(syscall_arg_bc)
     ld a,b
     or c
     jr z,p1146_sys_text_nospc
 
     ; Validate the complete caller-provided output range before entering ROM.
-    ld hl,(p1146_sys_text_out)
+    ld hl,(syscall_arg_de)
     call zx48_user_range_validate
     ret c
 
-    ld hl,(p1146_sys_text_in)
-    ld de,(p1146_sys_text_out)
-    ld bc,(p1146_sys_text_capacity)
+    ld hl,(syscall_arg_hl)
+    ld de,(syscall_arg_de)
+    ld bc,(syscall_arg_bc)
     jp zx48_p1146_rom_fp_to_text
 
 p1146_sys_text_nospc:
@@ -1603,18 +1592,8 @@ p1146_sys_text_nospc:
 ; Grammar is validated byte-for-byte before any ROM entry:
 ; [+-]? ( DIGITS ('.' DIGITS*)? | '.' DIGITS+ ) ([eE][+-]?DIGITS+)?
     MACRO EMIT_P1147_FP_FROM_TEXT_SYSCALL_ROUTINES
-p1147_sys_src         EQU P11_SYSCALL_TRANSIENT_BASE+0
-p1147_sys_out         EQU P11_SYSCALL_TRANSIENT_BASE+2
-p1147_sys_length      EQU P11_SYSCALL_TRANSIENT_BASE+4
-
 zx48_p1147_sys_fp_from_text:
-    ld hl,(syscall_arg_hl)
-    ld (p1147_sys_src),hl
-    ld de,(syscall_arg_de)
-    ld (p1147_sys_out),de
     ld bc,(syscall_arg_bc)
-    ld (p1147_sys_length),bc
-
     ld a,b
     or c
     jp z,p1147_sys_invalid
@@ -1623,18 +1602,17 @@ zx48_p1147_sys_fp_from_text:
     or a
     jp nz,p1147_sys_invalid
 
-    ld hl,(p1147_sys_src)
-    ld bc,(p1147_sys_length)
+    ld hl,(syscall_arg_hl)
     call zx48_user_range_validate
     ret c
-    ld hl,(p1147_sys_out)
+    ld hl,(syscall_arg_de)
     ld bc,5
     call zx48_user_range_validate
     ret c
 
     ld de,0
-    ld hl,(p1147_sys_src)
-    ld bc,(p1147_sys_length)
+    ld hl,(syscall_arg_hl)
+    ld bc,(syscall_arg_bc)
 
     ld a,(hl)
     cp '+'
@@ -1738,7 +1716,7 @@ p1147_sys_publish_negative:
     dec bc
     ld a,1
 p1147_sys_publish_ready:
-    ld de,(p1147_sys_out)
+    ld de,(syscall_arg_de)
     jp zx48_p1147_rom_fp_from_text
 
 p1147_sys_invalid:
