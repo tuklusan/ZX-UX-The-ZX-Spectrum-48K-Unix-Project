@@ -133,23 +133,6 @@ alternate-bank exchange only as OS-private scratch switching.
 | tape workspace used by SA/LD-BYTES | ROM compatibility zone | bounded | TAPE | valid only during the synchronous tape critical section |
 | console/graphics transient ROM workspace | ROM compatibility zone | bounded | CONSOLE/GRAPHICS | wrapper-owned only; never process ABI state |
 
-REV02 production also uses two individually verified compatibility-zone ranges
-without making them user-allocatable:
-
-- `0x5B00-0x5B7F`: controlled calculator/BEEP stack. This is the Spectrum
-  printer buffer; version 1 has no printer or Interface-1 support, and the
-  production ROM call set never enters `LPRINT`, `LLIST`, `COPY`, or the ROM
-  printer-buffer clear path.
-- `0x5CB6-0x5E35`: eight exact 48-byte process descriptors. `0x5CB6` is the
-  first byte after the standard system-variable block ending at `P-RAMT`
-  (`0x5CB4-0x5CB5`). Keyboard, tape and BEEPER paths do not address this range;
-  serialized calculator/text paths instead use the production operation window
-  beginning at `0x5E36`.
-
-The production calculator/text scratch then occupies `0x5E36-0x5F5F` at most,
-with its transaction snapshot at `0x5F80-0x5FF7`. All ranges remain inside the
-frozen `0x5B00-0x5FFF` compatibility zone and outside ordinary user allocation.
-
 The P1.14 UDG bank is the first arena allocation after `zx48_memory_init`; the
 exact P1.14 runtime pointer is `0x6000`, covering `0x6000..0x60FF`. Boot zeroes all
 256 bytes, writes ROM UDG at 0x5C7B-0x5C7C as little-endian bytes `00 60`, and

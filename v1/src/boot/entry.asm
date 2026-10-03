@@ -38,9 +38,7 @@ zx48_boot_main_impl:
     ld sp,BOOT_STACK_TOP
     ld iy,ROM_IY_ANCHOR
     IFDEF ZX48_REV02_COLD_IMAGE_INIT
-    ; Fixed kernel-reserve state is cold-linked; process descriptors live in
-    ; verified ROM-compatibility workspace and are initialized explicitly.
-    call zx48_process_init
+    ; Exact-image cold state already covers these fixed resident subsystems.
     ELSE
     call zx48_kernel_stack_init
     call zx48_memory_init
