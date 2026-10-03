@@ -77,6 +77,8 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: zxux-p11-prerelease-rev02-stage-c-${{ github.sha }}
-          path: /tmp/rev02-stage-c/
+          path: |
+            /tmp/rev02-stage-c/
+            /tmp/rev02-kernel-probe/
           retention-days: 90
           if-no-files-found: error
