@@ -150,6 +150,11 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
             "pop hl",
         ),
     )
+    # For a nonzero count, after the widened ADD has rejected carry and the
+    # inclusive end has been formed with DEC, end >= start is already proven.
+    # Therefore the compact production validator needs only the user-arena
+    # start lower bound and the end upper bound; a repeated end >= $6000 test
+    # is redundant and must not be required as source shape.
     user_arena = _ordered(
         validator,
         (
@@ -158,8 +163,6 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
             "cp $e0",
             "jr nc,zx48_user_range_bad",
             "ld a,d",
-            "cp $60",
-            "jr c,zx48_user_range_bad",
             "cp $e0",
             "jr nc,zx48_user_range_bad",
         ),
