@@ -375,6 +375,16 @@ zx48_p11_rom_txn_cleanup:
     ld (altreg_busy),a
     ld iy,ROM_IY_ANCHOR
     ret
+
+; Common ROM error restart for calculator gateways that need only transaction
+; restoration before returning E_INVAL.
+zx48_p11_rom_invalid_error:
+    ld hl,(p11_rom_saved_sp)
+    ld sp,hl
+    call zx48_p11_rom_txn_cleanup
+    ld a,E_INVAL
+    scf
+    ret
     ENDIF
     ENDM
 
@@ -405,7 +415,6 @@ p1117_fp_op              EQU P11_ROM_OP_BASE+0
 p1117_fp_lhs_ptr         EQU P11_ROM_OP_BASE+1
 p1117_fp_rhs_ptr         EQU P11_ROM_OP_BASE+3
 p1117_fp_out_ptr         EQU P11_ROM_OP_BASE+5
-p1117_fp_result          EQU P11_ROM_OP_BASE+7
 
 p1117_fp_rom_table:
     db P1117_ROM_ADD,P1117_ROM_SUB,P1117_ROM_MUL,P1117_ROM_DIV
@@ -435,7 +444,7 @@ zx48_p1117_rom_fp_exec:
 
     ld a,(p1117_fp_op)
     cp FPOP_OP_ABS
-    jp nc,p1117_fp_rom_operands_ready
+    jr nc,p1117_fp_rom_operands_ready
     ld hl,(p1117_fp_rhs_ptr)
     ld de,ROM_CALC_STACK+5
     ld bc,5
@@ -452,7 +461,7 @@ p1117_fp_rom_operands_ready:
     add hl,de
     ld b,(hl)
 
-    ld hl,p1117_fp_rom_error
+    ld hl,zx48_p11_rom_invalid_error
     push hl
     ld (ROM_ERR_SP),sp
     ld iy,ROM_IY_ANCHOR
@@ -464,25 +473,12 @@ p1117_fp_rom_operands_ready:
     ld bc,5
     or a
     sbc hl,bc
-    ld de,p1117_fp_result
+    ld de,(p1117_fp_out_ptr)
     ldir
     call zx48_p11_rom_txn_cleanup
-
-    ld hl,p1117_fp_result
-    ld de,(p1117_fp_out_ptr)
-    ld bc,5
-    ldir
     xor a
     ld h,a
     ld l,a
-    ret
-
-p1117_fp_rom_error:
-    ld hl,(p11_rom_saved_sp)
-    ld sp,hl
-    call zx48_p11_rom_txn_cleanup
-    ld a,E_INVAL
-    scf
     ret
 
 
@@ -762,21 +758,21 @@ zx48_p1118_rom_fp_to_int:
 
     ld a,(p1118_rom_float)
     or a
-    jp nz,p1118_rom_cast_invalid
+    jr nz,p1118_rom_cast_invalid
     ld a,(p1118_rom_float+4)
     or a
-    jp nz,p1118_rom_cast_invalid
+    jr nz,p1118_rom_cast_invalid
     ld a,(p1118_rom_float+1)
     or a
     jr z,p1118_rom_ftoi_positive
     cp $FF
-    jp nz,p1118_rom_cast_invalid
+    jr nz,p1118_rom_cast_invalid
     ld a,(p1118_rom_signed)
     or a
-    jp z,p1118_rom_cast_invalid
+    jr z,p1118_rom_cast_invalid
     ld a,(p1118_rom_float+3)
     bit 7,a
-    jp z,p1118_rom_cast_invalid
+    jr z,p1118_rom_cast_invalid
     jr p1118_rom_ftoi_publish
 
 p1118_rom_ftoi_positive:
@@ -785,7 +781,7 @@ p1118_rom_ftoi_positive:
     jr z,p1118_rom_ftoi_publish
     ld a,(p1118_rom_float+3)
     bit 7,a
-    jp nz,p1118_rom_cast_invalid
+    jr nz,p1118_rom_cast_invalid
 
 p1118_rom_ftoi_publish:
     ld hl,p1118_rom_float+2
@@ -814,7 +810,6 @@ P1119_ROM_EQ             EQU $0E
 p1119_rom_lhs_ptr       EQU P11_ROM_OP_BASE+0
 p1119_rom_rhs_ptr       EQU P11_ROM_OP_BASE+2
 p1119_rom_out_ptr       EQU P11_ROM_OP_BASE+4
-p1119_rom_result        EQU P11_ROM_OP_BASE+6
 
 ; HL=lhs five-byte pointer, DE=rhs five-byte pointer, BC=writable i8 result.
 zx48_p1119_rom_fp_cmp:
@@ -826,7 +821,7 @@ zx48_p1119_rom_fp_cmp:
     call zx48_p11_rom_txn_begin
     ret c
 
-    ld hl,p1119_rom_error
+    ld hl,zx48_p11_rom_invalid_error
     push hl
     ld (ROM_ERR_SP),sp
     ld iy,ROM_IY_ANCHOR
@@ -839,7 +834,6 @@ zx48_p1119_rom_fp_cmp:
     or a
     jr z,p1119_rom_not_equal
     xor a
-    ld (p1119_rom_result),a
     jr p1119_rom_success
 
 p1119_rom_not_equal:
@@ -849,19 +843,15 @@ p1119_rom_not_equal:
     db $3B,$38
     call p1119_rom_bool
     or a
-    jr z,p1119_rom_greater
     ld a,$FF
-    ld (p1119_rom_result),a
-    jr p1119_rom_success
-
-p1119_rom_greater:
+    jr nz,p1119_rom_success
     ld a,1
-    ld (p1119_rom_result),a
 
 p1119_rom_success:
     pop hl
+    push af
     call zx48_p11_rom_txn_cleanup
-    ld a,(p1119_rom_result)
+    pop af
     ld hl,(p1119_rom_out_ptr)
     ld (hl),a
     xor a
@@ -899,14 +889,6 @@ p1119_rom_bool_loop:
     djnz p1119_rom_bool_loop
     ret z
     ld a,1
-    ret
-
-p1119_rom_error:
-    ld hl,(p11_rom_saved_sp)
-    ld sp,hl
-    call zx48_p11_rom_txn_cleanup
-    ld a,E_INVAL
-    scf
     ret
 
 
@@ -1076,7 +1058,6 @@ p1147_text_length        EQU P11_ROM_OP_BASE+4
 p1147_text_sign          EQU P11_ROM_OP_BASE+6
 p1147_text_calc_mem      EQU P11_ROM_OP_BASE+7
 p1147_text_scratch       EQU P11_ROM_OP_BASE+37
-p1147_text_result        EQU P11_ROM_OP_BASE+293
 
 ; A=0 positive / 1 negative, HL=unsigned decimal token, BC=exact token length,
 ; DE=writable five-byte destination. Grammar/ranges are already validated.
@@ -1105,7 +1086,7 @@ zx48_p1147_rom_fp_from_text:
     ld hl,p1147_text_scratch
     ld (ROM_CH_ADD),hl
 
-    ld hl,p1147_text_error
+    ld hl,zx48_p11_rom_invalid_error
     push hl
     ld (ROM_ERR_SP),sp
     ld iy,ROM_IY_ANCHOR
@@ -1124,25 +1105,12 @@ p1147_text_sign_done:
     ld bc,5
     or a
     sbc hl,bc
-    ld de,p1147_text_result
+    ld de,(p1147_text_out_ptr)
     ldir
     call zx48_p11_rom_txn_cleanup
-
-    ld hl,p1147_text_result
-    ld de,(p1147_text_out_ptr)
-    ld bc,5
-    ldir
     xor a
     ld h,a
     ld l,a
-    ret
-
-p1147_text_error:
-    ld hl,(p11_rom_saved_sp)
-    ld sp,hl
-    call zx48_p11_rom_txn_cleanup
-    ld a,E_INVAL
-    scf
     ret
 
 
