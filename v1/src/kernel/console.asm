@@ -35,10 +35,6 @@ CONSOLE_STATE_END        EQU CONSOLE_STATE_BASE+9
 
     MACRO EMIT_CONSOLE_ROUTINES
 zx48_console_init:
-    IFDEF ZX48_REV02_COLD_IMAGE_INIT
-    ; All version-1 console/cursor defaults are part of the exact cold image.
-    ret
-    ELSE
     ld hl,1
     ld (cursor_phase),hl
     ld (tty_cursor_shape),hl
@@ -51,7 +47,6 @@ zx48_console_init:
     ld a,TTY_MODE_64
     ld (tty_mode),a
     ret
-    ENDIF
 
 zx48_console_clear:
     call zx48_cursor_hide
