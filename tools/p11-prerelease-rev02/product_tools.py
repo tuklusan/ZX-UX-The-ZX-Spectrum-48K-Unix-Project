@@ -66,7 +66,7 @@ def build_relocatable(sj: Path, out: Path, name: str, include_lines: str, emit_l
 
     asm=out/f"{name}-product.asm"
     asm.write_text(source(0,"",True),encoding="utf-8",newline="\n")
-    run([sj,"--nologo",asm.name],out)
+    run([sj,"--nologo",f"--sym={name}-product.sym",asm.name],out)
     base_asm=out/f"{name}-product-base.asm"
     base_asm.write_text(source(0x1000,"-base",False),encoding="utf-8",newline="\n")
     run([sj,"--nologo",base_asm.name],out)
@@ -103,7 +103,7 @@ def build_relocatable(sj: Path, out: Path, name: str, include_lines: str, emit_l
         w=struct.unpack_from("<H",rebuilt,off)[0]
         struct.pack_into("<H",rebuilt,off,(w+0x1000)&0xFFFF)
     req(bytes(rebuilt)==base_bytes,f"{name} two-origin relocation closure")
-    return asm,image,tuple(relocs),len(bss_bytes)
+    return asm,image,tuple(relocs),len(bss_bytes),parse_sym(out/f"{name}-product.sym")
 def load_maketap(root: Path):
     path=root/"v1/tools-host/maketap/maketap.py"
     spec=importlib.util.spec_from_file_location("zxux_rev02_maketap",path)
@@ -156,6 +156,14 @@ def parse_sym(path: Path):
         name,raw=line.split(": EQU 0x",1)
         try: out[name.strip()]=int(raw.strip(),16)
         except ValueError: pass
+    return out
+
+def marker_spans(symbols, names):
+    out=[]
+    for a,b in zip(names,names[1:]):
+        req(a in symbols and b in symbols,"module-span marker missing: "+a+"/"+b)
+        req(symbols[b] >= symbols[a],"module-span ordering: "+a)
+        out.append({"name":a,"bytes":symbols[b]-symbols[a]})
     return out
 
 def build_runtime_obj1(root: Path, sj: Path, out: Path)->Path:
@@ -242,7 +250,7 @@ def main():
         "ordinary as public DS/expression hook closure missing")
     # Product closure deliberately includes no historical P11PR compiler helper.
     req("EMIT_P11PR_CC_SDK_CORPUS_COMPILER" in ccsrc.read_text(),"historical fixture identity missing")
-    asm,image,sh_relocs,sh_bss=build_relocatable(
+    asm,image,sh_relocs,sh_bss,sh_syms=build_relocatable(
         sj,out,"sh",
         f'    INCLUDE "{(root/"v1/include/zx48ux.inc").as_posix()}"\n    INCLUDE "{(root/"v1/src/shell/sh.asm").as_posix()}"\n',
         '    EMIT_REV02_SH_PRODUCT\n',
@@ -263,7 +271,7 @@ def main():
     # Ordinary /bin/cc image.  REV02 attaches one generic bounded streaming
     # source-semantic compiler path; historical source-bound P1144/P1145/P11PR
     # compiler macros are deliberately not expanded or reachable.
-    cc_asm,cc_image,cc_relocs,cc_bss=build_relocatable(
+    cc_asm,cc_image,cc_relocs,cc_bss,cc_syms=build_relocatable(
         sj,out,"cc",
         f'    INCLUDE "{(root/"v1/include/zx48ux.inc").as_posix()}"\n    INCLUDE "{(root/"v1/src/tools/cc.asm").as_posix()}"\n',
         '    EMIT_P1128_CC_OBJ1_WRITER\n    EMIT_P1129_CC_TRANSACTION_ROUTINES\n    EMIT_REV02_CC_PRODUCT_CLI\n',
@@ -286,10 +294,10 @@ def main():
 
 
     # Prospective ordinary /bin/as image: generic ARG1/source-open scaffold only.
-    as_asm,as_image,as_relocs,as_bss=build_relocatable(
+    as_asm,as_image,as_relocs,as_bss,as_syms=build_relocatable(
         sj,out,"as",
         f'    INCLUDE "{(root/"v1/include/zx48ux.inc").as_posix()}"\n    INCLUDE "{(root/"tools/as.asm").as_posix()}"\n    INCLUDE "{(root/"tools/as_text.asm").as_posix()}"\n',
-        '    EMIT_P10_AS_OBJ1_SYMBOL_ROUTINES\n    EMIT_P10_AS_OBJ1_RELOC_ROUTINES\n    EMIT_P10_AS_EXPR_ROUTINES\n    EMIT_P10_AS_OBJ1_WRITER\n    EMIT_P10_AS_NAME_ROUTINES\n    EMIT_P10_AS_TRANSACTION_ROUTINES\n    EMIT_R17_AS_NSP1_OBJ1\n    EMIT_R17_AS_TEXT_OBJ1\n    EMIT_REV02_AS_PRODUCT_CLI\n',
+        'as_span_obj1_symbol:\n    EMIT_P10_AS_OBJ1_SYMBOL_ROUTINES\nas_span_obj1_reloc:\n    EMIT_P10_AS_OBJ1_RELOC_ROUTINES\nas_span_expr:\n    EMIT_P10_AS_EXPR_ROUTINES\nas_span_obj1_writer:\n    EMIT_P10_AS_OBJ1_WRITER\nas_span_name:\n    EMIT_P10_AS_NAME_ROUTINES\nas_span_transaction:\n    EMIT_P10_AS_TRANSACTION_ROUTINES\nas_span_nsp1:\n    EMIT_R17_AS_NSP1_OBJ1\nas_span_text:\n    EMIT_R17_AS_TEXT_OBJ1\nas_span_product_cli:\n    EMIT_REV02_AS_PRODUCT_CLI\nas_span_end:\n',
         '    defs AS_REV02_BSS_BYTES,0\n')
     req(as_image.is_file() and 64 <= as_image.stat().st_size <= 12288,"as product image size")
     as_resident=as_image.stat().st_size+as_bss+512
@@ -301,10 +309,10 @@ def main():
     req(as_tap==mt.m48o_blocks(mt.M48OObject("as",mt.M48O_BIN,mt.DIR_BIN,as_mex)),"as M48O nondeterminism")
 
     # Prospective ordinary /bin/ld image: generic normal single-OBJ1 linker plus REV18 -abs route.
-    ld_asm,ld_image,ld_relocs,ld_bss=build_relocatable(
+    ld_asm,ld_image,ld_relocs,ld_bss,ld_syms=build_relocatable(
         sj,out,"ld",
         f'    INCLUDE "{(root/"v1/include/zx48ux.inc").as_posix()}"\n    INCLUDE "{(root/"tools/ld.asm").as_posix()}"\n    INCLUDE "{(root/"v1/src/libc48/crt0.asm").as_posix()}"\n    INCLUDE "{(root/"v1/src/libc48/runtime_archive.asm").as_posix()}"\n',
-        '    EMIT_P10_LD_INPUT_LOADER\n    EMIT_P10_LD_ARCHIVE_SELECT_ROUTINES\n    EMIT_P10_LD_LAYOUT_ROUTINES\n    EMIT_P10_LD_SYMBOL_RESOLVE_ROUTINES\n    EMIT_REV02_LD_RELOCATION_ROUTINES\n    EMIT_P10_LD_DEFAULT_ENTRY_ROUTINES\n    EMIT_P10_LD_STACK_OPTION_ROUTINES\n    EMIT_P10_LD_MEX1_WRITER_ROUTINES\n    EMIT_P10_LD_TRANSACTION_ROUTINES\n    EMIT_P10_CRT0_OBJ1\n    EMIT_P10_RUNTIME_ARCHIVE\n    EMIT_P1135_C48_RUNTIME_ARCHIVE\n    EMIT_REV02_FULL_RUNTIME_ARCHIVE\n    EMIT_REV02_FULL_RUNTIME_ARCHIVE_ROUTINES\n    EMIT_REV02_LD_PRODUCT_CLI\n',
+        'ld_span_input:\n    EMIT_P10_LD_INPUT_LOADER\nld_span_archive_select:\n    EMIT_P10_LD_ARCHIVE_SELECT_ROUTINES\nld_span_layout:\n    EMIT_P10_LD_LAYOUT_ROUTINES\nld_span_symbol_resolve:\n    EMIT_P10_LD_SYMBOL_RESOLVE_ROUTINES\nld_span_relocation:\n    EMIT_REV02_LD_RELOCATION_ROUTINES\nld_span_entry:\n    EMIT_P10_LD_DEFAULT_ENTRY_ROUTINES\nld_span_stack:\n    EMIT_P10_LD_STACK_OPTION_ROUTINES\nld_span_mex_writer:\n    EMIT_P10_LD_MEX1_WRITER_ROUTINES\nld_span_transaction:\n    EMIT_P10_LD_TRANSACTION_ROUTINES\nld_span_crt0:\n    EMIT_P10_CRT0_OBJ1\nld_span_runtime_archive_legacy:\n    EMIT_P10_RUNTIME_ARCHIVE\nld_span_runtime_archive_p1135:\n    EMIT_P1135_C48_RUNTIME_ARCHIVE\nld_span_runtime_archive_full:\n    EMIT_REV02_FULL_RUNTIME_ARCHIVE\nld_span_runtime_archive_helpers:\n    EMIT_REV02_FULL_RUNTIME_ARCHIVE_ROUTINES\nld_span_product_cli:\n    EMIT_REV02_LD_PRODUCT_CLI\nld_span_end:\n',
         '    defs LD_REV02_NORMAL_BSS_BYTES,0\n')
     req(ld_image.is_file() and 64 <= ld_image.stat().st_size <= 20480,"ld product image size")
     req(ld_image.read_bytes().count(runtime_obj.read_bytes())==1,"full runtime archive member embedding")
@@ -331,6 +339,7 @@ def main():
       "as":{
         "source":"tools/as.asm","source_sha256":sha(assrc),"support_source":"tools/as_text.asm","support_source_sha256":sha(astextsrc),
         "image_sha256":sha(as_image),"image_bytes":as_image.stat().st_size,"bss_bytes":as_bss,"resident_bytes_including_stack":as_resident,"relocation_count":len(as_relocs),
+        "module_spans":marker_spans(as_syms,("as_span_obj1_symbol","as_span_obj1_reloc","as_span_expr","as_span_obj1_writer","as_span_name","as_span_transaction","as_span_nsp1","as_span_text","as_span_product_cli","as_span_end")),
         "mex1_sha256":sha(out/"as.mex1"),"m48o_tap_sha256":sha(out/"as.m48o.tap"),
         "entry":"EMIT_REV02_AS_PRODUCT_CLI",
         "semantic_status":"GENERIC-NATIVE-AS-FULL-P10-SYNTAX-DRIVER; LABEL/EQU/DB/DW/DS/GLOBAL/EXTERN/EXPRESSIONS; DETERMINISTIC-OBJ1-ABS16-RELOC; TRANSACTIONAL-PUBLISH"},
@@ -341,6 +350,7 @@ def main():
       "ld":{
         "source":"tools/ld.asm","source_sha256":sha(ldsrc),
         "image_sha256":sha(ld_image),"image_bytes":ld_image.stat().st_size,"bss_bytes":ld_bss,"resident_bytes":ld_resident,"relocation_count":len(ld_relocs),
+        "module_spans":marker_spans(ld_syms,("ld_span_input","ld_span_archive_select","ld_span_layout","ld_span_symbol_resolve","ld_span_relocation","ld_span_entry","ld_span_stack","ld_span_mex_writer","ld_span_transaction","ld_span_crt0","ld_span_runtime_archive_legacy","ld_span_runtime_archive_p1135","ld_span_runtime_archive_full","ld_span_runtime_archive_helpers","ld_span_product_cli","ld_span_end")),
         "mex1_sha256":sha(out/"ld.mex1"),"m48o_tap_sha256":sha(out/"ld.m48o.tap"),
         "entry":"EMIT_REV02_LD_PRODUCT_CLI",
         "semantic_status":"GENERIC-CRT0-USER-FULL-C48-RUNTIME-NORMAL-LINK-WITH-1024-BYTE-HEAP-PLUS-REV18-ABS"},
