@@ -411,10 +411,6 @@ P1117_ROM_ACS            EQU $23
 P1117_ROM_ATN            EQU $24
 P1117_ROM_SQR            EQU $28
 
-p1117_fp_op              EQU P11_ROM_OP_BASE+0
-p1117_fp_lhs_ptr         EQU P11_ROM_OP_BASE+1
-p1117_fp_rhs_ptr         EQU P11_ROM_OP_BASE+3
-p1117_fp_out_ptr         EQU P11_ROM_OP_BASE+5
 
 p1117_fp_rom_table:
     db P1117_ROM_ADD,P1117_ROM_SUB,P1117_ROM_MUL,P1117_ROM_DIV
@@ -426,34 +422,44 @@ p1117_fp_rom_table:
 ; A=FPOP1 op 1..17, HL=lhs five-byte pointer, DE=rhs pointer/0,
 ; BC=caller-owned five-byte output. Inputs have already been range-validated.
 zx48_p1117_rom_fp_exec:
-    ld (p1117_fp_op),a
-    ld (p1117_fp_lhs_ptr),hl
-    ld (p1117_fp_rhs_ptr),de
-    ld (p1117_fp_out_ptr),bc
+    ; Preserve the four gateway arguments in OS-private alternate registers
+    ; while the common transaction snapshots ROM state and records caller SP.
+    ex af,af'
+    exx
     ld hl,0
     add hl,sp
     call zx48_p11_rom_txn_begin
     ret c
+    exx
+    ex af,af'
 
-    ld hl,(p1117_fp_lhs_ptr)
+    ; Keep output/rhs/op on the kernel stack while the lhs is copied.
+    push bc
+    push de
+    push af
     ld de,ROM_CALC_STACK
     ld bc,5
     ldir
     ld hl,ROM_CALC_STACK+5
     ld (ROM_STKEND),hl
 
-    ld a,(p1117_fp_op)
+    pop af
     cp FPOP_OP_ABS
-    jr nc,p1117_fp_rom_operands_ready
-    ld hl,(p1117_fp_rhs_ptr)
+    jr nc,p1117_fp_rom_unary
+    pop hl
     ld de,ROM_CALC_STACK+5
     ld bc,5
     ldir
     ld hl,ROM_CALC_STACK+10
     ld (ROM_STKEND),hl
+    jr p1117_fp_rom_operands_ready
+
+p1117_fp_rom_unary:
+    pop hl
 
 p1117_fp_rom_operands_ready:
-    ld a,(p1117_fp_op)
+    pop de
+    push de
     dec a
     ld e,a
     ld d,0
@@ -468,12 +474,12 @@ p1117_fp_rom_operands_ready:
     call ROM_CALCULATE
     db $3B,$38
     pop hl
+    pop de
 
     ld hl,(ROM_STKEND)
     ld bc,5
     or a
     sbc hl,bc
-    ld de,(p1117_fp_out_ptr)
     ldir
     call zx48_p11_rom_txn_cleanup
     xor a
@@ -905,9 +911,6 @@ P1146_TEXT_SCRATCH        EQU 16
 P1146_MEM35               EQU $5CA1
 P1146_MEM35_SIZE          EQU 15
 
-p1146_text_in_ptr        EQU P11_ROM_OP_BASE+0
-p1146_text_out_ptr       EQU P11_ROM_OP_BASE+2
-p1146_text_capacity      EQU P11_ROM_OP_BASE+4
 p1146_text_saved_mem35   EQU P11_ROM_OP_BASE+8
 p1146_text_scratch       EQU P11_ROM_OP_BASE+23
 p1146_text_count         EQU P11_ROM_OP_BASE+39
@@ -955,13 +958,14 @@ p1146_text_capture_done:
 ; HL=five-byte source, DE=destination, BC=capacity. Source and destination
 ; ranges have already been validated by the syscall surface.
 zx48_p1146_rom_fp_to_text:
-    ld (p1146_text_in_ptr),hl
-    ld (p1146_text_out_ptr),de
-    ld (p1146_text_capacity),bc
+    exx
     ld hl,0
     add hl,sp
     call zx48_p11_rom_txn_begin
     ret c
+    exx
+    push bc
+    push de
     ld hl,P1146_MEM35
     ld de,p1146_text_saved_mem35
     ld bc,P1146_MEM35_SIZE
@@ -972,7 +976,6 @@ zx48_p1146_rom_fp_to_text:
     ld hl,p1146_text_channel
     ld (ROM_CURCHL),hl
 
-    ld hl,(p1146_text_in_ptr)
     ld de,ROM_CALC_STACK
     ld bc,5
     ldir
@@ -990,12 +993,15 @@ zx48_p1146_rom_fp_to_text:
     or a
     jr nz,p1146_text_internal_overflow
     call p1146_text_cleanup
+    pop ix
+    pop bc
 
     ld a,(p1146_text_count)
     ld e,a
     ld d,0
     inc de
-    ld hl,(p1146_text_capacity)
+    ld h,b
+    ld l,c
     or a
     sbc hl,de
     jr c,p1146_text_nospc
@@ -1004,7 +1010,8 @@ zx48_p1146_rom_fp_to_text:
     ld c,a
     ld b,0
     ld hl,p1146_text_scratch
-    ld de,(p1146_text_out_ptr)
+    push ix
+    pop de
     ldir
     xor a
     ld (de),a
@@ -1016,6 +1023,8 @@ zx48_p1146_rom_fp_to_text:
 
 p1146_text_internal_overflow:
     call p1146_text_cleanup
+    pop de
+    pop bc
     ld a,E_FORMAT
     scf
     ret
@@ -1052,9 +1061,6 @@ P1147_TEXT_MAX            EQU 255
 P1147_TEXT_SCRATCH        EQU 256
 P1147_MEM_WORK_SIZE       EQU 30
 
-p1147_text_in_ptr        EQU P11_ROM_OP_BASE+0
-p1147_text_out_ptr       EQU P11_ROM_OP_BASE+2
-p1147_text_length        EQU P11_ROM_OP_BASE+4
 p1147_text_sign          EQU P11_ROM_OP_BASE+6
 p1147_text_calc_mem      EQU P11_ROM_OP_BASE+7
 p1147_text_scratch       EQU P11_ROM_OP_BASE+37
@@ -1062,19 +1068,19 @@ p1147_text_scratch       EQU P11_ROM_OP_BASE+37
 ; A=0 positive / 1 negative, HL=unsigned decimal token, BC=exact token length,
 ; DE=writable five-byte destination. Grammar/ranges are already validated.
 zx48_p1147_rom_fp_from_text:
-    ld (p1147_text_sign),a
-    ld (p1147_text_in_ptr),hl
-    ld (p1147_text_out_ptr),de
-    ld (p1147_text_length),bc
+    ex af,af'
+    exx
     ld hl,0
     add hl,sp
     call zx48_p11_rom_txn_begin
     ret c
+    exx
+    ex af,af'
+    ld (p1147_text_sign),a
+    push de
 
     ; Freeze caller bytes before any ROM entry so output may alias input safely.
-    ld hl,(p1147_text_in_ptr)
     ld de,p1147_text_scratch
-    ld bc,(p1147_text_length)
     ldir
     ; GET-CHAR skips control bytes, including NUL. Use a printable punctuation
     ; sentinel that DEC-TO-FP returns on without interpreting as numeric syntax.
@@ -1101,11 +1107,11 @@ zx48_p1147_rom_fp_from_text:
 p1147_text_sign_done:
     pop hl
 
+    pop de
     ld hl,(ROM_STKEND)
     ld bc,5
     or a
     sbc hl,bc
-    ld de,(p1147_text_out_ptr)
     ldir
     call zx48_p11_rom_txn_cleanup
     xor a
