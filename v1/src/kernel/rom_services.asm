@@ -736,20 +736,15 @@ rom_info_table:
 ; Inputs are copied to private bytes before any caller destination is written,
 ; so the documented request/input/output aliasing contract is atomic.
     MACRO EMIT_P1118_ROM_FP_CAST_ROUTINES
-p1118_rom_value          EQU P11_ROM_OP_BASE+0
 p1118_rom_signed         EQU P11_ROM_OP_BASE+2
 p1118_rom_out_ptr        EQU P11_ROM_OP_BASE+3
-p1118_rom_in_ptr         EQU P11_ROM_OP_BASE+5
 p1118_rom_float          EQU P11_ROM_OP_BASE+7
 
 ; HL=u16 source, A=0 unsigned/1 signed, DE=writable five-byte destination.
 zx48_p1118_rom_int_to_fp:
-    ld (p1118_rom_value),hl
-    ld (p1118_rom_signed),a
     ld (p1118_rom_out_ptr),de
-    ld de,(p1118_rom_value)
+    ex de,hl
     ld c,0
-    ld a,(p1118_rom_signed)
     or a
     jr z,p1118_rom_itof_store
     bit 7,d
@@ -777,7 +772,6 @@ p1118_rom_itof_store:
 ; HL=five-byte source, A=0 unsigned/1 signed, DE=writable u16 destination.
 ; ROM_TRUNCATE is the Sinclair integer-toward-zero conversion primitive.
 zx48_p1118_rom_fp_to_int:
-    ld (p1118_rom_in_ptr),hl
     ld (p1118_rom_signed),a
     ld (p1118_rom_out_ptr),de
     ld de,p1118_rom_float
@@ -952,12 +946,10 @@ P1146_MEM35_SIZE          EQU 15
 p1146_text_in_ptr        EQU P11_ROM_OP_BASE+0
 p1146_text_out_ptr       EQU P11_ROM_OP_BASE+2
 p1146_text_capacity      EQU P11_ROM_OP_BASE+4
-p1146_text_saved_curchl  EQU P11_ROM_OP_BASE+6
 p1146_text_saved_mem35   EQU P11_ROM_OP_BASE+8
 p1146_text_scratch       EQU P11_ROM_OP_BASE+23
 p1146_text_count         EQU P11_ROM_OP_BASE+39
 p1146_text_overflow      EQU P11_ROM_OP_BASE+40
-p1146_text_char          EQU P11_ROM_OP_BASE+41
 
 p1146_text_channel:
     dw p1146_text_capture
@@ -971,9 +963,9 @@ p1146_text_input_stub:
 ; Called by ROM PRINT-A while its alternate BC/DE/HL bank is live. Preserve that
 ; bank so PRINT-FP can continue using it between emitted characters.
 p1146_text_capture:
-    ld (p1146_text_char),a
     push af
     push bc
+    ld c,a
     push de
     push hl
     ld a,(p1146_text_count)
@@ -983,7 +975,7 @@ p1146_text_capture:
     ld d,0
     ld hl,p1146_text_scratch
     add hl,de
-    ld a,(p1146_text_char)
+    ld a,c
     ld (hl),a
     ld hl,p1146_text_count
     inc (hl)
@@ -1008,8 +1000,6 @@ zx48_p1146_rom_fp_to_text:
     add hl,sp
     call zx48_p11_rom_txn_begin
     ret c
-    ld hl,(ROM_CURCHL)
-    ld (p1146_text_saved_curchl),hl
     ld hl,P1146_MEM35
     ld de,p1146_text_saved_mem35
     ld bc,P1146_MEM35_SIZE
@@ -1019,8 +1009,6 @@ zx48_p1146_rom_fp_to_text:
     ld (p1146_text_overflow),a
     ld hl,p1146_text_channel
     ld (ROM_CURCHL),hl
-    ld a,$FF
-    ld (ROM_IY_ANCHOR),a
 
     ld hl,(p1146_text_in_ptr)
     ld de,ROM_CALC_STACK
@@ -1088,8 +1076,6 @@ p1146_text_cleanup:
     ld de,P1146_MEM35
     ld bc,P1146_MEM35_SIZE
     ldir
-    ld hl,(p1146_text_saved_curchl)
-    ld (ROM_CURCHL),hl
     jp zx48_p11_rom_txn_cleanup
 
     ENDM
@@ -1138,8 +1124,6 @@ zx48_p1147_rom_fp_from_text:
     ld (ROM_MEM),hl
     ld hl,p1147_text_scratch
     ld (ROM_CH_ADD),hl
-    ld a,$FF
-    ld (ROM_IY_ANCHOR),a
 
     ld hl,p1147_text_error
     push hl
