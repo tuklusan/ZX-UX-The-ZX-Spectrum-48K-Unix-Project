@@ -20,7 +20,9 @@ from driver_core import DriverError
 from fuse_harness import FAIL_PC, PASS_PC, run_sna
 import phase1
 
-MARGIN_START = 0xFB10
+TEMPLATE_START = 0xFB10
+TEMPLATE_END = 0xFB1F
+MARGIN_START = 0xFB20
 MARGIN_END = 0xFB3F
 RELEASE_FLOOR = 0xFB40
 MARGIN_PATTERN = bytes(((index * 37 + 0x31) & 0xFF) for index in range(MARGIN_END - MARGIN_START + 1))
@@ -93,6 +95,16 @@ def _patch(kernel_bytes: bytes, extras: tuple[tuple[int, bytes], ...] = ()):
     return apply
 
 
+def _template_verify(kernel_bytes: bytes) -> bytes:
+    start = TEMPLATE_START - phase1.KERNEL_BASE
+    expected_bytes = kernel_bytes[start:start + (TEMPLATE_END - TEMPLATE_START + 1)]
+    require(len(expected_bytes) == TEMPLATE_END - TEMPLATE_START + 1, "REV02 stack template outside kernel image")
+    code = bytearray()
+    for offset, expected in enumerate(expected_bytes):
+        code += _load_byte(TEMPLATE_START + offset) + bytes((0xFE, expected)) + _jp_nz(FAIL_PC)
+    return bytes(code)
+
+
 def _margin_verify() -> bytes:
     code = bytearray()
     for offset, expected in enumerate(MARGIN_PATTERN):
@@ -107,6 +119,8 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
     syscall = (root / "v1/src/kernel/syscall.asm").read_text(encoding="utf-8").lower()
     rom = (root / "v1/src/kernel/rom_services.asm").read_text(encoding="utf-8").lower()
     scheduler = (root / "v1/src/kernel/scheduler.asm").read_text(encoding="utf-8").lower()
+    process = (root / "v1/src/kernel/process.asm").read_text(encoding="utf-8").lower()
+    kernel = (root / "v1/src/kernel/kernel.asm").read_text(encoding="utf-8").lower()
     return [
         {"name": "guard-frozen-at-16", "passed": "kstack_guard_size         equ 16" in errors},
         {"name": "sample-ignores-user-stacks", "passed": "cp $fb\n    ret c\n    cp $fd\n    ret nc" in errors},
@@ -115,6 +129,15 @@ def _source_contract(root: Path) -> list[dict[str, object]]:
         {"name": "syscall-return-checks-stack", "passed": "call zx48_kernel_stack_sample\n    call zx48_kernel_stack_check" in syscall},
         {"name": "rom-return-checks-stack", "passed": "call zx48_kernel_stack_sample\n    call zx48_kernel_stack_check" in rom},
         {"name": "scheduler-return-checks-stack", "passed": "call zx48_kernel_stack_sample\n    call zx48_kernel_stack_check" in scheduler},
+        {
+            "name": "rev02-pointer-template-starts-after-guard",
+            "passed": "rev02_process_ptr_template     equ kernel_stack_start+$10" in process,
+        },
+        {
+            "name": "rev02-pointer-template-is-cold-stack-image-only",
+            "passed": "assert $ = rev02_process_ptr_template" in kernel
+            and "one-shot descriptor-address template" in kernel,
+        },
     ]
 
 
@@ -145,6 +168,7 @@ def _stress_test(root: Path, labels: dict[str, int], kernel_bytes: bytes) -> Non
 
     code += b"\x2A" + _word(low) + _ld_de(RELEASE_FLOOR) + b"\xB7\xED\x52" + _jp_c(FAIL_PC)
     code += b"\x2A" + _word(low) + _ld_de(phase1.KSTACK_TOP) + b"\xB7\xED\x52" + _jp_z(FAIL_PC)
+    code += _template_verify(kernel_bytes)
     code += _margin_verify()
     run_sna(root, bytes(code), patch=_patch(kernel_bytes))
 
@@ -223,6 +247,7 @@ def dispatch(
             [
                 {"name": "release-watermark-at-or-above-fb40", "passed": True, "maximum_bytes": 448},
                 {"name": "architectural-64-byte-margin-untouched", "passed": True},
+                {"name": "rev02-process-pointer-template-preserved", "passed": True},
                 {"name": "guard-corruption-panics-kstack", "passed": True},
                 {"name": "over-448-negative", "passed": True},
             ]
@@ -234,6 +259,8 @@ def dispatch(
         root / "v1/src/kernel/syscall.asm",
         root / "v1/src/kernel/rom_services.asm",
         root / "v1/src/kernel/scheduler.asm",
+        root / "v1/src/kernel/process.asm",
+        root / "v1/src/kernel/kernel.asm",
         root / "v1/tools-host/test-driver/phase1_stack.py",
         kernel,
     )
