@@ -1380,23 +1380,9 @@ zx48_p1117_sys_fp_exec:
     ld d,(hl)
     ld (p1117_fp_req_out),de
 
-    ld hl,(p1117_fp_req_lhs)
-    ld a,h
-    or l
-    jp z,p1117_fp_sys_invalid
-
-    ld hl,(p1117_fp_req_out)
-    ld a,h
-    or l
-    jp z,p1117_fp_sys_invalid
-
     ld a,(p1117_fp_req_op)
     cp FPOP_OP_ABS
     jp nc,p1117_fp_sys_unary
-    ld hl,(p1117_fp_req_rhs)
-    ld a,h
-    or l
-    jp z,p1117_fp_sys_invalid
     jp p1117_fp_sys_validate_ranges
 
 p1117_fp_sys_unary:
@@ -1546,24 +1532,15 @@ zx48_p1119_sys_fp_cmp:
     ld (p1119_cmp_out),de
 
     ld hl,(p1119_cmp_lhs)
-    ld a,h
-    or l
-    jp z,p1119_cmp_invalid
     ld bc,5
     call zx48_user_range_validate
     ret c
 
     ld hl,(p1119_cmp_rhs)
-    ld a,h
-    or l
-    jp z,p1119_cmp_invalid
     call zx48_user_range_validate
     ret c
 
     ld hl,(p1119_cmp_out)
-    ld a,h
-    or l
-    jp z,p1119_cmp_invalid
     ld bc,1
     call zx48_user_range_validate
     ret c
