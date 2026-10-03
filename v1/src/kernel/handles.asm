@@ -134,6 +134,9 @@ zx48_od_create_found:
     or a
     ret
     ENDIF
+    IFDEF ZX48_REV02_COLD_IMAGE_INIT
+zx48_handle_nospc        EQU zx48_r2_handle_nospc
+    ENDIF
 
 ; A=OD index. Adds one shared reference.
 zx48_od_retain:
