@@ -1419,7 +1419,6 @@ p1117_fp_sys_invalid:
 ; P11.18 exact staged SYS_INT_TO_FP / SYS_FP_TO_INT ABI.
     MACRO EMIT_P1118_FP_CAST_SYSCALL_ROUTINES
 p1118_cast_req_ptr      EQU P11_SYSCALL_TRANSIENT_BASE+0
-p1118_cast_value        EQU P11_SYSCALL_TRANSIENT_BASE+2
 p1118_cast_signed       EQU P11_SYSCALL_TRANSIENT_BASE+4
 p1118_cast_in           EQU P11_SYSCALL_TRANSIENT_BASE+5
 p1118_cast_out          EQU P11_SYSCALL_TRANSIENT_BASE+7
@@ -1429,31 +1428,39 @@ zx48_p1118_sys_int_to_fp:
     ld bc,ITOF1_SIZE
     call zx48_user_range_validate
     ret c
-    ld e,(hl)
     inc hl
-    ld d,(hl)
-    ld (p1118_cast_value),de
     inc hl
     ld a,(hl)
     cp 2
-    jp nc,p1118_cast_invalid
-    ld (p1118_cast_signed),a
+    jr nc,p1118_cast_invalid
     inc hl
     ld a,(hl)
     or a
-    jp nz,p1118_cast_invalid
+    jr nz,p1118_cast_invalid
     inc hl
     ld e,(hl)
     inc hl
     ld d,(hl)
-    ld (p1118_cast_out),de
     ex de,hl
     ld bc,5
     call zx48_user_range_validate
     ret c
-    ld hl,(p1118_cast_value)
-    ld a,(p1118_cast_signed)
-    ld de,(p1118_cast_out)
+
+    ; Re-read the already-validated request only after the destination range
+    ; is accepted; no caller byte has been mutated.
+    ld hl,(syscall_arg_hl)
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    push de
+    inc hl
+    ld a,(hl)
+    inc hl
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    pop hl
     jp zx48_p1118_rom_int_to_fp
 
 zx48_p1118_sys_fp_to_int:
@@ -1468,12 +1475,12 @@ zx48_p1118_sys_fp_to_int:
     inc hl
     ld a,(hl)
     cp 2
-    jp nc,p1118_cast_invalid
+    jr nc,p1118_cast_invalid
     ld (p1118_cast_signed),a
     inc hl
     ld a,(hl)
     or a
-    jp nz,p1118_cast_invalid
+    jr nz,p1118_cast_invalid
     inc hl
     ld e,(hl)
     inc hl
