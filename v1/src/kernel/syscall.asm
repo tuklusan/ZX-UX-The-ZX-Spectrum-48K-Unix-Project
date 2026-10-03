@@ -1231,36 +1231,31 @@ zx48_p711_rom_info:
     call zx48_user_range_validate
     ret c
     ld a,(hl)
-    ld (p711_rom_index),a
+    ld c,a
     inc hl
     ld a,(hl)
     cp 7
     jr nc,zx48_p711_rom_invalid
-    ld (p711_rom_category),a
+    ld b,a
     inc hl
     ld e,(hl)
     inc hl
     ld d,(hl)
-    ld (p711_rom_out),de
+    push bc
+    push de
     ex de,hl
     ld bc,24
     call zx48_user_range_validate
+    pop de
+    pop bc
     ret c
-    ld a,(p711_rom_category)
-    ld b,a
-    ld a,(p711_rom_index)
-    ld c,a
     ld a,b
     ld b,c
-    ld de,(p711_rom_out)
     jp zx48_rom_info_lookup
 zx48_p711_rom_invalid:
     ld a,E_INVAL
     scf
     ret
-p711_rom_index           EQU P11_SYSCALL_TRANSIENT_BASE+0
-p711_rom_category        EQU P11_SYSCALL_TRANSIENT_BASE+1
-p711_rom_out             EQU P11_SYSCALL_TRANSIENT_BASE+2
     ENDM
 
 ; P7.14 exact SYS_UDG_DEFINE/GET/CLEAR staged syscall surfaces.
@@ -1355,14 +1350,14 @@ zx48_p1117_sys_fp_exec:
     ld a,(hl)
     ld (p1117_fp_req_op),a
     or a
-    jp z,p1117_fp_sys_invalid
+    jr z,p1117_fp_sys_invalid
     cp FPOP_OP_SQR+1
-    jp nc,p1117_fp_sys_invalid
+    jr nc,p1117_fp_sys_invalid
 
     inc hl
     ld a,(hl)
     or a
-    jp nz,p1117_fp_sys_invalid
+    jr nz,p1117_fp_sys_invalid
 
     inc hl
     ld e,(hl)
@@ -1382,8 +1377,8 @@ zx48_p1117_sys_fp_exec:
 
     ld a,(p1117_fp_req_op)
     cp FPOP_OP_ABS
-    jp nc,p1117_fp_sys_unary
-    jp p1117_fp_sys_validate_ranges
+    jr nc,p1117_fp_sys_unary
+    jr p1117_fp_sys_validate_ranges
 
 p1117_fp_sys_unary:
     ld hl,(p1117_fp_req_rhs)
@@ -1399,7 +1394,7 @@ p1117_fp_sys_validate_ranges:
 
     ld a,(p1117_fp_req_op)
     cp FPOP_OP_ABS
-    jp nc,p1117_fp_sys_validate_out
+    jr nc,p1117_fp_sys_validate_out
     ld hl,(p1117_fp_req_rhs)
     call zx48_user_range_validate
     ret c
@@ -1550,10 +1545,6 @@ zx48_p1119_sys_fp_cmp:
     ld bc,(p1119_cmp_out)
     jp zx48_p1119_rom_fp_cmp
 
-p1119_cmp_invalid:
-    ld a,E_INVAL
-    scf
-    ret
     ENDM
 
 ; P11.46 exact staged SYS_FP_TO_TEXT ABI.
