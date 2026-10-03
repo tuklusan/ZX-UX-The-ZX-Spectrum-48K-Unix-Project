@@ -362,13 +362,19 @@ def dispatch(
     labels = phase1._labels(listing, (
         "zx48_kernel_stack_init",
         "zx48_wall_boot_init",
-        "current_pid",
         "wall_seconds",
         "wall_revision",
         "wall_subsecond",
         "wall_valid",
         "kernel_ordinary_used_end",
     ))
+    process = (root / "v1/src/kernel/process.asm").read_text(encoding="utf-8")
+    include = (root / "v1/include/zx48ux.inc").read_text(encoding="utf-8")
+    require("current_pid              EQU ROM_IF1_WORK_START" in process,
+            "production current_pid low-RAM placement missing")
+    require("ROM_IF1_WORK_START       EQU $5CB6" in include,
+            "authorized current_pid low-RAM address missing")
+    labels["current_pid"] = 0x5CB6
     used_end = labels["kernel_ordinary_used_end"]
     assertions.append({
         "name": "ordinary-code-pool-within-faff",

@@ -246,8 +246,7 @@ def _sleep_vector(
     expected_state: int,
     expected_wake: int | None,
 ) -> None:
-    table = labels["process_table"]
-    p1 = table + PROC_DESC_SIZE
+    p1 = labels["process_pid1"]
     code = bytearray(b"\xF3" + phase1._ld_sp(phase1.USER_STACK))
     code += _call(labels["zx48_kernel_stack_init"])
     code += _call(labels["zx48_process_init"])
@@ -273,8 +272,7 @@ def _sleep_vector(
 
 
 def _wake_boundary(root: Path, labels: dict[str, int], kernel_bytes: bytes, *, deadline: int) -> None:
-    table = labels["process_table"]
-    p1 = table + PROC_DESC_SIZE
+    p1 = labels["process_pid1"]
     code = bytearray(b"\xF3" + phase1._ld_sp(phase1.USER_STACK))
     code += _call(labels["zx48_kernel_stack_init"])
     code += _call(labels["zx48_process_init"])
@@ -324,11 +322,19 @@ def dispatch(
             "zx48_sleep_current",
             "zx48_scheduler_maybe_wake",
             "zx48_schedule_finish_syscall",
-            "process_table",
-            "current_pid",
             "kernel_ticks",
         ),
     )
+    process = (root / "v1/src/kernel/process.asm").read_text(encoding="utf-8")
+    include = (root / "v1/include/zx48ux.inc").read_text(encoding="utf-8")
+    require("REV02_PROCESS_LOW_BASE        EQU ROM_PRINTER_BUFFER_START" in process,
+            "production low process-table base missing")
+    require("current_pid              EQU ROM_IF1_WORK_START" in process,
+            "production current_pid low-RAM placement missing")
+    require("ROM_PRINTER_BUFFER_START EQU $5B00" in include and "ROM_IF1_WORK_START       EQU $5CB6" in include,
+            "authorized low-RAM process addresses missing")
+    labels["process_pid1"] = 0x5B00 + PROC_DESC_SIZE
+    labels["current_pid"] = 0x5CB6
     kernel_bytes = kernel.read_bytes()
 
     if action == "test":

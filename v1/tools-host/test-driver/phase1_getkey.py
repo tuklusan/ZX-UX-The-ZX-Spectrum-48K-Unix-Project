@@ -280,8 +280,7 @@ def _ownership_negative_fixture(root: Path, labels: dict[str, int], kernel_bytes
 
 
 def _reblock_fixture(root: Path, labels: dict[str, int], kernel_bytes: bytes) -> None:
-    table = labels["process_table"]
-    p1 = table + PROC_DESC_SIZE
+    p1 = labels["process_pid1"]
     verifier = (
         _expect_cursor_state(labels, 0)
         + _expect_byte(p1 + PROC_STATE, PROC_WAIT_INPUT)
@@ -335,8 +334,6 @@ def dispatch(
             "zx48_keyboard_decode",
             "zx48_keyboard_release",
             "zx48_schedule",
-            "process_table",
-            "current_pid",
             "tty_input_owner",
             "cursor_service_parity",
             "screen_mutation_depth",
@@ -347,6 +344,16 @@ def dispatch(
             "tty_wrap_pending",
         ),
     )
+    process = (root / "v1/src/kernel/process.asm").read_text(encoding="utf-8")
+    include = (root / "v1/include/zx48ux.inc").read_text(encoding="utf-8")
+    require("REV02_PROCESS_LOW_BASE        EQU ROM_PRINTER_BUFFER_START" in process,
+            "production low process-table base missing")
+    require("current_pid              EQU ROM_IF1_WORK_START" in process,
+            "production current_pid low-RAM placement missing")
+    require("ROM_PRINTER_BUFFER_START EQU $5B00" in include and "ROM_IF1_WORK_START       EQU $5CB6" in include,
+            "authorized low-RAM process addresses missing")
+    labels["process_pid1"] = 0x5B00 + PROC_DESC_SIZE
+    labels["current_pid"] = 0x5CB6
     kernel_bytes = kernel.read_bytes()
 
     if action == "test":
