@@ -99,7 +99,7 @@ def main():
       "C019":["v1/src/kernel/tape.asm"],
       "C020":["v1/src/kernel/tape.asm"],
       "C021":["v1/src/kernel/syscall.asm","v1/src/kernel/kernel.asm"],
-      "C022":["v1/src/kernel/kernel.asm","v1/src/kernel/syscall.asm","v1/src/boot/entry.asm","v1/src/kernel/interrupt.asm","v1/src/kernel/im2.asm","v1/src/kernel/rom_services.asm","v1/src/kernel/errors.asm","v1/src/kernel/memory.asm","v1/src/kernel/process.asm","v1/src/kernel/handles.asm","v1/src/kernel/pipe.asm","v1/src/kernel/scheduler.asm","v1/src/kernel/z80_primitives.asm","v1/src/kernel/ula_io.asm","v1/src/kernel/tty32.asm","v1/src/kernel/tty64.asm","v1/src/kernel/cursor.asm","v1/src/kernel/console.asm","v1/src/kernel/keyboard.asm","v1/src/kernel/udg.asm","v1/src/kernel/graphics.asm","v1/src/kernel/sound.asm","v1/src/kernel/objects.asm","v1/src/kernel/tape.asm","v1/src/kernel/zxpack.asm"],
+      "C022":["v1/include/zx48ux.inc","v1/docs/rom-services.md","v1/src/kernel/kernel.asm","v1/src/kernel/syscall.asm","v1/src/boot/entry.asm","v1/src/kernel/interrupt.asm","v1/src/kernel/im2.asm","v1/src/kernel/rom_services.asm","v1/src/kernel/errors.asm","v1/src/kernel/memory.asm","v1/src/kernel/process.asm","v1/src/kernel/handles.asm","v1/src/kernel/pipe.asm","v1/src/kernel/scheduler.asm","v1/src/kernel/z80_primitives.asm","v1/src/kernel/ula_io.asm","v1/src/kernel/tty32.asm","v1/src/kernel/tty64.asm","v1/src/kernel/cursor.asm","v1/src/kernel/console.asm","v1/src/kernel/keyboard.asm","v1/src/kernel/udg.asm","v1/src/kernel/graphics.asm","v1/src/kernel/sound.asm","v1/src/kernel/objects.asm","v1/src/kernel/tape.asm","v1/src/kernel/zxpack.asm"],
     }
     rows=[]
     for g in gaps:

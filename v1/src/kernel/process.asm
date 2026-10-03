@@ -43,6 +43,15 @@ ENV1_MAX_NAME                 EQU 15
 ENV1_MAX_VALUE                EQU 63
 BOOTSTRAP_MAX_PAYLOAD         EQU 512
 PROCESS_CONTEXT_FRAME_BYTES   EQU 12
+
+; REV02 production-only low-RAM placement. Historical emitters retain their
+; original linked process table and emergency-reserve state.
+REV02_PROCESS_LOW_COUNT       EQU 5
+REV02_PROCESS_LOW_BASE        EQU ROM_PRINTER_BUFFER_START
+REV02_PROCESS_LOW_BYTES       EQU REV02_PROCESS_LOW_COUNT*PROC_DESC_SIZE
+REV02_PROCESS_HIGH_COUNT      EQU MAX_PROCESSES-REV02_PROCESS_LOW_COUNT
+    ASSERT REV02_PROCESS_LOW_BYTES <= ROM_PRINTER_BUFFER_END-ROM_PRINTER_BUFFER_START+1
+
 INITIAL_CONTEXT_IMAGE_BASE    EQU 0
 INITIAL_CONTEXT_STACK_BASE    EQU 2
 INITIAL_CONTEXT_STACK_SIZE    EQU 4
@@ -60,6 +69,18 @@ INITIAL_CONTEXT_SEED_SIZE     EQU 12
 ; C/A equal to its PID, and carry clear. A full table returns E_AGAIN/carry set.
     MACRO EMIT_PROCESS_CAPACITY_ROUTINE
 zx48_process_find_free_slot:
+    IFDEF ZX48_REV02_COLD_IMAGE_INIT
+    ld c,2
+    ld b,MAX_PROCESSES-2
+zx48_process_find_free_scan:
+    ld a,c
+    call zx48_process_ptr
+    ld a,(ix+PROC_STATE)
+    or a
+    jr z,zx48_process_find_free_found
+    inc c
+    djnz zx48_process_find_free_scan
+    ELSE
     ld ix,process_table+2*PROC_DESC_SIZE
     ld c,2
     ld b,MAX_PROCESSES-2
@@ -71,6 +92,7 @@ zx48_process_find_free_scan:
     add ix,de
     inc c
     djnz zx48_process_find_free_scan
+    ENDIF
     ld a,E_AGAIN
     scf
     ret
@@ -5174,21 +5196,58 @@ p514_mex_header: defs MEX_HEADER_SIZE,0
 ; traffic in reserve/info/wait paths.
     MACRO EMIT_REV02_PROCESS_ROUTINES
 zx48_process_init:
-    ; The production kernel image is loaded as exact initialized bytes.  The
-    ; descriptor table below therefore already is the cold-boot state.
+    ; PID0..PID4 live in the verified 0x5B00 printer buffer rather than the
+    ; ordinary kernel pool. Initialize that RAM explicitly after BASIC handoff.
+    xor a
+    ld hl,REV02_PROCESS_LOW_BASE
+    ld de,REV02_PROCESS_LOW_BASE+1
+    ld bc,REV02_PROCESS_LOW_BYTES-1
+    ld (hl),a
+    ldir
+    ld ix,REV02_PROCESS_LOW_BASE
+    ld (ix+PROC_PARENT),HANDLE_FREE
+    call zx48_r2_process_fill_handles
+    ld ix,REV02_PROCESS_LOW_BASE+PROC_DESC_SIZE
+    ld (ix+PROC_PID),1
+    ld (ix+PROC_PARENT),HANDLE_FREE
+    call zx48_r2_process_fill_handles
+    ld ix,REV02_PROCESS_LOW_BASE
+    ld (ix+PROC_STATE),PROC_RUNNING
+    xor a
+    ld (current_pid),a
+
+    ; The six reclaimed tail-system-variable scratch bytes are not inherited
+    ; BASIC state. Keep the same deterministic zero cold state as before.
+    ld hl,PROCESS_STATE_BASE
+    ld de,PROCESS_STATE_BASE+1
+    ld bc,5
+    ld (hl),a
+    ldir
     ret
 
 zx48_process_ptr:
     cp MAX_PROCESSES
     jr nc,zx48_process_noent
-    ld ix,process_table
+    push bc
+    push de
+    cp REV02_PROCESS_LOW_COUNT
+    jr nc,zx48_r2_process_ptr_high
+    ld ix,REV02_PROCESS_LOW_BASE
+    jr zx48_r2_process_ptr_offset
+zx48_r2_process_ptr_high:
+    sub REV02_PROCESS_LOW_COUNT
+    ld ix,process_table_high
+zx48_r2_process_ptr_offset:
     or a
-    ret z
+    jr z,zx48_r2_process_ptr_done
+    ld b,a
     ld de,PROC_DESC_SIZE
 zx48_r2_process_ptr_loop:
     add ix,de
-    dec a
-    jr nz,zx48_r2_process_ptr_loop
+    djnz zx48_r2_process_ptr_loop
+zx48_r2_process_ptr_done:
+    pop de
+    pop bc
     xor a
     ret
 zx48_process_lookup:
@@ -5251,7 +5310,8 @@ zx48_r2_process_fill_handles_loop:
     ret
 
 zx48_process_prepare_pid1:
-    ld ix,process_table+PROC_DESC_SIZE
+    ld a,1
+    call zx48_process_ptr
     ld a,(ix+PROC_STATE)
     or a
     jr nz,zx48_process_busy
@@ -5269,17 +5329,18 @@ zx48_process_busy:
 
 zx48_process_count:
     push hl
-    ld hl,process_table+PROC_DESC_SIZE+PROC_STATE
-    ld de,PROC_DESC_SIZE
     ld b,MAX_PROCESSES-1
     ld c,0
+    ld d,1
 zx48_r2_process_count_loop:
-    ld a,(hl)
+    ld a,d
+    call zx48_process_ptr
+    ld a,(ix+PROC_STATE)
     or a
     jr z,zx48_r2_process_count_next
     inc c
 zx48_r2_process_count_next:
-    add hl,de
+    inc d
     djnz zx48_r2_process_count_loop
     ld a,c
     pop hl
@@ -5405,10 +5466,11 @@ zx48_process_wait:
     ld l,a
 zx48_process_wait_again:
     ld h,0
-    ld ix,process_table+2*PROC_DESC_SIZE
     ld b,MAX_PROCESSES-2
-    ld de,PROC_DESC_SIZE
+    ld c,2
 zx48_process_wait_each:
+    ld a,c
+    call zx48_process_ptr
     ld a,(current_pid)
     cp (ix+PROC_PARENT)
     jr nz,zx48_process_wait_next
@@ -5423,7 +5485,7 @@ zx48_process_wait_state:
     cp PROC_ZOMBIE
     jr z,zx48_process_wait_reap
 zx48_process_wait_next:
-    add ix,de
+    inc c
     djnz zx48_process_wait_each
     ld a,h
     or a
@@ -5448,39 +5510,22 @@ zx48_process_wait_reap:
     ret
 
 process_fixed_state_start:
-PROCESS_STATE_BASE       EQU EMERGENCY_START+$45
+; The BASIC NMIADD/RAMTOP/P-RAMT tail is dead after the permanent ZX-UX handoff.
+; It holds six process scratch bytes. current_pid takes the first byte of the
+; unused Interface-1/Microdrive workspace; pipe.asm owns the remaining 15 bytes.
+PROCESS_STATE_BASE       EQU ROM_SYSVAR_KERNEL_TAIL_START
 process_info_ptr         EQU PROCESS_STATE_BASE+0
 process_temp_pid         EQU PROCESS_STATE_BASE+2
 process_temp_status      EQU PROCESS_STATE_BASE+3
 process_wait_target      EQU PROCESS_STATE_BASE+4
 process_wait_has_child   EQU PROCESS_STATE_BASE+5
-current_pid              EQU PROCESS_STATE_BASE+6
-PROCESS_STATE_END        EQU PROCESS_STATE_BASE+7
-    ASSERT PROCESS_STATE_END <= EMERGENCY_START+$7F
-; Cold-boot descriptor bytes are linked directly into the exact 8 KiB kernel
-; image.  This removes a redundant runtime clear/fill pass without changing the
-; frozen descriptor layout or any historical emitter.
-process_table:
-    db 0,HANDLE_FREE,PROC_RUNNING,0
-    defs PROC_HANDLES-4,0
-    defs MAX_HANDLES_PER_PROCESS,HANDLE_FREE
-    defs PROC_DESC_SIZE-(PROC_HANDLES+MAX_HANDLES_PER_PROCESS),0
-    db 1,HANDLE_FREE,PROC_FREE,0
-    defs PROC_HANDLES-4,0
-    defs MAX_HANDLES_PER_PROCESS,HANDLE_FREE
-    defs PROC_DESC_SIZE-(PROC_HANDLES+MAX_HANDLES_PER_PROCESS),0
-    db 2,HANDLE_FREE,PROC_FREE,0
-    defs PROC_HANDLES-4,0
-    defs MAX_HANDLES_PER_PROCESS,HANDLE_FREE
-    defs PROC_DESC_SIZE-(PROC_HANDLES+MAX_HANDLES_PER_PROCESS),0
-    db 3,HANDLE_FREE,PROC_FREE,0
-    defs PROC_HANDLES-4,0
-    defs MAX_HANDLES_PER_PROCESS,HANDLE_FREE
-    defs PROC_DESC_SIZE-(PROC_HANDLES+MAX_HANDLES_PER_PROCESS),0
-    db 4,HANDLE_FREE,PROC_FREE,0
-    defs PROC_HANDLES-4,0
-    defs MAX_HANDLES_PER_PROCESS,HANDLE_FREE
-    defs PROC_DESC_SIZE-(PROC_HANDLES+MAX_HANDLES_PER_PROCESS),0
+current_pid              EQU ROM_IF1_WORK_START
+PROCESS_STATE_END        EQU current_pid+1
+    ASSERT process_wait_has_child = ROM_SYSVAR_KERNEL_TAIL_END
+    ASSERT current_pid = ROM_IF1_WORK_START
+; PID5..PID7 remain linked into the exact kernel image. PID0..PID4 live at
+; REV02_PROCESS_LOW_BASE in the printer buffer and are initialized at boot.
+process_table_high:
     db 5,HANDLE_FREE,PROC_FREE,0
     defs PROC_HANDLES-4,0
     defs MAX_HANDLES_PER_PROCESS,HANDLE_FREE
@@ -5494,4 +5539,5 @@ process_table:
     defs MAX_HANDLES_PER_PROCESS,HANDLE_FREE
     defs PROC_DESC_SIZE-(PROC_HANDLES+MAX_HANDLES_PER_PROCESS),0
 process_fixed_state_end:
+    ASSERT process_fixed_state_end-process_table_high = REV02_PROCESS_HIGH_COUNT*PROC_DESC_SIZE
     ENDM

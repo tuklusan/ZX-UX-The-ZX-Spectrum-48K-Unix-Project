@@ -23,7 +23,27 @@ PIPE_WRITERS_O             EQU 9
 PIPE_RECORD_SIZE           EQU 10
 PIPE_FALLBACK_SIZE         EQU 128
 
-; The remainder of the fixed 0xFD00 fast-data block holds pipe runtime state.
+; Historical fixtures keep their original all-fast placement. The REV02 product
+; uses the otherwise-unused Interface-1/Microdrive workspace for the 15-byte
+; transient pipe scratch and keeps only the four hot records in fixed fast RAM.
+    IFDEF ZX48_REV02_COLD_IMAGE_INIT
+PIPE_STATE_BASE            EQU ROM_IF1_WORK_START+1
+pipe_result_ptr            EQU PIPE_STATE_BASE+0
+pipe_io_ptr                 EQU PIPE_STATE_BASE+2
+pipe_io_request             EQU PIPE_STATE_BASE+4
+pipe_io_done                EQU PIPE_STATE_BASE+6
+pipe_active_slot            EQU PIPE_STATE_BASE+8
+pipe_read_od                EQU PIPE_STATE_BASE+9
+pipe_write_od               EQU PIPE_STATE_BASE+10
+pipe_read_handle            EQU PIPE_STATE_BASE+11
+pipe_write_handle           EQU PIPE_STATE_BASE+12
+pipe_wait_state             EQU PIPE_STATE_BASE+13
+pipe_endpoint_kind          EQU PIPE_STATE_BASE+14
+pipe_table                  EQU HANDLE_FAST_END
+PIPE_FAST_END               EQU pipe_table+PIPE_COUNT*PIPE_RECORD_SIZE
+    ASSERT pipe_endpoint_kind = ROM_IF1_WORK_END
+    ASSERT PIPE_FAST_END <= FAST_RESERVE_END-$10
+    ELSE
 PIPE_FAST_BASE             EQU HANDLE_FAST_END
 pipe_result_ptr             EQU PIPE_FAST_BASE+0
 pipe_io_ptr                 EQU PIPE_FAST_BASE+2
@@ -39,6 +59,7 @@ pipe_endpoint_kind          EQU PIPE_FAST_BASE+14
 pipe_table                  EQU PIPE_FAST_BASE+15
 PIPE_FAST_END               EQU pipe_table+PIPE_COUNT*PIPE_RECORD_SIZE
     ASSERT PIPE_FAST_END <= syscall_frame_sp
+    ENDIF
 
     MACRO EMIT_PIPE_ROUTINES
 zx48_pipe_init:
@@ -558,8 +579,14 @@ zx48_pipe_noent:
 ; the resident kernel emits this byte-smaller equivalent path.
     MACRO EMIT_REV02_PIPE_ROUTINES
 zx48_pipe_init:
-    ; The exact production kernel image already zeroes the fixed FAST pipe
-    ; state/table before boot enters the resident kernel.
+    ; The four fast pipe records are cold-image zeroes. Reclaimed Interface-1
+    ; scratch is ordinary RAM and is initialized explicitly after BASIC handoff.
+    xor a
+    ld hl,PIPE_STATE_BASE
+    ld de,PIPE_STATE_BASE+1
+    ld bc,14
+    ld (hl),a
+    ldir
     ret
 
 ; A=slot -> IX record.
@@ -889,9 +916,11 @@ zx48_pipe_wake_writers:
 zx48_pipe_wake:
     ld h,a
     inc c
-    ld ix,process_table+PROC_DESC_SIZE
+    ld e,1
     ld b,MAX_PROCESSES-1
 zx48_pipe_wake_loop:
+    ld a,e
+    call zx48_process_ptr
     ld a,(ix+PROC_WAIT_OBJECT)
     cp c
     jr nz,zx48_r2_pipe_wake_next
@@ -902,8 +931,7 @@ zx48_pipe_wake_loop:
     ld (ix+PROC_WAIT_OBJECT),a
     ld (ix+PROC_STATE),PROC_READY
 zx48_r2_pipe_wake_next:
-    ld de,PROC_DESC_SIZE
-    add ix,de
+    inc e
     djnz zx48_pipe_wake_loop
     ret
 
@@ -946,14 +974,15 @@ zx48_pipe_try_free:
     inc a
     ld c,a
     push ix
-    ld ix,process_table+PROC_DESC_SIZE
+    ld e,1
     ld b,MAX_PROCESSES-1
 zx48_r2_pipe_waiter_scan:
+    ld a,e
+    call zx48_process_ptr
     ld a,(ix+PROC_WAIT_OBJECT)
     cp c
     jr z,zx48_r2_pipe_waiter_exists
-    ld de,PROC_DESC_SIZE
-    add ix,de
+    inc e
     djnz zx48_r2_pipe_waiter_scan
     pop ix
     ld l,(ix+PIPE_PTR_O)

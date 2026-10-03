@@ -85,6 +85,28 @@ def main():
     root=ns.root.resolve(); out=ns.output.resolve(); out.mkdir(parents=True,exist_ok=True)
     kernel=(root/"v1/src/kernel/kernel.asm").read_text(encoding="utf-8")
     syscall=(root/"v1/src/kernel/syscall.asm").read_text(encoding="utf-8")
+    include=(root/"v1/include/zx48ux.inc").read_text(encoding="utf-8")
+    process=(root/"v1/src/kernel/process.asm").read_text(encoding="utf-8")
+    pipe=(root/"v1/src/kernel/pipe.asm").read_text(encoding="utf-8")
+    rom_doc=(root/"v1/docs/rom-services.md").read_text(encoding="utf-8")
+    low_ram_needles=(
+        "ROM_PRINTER_BUFFER_START EQU $5B00",
+        "ROM_SYSVAR_KERNEL_TAIL_START EQU $5CB0",
+        "ROM_IF1_WORK_START       EQU $5CB6",
+        "ROM_IF1_WORK_END         EQU $5CC5",
+    )
+    for needle in low_ram_needles:
+        req(needle in include,"REV02 low-RAM constant missing: "+needle)
+    req("REV02_PROCESS_LOW_BASE        EQU ROM_PRINTER_BUFFER_START" in process,
+        "REV02 printer-buffer process placement missing")
+    req("PROCESS_STATE_BASE       EQU ROM_SYSVAR_KERNEL_TAIL_START" in process and
+        "current_pid              EQU ROM_IF1_WORK_START" in process,
+        "REV02 system-variable process state placement missing")
+    req("PIPE_STATE_BASE            EQU ROM_IF1_WORK_START+1" in pipe and
+        "pipe_endpoint_kind          EQU PIPE_STATE_BASE+14" in pipe,
+        "REV02 Interface-1 pipe scratch placement missing")
+    req("### REV02 C022 low-RAM kernel ownership" in rom_doc,
+        "REV02 low-RAM ownership documentation missing")
     baseline=assemble(root,"kernel-baseline",kernel)
 
     include_anchor='    INCLUDE "udg.asm"\n'
@@ -150,6 +172,13 @@ kernel_mod_rev02_sys_fp_from_text:
             "baseline":baseline,"public_api_lower_bound":public_api,
             "measurement_origin":measure_origin,
             "measurement_method":"size-only relocation preserves relative gateway placement; graphics macro is sourced once through syscall.asm; production kernel remains at $E000",
+            "low_ram_reclamation":{
+              "printer_buffer":{"range":"0x5B00-0x5BFF","bytes":256,"assignment":"PID0..PID4 descriptors at 0x5B00-0x5BEF"},
+              "basic_system_variables":{"range":"0x5C00-0x5CB5","bytes":182,"frames_reserved":"0x5C78-0x5C7A","current_assignment":"0x5CB0-0x5CB5 process scratch"},
+              "interface1_microdrive":{"range":"0x5CB6-0x5CC5","bytes":16,"assignment":"current_pid + 15-byte pipe scratch"},
+              "kernel_pool_limit_bytes":KERNEL_POOL_BYTES,
+              "kernel_pool_expansion_authorized":False,
+            },
             "scope":"size-only relocated lower-bound: graphics/sound/UDG/ROM/FP handlers; excludes object/tape/zxpack/spawn closure and final selector routing"}
     (out/"KERNEL-CLOSURE-PROBE.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n",encoding="utf-8")
     req(baseline["status"]=="PASS","baseline kernel probe must assemble")
