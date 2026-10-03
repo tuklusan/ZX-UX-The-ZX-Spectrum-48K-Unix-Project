@@ -14,7 +14,7 @@
 
     DEVICE ZXSPECTRUM48
     INCLUDE "../../include/zx48ux.inc"
-ZX48_REV02_COLD_IMAGE_INIT EQU 1
+    DEFINE ZX48_REV02_COLD_IMAGE_INIT
     INCLUDE "syscall.asm"
     INCLUDE "../boot/entry.asm"
     INCLUDE "interrupt.asm"
