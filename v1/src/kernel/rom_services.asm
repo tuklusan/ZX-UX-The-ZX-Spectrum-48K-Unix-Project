@@ -164,6 +164,10 @@ zx48_rom_k_test:
 zx48_rom_key_decode:
     call ROM_KEY_DECODE
     jr zx48_rom_checked_return
+zx48_rom_beeper:
+    call zx48_ula_rom_prepare
+    call ROM_BEEPER
+    jr zx48_rom_ula_done
 
 zx48_rom_sa_bytes:
     call zx48_ula_rom_prepare
