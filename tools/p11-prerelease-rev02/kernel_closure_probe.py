@@ -170,10 +170,97 @@ kernel_mod_rev02_sys_fp_from_text:
     candidate=candidate.replace(emit_anchor,emit_anchor+extra)
     public_api=assemble(root,"kernel-public-api-lower-bound",candidate,start=measure_origin)
 
+    # Architecture-capacity measurement only: construct a conservative complete
+    # resident closure envelope without changing production kernel layout/bytes.
+    # It deliberately composes the currently staged object/tape/zxpack/spawn and
+    # public-service owners so the architecture revision can size the protected
+    # kernel region from measured code rather than assuming +2 KiB is sufficient.
+    closure_includes='    INCLUDE "objects.asm"\n    INCLUDE "tape.asm"\n    INCLUDE "zxpack.asm"\n    INCLUDE "sound.asm"\n'
+    closure=kernel.replace(include_anchor,include_anchor+closure_includes)
+    closure_origin=0x6000
+    req(closure.count(origin_anchor)==1,"closure kernel origin anchor")
+    closure=closure.replace(origin_anchor,f"    ORG ${closure_origin:04X}\n",1)
+    for old,unused in gateway_asserts:
+        req(closure.count(old)==1,"closure gateway assertion anchor")
+    closure=closure.replace("    ASSERT $ = BOOT_GATEWAY\n",f"    ASSERT $ = ${closure_origin+3:04X}\n",1)
+    closure=closure.replace("    ASSERT $ = BOOT_GATEWAY+3\n",f"    ASSERT $ = ${closure_origin+6:04X}\n",1)
+    req(closure.count(emit_anchor)==1,"closure UDG emit anchor")
+    closure_extra=extra+"""kernel_mod_rev02_object_core:
+    EMIT_OBJECT_ROUTINES
+kernel_mod_rev02_object_open:
+    EMIT_OBJECT_OPEN_ROUTINES
+    EMIT_OBJECT_EXCLUSIVITY_ROUTINES
+kernel_mod_rev02_object_io:
+    EMIT_P407_RAW_IO_ROUTINES
+    EMIT_P408_RAW_WRITE_ROUTINES
+    EMIT_P409_APPEND_ROUTINES
+kernel_mod_rev02_object_meta:
+    EMIT_P411_STAT_OBJECT_ROUTINES
+    EMIT_P412_LIST_ROUTINES
+    EMIT_P413_REMOVE_ROUTINES
+    EMIT_P414_RENAME_ROUTINES
+    EMIT_P415_RENAME_REPLACEMENT_ROUTINES
+    EMIT_P419_WRITABLE_OPEN_ROUTINES
+    EMIT_P422_SYS_PACK_OBJECT_ROUTINES
+    EMIT_P423_SYS_UNPACK_OBJECT_ROUTINES
+    EMIT_P424_OBJECT_CANDIDATE_ROUTINES
+    EMIT_P431_CHDIR_OBJECT_ROUTINES
+    EMIT_P432_GETCWD_OBJECT_ROUTINES
+kernel_mod_rev02_handle_extensions:
+    EMIT_P406_EXCLUSIVITY_ROUTINES
+    EMIT_P417_PACKED_OD_ROUTINES
+kernel_mod_rev02_zxpack:
+    EMIT_ZXPACK_ROUTINES
+    EMIT_P416_ZXP1_DECODER
+    EMIT_P417_PACKED_READER_STATE_ROUTINES
+    EMIT_P418_PACKED_SEEK_ROUTINES
+    EMIT_P419_PACKED_WRITE_ROUTINES
+    EMIT_P420_TARGET_ENCODER_ROUTINES
+    EMIT_P421_PACK_DECISION_ROUTINES
+    EMIT_P422_SYS_PACK_CODEC_ROUTINES
+    EMIT_P423_SYS_UNPACK_CODEC_ROUTINES
+    EMIT_P424_PACK_CANDIDATE_ROUTINES
+    EMIT_P425_IDLE_PACK_ROUTINES
+    EMIT_P426_COMPACTION_ROUTINES
+    EMIT_P427_PACKED_SPAWN_STREAM_ROUTINES
+    EMIT_P428_ZXPACK_INFO_ROUTINES
+    EMIT_P505_PACKED_VALIDATOR_ROUTINES
+    EMIT_P1143_PACKED_READ_ADAPTER
+kernel_mod_rev02_memory_extensions:
+    EMIT_P426_COMPACT_ALLOC_ROUTINES
+kernel_mod_rev02_scheduler_extensions:
+    EMIT_P425_IDLE_MAINTENANCE_ROUTINES
+kernel_mod_rev02_tape:
+    EMIT_TAPE_ROUTINES
+kernel_mod_rev02_tape_recovery:
+    EMIT_P517_TAPE_RECOVERY_ROUTINES
+kernel_mod_rev02_spawn:
+    EMIT_PROCESS_CAPACITY_ROUTINE
+    EMIT_MEX1_RELOCATION_ROUTINES
+    EMIT_MEX1_IMAGE_LOAD_ROUTINES
+    EMIT_MEX1_STACK_ROUTINES
+    EMIT_ARG1_ROUTINES
+    EMIT_ENV1_ROUTINES
+    EMIT_INITIAL_CONTEXT_ROUTINES
+    EMIT_SPAWN_PREFLIGHT_ROUTINES
+    EMIT_SPAWN_TRANSACTION_ROUTINES
+    EMIT_EXEC_TRANSACTION_ROUTINES
+    EMIT_P427_PACKED_SPAWN_ROUTINES
+    EMIT_P514_DIRECT_TAPE_MEX1_ROUTINES
+kernel_mod_rev02_object_syscalls:
+    EMIT_P405_SYS_OPEN_ROUTINES
+    EMIT_P411_SYS_STAT_ROUTINES
+    EMIT_P428_ZXPACK_INFO_SYSCALL_ROUTINES
+    EMIT_P431_CHDIR_SYSCALL_ROUTINES
+    EMIT_P432_GETCWD_SYSCALL_ROUTINES
+"""
+    closure=closure.replace(emit_anchor,emit_anchor+closure_extra)
+    complete_closure=assemble(root,"kernel-complete-closure-envelope",closure,start=closure_origin)
+
     report={"schema":1,"kind":"rev02-kernel-closure-probe","status":"PASS" if baseline["status"]=="PASS" and public_api["status"]=="PASS" else "FAIL",
             "kernel_pool_bytes":KERNEL_POOL_BYTES,
-            "baseline":baseline,"public_api_lower_bound":public_api,
-            "measurement_origin":measure_origin,
+            "baseline":baseline,"public_api_lower_bound":public_api,"complete_closure_envelope":complete_closure,
+            "measurement_origin":measure_origin,"complete_closure_measurement_origin":closure_origin,
             "measurement_method":"size-only relocation preserves relative gateway placement; graphics macro is sourced once through syscall.asm; production kernel remains at $E000",
             "low_ram_reclamation":{
               "printer_buffer":{"range":"0x5B00-0x5BFF","bytes":256,"assignment":"PID0..PID4 descriptors at 0x5B00-0x5BEF"},
@@ -182,12 +269,12 @@ kernel_mod_rev02_sys_fp_from_text:
               "kernel_pool_limit_bytes":KERNEL_POOL_BYTES,
               "kernel_pool_expansion_authorized":False,
             },
-            "scope":"size-only relocated lower-bound: graphics/sound/UDG/ROM/FP handlers; excludes object/tape/zxpack/spawn closure and final selector routing"}
+            "scope":"public_api_lower_bound remains the staged graphics/sound/UDG/ROM/FP lower bound; complete_closure_envelope conservatively composes current staged object/tape/zxpack/spawn/public-service owners for architecture sizing and still excludes only the final compact selector rewrite"}
     (out/"KERNEL-CLOSURE-PROBE.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n",encoding="utf-8")
     req(baseline["status"]=="PASS","baseline kernel probe must assemble")
     if public_api["status"]!="PASS":
         print(public_api.get("stderr",""),file=sys.stderr)
         print(public_api.get("stdout",""),file=sys.stderr)
         raise SystemExit("ERROR: public API lower-bound probe must assemble")
-    print("REV02 KERNEL CLOSURE PROBE PASS",json.dumps({"baseline":baseline.get("ordinary_bytes"),"public_api":public_api.get("ordinary_bytes"),"pool":KERNEL_POOL_BYTES}))
+    print("REV02 KERNEL CLOSURE PROBE PASS",json.dumps({"baseline":baseline.get("ordinary_bytes"),"public_api":public_api.get("ordinary_bytes"),"complete_closure":complete_closure.get("ordinary_bytes"),"complete_closure_status":complete_closure.get("status"),"pool":KERNEL_POOL_BYTES}))
 if __name__=="__main__": main()
