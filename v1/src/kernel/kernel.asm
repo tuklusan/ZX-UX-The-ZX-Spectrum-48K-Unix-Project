@@ -14,6 +14,7 @@
 
     DEVICE ZXSPECTRUM48
     INCLUDE "../../include/zx48ux.inc"
+ZX48_REV02_COLD_IMAGE_INIT EQU 1
     INCLUDE "syscall.asm"
     INCLUDE "../boot/entry.asm"
     INCLUDE "interrupt.asm"
@@ -37,7 +38,6 @@
     ORG KERNEL_START
 kernel_image_start:
 kernel_ordinary_pool_start:
-ZX48_REV02_COLD_IMAGE_INIT EQU 1
 kernel_mod_gateways:
     EMIT_SYSCALL_GATEWAY
     ASSERT $ = BOOT_GATEWAY
@@ -90,7 +90,9 @@ kernel_ordinary_pool_end:
 
     ASSERT $ = KERNEL_STACK_START
 kernel_stack_storage:
-    DEFS KERNEL_STACK_END-KERNEL_STACK_START+1,0
+    ; The exact image carries the release stack guard; the remainder starts 0.
+    DEFS KSTACK_GUARD_SIZE,KSTACK_GUARD_BYTE
+    DEFS KERNEL_STACK_END-KERNEL_STACK_START+1-KSTACK_GUARD_SIZE,0
 
     ASSERT $ = FAST_RESERVE_START
 kernel_fast_reserve:
@@ -106,11 +108,23 @@ kernel_im2_table:
 
     ASSERT $ = EMERGENCY_START
 kernel_emergency_reserve:
-    ; The production kernel is loaded as an exact 8 KiB image. Seed the one
-    ; nonzero allocator cold-state record here; all other emergency state is 0.
-    ASSERT memory_free_extents >= EMERGENCY_START
+    ; Exact cold-state bytes remove redundant boot-time stores while preserving
+    ; every fixed reserve address and public behavior.
+    ASSERT wall_seconds >= EMERGENCY_START
     ASSERT memory_free_extents+FREE_EXTENT_COUNT*4 <= EMERGENCY_END+1
-    DEFS memory_free_extents-EMERGENCY_START,0
+    DEFS wall_seconds-$,0
+    dw $0680,$1726
+    DEFS wall_valid-$,0
+    db 1
+    DEFS kernel_stack_low_water-$,0
+    dw BOOT_STACK_TOP
+    DEFS cursor_phase-$,0
+    db 1
+    DEFS tty_mode-$,0
+    db TTY_MODE_64
+    DEFS tty_cursor_shape-$,0
+    db TTY_CURSOR_UNDERLINE
+    DEFS memory_free_extents-$,0
     dw ARENA_START,ARENA_SIZE
     DEFS (FREE_EXTENT_COUNT-1)*4,0
     DEFS EMERGENCY_END+1-$,0

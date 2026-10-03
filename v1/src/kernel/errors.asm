@@ -27,6 +27,10 @@ ERROR_STATE_END           EQU INTERRUPT_STATE_END+3
 
     MACRO EMIT_ERROR_ROUTINES
 zx48_kernel_stack_init:
+    IFDEF ZX48_REV02_COLD_IMAGE_INIT
+    ; Guard bytes and initial low-water value are part of the exact kernel image.
+    ret
+    ELSE
     ld hl,KERNEL_STACK_START
     ld b,KSTACK_GUARD_SIZE
     ld a,KSTACK_GUARD_BYTE
@@ -37,6 +41,7 @@ zx48_kernel_stack_init_loop:
     ld hl,BOOT_STACK_TOP
     ld (kernel_stack_low_water),hl
     ret
+    ENDIF
 
 zx48_kernel_stack_check:
     ld hl,KERNEL_STACK_START

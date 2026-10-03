@@ -36,13 +36,7 @@ CONSOLE_STATE_END        EQU CONSOLE_STATE_BASE+9
     MACRO EMIT_CONSOLE_ROUTINES
 zx48_console_init:
     IFDEF ZX48_REV02_COLD_IMAGE_INIT
-    ; Zero-valued console/cursor state is supplied by the exact cold image.
-    ; Publish only the three nonzero version-1 defaults.
-    ld a,1
-    ld (cursor_phase),a
-    ld (tty_cursor_shape),a
-    ld a,TTY_MODE_64
-    ld (tty_mode),a
+    ; All version-1 console/cursor defaults are part of the exact cold image.
     ret
     ELSE
     ld hl,1
