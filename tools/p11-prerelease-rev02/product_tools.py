@@ -253,7 +253,7 @@ def main():
     asm,image,sh_relocs,sh_bss,sh_syms=build_relocatable(
         sj,out,"sh",
         f'    INCLUDE "{(root/"v1/include/zx48ux.inc").as_posix()}"\n    INCLUDE "{(root/"v1/src/shell/sh.asm").as_posix()}"\n',
-        '    EMIT_REV02_SH_PRODUCT\n',
+        'sh_span_product:\n    EMIT_REV02_SH_PRODUCT\nsh_span_end:\n',
         '    defs SH_REV02_BSS_BYTES,0\n')
     req(image.is_file() and 256 <= image.stat().st_size <= 4096,"shell product image size")
     req(512 <= sh_bss <= 2048,"shell product BSS size")
@@ -274,7 +274,7 @@ def main():
     cc_asm,cc_image,cc_relocs,cc_bss,cc_syms=build_relocatable(
         sj,out,"cc",
         f'    INCLUDE "{(root/"v1/include/zx48ux.inc").as_posix()}"\n    INCLUDE "{(root/"v1/src/tools/cc.asm").as_posix()}"\n',
-        '    EMIT_P1128_CC_OBJ1_WRITER\n    EMIT_P1129_CC_TRANSACTION_ROUTINES\n    EMIT_REV02_CC_PRODUCT_CLI\n',
+        'cc_span_obj1_writer:\n    EMIT_P1128_CC_OBJ1_WRITER\ncc_span_transaction:\n    EMIT_P1129_CC_TRANSACTION_ROUTINES\ncc_span_product_cli:\n    EMIT_REV02_CC_PRODUCT_CLI\ncc_span_end:\n',
         '    defs CC_REV02_BSS_BYTES,0\n')
     req(cc_image.is_file() and 64 <= cc_image.stat().st_size <= 20480,"cc product image size")
     cc_resident=cc_image.stat().st_size+cc_bss+512
@@ -328,11 +328,11 @@ def main():
       "schema":1,"kind":"rev02-product-tools-preflight","status":"PASS",
       "shell":{
         "source":"v1/src/shell/sh.asm","source_sha256":sha(shsrc),
-        "image_sha256":sha(image),"image_bytes":image.stat().st_size,"bss_bytes":sh_bss,"resident_bytes_including_stack":sh_resident,"relocation_count":len(sh_relocs),"mex1_sha256":sha(out/"sh.mex1"),"m48o_tap_sha256":sha(out/"sh.m48o.tap"),
+        "image_sha256":sha(image),"image_bytes":image.stat().st_size,"bss_bytes":sh_bss,"resident_bytes_including_stack":sh_resident,"relocation_count":len(sh_relocs),"module_spans":marker_spans(sh_syms,("sh_span_product","sh_span_end")),"mex1_sha256":sha(out/"sh.mex1"),"m48o_tap_sha256":sha(out/"sh.m48o.tap"),
         "entry":"EMIT_REV02_SH_PRODUCT","semantic_status":"GENERIC-LOGIN-ISSUE-SESSION-ENV-PATH-ARG1-SPAWN-WAIT-BACKGROUND-COMMAND-LOOP"},
       "cc":{
         "source":"v1/src/tools/cc.asm","source_sha256":sha(ccsrc),
-        "image_sha256":sha(cc_image),"image_bytes":cc_image.stat().st_size,"bss_bytes":cc_bss,"resident_bytes_including_stack":cc_resident,"relocation_count":len(cc_relocs),
+        "image_sha256":sha(cc_image),"image_bytes":cc_image.stat().st_size,"bss_bytes":cc_bss,"resident_bytes_including_stack":cc_resident,"relocation_count":len(cc_relocs),"module_spans":marker_spans(cc_syms,("cc_span_obj1_writer","cc_span_transaction","cc_span_product_cli","cc_span_end")),
         "mex1_sha256":sha(out/"cc.mex1"),"m48o_tap_sha256":sha(out/"cc.m48o.tap"),
         "entry":"EMIT_REV02_CC_PRODUCT_CLI",
         "semantic_status":"GENERIC-STREAMING-NATIVE-C-CHECKPOINT; ONE-LEVEL-QUOTED-LOCAL-INCLUDE; BUILTIN-C48-HEADER; FROZEN-BOUNDED-OBJECT-LIKE-DEFINES; GENERIC-PROTOTYPES/CALLS/STRINGS/ABS16-RELOCS; INT-LOCALS/ASSIGNMENT/RVALUE/ADDITIVE-CODEGEN; LOCAL-POSTFIX-INC-DEC; IF-ELSE-CONTROL-FLOW; WHILE-CONTROL-FLOW; DO-WHILE-CONTROL-FLOW; FOR-CONTROL-FLOW; BREAK-CONTINUE-CONTROL-FLOW; C48_REGCALL-PARAMETER-SPILL/RECURSION; GLOBAL-SCALAR-BSS; GLOBAL-ARRAY-BSS/INDEXING; CONSTANT-GLOBAL-INITIALIZERS; RUNTIME-EXPRESSION-C48_REGCALL-ARGS-1-TO-16; RUNTIME-SIGNED-UNSIGNED-INT-MUL-DIV-MOD; RUNTIME-INT-BITWISE; RUNTIME-SIGNED-UNSIGNED-INT-SHIFTS; RUNTIME-SIGNED-UNSIGNED-COMPARISONS; RUNTIME-LOGICAL-SHORT-CIRCUIT; FUNCTION-RELATIVE-INTERNAL-BRANCH-RELOCS; INTEGER-CONSTANT-EXPRESSIONS; GENERIC-SIZEOF-TYPE/EXPR/CONST-DATA-MODEL; PARSE-OBJ1-BSS-PHASE-OVERLAY; FULL-C48-PENDING"},
