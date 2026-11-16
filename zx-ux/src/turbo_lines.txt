@@ -1,0 +1,24 @@
+ZX-UX UNIX v1 / ZX SPECTRUM 48K
+(C) 2026 SANYALnet Labs
+Z80 at 3.5 MHz / 48K RAM
+64 columns / 16K ROM
+MEMORY MAP (HEX). NO LEGROOM.
+Kernel: 6000-7FFF / 8192 bytes
+System calls enter at 6003
+User text ends at B52A
+OS image: 22090 bytes
+Boot/ZXPACK: B52C-B649
+I-node table: B64A-B949
+Arena: B94A-EFFF / 14006 bytes
+Arena free: 11718 bytes
+Program window: F000-FFB8
+U-area: FFB9-FFF3 / 59 bytes
+RAM file system. Root is /
+11 of 24 i-nodes in use
+38 programs. No disk required.
+Dirs: /bin /dev /etc /tmp /usr
+Devices: tty mem tap cassette
+4 process slots. Quite a crowd.
+IM 2 interrupts / 50 Hz
+1982-04-23 / 09:00:00
+ZX-UX starts with login:

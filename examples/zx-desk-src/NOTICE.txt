@@ -1,0 +1,3 @@
+zx-desk uses the original zx-desk design by Damian Cooper (copyright 2026),
+under the MIT license. The standard MIT permission notice and terms are
+included in the project THIRD-PARTY file and in the customer distribution.

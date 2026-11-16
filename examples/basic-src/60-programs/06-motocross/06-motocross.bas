@@ -1,0 +1,79 @@
+   1 BORDER 0: PAPER 0: INK 7: CLS 
+   5 LET hs=1e4: LET wr=4
+  10 GO SUB 9000
+  13 GO SUB 9100
+  15 CLS 
+  20 GO SUB 3000
+  22 BEEP .2,20
+  25 POKE 23674,255: POKE 23673,255: POKE 23672,255
+  30 PRINT AT y,x; BRIGHT 1;" {90}"
+ 100 FOR f=1 TO s: NEXT f
+ 200 LET x=x+1: IF x=31 THEN PRINT AT y,31;" ": LET x=0: LET y=y+5: IF y=25 THEN GO TO 2000
+ 250 IF SCREEN$ (y,x+1)="" THEN GO SUB 1000
+ 300 LET s=s+(1 AND IN 65022=251)-(1 AND IN 65022=254): IF s<1 THEN LET s=1
+ 900 GO TO 30
+1000 IF IN 49150=247 THEN GO TO 1500
+1020 LET c=144: FOR f=x TO 30: PRINT AT y,f; BRIGHT 1;" ";CHR$ c: LET c=c+(c<147)-(3 AND c=147): BEEP .1,-30: NEXT f
+1030 CLS : PRINT "Bad Luck! You crashed.": GO TO 9200
+1500 PRINT AT y,x;" ";AT y-1,x+1; BRIGHT 1;"{90}"
+1510 FOR f=10 TO 15: BEEP .02,f: NEXT f
+1520 PRINT BRIGHT 1;AT y-1,x+1;" ";AT y,x+2;"{90}": LET x=x+2: RETURN 
+2000 LET t1=(65536*PEEK 23674+256*PEEK 23673+PEEK 23672)/48: LET t=(INT (t1*100))/100
+2005 CLS 
+2010 PRINT AT 1,0;"Your Time Was ";t;" Seconds."
+2020 IF t<hs THEN PRINT INK 4'"This Is A New Fast Time!": LET hs=t
+2030 PRINT INK 5'"The Best Time Is ";hs;" Seconds."
+2040 GO TO 9200
+3000 FOR g=21 TO 6 STEP -5: PRINT AT g-1,RND*20+6; INK 6;"{94}";AT g-1,RND*20+6;"{94}": FOR f=0 TO 31: PRINT INK 2;AT g,f;" ": NEXT f: NEXT g
+3300 LET y=5: LET x=0: LET s=20
+3450 RETURN 
+5000 LET buses=5: CLS 
+5010 LET y=5: LET x=0: LET s=10
+5015 PRINT AT 0,11;buses;" BUSES"
+5020 GO SUB 7500
+5030 PRINT AT y,x; BRIGHT 1;" {90}"
+5100 FOR f=1 TO s: NEXT f
+5200 LET x=x+1: IF x=31 THEN PRINT AT y,31;" ": LET x=0: LET y=y+5
+5250 IF SCREEN$ (y,x+1)="" THEN GO TO 6000
+5300 LET s=s+(1 AND INKEY$="d")-(1 AND INKEY$="a"): IF s<1 THEN LET s=1
+5400 GO TO 5030
+6000 PRINT AT y,x;" "; BRIGHT 1;AT y-1,x+1;"{90}": BEEP s/100,1
+6020 PRINT BRIGHT 1;AT y-1,x+1;" ";AT y-2,x+2;"{90}": BEEP s/100,1: NEXT f
+6030 LET x=x+2: FOR f=x TO (x+20-s): BEEP s/100,1: PRINT BRIGHT 1;AT y-2,f;" {90}": NEXT f
+6040 PRINT AT y-2,f;" "; BRIGHT 1;AT y-1,f+1;"{90}": BEEP s/100,1
+6050 IF ATTR (y,f+1)<>6 THEN GO TO 6200
+6060 FOR x=f+1 TO 30: PRINT AT y-1,x; BRIGHT 1;" {90}"
+6065 BEEP s/100,(y=20)-(55 AND y=21)
+6070 IF SCREEN$ (y,x+1)="" THEN PRINT AT y-1,x+1;" ": LET y=y+1
+6080 NEXT f
+6085 CLS : LET buses=buses+1
+6090 GO TO 5010
+6200 PRINT AT y-1,f+1;" ": LET c=144: FOR x=f+1 TO 31: BEEP .1,-20: PRINT AT y,x; BRIGHT 1;" ";CHR$ c: LET c=c+(c<147)-(3 AND c=147): NEXT x
+6210 CLS : PRINT AT 0,0;"You Failed In Your Attempt At ";buses'"Buses."
+6240 IF buses-1>wr THEN PRINT INK 5'"However, Your Successful Jump   Over ";buses-1;" Buses Is A New World"'"Record!!!!": LET wr=buses-1
+6270 PRINT INK 6'"The World Record Is ";wr;" Buses."
+6290 GO TO 9200
+7500 FOR f=21 TO 6 STEP -5: FOR g=0 TO 31: PRINT INK 3;AT f,g;" ": NEXT g: NEXT f
+7510 PRINT INK 6;AT 20,4;"{95}";: FOR f=1 TO buses: PRINT INK 2; BRIGHT 1;"{96}";: NEXT f: PRINT INK 6;"{97}{98}{99}"
+7550 RETURN 
+9000 RESTORE 9010: FOR f=USR "a" TO USR "j"+7: READ g: POKE f,g: NEXT f
+9010 DATA 32,62,50,254,152,90,231,66
+9020 DATA 2,119,82,92,124,242,23,26
+9030 DATA 66,231,90,25,127,76,124,4
+9040 DATA 88,232,79,62,58,74,238,64
+9050 DATA 0,0,0,0,0,32,112,248
+9060 DATA 1,3,7,15,31,63,127,255
+9070 DATA 126,66,126,126,66,126,126,36
+9080 DATA 224,252,255,255,255,255,255,255,0,0,128,240,254,255,255,255,0,0,0,0,0,192,248,255
+9090 RETURN 
+9100 LET a$="MOTOCROSS": PRINT AT 21,11;a$: FOR f=1 TO 9: FOR g=20 TO 0 STEP -1: BEEP .001,f*3+30: PRINT AT g,f+10;a$(f);AT g+1,f+10;" ": NEXT g: NEXT f
+9105 FOR f=0 TO 30: BEEP .04,-28: PRINT INK 6;AT 2,f;" {90}";: NEXT f: PRINT AT 2,31;" "
+9110 PRINT AT 2,0;"This Program Consists Of Two    Motorbike Games."
+9120 PRINT INK 6'"For ""Moto-cross"", jump with J   only when you reach the obstacle"
+9130 PRINT INK 5'"For both programs, acceleration and deceleration are possible   by holding A or D."
+9200 PRINT INK 4'"Press the key which corresponds to what you want to do."
+9210 PRINT INK 6'"1...Moto-cross"' INK 5'"2...Stunt-cycle"' INK 7'"3...Exit from the program"
+9220 IF INKEY$="1" THEN GO TO 15
+9230 IF INKEY$="2" THEN GO TO 5000
+9240 IF INKEY$="3" THEN STOP 
+9250 GO TO 9220

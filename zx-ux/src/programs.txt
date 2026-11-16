@@ -1,0 +1,33 @@
+# path            label    extra mode bits (octal: 40 = set-uid)
+/bin/cat          cat
+/bin/cp           cp
+/bin/mv           mv
+/bin/ln           ln
+/bin/rm           rm
+/bin/rmdir        rmdir    40
+/bin/mkdir        mkdir    40
+/bin/chmod        chmod
+/bin/ls           ls
+/bin/pwd          pwd
+/bin/df           df
+/bin/date         date
+/bin/stat         stat
+/bin/wc           wc
+/bin/od           od
+/bin/cmp          cmp
+/bin/sum          sum
+/bin/echo         echo
+/bin/sleep        sleep
+/bin/cls          cls
+/bin/hello        hello
+/bin/beep         beep
+/bin/clock        clock
+/bin/forktest     fork
+/bin/du           du
+/bin/tap          tar
+/bin/tar          tar
+/bin/ps           ps
+/bin/top          top
+/bin/vi           vi
+/bin/zxpack       zxpack
+/bin/more         more

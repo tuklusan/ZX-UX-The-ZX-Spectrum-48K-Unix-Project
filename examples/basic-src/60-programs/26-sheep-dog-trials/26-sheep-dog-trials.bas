@@ -1,0 +1,87 @@
+   1 REM by Robert Erskine from an origial idea by Tom Hayward
+  10 GO SUB 6000
+  20 GO SUB 5000
+  30 INPUT "How many players?";A
+  40 DIM p(A): DIM S(4,2): LET DX=15: LET DY=15: BORDER 4: PAPER 4: INK 4: CLS 
+  45 RANDOMIZE : LET DD=1: LET RR=1: DIM R(2): LET R(1)=-1: LET R(2)=1
+  46 GO TO 65
+  50 CLS : FOR x=0 TO 21: PRINT AT x,0; INK 0;"{95}";AT x,31; INK 0;"{94}": NEXT x
+  55 FOR x=6 TO 9: PRINT INK 0;AT x,10;"{95}";AT x,20;"{94}": NEXT x
+  56 FOR x=11 TO 19: PRINT INK 0;AT 5,x;"{96}";AT 10,x;"_": NEXT x
+  57 PRINT PAPER 4; INK 4;AT 10,15;"  "
+  58 PRINT INK 0;AT 5,10;"{97}";AT 5,20;"{98}";AT 10,10;"{99}";AT 10,20;"{9A}"
+  60 FOR x=0 TO 31: PRINT AT 0,x; INK 0;"_";AT 21,x; INK 0;"{96}": NEXT x
+  61 RETURN 
+  80 FOR t=1 TO A: REM player loop
+  81 GO SUB 50
+  85 LET sc=0: LET S(1,1)=3: LET S(1,2)=15: LET S(2,1)=3: LET S(2,2)=16: LET S(3,1)=4: LET S(3,2)=15: LET S(4,1)=4: LET S(4,2)=16
+  90 PRINT AT 0,0; INK 7;"PLAYER ";t
+  95 GO TO 180
+ 100 REM dogmove
+ 105 IF INKEY$="0" THEN GO TO 3000
+ 110 LET I=CODE (INKEY$)-52
+ 115 PRINT INK 4; PAPER 4;AT DX,DY;" "
+ 120 IF I=1 AND ATTR (DX,DY-1)=36 THEN LET DY=DY-1: LET DD=2
+ 130 IF I=2 AND ATTR (DX+1,DY)=36 THEN LET DX=DX+1
+ 140 IF I=3 AND ATTR (DX-1,DY)=36 THEN LET DX=DX-1
+ 150 IF I=4 AND ATTR (DX,DY+1)=36 THEN LET DY=DY+1: LET DD=1
+ 160 IF DD=1 THEN PRINT PAPER 4; INK 0;AT DX,DY;"{90}"
+ 170 IF DD=2 THEN PRINT PAPER 4; INK 0;AT DX,DY;"{91}"
+ 175 RETURN 
+ 180 FOR z=1 TO 4: REM sheeploop
+ 190 LET SX=S(z,1): LET SY=S(z,2): REM sheepmove
+ 195 GO SUB 100
+ 200 IF RND>.75 THEN GO TO 230
+ 210 IF RND>.5 THEN LET SX=S(z,1)+R(2): GO TO 220
+ 215 LET SX=S(z,1)+R(1)
+ 220 IF RND>.5 THEN LET SY=S(z,2)+R(2): GO TO 230
+ 225 LET SY=S(z,2)+R(1)
+ 230 LET E=(ABS DX-S(z,1))/10: LET F=(ABS DY-S(z,2))/10: LET G=S(z,1)=DX: LET H=S(z,2)-DY
+ 235 LET o=0: LET q=RND: IF q>E AND q>F THEN LET o=1
+ 240 IF G>0 AND o=1 THEN LET SX=S(z,1)+1
+ 250 IF H>0 AND o=1 THEN LET SY=S(z,2)+1: LET RR=1
+ 260 IF G<0 AND o=1 THEN LET SX=S(z,1)-1
+ 270 IF H<0 AND o=1 THEN LET SY=S(z,2)-1: LET RR=2
+ 280 PRINT AT S(z,1),S(z,2);" "
+ 290 IF ATTR (SX,SY)<>36 THEN GO TO 310
+ 300 LET S(z,1)=SX: LET S(z,2)=SY
+ 310 IF RR=1 THEN PRINT PAPER 4; INK 7;AT S(z,1),S(z,2);"{92}"
+ 320 IF RR=2 THEN PRINT PAPER 4; INK 7;AT S(z,1),S(z,2);"{93}"
+ 330 LET RR=INT (RND*2)+1
+ 340 NEXT z
+ 350 LET sc=sc+1: PRINT PAPER 4; INK 7;AT 0,21;"Score ";150-sc;"   ": IF sc=150 THEN GO TO 3000
+ 360 GO TO 180
+ 370 NEXT t
+2000 BORDER 1: PAPER 1: INK 1: CLS 
+2005 INK 7: PRINT AT 0,12;"RESULTS": PRINT : PRINT 
+2010 FOR x=1 TO A
+2020 PRINT TAB 9;"Player ";x;"     ";p(x)
+2030 NEXT x
+2040 PRINT : PRINT TAB 4;"PRESS ANY KEY TO RESTART"
+2050 IF INKEY$="" THEN GO TO 2050
+2060 GO TO 10
+3000 PRINT INK 0;AT 10,15;"___"
+3002 LET p(t)=150-sc
+3005 LET check=0
+3010 FOR x=1 TO 4
+3020 IF S(x,1)>5 AND S(x,1)<>10 AND S(x,2)>10 AND S(x,2)<20 THEN LET check=check+1
+3030 NEXT x
+3040 IF check<4 THEN PRINT INK 7;AT 18,2;"You failed to pen the sheep";AT 19,2;"Your score is zero": LET P(t)=0: LET check=0: GO SUB 4000
+3050 IF check=4 THEN PRINT INK 7;AT 18,2;"Your score was ";P(t): LET check=0: GO SUB 4000
+3060 GO TO 370
+4000 FOR q=1 TO 400: NEXT q: RETURN 
+5000 BORDER 1: PAPER 1: INK 7: CLS 
+5010 PRINT AT 1,8;"SHEEPDOG TRIALS";AT 3,5;"@ Robert Erskine 1983"
+5020 PRINT AT 5,0;"The object of the game is to ","herd all four sheep into the penwithin a fixed time limit by ","moving the dog using the arrow ","keys. When he sheep have been ","penned, close the gate with ","the 0 key and your score will ","be displayed. Less than four ","sheep in the pen, or running","over time, results in a zero ","score"
+5030 PRINT 
+5050 PRINT 
+5060 PRINT "Any number of players can play ","in turn": PRINT 
+5070 PRINT "Press any key to start": PAUSE 0
+5080 RETURN 
+6000 RESTORE : FOR x=USR "a" TO USR "a"+87
+6010 READ n: POKE x,n
+6020 NEXT x
+6030 DATA 0,0,2,135,126,124,230,149,0,0,64,225,126,62,103,169,0,0,0,6,127,254,126,37,0,0,0,96,254,127,126,164
+6040 DATA 1,1,1,1,1,1,1,1,128,128,128,128,128,128,128,128,255,0,0,0,0,0,0,0
+6050 DATA 255,128,128,128,128,128,128,128,255,1,1,1,1,1,1,1,128,128,128,128,128,128,128,255,1,1,1,1,1,1,1,255
+6060 RETURN 
