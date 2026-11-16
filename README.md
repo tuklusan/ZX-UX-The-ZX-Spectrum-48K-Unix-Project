@@ -1,10 +1,16 @@
 # ZX-UX — UNIX for the Sinclair ZX Spectrum 48K
 
+<p align="center"><img src="media/zx-ux-login-screen-animated-gif.gif" alt="ZX-UX login screen on a Sinclair ZX Spectrum"></p>
+
 **8K KERNEL. PREEMPTIVE MULTITASKING. `inode`-BASED RAMFS. `/dev/` DEVICES. ONE SPECTRUM.**
 
 ZX-UX runs UNIX on the Sinclair ZX Spectrum 48K. Its native Z80 kernel brings preemptive multitasking, an inode-based RAM filesystem, a 64-column terminal and cassette-loaded executables to the original hardware.
 
 **A complete desktop development environment comes with it.** We call it the **ZX-UX SDK** (more below). Five cross-compilers and RVM, a ZX Spectrum virtual machine, let you write and test ZX-UX applications on modern computers, then make cassette images for physical or emulated Spectrums.
+
+*Watch ZX-UX begin with the Hanoi and 8 Queens multitasking demo, then move through ordinary UNIX-style work at the shell: commands, `vi`, and included applications.*
+
+https://github.com/user-attachments/assets/8bcd3da4-1842-45a8-8c00-13a9e94ea799
 
 ## 8K Z80 kernel and UNIX system calls
 
@@ -85,6 +91,10 @@ Note its PID as well. Hanoi animates on the left and 8 Queens searches on the ri
 A physical 48K Spectrum can use the same TZX images through compatible tape-transfer hardware.
 
 ### ZX-DESK — a graphical UNIX desktop on the Spectrum
+
+*Watch ZX-DESK in use: menus, overlapping windows, its file browser and desktop applications, all running as ZX-UX processes.*
+
+https://github.com/user-attachments/assets/5a191de6-29a6-47d1-8c32-bbcf9c010f8e
 
 **[ZX-DESK](examples/zx-desk-src/)** brings a windowed graphical desktop to ZX-UX, with desktop icons, drop-down menus, overlapping windows, Cascade and Tile views, and a live clock. Its applications include a two-pane file browser, a read-only Notes viewer, an About window and a compact command console. The desktop runs as a native ZX-UX process, using the OS for files, time, input and memory—not a separate operating system.
 
