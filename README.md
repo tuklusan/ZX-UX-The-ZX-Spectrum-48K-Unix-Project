@@ -336,6 +336,14 @@ Students of **operating-system and compiler design** can follow working code fro
 
 There is plenty left to try: port ZX-UX to other computers of its era, build a new kernel for another processor, or use its ideas as the starting point for a modern UNIX-like system. Linus Torvalds began Linux in 1991. ZX-UX offers another small place to begin. The hardware may change; the bugs still expect correct addresses.
 
+## AI DISCLOSURE ##
+
+ZX-UX began in the 1980s as a personal Sinclair ZX Spectrum and Z80 programming project, eventually growing into plans for a UNIX-style operating system. After decades on hold, retirement provided the opportunity to complete that work with a fresh Z80 implementation.
+
+During the modern development phase, we used generative AI coding agents as assistants for integrating compiler toolchains, developing and refining supporting code, debugging, testing, technical documentation, and routine project tasks.
+
+The original vision predates modern AI by decades. The completed ZX-UX system runs as conventional Z80 software on the Sinclair ZX Spectrum 48K. Neither the operating system nor its SDK requires generative AI models or online AI services at runtime.
+
 See the [non-commercial project license](LICENSE) and [third-party notices](THIRD-PARTY) for use and attribution terms.
 
 **WRITE ON A DESKTOP. TEST UNDER UNIX. RUN ON A SPECTRUM.**
