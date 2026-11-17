@@ -794,7 +794,7 @@ int main(int argc, char **argv)
     int key;
     int changed;
     wr_seed();
-    app_setfile("/tmp/write48.txt");
+    app_setfile("/tmp/write48");
     wr_cur = 0;
     wr_view = 0;
     wr_insert = 0;

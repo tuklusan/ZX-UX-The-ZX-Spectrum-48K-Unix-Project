@@ -342,7 +342,7 @@ int main(int argc, char **argv)
     sh_row = 0;
     sh_col = 0;
     sh_seed();
-    app_setfile("/tmp/sheet48.sh48");
+    app_setfile("/tmp/sheet48");
     sh_render();
     if (argc > 1 && strcmp(argv[1], "verify") == 0)
         return 0;

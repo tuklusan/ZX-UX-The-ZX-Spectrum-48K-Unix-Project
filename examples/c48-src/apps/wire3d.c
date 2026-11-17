@@ -508,7 +508,7 @@ int main(int argc, char **argv)
 {
     int key;
     w_reset();
-    app_setfile("/tmp/wire3d.w3d");
+    app_setfile("/tmp/wire3d");
     w_render();
     if (argc > 1 && strcmp(argv[1], "verify") == 0)
         return 0;

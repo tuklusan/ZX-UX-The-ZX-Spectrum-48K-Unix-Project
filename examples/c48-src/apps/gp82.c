@@ -405,7 +405,7 @@ int main(int argc, char **argv)
     int key;
     gp_seed();
     gp_edited = 0;
-    app_setfile("/tmp/gp82.gp82");
+    app_setfile("/tmp/gp82");
     gp_render();
     if (argc > 1 && strcmp(argv[1], "verify") == 0)
         return 0;
