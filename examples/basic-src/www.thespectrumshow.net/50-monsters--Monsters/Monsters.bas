@@ -1,0 +1,115 @@
+   1 REM Monsters
+   2 REM Rowan Vacher
+   3 REM PCN May 83
+   4 REM Typed by P Jenkinson
+  10 LET a=PEEK 23675+256*PEEK 23676
+  20 FOR b=a TO a+111
+  30 READ c: POKE b,c: NEXT b
+  40 DATA 240,23,31,63,99,107,127,60,15,232,248,252,198,214,254,60
+  41 DATA 27,12,24,48,96,192,192,192,216,48,24,12,6,3,3,3
+  42 DATA 0,0,0,112,192,192,127,127,0,0,0,14,3,3,254,254
+  43 DATA 255,229,127,127,112,63,12,60,135,151,254,254,14,252,48,60
+  44 DATA 127,225,237,97,127,15,25,16,254,135,103,134,254,240,144,156
+  45 DATA 28,4,5,61,33,33,115,82,196,68,204,8,8,8,156,148
+  46 DATA 153,90,60,24,24,36,36,36,66,231,231,66,66,66,66,66
+  53 GO SUB 5000
+  54 LET a$="{90}{91}": LET b$="{92}{93}": LET t=1: LET sp=3: LET j=0: LET score=0
+  55 INK 7: BORDER 0: PAPER 0: CLS 
+  60 LET z=2
+  70 FOR a=3 TO 27 STEP 6
+  80 PRINT AT 0,a; INK z;a$;AT 1,a;b$
+  90 LET z=z+1: NEXT a
+ 100 FOR c=2 TO 26 STEP 6
+ 110 PRINT AT 6,c; BRIGHT 1; INK 6;"+++": NEXT c
+ 120 PAUSE 200: LET b=3: LET x=3: LET l=2: LET s=1: LET tot=1
+ 129 IF b>27 THEN GO TO 4000
+ 130 PRINT AT 0,b;"   ";AT 1,b;"   "
+ 137 LET f=20: LET g=14
+ 139 PRINT AT 3,0;"                               ";AT 4,0;"                               "
+ 140 PRINT AT 3,x; INK 1;a$;AT 4,x;b$
+ 150 LET x=x+INT (RND*sp)+j: BEEP .006,1
+ 155 IF x<0 THEN LET x=0
+ 165 IF x>30 THEN LET x=0: LET s=s+1: LET tot=tot+1
+ 167 IF tot=15 THEN GO TO 4000
+ 210 LET l=INT (RND*10)
+ 220 IF l=3 THEN PLOT x*8,130: DRAW OVER 1;0,-129: BEEP .005,25
+ 230 IF l=3 THEN PLOT OVER 1;x*8,130: DRAW OVER 1; INK 6;0,-129: BEEP .05,25
+ 240 IF l=3 AND x=g THEN GO TO 9000
+ 300 PRINT AT f,g; INK 5;"{9D}"
+ 310 PRINT AT 21,g; BRIGHT 1; INK 4;"{9C}"
+ 316 IF x=7 OR x=13 OR x=19 OR x=25 THEN GO SUB 6000
+ 320 IF INKEY$="0" THEN GO SUB 700
+ 325 IF INKEY$="f" THEN GO SUB 1000
+ 330 IF INKEY$="1" THEN GO SUB 800
+ 342 IF s=3 THEN LET s=0: LET b=b+6: LET j=j+1: PRINT AT f,g;" ";AT 21,g;" ": GO TO 128
+ 350 GO TO 139
+ 710 PRINT AT f,g;" "
+ 720 PRINT AT 21,g;" "
+ 730 IF g<30 THEN LET g=g+1
+ 731 PRINT AT f,g; INK 5;"{9D}";AT 21,g; BRIGHT 1; INK 4;"{9C}"
+ 740 RETURN 
+ 810 PRINT AT f,g;" "
+ 820 PRINT AT 21,g;" "
+ 830 IF g>3 THEN LET g=g-1
+ 831 PRINT AT f,g; INK 5;"{9D}";AT 21,g; BRIGHT 1; INK 4;"{9C}"
+ 840 RETURN 
+1000 PRINT AT 3,0;"                                ";AT 4,0;"                                "
+1011 PRINT AT 3,x; INK 1;a$;AT 4,x;b$
+1015 BEEP .01,-1
+1020 LET f=f-1
+1030 PRINT AT f,g; INK 5;"{9D}";AT f+1,g;" "
+1031 IF (x=g OR x+1=g) AND f=3 THEN GO SUB 2000
+1035 REM IF f=7 THEN GO SUB 3000
+1036 IF f=2 THEN PRINT AT f,g;" ";AT 21,g;" ": LET score=score-10: LET f=20: GO TO 342
+1040 GO TO 1010
+2000 LET s=3: PRINT AT 3,x; INK 1;"\{7B}0x60{7D}\{7B}0x60{7D}";AT 4,x;"**": FOR a=10 TO -3 STEP -1: BEEP .01,a: NEXT a: PAUSE 20
+2001 PRINT AT 3,x; INK 1;"  ";AT 4,x;"  "
+2002 LET score=score+100: LET x=1: GO TO 342
+3000 LET g2=INT ((g+1)/3)
+3002 LET g3=(INT (g2/21))*2
+3004 IF g2>g3 THEN PRINT AT f,g;;"+";AT 8,g-1;"+++";AT 9,g-2;"+++++";AT f,g;" ";AT 8,g-1;"   ";AT 9,g-2;"    ";AT 21,g;" ": BEEP .01,-1: BEEP .01,-3: LET f=20: LET score=score-10: GO TO 342
+3020 RETURN 
+4000 IF t=3 THEN CLS : GO TO 4500
+4005 IF t=2 THEN LET a$="{98}{99}": LET b$="{9A}{9B}": LET t=3: LET sp=6: GO TO 56
+4010 LET sp=4: LET j=-1: LET t=2: LET a$="{94}{95}": LET b$="{96}{97}": GO TO 556
+4500 PRINT AT 0,0;score;AT 4,10;"YOU'VE SCORED"
+4510 FOR a=0 TO 31
+4520 FOR b=175 TO 167 STEP -1
+4530 IF POINT (a,b)=1 THEN PRINT AT 182-b,a; INK 3;"+"
+4531 REM IF POINT (a,b)=1 THEN PRINT AT b-160,a; INK 3;"+"
+4540 NEXT b
+4550 NEXT a
+4560 PRINT AT 0,0;"    ";AT 21,4;"Press any key for another go"
+4565 PAUSE 0
+4570 RUN 50
+5000 BORDER 0: PAPER 0: INK 6: CLS 
+5010 PRINT AT 5,10; FLASH 1;"""MONSTERS""";AT 6,11;"++++++++"
+5012 PRINT AT 10,2;"Do you want instructions?";AT 12,7;"Press (y) or (n)"
+5020 PAUSE 0
+5025 IF INKEY$<>"y" THEN RETURN 
+5030 IF INKEY$="y" THEN CLS : PRINT AT 2,0;"  The object of the game is to    destroy as many monsters as    possible, using as few missiles   as you can whilst avoiding          BOMBS and LASERS."
+5031 PRINT AT 8,3;"    1 Monster scores 100        A wasted missile scores -10";AT 12,4;"{90}{91}";AT 13,4;"{92}{93}";AT 12,15;"{94}{95}";AT 13,15;"{96}{97}"
+5032 PRINT AT 12,26;"{98}{99}";AT 13,26;"{9A}{9B}";AT 15,2;"(1) FOR LEFT  (0) FOR RIGHT";AT 17,8;"(f) FIRES MISSILE";AT 19,2;"(f) ALSO RAISES BOMB SHIELD";AT 21,3;"Press any key to continue"
+5040 PAUSE 0
+5050 RETURN 
+6000 LET w=5: GO TO 6010
+6005 PRINT AT w-1,x;" "
+6010 PRINT AT w,x; INK 6;"+": BEEP .005,w
+6014 IF INKEY$="f" THEN GO SUB 8000
+6015 IF INKEY$<>"f" THEN PRINT AT 19,g-1;"   "
+6016 IF INKEY$="0" THEN GO SUB 700
+6017 IF INKEY$="1" THEN GO SUB 800
+6020 LET w=w+1
+6025 IF w=20 AND x=g THEN PRINT AT 19,x;" ";AT 20,x;"*";AT 21,x;"\{7B}0x60{7D}": BEEP 2,2: GO TO 9000
+6030 IF w=21 THEN PRINT AT 20,x;" ";AT 19,0;"                                ": RETURN 
+6040 GO TO 6005
+7010 RETURN 
+8000 PRINT AT 19,g-1; INK 3;"+++";AT 18,0;"                                "
+8003 IF w=18 THEN GO SUB 8010
+8005 RETURN 
+8010 IF x=g-1 OR x=g OR x=g+1 THEN PRINT AT 10,x;"*": BEEP .01,-3: PRINT AT 18,x;" ";AT 17,x-1;"+++";AT 16,x-2;"+++++";AT 15,x-3;"+++++++";AT 17,x-1;"   ";AT 16,x-2;"     ";AT 15,x-3;"       ": BEEP .01,-3
+8015 LET w=20: LET x=x+1
+8020 RETURN 
+9010 PRINT AT 21,g; INK 6; FLASH 1;"{9C}";AT 20,g; INK 6; FLASH 1;"{9D}"
+9015 FOR a=1 TO 3: FOR b=20 TO 40: BEEP .005,a+b: NEXT b: NEXT a
+9030 CLS : PRINT AT 2,10; INK 6;"YOU ARE DEAD": GO TO 4500

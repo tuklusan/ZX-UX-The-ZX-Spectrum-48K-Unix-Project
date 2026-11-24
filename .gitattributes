@@ -1,0 +1,10 @@
+# Large reference manuals and future documents use Git LFS.
+docs/** filter=lfs diff=lfs merge=lfs -text
+# Keep the short reference index as a normal Git text file.
+docs/README.md -filter -diff -merge text
+
+# Release videos use Git LFS.
+media/*.mp4 filter=lfs diff=lfs merge=lfs -text
+
+# Preserve the independently reviewed third-party notice byte-for-byte.
+THIRD-PARTY -text

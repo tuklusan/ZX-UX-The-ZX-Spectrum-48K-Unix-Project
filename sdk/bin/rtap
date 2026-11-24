@@ -1,0 +1,11 @@
+#!/usr/bin/env python3
+# =====================================================================
+# ZX-UX 48K Sinclair ZX Spectrum Unix.
+# Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs.
+# Non-commercial use only under the repository LICENSE.
+# Commercial use prohibited without separate written permission.
+# =====================================================================
+import os, sys
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'py'))
+from rtap import main
+sys.exit(main(sys.argv[1:]))

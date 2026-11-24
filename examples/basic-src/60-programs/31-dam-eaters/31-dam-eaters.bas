@@ -1,0 +1,79 @@
+   1 BORDER 0: PAPER 0: INK 7: CLS 
+   5 LET hs=0
+  10 GO SUB 9000
+  15 GO SUB 7000
+  17 GO SUB 9800
+  20 GO SUB 8000
+  30 FOR i=1 TO n
+  40 LET x(i)=x(i)-1: IF RND>.8 THEN GO SUB 1000
+  50 PRINT AT y(i),x(i); INK i+3;"{93}{94} "
+  60 IF ATTR (y(i),x(i)-1)=22 THEN GO SUB 2000
+  80 NEXT i
+  90 LET q$=INKEY$
+ 100 IF NOT b THEN IF q$<>"" THEN LET g=(VAL q$)*6+2: LET s1=VAL q$: LET f=0: LET b=1: BEEP .01,30: IF g<>8 AND g<>14 AND g<>20 THEN LET b=0
+ 110 IF NOT b THEN GO TO 30
+ 115 FOR i=1 TO 2
+ 140 PRINT AT f,g;" "
+ 150 LET f=f+1: IF f=21 THEN GO TO 5000
+ 160 IF SCREEN$ (f,g)="" THEN GO TO 3000
+ 170 PRINT AT f,g;"|"
+ 190 NEXT i
+ 200 IF n<3 THEN LET c=c+1: IF c=130 THEN LET n=n+1: LET c=0: PRINT AT 17,8;"ENEMY REINFORCEMENT": FOR i=1 TO 30: BEEP .03,i: NEXT i: PRINT AT 17,8;"                   "
+ 999 GO TO 30
+1000 PRINT AT y(i),x(i);"   "
+1005 LET y(i)=y(i)+1-(2 AND RND>.5)
+1010 IF y(i)=0 THEN LET y(i)=20
+1020 IF y(i)=21 THEN LET y(i)=1
+1030 RETURN 
+2000 PRINT AT y(i),x(i)-1; BRIGHT 1;"{95}{96}": BEEP .03,5: PRINT AT y(i),x(i)-1; BRIGHT 1;"{96}{95}": BEEP .03,0
+2010 PRINT AT y(i),x(i)-1;"   "
+2020 IF SCREEN$ (y(i),x(i)-2)=" " THEN GO TO 4000
+2030 LET y(i)=INT (RND*20)+1: LET x(i)=29
+2040 RETURN 
+3000 PRINT AT f,g-1; BRIGHT 1;"{95}{96}{95}": FOR o=3 TO 9 STEP 3: BEEP .01,o: NEXT o: PRINT AT f,g-1; BRIGHT 1;"{96}{95}{96}": BEEP .05,25: PRINT AT f,g-1;"   "
+3005 LET sc=INT (sc+s1*2+f/3): PRINT AT 0,29;sc
+3010 LET b=0
+3015 FOR i=1 TO n
+3020 IF f=y(i) THEN IF g=x(i) OR g=x(i)+1 THEN GO TO 3500
+3030 NEXT i
+3500 LET y(i)=INT (RND*20)+1: LET x(i)=29
+3510 GO TO 30
+4000 FOR o=2 TO 5: PRINT AT y(i),o; INK 1;"{8F}": BEEP .07,-20: NEXT o
+4010 FOR o=y(i) TO 20: PRINT AT o,5; INK 1;"{8F}": BEEP .07,-20: NEXT o
+4020 BEEP .07,-20
+4030 IF SCREEN$ (o,4)=" " THEN PRINT INK 1;AT o,4;"{8F}"
+4040 IF SCREEN$ (o,3)=" " THEN PRINT INK 1;AT o,3;"{8F}"
+4050 NEXT o
+4055 PRINT PAPER 1; INK 6;AT 4,6;"You Scored ";sc;" Points."
+4060 IF sc>hs THEN PRINT AT 6,6; PAPER 1; INK 6;"Well Done! That's A New";AT 7,6;"High Score!!": LET hs=sc
+4070 PRINT PAPER 1; INK 6;AT 9,6;"The High-Score Is ";hs
+4080 PRINT PAPER 1; INK 6;AT 11,6;"PRESS A KEY TO PLAY AGAIN"
+4090 IF INKEY$="" THEN GO TO 4090
+4100 CLS : GO TO 17
+5000 PRINT AT 20,g; INK 5;"{98}": BEEP .1,-30: PRINT AT 20,g;" "
+5010 LET b=0: GO TO 30
+7000 PRINT AT 0,6;"D A M  E A T E R S       "
+7020 FOR f=29 TO 4 STEP -1: PRINT INK 5;AT 2,f;"{93}{94} ": BEEP .03,-20: NEXT f
+7030 PRINT AT 2,3; BRIGHT 1;"{95}{96}": BEEP .03,5: PRINT AT 2,3; BRIGHT 1;"{96}{95}": BEEP .03,5: PAUSE 25: PRINT AT 2,0;"   "
+7035 CLS : PRINT AT 0,6;"D A M  E A T E R S     "
+7040 PRINT INK 6;AT 2,0;"Can you prevent the dam from    being broken by the dam eaters?"
+7050 PRINT INK 5''"Release bombs from any of the   3 cannons above the dam with    the keys 1-3."
+7060 PRINT INK 4''"There are several more features which you will have to wait to  find out!"
+7070 PRINT INK 6''"Press any key to start": PAUSE 0: CLS : RETURN 
+8000 DIM y(3): DIM x(3)
+8010 LET sc=0: LET b=0
+8020 LET n=1: LET c=0
+8030 FOR i=1 TO 3: LET y(i)=INT (RND*20)+1: LET x(i)=29: NEXT i
+8499 RETURN 
+9000 FOR f=USR "a" TO USR "i"+7: READ g: POKE f,g: NEXT f
+9010 DATA 119,119,0,221,221,0,119,119,0,221,221,0,119,119,0,221,221,0,119,119,0,221,221,0
+9020 DATA 0,255,171,0,0,171,255,0,28,39,255,255,255,255,0,0
+9030 DATA 96,10,193,20,101,128,51,140,194,40,67,24,130,40,67,16
+9040 DATA 63,31,15,7,3,3,1,1
+9060 DATA 2,196,40,23,232,16,231,24
+9800 FOR f=0 TO 20 STEP 3: PRINT INK 6; PAPER 2;AT f,2;"{90}{90}{90}";AT f+1,2;"{91}{91}{91}";AT f+2,2;"{92}{92}{92}": NEXT f
+9805 FOR f=0 TO 20: PRINT INK 1;AT f,0;"{8F}{8F}": NEXT f
+9810 FOR f=0 TO 31: PRINT AT 21,f; INK 1;"{8F}": NEXT f
+9820 PRINT INK 3;AT 0,7;"{97}     {97}     {97}"
+9830 PRINT AT 0,23;"Score:0"
+9999 RETURN 

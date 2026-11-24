@@ -1,0 +1,14 @@
+Acer VGA 8x8 font for the ZX-UX 60-program C48 workspace
+
+Bitmap source: Bm437_Acer_VGA_8x8.otb in The Ultimate Oldschool PC Font
+Pack v2.2, by VileR, copyright 2016-2020.
+Source: https://int10h.org/oldschool-pc-fonts/
+License: Creative Commons Attribution-ShareAlike 4.0 International
+(CC BY-SA 4.0)
+Unchanged license text: https://creativecommons.org/licenses/by-sa/4.0/
+
+Changes to the glyph data: 96 printable characters, codes 32-127,
+were extracted as eight bytes per glyph and stored in c48lib-font.asm.
+The font is linked separately into each C48 program. Other glyph data
+belong to each game's BASIC listing and are not part of the VGA font.
+The license notice and source credit apply to the font in compiled tapes.

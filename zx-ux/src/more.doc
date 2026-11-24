@@ -1,0 +1,18 @@
+MORE(1)                                             ZX-UX
+
+NAME
+    more - show text one screen at a time
+
+USE
+    more file ...
+    more < file
+
+WHAT IT DOES
+    more shows 22 lines, then waits at --More--.
+    SPACE   show the next screen.
+    ENTER   show one more line.
+    q       quit.  EDIT and BREAK also quit.
+
+    Keys come from /dev/tty, so the text may come from a file.
+    With several files, each one starts with "::: name".
+    Long lines wrap at 64 columns and count as several lines.

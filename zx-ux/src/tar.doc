@@ -1,0 +1,45 @@
+TAR(1)                                              ZX-UX
+
+NAME
+    tar, tap - save and restore files with cassette tape
+
+USE
+    tar cvf /dev/cassette/name file ...
+    tar tvf /dev/cassette/name [file ...]
+    tar xvf /dev/cassette/name [file ...]
+    tap r file ...
+    tap t
+    tap x [file ...]
+
+WHAT IT DOES
+    tar saves files to tape. It can also list and restore them.
+    A saved directory includes the files below it.
+    Each file keeps its path, size, mode, and change time.
+    Packed files remain packed on tape.
+
+OPTIONS
+    c   Write a new tape set. Start recording first.
+    t   Show what the tape holds.
+    x   Restore all files, or only the named files and folders.
+    v   Print each file's kind, size, and path.
+    f   Select the cassette name. Use at most ten characters.
+
+    Use /dev/cassette without a name to read the next tape set,
+    except that t (and tap t) then lists the whole tape: hold BREAK.
+    Restoring a file replaces an older file of the same name.
+    tar also makes any missing parent folders.
+    If a file will not fit in memory, tar removes the partial file.
+
+    tap uses the same code. Its r, t, and x commands match
+    tar's c, t, and x commands.
+
+TAPE LAYOUT
+    Each tape set starts with a Spectrum header.
+    Each file has a header and data blocks up to 1,024 bytes (512 on old tapes).
+    An empty header marks the end.
+    Device files and resident /bin programs are not saved.
+
+EXAMPLES
+    tar cvf /dev/cassette/home /usr/home
+    tar tvf /dev/cassette/home
+    tar xvf /dev/cassette/home /usr/home/notes

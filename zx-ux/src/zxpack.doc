@@ -1,0 +1,38 @@
+ZXPACK(1)                                           ZX-UX
+
+NAME
+    zxpack - save RAM by packing files
+
+USE
+    zxpack
+    zxpack file ...
+    zxpack -d file ...
+
+WHAT IT DOES
+    Files share a memory area with running programs.
+    A file can be stored in full or in packed form.
+    Reading or writing a packed file restores it first.
+    Programs do not need to know how the file is stored.
+
+    The system may pack closed files when no program is running.
+    It first looks for files idle for 15 seconds.
+    It stops packing when a process needs to run.
+    If memory becomes full, it packs closed files and tries again.
+
+    With no names, zxpack shows stored files and free RAM.
+    With names, it packs those files at once.
+    Use -d to restore the full form of named files.
+
+    ls -l shows z for a packed file and its original size.
+    du shows the memory that the stored form takes.
+
+FORMAT
+    The method uses LZ77 with a 2 KB window.
+    An adaptive binary range coder stores matches and literals.
+    Packing takes time and needs room for the new stream.
+    Restoring a file needs room for its full size.
+
+MESSAGES
+    open, not packed     Another program is using the file.
+    would not be smaller Packing would not save space.
+    no room             Not enough free RAM.
